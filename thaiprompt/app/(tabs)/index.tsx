@@ -1,9 +1,9 @@
 /**
- * Home Screen - Premium Design V3
+ * Home Screen - Premium Design V4
  * ปรับปรุงปุ่มให้สวยงามมากขึ้น
+ * - รูปภาพขยายเต็มปุ่ม (ไม่แสดงตัวหนังสือถ้ามีรูป)
+ * - 3D effect พร้อมเงาและแสง
  * - Glassmorphism effect
- * - 3D shadow depth
- * - Glow effects
  * - Smooth animations
  */
 
@@ -20,6 +20,7 @@ import {
   Animated,
   Image,
   ImageSourcePropType,
+  Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
@@ -29,6 +30,7 @@ import { BannerCarousel } from '@/components';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 52) / 2;
+const CARD_HEIGHT = 130;
 
 // ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
@@ -60,7 +62,7 @@ const MENU_ITEMS = [
   { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
 ] as const;
 
-// Menu Card Component - ปรับปรุงให้สวยงาม
+// Menu Card Component - ปรับปรุงให้รูปภาพเต็มปุ่ม
 const MenuCard = ({
   item,
   index,
@@ -72,60 +74,122 @@ const MenuCard = ({
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
+  const pressAnim = useRef(new Animated.Value(0)).current;
+  const shineAnim = useRef(new Animated.Value(0)).current;
 
   // Glow animation
   useEffect(() => {
+    let isMounted = true;
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
           toValue: 1,
           duration: 2000,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: false,
         }),
         Animated.timing(glowAnim, {
           toValue: 0,
           duration: 2000,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: false,
         }),
       ])
     );
 
+    // Shine animation - เงาวาวเลื่อนผ่าน
+    const shineAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shineAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.timing(shineAnim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
     // Stagger start based on index
-    const timeout = setTimeout(() => animation.start(), index * 200);
+    const timeout = setTimeout(() => {
+      if (isMounted) {
+        animation.start();
+        shineAnimation.start();
+      }
+    }, index * 300);
+
     return () => {
+      isMounted = false;
       clearTimeout(timeout);
       animation.stop();
+      shineAnimation.stop();
     };
-  }, []);
+  }, [glowAnim, shineAnim, index]);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.92,
+        useNativeDriver: true,
+        speed: 50,
+        bounciness: 4,
+      }),
+      Animated.timing(pressAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      speed: 20,
-      bounciness: 8,
-    }).start();
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 8,
+      }),
+      Animated.timing(pressAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
+    outputRange: [0.4, 0.7],
   });
+
+  const shineTranslateX = shineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-CARD_WIDTH, CARD_WIDTH * 2],
+  });
+
+  const pressTranslateY = pressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 2],
+  });
+
+  const hasImage = item.hasImage && MENU_IMAGES[item.id];
 
   return (
     <Animated.View
       style={[
         styles.menuCardWrapper,
-        { transform: [{ scale: scaleAnim }] },
+        {
+          transform: [
+            { scale: scaleAnim },
+            { translateY: pressTranslateY },
+          ]
+        },
       ]}
     >
       {/* Glow Effect - เงาเรืองแสง */}
@@ -139,6 +203,9 @@ const MenuCard = ({
         ]}
       />
 
+      {/* 3D Shadow Base */}
+      <View style={[styles.menu3DShadow, { backgroundColor: item.colors[1] }]} />
+
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -151,43 +218,69 @@ const MenuCard = ({
           end={{ x: 1, y: 1 }}
           style={styles.menuGradient}
         >
-          {/* Shine overlay - เอฟเฟกต์แสงวาว */}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.25)', 'rgba(255,255,255,0)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.shineOverlay}
-          />
-
-          {/* Glass border - ขอบแก้ว */}
+          {/* Glass border - ขอบแก้ว 3D */}
           <View style={styles.glassBorder} />
+          <View style={styles.glassHighlight} />
 
-          {/* Icon Container - แสดงภาพถ้ามี ไม่งั้นใช้ emoji */}
-          {item.hasImage && MENU_IMAGES[item.id] ? (
-            <View style={styles.menuImageContainer}>
+          {/* แสดงภาพเต็มปุ่ม ถ้ามีภาพ */}
+          {hasImage ? (
+            <View style={styles.fullImageContainer}>
               <Image
                 source={MENU_IMAGES[item.id]}
-                style={styles.menuImage}
+                style={styles.fullImage}
                 resizeMode="cover"
               />
+              {/* Overlay gradient ด้านล่าง (ไม่แสดงชื่อ) */}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.3)']}
+                style={styles.imageOverlay}
+              />
+              {/* Shine effect เลื่อนผ่าน */}
+              <Animated.View
+                style={[
+                  styles.shineEffect,
+                  {
+                    transform: [{ translateX: shineTranslateX }],
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255,255,255,0.4)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.shineGradient}
+                />
+              </Animated.View>
             </View>
           ) : (
-            <View style={styles.menuIconContainer}>
-              <View style={styles.menuIconShadow} />
+            // ถ้าไม่มีภาพ ใช้ emoji
+            <>
+              {/* Shine overlay - เอฟเฟกต์แสงวาว */}
               <LinearGradient
-                colors={['rgba(255,255,255,0.4)', 'rgba(255,255,255,0.1)']}
-                style={styles.menuIconBox}
-              >
-                <Text style={styles.menuEmoji}>{item.icon}</Text>
-              </LinearGradient>
-            </View>
+                colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.shineOverlay}
+              />
+
+              {/* Icon Container */}
+              <View style={styles.menuIconContainer}>
+                <View style={styles.menuIconShadow} />
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.5)', 'rgba(255,255,255,0.15)']}
+                  style={styles.menuIconBox}
+                >
+                  <Text style={styles.menuEmoji}>{item.icon}</Text>
+                </LinearGradient>
+              </View>
+
+              {/* Title - แสดงเฉพาะเมื่อไม่มีภาพ */}
+              <Text style={styles.menuTitle}>{item.title}</Text>
+            </>
           )}
 
-          {/* Title */}
-          <Text style={[styles.menuTitle, item.hasImage && styles.menuTitleWithImage]}>{item.title}</Text>
-
-          {/* Bottom shine line */}
-          <View style={styles.bottomShine} />
+          {/* 3D inner shadow top */}
+          <View style={styles.inner3DTop} />
         </LinearGradient>
       </Pressable>
     </Animated.View>
@@ -597,7 +690,7 @@ const styles = StyleSheet.create({
   // Menu Card Styles
   menuCardWrapper: {
     width: CARD_WIDTH,
-    height: 120,
+    height: CARD_HEIGHT,
     marginBottom: 14,
   },
   menuGlow: {
@@ -606,25 +699,32 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     bottom: -4,
+    borderRadius: 22,
+    opacity: 0.4,
+  },
+  menu3DShadow: {
+    position: 'absolute',
+    bottom: -4,
+    left: 4,
+    right: 4,
+    height: 20,
     borderRadius: 20,
     opacity: 0.4,
   },
   menuCard: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: 'hidden',
     // Shadow for iOS
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
     // Shadow for Android
-    elevation: 8,
+    elevation: 12,
   },
   menuGradient: {
     flex: 1,
-    padding: 14,
-    justifyContent: 'space-between',
     overflow: 'hidden',
   },
   shineOverlay: {
@@ -633,6 +733,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '60%',
+    zIndex: 1,
   },
   glassBorder: {
     position: 'absolute',
@@ -640,74 +741,108 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 22,
+    zIndex: 2,
   },
+  glassHighlight: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    right: 2,
+    height: '40%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    zIndex: 2,
+  },
+  inner3DTop: {
+    position: 'absolute',
+    top: 2,
+    left: 4,
+    right: 4,
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    zIndex: 3,
+  },
+  // รูปภาพเต็มปุ่ม
+  fullImageContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    borderRadius: 22,
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+  },
+  shineEffect: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 60,
+  },
+  shineGradient: {
+    flex: 1,
+    transform: [{ skewX: '-20deg' }],
+  },
+  // Icon Container (เมื่อไม่มีภาพ)
   menuIconContainer: {
-    width: 48,
-    height: 48,
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 52,
+    height: 52,
+    zIndex: 4,
   },
   menuIconShadow: {
     position: 'absolute',
     top: 4,
     left: 4,
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  menuIconBox: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  menuIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   menuEmoji: {
-    fontSize: 26,
+    fontSize: 28,
     textAlign: 'center',
   },
-  // สไตล์สำหรับปุ่มที่มีภาพ
-  menuImageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  menuImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 14,
-  },
   menuTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  menuTitleWithImage: {
-    marginTop: 4,
-  },
-  bottomShine: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 14,
     left: 14,
     right: 14,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    zIndex: 4,
   },
 
   // Footer

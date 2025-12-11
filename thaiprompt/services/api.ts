@@ -330,6 +330,82 @@ interface Store {
 }
 
 /**
+ * ดึงรายละเอียดร้านค้า
+ */
+export const getStoreDetail = async (
+  storeId: string
+): Promise<{
+  success: boolean;
+  data?: {
+    id: string;
+    name: string;
+    description?: string;
+    logo?: string;
+    banner?: string;
+    rating: number;
+    isOfficial: boolean;
+    isFeatured: boolean;
+    productCount: number;
+    followerCount: number;
+    responseRate?: number;
+    joinedAt?: string;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/mobile/stores/${storeId}`
+    );
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error('Get store detail error:', error);
+    return {
+      success: false,
+      message: 'ไม่สามารถโหลดข้อมูลร้านค้าได้',
+    };
+  }
+};
+
+/**
+ * ดึงสินค้าของร้านค้า
+ */
+export const getStoreProducts = async (
+  storeId: string,
+  page: number = 1,
+  perPage: number = 20
+): Promise<{
+  success: boolean;
+  data?: {
+    items: Product[];
+    hasMore: boolean;
+    total: number;
+  };
+  message?: string;
+} | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<any>>(
+      `/mobile/stores/${storeId}/products`,
+      {
+        params: { page, per_page: perPage },
+      }
+    );
+    return {
+      success: true,
+      data: response.data.data,
+    };
+  } catch (error) {
+    console.error('Get store products error:', error);
+    return {
+      success: false,
+      message: 'ไม่สามารถโหลดสินค้าได้',
+    };
+  }
+};
+
+/**
  * ดึงรายการร้านค้าทางการ
  * (Admin จัดการจากเมนูจัดการแอพ)
  */
@@ -895,22 +971,44 @@ export const uploadKycImage = async (
   try {
     const formData = new FormData();
 
+    // แปลง URI ให้ถูกต้องสำหรับ React Native
+    let fileUri = imageUri;
+    // ถ้าเป็น content:// หรือ file:// ใช้ได้เลย
+    // ถ้าไม่มี scheme ให้เพิ่ม file://
+    if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
+      fileUri = `file://${fileUri}`;
+    }
+
     // สร้าง file object จาก uri
     const filename = imageUri.split('/').pop() || `${type}.jpg`;
-    const match = /\.(\w+)$/.exec(filename);
-    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+    // ตรวจสอบ extension โดยละเลย query string
+    const cleanFilename = filename.split('?')[0];
+    const match = /\.(\w+)$/.exec(cleanFilename);
+    let fileType = 'image/jpeg';
+    if (match) {
+      const ext = match[1].toLowerCase();
+      if (ext === 'png') fileType = 'image/png';
+      else if (ext === 'gif') fileType = 'image/gif';
+      else if (ext === 'webp') fileType = 'image/webp';
+      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
+      else fileType = `image/${ext}`;
+    }
 
     formData.append('image', {
-      uri: imageUri,
-      name: filename,
+      uri: fileUri,
+      name: cleanFilename || `${type}.jpg`,
       type: fileType,
     } as unknown as Blob);
     formData.append('type', type);
 
+    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: fileType, kycType: type });
+
+    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
     const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
     });
 
     return response.data;
@@ -2437,20 +2535,42 @@ export const uploadAvatar = async (imageUri: string): Promise<{
   try {
     const formData = new FormData();
 
+    // แปลง URI ให้ถูกต้องสำหรับ React Native
+    let fileUri = imageUri;
+    // ถ้าเป็น content:// หรือ file:// ใช้ได้เลย
+    // ถ้าไม่มี scheme ให้เพิ่ม file://
+    if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
+      fileUri = `file://${fileUri}`;
+    }
+
     const filename = imageUri.split('/').pop() || 'avatar.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    const fileType = match ? `image/${match[1]}` : 'image/jpeg';
+    // ตรวจสอบ extension โดยละเลย query string
+    const cleanFilename = filename.split('?')[0];
+    const match = /\.(\w+)$/.exec(cleanFilename);
+    let fileType = 'image/jpeg';
+    if (match) {
+      const ext = match[1].toLowerCase();
+      if (ext === 'png') fileType = 'image/png';
+      else if (ext === 'gif') fileType = 'image/gif';
+      else if (ext === 'webp') fileType = 'image/webp';
+      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
+      else fileType = `image/${ext}`;
+    }
 
     formData.append('avatar', {
-      uri: imageUri,
-      name: filename,
+      uri: fileUri,
+      name: cleanFilename || 'avatar.jpg',
       type: fileType,
     } as unknown as Blob);
 
+    console.log('📸 Uploading avatar:', { uri: fileUri, name: cleanFilename, type: fileType });
+
+    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
     const response = await apiClient.post(API_ENDPOINTS.AVATAR_UPLOAD, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
     });
 
     // อัพเดท user data ใน storage

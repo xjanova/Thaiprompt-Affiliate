@@ -1,16 +1,211 @@
 /**
  * Loading Screen Component - หน้า loading พร้อม animation แบบ Premium
  * มีแสงเปล่งออกจากโลโก้แบบ Radiant Glow Effect
+ * และมีอะตอมหิ่งห้อยเรืองแสงบินไปมา
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
+import React, { useEffect, useRef, useMemo } from 'react';
+import { View, Text, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { APP_INFO } from '@/config/appConfig';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// จำนวน fireflies
+const FIREFLY_COUNT = 15;
 
 interface LoadingScreenProps {
   message?: string;
 }
+
+// Firefly Component - อะตอมหิ่งห้อยเรืองแสง
+const Firefly = ({ index }: { index: number }) => {
+  // Random starting positions and sizes
+  const initialX = useMemo(() => Math.random() * SCREEN_WIDTH, []);
+  const initialY = useMemo(() => Math.random() * SCREEN_HEIGHT, []);
+  const size = useMemo(() => 4 + Math.random() * 6, []);
+  const duration = useMemo(() => 3000 + Math.random() * 4000, []);
+  const delay = useMemo(() => Math.random() * 2000, []);
+
+  // Animation values
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  // สุ่มทิศทางและระยะทาง
+  const targetX = useMemo(() => (Math.random() - 0.5) * 200, []);
+  const targetY = useMemo(() => (Math.random() - 0.5) * 200, []);
+
+  // สีสุ่มของหิ่งห้อย
+  const colors = useMemo(() => {
+    const colorOptions = [
+      ['rgba(59, 130, 246, 0.9)', 'rgba(59, 130, 246, 0.3)'], // Blue
+      ['rgba(139, 92, 246, 0.9)', 'rgba(139, 92, 246, 0.3)'], // Purple
+      ['rgba(6, 182, 212, 0.9)', 'rgba(6, 182, 212, 0.3)'], // Cyan
+      ['rgba(16, 185, 129, 0.9)', 'rgba(16, 185, 129, 0.3)'], // Green
+      ['rgba(251, 191, 36, 0.9)', 'rgba(251, 191, 36, 0.3)'], // Yellow
+    ];
+    return colorOptions[Math.floor(Math.random() * colorOptions.length)];
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const animate = () => {
+      if (!isMounted) return;
+
+      // Reset position
+      translateX.setValue(0);
+      translateY.setValue(0);
+
+      Animated.parallel([
+        // Movement X
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(translateX, {
+            toValue: targetX,
+            duration: duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        // Movement Y
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(translateY, {
+            toValue: targetY,
+            duration: duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        // Glow effect (opacity)
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(opacity, {
+            toValue: 0.8 + Math.random() * 0.2,
+            duration: duration / 4,
+            easing: Easing.ease,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.3,
+            duration: duration / 4,
+            easing: Easing.ease,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.9,
+            duration: duration / 4,
+            easing: Easing.ease,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: duration / 4,
+            easing: Easing.ease,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Scale pulse
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(scale, {
+            toValue: 1.2,
+            duration: duration / 2,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 0.5,
+            duration: duration / 2,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        if (isMounted) animate();
+      });
+    };
+
+    animate();
+
+    return () => {
+      isMounted = false;
+      translateX.stopAnimation();
+      translateY.stopAnimation();
+      opacity.stopAnimation();
+      scale.stopAnimation();
+    };
+  }, [translateX, translateY, opacity, scale, duration, delay, targetX, targetY]);
+
+  return (
+    <Animated.View
+      style={[
+        fireflyStyles.firefly,
+        {
+          left: initialX,
+          top: initialY,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          opacity,
+          transform: [
+            { translateX },
+            { translateY },
+            { scale },
+          ],
+        },
+      ]}
+    >
+      {/* Glow effect */}
+      <View
+        style={[
+          fireflyStyles.glow,
+          {
+            width: size * 3,
+            height: size * 3,
+            borderRadius: size * 1.5,
+            backgroundColor: colors[1],
+            left: -size,
+            top: -size,
+          },
+        ]}
+      />
+      {/* Core */}
+      <View
+        style={[
+          fireflyStyles.core,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: colors[0],
+          },
+        ]}
+      />
+    </Animated.View>
+  );
+};
+
+const fireflyStyles = StyleSheet.create({
+  firefly: {
+    position: 'absolute',
+    zIndex: 1,
+  },
+  glow: {
+    position: 'absolute',
+  },
+  core: {
+    position: 'absolute',
+    shadowColor: '#FFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+});
 
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = 'กำลังโหลด...',
@@ -36,11 +231,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   // Animation value สำหรับ spinner rotation
   const spinValue = useRef(new Animated.Value(0)).current;
 
-  // Animation สำหรับ particle glow
+  // Animation สำหรับ particle glow รอบโลโก้
   const particleRotation = useRef(new Animated.Value(0)).current;
 
+  // Animation สำหรับ orbit particles
+  const orbitRotation = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    // ใช้ ref เพื่อตรวจสอบว่า component ยัง mounted อยู่หรือไม่
     let isMounted = true;
 
     // Dot animation - sequential fade
@@ -204,6 +401,21 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       });
     };
 
+    // Orbit rotation (วงโคจรอะตอม)
+    const orbitAnim = () => {
+      if (!isMounted) return;
+
+      orbitRotation.setValue(0);
+      Animated.timing(orbitRotation, {
+        toValue: 1,
+        duration: 6000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => {
+        if (isMounted) orbitAnim();
+      });
+    };
+
     dotAnimation();
     pulseAnimation();
     ringAnimation(ring1Scale, ring1Opacity, 0);
@@ -211,11 +423,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     ringAnimation(ring3Scale, ring3Opacity, 1200);
     spinAnimation();
     particleAnim();
+    orbitAnim();
 
     // Cleanup function - หยุด animations เมื่อ component unmount
     return () => {
       isMounted = false;
-      // หยุด animation ทั้งหมด
       dot1Opacity.stopAnimation();
       dot2Opacity.stopAnimation();
       dot3Opacity.stopAnimation();
@@ -230,6 +442,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       ring3Opacity.stopAnimation();
       spinValue.stopAnimation();
       particleRotation.stopAnimation();
+      orbitRotation.stopAnimation();
     };
   }, [
     dot1Opacity,
@@ -246,6 +459,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     ring3Opacity,
     spinValue,
     particleRotation,
+    orbitRotation,
   ]);
 
   const spin = spinValue.interpolate({
@@ -258,12 +472,68 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     outputRange: ['0deg', '360deg'],
   });
 
+  const orbitSpin = orbitRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const reverseOrbitSpin = orbitRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-360deg'],
+  });
+
+  // Generate fireflies
+  const fireflies = useMemo(() => {
+    return Array.from({ length: FIREFLY_COUNT }, (_, i) => (
+      <Firefly key={i} index={i} />
+    ));
+  }, []);
+
   return (
     <LinearGradient
       colors={['#0A0A1A', '#0F0F23', '#1A1A2E']}
       style={styles.container}
     >
-      {/* Background Particles */}
+      {/* Fireflies - อะตอมหิ่งห้อยเรืองแสง */}
+      {fireflies}
+
+      {/* Orbiting atoms - วงโคจรอะตอมรอบโลโก้ */}
+      <View style={styles.orbitContainer}>
+        {/* Orbit Ring 1 - แนวนอน */}
+        <Animated.View
+          style={[
+            styles.orbit,
+            styles.orbit1,
+            { transform: [{ rotate: orbitSpin }, { rotateX: '70deg' }] },
+          ]}
+        >
+          <View style={[styles.orbitParticle, styles.orbitParticle1]} />
+        </Animated.View>
+
+        {/* Orbit Ring 2 - แนวเฉียง */}
+        <Animated.View
+          style={[
+            styles.orbit,
+            styles.orbit2,
+            { transform: [{ rotate: reverseOrbitSpin }, { rotateX: '60deg' }, { rotateY: '45deg' }] },
+          ]}
+        >
+          <View style={[styles.orbitParticle, styles.orbitParticle2]} />
+        </Animated.View>
+
+        {/* Orbit Ring 3 - แนวตั้ง */}
+        <Animated.View
+          style={[
+            styles.orbit,
+            styles.orbit3,
+            { transform: [{ rotate: orbitSpin }, { rotateY: '80deg' }] },
+          ]}
+        >
+          <View style={[styles.orbitParticle, styles.orbitParticle3]} />
+        </Animated.View>
+      </View>
+
+      {/* Background Particles - particle เดิม */}
       <Animated.View
         style={[
           styles.particleContainer,
@@ -399,6 +669,79 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Orbit styles - วงโคจรอะตอม
+  orbitContainer: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orbit: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderStyle: 'dashed',
+  },
+  orbit1: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+  },
+  orbit2: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+  },
+  orbit3: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  orbitParticle: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  orbitParticle1: {
+    top: -5,
+    left: '50%',
+    marginLeft: -5,
+    backgroundColor: '#3B82F6',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  orbitParticle2: {
+    top: -5,
+    left: '50%',
+    marginLeft: -5,
+    backgroundColor: '#8B5CF6',
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  orbitParticle3: {
+    top: -5,
+    left: '50%',
+    marginLeft: -5,
+    backgroundColor: '#06B6D4',
+    shadowColor: '#06B6D4',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   particleContainer: {
     position: 'absolute',
     width: 300,
@@ -419,6 +762,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+    zIndex: 10,
   },
   glowRing: {
     position: 'absolute',
