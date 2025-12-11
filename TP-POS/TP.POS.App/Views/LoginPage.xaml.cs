@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Microsoft.Maui.Controls.Shapes;
 using TP.POS.App.ViewModels;
 
 namespace TP.POS.App.Views;
