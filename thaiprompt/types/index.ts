@@ -12,6 +12,7 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  is_super_admin?: boolean;  // Super Admin flag สำหรับ bypass บางระบบ
   avatar?: string;
   phone?: string;
   address?: string;

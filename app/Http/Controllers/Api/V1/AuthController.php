@@ -41,6 +41,7 @@ class AuthController extends Controller
                     'wallet_address' => $walletAddress,
                     'referralCode' => $user->referral_code,
                     'referralLink' => url('/register?ref=' . $user->referral_code),
+                    'is_super_admin' => $user->is_super_admin ?? false,
                 ]),
                 'token' => $token,
             ],
@@ -74,6 +75,7 @@ class AuthController extends Controller
                 'wallet_address' => $walletAddress,
                 'referralCode' => $user->referral_code,
                 'referralLink' => url('/register?ref=' . $user->referral_code),
+                'is_super_admin' => $user->is_super_admin ?? false,
             ]),
         ]);
     }

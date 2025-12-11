@@ -113,6 +113,9 @@ const PermissionModal = ({
 export default function RiderScreen() {
   const { isAuthenticated, user } = useAuthStore();
 
+  // ⭐ Super Admin Bypass - เข้าได้โดยไม่ต้องสมัคร
+  const isSuperAdmin = user?.is_super_admin === true || user?.role === 'super_admin';
+
   const [riderData, setRiderData] = useState<any>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -139,6 +142,35 @@ export default function RiderScreen() {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
+      // ⭐ Super Admin Bypass - สร้างข้อมูลจำลองสำหรับทดสอบ
+      if (isSuperAdmin) {
+        setRiderData({
+          isRider: true,
+          riderId: 'ADMIN-DEV',
+          status: 'approved',
+          statusText: '✅ อนุมัติแล้ว (Developer Mode)',
+          availability: 'online',
+          availabilityText: 'ออนไลน์',
+          vehicleType: 'motorcycle',
+          vehicleTypeText: 'มอเตอร์ไซค์',
+          rating: 5.0,
+          totalJobs: 999,
+          completedJobs: 999,
+          completionRate: 100,
+          totalEarnings: 999999,
+          permissions: {
+            gps: true,
+            camera: true,
+            microphone: true,
+            notification: true,
+            allGranted: true,
+          },
+          isSuperAdminMode: true,  // Flag แสดงว่าเป็น dev mode
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const response = await getRiderStatus();
       if (response?.success && response.data) {
         setRiderData(response.data);
@@ -148,7 +180,7 @@ export default function RiderScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isSuperAdmin]);
 
   useEffect(() => {
     loadRiderStatus();
@@ -475,6 +507,13 @@ export default function RiderScreen() {
           )}
         </View>
 
+        {/* ⭐ Developer Mode Banner for Super Admin */}
+        {riderData?.isSuperAdminMode && (
+          <View style={styles.devModeBanner}>
+            <Text style={styles.devModeText}>⚙️ Developer Mode - Super Admin Access</Text>
+          </View>
+        )}
+
         {/* Status Card */}
         <LinearGradient
           colors={isPending ? ['#F59E0B', '#D97706'] : isRejected ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
@@ -620,6 +659,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F0F23' },
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  devModeBanner: { backgroundColor: 'rgba(245,158,11,0.2)', borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#F59E0B' },
+  devModeText: { color: '#FBBF24', fontSize: 14, fontWeight: '600', textAlign: 'center' },
   centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   centerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', marginTop: 16 },
   centerText: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 },
