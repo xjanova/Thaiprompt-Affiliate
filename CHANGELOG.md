@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.2] - 2025-12-11
+
+### ✨ Features
+- feat(tpix): enhance TPIX page with TPIX1.png hero image and cyberpunk design (77426cae)
+### 🐛 Bug Fixes
+- fix(home): use TPIX.png for TPIX menu button (ebbabd19)
+- fix(home): update menu images to use correct assets (b8ed6898)
+- fix(tpix): remove unused imports to prevent build warnings (7e243c0c)
+### 🔧 Other Changes
+- Merge pull request #2249 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (7cb54a68)
+
 ## [v3.375.1] - 2025-12-11
 
 ### ✨ Features
