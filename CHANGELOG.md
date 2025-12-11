@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.377.0] - 2025-12-11
+
+### ✨ Features
+- feat: add GPS sharing, improve fireflies, update version (98d10ed6)
+- feat(mobile): add Academy and Watch & Earn pages (db657ad3)
+- feat(home): update menu buttons with premium 2bt images (9e093b15)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2254 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (f873b589)
+
 ## [v3.376.1] - 2025-12-11
 
 ### ✨ Features
