@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.7] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Delete thaiprompt/assets/images/2bt/dd.txt (42776771)
+
 ## [v3.375.6] - 2025-12-11
 
 ### ✨ Features
