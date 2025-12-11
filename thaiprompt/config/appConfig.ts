@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.8.0',
-  BUILD_NUMBER: 27,
-  BUILD_DATE: '2025-12-11-GPS-ACADEMY', // GPS Sharing, Academy, Watch & Earn, 2bt images
+  VERSION: '1.8.1',
+  BUILD_NUMBER: 28,
+  BUILD_DATE: '2025-12-11-SHOP-FIX', // Fix shopping routes, add stores page
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
