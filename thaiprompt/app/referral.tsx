@@ -171,7 +171,7 @@ const QRCodeSection = ({
             >
               <View className="bg-white p-5 rounded-3xl">
                 <QRCode
-                  value={memberCode}
+                  value={referralLink}
                   size={180}
                   color="#1F2937"
                   backgroundColor="white"
