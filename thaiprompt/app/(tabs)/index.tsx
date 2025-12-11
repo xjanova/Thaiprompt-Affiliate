@@ -50,7 +50,7 @@ const MENU_IMAGES: Record<string, ImageSourcePropType> = {
   shopping: require('@/assets/images/shopping.png'),
   services: require('@/assets/images/service.png'),  // ใช้ภาพ service.png
   rider: require('@/assets/images/rider.png'),
-  tpix: require('@/assets/images/TPIX1.png'),  // TPIX Token - เหรียญ 3D Cyberpunk
+  tpix: require('@/assets/images/TPIX.png'),  // TPIX Token - ปุ่มเข้าสู่ระบบเหรียญ
   'wealth-guide': require('@/assets/images/riches-path.png'),
   tarot: require('@/assets/images/tarot.png'),
   leaderboard: require('@/assets/images/ranking.png'),
