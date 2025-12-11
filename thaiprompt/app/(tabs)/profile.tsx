@@ -541,16 +541,16 @@ export default function ProfileScreen() {
             isDark={isDark}
           />
           <MenuItem
-            icon="notifications-outline"
-            label="การแจ้งเตือน"
-            onPress={() => router.push('/notifications')}
-            isDark={isDark}
-          />
-          <MenuItem
             icon="language-outline"
             label="ภาษา"
             value="ไทย"
             onPress={() => Alert.alert('ภาษา', 'ขณะนี้รองรับเฉพาะภาษาไทย')}
+            isDark={isDark}
+          />
+          <MenuItem
+            icon="notifications-outline"
+            label="การแจ้งเตือน"
+            onPress={() => router.push('/notification-settings')}
             isDark={isDark}
           />
         </View>
@@ -561,8 +561,8 @@ export default function ProfileScreen() {
           </Text>
           <MenuItem
             icon="help-circle-outline"
-            label="ศูนย์ช่วยเหลือ"
-            onPress={() => router.push('/help')}
+            label="Wiki คู่มือการใช้งาน"
+            onPress={() => router.push('/wiki')}
             isDark={isDark}
           />
           <MenuItem
@@ -575,6 +575,18 @@ export default function ProfileScreen() {
             icon="document-text-outline"
             label="เงื่อนไขการใช้งาน"
             onPress={() => router.push('/terms')}
+            isDark={isDark}
+          />
+          <MenuItem
+            icon="document-text-outline"
+            label="ข้อตกลงการใช้งาน"
+            onPress={() => router.push('/agreement')}
+            isDark={isDark}
+          />
+          <MenuItem
+            icon="shield-checkmark-outline"
+            label="นโยบายความเป็นส่วนตัว"
+            onPress={() => router.push('/privacy')}
             isDark={isDark}
           />
           <MenuItem

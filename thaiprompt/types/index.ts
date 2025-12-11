@@ -12,8 +12,16 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  is_super_admin?: boolean;  // Super Admin flag สำหรับ bypass บางระบบ
   avatar?: string;
+  phone?: string;
+  address?: string;
+  bio?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_account_name?: string;
   referralCode?: string;
+  referralLink?: string;
   wallet_address?: string;
   permissions: string[];
   createdAt: string;

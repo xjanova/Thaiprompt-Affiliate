@@ -53,6 +53,11 @@ class User extends Authenticatable
         'state',
         'postal_code',
         'country',
+        // Profile/Bio fields (Mobile App)
+        'bio',
+        'bank_name',
+        'bank_account',
+        'bank_account_name',
         // Shipping address fields
         'shipping_address',
         'shipping_city',
@@ -112,6 +117,29 @@ class User extends Authenticatable
         'kyc_verified_at',       // ข้อมูล KYC ภายใน
         'blocked_at',            // ข้อมูล moderation ภายใน
     ];
+
+    /**
+     * Avatar accessor สำหรับ Mobile App compatibility
+     * เป็น alias ของ profile_picture เพื่อให้ใช้งานกับ Mobile App ได้
+     *
+     * @return string|null
+     */
+    public function getAvatarAttribute(): ?string
+    {
+        return $this->profile_picture;
+    }
+
+    /**
+     * Avatar mutator สำหรับ Mobile App compatibility
+     * เมื่อ set avatar จะ save ไปที่ profile_picture
+     *
+     * @param string|null $value
+     * @return void
+     */
+    public function setAvatarAttribute(?string $value): void
+    {
+        $this->attributes['profile_picture'] = $value;
+    }
 
     /**
      * Get profile picture URL or default avatar

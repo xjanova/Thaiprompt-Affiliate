@@ -3,17 +3,20 @@
  * เพิ่มมิติให้เมนูล่างและปุ่มรถเข็ญช๊อปปิ้ง
  */
 
-import React, { useEffect, useRef } from 'react';
-import { Tabs, router } from 'expo-router';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Tabs, router, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, Platform, Pressable, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCartStore } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { getUnreadNotificationCount } from '@/services/api';
 
 // Tab icons ใช้ emoji
 const TAB_ICONS = {
   home: { active: '🏠', inactive: '🏡' },
   network: { active: '👥', inactive: '👤' },
   wallet: { active: '💰', inactive: '💳' },
+  notifications: { active: '🔔', inactive: '🔕' },
   profile: { active: '⚙️', inactive: '👤' },
 };
 
@@ -193,6 +196,125 @@ const CartButton = () => {
   );
 };
 
+// Notification Badge Component - แสดงจำนวนข้อความที่ยังไม่ได้อ่าน
+const NotificationBadge = ({ count }: { count: number }) => {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (count > 0) {
+      // Bounce animation
+      scaleAnim.setValue(0);
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+
+      // Pulse animation loop
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.15,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [count, scaleAnim, pulseAnim]);
+
+  if (count === 0) return null;
+
+  return (
+    <Animated.View
+      style={[
+        styles.notificationBadge,
+        {
+          transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={['#EF4444', '#DC2626']}
+        style={styles.notificationBadgeGradient}
+      >
+        <Text style={styles.notificationBadgeText}>
+          {count > 99 ? '99+' : count}
+        </Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+};
+
+// Notification Tab Button with Badge
+const NotificationTabButton = ({
+  focused,
+  unreadCount,
+  onPress,
+}: {
+  focused: boolean;
+  unreadCount: number;
+  onPress: () => void;
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (focused) {
+      Animated.spring(scaleAnim, {
+        toValue: 1.1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [focused, scaleAnim]);
+
+  return (
+    <Pressable onPress={onPress}>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        {focused ? (
+          <View style={styles.activeTabContainer}>
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              style={styles.activeTab}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.tabHighlight} />
+              <Text style={styles.tabEmojiActive}>🔔</Text>
+            </LinearGradient>
+            <View style={[styles.tabShadow, { backgroundColor: 'rgba(245, 158, 11, 0.3)' }]} />
+            {/* Badge */}
+            <NotificationBadge count={unreadCount} />
+          </View>
+        ) : (
+          <View style={styles.inactiveTab}>
+            <Text style={styles.tabEmoji}>🔕</Text>
+            {/* Badge */}
+            <NotificationBadge count={unreadCount} />
+          </View>
+        )}
+      </Animated.View>
+    </Pressable>
+  );
+};
+
 // Tab Button Component with 3D effect
 const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active: string; inactive: string }; label: string }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -246,6 +368,47 @@ const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active:
 };
 
 export default function TabLayout() {
+  const { isAuthenticated } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // ดึงจำนวนข้อความที่ยังไม่ได้อ่าน
+  const fetchUnreadCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await getUnreadNotificationCount();
+      if (response?.success && typeof response.data?.count === 'number') {
+        setUnreadCount(response.data.count);
+      }
+    } catch (error) {
+      console.log('Failed to fetch unread count:', error);
+    }
+  }, [isAuthenticated]);
+
+  // ดึงข้อมูลเมื่อเข้าแอพ และ refresh ทุก 30 วินาที
+  useEffect(() => {
+    fetchUnreadCount();
+
+    // Auto refresh ทุก 30 วินาที
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  // Refresh เมื่อกลับมาที่ tab
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [fetchUnreadCount])
+  );
+
+  const handleNotificationPress = () => {
+    router.push('/notifications');
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <Tabs
@@ -312,6 +475,27 @@ export default function TabLayout() {
             title: 'กระเป๋า',
             tabBarIcon: ({ focused }) => (
               <TabButton focused={focused} icon={TAB_ICONS.wallet} label="กระเป๋า" />
+            ),
+          }}
+        />
+        {/* Notification Tab with Badge */}
+        <Tabs.Screen
+          name="notifications-tab"
+          options={{
+            title: 'แจ้งเตือน',
+            tabBarIcon: ({ focused }) => (
+              <NotificationTabButton
+                focused={focused}
+                unreadCount={unreadCount}
+                onPress={handleNotificationPress}
+              />
+            ),
+            tabBarButton: (props) => (
+              <Pressable
+                {...props}
+                onPress={handleNotificationPress}
+                style={props.style}
+              />
             ),
           }}
         />
@@ -481,6 +665,30 @@ const styles = StyleSheet.create({
   cartBadgeText: {
     color: '#FFFFFF',
     fontSize: 11,
+    fontWeight: 'bold',
+  },
+  // Notification Badge Styles
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    minWidth: 18,
+    height: 18,
+    zIndex: 10,
+  },
+  notificationBadgeGradient: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#0F172A',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: 'bold',
   },
 });

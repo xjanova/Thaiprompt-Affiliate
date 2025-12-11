@@ -30,11 +30,19 @@ class AuthController extends Controller
 
         $token = $user->createToken('mobile-app')->plainTextToken;
 
+        // ดึง wallet_address จาก wallet relationship
+        $walletAddress = $user->wallet?->wallet_address;
+
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
             'data' => [
-                'user' => $user,
+                'user' => array_merge($user->toArray(), [
+                    'wallet_address' => $walletAddress,
+                    'referralCode' => $user->referral_code,
+                    'referralLink' => url('/register?ref=' . $user->referral_code),
+                    'is_super_admin' => $user->is_super_admin ?? false,
+                ]),
                 'token' => $token,
             ],
         ]);
@@ -58,9 +66,17 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user();
+        $walletAddress = $user->wallet?->wallet_address;
+
         return response()->json([
             'success' => true,
-            'data' => $request->user(),
+            'data' => array_merge($user->toArray(), [
+                'wallet_address' => $walletAddress,
+                'referralCode' => $user->referral_code,
+                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'is_super_admin' => $user->is_super_admin ?? false,
+            ]),
         ]);
     }
 }

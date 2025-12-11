@@ -86,6 +86,37 @@ Route::prefix('webhook')->name('api.webhook.')->group(function () {
         ->name('truemoney');
 });
 
+// =============================================
+// POS Terminal API
+// สำหรับลงทะเบียนและจัดการเครื่อง POS
+// =============================================
+Route::prefix('pos')->name('api.pos.')->group(function () {
+    // Health check (public)
+    Route::get('/health', fn() => response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]));
+
+    // ลงทะเบียนเครื่อง POS (ต้องมี API Key)
+    Route::post('/register', [\App\Http\Controllers\Api\PosTerminalController::class, 'register'])
+        ->name('register');
+
+    // ตรวจสอบ License (ต้องมี API Key + Product Key)
+    Route::get('/validate', [\App\Http\Controllers\Api\PosTerminalController::class, 'validate'])
+        ->name('validate');
+
+    // Sync ข้อมูล (ต้องมี API Key + Product Key)
+    Route::post('/sync/products', [\App\Http\Controllers\Api\PosTerminalController::class, 'syncProducts'])
+        ->name('sync.products');
+
+    Route::post('/sync/categories', [\App\Http\Controllers\Api\PosTerminalController::class, 'syncCategories'])
+        ->name('sync.categories');
+
+    Route::post('/sync/orders', [\App\Http\Controllers\Api\PosTerminalController::class, 'uploadOrders'])
+        ->name('sync.orders');
+
+    // รายงานข้อมูลจาก POS
+    Route::post('/report/sales', [\App\Http\Controllers\Api\PosTerminalController::class, 'reportSales'])
+        ->name('report.sales');
+});
+
 // API v1
 Route::prefix('v1')->group(function () {
     // Public routes
@@ -156,6 +187,15 @@ Route::prefix('v1')->group(function () {
             Route::put('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateProfile']);
             Route::post('/change-password', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'changePassword']);
             Route::get('/referral-code', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getReferralCode']);
+            // Avatar Upload/Delete สำหรับ Mobile App
+            Route::post('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadAvatar']);
+            Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
+        });
+
+        // Mobile Profile Avatar (alternative endpoint)
+        Route::prefix('mobile/profile')->group(function () {
+            Route::post('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadAvatar']);
+            Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
         });
 
         // Products (Mobile App E-commerce)

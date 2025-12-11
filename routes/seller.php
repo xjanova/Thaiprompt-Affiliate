@@ -158,6 +158,12 @@ Route::prefix('products')->name('products.')->group(function () {
 // ========================================
 Route::prefix('orders')->name('orders.')->group(function () {
     Route::get('/', [OrderManagementController::class, 'index'])->name('index');
+
+    // Shipping Status Filters (สำหรับเมนูจัดการการจัดส่ง)
+    Route::get('/pending-shipping', [OrderManagementController::class, 'pendingShipping'])->name('pending-shipping');
+    Route::get('/shipped', [OrderManagementController::class, 'shipped'])->name('shipped');
+    Route::get('/delivered', [OrderManagementController::class, 'delivered'])->name('delivered');
+
     Route::get('/{id}', [OrderManagementController::class, 'show'])->name('show');
     Route::put('/{orderId}/items/{itemId}/status', [OrderManagementController::class, 'updateItemStatus'])->name('update-item-status');
     Route::post('/{orderId}/tracking', [OrderManagementController::class, 'addTracking'])->name('add-tracking');
@@ -168,6 +174,14 @@ Route::prefix('orders')->name('orders.')->group(function () {
     Route::get('/{orderId}/messages', [OrderManagementController::class, 'getMessages'])->name('messages');
     Route::post('/{orderId}/messages', [OrderManagementController::class, 'sendMessage'])->name('messages.send');
     Route::post('/{orderId}/messages/read', [OrderManagementController::class, 'markMessagesRead'])->name('messages.read');
+});
+
+// ========================================
+// CUSTOMER MESSAGES (แชทกับลูกค้า)
+// ========================================
+Route::prefix('messages')->name('messages.')->group(function () {
+    Route::get('/', [OrderManagementController::class, 'allMessages'])->name('index');
+    Route::get('/unread', [OrderManagementController::class, 'unreadMessages'])->name('unread');
 });
 
 // Notifications

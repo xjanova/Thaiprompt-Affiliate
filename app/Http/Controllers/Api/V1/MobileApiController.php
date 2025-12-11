@@ -149,9 +149,15 @@ class MobileApiController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'avatar' => $user->avatar,
+                'address' => $user->address,
+                'bio' => $user->bio,
+                'bank_name' => $user->bank_name,
+                'bank_account' => $user->bank_account,
+                'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
                 'referralCode' => $user->referral_code,
                 'referralLink' => url('/register?ref=' . $user->referral_code),
+                'wallet_address' => $user->wallet?->wallet_address ?? null,
                 'createdAt' => $user->created_at->toISOString(),
             ],
         ]);
@@ -171,6 +177,11 @@ class MobileApiController extends Controller
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|nullable|string|max:20',
             'avatar' => 'sometimes|nullable|string',
+            'address' => 'sometimes|nullable|string|max:500',
+            'bio' => 'sometimes|nullable|string|max:1000',
+            'bank_name' => 'sometimes|nullable|string|max:100',
+            'bank_account' => 'sometimes|nullable|string|max:50',
+            'bank_account_name' => 'sometimes|nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -181,7 +192,16 @@ class MobileApiController extends Controller
             ], 422);
         }
 
-        $user->update($request->only(['name', 'phone', 'avatar']));
+        // รับ fields ที่อนุญาต
+        $allowedFields = ['name', 'phone', 'avatar', 'address', 'bio', 'bank_name', 'bank_account', 'bank_account_name'];
+        $updateData = $request->only($allowedFields);
+
+        // กรอง null values
+        $updateData = array_filter($updateData, function ($value) {
+            return $value !== null;
+        });
+
+        $user->update($updateData);
 
         return response()->json([
             'success' => true,
@@ -192,10 +212,124 @@ class MobileApiController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'avatar' => $user->avatar,
+                'address' => $user->address,
+                'bio' => $user->bio,
+                'bank_name' => $user->bank_name,
+                'bank_account' => $user->bank_account,
+                'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
                 'referralCode' => $user->referral_code,
             ],
         ]);
+    }
+
+    /**
+     * อัพโหลดรูปโปรไฟล์ (Avatar)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
+        ], [
+            'avatar.required' => 'กรุณาเลือกรูปภาพ',
+            'avatar.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp',
+            'avatar.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // ลบรูปเดิมถ้ามี
+            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
+                \Storage::disk('public')->delete($user->avatar);
+            }
+
+            // อัพโหลดรูปใหม่
+            $file = $request->file('avatar');
+            $filename = 'avatars/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('', $filename, 'public');
+
+            // อัพเดทข้อมูลผู้ใช้
+            $avatarUrl = \Storage::disk('public')->url($path);
+            $user->avatar = $avatarUrl;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพโหลดรูปโปรไฟล์สำเร็จ',
+                'data' => [
+                    'avatarUrl' => $avatarUrl,
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'avatar' => $user->avatar,
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Avatar Upload Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการอัพโหลดรูป: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบรูปโปรไฟล์ (Avatar)
+     *
+     * @return JsonResponse
+     */
+    public function deleteAvatar(): JsonResponse
+    {
+        $user = Auth::user();
+
+        try {
+            // ลบรูปถ้ามี
+            if ($user->avatar) {
+                // แยก path จาก URL
+                $path = str_replace(\Storage::disk('public')->url(''), '', $user->avatar);
+                if (\Storage::disk('public')->exists($path)) {
+                    \Storage::disk('public')->delete($path);
+                }
+            }
+
+            // อัพเดทข้อมูลผู้ใช้
+            $user->avatar = null;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบรูปโปรไฟล์สำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Avatar Delete Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการลบรูป',
+            ], 500);
+        }
     }
 
     /**

@@ -183,16 +183,16 @@ export default function EditProfileScreen() {
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
-  // Form states
+  // Form states - โหลดข้อมูลจาก user
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [address, setAddress] = useState('');
-  const [bio, setBio] = useState('');
+  const [address, setAddress] = useState(user?.address || '');
+  const [bio, setBio] = useState(user?.bio || '');
 
-  // Bank info states
-  const [bankName, setBankName] = useState('');
-  const [bankAccount, setBankAccount] = useState('');
-  const [bankAccountName, setBankAccountName] = useState('');
+  // Bank info states - โหลดข้อมูลจาก user
+  const [bankName, setBankName] = useState(user?.bank_name || '');
+  const [bankAccount, setBankAccount] = useState(user?.bank_account || '');
+  const [bankAccountName, setBankAccountName] = useState(user?.bank_account_name || '');
 
   // Password change states
   const [showPasswordSection, setShowPasswordSection] = useState(false);

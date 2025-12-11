@@ -2,6 +2,191 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.8] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2251 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (cddafabb)
+- fix(api): fix KYC and Avatar upload compatibility with mobile app (e041f02a)
+### 🔧 Other Changes
+
+
+## [v3.375.7] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Delete thaiprompt/assets/images/2bt/dd.txt (42776771)
+
+## [v3.375.6] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (c51a5566)
+
+## [v3.375.5] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Create dd.txt (f3d6fb48)
+
+## [v3.375.4] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Create homebt (dbbfd8b8)
+
+## [v3.375.3] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2250 from xjanova/charming-elbakyan (7557cfa6)
+- fix: แก้ไข flow ลงทะเบียน POS ให้ใช้ shop_code และรับ API Key อัตโนมัติ (558204b6)
+### 🔧 Other Changes
+
+
+## [v3.375.2] - 2025-12-11
+
+### ✨ Features
+- feat(tpix): enhance TPIX page with TPIX1.png hero image and cyberpunk design (77426cae)
+### 🐛 Bug Fixes
+- fix(home): use TPIX.png for TPIX menu button (ebbabd19)
+- fix(home): update menu images to use correct assets (b8ed6898)
+- fix(tpix): remove unused imports to prevent build warnings (7e243c0c)
+### 🔧 Other Changes
+- Merge pull request #2249 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (7cb54a68)
+
+## [v3.375.1] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): เพิ่มหน้า TPIX Token พร้อมเอฟเฟคอลังการ (85a65c12)
+- feat(mobile): เพิ่มฟีเจอร์ pin ปุ่มบนหน้าหลัก (efd40d7f)
+- feat(mobile): เพิ่มระบบไรเดอร์สมบูรณ์และเมนูสั่งบริการ (5b16228c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2248 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (8e12bc84)
+
+## [v3.375.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2247 from xjanova/charming-elbakyan (5714d29e)
+- feat: เพิ่มระบบ License สองกุญแจและหน้า Setup ครั้งแรก (9f8321c2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.374.3] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (60b01f71)
+
+## [v3.374.2] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (266e9e27)
+
+## [v3.374.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (8817a8d1)
+
+## [v3.374.0] - 2025-12-11
+
+### ✨ Features
+- feat: เพิ่ม POS Terminal API สำหรับลงทะเบียนและ sync ข้อมูล (3d7bcf9b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.373.5] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): ปรับปรุง UI และเพิ่ม animation หลายส่วน (17710103)
+- feat(mobile): เพิ่มไอคอนกระดิ่งแจ้งเตือนพร้อม badge ใน tab bar (d2323334)
+### 🐛 Bug Fixes
+- fix(api): เพิ่ม wallet_address ใน login และ me API (1c96e527)
+- fix(mobile): ปิด navigation header ทุกหน้าให้แอพจัดการเอง (c1734d92)
+- fix(mobile): แก้ไขการอัพเดทโปรไฟล์และอัพโหลดรูปภาพให้ทำงานได้ (49d0e9f0)
+### 🔧 Other Changes
+- Merge pull request #2246 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (479145eb)
+
+## [v3.373.4] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2245 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (e99ac223)
+- feat(mobile): เพิ่มหน้าตั้งค่า Push Notifications ที่ทำงานจริง (04b83ab1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.373.3] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2244 from xjanova/claude/add-shop-management-01D44uoyiFkWEFES4tcJ8CEh (4713f710)
+- feat(seller): เพิ่มเมนูจัดการการจัดส่งและแชทกับลูกค้า (ff5c4cde)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.373.2] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): เพิ่มหน้าเงื่อนไข ข้อตกลง และนโยบายความเป็นส่วนตัว (0a657c2c)
+### 🐛 Bug Fixes
+- fix(mobile): แก้ไข QR Code ให้แสดงข้อมูลที่ถูกต้อง (8fef6421)
+### 🔧 Other Changes
+- Merge pull request #2243 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (0da40c34)
+
+## [v3.373.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2242 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (b385687e)
+- fix(api): แก้ไข endpoint PROFILE_UPDATE จาก /mobile/profile เป็น /profile (2873849b)
+### 🔧 Other Changes
+
+
+## [v3.373.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2241 from xjanova/charming-elbakyan (45b3e9a3)
+- feat: เพิ่ม animation กระพริบเรืองแสงและปรับปรุงการเชื่อมต่อ server (6506ec68)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.67] - 2025-12-11
 
 ### ✨ Features
