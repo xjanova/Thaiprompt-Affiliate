@@ -50,6 +50,7 @@ const MENU_IMAGES: Record<string, ImageSourcePropType> = {
   shopping: require('@/assets/images/shopping.png'),
   services: require('@/assets/images/shopping.png'),  // ใช้ภาพเดียวกับ shopping ก่อน
   rider: require('@/assets/images/rider.png'),
+  tpix: require('@/assets/images/coming-soon.png'),  // TPIX Token - รอภาพใหม่
   'wealth-guide': require('@/assets/images/riches-path.png'),
   tarot: require('@/assets/images/tarot.png'),
   leaderboard: require('@/assets/images/ranking.png'),
@@ -66,6 +67,7 @@ const MENU_ITEMS = [
   { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
   { id: 'services', title: 'สั่งบริการ', icon: '📦', colors: ['#14B8A6', '#0D9488'], glowColor: '#14B8A6', route: '/services', hasImage: true },
   { id: 'rider', title: 'เป็นไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
+  { id: 'tpix', title: 'TPIX Token', icon: '🪙', colors: ['#FFD700', '#FFA500'], glowColor: '#FFD700', route: '/tpix', hasImage: true },
   { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: true },
   { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: true },
   { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: true },
