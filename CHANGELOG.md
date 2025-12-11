@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.378.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2257 from xjanova/charming-elbakyan (9f66bb49)
+- feat: ปรับปรุง POS Activation และ UI Login (f538d694)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.377.2] - 2025-12-11
 
 ### ✨ Features
