@@ -57,34 +57,34 @@
         <ScrollView VerticalOptions="Center" HorizontalOptions="Center"
                     VerticalScrollBarVisibility="Never"
                     HorizontalScrollBarVisibility="Never">
-            <VerticalStackLayout Padding="30" Spacing="25"
-                                 MaximumWidthRequest="420"
+            <VerticalStackLayout Padding="20,10" Spacing="12"
+                                 MaximumWidthRequest="400"
                                  HorizontalOptions="Center">
 
                 <!-- Logo & Header with Glow Effect -->
-                <VerticalStackLayout Spacing="15" Margin="0,20,0,20">
+                <VerticalStackLayout Spacing="8" Margin="0,5,0,5">
                     <!-- Glowing Logo Container -->
                     <Grid HorizontalOptions="Center">
                         <!-- Outer Glow Ring -->
-                        <Border StrokeThickness="2" HeightRequest="120" WidthRequest="120"
+                        <Border StrokeThickness="2" HeightRequest="80" WidthRequest="80"
                                 Stroke="#22C55E" BackgroundColor="Transparent"
                                 Opacity="0.3" HorizontalOptions="Center">
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="30"/>
+                                <RoundRectangle CornerRadius="20"/>
                             </Border.StrokeShape>
                         </Border>
                         <!-- Main Logo -->
-                        <Border x:Name="LogoBorder" StrokeThickness="0" HeightRequest="100" WidthRequest="100"
+                        <Border x:Name="LogoBorder" StrokeThickness="0" HeightRequest="65" WidthRequest="65"
                                 BackgroundColor="#1A1A2E" HorizontalOptions="Center" VerticalOptions="Center">
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="25"/>
+                                <RoundRectangle CornerRadius="16"/>
                             </Border.StrokeShape>
                             <Border.Shadow>
-                                <Shadow Brush="#8022C55E" Offset="0,0" Radius="30"/>
+                                <Shadow Brush="#8022C55E" Offset="0,0" Radius="20"/>
                             </Border.Shadow>
                             <Grid>
                                 <!-- Inner Gradient -->
-                                <Border BackgroundColor="Transparent" HeightRequest="100" WidthRequest="100">
+                                <Border BackgroundColor="Transparent" HeightRequest="65" WidthRequest="65">
                                     <Border.Background>
                                         <RadialGradientBrush Center="0.5,0.5" Radius="0.7">
                                             <GradientStop Color="#22C55E" Offset="0"/>
@@ -93,37 +93,37 @@
                                         </RadialGradientBrush>
                                     </Border.Background>
                                 </Border>
-                                <Label Text="TP" FontSize="48" FontAttributes="Bold"
+                                <Label Text="TP" FontSize="28" FontAttributes="Bold"
                                        TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
                             </Grid>
                         </Border>
                     </Grid>
 
-                    <Label Text="TP-POS" FontSize="36" FontAttributes="Bold"
+                    <Label Text="TP-POS" FontSize="26" FontAttributes="Bold"
                            TextColor="White" HorizontalOptions="Center">
                         <Label.Shadow>
-                            <Shadow Brush="#8022C55E" Offset="0,0" Radius="15"/>
+                            <Shadow Brush="#8022C55E" Offset="0,0" Radius="10"/>
                         </Label.Shadow>
                     </Label>
-                    <Label Text="ระบบขายหน้าร้านครบวงจร" FontSize="16"
+                    <Label Text="ระบบขายหน้าร้านครบวงจร" FontSize="13"
                            TextColor="#9CA3AF" HorizontalOptions="Center"/>
 
                     <!-- Shop Name (if configured) -->
-                    <Border BackgroundColor="#1F2937" StrokeThickness="0" Padding="12,8"
+                    <Border BackgroundColor="#1F2937" StrokeThickness="0" Padding="8,5"
                             IsVisible="{Binding HasShopName}" HorizontalOptions="Center">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="20"/>
+                            <RoundRectangle CornerRadius="15"/>
                         </Border.StrokeShape>
-                        <HorizontalStackLayout Spacing="8">
-                            <Label Text="🏪" FontSize="14"/>
-                            <Label Text="{Binding ShopName}" FontSize="14"
+                        <HorizontalStackLayout Spacing="5">
+                            <Label Text="🏪" FontSize="12"/>
+                            <Label Text="{Binding ShopName}" FontSize="12"
                                    TextColor="#22C55E" FontAttributes="Bold"/>
                         </HorizontalStackLayout>
                     </Border>
                 </VerticalStackLayout>
 
                 <!-- Connection Status Indicator with Pulse -->
-                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" Margin="0,0,0,10">
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="6" Margin="0,0,0,5">
                     <Grid>
                         <!-- Pulse Ring -->
                         <Ellipse x:Name="PulseRing" WidthRequest="20" HeightRequest="20"
@@ -140,7 +140,7 @@
                 </HorizontalStackLayout>
 
                 <!-- Premium Glass-morphism Login Card -->
-                <Border x:Name="LoginCardBorder" StrokeThickness="1" Padding="25"
+                <Border x:Name="LoginCardBorder" StrokeThickness="1" Padding="18"
                         Stroke="#334155">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
@@ -155,67 +155,67 @@
                         <Shadow x:Name="LoginCardShadow" Brush="#4022C55E" Offset="0,0" Radius="50"/>
                     </Border.Shadow>
 
-                    <VerticalStackLayout Spacing="20">
-                        <Label Text="เข้าสู่ระบบ" FontSize="24" FontAttributes="Bold"
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="เข้าสู่ระบบ" FontSize="20" FontAttributes="Bold"
                                TextColor="White" HorizontalOptions="Center"/>
 
-                        <!-- Error Message with Glow -->
-                        <Border BackgroundColor="#7F1D1D" Stroke="#EF4444" StrokeThickness="1" Padding="12"
+                        <!-- Error Message -->
+                        <Border BackgroundColor="#7F1D1D" Stroke="#EF4444" StrokeThickness="1" Padding="8"
                                 IsVisible="{Binding ShowError}">
                             <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="10"/>
+                                <RoundRectangle CornerRadius="8"/>
                             </Border.StrokeShape>
-                            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
-                                <Label Text="⚠️" FontSize="16"/>
-                                <Label Text="{Binding ErrorMessage}" FontSize="14" TextColor="#FCA5A5"/>
+                            <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
+                                <Label Text="⚠️" FontSize="14"/>
+                                <Label Text="{Binding ErrorMessage}" FontSize="12" TextColor="#FCA5A5"/>
                             </HorizontalStackLayout>
                         </Border>
 
-                        <!-- Username Input - Premium Style -->
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="ชื่อผู้ใช้" FontSize="14" TextColor="#9CA3AF"/>
-                            <Border BackgroundColor="#1F2937" Stroke="#374151" StrokeThickness="1" Padding="15,12">
+                        <!-- Username Input -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="ชื่อผู้ใช้" FontSize="12" TextColor="#9CA3AF"/>
+                            <Border BackgroundColor="#1F2937" Stroke="#374151" StrokeThickness="1" Padding="10,8">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="14"/>
+                                    <RoundRectangle CornerRadius="10"/>
                                 </Border.StrokeShape>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                     <Border BackgroundColor="#374151" StrokeThickness="0"
-                                            WidthRequest="40" HeightRequest="40">
+                                            WidthRequest="32" HeightRequest="32">
                                         <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="10"/>
+                                            <RoundRectangle CornerRadius="8"/>
                                         </Border.StrokeShape>
-                                        <Label Text="👤" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Label Text="👤" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
                                     <Entry Grid.Column="1" Text="{Binding Username}"
                                            Placeholder="ระบุชื่อผู้ใช้"
                                            PlaceholderColor="#6B7280"
-                                           FontSize="16" TextColor="White"
+                                           FontSize="14" TextColor="White"
                                            BackgroundColor="Transparent"
                                            ReturnType="Next"/>
                                 </Grid>
                             </Border>
                         </VerticalStackLayout>
 
-                        <!-- Password Input - Premium Style -->
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="รหัสผ่าน" FontSize="14" TextColor="#9CA3AF"/>
-                            <Border BackgroundColor="#1F2937" Stroke="#374151" StrokeThickness="1" Padding="15,12">
+                        <!-- Password Input -->
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="รหัสผ่าน" FontSize="12" TextColor="#9CA3AF"/>
+                            <Border BackgroundColor="#1F2937" Stroke="#374151" StrokeThickness="1" Padding="10,8">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="14"/>
+                                    <RoundRectangle CornerRadius="10"/>
                                 </Border.StrokeShape>
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                     <Border BackgroundColor="#374151" StrokeThickness="0"
-                                            WidthRequest="40" HeightRequest="40">
+                                            WidthRequest="32" HeightRequest="32">
                                         <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="10"/>
+                                            <RoundRectangle CornerRadius="8"/>
                                         </Border.StrokeShape>
-                                        <Label Text="🔒" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Label Text="🔒" FontSize="14" HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
                                     <Entry Grid.Column="1" Text="{Binding Password}"
                                            Placeholder="ระบุรหัสผ่าน"
                                            PlaceholderColor="#6B7280"
                                            IsPassword="True"
-                                           FontSize="16" TextColor="White"
+                                           FontSize="14" TextColor="White"
                                            BackgroundColor="Transparent"
                                            ReturnType="Done"
                                            ReturnCommand="{Binding LoginCommand}"/>
@@ -225,11 +225,11 @@
 
                         <!-- Remember Me & Forgot Password -->
                         <Grid ColumnDefinitions="*,Auto">
-                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                                <CheckBox IsChecked="{Binding RememberMe}" Color="#22C55E"/>
-                                <Label Text="จำรหัสผ่าน" FontSize="14" TextColor="#9CA3AF" VerticalOptions="Center"/>
+                            <HorizontalStackLayout Spacing="5" VerticalOptions="Center">
+                                <CheckBox IsChecked="{Binding RememberMe}" Color="#22C55E" Scale="0.9"/>
+                                <Label Text="จำรหัสผ่าน" FontSize="12" TextColor="#9CA3AF" VerticalOptions="Center"/>
                             </HorizontalStackLayout>
-                            <Label Grid.Column="1" Text="ลืมรหัสผ่าน?" FontSize="14" TextColor="#60A5FA"
+                            <Label Grid.Column="1" Text="ลืมรหัสผ่าน?" FontSize="12" TextColor="#60A5FA"
                                    VerticalOptions="Center">
                                 <Label.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}"/>
@@ -237,98 +237,77 @@
                             </Label>
                         </Grid>
 
-                        <!-- Premium Login Button with Glow -->
-                        <Grid>
-                            <!-- Button Glow Background -->
-                            <Border BackgroundColor="#22C55E" StrokeThickness="0"
-                                    HeightRequest="55" Opacity="0.3">
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="14"/>
-                                </Border.StrokeShape>
-                                <Border.Shadow>
-                                    <Shadow Brush="#22C55E" Offset="0,0" Radius="20"/>
-                                </Border.Shadow>
-                            </Border>
-                            <Button Text="🔐  เข้าสู่ระบบ"
-                                    BackgroundColor="#22C55E" TextColor="White"
-                                    FontSize="18" FontAttributes="Bold"
-                                    HeightRequest="55" CornerRadius="14"
-                                    Command="{Binding LoginCommand}"
-                                    IsEnabled="{Binding CanLogin}"/>
-                        </Grid>
+                        <!-- Login Button -->
+                        <Button Text="🔐 เข้าสู่ระบบ"
+                                BackgroundColor="#22C55E" TextColor="White"
+                                FontSize="16" FontAttributes="Bold"
+                                HeightRequest="45" CornerRadius="10"
+                                Command="{Binding LoginCommand}"
+                                IsEnabled="{Binding CanLogin}"/>
 
                         <!-- Divider -->
-                        <Grid ColumnDefinitions="*,Auto,*" Margin="0,5">
+                        <Grid ColumnDefinitions="*,Auto,*">
                             <BoxView Grid.Column="0" HeightRequest="1" Color="#374151" VerticalOptions="Center"/>
-                            <Label Grid.Column="1" Text="หรือ" FontSize="14" TextColor="#6B7280" Margin="15,0"/>
+                            <Label Grid.Column="1" Text="หรือ" FontSize="12" TextColor="#6B7280" Margin="10,0"/>
                             <BoxView Grid.Column="2" HeightRequest="1" Color="#374151" VerticalOptions="Center"/>
                         </Grid>
 
                         <!-- Alternative Login Options -->
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <Button Text="🔢 PIN"
                                     BackgroundColor="#1F2937" TextColor="#9CA3AF"
-                                    FontSize="16" HeightRequest="48" CornerRadius="12"
+                                    FontSize="14" HeightRequest="40" CornerRadius="10"
                                     BorderColor="#374151" BorderWidth="1"
                                     Command="{Binding LoginWithPinCommand}"/>
                             <Button Grid.Column="1" Text="📴 Offline"
                                     BackgroundColor="#1F2937" TextColor="#9CA3AF"
-                                    FontSize="16" HeightRequest="48" CornerRadius="12"
+                                    FontSize="14" HeightRequest="40" CornerRadius="10"
                                     BorderColor="#374151" BorderWidth="1"
                                     Command="{Binding OfflineModeCommand}"/>
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- First Time Setup Notice - Premium Style -->
-                <Border BackgroundColor="#1E3A5F" Stroke="#3B82F6" StrokeThickness="1" Padding="15"
+                <!-- First Time Setup Notice -->
+                <Border BackgroundColor="#1E3A5F" Stroke="#3B82F6" StrokeThickness="1" Padding="12"
                         IsVisible="{Binding NeedsFirstTimeSetup}">
                     <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12"/>
+                        <RoundRectangle CornerRadius="10"/>
                     </Border.StrokeShape>
-                    <Border.Shadow>
-                        <Shadow Brush="#3B82F6" Offset="0,0" Radius="15" Opacity="0.4"/>
-                    </Border.Shadow>
-                    <VerticalStackLayout Spacing="10">
-                        <HorizontalStackLayout Spacing="8">
-                            <Label Text="⚡" FontSize="18"/>
-                            <Label Text="ยินดีต้อนรับ! ครั้งแรกใช้งาน" FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                    <VerticalStackLayout Spacing="8">
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="⚡" FontSize="14"/>
+                            <Label Text="ยินดีต้อนรับ! ครั้งแรกใช้งาน" FontSize="14" FontAttributes="Bold" TextColor="White"/>
                         </HorizontalStackLayout>
-                        <Label Text="กรุณาตั้งค่าระบบก่อนเริ่มใช้งาน ซึ่งจะใช้เวลาไม่นาน" FontSize="13" TextColor="#93C5FD"/>
+                        <Label Text="กรุณาตั้งค่าระบบก่อนเริ่มใช้งาน" FontSize="11" TextColor="#93C5FD"/>
                         <Button Text="🚀 เริ่มตั้งค่าระบบ"
                                 BackgroundColor="#3B82F6" TextColor="White"
-                                FontSize="15" FontAttributes="Bold"
-                                HeightRequest="45" CornerRadius="10"
+                                FontSize="13" FontAttributes="Bold"
+                                HeightRequest="38" CornerRadius="8"
                                 Command="{Binding GoToSetupCommand}"/>
                     </VerticalStackLayout>
                 </Border>
 
                 <!-- Setup Link (for configured users) -->
-                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5"
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="4"
                                        IsVisible="{Binding NeedsFirstTimeSetup, Converter={StaticResource InverseBoolConverter}}">
-                    <Label Text="ต้องการเปลี่ยนร้าน?" FontSize="14" TextColor="#6B7280"/>
-                    <Label Text="ตั้งค่าใหม่" FontSize="14" TextColor="#60A5FA" TextDecorations="Underline">
+                    <Label Text="เปลี่ยนร้าน?" FontSize="11" TextColor="#6B7280"/>
+                    <Label Text="ตั้งค่าใหม่" FontSize="11" TextColor="#60A5FA" TextDecorations="Underline">
                         <Label.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToSetupCommand}"/>
                         </Label.GestureRecognizers>
                     </Label>
                 </HorizontalStackLayout>
 
-                <!-- Device Code Display -->
-                <Border BackgroundColor="#1F2937" StrokeThickness="0" Padding="10" HorizontalOptions="Center">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="8"/>
-                    </Border.StrokeShape>
-                    <HorizontalStackLayout Spacing="8">
-                        <Label Text="🖥️" FontSize="12"/>
-                        <Label Text="Device Code:" FontSize="11" TextColor="#6B7280"/>
-                        <Label Text="{Binding DeviceCode}" FontSize="11" TextColor="#9CA3AF" FontAttributes="Bold"/>
+                <!-- Device Code & Version -->
+                <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
+                    <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
+                        <Label Text="🖥️" FontSize="10"/>
+                        <Label Text="{Binding DeviceCode}" FontSize="10" TextColor="#6B7280"/>
                     </HorizontalStackLayout>
-                </Border>
-
-                <!-- Version -->
-                <Label Text="{Binding AppVersion, StringFormat='v{0}'}"
-                       FontSize="12" TextColor="#4B5563" HorizontalOptions="Center" Margin="0,10,0,0"/>
+                    <Label Text="{Binding AppVersion, StringFormat='v{0}'}"
+                           FontSize="10" TextColor="#4B5563" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
 
             </VerticalStackLayout>
         </ScrollView>
