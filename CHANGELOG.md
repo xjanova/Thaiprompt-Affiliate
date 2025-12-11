@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.66] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่ม /pos/api/health เป็น public route สำหรับ MAUI App (93b7859b)
+### 🔧 Other Changes
+
+
 ## [v3.372.65] - 2025-12-10
 
 ### ✨ Features
