@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.378.3] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2260 from xjanova/charming-elbakyan (51ffb645)
+- fix: เพิ่ม using Microsoft.Maui.Controls.Shapes สำหรับ Ellipse type (5fbf25c8)
+### 🔧 Other Changes
+
+
 ## [v3.378.2] - 2025-12-11
 
 ### ✨ Features
