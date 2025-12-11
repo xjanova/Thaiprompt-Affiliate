@@ -12,7 +12,7 @@
  * - Premium Glassmorphism UI Design
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { useAppStore } from '@/stores/appStore';
 
 // รูปภาพ TPIX เหรียญทอง 3D
 const TPIX_COIN_IMAGE = require('@/assets/images/TPIX1.png');
@@ -425,8 +424,7 @@ const PulsingText = ({ children, style, delay = 0 }: { children: React.ReactNode
 // Main Component
 // =====================================================
 export default function TPIXScreen() {
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
+  // หน้านี้ใช้ dark theme เสมอ (Cyberpunk style)
   const fadeIn = useRef(new Animated.Value(0)).current;
 
   // Generate particles
