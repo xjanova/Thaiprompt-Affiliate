@@ -572,6 +572,12 @@ Route::middleware(['auth', 'role:seller,super_admin'])->prefix('seller')->name('
     require __DIR__.'/seller.php';
 });
 
+// POS Public Routes (ไม่ต้อง auth - สำหรับ health check และ MAUI App)
+Route::prefix('pos')->name('pos.')->group(function () {
+    // Health Check API - สำหรับ MAUI App ตรวจสอบการเชื่อมต่อ
+    Route::get('/api/health', [\App\Http\Controllers\Pos\PosApiController::class, 'health'])->name('api.health');
+});
+
 // POS Routes (Protected by auth middleware)
 Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
     require __DIR__.'/pos.php';
