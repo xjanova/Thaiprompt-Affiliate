@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels;assembly=TP.POS.App.ViewModels"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="TP.POS.App.Views.InventoryPage"
              Title="จัดการสต็อก"
@@ -229,7 +229,7 @@
                             ItemsSource="{Binding Products}"
                             SelectionMode="None"
                             Margin="15"
-                            IsVisible="{Binding SelectedTabIndex, Converter={toolkit:EqualConverter}, ConverterParameter=0}">
+                            IsVisible="{Binding ShowAllProducts}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:InventoryItemModel">
                         <Border StrokeThickness="0"
@@ -335,7 +335,7 @@
                             ItemsSource="{Binding LowStockProducts}"
                             SelectionMode="None"
                             Margin="15"
-                            IsVisible="{Binding SelectedTabIndex, Converter={toolkit:EqualConverter}, ConverterParameter=1}">
+                            IsVisible="{Binding ShowLowStockOnly}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:InventoryItemModel">
                         <Border StrokeThickness="2"

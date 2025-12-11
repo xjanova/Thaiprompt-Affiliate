@@ -1,91 +1,119 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.Windows.Input;
 using TP.POS.Core.Interfaces;
 
 namespace TP.POS.App.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับหน้าหลัก (Dashboard)
+/// ใช้ manual implementation เพื่อหลีกเลี่ยง source generator conflicts
 /// </summary>
-public partial class MainViewModel : BaseViewModel
+public class MainViewModel : BaseViewModel
 {
     private readonly ITransactionService _transactionService;
     private readonly IProductService _productService;
     private readonly ISyncService _syncService;
 
-    #region Observable Properties
+    #region Private Fields
 
-    /// <summary>
-    /// ยอดขายวันนี้
-    /// </summary>
-    [ObservableProperty]
     private decimal _todaySales;
-
-    /// <summary>
-    /// จำนวน Transaction วันนี้
-    /// </summary>
-    [ObservableProperty]
     private int _todayTransactionCount;
-
-    /// <summary>
-    /// ยอดขายเฉลี่ยต่อ Transaction
-    /// </summary>
-    [ObservableProperty]
     private decimal _averageSale;
-
-    /// <summary>
-    /// จำนวนสินค้าทั้งหมด
-    /// </summary>
-    [ObservableProperty]
     private int _totalProductCount;
-
-    /// <summary>
-    /// จำนวนสินค้าที่สต็อกต่ำ
-    /// </summary>
-    [ObservableProperty]
     private int _lowStockCount;
-
-    /// <summary>
-    /// จำนวน Transaction ที่รอ Sync
-    /// </summary>
-    [ObservableProperty]
     private int _pendingSyncCount;
-
-    /// <summary>
-    /// ชื่อผู้ใช้ที่ Login
-    /// </summary>
-    [ObservableProperty]
     private string _userName = "Admin";
-
-    /// <summary>
-    /// ชื่อร้านค้า
-    /// </summary>
-    [ObservableProperty]
     private string _shopName = "ร้านค้า TP-POS";
-
-    /// <summary>
-    /// วันที่และเวลาปัจจุบัน
-    /// </summary>
-    [ObservableProperty]
     private string _currentDateTime = DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm", new System.Globalization.CultureInfo("th-TH"));
-
-    /// <summary>
-    /// สถานะการเชื่อมต่อ Server
-    /// </summary>
-    [ObservableProperty]
     private bool _isConnected;
-
-    /// <summary>
-    /// ข้อความสถานะ
-    /// </summary>
-    [ObservableProperty]
     private string _statusMessage = "พร้อมใช้งาน";
-
-    /// <summary>
-    /// กำลัง Sync
-    /// </summary>
-    [ObservableProperty]
     private bool _isSyncing;
+
+    #endregion
+
+    #region Properties
+
+    public decimal TodaySales
+    {
+        get => _todaySales;
+        set => SetProperty(ref _todaySales, value);
+    }
+
+    public int TodayTransactionCount
+    {
+        get => _todayTransactionCount;
+        set => SetProperty(ref _todayTransactionCount, value);
+    }
+
+    public decimal AverageSale
+    {
+        get => _averageSale;
+        set => SetProperty(ref _averageSale, value);
+    }
+
+    public int TotalProductCount
+    {
+        get => _totalProductCount;
+        set => SetProperty(ref _totalProductCount, value);
+    }
+
+    public int LowStockCount
+    {
+        get => _lowStockCount;
+        set => SetProperty(ref _lowStockCount, value);
+    }
+
+    public int PendingSyncCount
+    {
+        get => _pendingSyncCount;
+        set => SetProperty(ref _pendingSyncCount, value);
+    }
+
+    public string UserName
+    {
+        get => _userName;
+        set => SetProperty(ref _userName, value);
+    }
+
+    public string ShopName
+    {
+        get => _shopName;
+        set => SetProperty(ref _shopName, value);
+    }
+
+    public string CurrentDateTime
+    {
+        get => _currentDateTime;
+        set => SetProperty(ref _currentDateTime, value);
+    }
+
+    public bool IsConnected
+    {
+        get => _isConnected;
+        set => SetProperty(ref _isConnected, value);
+    }
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
+
+    public bool IsSyncing
+    {
+        get => _isSyncing;
+        set => SetProperty(ref _isSyncing, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand GoToPosCommand { get; }
+    public ICommand GoToInventoryCommand { get; }
+    public ICommand GoToReportsCommand { get; }
+    public ICommand GoToSettingsCommand { get; }
+    public ICommand SyncCommand { get; }
+    public ICommand RefreshCommand { get; }
 
     #endregion
 
@@ -99,6 +127,14 @@ public partial class MainViewModel : BaseViewModel
         _syncService = syncService;
 
         Title = "หน้าหลัก";
+
+        // Initialize commands
+        GoToPosCommand = new Command(async () => await GoToPosAsync());
+        GoToInventoryCommand = new Command(async () => await GoToInventoryAsync());
+        GoToReportsCommand = new Command(async () => await GoToReportsAsync());
+        GoToSettingsCommand = new Command(async () => await GoToSettingsAsync());
+        SyncCommand = new Command(async () => await SyncAsync());
+        RefreshCommand = new Command(async () => await RefreshAsync());
     }
 
     /// <summary>
@@ -136,9 +172,6 @@ public partial class MainViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดสถิติ
-    /// </summary>
     private async Task LoadStatisticsAsync()
     {
         // ยอดขายวันนี้
@@ -164,9 +197,6 @@ public partial class MainViewModel : BaseViewModel
         PendingSyncCount = await _syncService.GetPendingSyncCountAsync();
     }
 
-    /// <summary>
-    /// เช็คการเชื่อมต่อ Server
-    /// </summary>
     private async Task CheckConnectionAsync()
     {
         try
@@ -191,48 +221,28 @@ public partial class MainViewModel : BaseViewModel
         }
     }
 
-    #region Commands
+    #region Command Implementations
 
-    /// <summary>
-    /// ไปหน้าขาย
-    /// </summary>
-    [RelayCommand]
     private async Task GoToPosAsync()
     {
         await Shell.Current.GoToAsync("//pos");
     }
 
-    /// <summary>
-    /// ไปหน้าสต็อก
-    /// </summary>
-    [RelayCommand]
     private async Task GoToInventoryAsync()
     {
         await Shell.Current.GoToAsync("//inventory");
     }
 
-    /// <summary>
-    /// ไปหน้ารายงาน
-    /// </summary>
-    [RelayCommand]
     private async Task GoToReportsAsync()
     {
         await Shell.Current.GoToAsync("//reports");
     }
 
-    /// <summary>
-    /// ไปหน้าตั้งค่า
-    /// </summary>
-    [RelayCommand]
     private async Task GoToSettingsAsync()
     {
         await Shell.Current.GoToAsync("//settings");
     }
 
-    /// <summary>
-    /// Sync ข้อมูล
-    /// </summary>
-    [RelayCommand]
     private async Task SyncAsync()
     {
         if (IsSyncing) return;
@@ -268,10 +278,6 @@ public partial class MainViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// รีเฟรชข้อมูล
-    /// </summary>
-    [RelayCommand]
     private async Task RefreshAsync()
     {
         await InitializeAsync();

@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.Windows.Input;
 using TP.POS.Core.Entities;
 using TP.POS.Core.Enums;
 using TP.POS.Core.Interfaces;
@@ -9,108 +8,140 @@ namespace TP.POS.App.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับหน้ารายงาน
+/// ใช้ manual implementation เพื่อหลีกเลี่ยง source generator conflicts
 /// </summary>
-public partial class ReportsViewModel : BaseViewModel
+public class ReportsViewModel : BaseViewModel
 {
     private readonly ITransactionService _transactionService;
 
-    #region Observable Properties
+    #region Private Fields
 
-    /// <summary>
-    /// วันที่เริ่มต้น
-    /// </summary>
-    [ObservableProperty]
     private DateTime _startDate = DateTime.Today;
-
-    /// <summary>
-    /// วันที่สิ้นสุด
-    /// </summary>
-    [ObservableProperty]
     private DateTime _endDate = DateTime.Today;
-
-    /// <summary>
-    /// ช่วงเวลาที่เลือก
-    /// </summary>
-    [ObservableProperty]
     private string _selectedPeriod = "today";
-
-    /// <summary>
-    /// ยอดขายรวม
-    /// </summary>
-    [ObservableProperty]
     private decimal _totalSales;
-
-    /// <summary>
-    /// จำนวนรายการขาย
-    /// </summary>
-    [ObservableProperty]
     private int _transactionCount;
-
-    /// <summary>
-    /// ยอดขายเฉลี่ยต่อรายการ
-    /// </summary>
-    [ObservableProperty]
     private decimal _averageSale;
-
-    /// <summary>
-    /// จำนวนสินค้าที่ขาย
-    /// </summary>
-    [ObservableProperty]
     private int _totalItemsSold;
-
-    /// <summary>
-    /// ส่วนลดรวม
-    /// </summary>
-    [ObservableProperty]
     private decimal _totalDiscount;
-
-    /// <summary>
-    /// ภาษีรวม
-    /// </summary>
-    [ObservableProperty]
     private decimal _totalTax;
-
-    /// <summary>
-    /// ยอดเงินสด
-    /// </summary>
-    [ObservableProperty]
     private decimal _cashAmount;
-
-    /// <summary>
-    /// ยอด QR/บัตร
-    /// </summary>
-    [ObservableProperty]
     private decimal _cardQrAmount;
-
-    /// <summary>
-    /// รายการขายล่าสุด
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<TransactionDisplayModel> _recentTransactions = new();
-
-    /// <summary>
-    /// สินค้าขายดี
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<TopProductModel> _topProducts = new();
-
-    /// <summary>
-    /// ยอดขายรายวัน (สำหรับ Chart)
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<DailySalesModel> _dailySales = new();
-
-    /// <summary>
-    /// รายการตามช่องทางชำระ
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<PaymentBreakdownModel> _paymentBreakdown = new();
-
-    /// <summary>
-    /// Tab ที่เลือก
-    /// </summary>
-    [ObservableProperty]
     private int _selectedTabIndex;
+
+    #endregion
+
+    #region Properties
+
+    public DateTime StartDate
+    {
+        get => _startDate;
+        set => SetProperty(ref _startDate, value);
+    }
+
+    public DateTime EndDate
+    {
+        get => _endDate;
+        set => SetProperty(ref _endDate, value);
+    }
+
+    public string SelectedPeriod
+    {
+        get => _selectedPeriod;
+        set => SetProperty(ref _selectedPeriod, value);
+    }
+
+    public decimal TotalSales
+    {
+        get => _totalSales;
+        set => SetProperty(ref _totalSales, value);
+    }
+
+    public int TransactionCount
+    {
+        get => _transactionCount;
+        set => SetProperty(ref _transactionCount, value);
+    }
+
+    public decimal AverageSale
+    {
+        get => _averageSale;
+        set => SetProperty(ref _averageSale, value);
+    }
+
+    public int TotalItemsSold
+    {
+        get => _totalItemsSold;
+        set => SetProperty(ref _totalItemsSold, value);
+    }
+
+    public decimal TotalDiscount
+    {
+        get => _totalDiscount;
+        set => SetProperty(ref _totalDiscount, value);
+    }
+
+    public decimal TotalTax
+    {
+        get => _totalTax;
+        set => SetProperty(ref _totalTax, value);
+    }
+
+    public decimal CashAmount
+    {
+        get => _cashAmount;
+        set => SetProperty(ref _cashAmount, value);
+    }
+
+    public decimal CardQrAmount
+    {
+        get => _cardQrAmount;
+        set => SetProperty(ref _cardQrAmount, value);
+    }
+
+    public ObservableCollection<TransactionDisplayModel> RecentTransactions
+    {
+        get => _recentTransactions;
+        set => SetProperty(ref _recentTransactions, value);
+    }
+
+    public ObservableCollection<TopProductModel> TopProducts
+    {
+        get => _topProducts;
+        set => SetProperty(ref _topProducts, value);
+    }
+
+    public ObservableCollection<DailySalesModel> DailySales
+    {
+        get => _dailySales;
+        set => SetProperty(ref _dailySales, value);
+    }
+
+    public ObservableCollection<PaymentBreakdownModel> PaymentBreakdown
+    {
+        get => _paymentBreakdown;
+        set => SetProperty(ref _paymentBreakdown, value);
+    }
+
+    public int SelectedTabIndex
+    {
+        get => _selectedTabIndex;
+        set => SetProperty(ref _selectedTabIndex, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand SelectPeriodCommand { get; }
+    public ICommand RefreshCommand { get; }
+    public ICommand ViewTransactionCommand { get; }
+    public ICommand PrintXReportCommand { get; }
+    public ICommand SelectTabCommand { get; }
 
     #endregion
 
@@ -118,11 +149,15 @@ public partial class ReportsViewModel : BaseViewModel
     {
         _transactionService = transactionService;
         Title = "รายงาน";
+
+        // Initialize commands
+        SelectPeriodCommand = new Command<string>(async (period) => await SelectPeriodAsync(period));
+        RefreshCommand = new Command(async () => await RefreshAsync());
+        ViewTransactionCommand = new Command<TransactionDisplayModel>(async (trans) => await ViewTransactionAsync(trans));
+        PrintXReportCommand = new Command(async () => await PrintXReportAsync());
+        SelectTabCommand = new Command<int>(SelectTab);
     }
 
-    /// <summary>
-    /// Initialize
-    /// </summary>
     public async Task InitializeAsync()
     {
         if (IsBusy) return;
@@ -144,33 +179,17 @@ public partial class ReportsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดข้อมูลรายงาน
-    /// </summary>
     private async Task LoadReportDataAsync()
     {
-        // ดึงรายการขาย
         var transactions = await _transactionService.GetByDateRangeAsync(StartDate, EndDate.AddDays(1).AddSeconds(-1));
 
-        // คำนวณสถิติ
         CalculateStatistics(transactions);
-
-        // โหลดรายการล่าสุด
         LoadRecentTransactions(transactions);
-
-        // โหลดสินค้าขายดี
         await LoadTopProductsAsync(transactions);
-
-        // โหลดยอดขายรายวัน
         LoadDailySales(transactions);
-
-        // โหลดแบ่งตามช่องทางชำระ
         LoadPaymentBreakdown(transactions);
     }
 
-    /// <summary>
-    /// คำนวณสถิติ
-    /// </summary>
     private void CalculateStatistics(List<Transaction> transactions)
     {
         var completedTrans = transactions.Where(t => t.Status == TransactionStatus.Completed).ToList();
@@ -191,9 +210,6 @@ public partial class ReportsViewModel : BaseViewModel
             .Sum(t => t.TotalAmount);
     }
 
-    /// <summary>
-    /// โหลดรายการขายล่าสุด
-    /// </summary>
     private void LoadRecentTransactions(List<Transaction> transactions)
     {
         RecentTransactions.Clear();
@@ -219,14 +235,10 @@ public partial class ReportsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดสินค้าขายดี
-    /// </summary>
     private async Task LoadTopProductsAsync(List<Transaction> transactions)
     {
         TopProducts.Clear();
 
-        // ดึงรายการสินค้าจากทุก transaction
         var allItems = new List<TransactionItem>();
         foreach (var trans in transactions.Where(t => t.Status == TransactionStatus.Completed))
         {
@@ -234,14 +246,13 @@ public partial class ReportsViewModel : BaseViewModel
             allItems.AddRange(items);
         }
 
-        // Group by product และนับ
         var topProducts = allItems
             .GroupBy(i => new { i.ProductId, i.ProductName })
             .Select(g => new TopProductModel
             {
                 ProductName = g.Key.ProductName,
                 QuantitySold = g.Sum(i => i.Quantity),
-                TotalRevenue = g.Sum(i => i.TotalPrice)
+                TotalRevenue = g.Sum(i => i.LineTotal)
             })
             .OrderByDescending(p => p.QuantitySold)
             .Take(10);
@@ -254,9 +265,6 @@ public partial class ReportsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดยอดขายรายวัน
-    /// </summary>
     private void LoadDailySales(List<Transaction> transactions)
     {
         DailySales.Clear();
@@ -280,9 +288,6 @@ public partial class ReportsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดแบ่งตามช่องทางชำระ
-    /// </summary>
     private void LoadPaymentBreakdown(List<Transaction> transactions)
     {
         PaymentBreakdown.Clear();
@@ -309,9 +314,6 @@ public partial class ReportsViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// แปลงชื่อวันเป็นภาษาไทย
-    /// </summary>
     private string GetThaiDayName(DayOfWeek day)
     {
         return day switch
@@ -327,12 +329,8 @@ public partial class ReportsViewModel : BaseViewModel
         };
     }
 
-    #region Commands
+    #region Command Implementations
 
-    /// <summary>
-    /// เลือกช่วงเวลา
-    /// </summary>
-    [RelayCommand]
     private async Task SelectPeriodAsync(string period)
     {
         SelectedPeriod = period;
@@ -356,26 +354,17 @@ public partial class ReportsViewModel : BaseViewModel
                 EndDate = DateTime.Today;
                 break;
             case "custom":
-                // แสดง date picker ให้ผู้ใช้เลือก
                 return;
         }
 
         await InitializeAsync();
     }
 
-    /// <summary>
-    /// รีเฟรชรายงาน
-    /// </summary>
-    [RelayCommand]
     private async Task RefreshAsync()
     {
         await InitializeAsync();
     }
 
-    /// <summary>
-    /// ดูรายละเอียด Transaction
-    /// </summary>
-    [RelayCommand]
     private async Task ViewTransactionAsync(TransactionDisplayModel transaction)
     {
         await Shell.Current.GoToAsync("receipt", new Dictionary<string, object>
@@ -384,19 +373,11 @@ public partial class ReportsViewModel : BaseViewModel
         });
     }
 
-    /// <summary>
-    /// พิมพ์รายงาน X
-    /// </summary>
-    [RelayCommand]
     private async Task PrintXReportAsync()
     {
         await Shell.Current.DisplayAlert("พิมพ์รายงาน X", "กำลังพัฒนา...", "ตกลง");
     }
 
-    /// <summary>
-    /// เลือก Tab
-    /// </summary>
-    [RelayCommand]
     private void SelectTab(int tabIndex)
     {
         SelectedTabIndex = tabIndex;

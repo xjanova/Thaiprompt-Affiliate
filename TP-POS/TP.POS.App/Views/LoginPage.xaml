@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:TP.POS.App.ViewModels"
+             xmlns:vm="clr-namespace:TP.POS.App.ViewModels;assembly=TP.POS.App.ViewModels"
              x:Class="TP.POS.App.Views.LoginPage"
              x:DataType="vm:LoginViewModel"
              Title="เข้าสู่ระบบ"
@@ -9,14 +9,23 @@
              BackgroundColor="#F3F4F6">
 
     <Grid>
-        <!-- Background Gradient Effect -->
-        <BoxView BackgroundColor="#22C55E" HeightRequest="300" VerticalOptions="Start"/>
+        <!-- Background - พื้นหลังเต็มจอ -->
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#22C55E" Offset="0.0"/>
+                <GradientStop Color="#16A34A" Offset="0.4"/>
+                <GradientStop Color="#F3F4F6" Offset="0.4"/>
+                <GradientStop Color="#F3F4F6" Offset="1.0"/>
+            </LinearGradientBrush>
+        </Grid.Background>
 
-        <ScrollView>
-            <VerticalStackLayout Padding="30" Spacing="25">
+        <ScrollView VerticalOptions="Center" HorizontalOptions="Center">
+            <VerticalStackLayout Padding="30" Spacing="25"
+                                 MaximumWidthRequest="420"
+                                 HorizontalOptions="Center">
 
                 <!-- Logo & Header -->
-                <VerticalStackLayout Spacing="15" Margin="0,40,0,30">
+                <VerticalStackLayout Spacing="15" Margin="0,20,0,20">
                     <!-- Logo -->
                     <Border StrokeThickness="0" HeightRequest="100" WidthRequest="100"
                             BackgroundColor="White" HorizontalOptions="Center">
@@ -41,13 +50,24 @@
                            IsVisible="{Binding ShopName, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
                 </VerticalStackLayout>
 
-                <!-- Login Card -->
-                <Border BackgroundColor="White" StrokeThickness="0" Padding="25">
+                <!-- Connection Status Indicator -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="8" Margin="0,0,0,10">
+                    <Ellipse x:Name="ConnectionIndicator"
+                             WidthRequest="12" HeightRequest="12"
+                             Fill="#22C55E" VerticalOptions="Center"/>
+                    <Label x:Name="ConnectionStatusLabel"
+                           Text="{Binding ConnectionStatusText}"
+                           FontSize="13" TextColor="White"
+                           Opacity="0.9" VerticalOptions="Center"/>
+                </HorizontalStackLayout>
+
+                <!-- Login Card พร้อมเอฟเฟกต์แสงเรือง -->
+                <Border x:Name="LoginCardBorder" BackgroundColor="White" StrokeThickness="0" Padding="25">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="20"/>
                     </Border.StrokeShape>
                     <Border.Shadow>
-                        <Shadow Brush="#20000000" Offset="0,4" Radius="15"/>
+                        <Shadow x:Name="LoginCardShadow" Brush="#6022C55E" Offset="0,0" Radius="40" Opacity="0.6"/>
                     </Border.Shadow>
 
                     <VerticalStackLayout Spacing="20">
