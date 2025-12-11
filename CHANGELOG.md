@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.6] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (c51a5566)
+
 ## [v3.375.5] - 2025-12-11
 
 ### ✨ Features
