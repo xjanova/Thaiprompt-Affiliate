@@ -82,12 +82,13 @@ const MENU_ITEMS = [
 // จำนวนหิ่งห้อย (ลดจำนวนเพื่อไม่ให้แอพหนัก)
 const NUM_FIREFLIES = 12;
 
-// Firefly Component - หิ่งห้อยเรืองแสง
+// Firefly Component - หิ่งห้อยเรืองแสง (ปรับปรุงให้สว่างและชัดขึ้น)
 const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(Math.random() * width)).current;
   const translateY = useRef(new Animated.Value(Math.random() * screenHeight * 0.6)).current;
-  const scale = useRef(new Animated.Value(0.5 + Math.random() * 0.5)).current;
+  const scale = useRef(new Animated.Value(0.8 + Math.random() * 0.4)).current;
+  const glowOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let isMounted = true;
@@ -100,16 +101,31 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
       const newY = Math.random() * screenHeight * 0.6;
 
       Animated.parallel([
-        // Fade in and out
+        // Fade in and out - เพิ่มความสว่าง
         Animated.sequence([
           Animated.timing(opacity, {
-            toValue: 0.3 + Math.random() * 0.5,
-            duration: duration * 0.3,
+            toValue: 0.7 + Math.random() * 0.3, // สว่างขึ้น 0.7-1.0
+            duration: duration * 0.25,
             useNativeDriver: true,
           }),
+          Animated.delay(duration * 0.2), // ค้างไว้ให้เห็นชัด
           Animated.timing(opacity, {
             toValue: 0,
-            duration: duration * 0.7,
+            duration: duration * 0.55,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Glow pulse
+        Animated.sequence([
+          Animated.timing(glowOpacity, {
+            toValue: 1,
+            duration: duration * 0.25,
+            useNativeDriver: true,
+          }),
+          Animated.delay(duration * 0.2),
+          Animated.timing(glowOpacity, {
+            toValue: 0,
+            duration: duration * 0.55,
             useNativeDriver: true,
           }),
         ]),
@@ -126,16 +142,16 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-        // Pulse
+        // Pulse - ขยายขนาดให้ชัดขึ้น
         Animated.sequence([
           Animated.timing(scale, {
-            toValue: 0.8 + Math.random() * 0.4,
-            duration: duration * 0.5,
+            toValue: 1.2 + Math.random() * 0.5,
+            duration: duration * 0.4,
             useNativeDriver: true,
           }),
           Animated.timing(scale, {
-            toValue: 0.5 + Math.random() * 0.3,
-            duration: duration * 0.5,
+            toValue: 0.8 + Math.random() * 0.3,
+            duration: duration * 0.6,
             useNativeDriver: true,
           }),
         ]),
@@ -157,18 +173,51 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
     <Animated.View
       style={{
         position: 'absolute',
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#FFD700',
-        opacity,
         transform: [{ translateX }, { translateY }, { scale }],
-        shadowColor: '#FFD700',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 6,
       }}
-    />
+    >
+      {/* Outer glow - แสงรอบนอก */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: '#FFD700',
+          opacity: Animated.multiply(glowOpacity, 0.3),
+          left: -9,
+          top: -9,
+        }}
+      />
+      {/* Middle glow */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: '#FFEC8B',
+          opacity: Animated.multiply(glowOpacity, 0.5),
+          left: -4,
+          top: -4,
+        }}
+      />
+      {/* Core - แกนกลางสว่าง */}
+      <Animated.View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: '#FFFACD',
+          opacity,
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      />
+    </Animated.View>
   );
 };
 
