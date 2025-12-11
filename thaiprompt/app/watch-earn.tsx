@@ -3,7 +3,7 @@
  * TikTok/YouTube Style Earning Platform
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,13 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuthStore } from '@/stores/authStore';
+import { API_BASE_URL } from '@/config/appConfig';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -186,12 +190,90 @@ const AnimatedCoin = ({ delay }: { delay: number }) => {
 export default function WatchEarnScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [totalEarned, setTotalEarned] = useState(125);
-  const [todayEarned, setTodayEarned] = useState(35);
+  const [refreshing, setRefreshing] = useState(false);
+  const [totalEarned, setTotalEarned] = useState(0);
+  const [todayEarned, setTodayEarned] = useState(0);
+  const [videos, setVideos] = useState<Video[]>(VIDEOS);
+  const [watchedCount, setWatchedCount] = useState(0);
+  const [dailyTarget, setDailyTarget] = useState(10);
+  const [dailyBonus, setDailyBonus] = useState(50);
+
+  const { token } = useAuthStore();
+
+  // โหลดวิดีโอจาก API
+  const loadVideos = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/mobile/watch-earn/videos?category=${selectedCategory}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setVideos(data.data);
+      }
+    } catch (error) {
+      console.log('ใช้ข้อมูล mock videos:', error);
+      // ใช้ข้อมูล mock ถ้า API ไม่ทำงาน
+      setVideos(VIDEOS);
+    }
+  }, [selectedCategory, token]);
+
+  // โหลดข้อมูลรายได้จาก API
+  const loadEarnings = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/mobile/watch-earn/earnings`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setTotalEarned(data.data.total_earned || 0);
+        setTodayEarned(data.data.today_earned || 0);
+        setWatchedCount(data.data.watched_count || 0);
+        setDailyTarget(data.data.daily_target || 10);
+        setDailyBonus(data.data.daily_bonus || 50);
+      }
+    } catch (error) {
+      console.log('ใช้ข้อมูล mock earnings:', error);
+      // ใช้ข้อมูล mock
+      setTotalEarned(125);
+      setTodayEarned(35);
+      setWatchedCount(6);
+    }
+  }, [token]);
+
+  // โหลดข้อมูลทั้งหมด
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([loadVideos(), loadEarnings()]);
+    setIsLoading(false);
+  }, [loadVideos, loadEarnings]);
+
+  // Refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([loadVideos(), loadEarnings()]);
+    setRefreshing(false);
+  }, [loadVideos, loadEarnings]);
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
+    loadData();
+  }, [loadData]);
+
+  // โหลดวิดีโอใหม่เมื่อเปลี่ยน category
+  useEffect(() => {
+    if (!isLoading) {
+      loadVideos();
+    }
+  }, [selectedCategory]);
 
   const getPlatformIcon = (platform: Video['platform']) => {
     switch (platform) {
@@ -215,9 +297,73 @@ export default function WatchEarnScreen() {
     }
   };
 
+  // ส่งข้อมูลการดูวิดีโอไปยัง API
+  const submitVideoWatch = async (video: Video) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/mobile/watch-earn/submit`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({
+          video_id: video.id,
+          duration: video.duration,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // อัพเดทรายได้หลังดูวิดีโอจบ
+        setTotalEarned((prev) => prev + video.reward);
+        setTodayEarned((prev) => prev + video.reward);
+        setWatchedCount((prev) => prev + 1);
+
+        // Mark video as watched
+        setVideos((prevVideos) =>
+          prevVideos.map((v) =>
+            v.id === video.id ? { ...v, isWatched: true } : v
+          )
+        );
+
+        Alert.alert(
+          '🎉 ได้รับรางวัล!',
+          `คุณได้รับ ฿${video.reward} จากการดูวิดีโอ`,
+          [{ text: 'ตกลง' }]
+        );
+      }
+    } catch (error) {
+      console.log('Error submitting video watch:', error);
+      // สำหรับ demo mode - ยังคง update UI
+      setVideos((prevVideos) =>
+        prevVideos.map((v) =>
+          v.id === video.id ? { ...v, isWatched: true } : v
+        )
+      );
+    }
+  };
+
   const handleVideoPress = (video: Video) => {
-    // TODO: Open video player
-    router.push('/coming-soon');
+    if (video.isWatched) {
+      Alert.alert('ดูแล้ว', 'คุณได้ดูวิดีโอนี้และรับรางวัลแล้ว');
+      return;
+    }
+
+    // TODO: Open video player แล้วเรียก submitVideoWatch เมื่อดูจบ
+    // สำหรับ demo - submit ทันที
+    Alert.alert(
+      'ดูวิดีโอ',
+      `กำลังเปิดวิดีโอ "${video.title}"\nรางวัล: ฿${video.reward}`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ดูเสร็จแล้ว (Demo)',
+          onPress: () => submitVideoWatch(video)
+        },
+      ]
+    );
   };
 
   if (isLoading) {
@@ -244,7 +390,18 @@ export default function WatchEarnScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#E11D48']}
+            tintColor="#E11D48"
+          />
+        }
+      >
         {/* Hero Banner */}
         <View style={styles.heroContainer}>
           <Image source={WATCH_EARN_HERO} style={styles.heroImage} resizeMode="cover" />
@@ -356,10 +513,10 @@ export default function WatchEarnScreen() {
         <View style={styles.videoSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>คลิปวิดีโอ</Text>
-            <Text style={styles.sectionCount}>{VIDEOS.length} คลิป</Text>
+            <Text style={styles.sectionCount}>{videos.length} คลิป</Text>
           </View>
 
-          {VIDEOS.map((video) => (
+          {videos.map((video) => (
             <TouchableOpacity
               key={video.id}
               style={[styles.videoCard, video.isWatched && styles.videoCardWatched]}
@@ -424,11 +581,15 @@ export default function WatchEarnScreen() {
             </View>
             <View style={styles.missionProgress}>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '60%' }]} />
+                <View style={[styles.progressFill, { width: `${Math.min((watchedCount / dailyTarget) * 100, 100)}%` }]} />
               </View>
-              <Text style={styles.progressText}>6/10 คลิป</Text>
+              <Text style={styles.progressText}>{watchedCount}/{dailyTarget} คลิป</Text>
             </View>
-            <Text style={styles.missionReward}>ดูครบ 10 คลิป รับโบนัส ฿50!</Text>
+            <Text style={styles.missionReward}>
+              {watchedCount >= dailyTarget
+                ? '🎉 ยินดีด้วย! คุณทำภารกิจครบแล้ว!'
+                : `ดูครบ ${dailyTarget} คลิป รับโบนัส ฿${dailyBonus}!`}
+            </Text>
           </LinearGradient>
         </View>
 

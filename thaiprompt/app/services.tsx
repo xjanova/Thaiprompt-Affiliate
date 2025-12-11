@@ -726,7 +726,7 @@ export default function ServicesScreen() {
             >
               <CategoryPill
                 title="ทั้งหมด"
-                icon="apps"
+                icon="📱"
                 isActive={activeCategory === null}
                 onPress={() => setActiveCategory(null)}
                 index={0}
