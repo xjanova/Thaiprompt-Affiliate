@@ -19,6 +19,9 @@ class TarotReadingCategory extends Model
         'icon',
         'color',
         'price',
+        'platform_fee_percentage',
+        'pv_percentage',
+        'commission_enabled',
         'is_free_first',
         'is_active',
         'sort_order',
@@ -26,6 +29,9 @@ class TarotReadingCategory extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'platform_fee_percentage' => 'decimal:2',
+        'pv_percentage' => 'decimal:2',
+        'commission_enabled' => 'boolean',
         'is_free_first' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
