@@ -48,9 +48,9 @@ const MENU_IMAGES: Record<string, ImageSourcePropType> = {
   referral: require('@/assets/images/refer-friend.png'),
   commissions: require('@/assets/images/commission.png'),
   shopping: require('@/assets/images/shopping.png'),
-  services: require('@/assets/images/shopping.png'),  // ใช้ภาพเดียวกับ shopping ก่อน
+  services: require('@/assets/images/service.png'),  // ใช้ภาพ service.png
   rider: require('@/assets/images/rider.png'),
-  tpix: require('@/assets/images/coming-soon.png'),  // TPIX Token - รอภาพใหม่
+  tpix: require('@/assets/images/TPIX1.png'),  // TPIX Token - เหรียญ 3D Cyberpunk
   'wealth-guide': require('@/assets/images/riches-path.png'),
   tarot: require('@/assets/images/tarot.png'),
   leaderboard: require('@/assets/images/ranking.png'),
