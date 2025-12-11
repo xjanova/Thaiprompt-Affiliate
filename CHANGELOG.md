@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.372.67] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2240 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (c60ca304)
+- feat(mobile): ปรับ UI ทุกหน้าให้ใช้ layout แบบ wallet (713007a7)
+- feat(mobile): ปรับปรุง UI และแก้ไขปัญหาหลายจุด (299c7fa6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.372.66] - 2025-12-11
 
 ### ✨ Features
