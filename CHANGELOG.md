@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2242 from xjanova/claude/improve-ui-navigation-01NXH6TzLA4TxwQrSANA8c7j (b385687e)
+- fix(api): แก้ไข endpoint PROFILE_UPDATE จาก /mobile/profile เป็น /profile (2873849b)
+### 🔧 Other Changes
+
+
 ## [v3.373.0] - 2025-12-11
 
 ### ✨ Features
