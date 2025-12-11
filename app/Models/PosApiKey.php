@@ -12,20 +12,24 @@ use Illuminate\Support\Str;
 /**
  * POS API Key Model
  *
- * จัดการ API Keys สำหรับเครื่อง POS ของร้านค้า
- * ใช้สำหรับ authentication ในระบบสองกุญแจ (Product Key + API Key)
+ * เก็บ API Keys ที่ Server สร้างให้ POS
+ * Admin จะเห็น key ใน Admin Panel และต้องให้กับลูกค้าเอง
+ * ลูกค้าจะนำ API Key ไปกรอกที่ POS เพื่อยืนยันสิทธิ์
  *
  * @property int $id
- * @property int $shop_id
- * @property string $name ชื่อ API Key
- * @property string $key API Key (hashed)
- * @property string $key_prefix ตัวอักษรต้น key
- * @property string|null $description รายละเอียด
- * @property int $max_terminals จำนวนเครื่องที่อนุญาต
- * @property bool $is_active สถานะใช้งาน
- * @property \Carbon\Carbon|null $expires_at วันหมดอายุ
- * @property \Carbon\Carbon|null $last_used_at ใช้งานล่าสุด
- * @property int|null $created_by ผู้สร้าง
+ * @property int|null $shop_id
+ * @property string $key
+ * @property string|null $name
+ * @property string|null $description
+ * @property bool $is_active
+ * @property bool $is_blocked
+ * @property string|null $blocked_reason
+ * @property \Carbon\Carbon|null $blocked_at
+ * @property int|null $blocked_by
+ * @property \Carbon\Carbon|null $last_used_at
+ * @property \Carbon\Carbon|null $expires_at
+ * @property array|null $permissions
+ * @property int $rate_limit
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -35,148 +39,104 @@ class PosApiKey extends Model
     use HasFactory, SoftDeletes;
 
     /**
-     * The table associated with the model.
-     *
-     * @var string
+     * ชื่อตาราง
      */
     protected $table = 'pos_api_keys';
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
+     * คอลัมน์ที่สามารถกรอกได้
      */
     protected $fillable = [
         'shop_id',
-        'name',
         'key',
-        'key_prefix',
+        'name',
         'description',
-        'max_terminals',
         'is_active',
-        'expires_at',
+        'is_blocked',
+        'blocked_reason',
+        'blocked_at',
+        'blocked_by',
         'last_used_at',
-        'created_by',
+        'expires_at',
+        'permissions',
+        'rate_limit',
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Attribute Casting
      */
     protected $casts = [
         'is_active' => 'boolean',
-        'max_terminals' => 'integer',
-        'expires_at' => 'datetime',
+        'is_blocked' => 'boolean',
+        'blocked_at' => 'datetime',
         'last_used_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'permissions' => 'array',
+        'rate_limit' => 'integer',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<string>
+     * Hidden attributes
      */
     protected $hidden = [
-        'key',
+        // API Key ไม่ซ่อน เพราะ Admin ต้องเห็น
     ];
 
+    // =========================================
+    // Relationships
+    // =========================================
+
     /**
-     * ความสัมพันธ์กับร้านค้า
-     *
-     * @return BelongsTo
+     * ร้านค้าที่ API Key นี้ผูกอยู่
      */
     public function shop(): BelongsTo
     {
-        return $this->belongsTo(Shop::class);
+        return $this->belongsTo(VendorStore::class, 'shop_id');
     }
 
     /**
-     * ความสัมพันธ์กับผู้สร้าง
-     *
-     * @return BelongsTo
+     * Admin ที่บล็อก API Key นี้
      */
-    public function creator(): BelongsTo
+    public function blockedByUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'blocked_by');
     }
 
     /**
-     * ความสัมพันธ์กับ POS Terminals
-     *
-     * @return HasMany
+     * POS Terminals ที่ใช้ API Key นี้
      */
     public function terminals(): HasMany
     {
         return $this->hasMany(PosTerminal::class, 'api_key_id');
     }
 
-    /**
-     * สร้าง API Key ใหม่
-     *
-     * @return array{key: string, prefix: string} คืน plain key และ prefix
-     */
-    public static function generateKey(): array
-    {
-        // สร้าง key แบบสุ่ม 32 characters
-        $plainKey = 'pk_' . Str::random(32);
-        $prefix = substr($plainKey, 0, 8);
-
-        return [
-            'key' => $plainKey,
-            'prefix' => $prefix,
-        ];
-    }
+    // =========================================
+    // Scopes
+    // =========================================
 
     /**
-     * ตรวจสอบว่า API Key หมดอายุหรือไม่
-     *
-     * @return bool
-     */
-    public function isExpired(): bool
-    {
-        if (!$this->expires_at) {
-            return false;
-        }
-
-        return $this->expires_at->isPast();
-    }
-
-    /**
-     * ตรวจสอบว่าสามารถลงทะเบียนเครื่องเพิ่มได้หรือไม่
-     *
-     * @return bool
-     */
-    public function canRegisterMoreTerminals(): bool
-    {
-        if ($this->max_terminals === 0) {
-            return true; // ไม่จำกัด
-        }
-
-        return $this->terminals()->count() < $this->max_terminals;
-    }
-
-    /**
-     * จำนวนเครื่องที่ลงทะเบียนแล้ว
-     *
-     * @return int
-     */
-    public function getRegisteredTerminalsCountAttribute(): int
-    {
-        return $this->terminals()->count();
-    }
-
-    /**
-     * Scope: API Keys ที่ใช้งานได้
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * เฉพาะ API Keys ที่ active
      */
     public function scopeActive($query)
     {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * เฉพาะ API Keys ที่ถูกบล็อก
+     */
+    public function scopeBlocked($query)
+    {
+        return $query->where('is_blocked', true);
+    }
+
+    /**
+     * เฉพาะ API Keys ที่ใช้งานได้
+     */
+    public function scopeUsable($query)
+    {
         return $query->where('is_active', true)
+            ->where('is_blocked', false)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -184,13 +144,147 @@ class PosApiKey extends Model
     }
 
     /**
+     * ค้นหาตาม shop_id
+     */
+    public function scopeForShop($query, $shopId)
+    {
+        return $query->where('shop_id', $shopId);
+    }
+
+    // =========================================
+    // Helper Methods
+    // =========================================
+
+    /**
+     * สร้าง API Key ใหม่
+     */
+    public static function generateKey(): string
+    {
+        return 'pk_' . Str::random(32);
+    }
+
+    /**
+     * ตรวจสอบว่า API Key ใช้งานได้หรือไม่
+     */
+    public function isUsable(): bool
+    {
+        // ต้อง active
+        if (!$this->is_active) {
+            return false;
+        }
+
+        // ต้องไม่ถูกบล็อก
+        if ($this->is_blocked) {
+            return false;
+        }
+
+        // ต้องไม่หมดอายุ
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * ดึงสถานะเป็นข้อความ
+     */
+    public function getStatusText(): string
+    {
+        if (!$this->is_active) {
+            return 'ปิดใช้งาน';
+        }
+
+        if ($this->is_blocked) {
+            return 'ถูกบล็อก';
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 'หมดอายุ';
+        }
+
+        return 'ใช้งานได้';
+    }
+
+    /**
+     * ดึงสถานะเป็น badge class (Tailwind)
+     */
+    public function getStatusBadgeClass(): string
+    {
+        if (!$this->is_active) {
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        }
+
+        if ($this->is_blocked) {
+            return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        }
+
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        }
+
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    }
+
+    /**
+     * บล็อก API Key
+     */
+    public function block(string $reason, int $blockedBy): void
+    {
+        $this->update([
+            'is_blocked' => true,
+            'blocked_reason' => $reason,
+            'blocked_at' => now(),
+            'blocked_by' => $blockedBy,
+        ]);
+    }
+
+    /**
+     * ปลดบล็อก API Key
+     */
+    public function unblock(): void
+    {
+        $this->update([
+            'is_blocked' => false,
+            'blocked_reason' => null,
+            'blocked_at' => null,
+            'blocked_by' => null,
+        ]);
+    }
+
+    /**
      * อัพเดทเวลาใช้งานล่าสุด
-     *
-     * @return bool
      */
     public function touch(): bool
     {
-        $this->last_used_at = now();
-        return $this->save();
+        return $this->update(['last_used_at' => now()]);
+    }
+
+    /**
+     * ตรวจสอบสิทธิ์
+     */
+    public function hasPermission(string $permission): bool
+    {
+        if (empty($this->permissions)) {
+            return true; // ถ้าไม่กำหนด = มีทุกสิทธิ์
+        }
+
+        return in_array($permission, $this->permissions);
+    }
+
+    // =========================================
+    // Boot Method
+    // =========================================
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        // สร้าง API Key อัตโนมัติถ้าไม่มี
+        static::creating(function ($model) {
+            if (empty($model->key)) {
+                $model->key = self::generateKey();
+            }
+        });
     }
 }
