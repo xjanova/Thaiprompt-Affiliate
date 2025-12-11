@@ -552,4 +552,261 @@ class PosTerminalController extends Controller
             ], 500);
         }
     }
+
+    // =========================================
+    // Sync Methods
+    // =========================================
+
+    /**
+     * Sync สินค้าจาก Server
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function syncProducts(Request $request): JsonResponse
+    {
+        $terminal = $this->authenticateTerminal($request);
+        if (!$terminal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่ได้รับอนุญาต'
+            ], 401);
+        }
+
+        // ดึงสินค้าจากร้าน
+        $products = \App\Models\Product::where('shop_id', $terminal->shop_id)
+            ->where('is_active', true)
+            ->with(['category'])
+            ->get()
+            ->map(fn($p) => [
+                'id' => $p->id,
+                'sku' => $p->sku,
+                'barcode' => $p->barcode,
+                'name' => $p->name,
+                'price' => $p->price,
+                'cost' => $p->cost,
+                'stock' => $p->stock,
+                'category_id' => $p->category_id,
+                'category_name' => $p->category?->name,
+                'image_url' => $p->image_url,
+                'updated_at' => $p->updated_at?->toISOString(),
+            ]);
+
+        // อัพเดท last sync
+        $terminal->update(['last_sync_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+            'synced_at' => now()->toISOString()
+        ]);
+    }
+
+    /**
+     * Sync หมวดหมู่จาก Server
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function syncCategories(Request $request): JsonResponse
+    {
+        $terminal = $this->authenticateTerminal($request);
+        if (!$terminal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่ได้รับอนุญาต'
+            ], 401);
+        }
+
+        // ดึงหมวดหมู่จากร้าน
+        $categories = \App\Models\Category::where('shop_id', $terminal->shop_id)
+            ->where('is_active', true)
+            ->get()
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'icon' => $c->icon,
+                'color' => $c->color,
+                'sort_order' => $c->sort_order,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+            'synced_at' => now()->toISOString()
+        ]);
+    }
+
+    /**
+     * อัพโหลดคำสั่งซื้อจาก POS ไป Server
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function uploadOrders(Request $request): JsonResponse
+    {
+        $terminal = $this->authenticateTerminal($request);
+        if (!$terminal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่ได้รับอนุญาต'
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'orders' => 'required|array',
+            'orders.*.local_id' => 'required|string',
+            'orders.*.total' => 'required|numeric',
+            'orders.*.items' => 'required|array',
+            'orders.*.created_at' => 'required|date',
+        ]);
+
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($validated['orders'] as $orderData) {
+            try {
+                // ตรวจสอบว่าเคย sync แล้วหรือยัง
+                $existing = \App\Models\Order::where('pos_local_id', $orderData['local_id'])
+                    ->where('pos_terminal_id', $terminal->id)
+                    ->first();
+
+                if ($existing) {
+                    continue; // ข้าม order ที่เคย sync แล้ว
+                }
+
+                // สร้าง order ใหม่
+                $order = \App\Models\Order::create([
+                    'shop_id' => $terminal->shop_id,
+                    'pos_terminal_id' => $terminal->id,
+                    'pos_local_id' => $orderData['local_id'],
+                    'total' => $orderData['total'],
+                    'status' => 'completed',
+                    'created_at' => $orderData['created_at'],
+                ]);
+
+                // สร้าง order items
+                foreach ($orderData['items'] as $item) {
+                    $order->items()->create([
+                        'product_id' => $item['product_id'] ?? null,
+                        'product_name' => $item['name'],
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['price'],
+                        'line_total' => $item['quantity'] * $item['price'],
+                    ]);
+                }
+
+                $uploadedCount++;
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'local_id' => $orderData['local_id'],
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'uploaded' => $uploadedCount,
+            'errors' => $errors,
+            'synced_at' => now()->toISOString()
+        ]);
+    }
+
+    /**
+     * รายงานยอดขาย
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function reportSales(Request $request): JsonResponse
+    {
+        $terminal = $this->authenticateTerminal($request);
+        if (!$terminal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่ได้รับอนุญาต'
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'total_sales' => 'required|numeric',
+            'total_orders' => 'required|integer',
+            'total_items' => 'required|integer',
+            'cash_sales' => 'nullable|numeric',
+            'card_sales' => 'nullable|numeric',
+            'other_sales' => 'nullable|numeric',
+        ]);
+
+        // บันทึกรายงาน
+        \App\Models\PosDailyReport::updateOrCreate(
+            [
+                'terminal_id' => $terminal->id,
+                'report_date' => $validated['date'],
+            ],
+            [
+                'total_sales' => $validated['total_sales'],
+                'total_transactions' => $validated['total_orders'],
+                'items_sold' => $validated['total_items'],
+                'total_cash' => $validated['cash_sales'] ?? 0,
+                'total_card' => $validated['card_sales'] ?? 0,
+                'total_qr' => $validated['other_sales'] ?? 0,
+                'synced_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกรายงานสำเร็จ'
+        ]);
+    }
+
+    // =========================================
+    // Private Methods
+    // =========================================
+
+    /**
+     * Authenticate POS Terminal จาก headers
+     *
+     * @param Request $request
+     * @return PosTerminal|null
+     */
+    private function authenticateTerminal(Request $request): ?PosTerminal
+    {
+        $apiKey = $request->header('X-API-Key');
+        $productKey = $request->header('X-Product-Key');
+
+        if (empty($apiKey) || empty($productKey)) {
+            return null;
+        }
+
+        // หา API Key
+        $posApiKey = PosApiKey::where('key', $apiKey)
+            ->where('is_active', true)
+            ->where('is_blocked', false) // ต้องไม่ถูกบล็อก
+            ->first();
+
+        if (!$posApiKey) {
+            return null;
+        }
+
+        // ตรวจสอบวันหมดอายุ
+        if ($posApiKey->expires_at && $posApiKey->expires_at->isPast()) {
+            return null;
+        }
+
+        // หา Terminal
+        $terminal = PosTerminal::where('product_key', $productKey)
+            ->where('api_key_id', $posApiKey->id)
+            ->where('status', PosTerminal::STATUS_ACTIVE)
+            ->where('is_verified', true)
+            ->first();
+
+        if ($terminal) {
+            $terminal->recordSync($request->ip());
+        }
+
+        return $terminal;
+    }
 }
