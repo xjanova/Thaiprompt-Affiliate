@@ -581,6 +581,19 @@
                         </svg>
                     </button>
 
+                    <!-- เปิดหน้าจอลูกค้า (Dual Screen) -->
+                    <button @click="openCustomerDisplay()"
+                            class="p-2.5 rounded-xl transition-all group relative"
+                            :class="customerDisplayWindow && !customerDisplayWindow.closed ? 'bg-purple-500 text-white neon-purple' : 'glass-panel-light text-gray-400 hover:text-white'"
+                            title="เปิดหน้าจอลูกค้า (Dual Screen)">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <!-- Status Indicator -->
+                        <span x-show="customerDisplayWindow && !customerDisplayWindow.closed"
+                              class="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse border-2 border-gray-900"></span>
+                    </button>
+
                     <!-- Dark Mode Toggle -->
                     <button @click="toggleDarkMode()" class="p-2.5 glass-panel-light rounded-xl text-gray-400 hover:text-white transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1200,6 +1213,9 @@
                 async init() {
                     this.calculateTotals();
 
+                    // เริ่มต้น BroadcastChannel สำหรับ Dual Screen
+                    this.initBroadcastChannel();
+
                     // โหลดข้อมูลพนักงานจาก localStorage
                     this.loadStaffFromStorage();
 
@@ -1458,8 +1474,20 @@
                 // CUSTOMER DISPLAY SYNC
                 // ========================================
 
+                // BroadcastChannel สำหรับ real-time sync ระหว่าง tabs
+                displayChannel: null,
+                customerDisplayWindow: null,
+
+                // เริ่มต้น BroadcastChannel
+                initBroadcastChannel() {
+                    if ('BroadcastChannel' in window) {
+                        this.displayChannel = new BroadcastChannel(`pos_display_${this.deviceCode}`);
+                        console.log('📡 BroadcastChannel initialized:', `pos_display_${this.deviceCode}`);
+                    }
+                },
+
                 syncToCustomerDisplay() {
-                    // Sync via localStorage (fallback)
+                    // สร้างข้อมูลสำหรับส่ง
                     const displayData = {
                         action: this.cart.length > 0 ? 'update' : 'clear',
                         items: this.cart.map(item => ({
@@ -1474,14 +1502,172 @@
                         tax: this.tax,
                         serviceCharge: this.serviceCharge,
                         total: this.total,
-                        cartPV: this.cartPV,
-                        cartPoints: this.cartPoints
+                        totalPv: this.cartPV,
+                        totalPoints: this.cartPoints,
+                        timestamp: Date.now()
                     };
 
+                    // 1. ส่งผ่าน BroadcastChannel (เร็วที่สุด, same-origin)
+                    if (this.displayChannel) {
+                        this.displayChannel.postMessage(displayData);
+                    }
+
+                    // 2. ส่งผ่าน localStorage (fallback สำหรับ browsers เก่า)
                     localStorage.setItem('pos_customer_display', JSON.stringify(displayData));
 
-                    // Also try API sync if available
+                    // 3. ส่งผ่าน API (สำหรับ WebSocket broadcast)
                     this.syncViaAPI(displayData);
+                },
+
+                // ========================================
+                // MULTI-SCREEN MANAGEMENT
+                // ระบบจัดการหน้าจอหลัก/รอง อัตโนมัติ
+                // ========================================
+
+                availableScreens: [],
+                primaryScreen: null,
+                secondaryScreen: null,
+
+                // ตรวจจับหน้าจอที่มีอยู่
+                async detectScreens() {
+                    if ('getScreenDetails' in window) {
+                        try {
+                            const screenDetails = await window.getScreenDetails();
+                            this.availableScreens = screenDetails.screens;
+
+                            // หาหน้าจอหลัก (ที่มี isPrimary = true หรือ จอที่ใหญ่ที่สุด)
+                            this.primaryScreen = this.availableScreens.find(s => s.isPrimary) ||
+                                                 this.availableScreens.reduce((a, b) =>
+                                                     (a.width * a.height) > (b.width * b.height) ? a : b
+                                                 );
+
+                            // หน้าจอรอง = หน้าจอที่ไม่ใช่หลัก
+                            this.secondaryScreen = this.availableScreens.find(s => s !== this.primaryScreen);
+
+                            console.log('🖥️ ตรวจพบ', this.availableScreens.length, 'หน้าจอ');
+                            console.log('📺 หน้าจอหลัก:', this.primaryScreen?.label || 'Primary');
+                            console.log('📺 หน้าจอรอง:', this.secondaryScreen?.label || 'ไม่มี');
+
+                            return true;
+                        } catch (error) {
+                            console.warn('⚠️ ไม่สามารถใช้ Multi-Screen API:', error.message);
+                            return false;
+                        }
+                    }
+                    return false;
+                },
+
+                // เปิดหน้าจอ Customer Display ในหน้าต่างใหม่ (รองรับ Multi-Screen)
+                async openCustomerDisplay() {
+                    const displayUrl = `/pos/customer-display?device_code=${this.deviceCode}&auto_fullscreen=1`;
+
+                    // ปิดหน้าต่างเก่าถ้ามี
+                    if (this.customerDisplayWindow && !this.customerDisplayWindow.closed) {
+                        this.customerDisplayWindow.focus();
+                        // ลอง fullscreen หน้าต่างที่เปิดอยู่
+                        this.requestCustomerDisplayFullscreen();
+                        return;
+                    }
+
+                    // ตรวจจับหน้าจอ
+                    const hasMultiScreen = await this.detectScreens();
+
+                    let windowFeatures;
+                    if (hasMultiScreen && this.secondaryScreen) {
+                        // มีหน้าจอรอง - เปิดบนหน้าจอรองเต็มจอ
+                        const screen = this.secondaryScreen;
+                        windowFeatures = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`;
+                        console.log('🖥️ เปิด Customer Display บนหน้าจอรอง:', screen.label);
+                    } else {
+                        // หน้าจอเดียว - เปิดเป็น popup ขนาดใหญ่
+                        const width = Math.min(1280, screen.availWidth * 0.8);
+                        const height = Math.min(800, screen.availHeight * 0.8);
+                        const left = (screen.availWidth - width) / 2;
+                        const top = (screen.availHeight - height) / 2;
+                        windowFeatures = `left=${left},top=${top},width=${width},height=${height},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`;
+                        console.log('🖥️ เปิด Customer Display บนหน้าจอเดียวกัน');
+                    }
+
+                    this.customerDisplayWindow = window.open(displayUrl, 'POS_CustomerDisplay', windowFeatures);
+
+                    if (this.customerDisplayWindow) {
+                        console.log('🖥️ Customer Display window opened');
+
+                        // รอให้หน้าต่างโหลดเสร็จ แล้วทำ fullscreen
+                        this.customerDisplayWindow.addEventListener('load', () => {
+                            setTimeout(() => {
+                                this.requestCustomerDisplayFullscreen();
+                                this.syncToCustomerDisplay();
+                            }, 500);
+                        });
+
+                        // Fallback ถ้า load event ไม่ทำงาน
+                        setTimeout(() => {
+                            this.syncToCustomerDisplay();
+                        }, 1500);
+                    } else {
+                        alert('ไม่สามารถเปิดหน้าต่าง Customer Display ได้\nกรุณาอนุญาต popup สำหรับเว็บไซต์นี้');
+                    }
+                },
+
+                // Request fullscreen สำหรับ Customer Display
+                requestCustomerDisplayFullscreen() {
+                    if (this.customerDisplayWindow && !this.customerDisplayWindow.closed) {
+                        try {
+                            // ส่ง message ให้ Customer Display ทำ fullscreen
+                            if (this.displayChannel) {
+                                this.displayChannel.postMessage({
+                                    action: 'requestFullscreen'
+                                });
+                            }
+                        } catch (error) {
+                            console.warn('⚠️ ไม่สามารถ request fullscreen:', error.message);
+                        }
+                    }
+                },
+
+                // ทำ Cashier เป็น Fullscreen บนหน้าจอหลัก
+                async enterPrimaryFullscreen() {
+                    const elem = document.documentElement;
+                    try {
+                        if ('getScreenDetails' in window && this.primaryScreen) {
+                            // ใช้ Fullscreen API พร้อม screen option
+                            await elem.requestFullscreen({ screen: this.primaryScreen });
+                        } else if (elem.requestFullscreen) {
+                            await elem.requestFullscreen();
+                        } else if (elem.webkitRequestFullscreen) {
+                            await elem.webkitRequestFullscreen();
+                        } else if (elem.mozRequestFullScreen) {
+                            await elem.mozRequestFullScreen();
+                        }
+                        console.log('🖥️ Cashier fullscreen บนหน้าจอหลัก');
+                    } catch (error) {
+                        console.warn('⚠️ ไม่สามารถทำ fullscreen:', error.message);
+                    }
+                },
+
+                // ส่งข้อมูลการชำระเงินสำเร็จ
+                sendTransactionCompleted(transaction) {
+                    const completedData = {
+                        action: 'completed',
+                        transactionId: transaction.id,
+                        totalAmount: this.total,
+                        amountPaid: this.amountPaid,
+                        changeAmount: this.amountPaid - this.total,
+                        paymentMethod: this.paymentMethod,
+                        totalItems: this.cart.length,
+                        totalPv: this.cartPV,
+                        totalPoints: this.cartPoints,
+                        timestamp: Date.now()
+                    };
+
+                    // ส่งผ่าน BroadcastChannel
+                    if (this.displayChannel) {
+                        this.displayChannel.postMessage(completedData);
+                    }
+
+                    // ส่งผ่าน localStorage
+                    localStorage.setItem('pos_customer_display', JSON.stringify(completedData));
                 },
 
                 async syncViaAPI(data) {
@@ -1549,6 +1735,9 @@
                             this.lastTransactionPV = this.cartPV;
                             this.lastTransactionPoints = this.cartPoints;
 
+                            // ส่งข้อมูลชำระเงินสำเร็จไปยัง Customer Display
+                            this.sendTransactionCompleted(result.transaction);
+
                             // Open receipt
                             window.open(`/pos/receipt/${result.transaction.id}`, '_blank');
 
@@ -1557,9 +1746,6 @@
                             this.discountPercentage = 0;
                             this.amountPaid = 0;
                             this.calculateTotals();
-
-                            // Clear customer display
-                            localStorage.setItem('pos_customer_display', JSON.stringify({ action: 'clear' }));
 
                             // Show success modal
                             this.showSuccessModal = true;

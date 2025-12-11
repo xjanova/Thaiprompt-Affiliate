@@ -39,16 +39,27 @@ public class TpAffiliateApiClient
 
     /// <summary>
     /// ตรวจสอบการเชื่อมต่อ
+    /// จะลองเรียก /pos/api/health ก่อน ถ้าไม่สำเร็จจะลองเรียก root URL แทน
     /// </summary>
     public async Task<bool> CheckConnectivityAsync()
     {
         try
         {
+            // ลองเรียก /pos/api/health ก่อน (ต้อง deploy แล้ว)
             var response = await _httpClient.GetAsync("/pos/api/health");
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            // ถ้า health endpoint ไม่พร้อม ลองเรียก root URL แทน
+            // เพื่อตรวจสอบว่า server online อยู่หรือไม่
+            var rootResponse = await _httpClient.GetAsync("/");
+            return rootResponse.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"CheckConnectivity error: {ex.Message}");
             return false;
         }
     }
@@ -73,6 +84,26 @@ public class TpAffiliateApiClient
     }
 
     #region Authentication
+
+    /// <summary>
+    /// ดึงข้อมูล User และร้านค้า
+    /// </summary>
+    public async Task<ApiResponse<UserInfoData>?> GetUserInfoAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/pos/api/user/info");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ApiResponse<UserInfoData>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"GetUserInfo error: {ex.Message}");
+        }
+        return null;
+    }
 
     /// <summary>
     /// Login
@@ -440,6 +471,25 @@ public class LoginResponse
     public int UserId { get; set; }
     public string? UserName { get; set; }
     public string? Email { get; set; }
+}
+
+/// <summary>
+/// ข้อมูล User และร้านค้า (จาก /pos/api/user/info)
+/// </summary>
+public class UserInfoData
+{
+    public int UserId { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string? Avatar { get; set; }
+    public int? ShopId { get; set; }
+    public string? ShopName { get; set; }
+    public bool IsAdmin { get; set; }
+    public string Role { get; set; } = "user";
+    public List<string> Permissions { get; set; } = new();
+    public string? MemberCode { get; set; }
+    public decimal Points { get; set; }
 }
 
 /// <summary>

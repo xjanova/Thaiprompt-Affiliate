@@ -18,6 +18,50 @@
          * ใช้ Tailwind เป็นหลัก เพิ่ม custom animations
          * ============================================ */
 
+        /* Dynamic Font Scaling - ปรับขนาดตามหน้าจออัตโนมัติ */
+        :root {
+            --scale-factor: 1;
+        }
+
+        /* Scale ทั้งหน้า */
+        .auto-scale {
+            font-size: calc(16px * var(--scale-factor));
+        }
+
+        /* ขนาดหน้าจอต่างๆ */
+        @media screen and (min-width: 1920px) {
+            :root { --scale-factor: 1.25; }
+        }
+        @media screen and (min-width: 2560px) {
+            :root { --scale-factor: 1.5; }
+        }
+        @media screen and (min-width: 3840px) {
+            :root { --scale-factor: 2; }
+        }
+        @media screen and (max-width: 1366px) {
+            :root { --scale-factor: 0.9; }
+        }
+        @media screen and (max-width: 1024px) {
+            :root { --scale-factor: 0.8; }
+        }
+        @media screen and (max-width: 768px) {
+            :root { --scale-factor: 0.7; }
+        }
+
+        /* Fullscreen optimizations */
+        :fullscreen {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #6B8DD6, #8E37D7);
+        }
+
+        :fullscreen .footer-bar {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        :fullscreen:hover .footer-bar {
+            opacity: 1;
+        }
+
         /* Background gradient animation */
         .animated-gradient {
             background: linear-gradient(-45deg, #667eea, #764ba2, #6B8DD6, #8E37D7);
@@ -181,7 +225,7 @@
         }
     </style>
 </head>
-<body class="animated-gradient min-h-screen text-white overflow-hidden">
+<body class="animated-gradient min-h-screen text-white overflow-hidden auto-scale">
     <!-- Main Container with Alpine.js -->
     <div class="h-screen flex flex-col" x-data="customerDisplay()" x-init="init()">
 
@@ -497,7 +541,7 @@
         </main>
 
         <!-- Footer Bar -->
-        <footer class="glass-card border-t border-white/20 px-4 md:px-8 py-3 md:py-4">
+        <footer class="glass-card border-t border-white/20 px-4 md:px-8 py-3 md:py-4 footer-bar">
             <div class="flex flex-wrap items-center justify-between text-xs md:text-sm text-white/70 gap-2">
                 <div class="flex items-center gap-2" x-show="store.phone">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -521,12 +565,46 @@
 
                 <!-- Connection Status -->
                 <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full"
-                         :class="isConnected ? 'bg-emerald-400' : 'bg-red-400'"></div>
-                    <span x-text="isConnected ? 'เชื่อมต่อแล้ว' : 'ไม่ได้เชื่อมต่อ'"></span>
+                    <div class="w-2 h-2 rounded-full animate-pulse"
+                         :class="isConnected || displayChannel ? 'bg-emerald-400' : 'bg-red-400'"></div>
+                    <span x-text="displayChannel ? 'Dual Screen พร้อมใช้งาน' : (isConnected ? 'เชื่อมต่อแล้ว' : 'รอการเชื่อมต่อ...')"></span>
                 </div>
+
+                <!-- Fullscreen Toggle Button -->
+                <button @click="toggleFullscreen()"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition"
+                        :title="isFullscreen ? 'ออกจากโหมดเต็มจอ' : 'เต็มจอ'">
+                    <svg x-show="!isFullscreen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                    </svg>
+                    <svg x-show="isFullscreen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"></path>
+                    </svg>
+                    <span class="text-xs" x-text="isFullscreen ? 'ย่อ' : 'เต็มจอ'"></span>
+                </button>
             </div>
         </footer>
+
+        <!-- Fullscreen Hint Overlay -->
+        <div x-show="showFullscreenHint"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center cursor-pointer"
+             @click="enterFullscreen(); showFullscreenHint = false;">
+            <div class="text-center animate-pulse">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">คลิกเพื่อเต็มจอ</h2>
+                <p class="text-white/70">Click anywhere to enter fullscreen mode</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -628,11 +706,22 @@
                     // เริ่ม rotation โฆษณา
                     this.startAdRotation();
 
+                    // ตั้งค่า BroadcastChannel (Primary - เร็วที่สุด)
+                    this.setupBroadcastChannel();
+
                     // ตั้งค่า WebSocket listeners
                     this.setupWebSocket();
 
                     // ตั้งค่า localStorage listener (fallback)
                     this.setupLocalStorageListener();
+
+                    // ตรวจสอบ auto fullscreen
+                    this.checkAutoFullscreen();
+
+                    // Listen for fullscreen changes
+                    document.addEventListener('fullscreenchange', () => {
+                        this.isFullscreen = !!document.fullscreenElement;
+                    });
 
                     // ส่ง heartbeat
                     this.sendHeartbeat();
@@ -703,6 +792,116 @@
                 },
 
                 // ========================================
+                // BroadcastChannel (Primary - เร็วที่สุด)
+                // ========================================
+
+                displayChannel: null,
+
+                setupBroadcastChannel() {
+                    if ('BroadcastChannel' in window) {
+                        this.displayChannel = new BroadcastChannel(`pos_display_${this.deviceCode}`);
+
+                        this.displayChannel.onmessage = (event) => {
+                            const data = event.data;
+                            console.log('📡 BroadcastChannel received:', data.action);
+
+                            if (data.action === 'update') {
+                                this.handleCartUpdate(data);
+                            } else if (data.action === 'clear') {
+                                this.handleDisplayClear(data);
+                            } else if (data.action === 'completed') {
+                                this.handleTransactionCompleted(data);
+                            } else if (data.action === 'requestFullscreen') {
+                                this.enterFullscreen();
+                            }
+
+                            // อัพเดท connection status
+                            this.isConnected = true;
+                        };
+
+                        console.log('📡 BroadcastChannel listening on:', `pos_display_${this.deviceCode}`);
+                    } else {
+                        console.warn('⚠️ BroadcastChannel not supported, using localStorage fallback');
+                    }
+                },
+
+                // ========================================
+                // FULLSCREEN & DISPLAY MANAGEMENT
+                // ========================================
+
+                isFullscreen: false,
+
+                // เข้าสู่โหมด Fullscreen
+                async enterFullscreen() {
+                    const elem = document.documentElement;
+                    try {
+                        if (elem.requestFullscreen) {
+                            await elem.requestFullscreen();
+                        } else if (elem.webkitRequestFullscreen) {
+                            await elem.webkitRequestFullscreen();
+                        } else if (elem.mozRequestFullScreen) {
+                            await elem.mozRequestFullScreen();
+                        } else if (elem.msRequestFullscreen) {
+                            await elem.msRequestFullscreen();
+                        }
+                        this.isFullscreen = true;
+                        console.log('🖥️ Customer Display เข้าสู่โหมดเต็มจอ');
+                    } catch (error) {
+                        console.warn('⚠️ ไม่สามารถทำ fullscreen:', error.message);
+                    }
+                },
+
+                // ออกจากโหมด Fullscreen
+                async exitFullscreen() {
+                    try {
+                        if (document.exitFullscreen) {
+                            await document.exitFullscreen();
+                        } else if (document.webkitExitFullscreen) {
+                            await document.webkitExitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                            await document.mozCancelFullScreen();
+                        } else if (document.msExitFullscreen) {
+                            await document.msExitFullscreen();
+                        }
+                        this.isFullscreen = false;
+                    } catch (error) {
+                        console.warn('⚠️ ไม่สามารถออกจาก fullscreen:', error.message);
+                    }
+                },
+
+                // Toggle Fullscreen
+                toggleFullscreen() {
+                    if (this.isFullscreen || document.fullscreenElement) {
+                        this.exitFullscreen();
+                    } else {
+                        this.enterFullscreen();
+                    }
+                },
+
+                // ตรวจสอบ auto_fullscreen parameter
+                checkAutoFullscreen() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('auto_fullscreen') === '1') {
+                        // รอ 1 วินาทีแล้วทำ fullscreen (ต้องมี user interaction ก่อน)
+                        console.log('🖥️ Auto-fullscreen mode enabled');
+                        // Fullscreen ต้องมี user gesture, ใช้ click event แทน
+                        document.body.addEventListener('click', () => {
+                            if (!this.isFullscreen && !document.fullscreenElement) {
+                                this.enterFullscreen();
+                            }
+                        }, { once: true });
+
+                        // แสดง hint ให้ user คลิก
+                        this.showFullscreenHint = true;
+                        setTimeout(() => {
+                            this.showFullscreenHint = false;
+                        }, 5000);
+                    }
+                },
+
+                showFullscreenHint: false,
+
+                // ========================================
                 // LocalStorage Fallback
                 // ========================================
 
@@ -711,6 +910,8 @@
                         if (e.key === 'pos_customer_display') {
                             try {
                                 const data = JSON.parse(e.newValue);
+                                console.log('💾 localStorage received:', data.action);
+
                                 if (data.action === 'update') {
                                     this.handleCartUpdate(data);
                                 } else if (data.action === 'clear') {

@@ -14,16 +14,16 @@
   <ItemGroup>
     <!-- SQLite สำหรับ Offline Database -->
     <PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.11" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.8" />
 
     <!-- HTTP Client สำหรับเรียก API -->
-    <PackageReference Include="System.Net.Http.Json" Version="10.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="9.0.0" />
 
     <!-- JSON Serialization -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 
     <!-- Polly สำหรับ Retry Logic -->
-    <PackageReference Include="Polly" Version="8.6.5" />
+    <PackageReference Include="Polly" Version="8.4.0" />
   </ItemGroup>
 
   <ItemGroup>

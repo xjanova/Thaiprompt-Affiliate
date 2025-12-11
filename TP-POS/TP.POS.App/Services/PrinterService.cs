@@ -1,4 +1,5 @@
 using TP.POS.Core.Entities;
+using TP.POS.Core.Enums;
 using TP.POS.Core.Interfaces;
 
 namespace TP.POS.App.Services;

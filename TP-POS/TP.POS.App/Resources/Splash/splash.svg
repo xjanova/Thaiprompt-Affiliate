@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <text x="256" y="240" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="white" text-anchor="middle">TP-POS</text>
-  <text x="256" y="320" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" opacity="0.8">ระบบขายหน้าร้าน</text>
+  <rect width="512" height="512" fill="#22C55E"/>
+  <text x="256" y="280" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="white" text-anchor="middle">TP-POS</text>
+  <text x="256" y="360" font-family="Arial, sans-serif" font-size="32" fill="white" text-anchor="middle">Point of Sale</text>
 </svg>
