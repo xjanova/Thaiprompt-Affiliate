@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="TP.POS.App.Views.CustomerDisplayPage"
+             Title="Customer Display"
+             BackgroundColor="#0F172A">
+
+    <Grid>
+        <!-- พื้นหลัง Gradient -->
+        <BoxView>
+            <BoxView.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#0F172A" Offset="0"/>
+                    <GradientStop Color="#1E293B" Offset="0.5"/>
+                    <GradientStop Color="#0F172A" Offset="1"/>
+                </LinearGradientBrush>
+            </BoxView.Background>
+        </BoxView>
+
+        <!-- Decorative Elements -->
+        <Ellipse Fill="#22C55E"
+                 Opacity="0.08"
+                 WidthRequest="600"
+                 HeightRequest="600"
+                 HorizontalOptions="Start"
+                 VerticalOptions="Start"
+                 Margin="-200,-200,0,0"/>
+
+        <Ellipse Fill="#3B82F6"
+                 Opacity="0.06"
+                 WidthRequest="500"
+                 HeightRequest="500"
+                 HorizontalOptions="End"
+                 VerticalOptions="End"
+                 Margin="0,0,-150,-150"/>
+
+        <!-- Main Content -->
+        <Grid Padding="40" RowDefinitions="Auto,*,Auto">
+
+            <!-- Header -->
+            <Border Grid.Row="0"
+                    StrokeThickness="0"
+                    Padding="30"
+                    Margin="0,0,0,30">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#22C55E" Offset="0"/>
+                        <GradientStop Color="#16A34A" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow Brush="#22C55E" Offset="0,8" Radius="30" Opacity="0.4"/>
+                </Border.Shadow>
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Logo -->
+                    <Border Grid.Column="0"
+                            StrokeThickness="0"
+                            BackgroundColor="White"
+                            HeightRequest="70"
+                            WidthRequest="70">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="15"/>
+                        </Border.StrokeShape>
+                        <Label Text="TP"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               TextColor="#22C55E"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Border>
+
+                    <!-- Store Name -->
+                    <VerticalStackLayout Grid.Column="1" Margin="25,0,0,0" VerticalOptions="Center">
+                        <Label Text="TP POS"
+                               FontSize="36"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+                        <Label x:Name="lblShopName"
+                               Text="ยินดีต้อนรับ"
+                               FontSize="20"
+                               TextColor="White"
+                               Opacity="0.9"/>
+                    </VerticalStackLayout>
+
+                    <!-- Time -->
+                    <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" HorizontalOptions="End">
+                        <Label x:Name="lblTime"
+                               Text="00:00:00"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="End"/>
+                        <Label x:Name="lblDate"
+                               Text="วันจันทร์ที่ 1 มกราคม 2568"
+                               FontSize="16"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalOptions="End"/>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
+            <!-- Cart Items / Thank You Message -->
+            <Grid Grid.Row="1">
+                <!-- รายการสินค้า -->
+                <Border x:Name="cartSection"
+                        StrokeThickness="1"
+                        Stroke="#334155"
+                        Padding="30"
+                        IsVisible="True">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#1E293B" Offset="0"/>
+                            <GradientStop Color="#0F172A" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="20"/>
+                    </Border.StrokeShape>
+
+                    <Grid RowDefinitions="Auto,*">
+                        <!-- หัวข้อ -->
+                        <Label Grid.Row="0"
+                               Text="🛒 รายการสินค้า"
+                               FontSize="28"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               Margin="0,0,0,20"/>
+
+                        <!-- รายการ -->
+                        <CollectionView Grid.Row="1"
+                                        x:Name="cartItemsCollection"
+                                        SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border StrokeThickness="0"
+                                            BackgroundColor="#334155"
+                                            Padding="20"
+                                            Margin="0,0,0,10">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <VerticalStackLayout Grid.Column="0">
+                                                <Label Text="{Binding Name}"
+                                                       FontSize="22"
+                                                       FontAttributes="Bold"
+                                                       TextColor="White"/>
+                                                <Label Text="{Binding UnitPrice, StringFormat='฿{0:N2} / ชิ้น'}"
+                                                       FontSize="16"
+                                                       TextColor="#94A3B8"/>
+                                            </VerticalStackLayout>
+
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding Quantity, StringFormat='x{0}'}"
+                                                   FontSize="24"
+                                                   FontAttributes="Bold"
+                                                   TextColor="#22C55E"
+                                                   VerticalOptions="Center"
+                                                   Margin="20,0"/>
+
+                                            <Label Grid.Column="2"
+                                                   Text="{Binding LineTotal, StringFormat='฿{0:N2}'}"
+                                                   FontSize="24"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"
+                                                   VerticalOptions="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+
+                            <CollectionView.EmptyView>
+                                <VerticalStackLayout HorizontalOptions="Center"
+                                                     VerticalOptions="Center"
+                                                     Spacing="20">
+                                    <Label Text="🛍️" FontSize="80"/>
+                                    <Label Text="รอรับรายการสินค้า"
+                                           FontSize="28"
+                                           TextColor="#94A3B8"
+                                           HorizontalTextAlignment="Center"/>
+                                </VerticalStackLayout>
+                            </CollectionView.EmptyView>
+                        </CollectionView>
+                    </Grid>
+                </Border>
+
+                <!-- Thank You Message -->
+                <Border x:Name="thankYouSection"
+                        StrokeThickness="0"
+                        Padding="50"
+                        IsVisible="False">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#22C55E" Offset="0"/>
+                            <GradientStop Color="#16A34A" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="30"/>
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#22C55E" Offset="0,10" Radius="40" Opacity="0.5"/>
+                    </Border.Shadow>
+
+                    <VerticalStackLayout HorizontalOptions="Center"
+                                         VerticalOptions="Center"
+                                         Spacing="30">
+                        <Label Text="✅" FontSize="100"/>
+                        <Label Text="ขอบคุณที่ใช้บริการ"
+                               FontSize="48"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalTextAlignment="Center"/>
+                        <Label Text="Thank you for shopping with us!"
+                               FontSize="24"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalTextAlignment="Center"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Footer - Total -->
+            <Border Grid.Row="2"
+                    StrokeThickness="1"
+                    Stroke="#334155"
+                    Padding="30"
+                    Margin="0,30,0,0">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#1E293B" Offset="0"/>
+                        <GradientStop Color="#0F172A" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="15">
+                    <!-- ยอดรวม -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="ยอดรวม"
+                               FontSize="24"
+                               TextColor="#94A3B8"/>
+                        <Label Grid.Column="1"
+                               x:Name="lblSubtotal"
+                               Text="฿0.00"
+                               FontSize="24"
+                               TextColor="White"/>
+                    </Grid>
+
+                    <!-- ส่วนลด -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" x:Name="discountRow" IsVisible="False">
+                        <Label Grid.Column="0"
+                               Text="ส่วนลด"
+                               FontSize="24"
+                               TextColor="#94A3B8"/>
+                        <Label Grid.Column="1"
+                               x:Name="lblDiscount"
+                               Text="-฿0.00"
+                               FontSize="24"
+                               TextColor="#EF4444"/>
+                    </Grid>
+
+                    <!-- ภาษี -->
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="ภาษี 7%"
+                               FontSize="24"
+                               TextColor="#94A3B8"/>
+                        <Label Grid.Column="1"
+                               x:Name="lblTax"
+                               Text="฿0.00"
+                               FontSize="24"
+                               TextColor="White"/>
+                    </Grid>
+
+                    <!-- ยอดสุทธิ -->
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="ยอดชำระ"
+                               FontSize="36"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+                        <Label Grid.Column="1"
+                               x:Name="lblTotal"
+                               Text="฿0.00"
+                               FontSize="48"
+                               FontAttributes="Bold"
+                               TextColor="#22C55E"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

@@ -7,6 +7,36 @@
     Shell.FlyoutBehavior="Flyout"
     Shell.FlyoutBackgroundColor="{StaticResource Primary}">
 
+    <!-- สถานะการเชื่อมต่อ มุมขวาบน -->
+    <Shell.TitleView>
+        <Grid ColumnDefinitions="*,Auto" Padding="0,0,15,0">
+            <!-- สถานะ Online/Offline (ขวา) -->
+            <Border Grid.Column="1"
+                    x:Name="connectionStatusBorder"
+                    StrokeThickness="0"
+                    BackgroundColor="#22C55E"
+                    Padding="12,6"
+                    VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="15"/>
+                </Border.StrokeShape>
+                <HorizontalStackLayout Spacing="6">
+                    <Label x:Name="statusIcon"
+                           Text="●"
+                           FontSize="12"
+                           TextColor="White"
+                           VerticalOptions="Center"/>
+                    <Label x:Name="statusText"
+                           Text="Online"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           VerticalOptions="Center"/>
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
+    </Shell.TitleView>
+
     <Shell.FlyoutHeader>
         <Grid HeightRequest="180" BackgroundColor="{StaticResource Primary}" Padding="20">
             <VerticalStackLayout VerticalOptions="Center">
@@ -27,7 +57,7 @@
                            VerticalOptions="Center"/>
                 </Border>
 
-                <Label Text="TP-POS"
+                <Label Text="TP POS"
                        FontSize="24"
                        FontAttributes="Bold"
                        TextColor="White"

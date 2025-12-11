@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using TP.POS.Core.Entities;
 using TP.POS.Core.Enums;
 using TP.POS.Core.Interfaces;
@@ -9,8 +10,9 @@ namespace TP.POS.App.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับหน้าขายสินค้า
+/// ใช้ manual INotifyPropertyChanged implementation แทน source generators
 /// </summary>
-public partial class PosViewModel : BaseViewModel
+public class PosViewModel : BaseViewModel
 {
     private readonly IProductService _productService;
     private readonly ICartService _cartService;
@@ -19,95 +21,124 @@ public partial class PosViewModel : BaseViewModel
 
     #region Observable Properties
 
-    /// <summary>
-    /// ข้อความค้นหา
-    /// </summary>
-    [ObservableProperty]
     private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set => SetProperty(ref _searchText, value);
+    }
 
-    /// <summary>
-    /// หมวดหมู่ที่เลือก
-    /// </summary>
-    [ObservableProperty]
     private Category? _selectedCategory;
+    public Category? SelectedCategory
+    {
+        get => _selectedCategory;
+        set => SetProperty(ref _selectedCategory, value);
+    }
 
-    /// <summary>
-    /// รายการสินค้า
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<ProductDisplayModel> _products = new();
+    public ObservableCollection<ProductDisplayModel> Products
+    {
+        get => _products;
+        set => SetProperty(ref _products, value);
+    }
 
-    /// <summary>
-    /// รายการหมวดหมู่
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<CategoryDisplayModel> _categories = new();
+    public ObservableCollection<CategoryDisplayModel> Categories
+    {
+        get => _categories;
+        set => SetProperty(ref _categories, value);
+    }
 
-    /// <summary>
-    /// รายการในตะกร้า
-    /// </summary>
-    [ObservableProperty]
     private ObservableCollection<CartItem> _cartItems = new();
+    public ObservableCollection<CartItem> CartItems
+    {
+        get => _cartItems;
+        set => SetProperty(ref _cartItems, value);
+    }
 
-    /// <summary>
-    /// ยอดรวมก่อนส่วนลด
-    /// </summary>
-    [ObservableProperty]
     private decimal _subtotal;
+    public decimal Subtotal
+    {
+        get => _subtotal;
+        set => SetProperty(ref _subtotal, value);
+    }
 
-    /// <summary>
-    /// ส่วนลด
-    /// </summary>
-    [ObservableProperty]
     private decimal _discountAmount;
+    public decimal DiscountAmount
+    {
+        get => _discountAmount;
+        set => SetProperty(ref _discountAmount, value);
+    }
 
-    /// <summary>
-    /// ภาษี
-    /// </summary>
-    [ObservableProperty]
     private decimal _taxAmount;
+    public decimal TaxAmount
+    {
+        get => _taxAmount;
+        set => SetProperty(ref _taxAmount, value);
+    }
 
-    /// <summary>
-    /// ยอดสุทธิ
-    /// </summary>
-    [ObservableProperty]
     private decimal _totalAmount;
+    public decimal TotalAmount
+    {
+        get => _totalAmount;
+        set => SetProperty(ref _totalAmount, value);
+    }
 
-    /// <summary>
-    /// มีสินค้าในตะกร้าหรือไม่
-    /// </summary>
-    [ObservableProperty]
     private bool _hasItems;
+    public bool HasItems
+    {
+        get => _hasItems;
+        set => SetProperty(ref _hasItems, value);
+    }
 
-    /// <summary>
-    /// สถานะออนไลน์
-    /// </summary>
-    [ObservableProperty]
     private bool _isOnline;
+    public bool IsOnline
+    {
+        get => _isOnline;
+        set => SetProperty(ref _isOnline, value);
+    }
 
-    /// <summary>
-    /// สถานะ Sync
-    /// </summary>
-    [ObservableProperty]
     private string _syncStatusText = "ออฟไลน์";
+    public string SyncStatusText
+    {
+        get => _syncStatusText;
+        set => SetProperty(ref _syncStatusText, value);
+    }
 
-    /// <summary>
-    /// สี Sync Status
-    /// </summary>
-    [ObservableProperty]
     private Color _syncStatusColor = Colors.Gray;
+    public Color SyncStatusColor
+    {
+        get => _syncStatusColor;
+        set => SetProperty(ref _syncStatusColor, value);
+    }
 
-    /// <summary>
-    /// สีพื้นหลังปุ่ม "ทั้งหมด"
-    /// </summary>
-    [ObservableProperty]
     private Color _allCategoryBackground = Color.FromArgb("#22C55E");
+    public Color AllCategoryBackground
+    {
+        get => _allCategoryBackground;
+        set => SetProperty(ref _allCategoryBackground, value);
+    }
 
-    /// <summary>
-    /// สีตัวอักษรปุ่ม "ทั้งหมด"
-    /// </summary>
-    [ObservableProperty]
     private Color _allCategoryTextColor = Colors.White;
+    public Color AllCategoryTextColor
+    {
+        get => _allCategoryTextColor;
+        set => SetProperty(ref _allCategoryTextColor, value);
+    }
+
+    #endregion
+
+    #region Commands
+
+    public ICommand SearchCommand { get; }
+    public ICommand SelectCategoryCommand { get; }
+    public ICommand ScanBarcodeCommand { get; }
+    public ICommand AddToCartCommand { get; }
+    public ICommand RemoveFromCartCommand { get; }
+    public ICommand IncrementCommand { get; }
+    public ICommand DecrementCommand { get; }
+    public ICommand ClearCartCommand { get; }
+    public ICommand CheckoutCommand { get; }
 
     #endregion
 
@@ -123,6 +154,17 @@ public partial class PosViewModel : BaseViewModel
         _scannerService = scannerService;
 
         Title = "ขายสินค้า";
+
+        // Initialize Commands
+        SearchCommand = new Command(async () => await SearchAsync());
+        SelectCategoryCommand = new Command<CategoryDisplayModel?>(async (cat) => await SelectCategoryAsync(cat));
+        ScanBarcodeCommand = new Command(async () => await ScanBarcodeAsync());
+        AddToCartCommand = new Command<ProductDisplayModel>(async (product) => await AddToCartAsync(product));
+        RemoveFromCartCommand = new Command<CartItem>(async (item) => await RemoveFromCartAsync(item));
+        IncrementCommand = new Command<CartItem>(async (item) => await IncrementAsync(item));
+        DecrementCommand = new Command<CartItem>(async (item) => await DecrementAsync(item));
+        ClearCartCommand = new Command(async () => await ClearCartAsync());
+        CheckoutCommand = new Command(async () => await CheckoutAsync());
 
         // รับ Event จาก Cart
         _cartService.CartChanged += OnCartChanged;
@@ -146,19 +188,11 @@ public partial class PosViewModel : BaseViewModel
             IsBusy = true;
             BusyMessage = "กำลังโหลดข้อมูล...";
 
-            // โหลดหมวดหมู่
             await LoadCategoriesAsync();
-
-            // โหลดสินค้า
             await LoadProductsAsync();
-
-            // โหลดตะกร้า
             await LoadCartAsync();
-
-            // เริ่มฟังบาร์โค้ด
             await _scannerService.StartListeningAsync();
 
-            // ตรวจสอบการเชื่อมต่อ
             IsOnline = await _syncService.CheckConnectivityAsync();
             UpdateSyncStatus();
         }
@@ -174,9 +208,6 @@ public partial class PosViewModel : BaseViewModel
 
     #region Load Data
 
-    /// <summary>
-    /// โหลดหมวดหมู่
-    /// </summary>
     private async Task LoadCategoriesAsync()
     {
         var categories = await _productService.GetCategoriesAsync();
@@ -196,9 +227,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดสินค้า
-    /// </summary>
     private async Task LoadProductsAsync()
     {
         var products = await _productService.SearchAsync(SearchText, SelectedCategory?.Id);
@@ -226,9 +254,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// โหลดตะกร้า
-    /// </summary>
     private async Task LoadCartAsync()
     {
         var items = await _cartService.GetAllItemsAsync();
@@ -237,9 +262,6 @@ public partial class PosViewModel : BaseViewModel
         await UpdateCartSummaryAsync();
     }
 
-    /// <summary>
-    /// อัพเดทสรุปตะกร้า
-    /// </summary>
     private async Task UpdateCartSummaryAsync()
     {
         var summary = await _cartService.GetSummaryAsync();
@@ -253,24 +275,15 @@ public partial class PosViewModel : BaseViewModel
 
     #endregion
 
-    #region Commands
+    #region Command Implementations
 
-    /// <summary>
-    /// ค้นหาสินค้า
-    /// </summary>
-    [RelayCommand]
     private async Task SearchAsync()
     {
         await LoadProductsAsync();
     }
 
-    /// <summary>
-    /// เลือกหมวดหมู่
-    /// </summary>
-    [RelayCommand]
     private async Task SelectCategoryAsync(CategoryDisplayModel? category)
     {
-        // อัพเดท UI
         foreach (var cat in Categories)
         {
             cat.BackgroundColor = Color.FromArgb("#F3F4F6");
@@ -296,10 +309,6 @@ public partial class PosViewModel : BaseViewModel
         await LoadProductsAsync();
     }
 
-    /// <summary>
-    /// สแกนบาร์โค้ด
-    /// </summary>
-    [RelayCommand]
     private async Task ScanBarcodeAsync()
     {
         var barcode = await _scannerService.ScanWithCameraAsync();
@@ -309,10 +318,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// เพิ่มสินค้าลงตะกร้า
-    /// </summary>
-    [RelayCommand]
     private async Task AddToCartAsync(ProductDisplayModel product)
     {
         if (product.StockQuantity <= 0)
@@ -325,15 +330,10 @@ public partial class PosViewModel : BaseViewModel
         if (fullProduct != null)
         {
             await _cartService.AddItemAsync(fullProduct);
-
-            // Haptic feedback
             HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
         }
     }
 
-    /// <summary>
-    /// เพิ่มสินค้าด้วยบาร์โค้ด
-    /// </summary>
     private async Task AddByBarcodeAsync(string barcode)
     {
         var result = await _cartService.AddByBarcodeAsync(barcode);
@@ -347,10 +347,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ลบสินค้าออกจากตะกร้า
-    /// </summary>
-    [RelayCommand]
     private async Task RemoveFromCartAsync(CartItem item)
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -364,19 +360,11 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// เพิ่มจำนวน
-    /// </summary>
-    [RelayCommand]
     private async Task IncrementAsync(CartItem item)
     {
         await _cartService.IncrementQuantityAsync(item.Id);
     }
 
-    /// <summary>
-    /// ลดจำนวน
-    /// </summary>
-    [RelayCommand]
     private async Task DecrementAsync(CartItem item)
     {
         if (item.Quantity > 1)
@@ -389,10 +377,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ล้างตะกร้า
-    /// </summary>
-    [RelayCommand]
     private async Task ClearCartAsync()
     {
         bool confirm = await Shell.Current.DisplayAlert(
@@ -406,10 +390,6 @@ public partial class PosViewModel : BaseViewModel
         }
     }
 
-    /// <summary>
-    /// ชำระเงิน
-    /// </summary>
-    [RelayCommand]
     private async Task CheckoutAsync()
     {
         if (!HasItems) return;
@@ -424,9 +404,6 @@ public partial class PosViewModel : BaseViewModel
 
     #region Event Handlers
 
-    /// <summary>
-    /// เมื่อตะกร้าเปลี่ยน
-    /// </summary>
     private async void OnCartChanged(object? sender, CartChangedEventArgs e)
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -435,9 +412,6 @@ public partial class PosViewModel : BaseViewModel
         });
     }
 
-    /// <summary>
-    /// เมื่อสแกนบาร์โค้ด
-    /// </summary>
     private async void OnBarcodeScanned(object? sender, BarcodeScannedEventArgs e)
     {
         await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -446,9 +420,6 @@ public partial class PosViewModel : BaseViewModel
         });
     }
 
-    /// <summary>
-    /// เมื่อสถานะ Sync เปลี่ยน
-    /// </summary>
     private void OnSyncStatusChanged(object? sender, SyncStatusEventArgs e)
     {
         MainThread.BeginInvokeOnMainThread(() =>
@@ -458,9 +429,6 @@ public partial class PosViewModel : BaseViewModel
         });
     }
 
-    /// <summary>
-    /// อัพเดทสถานะ Sync
-    /// </summary>
     private void UpdateSyncStatus()
     {
         if (IsOnline)
@@ -483,8 +451,10 @@ public partial class PosViewModel : BaseViewModel
 /// <summary>
 /// Model สำหรับแสดงสินค้า
 /// </summary>
-public partial class ProductDisplayModel : ObservableObject
+public class ProductDisplayModel : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public int Id { get; set; }
     public string Sku { get; set; } = string.Empty;
     public string? Barcode { get; set; }
@@ -495,23 +465,57 @@ public partial class ProductDisplayModel : ObservableObject
     public string ImageUrl { get; set; } = "product_placeholder.png";
     public decimal TaxRate { get; set; }
     public Color StockStatusColor { get; set; } = Colors.Green;
+
+    protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
 /// <summary>
 /// Model สำหรับแสดงหมวดหมู่
 /// </summary>
-public partial class CategoryDisplayModel : ObservableObject
+public class CategoryDisplayModel : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Icon { get; set; }
     public string Color { get; set; } = "#22C55E";
 
-    [ObservableProperty]
     private Color _backgroundColor = Colors.White;
+    public Color BackgroundColor
+    {
+        get => _backgroundColor;
+        set
+        {
+            if (_backgroundColor != value)
+            {
+                _backgroundColor = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
-    [ObservableProperty]
     private Color _textColor = Colors.Black;
+    public Color TextColor
+    {
+        get => _textColor;
+        set
+        {
+            if (_textColor != value)
+            {
+                _textColor = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    protected void OnPropertyChanged([CallerMemberName] string propertyName = "")
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }
 
 #endregion

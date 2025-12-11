@@ -1,5 +1,4 @@
 using CommunityToolkit.Maui;
-using Microsoft.Extensions.Logging;
 using TP.POS.App.Services;
 using TP.POS.App.ViewModels;
 using TP.POS.App.Views;
@@ -35,10 +34,6 @@ public static class MauiProgram
         // ลงทะเบียน Services
         ConfigureServices(builder.Services);
 
-#if DEBUG
-        builder.Logging.AddDebug();
-#endif
-
         return builder.Build();
     }
 
@@ -51,35 +46,43 @@ public static class MauiProgram
         var dbPath = Path.Combine(FileSystem.AppDataDirectory, "tppos.db");
         services.AddSingleton(new PosDatabase(dbPath));
 
-        // API Client
-        // TODO: อ่าน URL จาก Settings
-        services.AddSingleton(new TpAffiliateApiClient("https://your-server.com"));
+        // API Client - เชื่อมต่อ TP-Affiliate Server
+        services.AddSingleton<TpAffiliateApiClient>(new TpAffiliateApiClient("https://main.thaiprompt.online"));
 
         // Services
+        services.AddSingleton<IAuthService, AuthService>();
         services.AddSingleton<IProductService, ProductService>();
         services.AddSingleton<ICartService, CartService>();
         services.AddSingleton<ITransactionService, TransactionService>();
         services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<IPrinterService, PrinterService>();
         services.AddSingleton<IScannerService, ScannerService>();
+        services.AddSingleton<IDualMonitorService, DualMonitorService>();
+
+        // Connection Status Service - ตรวจสอบสถานะการเชื่อมต่อ Server
+        services.AddSingleton<ConnectionStatusService>(sp =>
+        {
+            var apiClient = sp.GetRequiredService<TpAffiliateApiClient>();
+            return new ConnectionStatusService(apiClient);
+        });
 
         // ViewModels
         services.AddTransient<MainViewModel>();
+        services.AddTransient<LoginViewModel>();
         services.AddTransient<PosViewModel>();
         services.AddTransient<CheckoutViewModel>();
         services.AddTransient<InventoryViewModel>();
         services.AddTransient<ReportsViewModel>();
         services.AddTransient<SettingsViewModel>();
-        services.AddTransient<LoginViewModel>();
 
         // Pages
+        services.AddTransient<LoginPage>();
         services.AddTransient<MainPage>();
         services.AddTransient<PosPage>();
         services.AddTransient<CheckoutPage>();
         services.AddTransient<InventoryPage>();
         services.AddTransient<ReportsPage>();
         services.AddTransient<SettingsPage>();
-        services.AddTransient<LoginPage>();
         services.AddTransient<TransactionsPage>();
         services.AddTransient<ReceiptPage>();
         services.AddTransient<ProductDetailPage>();
