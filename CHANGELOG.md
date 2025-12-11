@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.8] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2251 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (cddafabb)
+- fix(api): fix KYC and Avatar upload compatibility with mobile app (e041f02a)
+### 🔧 Other Changes
+
+
 ## [v3.375.7] - 2025-12-11
 
 ### ✨ Features
