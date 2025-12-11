@@ -3,7 +3,7 @@
  * Premium Learning Platform
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,14 @@ import {
   Dimensions,
   Image,
   ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { useAuthStore } from '@/stores/authStore';
+import { API_BASE_URL } from '@/config/appConfig';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -44,103 +48,11 @@ interface Course {
   isPopular?: boolean;
 }
 
-// หลักสูตรตัวอย่าง
-const COURSES: Course[] = [
-  {
-    id: 'mlm-basics',
-    title: 'พื้นฐาน MLM สู่ความสำเร็จ',
-    description: 'เรียนรู้หลักการ MLM ตั้งแต่เริ่มต้น สร้างทีมและรายได้อย่างยั่งยืน',
-    instructor: 'อ.สมชาย รวยดี',
-    duration: '4 ชั่วโมง',
-    lessons: 12,
-    level: 'beginner',
-    price: 0,
-    rating: 4.8,
-    students: 1250,
-    icon: '📚',
-    gradientColors: ['#10B981', '#059669'],
-    isFree: true,
-    isPopular: true,
-  },
-  {
-    id: 'crypto-trading',
-    title: 'เทรด Crypto สำหรับมือใหม่',
-    description: 'เข้าใจตลาด Cryptocurrency และเริ่มต้นเทรดอย่างมืออาชีพ',
-    instructor: 'อ.วิทย์ คริปโต',
-    duration: '6 ชั่วโมง',
-    lessons: 18,
-    level: 'beginner',
-    price: 990,
-    originalPrice: 1990,
-    rating: 4.9,
-    students: 856,
-    icon: '🪙',
-    gradientColors: ['#F59E0B', '#D97706'],
-    isNew: true,
-  },
-  {
-    id: 'affiliate-marketing',
-    title: 'Affiliate Marketing Masterclass',
-    description: 'สร้างรายได้ Passive Income จาก Affiliate Marketing',
-    instructor: 'อ.นิดา แอฟฟิลิเอท',
-    duration: '8 ชั่วโมง',
-    lessons: 24,
-    level: 'intermediate',
-    price: 1490,
-    originalPrice: 2990,
-    rating: 4.7,
-    students: 632,
-    icon: '💰',
-    gradientColors: ['#8B5CF6', '#6D28D9'],
-    isPopular: true,
-  },
-  {
-    id: 'leadership',
-    title: 'ภาวะผู้นำและการสร้างทีม',
-    description: 'พัฒนาทักษะผู้นำ สร้างทีมที่แข็งแกร่ง',
-    instructor: 'อ.ประสิทธิ์ ลีดเดอร์',
-    duration: '5 ชั่วโมง',
-    lessons: 15,
-    level: 'advanced',
-    price: 1990,
-    rating: 4.6,
-    students: 423,
-    icon: '👥',
-    gradientColors: ['#EC4899', '#DB2777'],
-  },
-  {
-    id: 'digital-marketing',
-    title: 'Digital Marketing 2024',
-    description: 'เทคนิคการตลาดดิจิทัลล่าสุด Facebook, TikTok, LINE',
-    instructor: 'อ.มาร์ค ดิจิทัล',
-    duration: '10 ชั่วโมง',
-    lessons: 30,
-    level: 'intermediate',
-    price: 2490,
-    originalPrice: 4990,
-    rating: 4.8,
-    students: 1089,
-    icon: '📱',
-    gradientColors: ['#3B82F6', '#2563EB'],
-    isNew: true,
-    isPopular: true,
-  },
-  {
-    id: 'personal-finance',
-    title: 'วางแผนการเงินส่วนบุคคล',
-    description: 'จัดการเงิน ออม ลงทุน สู่อิสรภาพทางการเงิน',
-    instructor: 'อ.เงินทอง มั่งมี',
-    duration: '3 ชั่วโมง',
-    lessons: 10,
-    level: 'beginner',
-    price: 0,
-    rating: 4.5,
-    students: 2150,
-    icon: '💳',
-    gradientColors: ['#14B8A6', '#0D9488'],
-    isFree: true,
-  },
-];
+interface Stats {
+  totalCourses: number;
+  totalStudents: number;
+  avgRating: number;
+}
 
 const CATEGORIES = [
   { id: 'all', label: 'ทั้งหมด', icon: '📖' },
@@ -152,19 +64,64 @@ const CATEGORIES = [
 export default function AcademyScreen() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [stats, setStats] = useState<Stats>({ totalCourses: 50, totalStudents: 10000, avgRating: 4.8 });
+  const { token } = useAuthStore();
+
+  // โหลดข้อมูลจาก API
+  const loadCourses = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/mobile/academy/courses?category=${selectedCategory}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        setCourses(data.data);
+        if (data.stats) {
+          setStats(data.stats);
+        }
+      }
+    } catch (error) {
+      console.error('Load courses error:', error);
+      // ใช้ mock data ถ้าโหลดไม่สำเร็จ
+      setCourses([
+        {
+          id: 'mlm-basics',
+          title: 'พื้นฐาน MLM สู่ความสำเร็จ',
+          description: 'เรียนรู้หลักการ MLM ตั้งแต่เริ่มต้น',
+          instructor: 'อ.สมชาย รวยดี',
+          duration: '4 ชั่วโมง',
+          lessons: 12,
+          level: 'beginner',
+          price: 0,
+          rating: 4.8,
+          students: 1250,
+          icon: '📚',
+          gradientColors: ['#10B981', '#059669'],
+          isFree: true,
+          isPopular: true,
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [selectedCategory, token]);
 
   useEffect(() => {
-    // จำลองการโหลดข้อมูล
-    setTimeout(() => setIsLoading(false), 500);
-  }, []);
+    loadCourses();
+  }, [loadCourses]);
 
-  const filteredCourses = COURSES.filter((course) => {
-    if (selectedCategory === 'all') return true;
-    if (selectedCategory === 'free') return course.isFree;
-    if (selectedCategory === 'popular') return course.isPopular;
-    if (selectedCategory === 'new') return course.isNew;
-    return true;
-  });
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadCourses();
+  };
+
+  const filteredCourses = courses;
 
   const getLevelBadge = (level: Course['level']) => {
     switch (level) {
@@ -206,7 +163,13 @@ export default function AcademyScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3B82F6" />
+        }
+      >
         {/* Hero Banner */}
         <View style={styles.heroContainer}>
           <Image source={ACADEMY_HERO} style={styles.heroImage} resizeMode="cover" />
@@ -225,17 +188,17 @@ export default function AcademyScreen() {
         {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>50+</Text>
+            <Text style={styles.statValue}>{stats.totalCourses}+</Text>
             <Text style={styles.statLabel}>หลักสูตร</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>10K+</Text>
+            <Text style={styles.statValue}>{stats.totalStudents >= 1000 ? `${Math.floor(stats.totalStudents / 1000)}K+` : stats.totalStudents}</Text>
             <Text style={styles.statLabel}>ผู้เรียน</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>4.8</Text>
+            <Text style={styles.statValue}>{stats.avgRating.toFixed(1)}</Text>
             <Text style={styles.statLabel}>คะแนนเฉลี่ย</Text>
           </View>
         </View>

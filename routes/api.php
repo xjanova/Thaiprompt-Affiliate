@@ -314,6 +314,20 @@ Route::prefix('v1')->group(function () {
             Route::get('/{storeId}/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreProducts']);
         });
 
+        // Academy (Mobile App) - ระบบการเรียนรู้
+        Route::prefix('mobile/academy')->group(function () {
+            Route::get('/courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourses']);
+            Route::get('/courses/{courseId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourseDetail']);
+            Route::get('/my-courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getMyCourses']);
+        });
+
+        // Watch & Earn (Mobile App) - ดูคลิปได้เงิน
+        Route::prefix('mobile/watch-earn')->group(function () {
+            Route::get('/videos', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getVideos']);
+            Route::get('/earnings', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getVideoEarnings']);
+            Route::post('/submit', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'submitVideoWatch']);
+        });
+
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRanks']);
