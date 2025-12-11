@@ -300,22 +300,23 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
 
-        {/* Feature Screens */}
+        {/* Feature Screens - ปิด header ทั้งหมดให้แอพจัดการเอง */}
         <Stack.Screen name="main-menu" options={{ headerShown: false }} />
         <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-        <Stack.Screen name="shopping" options={{ title: 'ช้อปปิ้ง', headerShown: true }} />
-        <Stack.Screen name="commissions" options={{ title: 'คอมมิชชั่น', headerShown: true }} />
-        <Stack.Screen name="referral" options={{ title: 'แนะนำเพื่อน', headerShown: true }} />
-        <Stack.Screen name="notifications" options={{ title: 'การแจ้งเตือน', headerShown: true }} />
-        <Stack.Screen name="support" options={{ title: 'ช่วยเหลือ', headerShown: true }} />
-        <Stack.Screen name="kyc" options={{ title: 'ยืนยันตัวตน', headerShown: true }} />
-        <Stack.Screen name="leaderboard" options={{ title: 'อันดับ', headerShown: true }} />
-        <Stack.Screen name="rank" options={{ title: 'ระดับ', headerShown: true }} />
-        <Stack.Screen name="rider" options={{ title: 'ไรเดอร์', headerShown: true }} />
-        <Stack.Screen name="wiki" options={{ title: 'คู่มือการใช้งาน', headerShown: true }} />
-        <Stack.Screen name="settings" options={{ title: 'ตั้งค่า', headerShown: true }} />
-        <Stack.Screen name="coming-soon" options={{ title: 'เร็วๆ นี้', headerShown: true }} />
+        <Stack.Screen name="shopping" options={{ headerShown: false }} />
+        <Stack.Screen name="commissions" options={{ headerShown: false }} />
+        <Stack.Screen name="referral" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="support" options={{ headerShown: false }} />
+        <Stack.Screen name="kyc" options={{ headerShown: false }} />
+        <Stack.Screen name="leaderboard" options={{ headerShown: false }} />
+        <Stack.Screen name="rank" options={{ headerShown: false }} />
+        <Stack.Screen name="rider" options={{ headerShown: false }} />
+        <Stack.Screen name="wiki" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
         <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
 
         {/* Wallet Screens */}
         <Stack.Screen name="wallet-topup" options={{ headerShown: false }} />
@@ -324,9 +325,9 @@ export default function RootLayout() {
         <Stack.Screen name="wallet-history" options={{ headerShown: false }} />
 
         {/* Tarot Screens */}
-        <Stack.Screen name="tarot/index" options={{ title: 'ดูดวงไพ่ทาโรต์', headerShown: true }} />
-        <Stack.Screen name="tarot/select-cards" options={{ title: 'เลือกไพ่', headerShown: true }} />
-        <Stack.Screen name="tarot/reading" options={{ title: 'ผลการดูดวง', headerShown: true }} />
+        <Stack.Screen name="tarot/index" options={{ headerShown: false }} />
+        <Stack.Screen name="tarot/select-cards" options={{ headerShown: false }} />
+        <Stack.Screen name="tarot/reading" options={{ headerShown: false }} />
 
         {/* MLM Tree */}
         <Stack.Screen name="mlm-tree" options={{ headerShown: false }} />
