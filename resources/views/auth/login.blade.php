@@ -261,7 +261,7 @@
                 {{-- LINE Login --}}
                 @php
                     $lineSettings = \App\Models\LineOaSetting::getActive();
-                    $showLineLogin = $lineSettings && $lineSettings->channel_id && $lineSettings->channel_secret;
+                    $showLineLogin = $lineSettings && $lineSettings->login_channel_id && $lineSettings->channel_secret;
                 @endphp
 
                 @if($showLineLogin)
