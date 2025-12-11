@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.376.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2253 from xjanova/charming-elbakyan (79f20ad6)
+- fix: รวม POS controllers และแก้ duplicate routes (0207b944)
+### 🔧 Other Changes
+
+
 ## [v3.376.0] - 2025-12-11
 
 ### ✨ Features
