@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.378.2] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2259 from xjanova/claude/fix-line-login-button-011u7FwodZ8yyLB13824wX5u (fd503b1b)
+- fix(auth): correct LINE Login button visibility check (84f7bec3)
+### 🔧 Other Changes
+
+
 ## [v3.378.1] - 2025-12-11
 
 ### ✨ Features
