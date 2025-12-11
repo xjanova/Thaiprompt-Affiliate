@@ -54,7 +54,9 @@
         </AbsoluteLayout>
 
         <!-- Main Content -->
-        <ScrollView VerticalOptions="Center" HorizontalOptions="Center">
+        <ScrollView VerticalOptions="Center" HorizontalOptions="Center"
+                    VerticalScrollBarVisibility="Never"
+                    HorizontalScrollBarVisibility="Never">
             <VerticalStackLayout Padding="30" Spacing="25"
                                  MaximumWidthRequest="420"
                                  HorizontalOptions="Center">
