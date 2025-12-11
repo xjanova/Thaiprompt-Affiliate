@@ -126,7 +126,7 @@ export const API_ENDPOINTS = {
   // Profile
   PROFILE: '/profile',
   UPDATE_PROFILE: '/profile', // ใช้ PUT method
-  PROFILE_UPDATE: '/mobile/profile', // ใช้ PUT method
+  PROFILE_UPDATE: '/profile', // ใช้ PUT method
   AVATAR_UPLOAD: '/mobile/profile/avatar',
   AVATAR_DELETE: '/mobile/profile/avatar',
   CHANGE_PASSWORD: '/profile/change-password',
