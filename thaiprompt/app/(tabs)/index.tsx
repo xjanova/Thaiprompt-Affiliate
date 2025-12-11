@@ -41,27 +41,29 @@ const CARD_HEIGHT = Math.round(CARD_WIDTH * 9 / 16); // 16:9 aspect ratio
 // Key สำหรับเก็บ pinned items
 const PINNED_ITEMS_KEY = 'home_pinned_items';
 
-// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
+// ภาพปุ่มเมนู - ใช้ภาพจาก assets/images/2bt (Premium 3D Style)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
-  wallet: require('@/assets/images/wallet.png'),
-  network: require('@/assets/images/mlm-network.png'),
-  referral: require('@/assets/images/refer-friend.png'),
-  commissions: require('@/assets/images/commission.png'),
-  shopping: require('@/assets/images/shopping.png'),
-  services: require('@/assets/images/service.png'),  // ใช้ภาพ service.png
-  rider: require('@/assets/images/rider.png'),
-  tpix: require('@/assets/images/TPIX.png'),  // TPIX Token - ปุ่มเข้าสู่ระบบเหรียญ
-  'wealth-guide': require('@/assets/images/riches-path.png'),
-  tarot: require('@/assets/images/tarot.png'),
-  leaderboard: require('@/assets/images/ranking.png'),
-  'coming-soon': require('@/assets/images/coming-soon.png'),
-  settings: require('@/assets/images/setting.png'),
+  wallet: require('@/assets/images/2bt/wallet.png'),
+  network: require('@/assets/images/2bt/MLMNetwork.png'),
+  referral: require('@/assets/images/2bt/refer_friend.png'),
+  commissions: require('@/assets/images/2bt/Commission.png'),
+  shopping: require('@/assets/images/2bt/shopping.png'),
+  services: require('@/assets/images/2bt/service.png'),
+  rider: require('@/assets/images/2bt/rider.png'),
+  tpix: require('@/assets/images/TPIX.png'),  // TPIX Token - ยังใช้รูปเดิม
+  'wealth-guide': require('@/assets/images/2bt/RichesPath.png'),
+  tarot: require('@/assets/images/2bt/tarot.png'),
+  leaderboard: require('@/assets/images/2bt/Ranking.png'),
+  'coming-soon': require('@/assets/images/2bt/comming soon.png'),
+  settings: require('@/assets/images/2bt/setting.png'),
+  academy: require('@/assets/images/2bt/academy.png'),
+  'watch-earn': require('@/assets/images/2bt/watch&earn.png'),
 };
 
-// Menu Items - ทุกปุ่มใช้ภาพ
+// Menu Items - ทุกปุ่มใช้ภาพจาก 2bt folder (Premium 3D Style)
 const MENU_ITEMS = [
   { id: 'wallet', title: 'กระเป๋าเงิน', icon: '💰', colors: ['#10B981', '#059669'], glowColor: '#10B981', route: '/(tabs)/wallet', hasImage: true },
-  { id: 'network', title: 'สายงาน', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
+  { id: 'network', title: 'ดูผัง MLM', icon: '👥', colors: ['#8B5CF6', '#6D28D9'], glowColor: '#8B5CF6', route: '/(tabs)/network', hasImage: true },
   { id: 'referral', title: 'แนะนำเพื่อน', icon: '🤝', colors: ['#EC4899', '#DB2777'], glowColor: '#EC4899', route: '/referral', hasImage: true },
   { id: 'commissions', title: 'คอมมิชชั่น', icon: '💵', colors: ['#3B82F6', '#2563EB'], glowColor: '#3B82F6', route: '/commissions', hasImage: true },
   { id: 'shopping', title: 'ช้อปปิ้ง', icon: '🛒', colors: ['#F59E0B', '#D97706'], glowColor: '#F59E0B', route: '/shopping', hasImage: true },
@@ -69,10 +71,12 @@ const MENU_ITEMS = [
   { id: 'rider', title: 'เป็นไรเดอร์', icon: '🚴', colors: ['#06B6D4', '#0891B2'], glowColor: '#06B6D4', route: '/rider', hasImage: true },
   { id: 'tpix', title: 'TPIX Token', icon: '🪙', colors: ['#FFD700', '#FFA500'], glowColor: '#FFD700', route: '/tpix', hasImage: true },
   { id: 'wealth-guide', title: 'เส้นทางเศรษฐี', icon: '📚', colors: ['#F97316', '#EA580C'], glowColor: '#F97316', route: '/wealth-guide', hasImage: true },
+  { id: 'academy', title: 'Academy', icon: '🎓', colors: ['#0EA5E9', '#0284C7'], glowColor: '#0EA5E9', route: '/academy', hasImage: true },
+  { id: 'watch-earn', title: 'ดูคลิปได้เงิน', icon: '🎬', colors: ['#E11D48', '#BE123C'], glowColor: '#E11D48', route: '/watch-earn', hasImage: true },
   { id: 'tarot', title: 'ดูดวง', icon: '🔮', colors: ['#6366F1', '#4F46E5'], glowColor: '#6366F1', route: '/tarot', hasImage: true },
   { id: 'leaderboard', title: 'อันดับ', icon: '🏆', colors: ['#EF4444', '#DC2626'], glowColor: '#EF4444', route: '/leaderboard', hasImage: true },
-  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
   { id: 'settings', title: 'ตั้งค่า', icon: '⚙️', colors: ['#64748B', '#475569'], glowColor: '#64748B', route: '/settings', hasImage: true },
+  { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
 ] as const;
 
 // จำนวนหิ่งห้อย (ลดจำนวนเพื่อไม่ให้แอพหนัก)
