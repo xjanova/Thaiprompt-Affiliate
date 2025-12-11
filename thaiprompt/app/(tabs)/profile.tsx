@@ -547,6 +547,12 @@ export default function ProfileScreen() {
             onPress={() => Alert.alert('ภาษา', 'ขณะนี้รองรับเฉพาะภาษาไทย')}
             isDark={isDark}
           />
+          <MenuItem
+            icon="notifications-outline"
+            label="การแจ้งเตือน"
+            onPress={() => router.push('/notification-settings')}
+            isDark={isDark}
+          />
         </View>
 
         <View style={styles.section}>
