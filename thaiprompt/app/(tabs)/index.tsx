@@ -5,6 +5,7 @@
  * - 3D effect พร้อมเงาและแสง
  * - Glassmorphism effect
  * - Firefly animation background
+ * - Pin menu feature (กดค้างเพื่อ pin)
  * - Smooth animations
  */
 
@@ -22,17 +23,23 @@ import {
   Image,
   ImageSourcePropType,
   Easing,
+  Vibration,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { BannerCarousel } from '@/components';
+import * as SecureStore from 'expo-secure-store';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 // ปรับขนาดปุ่มให้รองรับภาพ 16:9
 const CARD_WIDTH = (width - 52) / 2;
 const CARD_HEIGHT = Math.round(CARD_WIDTH * 9 / 16); // 16:9 aspect ratio
+
+// Key สำหรับเก็บ pinned items
+const PINNED_ITEMS_KEY = 'home_pinned_items';
 
 // ภาพปุ่มเมนู - ใช้ภาพจาก assets/images (ครบทุกปุ่ม)
 const MENU_IMAGES: Record<string, ImageSourcePropType> = {
@@ -178,15 +185,19 @@ const FirefliesBackground = () => {
   );
 };
 
-// Menu Card Component - ปรับปรุงให้รูปภาพเต็มปุ่ม 16:9
+// Menu Card Component - ปรับปรุงให้รูปภาพเต็มปุ่ม 16:9 + Pin feature
 const MenuCard = ({
   item,
   index,
-  onPress
+  onPress,
+  isPinned,
+  onLongPress,
 }: {
   item: typeof MENU_ITEMS[number];
   index: number;
   onPress: () => void;
+  isPinned?: boolean;
+  onLongPress?: () => void;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -324,6 +335,11 @@ const MenuCard = ({
 
       <Pressable
         onPress={onPress}
+        onLongPress={() => {
+          Vibration.vibrate(50);  // สั่นเบาๆ เมื่อ pin/unpin
+          onLongPress?.();
+        }}
+        delayLongPress={500}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.menuCard}
@@ -334,6 +350,13 @@ const MenuCard = ({
           end={{ x: 1, y: 1 }}
           style={styles.menuGradient}
         >
+          {/* Pin Indicator - แสดงเมื่อ pinned */}
+          {isPinned && (
+            <View style={styles.pinIndicator}>
+              <Text style={styles.pinIcon}>📌</Text>
+            </View>
+          )}
+
           {/* Glass border - ขอบแก้ว 3D */}
           <View style={styles.glassBorder} />
           <View style={styles.glassHighlight} />
@@ -415,6 +438,65 @@ export default function HomeScreen() {
   const { user, isAuthenticated } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState(getGreeting());
+  const [pinnedItems, setPinnedItems] = useState<string[]>([]);
+
+  // Load pinned items from storage
+  useEffect(() => {
+    const loadPinnedItems = async () => {
+      try {
+        const saved = await SecureStore.getItemAsync(PINNED_ITEMS_KEY);
+        if (saved) {
+          setPinnedItems(JSON.parse(saved));
+        }
+      } catch (error) {
+        console.log('Load pinned items error:', error);
+      }
+    };
+    loadPinnedItems();
+  }, []);
+
+  // Save pinned items to storage
+  const savePinnedItems = async (items: string[]) => {
+    try {
+      await SecureStore.setItemAsync(PINNED_ITEMS_KEY, JSON.stringify(items));
+    } catch (error) {
+      console.log('Save pinned items error:', error);
+    }
+  };
+
+  // Toggle pin item
+  const togglePin = useCallback((itemId: string) => {
+    setPinnedItems(prev => {
+      const newPinned = prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId];
+
+      // Save to storage
+      savePinnedItems(newPinned);
+
+      // Show feedback
+      const isPinning = !prev.includes(itemId);
+      Alert.alert(
+        isPinning ? '📌 ปักหมุดแล้ว' : '📌 ยกเลิกปักหมุด',
+        isPinning ? 'เมนูนี้จะแสดงด้านบนสุด' : 'เมนูกลับไปตำแหน่งเดิม',
+        [{ text: 'ตกลง' }],
+        { cancelable: true }
+      );
+
+      return newPinned;
+    });
+  }, []);
+
+  // Sort menu items - pinned first
+  const sortedMenuItems = useMemo(() => {
+    return [...MENU_ITEMS].sort((a, b) => {
+      const aPinned = pinnedItems.includes(a.id);
+      const bPinned = pinnedItems.includes(b.id);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+  }, [pinnedItems]);
 
   // Update greeting when screen is focused
   useFocusEffect(
@@ -579,14 +661,19 @@ export default function HomeScreen() {
 
         {/* Menu Section */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>บริการ</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>บริการ</Text>
+            <Text style={styles.sectionHint}>กดค้างเพื่อปักหมุด 📌</Text>
+          </View>
           <View style={styles.menuGrid}>
-            {MENU_ITEMS.map((item, index) => (
+            {sortedMenuItems.map((item, index) => (
               <MenuCard
                 key={item.id}
                 item={item}
                 index={index}
                 onPress={() => handleMenuPress(item.route)}
+                isPinned={pinnedItems.includes(item.id)}
+                onLongPress={() => togglePin(item.id)}
               />
             ))}
           </View>
@@ -795,11 +882,20 @@ const styles = StyleSheet.create({
   menuSection: {
     paddingHorizontal: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 16,
+  },
+  sectionHint: {
+    fontSize: 12,
+    color: '#6B7280',
   },
   menuGrid: {
     flexDirection: 'row',
@@ -876,6 +972,27 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     zIndex: 2,
+  },
+  // Pin indicator styles
+  pinIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  pinIcon: {
+    fontSize: 14,
   },
   inner3DTop: {
     position: 'absolute',
