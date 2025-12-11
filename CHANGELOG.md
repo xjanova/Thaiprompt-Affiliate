@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.373.3] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2244 from xjanova/claude/add-shop-management-01D44uoyiFkWEFES4tcJ8CEh (4713f710)
+- feat(seller): เพิ่มเมนูจัดการการจัดส่งและแชทกับลูกค้า (ff5c4cde)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.373.2] - 2025-12-11
 
 ### ✨ Features
