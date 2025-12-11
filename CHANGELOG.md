@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.375.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2247 from xjanova/charming-elbakyan (5714d29e)
+- feat: เพิ่มระบบ License สองกุญแจและหน้า Setup ครั้งแรก (9f8321c2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.374.3] - 2025-12-11
 
 ### ✨ Features
