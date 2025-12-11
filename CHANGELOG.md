@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.374.0] - 2025-12-11
+
+### ✨ Features
+- feat: เพิ่ม POS Terminal API สำหรับลงทะเบียนและ sync ข้อมูล (3d7bcf9b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.373.5] - 2025-12-11
 
 ### ✨ Features
