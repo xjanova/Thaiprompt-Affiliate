@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.377.2] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): connect Academy & Watch Earn to backend APIs (a72f1d3e)
+### 🐛 Bug Fixes
+- Merge pull request #2256 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (05c213f6)
+### 🔧 Other Changes
+
+
 ## [v3.377.1] - 2025-12-11
 
 ### ✨ Features
