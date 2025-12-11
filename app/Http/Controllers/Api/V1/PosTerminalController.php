@@ -37,7 +37,183 @@ use Illuminate\Support\Facades\Validator;
 class PosTerminalController extends Controller
 {
     /**
-     * ลงทะเบียน POS Terminal ใหม่
+     * Single-step activation: ลงทะเบียนและยืนยัน POS ในครั้งเดียว
+     *
+     * รวมขั้นตอน register + verify เป็นขั้นตอนเดียว
+     * ต้องระบุ API Key ตอนลงทะเบียนเลย
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function activate(Request $request): JsonResponse
+    {
+        try {
+            // ตรวจสอบข้อมูล
+            $validator = Validator::make($request->all(), [
+                'product_key' => 'required|string|max:50',
+                'shop_code' => 'required|string|max:50',
+                'api_key' => 'required|string|max:100',
+                'device_id' => 'required|string|max:100',
+                'device_name' => 'nullable|string|max:255',
+                'device_model' => 'nullable|string|max:100',
+                'platform' => 'nullable|string|max:50',
+                'app_version' => 'nullable|string|max:20',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ข้อมูลไม่ถูกต้อง',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            // ค้นหาร้านค้าจาก shop_code
+            $shop = VendorStore::where('shop_code', $validated['shop_code'])
+                ->orWhere('id', $validated['shop_code'])
+                ->first();
+
+            if (!$shop) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้าจากรหัสที่ระบุ',
+                    'error_code' => 'SHOP_NOT_FOUND',
+                ], 404);
+            }
+
+            // ค้นหา API Key
+            $apiKey = PosApiKey::where('key', $validated['api_key'])->first();
+
+            if (!$apiKey) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่ถูกต้อง',
+                    'error_code' => 'INVALID_API_KEY',
+                ], 401);
+            }
+
+            // ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
+            if ($apiKey->is_blocked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "API Key ถูกบล็อก: {$apiKey->blocked_reason}",
+                    'error_code' => 'API_KEY_BLOCKED',
+                    'blocked' => true,
+                    'blocked_reason' => $apiKey->blocked_reason,
+                    'blocked_at' => $apiKey->blocked_at?->toISOString(),
+                ], 403);
+            }
+
+            // ตรวจสอบว่า API Key ใช้งานได้
+            if (!$apiKey->isUsable()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $apiKey->getStatusText() . ')',
+                    'error_code' => 'API_KEY_UNUSABLE',
+                ], 403);
+            }
+
+            // ตรวจสอบว่า shop_id ตรงกัน (ถ้า API Key มี shop_id)
+            if ($apiKey->shop_id && $apiKey->shop_id !== $shop->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'API Key ไม่ตรงกับร้านค้าที่ระบุ',
+                    'error_code' => 'SHOP_MISMATCH',
+                ], 403);
+            }
+
+            DB::beginTransaction();
+
+            // ตรวจสอบว่า Product Key นี้เคยลงทะเบียนแล้วหรือไม่
+            $terminal = PosTerminal::where('product_key', $validated['product_key'])->first();
+
+            if ($terminal) {
+                // ถ้ามีอยู่แล้ว - อัพเดทและยืนยัน
+                $terminal->update([
+                    'shop_id' => $shop->id,
+                    'api_key_id' => $apiKey->id,
+                    'device_id' => $validated['device_id'],
+                    'device_name' => $validated['device_name'] ?? $terminal->device_name,
+                    'device_model' => $validated['device_model'] ?? $terminal->device_model,
+                    'platform' => $validated['platform'] ?? $terminal->platform,
+                    'app_version' => $validated['app_version'] ?? $terminal->app_version,
+                    'status' => PosTerminal::STATUS_ACTIVE,
+                    'is_verified' => true,
+                    'verified_at' => now(),
+                    'last_ip_address' => $request->ip(),
+                ]);
+            } else {
+                // สร้าง Terminal ใหม่ และ activate เลย
+                $terminal = PosTerminal::create([
+                    'shop_id' => $shop->id,
+                    'api_key_id' => $apiKey->id,
+                    'product_key' => $validated['product_key'],
+                    'device_id' => $validated['device_id'],
+                    'device_name' => $validated['device_name'] ?? null,
+                    'device_model' => $validated['device_model'] ?? null,
+                    'platform' => $validated['platform'] ?? null,
+                    'app_version' => $validated['app_version'] ?? null,
+                    'status' => PosTerminal::STATUS_ACTIVE,
+                    'is_verified' => true,
+                    'verified_at' => now(),
+                    'last_ip_address' => $request->ip(),
+                    'device_info' => [
+                        'activated_at' => now()->toISOString(),
+                        'activated_ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ],
+                ]);
+            }
+
+            // อัพเดท API Key
+            $apiKey->update([
+                'shop_id' => $shop->id,
+                'last_used_at' => now(),
+            ]);
+
+            DB::commit();
+
+            // Log การ activate
+            Log::info('POS Terminal activated', [
+                'terminal_id' => $terminal->id,
+                'shop_id' => $shop->id,
+                'product_key' => $validated['product_key'],
+                'api_key_id' => $apiKey->id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Activate POS สำเร็จ พร้อมใช้งาน',
+                'data' => [
+                    'terminal_id' => $terminal->id,
+                    'status' => 'active',
+                    'is_verified' => true,
+                    'shop_name' => $shop->name,
+                    'shop_id' => $shop->id,
+                    'verified_at' => $terminal->verified_at?->toISOString(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('POS Terminal activation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการ activate',
+                'error_code' => 'ACTIVATION_ERROR',
+            ], 500);
+        }
+    }
+
+    /**
+     * (Legacy) ลงทะเบียน POS Terminal ใหม่
      *
      * ⚠️ สำคัญ: ไม่ส่ง API Key กลับ!
      * Admin ต้องให้ API Key กับลูกค้าเอง

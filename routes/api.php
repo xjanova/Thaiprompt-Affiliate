@@ -1421,12 +1421,17 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 | 4. GET /pos/status - ตรวจสอบเป็นระยะว่าถูกบล็อกหรือไม่
 */
 Route::prefix('pos')->name('api.pos.')->group(function () {
-    // ลงทะเบียน POS Terminal (Public - ไม่ต้อง auth)
+    // ⭐ Single-step activation (แนะนำ) - ลงทะเบียนและยืนยันในครั้งเดียว
+    // ต้องระบุ: server_url, shop_code, api_key, product_key, device_id
+    Route::post('/activate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'activate'])
+        ->name('activate');
+
+    // (Legacy) ลงทะเบียน POS Terminal (Public - ไม่ต้อง auth)
     // ⚠️ ไม่ส่ง API Key กลับ! Admin ต้องให้ลูกค้าเอง
     Route::post('/register', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'register'])
         ->name('register');
 
-    // ยืนยัน POS ด้วย API Key (Public)
+    // (Legacy) ยืนยัน POS ด้วย API Key (Public)
     Route::post('/verify', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'verify'])
         ->name('verify');
 
