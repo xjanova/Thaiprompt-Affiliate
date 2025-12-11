@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.376.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2252 from xjanova/charming-elbakyan (2570b45d)
+- feat: เพิ่มระบบ POS Terminal License แบบ 2 กุญแจ (0e63d959)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge origin/claude/Main, keep our POS models with is_blocked support (52d17120)
+
 ## [v3.375.8] - 2025-12-11
 
 ### ✨ Features
