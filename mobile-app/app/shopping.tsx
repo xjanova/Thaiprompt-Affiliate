@@ -7,6 +7,7 @@
  * - หมวดหมู่สินค้า
  * - Banner โฆษณา (Admin Control)
  * - FlatList สำหรับ performance ที่ดี
+ * - Firefly Glow Effect (หิ่งห้อยเรืองแสงฟุ้ง)
  */
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
@@ -21,12 +22,25 @@ import {
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeInRight, FadeIn } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+  withSequence,
+  withDelay,
+  Easing,
+} from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -43,6 +57,109 @@ import type { Product, ProductCategory } from '@/types';
 
 const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 10;
+
+// =====================================================
+// Firefly Glow Components (หิ่งห้อยเรืองแสงฟุ้ง)
+// =====================================================
+
+// Firefly Orb - จุดแสงหิ่งห้อยที่กระพริบ
+const FireflyOrb = ({
+  size = 8,
+  color = '#FBBF24',
+  delay = 0,
+  duration = 2000,
+  style,
+}: {
+  size?: number;
+  color?: string;
+  delay?: number;
+  duration?: number;
+  style?: any;
+}) => {
+  const opacity = useSharedValue(0.3);
+  const scale = useSharedValue(0.8);
+
+  useEffect(() => {
+    // กระพริบแบบหิ่งห้อย
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: duration * 0.4, easing: Easing.ease }),
+          withTiming(0.2, { duration: duration * 0.6, easing: Easing.ease })
+        ),
+        -1,
+        false
+      )
+    );
+
+    scale.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1.2, { duration: duration * 0.4, easing: Easing.ease }),
+          withTiming(0.8, { duration: duration * 0.6, easing: Easing.ease })
+        ),
+        -1,
+        false
+      )
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.8,
+          shadowRadius: size * 2,
+          elevation: 5,
+        },
+        style,
+        animatedStyle,
+      ]}
+    />
+  );
+};
+
+// Glow Container - กล่องที่มีแสงเรืองรอบๆ
+const GlowContainer = ({
+  children,
+  glowColor = '#3B82F6',
+  intensity = 20,
+  style,
+}: {
+  children: React.ReactNode;
+  glowColor?: string;
+  intensity?: number;
+  style?: any;
+}) => (
+  <View
+    style={[
+      {
+        shadowColor: glowColor,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: intensity,
+        elevation: 10,
+      },
+      style,
+    ]}
+  >
+    {children}
+  </View>
+);
 
 // Premium Store Type
 interface PremiumStoreData {
@@ -105,7 +222,7 @@ const CategoryChip = ({
   </Animated.View>
 );
 
-// Premium Store Card (ร้านพรีเมี่ยม - ร้านเดียวของระบบ)
+// Premium Store Card (ร้านพรีเมี่ยม - ร้านเดียวของระบบ) + Firefly Effects
 const PremiumStoreCard = ({
   store,
   onPress,
@@ -116,89 +233,127 @@ const PremiumStoreCard = ({
   isDark: boolean;
 }) => (
   <Animated.View entering={FadeIn.delay(100).springify()} className="mx-4 mb-4">
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.95 : 1 })}
+    <GlowContainer
+      glowColor={isDark ? '#60A5FA' : '#3B82F6'}
+      intensity={25}
     >
-      <LinearGradient
-        colors={isDark ? ['#1E3A8A', '#312E81'] : ['#3B82F6', '#8B5CF6']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: 20, overflow: 'hidden' }}
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({ opacity: pressed ? 0.95 : 1 })}
       >
-        <View className="p-4">
-          <View className="flex-row items-center">
-            {/* Store Logo */}
-            <View className="w-16 h-16 rounded-2xl bg-white/20 items-center justify-center mr-4 overflow-hidden">
-              {store.logo ? (
-                <Image
-                  source={{ uri: store.logo }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <Text className="text-4xl">👑</Text>
-              )}
-            </View>
+        <LinearGradient
+          colors={isDark ? ['#1E3A8A', '#312E81'] : ['#3B82F6', '#8B5CF6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 20, overflow: 'hidden', position: 'relative' }}
+        >
+          {/* Firefly Orbs - หิ่งห้อยกระพริบ */}
+          <FireflyOrb size={6} color="#FBBF24" delay={0} duration={2500} style={{ top: 15, right: 20 }} />
+          <FireflyOrb size={8} color="#F59E0B" delay={400} duration={3000} style={{ top: 40, right: 60 }} />
+          <FireflyOrb size={5} color="#FCD34D" delay={800} duration={2800} style={{ top: 25, right: 100 }} />
+          <FireflyOrb size={7} color="#FBBF24" delay={1200} duration={2200} style={{ bottom: 30, right: 30 }} />
+          <FireflyOrb size={4} color="#FDE68A" delay={600} duration={3200} style={{ bottom: 50, right: 80 }} />
+          <FireflyOrb size={6} color="#F59E0B" delay={1000} duration={2600} style={{ top: 60, left: 20 }} />
 
-            {/* Store Info */}
-            <View className="flex-1">
-              <View className="flex-row items-center mb-1">
-                <Text className="text-white font-bold text-lg mr-2">
-                  {store.name}
+          {/* Blur Overlay for soft glow */}
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(251, 191, 36, 0.05)',
+              borderRadius: 20,
+            }}
+          />
+
+          <View className="p-4">
+            <View className="flex-row items-center">
+              {/* Store Logo with Glow */}
+              <GlowContainer glowColor="#FBBF24" intensity={15}>
+                <View className="w-16 h-16 rounded-2xl bg-white/20 items-center justify-center mr-4 overflow-hidden">
+                  {store.logo ? (
+                    <Image
+                      source={{ uri: store.logo }}
+                      className="w-full h-full"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text className="text-4xl">👑</Text>
+                  )}
+                </View>
+              </GlowContainer>
+
+              {/* Store Info */}
+              <View className="flex-1">
+                <View className="flex-row items-center mb-1">
+                  <Text className="text-white font-bold text-lg mr-2">
+                    {store.name}
+                  </Text>
+                  <GlowContainer glowColor="#FBBF24" intensity={10}>
+                    <View className="bg-amber-400 px-2 py-0.5 rounded-full flex-row items-center">
+                      <Ionicons name="shield-checkmark" size={12} color="#1F2937" />
+                      <Text className="text-gray-900 text-xs font-bold ml-1">PREMIUM</Text>
+                    </View>
+                  </GlowContainer>
+                </View>
+
+                <Text className="text-white/80 text-sm mb-2" numberOfLines={1}>
+                  {store.description}
                 </Text>
-                <View className="bg-amber-400 px-2 py-0.5 rounded-full flex-row items-center">
-                  <Ionicons name="shield-checkmark" size={12} color="#1F2937" />
-                  <Text className="text-gray-900 text-xs font-bold ml-1">PREMIUM</Text>
-                </View>
-              </View>
 
-              <Text className="text-white/80 text-sm mb-2" numberOfLines={1}>
-                {store.description}
-              </Text>
-
-              <View className="flex-row items-center">
-                <View className="flex-row items-center mr-4">
-                  <Ionicons name="star" size={14} color="#FBBF24" />
-                  <Text className="text-white text-sm ml-1">
-                    {store.rating.toFixed(1)}
-                  </Text>
-                </View>
-                <View className="flex-row items-center mr-4">
-                  <Ionicons name="cube-outline" size={14} color="#FFF" />
-                  <Text className="text-white text-sm ml-1">
-                    {store.productCount} สินค้า
-                  </Text>
-                </View>
                 <View className="flex-row items-center">
-                  <Ionicons name="flame" size={14} color="#F97316" />
-                  <Text className="text-white text-sm ml-1">
-                    {store.featuredCount} แนะนำ
-                  </Text>
+                  <View className="flex-row items-center mr-4">
+                    <Ionicons name="star" size={14} color="#FBBF24" />
+                    <Text className="text-white text-sm ml-1">
+                      {store.rating.toFixed(1)}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center mr-4">
+                    <Ionicons name="cube-outline" size={14} color="#FFF" />
+                    <Text className="text-white text-sm ml-1">
+                      {store.productCount} สินค้า
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center">
+                    <Ionicons name="flame" size={14} color="#F97316" />
+                    <Text className="text-white text-sm ml-1">
+                      {store.featuredCount} แนะนำ
+                    </Text>
+                  </View>
                 </View>
               </View>
+
+              {/* Arrow with Glow */}
+              <GlowContainer glowColor="#FFFFFF" intensity={8}>
+                <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
+                  <Ionicons name="chevron-forward" size={20} color="white" />
+                </View>
+              </GlowContainer>
             </View>
 
-            {/* Arrow */}
-            <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
-              <Ionicons name="chevron-forward" size={20} color="white" />
+            {/* Features with subtle glow */}
+            <View className="flex-row flex-wrap mt-3 -mb-1">
+              {store.features.slice(0, 3).map((feature, idx) => (
+                <View
+                  key={idx}
+                  className="bg-white/15 px-2 py-1 rounded-lg mr-2 mb-1"
+                  style={{
+                    shadowColor: '#FBBF24',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                  }}
+                >
+                  <Text className="text-white/90 text-xs">{feature}</Text>
+                </View>
+              ))}
             </View>
           </View>
-
-          {/* Features */}
-          <View className="flex-row flex-wrap mt-3 -mb-1">
-            {store.features.slice(0, 3).map((feature, idx) => (
-              <View
-                key={idx}
-                className="bg-white/10 px-2 py-1 rounded-lg mr-2 mb-1"
-              >
-                <Text className="text-white/90 text-xs">{feature}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      </LinearGradient>
-    </Pressable>
+        </LinearGradient>
+      </Pressable>
+    </GlowContainer>
   </Animated.View>
 );
 
