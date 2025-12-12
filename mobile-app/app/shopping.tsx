@@ -2,8 +2,9 @@
  * Shopping Screen - หน้าช้อปปิ้งสินค้า (Premium Version)
  *
  * Features:
+ * - ร้านพรีเมี่ยม (Official Shop) - ร้านเดียวของระบบ
  * - Infinite Scroll โหลด 10 รายการต่อครั้ง
- * - หมวดหมู่ร้านค้า: ร้านค้าทางการ, ร้านแนะนำติดดาว
+ * - หมวดหมู่สินค้า
  * - Banner โฆษณา (Admin Control)
  * - FlatList สำหรับ performance ที่ดี
  */
@@ -28,7 +29,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight, FadeIn } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { getProducts, getProductCategories, getFeaturedStores, getOfficialStores } from '@/services/api';
+import {
+  getProductCategories,
+  getFeaturedStores,
+  getPremiumStore,
+  getPremiumStoreProducts,
+} from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
@@ -38,7 +44,25 @@ import type { Product, ProductCategory } from '@/types';
 const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 10;
 
-// Store Type
+// Premium Store Type
+interface PremiumStoreData {
+  id: string;
+  sellerId: number;
+  name: string;
+  description: string;
+  logo?: string;
+  banner?: string;
+  rating: number;
+  ratingCount: number;
+  isOfficial: boolean;
+  isPremium: boolean;
+  productCount: number;
+  featuredCount: number;
+  verified: boolean;
+  features: string[];
+}
+
+// Store Type for Featured Stores
 interface Store {
   id: string;
   name: string;
@@ -81,16 +105,111 @@ const CategoryChip = ({
   </Animated.View>
 );
 
-// Store Card (ร้านค้าทางการ / ร้านแนะนำ)
+// Premium Store Card (ร้านพรีเมี่ยม - ร้านเดียวของระบบ)
+const PremiumStoreCard = ({
+  store,
+  onPress,
+  isDark,
+}: {
+  store: PremiumStoreData;
+  onPress: () => void;
+  isDark: boolean;
+}) => (
+  <Animated.View entering={FadeIn.delay(100).springify()} className="mx-4 mb-4">
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({ opacity: pressed ? 0.95 : 1 })}
+    >
+      <LinearGradient
+        colors={isDark ? ['#1E3A8A', '#312E81'] : ['#3B82F6', '#8B5CF6']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ borderRadius: 20, overflow: 'hidden' }}
+      >
+        <View className="p-4">
+          <View className="flex-row items-center">
+            {/* Store Logo */}
+            <View className="w-16 h-16 rounded-2xl bg-white/20 items-center justify-center mr-4 overflow-hidden">
+              {store.logo ? (
+                <Image
+                  source={{ uri: store.logo }}
+                  className="w-full h-full"
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text className="text-4xl">👑</Text>
+              )}
+            </View>
+
+            {/* Store Info */}
+            <View className="flex-1">
+              <View className="flex-row items-center mb-1">
+                <Text className="text-white font-bold text-lg mr-2">
+                  {store.name}
+                </Text>
+                <View className="bg-amber-400 px-2 py-0.5 rounded-full flex-row items-center">
+                  <Ionicons name="shield-checkmark" size={12} color="#1F2937" />
+                  <Text className="text-gray-900 text-xs font-bold ml-1">PREMIUM</Text>
+                </View>
+              </View>
+
+              <Text className="text-white/80 text-sm mb-2" numberOfLines={1}>
+                {store.description}
+              </Text>
+
+              <View className="flex-row items-center">
+                <View className="flex-row items-center mr-4">
+                  <Ionicons name="star" size={14} color="#FBBF24" />
+                  <Text className="text-white text-sm ml-1">
+                    {store.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <View className="flex-row items-center mr-4">
+                  <Ionicons name="cube-outline" size={14} color="#FFF" />
+                  <Text className="text-white text-sm ml-1">
+                    {store.productCount} สินค้า
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="flame" size={14} color="#F97316" />
+                  <Text className="text-white text-sm ml-1">
+                    {store.featuredCount} แนะนำ
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Arrow */}
+            <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center">
+              <Ionicons name="chevron-forward" size={20} color="white" />
+            </View>
+          </View>
+
+          {/* Features */}
+          <View className="flex-row flex-wrap mt-3 -mb-1">
+            {store.features.slice(0, 3).map((feature, idx) => (
+              <View
+                key={idx}
+                className="bg-white/10 px-2 py-1 rounded-lg mr-2 mb-1"
+              >
+                <Text className="text-white/90 text-xs">{feature}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </LinearGradient>
+    </Pressable>
+  </Animated.View>
+);
+
+// Store Card (ร้านแนะนำ)
 const StoreCard = ({
   store,
   index,
-  isOfficial,
   onPress,
 }: {
   store: Store;
   index: number;
-  isOfficial: boolean;
   onPress: () => void;
 }) => (
   <Animated.View
@@ -115,17 +234,10 @@ const StoreCard = ({
         )}
 
         {/* Badge */}
-        {isOfficial ? (
-          <View className="absolute top-2 right-2 bg-blue-500 px-1.5 py-0.5 rounded-full flex-row items-center">
-            <Ionicons name="checkmark-circle" size={10} color="white" />
-            <Text className="text-white text-[8px] ml-0.5 font-bold">ทางการ</Text>
-          </View>
-        ) : (
-          <View className="absolute top-2 right-2 bg-amber-500 px-1.5 py-0.5 rounded-full flex-row items-center">
-            <Ionicons name="star" size={10} color="white" />
-            <Text className="text-white text-[8px] ml-0.5 font-bold">แนะนำ</Text>
-          </View>
-        )}
+        <View className="absolute top-2 right-2 bg-amber-500 px-1.5 py-0.5 rounded-full flex-row items-center">
+          <Ionicons name="star" size={10} color="white" />
+          <Text className="text-white text-[8px] ml-0.5 font-bold">แนะนำ</Text>
+        </View>
       </View>
 
       {/* Store Info */}
@@ -157,7 +269,7 @@ const ProductCard = ({
   index: number;
   onPress: () => void;
 }) => {
-  const hasDiscount = product.discount_price && product.discount_price < product.price;
+  const hasDiscount = product.original_price && product.original_price > product.price;
 
   return (
     <Animated.View
@@ -185,13 +297,20 @@ const ProductCard = ({
           {hasDiscount && (
             <View className="absolute top-2 left-2 bg-red-500 px-2 py-0.5 rounded-full">
               <Text className="text-white text-xs font-bold">
-                -{Math.round((1 - product.discount_price! / product.price) * 100)}%
+                -{Math.round((1 - product.price / product.original_price!) * 100)}%
               </Text>
             </View>
           )}
 
+          {/* Featured Badge */}
+          {product.is_featured && (
+            <View className="absolute top-2 right-2 bg-amber-500 px-2 py-0.5 rounded-full">
+              <Text className="text-white text-xs font-bold">แนะนำ</Text>
+            </View>
+          )}
+
           {/* Commission Badge */}
-          {product.commission_rate && product.commission_rate > 0 && (
+          {!product.is_featured && product.commission_rate && product.commission_rate > 0 && (
             <View className="absolute top-2 right-2 bg-green-500 px-2 py-0.5 rounded-full">
               <Text className="text-white text-xs font-bold">
                 +{product.commission_rate}%
@@ -212,10 +331,10 @@ const ProductCard = ({
             {hasDiscount ? (
               <>
                 <Text className="text-primary-500 font-bold">
-                  {formatCurrency(product.discount_price!)}
+                  {formatCurrency(product.price)}
                 </Text>
                 <Text className="text-gray-400 text-xs line-through ml-1">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(product.original_price!)}
                 </Text>
               </>
             ) : (
@@ -225,15 +344,22 @@ const ProductCard = ({
             )}
           </View>
 
-          {/* Rating */}
-          {product.rating && (
-            <View className="flex-row items-center mt-1">
-              <Ionicons name="star" size={12} color="#FBBF24" />
-              <Text className="text-gray-500 text-xs ml-1">
-                {product.rating.toFixed(1)} ({product.review_count || 0})
+          {/* PV & Rating */}
+          <View className="flex-row items-center justify-between mt-1">
+            {product.pv > 0 && (
+              <Text className="text-green-600 dark:text-green-400 text-xs font-medium">
+                PV: {product.pv}
               </Text>
-            </View>
-          )}
+            )}
+            {product.rating > 0 && (
+              <View className="flex-row items-center">
+                <Ionicons name="star" size={10} color="#FBBF24" />
+                <Text className="text-gray-500 text-xs ml-0.5">
+                  {product.rating.toFixed(1)}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </Pressable>
     </Animated.View>
@@ -289,7 +415,7 @@ export default function ShoppingScreen() {
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [officialStores, setOfficialStores] = useState<Store[]>([]);
+  const [premiumStore, setPremiumStore] = useState<PremiumStoreData | null>(null);
   const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
 
   // UI states
@@ -308,32 +434,23 @@ export default function ShoppingScreen() {
   // โหลดข้อมูลร้านค้า
   const loadStores = useCallback(async () => {
     try {
-      // ดึงจาก API หรือใช้ mock data
-      const officialResponse = await getOfficialStores?.() || null;
-      const featuredResponse = await getFeaturedStores?.() || null;
+      // ดึงร้านพรีเมี่ยม (Official Shop)
+      const premiumResponse = await getPremiumStore();
+      if (premiumResponse) {
+        setPremiumStore(premiumResponse);
+      }
 
-      // Mock data ถ้า API ไม่มี
-      const mockOfficialStores: Store[] = [
-        { id: '1', name: 'Thaiprompt Official', rating: 4.9, isOfficial: true, isFeatured: false, productCount: 150 },
-        { id: '2', name: 'TP Electronics', rating: 4.8, isOfficial: true, isFeatured: false, productCount: 89 },
-        { id: '3', name: 'TP Fashion', rating: 4.7, isOfficial: true, isFeatured: false, productCount: 234 },
-      ];
-
-      const mockFeaturedStores: Store[] = [
-        { id: '4', name: 'TopSeller Shop', rating: 4.9, isOfficial: false, isFeatured: true, productCount: 67 },
-        { id: '5', name: 'BestDeal Store', rating: 4.8, isOfficial: false, isFeatured: true, productCount: 123 },
-        { id: '6', name: 'Premium Goods', rating: 4.7, isOfficial: false, isFeatured: true, productCount: 45 },
-        { id: '7', name: 'Quality First', rating: 4.6, isOfficial: false, isFeatured: true, productCount: 78 },
-      ];
-
-      setOfficialStores(officialResponse || mockOfficialStores);
-      setFeaturedStores(featuredResponse || mockFeaturedStores);
+      // ดึงร้านแนะนำติดดาว
+      const featuredResponse = await getFeaturedStores();
+      if (featuredResponse) {
+        setFeaturedStores(featuredResponse);
+      }
     } catch (error) {
       console.error('Load stores error:', error);
     }
   }, []);
 
-  // โหลดสินค้า (Infinite Scroll)
+  // โหลดสินค้าจากร้านพรีเมี่ยม (Infinite Scroll)
   const loadProducts = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
       if (pageNum === 1) {
@@ -365,29 +482,30 @@ export default function ShoppingScreen() {
         }
       }
 
-      // ดึง products
+      // ดึง products จากร้านพรีเมี่ยม
       if (online) {
-        const freshProducts = await getProducts({
+        const result = await getPremiumStoreProducts({
           category: selectedCategory,
           page: pageNum,
           limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
         });
 
-        if (freshProducts) {
+        if (result) {
           if (append) {
-            setProducts(prev => [...prev, ...freshProducts]);
+            setProducts(prev => [...prev, ...result.products]);
           } else {
-            setProducts(freshProducts);
+            setProducts(result.products);
           }
 
           // Check if has more
-          setHasMore(freshProducts.length >= ITEMS_PER_PAGE);
+          setHasMore(result.pagination.hasMore);
 
           // Cache first page
           if (pageNum === 1) {
             await Cache.setCache(
               Cache.CACHE_KEYS.PRODUCTS,
-              freshProducts,
+              result.products,
               Cache.DEFAULT_CACHE_DURATION
             );
           }
@@ -411,21 +529,21 @@ export default function ShoppingScreen() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
   // Initial load
   useEffect(() => {
     loadStores();
     loadProducts(1);
-  }, [loadStores, loadProducts]);
+  }, [loadStores]);
 
-  // Reload when category changes
+  // Reload when category or search changes
   useEffect(() => {
     setPage(1);
     setProducts([]);
     setHasMore(true);
     loadProducts(1);
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
@@ -445,15 +563,7 @@ export default function ShoppingScreen() {
     setRefreshing(false);
   };
 
-  // Filter products
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
-  // Header Component (Banner + Categories + Stores)
+  // Header Component (Banner + Premium Store + Categories)
   const ListHeaderComponent = () => (
     <>
       {/* Banner โฆษณา */}
@@ -468,59 +578,62 @@ export default function ShoppingScreen() {
         />
       </View>
 
-      {/* ร้านค้าทางการ */}
-      <View className="mb-4">
-        <SectionHeader
-          title="🏪 ร้านค้าทางการ"
-          subtitle="ร้านค้าที่ได้รับการรับรอง"
-          onSeeAll={() => router.push('/stores?type=official')}
-          isDark={isDark}
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-        >
-          {officialStores.map((store, index) => (
-            <StoreCard
-              key={store.id}
-              store={store}
-              index={index}
-              isOfficial={true}
-              onPress={() => router.push(`/store/${store.id}`)}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {/* ร้านพรีเมี่ยม (Official Shop) */}
+      {premiumStore && (
+        <View className="mb-4">
+          <SectionHeader
+            title="👑 ร้านพรีเมี่ยม"
+            subtitle="สินค้าคุณภาพจาก Thaiprompt"
+            isDark={isDark}
+          />
+          <PremiumStoreCard
+            store={premiumStore}
+            onPress={() => {
+              // สินค้าทั้งหมดอยู่ในหน้านี้แล้ว scroll ลงไป
+              flatListRef.current?.scrollToOffset({ offset: 400, animated: true });
+            }}
+            isDark={isDark}
+          />
+        </View>
+      )}
 
       {/* ร้านแนะนำติดดาว */}
-      <View className="mb-4">
+      {featuredStores.length > 0 && (
+        <View className="mb-4">
+          <SectionHeader
+            title="⭐ ร้านแนะนำติดดาว"
+            subtitle="ร้านค้าคุณภาพจากพันธมิตร"
+            onSeeAll={() => router.push('/stores?type=featured')}
+            isDark={isDark}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+          >
+            {featuredStores.map((store, index) => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                index={index}
+                onPress={() => router.push(`/store/${store.id}`)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* สินค้าจากร้านพรีเมี่ยม */}
+      <View className="mb-2">
         <SectionHeader
-          title="⭐ ร้านแนะนำติดดาว"
-          subtitle="คัดสรรโดยทีมงาน"
-          onSeeAll={() => router.push('/stores?type=featured')}
+          title="🛍️ สินค้าจากร้านพรีเมี่ยม"
+          subtitle={premiumStore?.name || 'Official Shop'}
           isDark={isDark}
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-        >
-          {featuredStores.map((store, index) => (
-            <StoreCard
-              key={store.id}
-              store={store}
-              index={index}
-              isOfficial={false}
-              onPress={() => router.push(`/store/${store.id}`)}
-            />
-          ))}
-        </ScrollView>
       </View>
 
       {/* Categories */}
       <View className="mb-4">
-        <SectionHeader title="หมวดหมู่" isDark={isDark} />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -547,7 +660,7 @@ export default function ShoppingScreen() {
       {/* Results Count */}
       <View className="px-4 mb-3">
         <Text className="text-gray-500 dark:text-gray-400 text-sm">
-          พบ {filteredProducts.length} รายการ
+          พบ {products.length} รายการ
           {hasMore && ' (โหลดเพิ่มเมื่อเลื่อนลง)'}
         </Text>
       </View>
@@ -575,8 +688,13 @@ export default function ShoppingScreen() {
         <Text className="text-gray-500 dark:text-gray-400 mt-4 text-center">
           {searchQuery
             ? `ไม่พบสินค้าที่ค้นหา "${searchQuery}"`
-            : 'ไม่มีสินค้าในหมวดหมู่นี้'}
+            : 'ยังไม่มีสินค้าในหมวดหมู่นี้'}
         </Text>
+        {!premiumStore && (
+          <Text className="text-gray-400 text-sm mt-2 text-center px-8">
+            ร้านพรีเมี่ยมยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ
+          </Text>
+        )}
       </View>
     );
   };
@@ -587,7 +705,7 @@ export default function ShoppingScreen() {
       <LoadingFooter isLoading={isLoadingMore} />
 
       {/* Commission Info Banner */}
-      {isAuthenticated && !isLoadingMore && filteredProducts.length > 0 && (
+      {isAuthenticated && !isLoadingMore && products.length > 0 && (
         <Animated.View
           entering={FadeIn.delay(300)}
           className="mx-4 mb-6"
@@ -605,7 +723,7 @@ export default function ShoppingScreen() {
               <View className="flex-1">
                 <Text className="text-white font-bold">รับคอมมิชชั่นทุกการขาย!</Text>
                 <Text className="text-green-100 text-sm">
-                  แชร์ลิงก์สินค้าและรับค่าคอมมิชชั่นสูงสุด 30%
+                  แชร์ลิงก์สินค้าและรับค่าคอมมิชชั่น + PV
                 </Text>
               </View>
             </View>
@@ -683,9 +801,10 @@ export default function ShoppingScreen() {
             <TextInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="ค้นหาสินค้า..."
+              placeholder="ค้นหาสินค้าในร้านพรีเมี่ยม..."
               placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
               className="flex-1 ml-3 text-gray-900 dark:text-white"
+              returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
@@ -702,7 +821,7 @@ export default function ShoppingScreen() {
         {/* Products Grid with Infinite Scroll */}
         <FlatList
           ref={flatListRef}
-          data={filteredProducts}
+          data={products}
           renderItem={renderProduct}
           keyExtractor={(item) => item.id.toString()}
           numColumns={2}

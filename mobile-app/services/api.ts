@@ -361,6 +361,87 @@ export const getFeaturedStores = async (): Promise<Store[] | null> => {
   }
 };
 
+// Premium Store Type
+interface PremiumStore {
+  id: string;
+  sellerId: number;
+  name: string;
+  description: string;
+  logo?: string;
+  banner?: string;
+  rating: number;
+  ratingCount: number;
+  isOfficial: boolean;
+  isPremium: boolean;
+  productCount: number;
+  featuredCount: number;
+  verified: boolean;
+  features: string[];
+}
+
+/**
+ * ดึงข้อมูลร้านพรีเมี่ยม (Official Shop)
+ * มีร้านเดียวในระบบ
+ */
+export const getPremiumStore = async (): Promise<PremiumStore | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<PremiumStore>>(
+      '/mobile/premium-store'
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get premium store error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงสินค้าจากร้านพรีเมี่ยม
+ */
+export const getPremiumStoreProducts = async (
+  params?: {
+    category?: string | null;
+    featured?: boolean;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }
+): Promise<{
+  products: Product[];
+  pagination: {
+    total: number;
+    currentPage: number;
+    lastPage: number;
+    hasMore: boolean;
+  };
+} | null> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.featured) queryParams.append('featured', 'true');
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await apiClient.get<ApiResponse<Product[]>>(
+      `/mobile/premium-store/products?${queryParams.toString()}`
+    );
+
+    return {
+      products: response.data.data || [],
+      pagination: (response.data as any).pagination || {
+        total: 0,
+        currentPage: 1,
+        lastPage: 1,
+        hasMore: false,
+      },
+    };
+  } catch (error) {
+    console.error('Get premium store products error:', error);
+    return null;
+  }
+};
+
 /**
  * ดึงรายการหมวดหมู่สินค้า
  */
@@ -387,6 +468,56 @@ export const getProductDetail = async (id: string): Promise<Product | null> => {
     return response.data.data || null;
   } catch (error) {
     console.error('Get product detail error:', error);
+    return null;
+  }
+};
+
+// =====================================================
+// Cart APIs
+// =====================================================
+
+/**
+ * เพิ่มสินค้าลงตะกร้า
+ */
+export const addToCart = async (
+  productId: number | string,
+  quantity: number = 1
+): Promise<{ success: boolean; message?: string } | null> => {
+  try {
+    const response = await apiClient.post<ApiResponse<any>>('/cart/add', {
+      product_id: productId,
+      quantity,
+    });
+
+    return {
+      success: response.data.success,
+      message: response.data.message,
+    };
+  } catch (error: any) {
+    console.error('Add to cart error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'ไม่สามารถเพิ่มสินค้าได้',
+    };
+  }
+};
+
+/**
+ * ดึงข้อมูลตะกร้าสินค้า
+ */
+export const getCart = async (): Promise<{
+  items: any[];
+  total: number;
+} | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<any>>('/cart');
+
+    if (response.data.success) {
+      return response.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Get cart error:', error);
     return null;
   }
 };

@@ -4566,6 +4566,181 @@ class MobileApiController extends Controller
     }
 
     // =====================================================
+    // Premium Store (Official Shop)
+    // =====================================================
+
+    /**
+     * ดึงข้อมูลร้านพรีเมี่ยม (Official Shop)
+     * มีร้านเดียวในระบบที่ขายสินค้าจากแพลตฟอร์ม
+     *
+     * @return JsonResponse
+     */
+    public function getPremiumStore(): JsonResponse
+    {
+        try {
+            // ดึง Official Seller
+            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+            $seller = \App\Models\User::where('email', $email)->first();
+
+            if (!$seller) {
+                return response()->json([
+                    'success' => true,
+                    'data' => null,
+                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
+                ]);
+            }
+
+            // นับจำนวนสินค้าที่ active
+            $productCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->count();
+
+            // นับจำนวนสินค้าแนะนำ
+            $featuredCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->where('is_featured', true)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => 'premium',
+                    'sellerId' => $seller->id,
+                    'name' => config('shop.official_shop.name', 'Thaiprompt Premium'),
+                    'description' => 'สินค้าพรีเมี่ยมจาก Thaiprompt - คุณภาพสูง รับประกัน',
+                    'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
+                    'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
+                    'rating' => 5.0,
+                    'ratingCount' => 100,
+                    'isOfficial' => true,
+                    'isPremium' => true,
+                    'productCount' => $productCount,
+                    'featuredCount' => $featuredCount,
+                    'verified' => true,
+                    'features' => [
+                        'สินค้าของแท้ 100%',
+                        'รับประกันคุณภาพ',
+                        'จัดส่งฟรี',
+                        'คืนสินค้าได้ภายใน 30 วัน',
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Premium Store Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงสินค้าจากร้านพรีเมี่ยม (Official Shop)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getPremiumStoreProducts(Request $request): JsonResponse
+    {
+        try {
+            // ดึง Official Seller
+            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+            $seller = \App\Models\User::where('email', $email)->first();
+
+            if (!$seller) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
+                ]);
+            }
+
+            $page = $request->get('page', 1);
+            $limit = min($request->get('limit', 10), 50);
+            $category = $request->get('category');
+            $featured = $request->boolean('featured', false);
+            $search = $request->get('search');
+
+            $query = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->with('category');
+
+            // กรองตามหมวดหมู่
+            if ($category) {
+                $query->where('category_id', $category);
+            }
+
+            // กรองเฉพาะสินค้าแนะนำ
+            if ($featured) {
+                $query->where('is_featured', true);
+            }
+
+            // ค้นหา
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // เรียงลำดับ: Featured ก่อน, ตามด้วย Created At
+            $query->orderBy('is_featured', 'desc')
+                ->orderBy('created_at', 'desc');
+
+            $products = $query->paginate($limit, ['*'], 'page', $page);
+
+            $formattedProducts = $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'description' => $product->short_description ?: \Str::limit($product->description, 100),
+                    'image' => $product->main_image_url ? url($product->main_image_url) : null,
+                    'images' => $product->image_urls ?? [],
+                    'price' => (float) $product->price,
+                    'discount_price' => $product->compare_at_price && $product->compare_at_price > $product->price
+                        ? (float) $product->price
+                        : null,
+                    'original_price' => $product->compare_at_price ? (float) $product->compare_at_price : null,
+                    'category' => $product->category?->name,
+                    'categoryId' => $product->category_id,
+                    'rating' => (float) ($product->rating_average ?? 0),
+                    'review_count' => $product->rating_count ?? 0,
+                    'pv' => (float) ($product->pv_value ?? round($product->price * 0.1)),
+                    'commission_rate' => (float) ($product->commission_rate ?? 0),
+                    'is_featured' => (bool) $product->is_featured,
+                    'stock_status' => $product->stock_status ?? 'in_stock',
+                    'brand' => $product->brand,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedProducts,
+                'pagination' => [
+                    'total' => $products->total(),
+                    'currentPage' => $products->currentPage(),
+                    'lastPage' => $products->lastPage(),
+                    'perPage' => $products->perPage(),
+                    'hasMore' => $products->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Premium Store Products Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
     // Academy - ระบบการเรียนรู้ออนไลน์
     // =====================================================
 

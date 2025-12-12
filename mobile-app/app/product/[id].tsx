@@ -23,16 +23,16 @@ import * as Clipboard from 'expo-clipboard';
 import { LavaBackground, GlassCard, Button } from '@/components';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { formatCurrency, API_BASE_URL } from '@/constants';
+import { formatCurrency } from '@/constants';
+import { getProductDetail, addToCart as addToCartApi } from '@/services/api';
 import type { Product } from '@/types';
-import axios from 'axios';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { resolvedTheme } = useAppStore();
-  const { user, isAuthenticated, token } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const isDark = resolvedTheme === 'dark';
 
   // State
@@ -52,28 +52,45 @@ export default function ProductDetailScreen() {
     setError('');
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/products/${id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const productData = await getProductDetail(id);
 
-      if (response.data.success) {
-        setProduct(response.data.data);
+      if (productData) {
+        // Map API response to Product type
+        setProduct({
+          id: productData.id,
+          name: productData.name,
+          description: productData.description,
+          price: productData.price,
+          original_price: productData.original_price || productData.compare_at_price,
+          image: productData.image || productData.main_image_url,
+          images: productData.images || (productData.image_urls ? productData.image_urls : []),
+          category: productData.category?.name || productData.category,
+          categoryId: productData.categoryId || productData.category_id,
+          rating: productData.rating || productData.rating_average || 0,
+          review_count: productData.review_count || productData.rating_count || 0,
+          pv: productData.pv || productData.pv_value || 0,
+          commission_rate: productData.commission_rate || 0,
+          is_featured: productData.is_featured || false,
+          stock_status: productData.stock_status || 'in_stock',
+          brand: productData.brand,
+        } as Product);
       } else {
-        setError(response.data.message || 'ไม่พบสินค้า');
+        setError('ไม่พบสินค้า');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      console.error('Fetch product error:', err);
+      setError(err.message || 'เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setIsLoading(false);
     }
-  }, [id, token]);
+  }, [id]);
 
   useEffect(() => {
     fetchProduct();
   }, [fetchProduct]);
 
   // เพิ่มลงตะกร้า
-  const addToCart = async () => {
+  const handleAddToCart = async () => {
     if (!isAuthenticated) {
       Alert.alert(
         'กรุณาเข้าสู่ระบบ',
@@ -91,28 +108,19 @@ export default function ProductDetailScreen() {
     setIsAddingToCart(true);
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/cart/add`,
-        {
-          product_id: product.id,
-          quantity,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const result = await addToCartApi(product.id, quantity);
 
-      if (response.data.success) {
+      if (result?.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert('สำเร็จ!', `เพิ่ม ${product.name} ลงตะกร้าแล้ว`, [
           { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
           { text: 'ช้อปต่อ', style: 'cancel' },
         ]);
       } else {
-        Alert.alert('เกิดข้อผิดพลาด', response.data.message);
+        Alert.alert('เกิดข้อผิดพลาด', result?.message || 'ไม่สามารถเพิ่มสินค้าได้');
       }
     } catch (err: any) {
-      Alert.alert('เกิดข้อผิดพลาด', err.response?.data?.message || 'ไม่สามารถเพิ่มสินค้าได้');
+      Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเพิ่มสินค้าได้');
     } finally {
       setIsAddingToCart(false);
     }
@@ -427,7 +435,7 @@ export default function ProductDetailScreen() {
             <View className="flex-1">
               <Button
                 title={isAddingToCart ? 'กำลังเพิ่ม...' : 'เพิ่มลงตะกร้า'}
-                onPress={addToCart}
+                onPress={handleAddToCart}
                 loading={isAddingToCart}
                 disabled={isAddingToCart}
                 fullWidth
