@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.380.1] - 2025-12-12
+
+### ✨ Features
+- feat(mobile): add firefly glow effects to home and shopping pages (64f5ddde)
+- feat(mobile): redesign shopping to Premium Store with real API (5aa1ec5d)
+### 🐛 Bug Fixes
+- fix(mobile): use correct thaiprompt folder, delete mobile-app (77a10755)
+- fix(api): connect Premium Store to backend Official Shop config (67f17c8d)
+### 🔧 Other Changes
+- Merge pull request #2265 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (2b586fa9)
+- merge: sync with claude/Main branch (bc5e8e4a)
+
 ## [v3.380.0] - 2025-12-12
 
 ### ✨ Features
