@@ -1449,8 +1449,16 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
 | 4. GET /pos/status - ตรวจสอบเป็นระยะว่าถูกบล็อกหรือไม่
 */
 Route::prefix('pos')->name('api.pos.')->group(function () {
+    // 🔔 Ping - ทดสอบการเชื่อมต่อ (Public)
+    Route::get('/ping', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'ping'])
+        ->name('ping');
+
+    // 📝 ลงทะเบียน Device - สร้าง API Key อัตโนมัติ (Admin เห็นแต่ไม่ส่งกลับ)
+    Route::post('/register-device', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'registerDevice'])
+        ->name('register-device');
+
     // ⭐ Single-step activation (แนะนำ) - ลงทะเบียนและยืนยันในครั้งเดียว
-    // ต้องระบุ: server_url, shop_code, api_key, product_key, device_id
+    // ต้องระบุ: shop_code, api_key, product_key
     Route::post('/activate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'activate'])
         ->name('activate');
 
