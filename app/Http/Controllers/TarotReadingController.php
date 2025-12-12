@@ -10,9 +10,11 @@ use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
 use App\Models\TarotCardBackImage;
 use App\Models\PaymentTransaction;
+use App\Services\TarotCommissionService;
 use App\Services\TarotInterpretationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TarotReadingController extends Controller
@@ -25,13 +27,24 @@ class TarotReadingController extends Controller
     protected TarotInterpretationService $interpretationService;
 
     /**
+     * บริการจัดการคอมมิชชั่นไพ่ทาโร่ต์
+     *
+     * @var TarotCommissionService
+     */
+    protected TarotCommissionService $commissionService;
+
+    /**
      * Constructor
      *
      * @param TarotInterpretationService $interpretationService
+     * @param TarotCommissionService $commissionService
      */
-    public function __construct(TarotInterpretationService $interpretationService)
-    {
+    public function __construct(
+        TarotInterpretationService $interpretationService,
+        TarotCommissionService $commissionService
+    ) {
         $this->interpretationService = $interpretationService;
+        $this->commissionService = $commissionService;
     }
 
     /**
@@ -211,6 +224,13 @@ class TarotReadingController extends Controller
 
     /**
      * Process payment and create reading
+     *
+     * ขั้นตอนการทำงาน:
+     * 1. ตรวจสอบข้อมูล input
+     * 2. สร้าง payment transaction
+     * 3. สร้าง reading record
+     * 4. ประมวลผลการชำระเงินและแบ่งคอมมิชชั่น (TarotCommissionService)
+     * 5. สุ่มไพ่และสร้างคำทำนาย
      */
     public function processPayment(Request $request)
     {
@@ -225,13 +245,29 @@ class TarotReadingController extends Controller
         $spreadType = TarotSpreadType::findOrFail($request->spread_type_id);
 
         $userId = Auth::id();
+        $paymentMethod = $request->payment_method;
+
+        // ตรวจสอบยอดเงินใน wallet ก่อน (ถ้าชำระผ่าน wallet)
+        if ($paymentMethod === 'wallet' && $userId) {
+            $user = Auth::user();
+            $wallet = $user->wallet;
+
+            if (!$wallet || $wallet->balance < $category->price) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยอดเงินใน Wallet ไม่เพียงพอ',
+                    'required_amount' => $category->price,
+                    'current_balance' => $wallet ? $wallet->balance : 0,
+                ], 400);
+            }
+        }
 
         // Create payment transaction
         $transaction = PaymentTransaction::create([
             'transaction_id' => 'TAROT-' . strtoupper(Str::random(12)),
             'user_id' => $userId,
             'type' => 'order_payment',
-            'payment_method' => $request->payment_method,
+            'payment_method' => $paymentMethod,
             'status' => 'pending',
             'amount' => $category->price,
             'currency' => 'THB',
@@ -243,14 +279,42 @@ class TarotReadingController extends Controller
             ],
         ]);
 
-        // TODO: Integrate with actual payment gateway
-        // For now, we'll mark as completed for testing
-        $transaction->status = 'completed';
-        $transaction->paid_at = now();
-        $transaction->save();
-
         // Create the reading
         $reading = $this->createReading($category, $spreadType, $request->question, false, $category->price);
+
+        // ประมวลผลการชำระเงินและแบ่งคอมมิชชั่น
+        $commissionResult = $this->commissionService->processPayment(
+            $reading,
+            $paymentMethod,
+            $transaction->id
+        );
+
+        if (!$commissionResult['success']) {
+            // ถ้าชำระเงินไม่สำเร็จ ให้ลบ reading และอัพเดท transaction
+            $reading->delete();
+            $transaction->update([
+                'status' => 'failed',
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'error' => $commissionResult['message'],
+                ]),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $commissionResult['message'],
+            ], 400);
+        }
+
+        // อัพเดท transaction เป็น completed
+        $transaction->update([
+            'status' => 'completed',
+            'paid_at' => now(),
+            'metadata' => array_merge($transaction->metadata ?? [], [
+                'platform_fee' => $commissionResult['data']['platform_fee'] ?? 0,
+                'pv_amount' => $commissionResult['data']['pv_amount'] ?? 0,
+                'total_commission' => $commissionResult['data']['total_commission'] ?? 0,
+            ]),
+        ]);
 
         // Select random cards
         $cards = $this->selectRandomCards($spreadType->card_count, $spreadType);
@@ -277,10 +341,24 @@ class TarotReadingController extends Controller
         // สร้างคำทำนายละเอียดสำหรับไพ่ทั้งหมด
         $this->interpretationService->generateInterpretations($reading);
 
+        Log::info('Tarot reading created with commission', [
+            'reading_id' => $reading->id,
+            'user_id' => $userId,
+            'amount' => $category->price,
+            'platform_fee' => $reading->platform_fee,
+            'pv_amount' => $reading->pv_amount,
+            'total_commission' => $reading->total_commission,
+        ]);
+
         return response()->json([
             'success' => true,
             'reading_id' => $reading->id,
-            'redirect_url' => route('tarot.reading.show', $reading->id)
+            'redirect_url' => route('tarot.reading.show', $reading->id),
+            'commission_info' => [
+                'platform_fee' => $reading->platform_fee,
+                'pv_amount' => $reading->pv_amount,
+                'total_commission' => $reading->total_commission,
+            ],
         ]);
     }
 

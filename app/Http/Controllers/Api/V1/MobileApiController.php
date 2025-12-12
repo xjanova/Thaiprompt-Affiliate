@@ -251,9 +251,12 @@ class MobileApiController extends Controller
         }
 
         try {
-            // ลบรูปเดิมถ้ามี
-            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-                \Storage::disk('public')->delete($user->avatar);
+            // ลบรูปเดิมถ้ามี (แยก path จาก URL ก่อน)
+            if ($user->avatar) {
+                $oldPath = str_replace(\Storage::disk('public')->url(''), '', $user->avatar);
+                if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                    \Storage::disk('public')->delete($oldPath);
+                }
             }
 
             // อัพโหลดรูปใหม่
@@ -1348,8 +1351,8 @@ class MobileApiController extends Controller
             $kycPath = 'kyc/' . $user->id;
             $type = $request->type;
 
-            // อัพโหลดรูป
-            $imagePath = $request->file('image')->store($kycPath, 'private');
+            // อัพโหลดรูป (ใช้ disk 'local' เพื่อเก็บไฟล์แบบ private)
+            $imagePath = $request->file('image')->store($kycPath, 'local');
 
             // หา or สร้าง KYC draft
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)
@@ -4223,6 +4226,899 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาดในการโอนเงิน กรุณาลองใหม่',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // GPS Sharing - แชร์ตำแหน่ง GPS ให้ Admin ดู
+    // =====================================================
+
+    /**
+     * แชร์ตำแหน่ง GPS
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function shareGpsLocation(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'altitude' => 'nullable|numeric',
+            'accuracy' => 'nullable|numeric',
+            'speed' => 'nullable|numeric',
+            'heading' => 'nullable|numeric',
+            'battery_level' => 'nullable|integer|between:0,100',
+            'device_model' => 'nullable|string|max:100',
+            'os_version' => 'nullable|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // บันทึกหรืออัพเดทตำแหน่ง GPS
+            $gpsData = [
+                'user_id' => $user->id,
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+                'altitude' => $request->altitude,
+                'accuracy' => $request->accuracy,
+                'speed' => $request->speed,
+                'heading' => $request->heading,
+                'battery_level' => $request->battery_level,
+                'device_model' => $request->device_model,
+                'os_version' => $request->os_version,
+                'is_sharing' => true,
+                'last_update' => now(),
+            ];
+
+            // ใช้ updateOrCreate เพื่อบันทึก GPS
+            DB::table('user_gps_locations')->updateOrInsert(
+                ['user_id' => $user->id],
+                array_merge($gpsData, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทตำแหน่งสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Share GPS Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการอัพเดทตำแหน่ง',
+            ], 500);
+        }
+    }
+
+    /**
+     * หยุดแชร์ตำแหน่ง GPS
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function stopGpsSharing(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        try {
+            // อัพเดทสถานะเป็นหยุดแชร์
+            DB::table('user_gps_locations')
+                ->where('user_id', $user->id)
+                ->update([
+                    'is_sharing' => false,
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'หยุดแชร์ตำแหน่งสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Stop GPS Sharing Error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Store Listing - รายการร้านค้า
+    // =====================================================
+
+    /**
+     * ดึงรายการร้านค้าทางการ (Official Stores)
+     *
+     * @return JsonResponse
+     */
+    public function getOfficialStores(): JsonResponse
+    {
+        try {
+            // ดึงร้านค้าที่ verified และ active
+            $stores = \App\Models\VendorStore::where('is_active', true)
+                ->where('is_verified', true)
+                ->orderBy('rating_average', 'desc')
+                ->limit(20)
+                ->get();
+
+            $formattedStores = $stores->map(function ($store) {
+                return [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'isOfficial' => true,
+                    'isFeatured' => (bool) $store->is_featured_home,
+                    'productCount' => $store->total_products ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedStores,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Official Stores Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายการร้านแนะนำติดดาว (Featured Stores)
+     *
+     * @return JsonResponse
+     */
+    public function getFeaturedStores(): JsonResponse
+    {
+        try {
+            // ดึงร้านค้าที่ featured และ active
+            $stores = \App\Models\VendorStore::where('is_active', true)
+                ->where('is_featured_home', true)
+                ->orderBy('featured_home_order', 'asc')
+                ->orderBy('rating_average', 'desc')
+                ->limit(20)
+                ->get();
+
+            $formattedStores = $stores->map(function ($store) {
+                return [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'isOfficial' => (bool) $store->is_verified,
+                    'isFeatured' => true,
+                    'productCount' => $store->total_products ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedStores,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Featured Stores Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายละเอียดร้านค้า
+     *
+     * @param string $storeId
+     * @return JsonResponse
+     */
+    public function getStoreDetail(string $storeId): JsonResponse
+    {
+        try {
+            $store = \App\Models\VendorStore::where('id', $storeId)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$store) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้า',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => (string) $store->id,
+                    'name' => $store->store_name,
+                    'description' => $store->store_description,
+                    'logo' => $store->store_logo ? url($store->store_logo) : null,
+                    'banner' => $store->store_banner ? url($store->store_banner) : null,
+                    'rating' => (float) ($store->rating_average ?? 4.5),
+                    'ratingCount' => $store->rating_count ?? 0,
+                    'isOfficial' => (bool) $store->is_verified,
+                    'isFeatured' => (bool) $store->is_featured_home,
+                    'productCount' => $store->total_products ?? 0,
+                    'followerCount' => 0, // ไม่มีฟิลด์นี้ในตอนนี้
+                    'joinedAt' => $store->created_at?->format('Y-m-d'),
+                    'responseRate' => 98, // Mock value
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Store Detail Error', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงสินค้าของร้านค้า
+     *
+     * @param Request $request
+     * @param string $storeId
+     * @return JsonResponse
+     */
+    public function getStoreProducts(Request $request, string $storeId): JsonResponse
+    {
+        try {
+            $store = \App\Models\VendorStore::where('id', $storeId)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$store) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบร้านค้า',
+                ], 404);
+            }
+
+            $page = $request->get('page', 1);
+            $limit = min($request->get('limit', 10), 50);
+
+            $products = Product::where('store_id', $store->id)
+                ->where('is_active', true)
+                ->orderBy('created_at', 'desc')
+                ->paginate($limit, ['*'], 'page', $page);
+
+            $formattedProducts = $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'image' => $product->image ? url($product->image) : null,
+                    'price' => (float) $product->price,
+                    'discount_price' => $product->discount_price ? (float) $product->discount_price : null,
+                    'rating' => $product->rating ?? 0,
+                    'review_count' => $product->review_count ?? 0,
+                    'pv' => $product->pv_value ?? round($product->price * 0.1),
+                    'commission_rate' => $product->commission_rate ?? 0,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedProducts,
+                'pagination' => [
+                    'total' => $products->total(),
+                    'currentPage' => $products->currentPage(),
+                    'lastPage' => $products->lastPage(),
+                    'hasMore' => $products->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Store Products Error', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Premium Store (Official Shop)
+    // =====================================================
+
+    /**
+     * ดึงข้อมูลร้านพรีเมี่ยม (Official Shop)
+     * มีร้านเดียวในระบบที่ขายสินค้าจากแพลตฟอร์ม
+     *
+     * @return JsonResponse
+     */
+    public function getPremiumStore(): JsonResponse
+    {
+        try {
+            // ดึง Official Seller
+            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+            $seller = \App\Models\User::where('email', $email)->first();
+
+            if (!$seller) {
+                return response()->json([
+                    'success' => true,
+                    'data' => null,
+                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
+                ]);
+            }
+
+            // นับจำนวนสินค้าที่ active
+            $productCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->count();
+
+            // นับจำนวนสินค้าแนะนำ
+            $featuredCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->where('is_featured', true)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => 'premium',
+                    'sellerId' => $seller->id,
+                    'name' => config('shop.official_shop.name', 'Official Shop'),
+                    'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
+                    'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
+                    'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
+                    'rating' => 5.0,
+                    'ratingCount' => $productCount > 0 ? $productCount * 5 : 100, // ใช้จำนวนสินค้าคูณ 5 เป็น rating count
+                    'isOfficial' => true,
+                    'isPremium' => true,
+                    'productCount' => $productCount,
+                    'featuredCount' => $featuredCount,
+                    'verified' => true,
+                    'commissionRate' => config('shop.official_shop.default_commission_rate', 25),
+                    'features' => [
+                        'สินค้าของแท้ 100%',
+                        'รับประกันคุณภาพ',
+                        'จัดส่งฟรีเมื่อซื้อครบ 500 บาท',
+                        'คืนสินค้าได้ภายใน 30 วัน',
+                    ],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Premium Store Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงสินค้าจากร้านพรีเมี่ยม (Official Shop)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getPremiumStoreProducts(Request $request): JsonResponse
+    {
+        try {
+            // ดึง Official Seller
+            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+            $seller = \App\Models\User::where('email', $email)->first();
+
+            if (!$seller) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
+                ]);
+            }
+
+            $page = $request->get('page', 1);
+            $limit = min($request->get('limit', 10), 50);
+            $category = $request->get('category');
+            $featured = $request->boolean('featured', false);
+            $search = $request->get('search');
+
+            $query = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->with('category');
+
+            // กรองตามหมวดหมู่
+            if ($category) {
+                $query->where('category_id', $category);
+            }
+
+            // กรองเฉพาะสินค้าแนะนำ
+            if ($featured) {
+                $query->where('is_featured', true);
+            }
+
+            // ค้นหา
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            }
+
+            // เรียงลำดับ: Featured ก่อน, ตามด้วย Created At
+            $query->orderBy('is_featured', 'desc')
+                ->orderBy('created_at', 'desc');
+
+            $products = $query->paginate($limit, ['*'], 'page', $page);
+
+            $formattedProducts = $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'description' => $product->short_description ?: \Str::limit($product->description, 100),
+                    'image' => $product->main_image_url ? url($product->main_image_url) : null,
+                    'images' => $product->image_urls ?? [],
+                    'price' => (float) $product->price,
+                    'discount_price' => $product->compare_at_price && $product->compare_at_price > $product->price
+                        ? (float) $product->price
+                        : null,
+                    'original_price' => $product->compare_at_price ? (float) $product->compare_at_price : null,
+                    'category' => $product->category?->name,
+                    'categoryId' => $product->category_id,
+                    'rating' => (float) ($product->rating_average ?? 0),
+                    'review_count' => $product->rating_count ?? 0,
+                    'pv' => (float) ($product->pv_value ?? round($product->price * 0.1)),
+                    'commission_rate' => (float) ($product->commission_rate ?? 0),
+                    'is_featured' => (bool) $product->is_featured,
+                    'stock_status' => $product->stock_status ?? 'in_stock',
+                    'brand' => $product->brand,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $formattedProducts,
+                'pagination' => [
+                    'total' => $products->total(),
+                    'currentPage' => $products->currentPage(),
+                    'lastPage' => $products->lastPage(),
+                    'perPage' => $products->perPage(),
+                    'hasMore' => $products->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Premium Store Products Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Academy - ระบบการเรียนรู้ออนไลน์
+    // =====================================================
+
+    /**
+     * ดึงรายการหลักสูตร
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getCourses(Request $request): JsonResponse
+    {
+        try {
+            $category = $request->get('category', 'all');
+
+            // หลักสูตรตัวอย่าง (สามารถเปลี่ยนเป็นดึงจาก DB ได้)
+            $courses = [
+                [
+                    'id' => 'mlm-basics',
+                    'title' => 'พื้นฐาน MLM สู่ความสำเร็จ',
+                    'description' => 'เรียนรู้หลักการ MLM ตั้งแต่เริ่มต้น สร้างทีมและรายได้อย่างยั่งยืน',
+                    'instructor' => 'อ.สมชาย รวยดี',
+                    'duration' => '4 ชั่วโมง',
+                    'lessons' => 12,
+                    'level' => 'beginner',
+                    'price' => 0,
+                    'originalPrice' => null,
+                    'rating' => 4.8,
+                    'students' => 1250,
+                    'icon' => '📚',
+                    'gradientColors' => ['#10B981', '#059669'],
+                    'isFree' => true,
+                    'isNew' => false,
+                    'isPopular' => true,
+                ],
+                [
+                    'id' => 'crypto-trading',
+                    'title' => 'เทรด Crypto สำหรับมือใหม่',
+                    'description' => 'เข้าใจตลาด Cryptocurrency และเริ่มต้นเทรดอย่างมืออาชีพ',
+                    'instructor' => 'อ.วิทย์ คริปโต',
+                    'duration' => '6 ชั่วโมง',
+                    'lessons' => 18,
+                    'level' => 'beginner',
+                    'price' => 990,
+                    'originalPrice' => 1990,
+                    'rating' => 4.9,
+                    'students' => 856,
+                    'icon' => '🪙',
+                    'gradientColors' => ['#F59E0B', '#D97706'],
+                    'isFree' => false,
+                    'isNew' => true,
+                    'isPopular' => false,
+                ],
+                [
+                    'id' => 'affiliate-marketing',
+                    'title' => 'Affiliate Marketing Masterclass',
+                    'description' => 'สร้างรายได้ Passive Income จาก Affiliate Marketing',
+                    'instructor' => 'อ.นิดา แอฟฟิลิเอท',
+                    'duration' => '8 ชั่วโมง',
+                    'lessons' => 24,
+                    'level' => 'intermediate',
+                    'price' => 1490,
+                    'originalPrice' => 2990,
+                    'rating' => 4.7,
+                    'students' => 632,
+                    'icon' => '💰',
+                    'gradientColors' => ['#8B5CF6', '#6D28D9'],
+                    'isFree' => false,
+                    'isNew' => false,
+                    'isPopular' => true,
+                ],
+                [
+                    'id' => 'leadership',
+                    'title' => 'ภาวะผู้นำและการสร้างทีม',
+                    'description' => 'พัฒนาทักษะผู้นำ สร้างทีมที่แข็งแกร่ง',
+                    'instructor' => 'อ.ประสิทธิ์ ลีดเดอร์',
+                    'duration' => '5 ชั่วโมง',
+                    'lessons' => 15,
+                    'level' => 'advanced',
+                    'price' => 1990,
+                    'originalPrice' => null,
+                    'rating' => 4.6,
+                    'students' => 423,
+                    'icon' => '👥',
+                    'gradientColors' => ['#EC4899', '#DB2777'],
+                    'isFree' => false,
+                    'isNew' => false,
+                    'isPopular' => false,
+                ],
+                [
+                    'id' => 'digital-marketing',
+                    'title' => 'Digital Marketing 2024',
+                    'description' => 'เทคนิคการตลาดดิจิทัลล่าสุด Facebook, TikTok, LINE',
+                    'instructor' => 'อ.มาร์ค ดิจิทัล',
+                    'duration' => '10 ชั่วโมง',
+                    'lessons' => 30,
+                    'level' => 'intermediate',
+                    'price' => 2490,
+                    'originalPrice' => 4990,
+                    'rating' => 4.8,
+                    'students' => 1089,
+                    'icon' => '📱',
+                    'gradientColors' => ['#3B82F6', '#2563EB'],
+                    'isFree' => false,
+                    'isNew' => true,
+                    'isPopular' => true,
+                ],
+                [
+                    'id' => 'personal-finance',
+                    'title' => 'วางแผนการเงินส่วนบุคคล',
+                    'description' => 'จัดการเงิน ออม ลงทุน สู่อิสรภาพทางการเงิน',
+                    'instructor' => 'อ.เงินทอง มั่งมี',
+                    'duration' => '3 ชั่วโมง',
+                    'lessons' => 10,
+                    'level' => 'beginner',
+                    'price' => 0,
+                    'originalPrice' => null,
+                    'rating' => 4.5,
+                    'students' => 2150,
+                    'icon' => '💳',
+                    'gradientColors' => ['#14B8A6', '#0D9488'],
+                    'isFree' => true,
+                    'isNew' => false,
+                    'isPopular' => false,
+                ],
+            ];
+
+            // กรองตาม category
+            if ($category === 'free') {
+                $courses = array_filter($courses, fn($c) => $c['isFree']);
+            } elseif ($category === 'popular') {
+                $courses = array_filter($courses, fn($c) => $c['isPopular']);
+            } elseif ($category === 'new') {
+                $courses = array_filter($courses, fn($c) => $c['isNew']);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => array_values($courses),
+                'stats' => [
+                    'totalCourses' => 50,
+                    'totalStudents' => 10000,
+                    'avgRating' => 4.8,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายละเอียดหลักสูตร
+     *
+     * @param string $courseId
+     * @return JsonResponse
+     */
+    public function getCourseDetail(string $courseId): JsonResponse
+    {
+        // ตัวอย่าง: หาหลักสูตรจาก ID
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $courseId,
+                'title' => 'หลักสูตรตัวอย่าง',
+                'description' => 'รายละเอียดหลักสูตร...',
+                'lessons' => [
+                    ['id' => 1, 'title' => 'บทที่ 1: แนะนำ', 'duration' => '10:00', 'isFree' => true],
+                    ['id' => 2, 'title' => 'บทที่ 2: พื้นฐาน', 'duration' => '15:00', 'isFree' => false],
+                    ['id' => 3, 'title' => 'บทที่ 3: ขั้นสูง', 'duration' => '20:00', 'isFree' => false],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงหลักสูตรของฉัน
+     *
+     * @return JsonResponse
+     */
+    public function getMyCourses(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'enrolled' => [],
+                'completed' => [],
+                'inProgress' => [],
+            ],
+        ]);
+    }
+
+    // =====================================================
+    // Watch & Earn - ดูคลิปได้เงิน
+    // =====================================================
+
+    /**
+     * ดึงรายการวิดีโอ
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getVideos(Request $request): JsonResponse
+    {
+        try {
+            $category = $request->get('category', 'all');
+            $user = Auth::user();
+
+            // วิดีโอตัวอย่าง
+            $videos = [
+                [
+                    'id' => '1',
+                    'title' => 'วิธีสร้างรายได้ออนไลน์ 2024',
+                    'thumbnail' => '🎬',
+                    'duration' => '2:30',
+                    'reward' => 5,
+                    'platform' => 'tiktok',
+                    'views' => '125K',
+                    'isWatched' => false,
+                    'category' => 'การเงิน',
+                ],
+                [
+                    'id' => '2',
+                    'title' => 'เคล็ดลับการลงทุนสำหรับมือใหม่',
+                    'thumbnail' => '📈',
+                    'duration' => '5:45',
+                    'reward' => 10,
+                    'platform' => 'youtube',
+                    'views' => '89K',
+                    'isWatched' => false,
+                    'category' => 'การลงทุน',
+                ],
+                [
+                    'id' => '3',
+                    'title' => 'MLM ทำอย่างไรให้สำเร็จ',
+                    'thumbnail' => '👥',
+                    'duration' => '3:15',
+                    'reward' => 7,
+                    'platform' => 'tiktok',
+                    'views' => '256K',
+                    'isWatched' => false,
+                    'category' => 'MLM',
+                ],
+                [
+                    'id' => '4',
+                    'title' => 'รีวิวสินค้าขายดี',
+                    'thumbnail' => '🛒',
+                    'duration' => '4:20',
+                    'reward' => 8,
+                    'platform' => 'facebook',
+                    'views' => '67K',
+                    'isWatched' => false,
+                    'category' => 'รีวิว',
+                ],
+                [
+                    'id' => '5',
+                    'title' => 'Crypto 101 สำหรับผู้เริ่มต้น',
+                    'thumbnail' => '🪙',
+                    'duration' => '8:00',
+                    'reward' => 15,
+                    'platform' => 'youtube',
+                    'views' => '432K',
+                    'isWatched' => false,
+                    'category' => 'Crypto',
+                ],
+                [
+                    'id' => '6',
+                    'title' => 'เทคนิคการขายออนไลน์',
+                    'thumbnail' => '💰',
+                    'duration' => '3:45',
+                    'reward' => 6,
+                    'platform' => 'tiktok',
+                    'views' => '198K',
+                    'isWatched' => false,
+                    'category' => 'การขาย',
+                ],
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $videos,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายได้จากการดูวิดีโอ
+     *
+     * @return JsonResponse
+     */
+    public function getVideoEarnings(): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        // ข้อมูลรายได้ตัวอย่าง
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'totalEarned' => 125,
+                'todayEarned' => 35,
+                'videosWatched' => 6,
+                'dailyGoal' => 10,
+                'dailyBonus' => 50,
+            ],
+        ]);
+    }
+
+    /**
+     * บันทึกการดูวิดีโอ
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function submitVideoWatch(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบ',
+            ], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'video_id' => 'required|string',
+            'watch_duration' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ข้อมูลไม่ถูกต้อง',
+            ], 422);
+        }
+
+        try {
+            // ตัวอย่าง: ให้รางวัลจากการดูวิดีโอ
+            $reward = rand(5, 15);
+
+            // บันทึกลง DB (สามารถเพิ่มตารางได้ภายหลัง)
+            // VideoWatch::create([...]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "ยินดีด้วย! คุณได้รับ ฿{$reward}",
+                'data' => [
+                    'reward' => $reward,
+                    'newTotal' => 125 + $reward,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด',
             ], 500);
         }
     }

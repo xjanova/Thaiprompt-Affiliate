@@ -16,6 +16,12 @@ class TarotReading extends Model
         'question',
         'interpretation',
         'amount_paid',
+        'platform_fee',
+        'pv_amount',
+        'total_commission',
+        'commission_status',
+        'payment_method',
+        'payment_transaction_id',
         'is_free',
         'is_saved',
         'session_id',
@@ -24,6 +30,9 @@ class TarotReading extends Model
 
     protected $casts = [
         'amount_paid' => 'decimal:2',
+        'platform_fee' => 'decimal:2',
+        'pv_amount' => 'decimal:2',
+        'total_commission' => 'decimal:2',
         'is_free' => 'boolean',
         'is_saved' => 'boolean',
     ];
@@ -58,6 +67,22 @@ class TarotReading extends Model
     public function cards()
     {
         return $this->hasMany(TarotReadingCard::class, 'reading_id')->orderBy('position');
+    }
+
+    /**
+     * Get commissions for this reading
+     */
+    public function commissions()
+    {
+        return $this->hasMany(TarotCommission::class, 'tarot_reading_id');
+    }
+
+    /**
+     * Get payment transaction
+     */
+    public function paymentTransaction()
+    {
+        return $this->belongsTo(PaymentTransaction::class, 'payment_transaction_id');
     }
 
     /**

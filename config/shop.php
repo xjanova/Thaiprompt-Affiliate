@@ -25,13 +25,22 @@ return [
         'name' => env('OFFICIAL_SHOP_NAME', 'Official Shop'),
 
         // คำอธิบายร้าน
-        'description' => 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%',
+        'description' => env('OFFICIAL_SHOP_DESCRIPTION', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
+
+        // Logo URL (ถ้าไม่มีจะใช้ default)
+        'logo' => env('OFFICIAL_SHOP_LOGO', null),
+
+        // Banner URL (ถ้าไม่มีจะใช้ default)
+        'banner' => env('OFFICIAL_SHOP_BANNER', null),
 
         // อัตราคอมมิชชั่นเริ่มต้น (%)
-        'default_commission_rate' => 25.00,
+        'default_commission_rate' => env('OFFICIAL_SHOP_COMMISSION_RATE', 25.00),
 
         // อัตราคอมมิชชั่นสูงสุด (%)
-        'max_commission_rate' => 40.00,
+        'max_commission_rate' => env('OFFICIAL_SHOP_MAX_COMMISSION_RATE', 40.00),
+
+        // PV เริ่มต้น (% ของราคา)
+        'default_pv_percentage' => env('OFFICIAL_SHOP_PV_PERCENTAGE', 10.00),
     ],
 
 ];

@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.7.4',
-  BUILD_NUMBER: 26,
-  BUILD_DATE: '2025-12-10-TRANSFER-CONFIRM', // เพิ่ม confirmation ก่อนโอน + แสดงยอดคงเหลือหลังโอน
+  VERSION: '1.8.1',
+  BUILD_NUMBER: 28,
+  BUILD_DATE: '2025-12-11-SHOP-FIX', // Fix shopping routes, add stores page
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
