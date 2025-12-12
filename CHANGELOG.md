@@ -2,6 +2,193 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.380.0] - 2025-12-12
+
+### ✨ Features
+- Merge pull request #2263 from xjanova/charming-elbakyan (bce70820)
+- feat: เพิ่ม ping endpoint และปรับปรุง POS Terminal API (375b60a7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.379.1] - 2025-12-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2262 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (94beae7b)
+- fix(api): fix avatar and KYC image upload storage issues (ee04ed07)
+### 🔧 Other Changes
+
+
+## [v3.379.0] - 2025-12-12
+
+### ✨ Features
+- feat: เพิ่มหน้า Seller Dashboard สำหรับลงทะเบียน POS Terminal (7cfa52a4)
+### 🐛 Bug Fixes
+- fix: ปรับ UI Login ให้กระชับไม่ล้นจอ (f0f3fe30)
+- fix: ซ่อน scrollbar ในหน้า Login (c4170a3f)
+### 🔧 Other Changes
+- Merge pull request #2261 from xjanova/charming-elbakyan (82a17587)
+
+## [v3.378.3] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2260 from xjanova/charming-elbakyan (51ffb645)
+- fix: เพิ่ม using Microsoft.Maui.Controls.Shapes สำหรับ Ellipse type (5fbf25c8)
+### 🔧 Other Changes
+
+
+## [v3.378.2] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2259 from xjanova/claude/fix-line-login-button-011u7FwodZ8yyLB13824wX5u (fd503b1b)
+- fix(auth): correct LINE Login button visibility check (84f7bec3)
+### 🔧 Other Changes
+
+
+## [v3.378.1] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2258 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (27b67a44)
+- feat(tarot): add PV and commission system for tarot readings (e5c06cee)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.378.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2257 from xjanova/charming-elbakyan (9f66bb49)
+- feat: ปรับปรุง POS Activation และ UI Login (f538d694)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.377.2] - 2025-12-11
+
+### ✨ Features
+- feat(mobile): connect Academy & Watch Earn to backend APIs (a72f1d3e)
+### 🐛 Bug Fixes
+- Merge pull request #2256 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (05c213f6)
+### 🔧 Other Changes
+
+
+## [v3.377.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2255 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (e4478202)
+- fix(mobile): add stores page and fix shopping route errors (3faf4fe1)
+### 🔧 Other Changes
+
+
+## [v3.377.0] - 2025-12-11
+
+### ✨ Features
+- feat: add GPS sharing, improve fireflies, update version (98d10ed6)
+- feat(mobile): add Academy and Watch & Earn pages (db657ad3)
+- feat(home): update menu buttons with premium 2bt images (9e093b15)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2254 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (f873b589)
+
+## [v3.376.1] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2253 from xjanova/charming-elbakyan (79f20ad6)
+- fix: รวม POS controllers และแก้ duplicate routes (0207b944)
+### 🔧 Other Changes
+
+
+## [v3.376.0] - 2025-12-11
+
+### ✨ Features
+- Merge pull request #2252 from xjanova/charming-elbakyan (2570b45d)
+- feat: เพิ่มระบบ POS Terminal License แบบ 2 กุญแจ (0e63d959)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge origin/claude/Main, keep our POS models with is_blocked support (52d17120)
+
+## [v3.375.8] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2251 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (cddafabb)
+- fix(api): fix KYC and Avatar upload compatibility with mobile app (e041f02a)
+### 🔧 Other Changes
+
+
+## [v3.375.7] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Delete thaiprompt/assets/images/2bt/dd.txt (42776771)
+
+## [v3.375.6] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add files via upload (c51a5566)
+
+## [v3.375.5] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Create dd.txt (f3d6fb48)
+
+## [v3.375.4] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Create homebt (dbbfd8b8)
+
+## [v3.375.3] - 2025-12-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2250 from xjanova/charming-elbakyan (7557cfa6)
+- fix: แก้ไข flow ลงทะเบียน POS ให้ใช้ shop_code และรับ API Key อัตโนมัติ (558204b6)
+### 🔧 Other Changes
+
+
+## [v3.375.2] - 2025-12-11
+
+### ✨ Features
+- feat(tpix): enhance TPIX page with TPIX1.png hero image and cyberpunk design (77426cae)
+### 🐛 Bug Fixes
+- fix(home): use TPIX.png for TPIX menu button (ebbabd19)
+- fix(home): update menu images to use correct assets (b8ed6898)
+- fix(tpix): remove unused imports to prevent build warnings (7e243c0c)
+### 🔧 Other Changes
+- Merge pull request #2249 from xjanova/claude/add-tpix-image-01Fy2SPJ6PHPmjvcnBGVuuh6 (7cb54a68)
+
 ## [v3.375.1] - 2025-12-11
 
 ### ✨ Features

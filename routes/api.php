@@ -86,37 +86,6 @@ Route::prefix('webhook')->name('api.webhook.')->group(function () {
         ->name('truemoney');
 });
 
-// =============================================
-// POS Terminal API
-// สำหรับลงทะเบียนและจัดการเครื่อง POS
-// =============================================
-Route::prefix('pos')->name('api.pos.')->group(function () {
-    // Health check (public)
-    Route::get('/health', fn() => response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]));
-
-    // ลงทะเบียนเครื่อง POS (ต้องมี API Key)
-    Route::post('/register', [\App\Http\Controllers\Api\PosTerminalController::class, 'register'])
-        ->name('register');
-
-    // ตรวจสอบ License (ต้องมี API Key + Product Key)
-    Route::get('/validate', [\App\Http\Controllers\Api\PosTerminalController::class, 'validate'])
-        ->name('validate');
-
-    // Sync ข้อมูล (ต้องมี API Key + Product Key)
-    Route::post('/sync/products', [\App\Http\Controllers\Api\PosTerminalController::class, 'syncProducts'])
-        ->name('sync.products');
-
-    Route::post('/sync/categories', [\App\Http\Controllers\Api\PosTerminalController::class, 'syncCategories'])
-        ->name('sync.categories');
-
-    Route::post('/sync/orders', [\App\Http\Controllers\Api\PosTerminalController::class, 'uploadOrders'])
-        ->name('sync.orders');
-
-    // รายงานข้อมูลจาก POS
-    Route::post('/report/sales', [\App\Http\Controllers\Api\PosTerminalController::class, 'reportSales'])
-        ->name('report.sales');
-});
-
 // API v1
 Route::prefix('v1')->group(function () {
     // Public routes
@@ -1469,4 +1438,70 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         // Provider tracking - ดูตำแหน่งลูกค้า
         Route::get('/{booking}/track', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'providerTrackBooking']);
     });
+});
+
+/*
+|--------------------------------------------------------------------------
+| POS Terminal API Routes (สำหรับ POS Desktop App - MAUI)
+|--------------------------------------------------------------------------
+| ระบบ 2 กุญแจ:
+| - Product Key: สร้างที่ POS device อัตโนมัติ
+| - API Key: Admin ให้กับลูกค้า (ไม่ส่งกลับอัตโนมัติ)
+|
+| Flow:
+| 1. POST /pos/register - ลงทะเบียน POS (ได้ terminal_id, รอ API Key)
+| 2. POST /pos/verify - ยืนยันด้วย API Key
+| 3. GET /pos/validate - ตรวจสอบสถานะก่อน sync
+| 4. GET /pos/status - ตรวจสอบเป็นระยะว่าถูกบล็อกหรือไม่
+*/
+Route::prefix('pos')->name('api.pos.')->group(function () {
+    // 🔔 Ping - ทดสอบการเชื่อมต่อ (Public)
+    Route::get('/ping', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'ping'])
+        ->name('ping');
+
+    // 📝 ลงทะเบียน Device - สร้าง API Key อัตโนมัติ (Admin เห็นแต่ไม่ส่งกลับ)
+    Route::post('/register-device', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'registerDevice'])
+        ->name('register-device');
+
+    // ⭐ Single-step activation (แนะนำ) - ลงทะเบียนและยืนยันในครั้งเดียว
+    // ต้องระบุ: shop_code, api_key, product_key
+    Route::post('/activate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'activate'])
+        ->name('activate');
+
+    // (Legacy) ลงทะเบียน POS Terminal (Public - ไม่ต้อง auth)
+    // ⚠️ ไม่ส่ง API Key กลับ! Admin ต้องให้ลูกค้าเอง
+    Route::post('/register', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'register'])
+        ->name('register');
+
+    // (Legacy) ยืนยัน POS ด้วย API Key (Public)
+    Route::post('/verify', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'verify'])
+        ->name('verify');
+
+    // ตรวจสอบสถานะ POS และ API Key (ต้องมี headers)
+    Route::get('/validate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'validate'])
+        ->name('validate');
+
+    // ตรวจสอบสถานะเป็นระยะ (สำหรับแจ้งเตือนเมื่อถูกบล็อก)
+    Route::get('/status', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'checkStatus'])
+        ->name('status');
+
+    // Health check (public)
+    Route::get('/health', fn() => response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]));
+
+    // ======== Sync Routes (ต้องมี X-API-Key + X-Product-Key headers) ========
+    // Sync สินค้าจาก Server
+    Route::post('/sync/products', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'syncProducts'])
+        ->name('sync.products');
+
+    // Sync หมวดหมู่จาก Server
+    Route::post('/sync/categories', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'syncCategories'])
+        ->name('sync.categories');
+
+    // อัพโหลดคำสั่งซื้อไป Server
+    Route::post('/sync/orders', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'uploadOrders'])
+        ->name('sync.orders');
+
+    // รายงานยอดขายรายวัน
+    Route::post('/report/sales', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'reportSales'])
+        ->name('report.sales');
 });
