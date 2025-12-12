@@ -437,6 +437,87 @@ export const getFeaturedStores = async (): Promise<Store[] | null> => {
   }
 };
 
+// Premium Store Type
+interface PremiumStore {
+  id: string;
+  sellerId: number;
+  name: string;
+  description: string;
+  logo?: string;
+  banner?: string;
+  rating: number;
+  ratingCount: number;
+  isOfficial: boolean;
+  isPremium: boolean;
+  productCount: number;
+  featuredCount: number;
+  verified: boolean;
+  features: string[];
+}
+
+/**
+ * ดึงข้อมูลร้านพรีเมี่ยม (Official Shop)
+ * มีร้านเดียวในระบบ - เชื่อมต่อกับ admin/official-shop
+ */
+export const getPremiumStore = async (): Promise<PremiumStore | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<PremiumStore>>(
+      '/mobile/premium-store'
+    );
+    return response.data.data || null;
+  } catch (error) {
+    console.error('Get premium store error:', error);
+    return null;
+  }
+};
+
+/**
+ * ดึงสินค้าจากร้านพรีเมี่ยม
+ */
+export const getPremiumStoreProducts = async (
+  params?: {
+    category?: string | null;
+    featured?: boolean;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }
+): Promise<{
+  products: Product[];
+  pagination: {
+    total: number;
+    currentPage: number;
+    lastPage: number;
+    hasMore: boolean;
+  };
+} | null> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.featured) queryParams.append('featured', 'true');
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await apiClient.get<ApiResponse<Product[]>>(
+      `/mobile/premium-store/products?${queryParams.toString()}`
+    );
+
+    return {
+      products: response.data.data || [],
+      pagination: (response.data as any).pagination || {
+        total: 0,
+        currentPage: 1,
+        lastPage: 1,
+        hasMore: false,
+      },
+    };
+  } catch (error) {
+    console.error('Get premium store products error:', error);
+    return null;
+  }
+};
+
 /**
  * ดึงรายการหมวดหมู่สินค้า
  */

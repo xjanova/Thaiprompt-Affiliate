@@ -1,10 +1,12 @@
 /**
- * Shopping Screen - Premium Stable Version
+ * Shopping Screen - Premium Version with Firefly Effects
  * ใช้ StyleSheet แทน NativeWind
  *
  * Features:
+ * - ร้านพรีเมี่ยม (Official Shop) - ร้านเดียวของระบบ เชื่อมกับ admin/official-shop
+ * - Firefly Glow Effects (หิ่งห้อยเรืองแสงฟุ้ง)
  * - Infinite Scroll โหลด 10 รายการต่อครั้ง
- * - หมวดหมู่ร้านค้า: ร้านค้าทางการ, ร้านแนะนำติดดาว
+ * - หมวดหมู่สินค้า
  * - Banner โฆษณา (Admin Control)
  * - FlatList สำหรับ performance ที่ดี
  * - แสดง PV (Point Value) บนสินค้า
@@ -24,23 +26,207 @@ import {
   Dimensions,
   StyleSheet,
   StatusBar,
+  Animated,
+  Easing,
 } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
-import { getProducts, getProductCategories, getFeaturedStores, getOfficialStores } from '@/services/api';
+import {
+  getProductCategories,
+  getFeaturedStores,
+  getPremiumStore,
+  getPremiumStoreProducts,
+} from '@/services/api';
 import * as Cache from '@/services/cache';
 import * as Network from '@/services/network';
 import { formatCurrency } from '@/constants';
 import { BannerCarousel } from '@/components';
 import type { Product, ProductCategory } from '@/types';
 
-const { width } = Dimensions.get('window');
+const { width, height: screenHeight } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 10;
 const PRODUCT_CARD_WIDTH = (width - 48) / 2;
 
-// Store Type
+// =====================================================
+// Firefly Glow Components (หิ่งห้อยเรืองแสงฟุ้ง)
+// =====================================================
+
+// จำนวนหิ่งห้อย
+const NUM_FIREFLIES = 8;
+
+// Firefly Component - หิ่งห้อยเรืองแสง
+const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(Math.random() * width)).current;
+  const translateY = useRef(new Animated.Value(Math.random() * 200)).current;
+  const scale = useRef(new Animated.Value(0.8 + Math.random() * 0.4)).current;
+  const glowOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const animate = () => {
+      if (!isMounted) return;
+
+      const newX = Math.random() * width;
+      const newY = Math.random() * 200;
+
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(opacity, {
+            toValue: 0.7 + Math.random() * 0.3,
+            duration: duration * 0.25,
+            useNativeDriver: true,
+          }),
+          Animated.delay(duration * 0.2),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: duration * 0.55,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(glowOpacity, {
+            toValue: 1,
+            duration: duration * 0.25,
+            useNativeDriver: true,
+          }),
+          Animated.delay(duration * 0.2),
+          Animated.timing(glowOpacity, {
+            toValue: 0,
+            duration: duration * 0.55,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.timing(translateX, {
+          toValue: newX,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: newY,
+          duration: duration,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: 1.2 + Math.random() * 0.5,
+            duration: duration * 0.4,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 0.8 + Math.random() * 0.3,
+            duration: duration * 0.6,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        if (isMounted) animate();
+      });
+    };
+
+    const timeout = setTimeout(animate, delay);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        transform: [{ translateX }, { translateY }, { scale }],
+      }}
+    >
+      {/* Outer glow */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: '#FFD700',
+          opacity: Animated.multiply(glowOpacity, 0.3),
+          left: -9,
+          top: -9,
+        }}
+      />
+      {/* Middle glow */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: '#FFEC8B',
+          opacity: Animated.multiply(glowOpacity, 0.5),
+          left: -4,
+          top: -4,
+        }}
+      />
+      {/* Core */}
+      <Animated.View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: '#FFFACD',
+          opacity,
+          shadowColor: '#FFD700',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: 12,
+          elevation: 8,
+        }}
+      />
+    </Animated.View>
+  );
+};
+
+// Fireflies Container
+const FirefliesContainer = () => {
+  const fireflies = React.useMemo(() => {
+    return Array.from({ length: NUM_FIREFLIES }, (_, i) => ({
+      id: i,
+      delay: Math.random() * 2000,
+      duration: 3000 + Math.random() * 3000,
+    }));
+  }, []);
+
+  return (
+    <View style={styles.firefliesContainer} pointerEvents="none">
+      {fireflies.map((fly) => (
+        <Firefly key={fly.id} delay={fly.delay} duration={fly.duration} />
+      ))}
+    </View>
+  );
+};
+
+// Premium Store Type
+interface PremiumStoreData {
+  id: string;
+  sellerId: number;
+  name: string;
+  description: string;
+  logo?: string;
+  banner?: string;
+  rating: number;
+  ratingCount: number;
+  isOfficial: boolean;
+  isPremium: boolean;
+  productCount: number;
+  featuredCount: number;
+  verified: boolean;
+  features: string[];
+}
+
+// Store Type for Featured Stores
 interface Store {
   id: string;
   name: string;
@@ -77,18 +263,108 @@ const CategoryChip = ({
   </Pressable>
 );
 
-// Store Card Component
+// Premium Store Card Component (ร้านพรีเมี่ยม - ร้านเดียวของระบบ) + Firefly Effects
+const PremiumStoreCard = ({
+  store,
+  onPress,
+}: {
+  store: PremiumStoreData;
+  onPress: () => void;
+}) => (
+  <Pressable onPress={onPress} style={styles.premiumCardContainer}>
+    {/* Glow Effect */}
+    <View style={styles.premiumGlow} />
+
+    <LinearGradient
+      colors={['#3B82F6', '#8B5CF6']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.premiumCard}
+    >
+      {/* Fireflies in card */}
+      <FirefliesContainer />
+
+      {/* Shine overlay */}
+      <LinearGradient
+        colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.premiumShine}
+      />
+
+      <View style={styles.premiumContent}>
+        {/* Store Logo with Glow */}
+        <View style={styles.premiumLogoGlow}>
+          <View style={styles.premiumLogoContainer}>
+            {store.logo ? (
+              <Image
+                source={{ uri: store.logo }}
+                style={styles.premiumLogo}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ fontSize: 36 }}>👑</Text>
+            )}
+          </View>
+        </View>
+
+        {/* Store Info */}
+        <View style={styles.premiumInfo}>
+          <View style={styles.premiumNameRow}>
+            <Text style={styles.premiumName}>{store.name}</Text>
+            <View style={styles.premiumBadge}>
+              <Text style={{ fontSize: 10 }}>🛡️</Text>
+              <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+            </View>
+          </View>
+
+          <Text style={styles.premiumDescription} numberOfLines={1}>
+            {store.description}
+          </Text>
+
+          <View style={styles.premiumStats}>
+            <View style={styles.premiumStat}>
+              <Text style={{ fontSize: 12 }}>⭐</Text>
+              <Text style={styles.premiumStatText}>{store.rating.toFixed(1)}</Text>
+            </View>
+            <View style={styles.premiumStat}>
+              <Text style={{ fontSize: 12 }}>📦</Text>
+              <Text style={styles.premiumStatText}>{store.productCount} สินค้า</Text>
+            </View>
+            <View style={styles.premiumStat}>
+              <Text style={{ fontSize: 12 }}>🔥</Text>
+              <Text style={styles.premiumStatText}>{store.featuredCount} แนะนำ</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Arrow */}
+        <View style={styles.premiumArrow}>
+          <Text style={{ fontSize: 20, color: 'white' }}>→</Text>
+        </View>
+      </View>
+
+      {/* Features */}
+      <View style={styles.premiumFeatures}>
+        {store.features.slice(0, 3).map((feature, idx) => (
+          <View key={idx} style={styles.premiumFeatureTag}>
+            <Text style={styles.premiumFeatureText}>{feature}</Text>
+          </View>
+        ))}
+      </View>
+    </LinearGradient>
+  </Pressable>
+);
+
+// Store Card Component (ร้านแนะนำติดดาว)
 const StoreCard = ({
   store,
-  isOfficial,
   onPress,
 }: {
   store: Store;
-  isOfficial: boolean;
   onPress: () => void;
 }) => (
   <Pressable onPress={onPress} style={styles.storeCard}>
-    {/* Store Image */}
     <View style={styles.storeImageContainer}>
       {store.logo ? (
         <Image source={{ uri: store.logo }} style={styles.storeImage} resizeMode="cover" />
@@ -96,14 +372,12 @@ const StoreCard = ({
         <Text style={{ fontSize: 36, color: '#9CA3AF' }}>🏪</Text>
       )}
 
-      {/* Badge */}
-      <View style={[styles.storeBadge, isOfficial ? styles.badgeBlue : styles.badgeOrange]}>
-        <Text style={{ fontSize: 10, color: 'white' }}>{isOfficial ? '✅' : '⭐'}</Text>
-        <Text style={styles.storeBadgeText}>{isOfficial ? 'ทางการ' : 'แนะนำ'}</Text>
+      <View style={styles.storeBadgeFeatured}>
+        <Text style={{ fontSize: 10, color: 'white' }}>⭐</Text>
+        <Text style={styles.storeBadgeText}>แนะนำ</Text>
       </View>
     </View>
 
-    {/* Store Info */}
     <View style={styles.storeInfo}>
       <Text style={styles.storeName} numberOfLines={1}>{store.name}</Text>
       <View style={styles.storeRating}>
@@ -125,12 +399,10 @@ const ProductCard = ({
   onPress: () => void;
 }) => {
   const hasDiscount = product.discount_price && product.discount_price < product.price;
-  // คำนวณ PV - ใช้ค่าจาก product หรือ 10% ของราคา
   const pv = (product as any).pv || Math.round(product.price * 0.1);
 
   return (
     <Pressable onPress={onPress} style={styles.productCard}>
-      {/* Image */}
       <View style={styles.productImageContainer}>
         {product.image ? (
           <Image source={{ uri: product.image }} style={styles.productImage} resizeMode="cover" />
@@ -138,7 +410,6 @@ const ProductCard = ({
           <Text style={{ fontSize: 48, color: '#9CA3AF' }}>📦</Text>
         )}
 
-        {/* Discount Badge */}
         {hasDiscount && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountBadgeText}>
@@ -147,13 +418,11 @@ const ProductCard = ({
           </View>
         )}
 
-        {/* PV Badge - แสดงมุมขวาบน */}
         <View style={styles.pvBadge}>
           <Text style={{ fontSize: 10, color: '#FFD700' }}>⭐</Text>
           <Text style={styles.pvBadgeText}>{pv} PV</Text>
         </View>
 
-        {/* Commission Badge */}
         {product.commission_rate && product.commission_rate > 0 && (
           <View style={styles.commissionBadge}>
             <Text style={styles.commissionBadgeText}>+{product.commission_rate}%</Text>
@@ -161,7 +430,6 @@ const ProductCard = ({
         )}
       </View>
 
-      {/* Info */}
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
 
@@ -176,7 +444,6 @@ const ProductCard = ({
           )}
         </View>
 
-        {/* Rating & PV Row */}
         <View style={styles.ratingPvRow}>
           {product.rating && (
             <View style={styles.ratingContainer}>
@@ -210,7 +477,7 @@ const SectionHeader = ({
     {onSeeAll && (
       <Pressable onPress={onSeeAll} style={styles.seeAllButton}>
         <Text style={styles.seeAllText}>ดูทั้งหมด</Text>
-        <Text style={{ fontSize: 16, color: '#3B82F6' }}>➡️</Text>
+        <Text style={{ fontSize: 16, color: '#3B82F6' }}>→</Text>
       </Pressable>
     )}
   </View>
@@ -235,7 +502,7 @@ export default function ShoppingScreen() {
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [officialStores, setOfficialStores] = useState<Store[]>([]);
+  const [premiumStore, setPremiumStore] = useState<PremiumStoreData | null>(null);
   const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
 
   // UI states
@@ -254,31 +521,39 @@ export default function ShoppingScreen() {
   // โหลดข้อมูลร้านค้า
   const loadStores = useCallback(async () => {
     try {
-      const officialResponse = await getOfficialStores?.() || null;
-      const featuredResponse = await getFeaturedStores?.() || null;
+      // ดึงร้านพรีเมี่ยม (Official Shop)
+      const premiumResponse = await getPremiumStore();
+      if (premiumResponse) {
+        setPremiumStore(premiumResponse);
+      } else {
+        // Mock data ถ้า API ยังไม่พร้อม
+        setPremiumStore({
+          id: 'premium-1',
+          sellerId: 1,
+          name: 'Official Shop',
+          description: 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%',
+          rating: 4.9,
+          ratingCount: 1250,
+          isOfficial: true,
+          isPremium: true,
+          productCount: 150,
+          featuredCount: 25,
+          verified: true,
+          features: ['สินค้าแท้ 100%', 'รับประกันคุณภาพ', 'คอมมิชชั่นสูง'],
+        });
+      }
 
-      // Mock data ถ้า API ไม่มี
-      const mockOfficialStores: Store[] = [
-        { id: '1', name: 'Thaiprompt Official', rating: 4.9, isOfficial: true, isFeatured: false, productCount: 150 },
-        { id: '2', name: 'TP Electronics', rating: 4.8, isOfficial: true, isFeatured: false, productCount: 89 },
-        { id: '3', name: 'TP Fashion', rating: 4.7, isOfficial: true, isFeatured: false, productCount: 234 },
-      ];
-
-      const mockFeaturedStores: Store[] = [
-        { id: '4', name: 'TopSeller Shop', rating: 4.9, isOfficial: false, isFeatured: true, productCount: 67 },
-        { id: '5', name: 'BestDeal Store', rating: 4.8, isOfficial: false, isFeatured: true, productCount: 123 },
-        { id: '6', name: 'Premium Goods', rating: 4.7, isOfficial: false, isFeatured: true, productCount: 45 },
-        { id: '7', name: 'Quality First', rating: 4.6, isOfficial: false, isFeatured: true, productCount: 78 },
-      ];
-
-      setOfficialStores(officialResponse || mockOfficialStores);
-      setFeaturedStores(featuredResponse || mockFeaturedStores);
+      // ดึงร้านแนะนำติดดาว
+      const featuredResponse = await getFeaturedStores();
+      if (featuredResponse) {
+        setFeaturedStores(featuredResponse);
+      }
     } catch (error) {
       console.error('Load stores error:', error);
     }
   }, []);
 
-  // โหลดสินค้า (Infinite Scroll)
+  // โหลดสินค้าจากร้านพรีเมี่ยม (Infinite Scroll)
   const loadProducts = useCallback(async (pageNum: number = 1, append: boolean = false) => {
     try {
       if (pageNum === 1) {
@@ -310,26 +585,27 @@ export default function ShoppingScreen() {
         }
       }
 
-      // ดึง products
+      // ดึง products จากร้านพรีเมี่ยม
       if (online) {
-        const freshProducts = await getProducts({
+        const result = await getPremiumStoreProducts({
           category: selectedCategory,
           page: pageNum,
           limit: ITEMS_PER_PAGE,
+          search: searchQuery || undefined,
         });
 
-        if (freshProducts) {
+        if (result) {
           if (append) {
-            setProducts(prev => [...prev, ...freshProducts]);
+            setProducts(prev => [...prev, ...result.products]);
           } else {
-            setProducts(freshProducts);
+            setProducts(result.products);
           }
-          setHasMore(freshProducts.length >= ITEMS_PER_PAGE);
+          setHasMore(result.pagination.hasMore);
 
           if (pageNum === 1) {
             await Cache.setCache(
               Cache.CACHE_KEYS.PRODUCTS,
-              freshProducts,
+              result.products,
               Cache.DEFAULT_CACHE_DURATION
             );
           }
@@ -350,22 +626,23 @@ export default function ShoppingScreen() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
-  // Initial load stores - โหลดครั้งแรกเท่านั้น
+  // Initial load
   useEffect(() => {
     loadStores();
+    loadProducts(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Initial load products และ reload เมื่อ category เปลี่ยน
+  // Reload when category or search changes
   useEffect(() => {
     setPage(1);
     setProducts([]);
     setHasMore(true);
     loadProducts(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
@@ -406,55 +683,57 @@ export default function ShoppingScreen() {
         />
       </View>
 
-      {/* ร้านค้าทางการ */}
-      <View style={styles.section}>
-        <SectionHeader
-          title="🏪 ร้านค้าทางการ"
-          subtitle="ร้านค้าที่ได้รับการรับรอง"
-          onSeeAll={() => router.push('/stores?type=official')}
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.storeScrollContent}
-        >
-          {officialStores.map((store) => (
-            <StoreCard
-              key={store.id}
-              store={store}
-              isOfficial={true}
-              onPress={() => router.push(`/store/${store.id}`)}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {/* ร้านพรีเมี่ยม (Official Shop) */}
+      {premiumStore && (
+        <View style={styles.section}>
+          <SectionHeader
+            title="👑 ร้านพรีเมี่ยม"
+            subtitle="สินค้าคุณภาพจาก Thaiprompt"
+          />
+          <PremiumStoreCard
+            store={premiumStore}
+            onPress={() => {
+              // Scroll ไปดูสินค้าด้านล่าง
+              flatListRef.current?.scrollToOffset({ offset: 400, animated: true });
+            }}
+          />
+        </View>
+      )}
 
       {/* ร้านแนะนำติดดาว */}
+      {featuredStores.length > 0 && (
+        <View style={styles.section}>
+          <SectionHeader
+            title="⭐ ร้านแนะนำติดดาว"
+            subtitle="คัดสรรโดยทีมงาน"
+            onSeeAll={() => router.push('/stores?type=featured')}
+          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.storeScrollContent}
+          >
+            {featuredStores.map((store) => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                onPress={() => router.push(`/store/${store.id}`)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* สินค้าจากร้านพรีเมี่ยม */}
       <View style={styles.section}>
         <SectionHeader
-          title="⭐ ร้านแนะนำติดดาว"
-          subtitle="คัดสรรโดยทีมงาน"
-          onSeeAll={() => router.push('/stores?type=featured')}
+          title="🛍️ สินค้าจากร้านพรีเมี่ยม"
+          subtitle={premiumStore?.name || 'Official Shop'}
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.storeScrollContent}
-        >
-          {featuredStores.map((store) => (
-            <StoreCard
-              key={store.id}
-              store={store}
-              isOfficial={false}
-              onPress={() => router.push(`/store/${store.id}`)}
-            />
-          ))}
-        </ScrollView>
       </View>
 
       {/* Categories */}
       <View style={styles.section}>
-        <SectionHeader title="หมวดหมู่" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -501,8 +780,13 @@ export default function ShoppingScreen() {
       <View style={styles.emptyContainer}>
         <Text style={{ fontSize: 64, color: '#6B7280' }}>📦</Text>
         <Text style={styles.emptyText}>
-          {searchQuery ? `ไม่พบสินค้าที่ค้นหา "${searchQuery}"` : 'ไม่มีสินค้าในหมวดหมู่นี้'}
+          {searchQuery ? `ไม่พบสินค้าที่ค้นหา "${searchQuery}"` : 'ยังไม่มีสินค้าในหมวดหมู่นี้'}
         </Text>
+        {!premiumStore && (
+          <Text style={styles.emptySubtext}>
+            ร้านพรีเมี่ยมยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ
+          </Text>
+        )}
       </View>
     );
   };
@@ -527,7 +811,7 @@ export default function ShoppingScreen() {
             <View style={styles.commissionTextContainer}>
               <Text style={styles.commissionTitle}>รับคอมมิชชั่นทุกการขาย!</Text>
               <Text style={styles.commissionSubtitle}>
-                แชร์ลิงก์สินค้าและรับค่าคอมมิชชั่นสูงสุด 30%
+                แชร์ลิงก์สินค้าและรับค่าคอมมิชชั่น + PV
               </Text>
             </View>
           </LinearGradient>
@@ -577,7 +861,7 @@ export default function ShoppingScreen() {
           headerTintColor: '#FFFFFF',
           headerLeft: () => (
             <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <Text style={{ fontSize: 24, color: '#FFFFFF' }}>⬅️</Text>
+              <Text style={{ fontSize: 24, color: '#FFFFFF' }}>←</Text>
             </Pressable>
           ),
           headerRight: () => (
@@ -602,7 +886,7 @@ export default function ShoppingScreen() {
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder="ค้นหาสินค้า..."
+            placeholder="ค้นหาสินค้าในร้านพรีเมี่ยม..."
             placeholderTextColor="#6B7280"
             style={styles.searchInput}
           />
@@ -648,6 +932,17 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+  },
+
+  // Fireflies
+  firefliesContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    zIndex: 1,
   },
 
   // Offline Banner
@@ -722,6 +1017,135 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
+  // Premium Store Card
+  premiumCardContainer: {
+    marginHorizontal: 16,
+  },
+  premiumGlow: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    bottom: -8,
+    backgroundColor: '#3B82F6',
+    borderRadius: 24,
+    opacity: 0.3,
+  },
+  premiumCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    position: 'relative',
+  },
+  premiumShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    zIndex: 0,
+  },
+  premiumContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    zIndex: 2,
+  },
+  premiumLogoGlow: {
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  premiumLogoContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    overflow: 'hidden',
+  },
+  premiumLogo: {
+    width: '100%',
+    height: '100%',
+  },
+  premiumInfo: {
+    flex: 1,
+  },
+  premiumNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  premiumName: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBBF24',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  premiumBadgeText: {
+    color: '#1F2937',
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginLeft: 2,
+  },
+  premiumDescription: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  premiumStats: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  premiumStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  premiumStatText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+  },
+  premiumArrow: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumFeatures: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+    zIndex: 2,
+  },
+  premiumFeatureTag: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  premiumFeatureText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 11,
+  },
+
   // Category Chip
   categoryScrollContent: {
     paddingHorizontal: 16,
@@ -751,7 +1175,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  // Store Card
+  // Store Card (Featured)
   storeScrollContent: {
     paddingHorizontal: 16,
   },
@@ -774,21 +1198,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  storeBadge: {
+  storeBadgeFeatured: {
     position: 'absolute',
     top: 8,
     right: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F59E0B',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
-  },
-  badgeBlue: {
-    backgroundColor: '#3B82F6',
-  },
-  badgeOrange: {
-    backgroundColor: '#F59E0B',
   },
   storeBadgeText: {
     color: '#FFFFFF',
@@ -856,7 +1275,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  // PV Badge - มุมขวาบนของรูปสินค้า
   pvBadge: {
     position: 'absolute',
     top: 8,
@@ -955,6 +1373,13 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 16,
     textAlign: 'center',
+  },
+  emptySubtext: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
   },
 
   // Loading Footer

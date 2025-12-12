@@ -283,6 +283,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/{storeId}/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreProducts']);
         });
 
+        // Premium Store (Mobile App) - ร้านพรีเมี่ยม (Official Shop)
+        Route::prefix('mobile/premium-store')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getPremiumStore']);
+            Route::get('/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getPremiumStoreProducts']);
+        });
+
         // Academy (Mobile App) - ระบบการเรียนรู้
         Route::prefix('mobile/academy')->group(function () {
             Route::get('/courses', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCourses']);
