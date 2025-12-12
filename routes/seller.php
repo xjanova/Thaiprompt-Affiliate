@@ -237,6 +237,16 @@ Route::prefix('pos')->name('pos.')->group(function () {
     // Advertisements
     Route::get('/advertisements', [SellerPosController::class, 'advertisements'])->name('advertisements');
     Route::post('/advertisements', [SellerPosController::class, 'advertisementStore'])->name('advertisements.store');
+
+    // POS Terminal Registration (สำหรับ Desktop App)
+    Route::get('/terminals', [SellerPosController::class, 'terminals'])->name('terminals');
+    Route::post('/api-keys', [SellerPosController::class, 'createApiKey'])->name('api-keys.store');
+    Route::get('/api-keys/{apiKey}', [SellerPosController::class, 'showApiKey'])->name('api-keys.show');
+    Route::post('/api-keys/{apiKey}/toggle-block', [SellerPosController::class, 'toggleApiKeyBlock'])->name('api-keys.toggle-block');
+    Route::delete('/api-keys/{apiKey}', [SellerPosController::class, 'deleteApiKey'])->name('api-keys.destroy');
+    Route::get('/terminals/{terminal}', [SellerPosController::class, 'showTerminal'])->name('terminals.show');
+    Route::post('/terminals/{terminal}/toggle-status', [SellerPosController::class, 'toggleTerminalStatus'])->name('terminals.toggle-status');
+    Route::delete('/terminals/{terminal}', [SellerPosController::class, 'deleteTerminal'])->name('terminals.destroy');
 });
 
 // ========================================

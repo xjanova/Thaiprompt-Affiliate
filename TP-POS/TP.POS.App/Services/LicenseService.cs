@@ -7,7 +7,15 @@ namespace TP.POS.App.Services;
 
 /// <summary>
 /// Service สำหรับจัดการ License และการลงทะเบียน POS
-/// ใช้ระบบ 2 กุญแจ: Product Key + API Key
+///
+/// Flow การตั้งค่าครั้งแรก (ขั้นตอนเดียว):
+/// 1. กรอก Server URL + Shop Code + API Key
+/// 2. ระบบ Activate และเริ่มใช้งานได้ทันที
+///
+/// ระบบตรวจสอบ:
+/// - ตรวจสอบสถานะเป็นระยะ (ทุก 1 นาที)
+/// - แจ้งเตือนเมื่อ API Key ถูกบล็อก
+/// - ส่ง heartbeat ไป Server เพื่อแสดงสถานะ Online
 /// </summary>
 public class LicenseService : ILicenseService
 {
@@ -29,6 +37,15 @@ public class LicenseService : ILicenseService
     private const string PREF_LICENSE_DATA = "license_data_encrypted";
     private const string PREF_PRODUCT_KEY = "product_key";
     private const string PREF_DEVICE_ID = "device_id";
+    private const string PREF_API_KEY = "api_key";
+    private const string PREF_SERVER_URL = "server_url";
+    private const string PREF_SHOP_CODE = "shop_code";
+    private const string PREF_TERMINAL_ID = "terminal_id";
+
+    /// <summary>
+    /// Interval สำหรับตรวจสอบสถานะ (มิลลิวินาที)
+    /// </summary>
+    private const int STATUS_CHECK_INTERVAL = 60000; // 1 นาที
 
     #endregion
 
@@ -48,6 +65,31 @@ public class LicenseService : ILicenseService
     /// License ใช้งานได้หรือไม่
     /// </summary>
     public bool IsActivated => CurrentLicense?.IsValid ?? false;
+
+    /// <summary>
+    /// ต้องกรอก API Key หรือไม่
+    /// </summary>
+    public bool NeedsApiKey => CurrentLicense?.Status == LicenseStatus.PendingApiKey;
+
+    /// <summary>
+    /// API Key ถูกบล็อกหรือไม่
+    /// </summary>
+    public bool IsBlocked => CurrentLicense?.Status == LicenseStatus.Blocked;
+
+    /// <summary>
+    /// ข้อความแจ้งเตือนเมื่อถูกบล็อก
+    /// </summary>
+    public string? BlockedMessage => CurrentLicense?.BlockedMessage;
+
+    /// <summary>
+    /// Timer สำหรับตรวจสอบสถานะเป็นระยะ
+    /// </summary>
+    private Timer? _statusCheckTimer;
+
+    /// <summary>
+    /// Event เมื่อ API Key ถูกบล็อก
+    /// </summary>
+    public event EventHandler<BlockedEventArgs>? OnApiKeyBlocked;
 
     #endregion
 
@@ -118,9 +160,6 @@ public class LicenseService : ILicenseService
                 return false;
         }
 
-        // ตรวจสอบด้วย checksum (optional - เพิ่มความปลอดภัย)
-        // สามารถเพิ่ม logic ตรวจสอบเพิ่มเติมได้
-
         return true;
     }
 
@@ -166,13 +205,14 @@ public class LicenseService : ILicenseService
 
     #endregion
 
-    #region License Registration & Validation
+    #region Single Step Activation (ขั้นตอนเดียว)
 
     /// <summary>
-    /// ลงทะเบียนเครื่อง POS กับ Server
-    /// Flow: POS ส่ง shop_code → Server สร้าง API Key ให้อัตโนมัติ → POS เก็บ API Key ไว้ใช้
+    /// Activate POS ด้วย Server URL + Shop Code + API Key (ขั้นตอนเดียว)
+    ///
+    /// นี่คือ method หลักสำหรับการตั้งค่าครั้งแรก
     /// </summary>
-    public async Task<LicenseActivationResult> RegisterAsync(string serverUrl, string shopCode)
+    public async Task<LicenseActivationResult> ActivateAsync(string serverUrl, string shopCode, string apiKey)
     {
         try
         {
@@ -197,6 +237,16 @@ public class LicenseService : ILicenseService
                 };
             }
 
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                return new LicenseActivationResult
+                {
+                    Success = false,
+                    Message = "กรุณาระบุ API Key",
+                    ErrorCode = "MISSING_API_KEY"
+                };
+            }
+
             // ดึง/สร้าง Product Key
             var productKey = Preferences.Get(PREF_PRODUCT_KEY, string.Empty);
             if (string.IsNullOrEmpty(productKey))
@@ -207,11 +257,12 @@ public class LicenseService : ILicenseService
             // ดึง Device ID
             var deviceId = GetDeviceId();
 
-            // เตรียมข้อมูลลงทะเบียน (ส่ง shop_code แทน api_key)
-            var registrationData = new
+            // เตรียมข้อมูล Activate
+            var activateData = new
             {
                 product_key = productKey,
                 shop_code = shopCode,
+                api_key = apiKey,
                 device_id = deviceId,
                 device_name = DeviceInfo.Name,
                 device_model = DeviceInfo.Model,
@@ -219,40 +270,30 @@ public class LicenseService : ILicenseService
                 app_version = AppInfo.Current.VersionString
             };
 
-            // ส่งข้อมูลไป Server (ไม่ต้องส่ง API Key เพราะ Server จะสร้างให้)
+            // ส่งข้อมูลไป Server
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);
 
-            var json = JsonSerializer.Serialize(registrationData);
+            var json = JsonSerializer.Serialize(activateData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var registerUrl = serverUrl.TrimEnd('/') + "/api/pos/register";
-            var response = await httpClient.PostAsync(registerUrl, content);
+            var activateUrl = serverUrl.TrimEnd('/') + "/api/pos/activate";
+            var response = await httpClient.PostAsync(activateUrl, content);
             var responseBody = await response.Content.ReadAsStringAsync();
+
+            System.Diagnostics.Debug.WriteLine($"Activate response: {responseBody}");
 
             if (response.IsSuccessStatusCode)
             {
                 // Parse response
-                var result = JsonSerializer.Deserialize<RegistrationResponse>(responseBody, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<ActivateResponse>(responseBody, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
 
                 if (result?.Success == true)
                 {
-                    // Server ส่ง API Key กลับมา
-                    var apiKey = result.Data?.ApiKey;
-                    if (string.IsNullOrEmpty(apiKey))
-                    {
-                        return new LicenseActivationResult
-                        {
-                            Success = false,
-                            Message = "Server ไม่ได้ส่ง API Key กลับมา",
-                            ErrorCode = "NO_API_KEY_RETURNED"
-                        };
-                    }
-
-                    // สร้าง License Info
+                    // สร้าง License Info สถานะ "Active"
                     var license = new LicenseInfo
                     {
                         ProductKey = productKey,
@@ -260,10 +301,10 @@ public class LicenseService : ILicenseService
                         DeviceId = deviceId,
                         ShopName = result.Data?.ShopName ?? "",
                         ShopId = result.Data?.ShopId ?? 0,
-                        PosTerminalId = result.Data?.PosTerminalId ?? 0,
+                        PosTerminalId = result.Data?.TerminalId ?? 0,
                         Status = LicenseStatus.Activated,
                         RegisteredAt = DateTime.UtcNow,
-                        ExpiresAt = result.Data?.ExpiresAt,
+                        VerifiedAt = DateTime.UtcNow,
                         ServerUrl = serverUrl
                     };
 
@@ -271,18 +312,25 @@ public class LicenseService : ILicenseService
                     await SaveLicenseAsync(license);
                     CurrentLicense = license;
 
-                    // บันทึก Server URL และ API Key (ที่ได้รับจาก Server)
-                    Preferences.Set("server_url", serverUrl);
-                    Preferences.Set("api_key", apiKey);
-                    Preferences.Set("shop_code", shopCode);
-                    Preferences.Set("shop_name", license.ShopName);
-                    Preferences.Set("shop_id", license.ShopId);
+                    // บันทึกข้อมูลอื่นๆ
+                    Preferences.Set(PREF_SERVER_URL, serverUrl);
+                    Preferences.Set(PREF_SHOP_CODE, shopCode);
+                    Preferences.Set(PREF_API_KEY, apiKey);
+                    Preferences.Set(PREF_TERMINAL_ID, license.PosTerminalId);
+                    if (!string.IsNullOrEmpty(license.ShopName))
+                    {
+                        Preferences.Set("shop_name", license.ShopName);
+                    }
+
+                    // เริ่ม timer ตรวจสอบสถานะ
+                    StartStatusCheckTimer();
 
                     return new LicenseActivationResult
                     {
                         Success = true,
-                        Message = "ลงทะเบียนสำเร็จ",
-                        License = license
+                        Message = "Activate สำเร็จ พร้อมใช้งาน",
+                        License = license,
+                        NeedsApiKey = false
                     };
                 }
                 else
@@ -290,27 +338,52 @@ public class LicenseService : ILicenseService
                     return new LicenseActivationResult
                     {
                         Success = false,
-                        Message = result?.Message ?? "การลงทะเบียนล้มเหลว",
-                        ErrorCode = result?.ErrorCode ?? "REGISTRATION_FAILED"
+                        Message = result?.Message ?? "การ Activate ล้มเหลว",
+                        ErrorCode = result?.ErrorCode ?? "ACTIVATE_FAILED"
                     };
                 }
             }
-            else
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                // Handle error responses
-                var errorMessage = response.StatusCode switch
+                // API Key ถูกบล็อก
+                var result = JsonSerializer.Deserialize<ActivateResponse>(responseBody, new JsonSerializerOptions
                 {
-                    System.Net.HttpStatusCode.BadRequest => "Product Key ไม่ถูกต้อง",
-                    System.Net.HttpStatusCode.NotFound => "ไม่พบร้านค้าจากรหัสที่ระบุ",
-                    System.Net.HttpStatusCode.Conflict => "Product Key นี้ถูกใช้งานแล้ว",
-                    System.Net.HttpStatusCode.InternalServerError => "Server เกิดข้อผิดพลาด",
-                    _ => $"เกิดข้อผิดพลาด: {response.StatusCode}"
-                };
+                    PropertyNameCaseInsensitive = true
+                });
 
                 return new LicenseActivationResult
                 {
                     Success = false,
-                    Message = errorMessage,
+                    Message = result?.Message ?? "API Key ถูกบล็อก กรุณาติดต่อ Admin",
+                    ErrorCode = result?.ErrorCode ?? "API_KEY_BLOCKED",
+                    IsBlocked = true,
+                    BlockedReason = result?.BlockedReason
+                };
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                return new LicenseActivationResult
+                {
+                    Success = false,
+                    Message = "API Key ไม่ถูกต้อง",
+                    ErrorCode = "INVALID_API_KEY"
+                };
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return new LicenseActivationResult
+                {
+                    Success = false,
+                    Message = "ไม่พบร้านค้าจากรหัสที่ระบุ หรือ API Key ไม่ตรงกับร้านค้า",
+                    ErrorCode = "SHOP_NOT_FOUND"
+                };
+            }
+            else
+            {
+                return new LicenseActivationResult
+                {
+                    Success = false,
+                    Message = $"เกิดข้อผิดพลาด: {response.StatusCode}",
                     ErrorCode = response.StatusCode.ToString()
                 };
             }
@@ -335,7 +408,7 @@ public class LicenseService : ILicenseService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Registration error: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Activate error: {ex}");
             return new LicenseActivationResult
             {
                 Success = false,
@@ -344,6 +417,51 @@ public class LicenseService : ILicenseService
             };
         }
     }
+
+    #endregion
+
+    #region Legacy Methods (สำหรับ backward compatibility)
+
+    /// <summary>
+    /// ลงทะเบียน POS กับ Server (Legacy - ใช้ ActivateAsync แทน)
+    /// </summary>
+    public async Task<LicenseActivationResult> RegisterAsync(string serverUrl, string shopCode)
+    {
+        // Redirect ไปใช้ ActivateAsync แต่ไม่มี API Key
+        return new LicenseActivationResult
+        {
+            Success = false,
+            Message = "กรุณาใช้ ActivateAsync พร้อม API Key แทน",
+            ErrorCode = "USE_ACTIVATE_INSTEAD",
+            NeedsApiKey = true
+        };
+    }
+
+    /// <summary>
+    /// ยืนยัน POS ด้วย API Key (Legacy - ใช้ ActivateAsync แทน)
+    /// </summary>
+    public async Task<LicenseActivationResult> VerifyApiKeyAsync(string apiKey)
+    {
+        // ถ้ามี License อยู่แล้ว ให้ใช้ข้อมูลเดิม
+        var serverUrl = Preferences.Get(PREF_SERVER_URL, string.Empty);
+        var shopCode = Preferences.Get(PREF_SHOP_CODE, string.Empty);
+
+        if (string.IsNullOrEmpty(serverUrl) || string.IsNullOrEmpty(shopCode))
+        {
+            return new LicenseActivationResult
+            {
+                Success = false,
+                Message = "กรุณาลงทะเบียน POS ก่อน",
+                ErrorCode = "NOT_REGISTERED"
+            };
+        }
+
+        return await ActivateAsync(serverUrl, shopCode, apiKey);
+    }
+
+    #endregion
+
+    #region License Validation & Status Check
 
     /// <summary>
     /// ตรวจสอบสถานะ License กับ Server
@@ -384,18 +502,56 @@ public class LicenseService : ILicenseService
                 }
                 else
                 {
-                    // License ถูกเพิกถอน
+                    // ตรวจสอบว่าถูกบล็อกหรือไม่
+                    if (result?.Blocked == true)
+                    {
+                        CurrentLicense.Status = LicenseStatus.Blocked;
+                        CurrentLicense.BlockedMessage = result.Message ?? "API Key ถูกบล็อก";
+                        await SaveLicenseAsync(CurrentLicense);
+
+                        // Trigger event
+                        OnApiKeyBlocked?.Invoke(this, new BlockedEventArgs
+                        {
+                            Message = CurrentLicense.BlockedMessage,
+                            Reason = result.BlockedReason
+                        });
+
+                        return false;
+                    }
+
                     CurrentLicense.Status = LicenseStatus.Invalid;
                     CurrentLicense.ErrorMessage = result?.Message ?? "License ไม่ถูกต้อง";
                     await SaveLicenseAsync(CurrentLicense);
                     return false;
                 }
             }
-            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
-                     response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
-                CurrentLicense.Status = LicenseStatus.Suspended;
-                CurrentLicense.ErrorMessage = "License ถูกระงับการใช้งาน";
+                // API Key ถูกบล็อกหรือระงับ
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<ValidationResponse>(responseBody, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                CurrentLicense.Status = LicenseStatus.Blocked;
+                CurrentLicense.BlockedMessage = result?.Message ?? "API Key ถูกบล็อก กรุณาติดต่อ Admin";
+                CurrentLicense.BlockedReason = result?.BlockedReason;
+                await SaveLicenseAsync(CurrentLicense);
+
+                // Trigger event
+                OnApiKeyBlocked?.Invoke(this, new BlockedEventArgs
+                {
+                    Message = CurrentLicense.BlockedMessage,
+                    Reason = CurrentLicense.BlockedReason
+                });
+
+                return false;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                CurrentLicense.Status = LicenseStatus.Invalid;
+                CurrentLicense.ErrorMessage = "API Key ไม่ถูกต้อง";
                 await SaveLicenseAsync(CurrentLicense);
                 return false;
             }
@@ -409,6 +565,106 @@ public class LicenseService : ILicenseService
             // Network error - ยังอนุญาตให้ใช้งานต่อ (offline mode)
             return CurrentLicense.IsValid;
         }
+    }
+
+    /// <summary>
+    /// ตรวจสอบสถานะเป็นระยะ (สำหรับแจ้งเตือนเมื่อถูกบล็อก และส่ง heartbeat)
+    /// </summary>
+    public async Task<StatusCheckResult> CheckStatusAsync()
+    {
+        try
+        {
+            var apiKey = Preferences.Get(PREF_API_KEY, string.Empty);
+            var productKey = Preferences.Get(PREF_PRODUCT_KEY, string.Empty);
+            var serverUrl = Preferences.Get(PREF_SERVER_URL, string.Empty);
+
+            if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(productKey) || string.IsNullOrEmpty(serverUrl))
+            {
+                return new StatusCheckResult
+                {
+                    Success = true,
+                    HasIssue = false
+                };
+            }
+
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            httpClient.DefaultRequestHeaders.Add("X-API-Key", apiKey);
+            httpClient.DefaultRequestHeaders.Add("X-Product-Key", productKey);
+
+            var statusUrl = serverUrl.TrimEnd('/') + "/api/pos/status";
+            var response = await httpClient.GetAsync(statusUrl);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            var result = JsonSerializer.Deserialize<StatusCheckResponse>(responseBody, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            if (result?.HasIssue == true)
+            {
+                // มีปัญหา - อัพเดทสถานะ
+                if (CurrentLicense != null && result.ApiKeyStatus?.IsBlocked == true)
+                {
+                    CurrentLicense.Status = LicenseStatus.Blocked;
+                    CurrentLicense.BlockedMessage = result.IssueMessage ?? "API Key ถูกบล็อก";
+                    CurrentLicense.BlockedReason = result.ApiKeyStatus?.BlockedReason;
+                    await SaveLicenseAsync(CurrentLicense);
+
+                    // Trigger event
+                    OnApiKeyBlocked?.Invoke(this, new BlockedEventArgs
+                    {
+                        Message = CurrentLicense.BlockedMessage,
+                        Reason = CurrentLicense.BlockedReason
+                    });
+                }
+
+                return new StatusCheckResult
+                {
+                    Success = true,
+                    HasIssue = true,
+                    IssueMessage = result.IssueMessage,
+                    ContactAdmin = result.ContactAdmin ?? false
+                };
+            }
+
+            return new StatusCheckResult
+            {
+                Success = true,
+                HasIssue = false
+            };
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Status check error: {ex}");
+            return new StatusCheckResult
+            {
+                Success = false,
+                HasIssue = false
+            };
+        }
+    }
+
+    /// <summary>
+    /// เริ่ม timer สำหรับตรวจสอบสถานะเป็นระยะ
+    /// </summary>
+    private void StartStatusCheckTimer()
+    {
+        StopStatusCheckTimer();
+
+        _statusCheckTimer = new Timer(async _ =>
+        {
+            await CheckStatusAsync();
+        }, null, STATUS_CHECK_INTERVAL, STATUS_CHECK_INTERVAL);
+    }
+
+    /// <summary>
+    /// หยุด timer
+    /// </summary>
+    private void StopStatusCheckTimer()
+    {
+        _statusCheckTimer?.Dispose();
+        _statusCheckTimer = null;
     }
 
     #endregion
@@ -448,8 +704,14 @@ public class LicenseService : ILicenseService
 
                 CurrentLicense = license;
 
-                // ตรวจสอบกับ Server (background)
-                _ = ValidateLicenseAsync();
+                // ถ้า License ยืนยันแล้ว เริ่ม status check timer
+                if (license.Status == LicenseStatus.Activated)
+                {
+                    StartStatusCheckTimer();
+
+                    // ตรวจสอบกับ Server (background)
+                    _ = ValidateLicenseAsync();
+                }
 
                 return true;
             }
@@ -489,11 +751,16 @@ public class LicenseService : ILicenseService
     {
         Preferences.Remove(PREF_LICENSE_DATA);
         Preferences.Remove(PREF_PRODUCT_KEY);
-        Preferences.Remove("server_url");
-        Preferences.Remove("api_key");
+        Preferences.Remove(PREF_API_KEY);
+        Preferences.Remove(PREF_SERVER_URL);
+        Preferences.Remove(PREF_SHOP_CODE);
+        Preferences.Remove(PREF_TERMINAL_ID);
         Preferences.Remove("shop_name");
         Preferences.Remove("shop_id");
+
         CurrentLicense = null;
+        StopStatusCheckTimer();
+
         await Task.CompletedTask;
     }
 
@@ -577,28 +844,60 @@ public class LicenseService : ILicenseService
 
     #region Response Models
 
-    private class RegistrationResponse
+    private class ActivateResponse
     {
         public bool Success { get; set; }
         public string? Message { get; set; }
         public string? ErrorCode { get; set; }
-        public RegistrationData? Data { get; set; }
+        public string? BlockedReason { get; set; }
+        public ActivateData? Data { get; set; }
     }
 
-    private class RegistrationData
+    private class ActivateData
     {
-        public string? ApiKey { get; set; }
         public string? ShopName { get; set; }
         public int ShopId { get; set; }
-        public int PosTerminalId { get; set; }
-        public DateTime? ExpiresAt { get; set; }
+        public int TerminalId { get; set; }
+        public string? Status { get; set; }
+        public bool IsVerified { get; set; }
     }
 
     private class ValidationResponse
     {
+        public bool Success { get; set; }
         public bool Valid { get; set; }
         public string? Message { get; set; }
         public DateTime? ExpiresAt { get; set; }
+        public bool Blocked { get; set; }
+        public string? BlockedReason { get; set; }
+        public bool NeedsApiKey { get; set; }
+        public bool ContactAdmin { get; set; }
+    }
+
+    private class StatusCheckResponse
+    {
+        public bool Success { get; set; }
+        public bool HasIssue { get; set; }
+        public string? IssueMessage { get; set; }
+        public bool? ContactAdmin { get; set; }
+        public ApiKeyStatusData? ApiKeyStatus { get; set; }
+        public TerminalStatusData? TerminalStatus { get; set; }
+    }
+
+    private class ApiKeyStatusData
+    {
+        public bool IsValid { get; set; }
+        public bool IsBlocked { get; set; }
+        public string? BlockedReason { get; set; }
+        public string? BlockedAt { get; set; }
+        public string? StatusText { get; set; }
+    }
+
+    private class TerminalStatusData
+    {
+        public string? Status { get; set; }
+        public bool IsVerified { get; set; }
+        public string? StatusText { get; set; }
     }
 
     #endregion

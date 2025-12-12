@@ -11,9 +11,9 @@ public enum LicenseStatus
     NotRegistered,
 
     /// <summary>
-    /// รอการยืนยันจาก Server
+    /// ลงทะเบียนแล้ว รอกรอก API Key จาก Admin
     /// </summary>
-    Pending,
+    PendingApiKey,
 
     /// <summary>
     /// ลงทะเบียนสำเร็จ - ใช้งานได้
@@ -31,9 +31,14 @@ public enum LicenseStatus
     Expired,
 
     /// <summary>
-    /// ถูกระงับการใช้งาน
+    /// ถูกระงับชั่วคราว
     /// </summary>
-    Suspended
+    Suspended,
+
+    /// <summary>
+    /// ถูกบล็อก
+    /// </summary>
+    Blocked
 }
 
 /// <summary>
@@ -47,9 +52,9 @@ public class LicenseInfo
     public string ProductKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// API Key จากเว็บหลัก
+    /// API Key จาก Admin (ไม่ส่งกลับอัตโนมัติ)
     /// </summary>
-    public string ApiKey { get; set; } = string.Empty;
+    public string? ApiKey { get; set; }
 
     /// <summary>
     /// Device ID (Hardware fingerprint)
@@ -82,6 +87,11 @@ public class LicenseInfo
     public DateTime? RegisteredAt { get; set; }
 
     /// <summary>
+    /// วันที่ยืนยัน API Key
+    /// </summary>
+    public DateTime? VerifiedAt { get; set; }
+
+    /// <summary>
     /// วันที่หมดอายุ (ถ้ามี)
     /// </summary>
     public DateTime? ExpiresAt { get; set; }
@@ -97,6 +107,16 @@ public class LicenseInfo
     public string? ErrorMessage { get; set; }
 
     /// <summary>
+    /// ข้อความเมื่อถูกบล็อก
+    /// </summary>
+    public string? BlockedMessage { get; set; }
+
+    /// <summary>
+    /// เหตุผลที่ถูกบล็อก
+    /// </summary>
+    public string? BlockedReason { get; set; }
+
+    /// <summary>
     /// License ใช้งานได้หรือไม่
     /// </summary>
     public bool IsValid => Status == LicenseStatus.Activated &&
@@ -105,6 +125,15 @@ public class LicenseInfo
 
 /// <summary>
 /// Interface สำหรับจัดการ License และการลงทะเบียน POS
+///
+/// ระบบ 2 กุญแจ:
+/// 1. Product Key: สร้างที่ POS device อัตโนมัติ
+/// 2. API Key: Admin ให้กับลูกค้า
+///
+/// Flow (Single-step activation):
+/// 1. ActivateAsync() - ลงทะเบียนและยืนยันด้วย Server URL + Shop Code + API Key
+/// 2. ValidateLicenseAsync() - ตรวจสอบสถานะก่อน sync
+/// 3. CheckStatusAsync() - ตรวจสอบสถานะเป็นระยะ (heartbeat)
 /// </summary>
 public interface ILicenseService
 {
@@ -124,6 +153,26 @@ public interface ILicenseService
     bool IsActivated { get; }
 
     /// <summary>
+    /// ต้องกรอก API Key หรือไม่
+    /// </summary>
+    bool NeedsApiKey { get; }
+
+    /// <summary>
+    /// API Key ถูกบล็อกหรือไม่
+    /// </summary>
+    bool IsBlocked { get; }
+
+    /// <summary>
+    /// ข้อความแจ้งเตือนเมื่อถูกบล็อก
+    /// </summary>
+    string? BlockedMessage { get; }
+
+    /// <summary>
+    /// Event เมื่อ API Key ถูกบล็อก
+    /// </summary>
+    event EventHandler<BlockedEventArgs>? OnApiKeyBlocked;
+
+    /// <summary>
     /// สร้าง Product Key ใหม่สำหรับเครื่องนี้
     /// </summary>
     /// <returns>Product Key ที่สร้างขึ้น</returns>
@@ -137,18 +186,42 @@ public interface ILicenseService
     bool ValidateProductKey(string productKey);
 
     /// <summary>
-    /// ลงทะเบียนเครื่อง POS กับ Server
+    /// Single-step activation: ลงทะเบียนและยืนยัน POS กับ Server
+    /// รวมขั้นตอนทั้งหมดเป็นขั้นตอนเดียว
+    /// </summary>
+    /// <param name="serverUrl">URL ของ Server หลัก (เช่น https://api.example.com)</param>
+    /// <param name="shopCode">รหัสร้านค้า</param>
+    /// <param name="apiKey">API Key จาก Admin</param>
+    /// <returns>ผลการ Activate</returns>
+    Task<LicenseActivationResult> ActivateAsync(string serverUrl, string shopCode, string apiKey);
+
+    /// <summary>
+    /// (Legacy) ขั้นตอนที่ 1: ลงทะเบียน POS กับ Server
+    /// ⚠️ สำคัญ: Server ไม่ส่ง API Key กลับ!
     /// </summary>
     /// <param name="serverUrl">URL ของ Server หลัก</param>
-    /// <param name="apiKey">API Key จาก Server</param>
+    /// <param name="shopCode">รหัสร้านค้า</param>
     /// <returns>ผลการลงทะเบียน</returns>
-    Task<LicenseActivationResult> RegisterAsync(string serverUrl, string apiKey);
+    Task<LicenseActivationResult> RegisterAsync(string serverUrl, string shopCode);
+
+    /// <summary>
+    /// (Legacy) ขั้นตอนที่ 2: ยืนยัน POS ด้วย API Key ที่ได้จาก Admin
+    /// </summary>
+    /// <param name="apiKey">API Key จาก Admin</param>
+    /// <returns>ผลการยืนยัน</returns>
+    Task<LicenseActivationResult> VerifyApiKeyAsync(string apiKey);
 
     /// <summary>
     /// ตรวจสอบสถานะ License กับ Server
     /// </summary>
     /// <returns>true ถ้า License ยังใช้งานได้</returns>
     Task<bool> ValidateLicenseAsync();
+
+    /// <summary>
+    /// ตรวจสอบสถานะเป็นระยะ (สำหรับแจ้งเตือนเมื่อถูกบล็อก)
+    /// </summary>
+    /// <returns>ผลการตรวจสอบสถานะ</returns>
+    Task<StatusCheckResult> CheckStatusAsync();
 
     /// <summary>
     /// โหลด License ที่บันทึกไว้
@@ -192,4 +265,61 @@ public class LicenseActivationResult
     /// Error Code (ถ้าไม่สำเร็จ)
     /// </summary>
     public string? ErrorCode { get; set; }
+
+    /// <summary>
+    /// ต้องกรอก API Key หรือไม่
+    /// </summary>
+    public bool NeedsApiKey { get; set; }
+
+    /// <summary>
+    /// API Key ถูกบล็อกหรือไม่
+    /// </summary>
+    public bool IsBlocked { get; set; }
+
+    /// <summary>
+    /// เหตุผลที่ถูกบล็อก
+    /// </summary>
+    public string? BlockedReason { get; set; }
+}
+
+/// <summary>
+/// ผลการตรวจสอบสถานะ
+/// </summary>
+public class StatusCheckResult
+{
+    /// <summary>
+    /// สำเร็จหรือไม่
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
+    /// มีปัญหาหรือไม่
+    /// </summary>
+    public bool HasIssue { get; set; }
+
+    /// <summary>
+    /// ข้อความปัญหา
+    /// </summary>
+    public string? IssueMessage { get; set; }
+
+    /// <summary>
+    /// ต้องติดต่อ Admin หรือไม่
+    /// </summary>
+    public bool ContactAdmin { get; set; }
+}
+
+/// <summary>
+/// Event Arguments เมื่อ API Key ถูกบล็อก
+/// </summary>
+public class BlockedEventArgs : EventArgs
+{
+    /// <summary>
+    /// ข้อความแจ้งเตือน
+    /// </summary>
+    public string? Message { get; set; }
+
+    /// <summary>
+    /// เหตุผลที่ถูกบล็อก
+    /// </summary>
+    public string? Reason { get; set; }
 }

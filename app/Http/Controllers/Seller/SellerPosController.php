@@ -11,6 +11,8 @@ use App\Models\PosSession;
 use App\Models\PosCategory;
 use App\Models\PosSetting;
 use App\Models\PosAdvertisement;
+use App\Models\PosApiKey;
+use App\Models\PosTerminal;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -566,5 +568,177 @@ class SellerPosController extends Controller
             ->get();
 
         return response()->json($products);
+    }
+
+    // =========================================
+    // POS Terminal Registration (สำหรับ Desktop App)
+    // =========================================
+
+    /**
+     * หน้าจัดการ POS Terminals
+     * แสดง API Keys และ Terminals ที่ลงทะเบียนแล้ว
+     */
+    public function terminals()
+    {
+        $store = $this->getStore();
+
+        // ดึง API Keys ทั้งหมดของร้าน
+        $apiKeys = PosApiKey::where('shop_id', $store->id)
+            ->with('terminals')
+            ->latest()
+            ->get();
+
+        // ดึง Terminals ที่ลงทะเบียนแล้ว
+        $terminals = PosTerminal::where('shop_id', $store->id)
+            ->with('apiKey')
+            ->latest()
+            ->get();
+
+        // สถิติ
+        $stats = [
+            'total_api_keys' => $apiKeys->count(),
+            'active_api_keys' => $apiKeys->where('is_active', true)->where('is_blocked', false)->count(),
+            'total_terminals' => $terminals->count(),
+            'active_terminals' => $terminals->where('status', 'active')->count(),
+            'online_terminals' => $terminals->where('is_online', true)->count(),
+        ];
+
+        return view('seller.pos.terminals.index', compact('apiKeys', 'terminals', 'stats', 'store'));
+    }
+
+    /**
+     * สร้าง API Key ใหม่สำหรับ POS Terminal
+     */
+    public function createApiKey(Request $request)
+    {
+        $store = $this->getStore();
+
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:500',
+        ]);
+
+        // สร้าง API Key
+        $apiKey = PosApiKey::create([
+            'shop_id' => $store->id,
+            'name' => $validated['name'] ?? 'POS Terminal ' . ($store->apiKeys()->count() + 1),
+            'description' => $validated['description'] ?? null,
+            'is_active' => true,
+            'is_blocked' => false,
+        ]);
+
+        return back()->with('success', 'สร้าง API Key สำเร็จ! คัดลอก Key นี้ไปใส่ในโปรแกรม POS')
+            ->with('new_api_key', $apiKey->key);
+    }
+
+    /**
+     * แสดงรายละเอียด API Key
+     */
+    public function showApiKey(PosApiKey $apiKey)
+    {
+        $store = $this->getStore();
+
+        // ตรวจสอบว่า API Key เป็นของร้านนี้
+        if ($apiKey->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์เข้าถึง API Key นี้');
+        }
+
+        $apiKey->load('terminals');
+
+        return view('seller.pos.terminals.api-key-detail', compact('apiKey', 'store'));
+    }
+
+    /**
+     * บล็อก/ปลดบล็อก API Key
+     */
+    public function toggleApiKeyBlock(Request $request, PosApiKey $apiKey)
+    {
+        $store = $this->getStore();
+
+        if ($apiKey->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์');
+        }
+
+        if ($apiKey->is_blocked) {
+            // ปลดบล็อก
+            $apiKey->unblock();
+            $message = 'ปลดบล็อก API Key สำเร็จ';
+        } else {
+            // บล็อก
+            $reason = $request->input('reason', 'บล็อกโดยเจ้าของร้าน');
+            $apiKey->block($reason, auth()->id());
+            $message = 'บล็อก API Key สำเร็จ';
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * ลบ API Key
+     */
+    public function deleteApiKey(PosApiKey $apiKey)
+    {
+        $store = $this->getStore();
+
+        if ($apiKey->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์');
+        }
+
+        // ลบ terminals ที่ใช้ API Key นี้ด้วย
+        $apiKey->terminals()->delete();
+        $apiKey->delete();
+
+        return back()->with('success', 'ลบ API Key สำเร็จ');
+    }
+
+    /**
+     * แสดงรายละเอียด Terminal
+     */
+    public function showTerminal(PosTerminal $terminal)
+    {
+        $store = $this->getStore();
+
+        if ($terminal->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์');
+        }
+
+        $terminal->load('apiKey');
+
+        return view('seller.pos.terminals.terminal-detail', compact('terminal', 'store'));
+    }
+
+    /**
+     * บล็อก/ปลดบล็อก Terminal
+     */
+    public function toggleTerminalStatus(PosTerminal $terminal)
+    {
+        $store = $this->getStore();
+
+        if ($terminal->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์');
+        }
+
+        $newStatus = $terminal->status === 'active' ? 'inactive' : 'active';
+        $terminal->update(['status' => $newStatus]);
+
+        $message = $newStatus === 'active' ? 'เปิดใช้งาน Terminal สำเร็จ' : 'ปิดใช้งาน Terminal สำเร็จ';
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * ลบ Terminal
+     */
+    public function deleteTerminal(PosTerminal $terminal)
+    {
+        $store = $this->getStore();
+
+        if ($terminal->shop_id !== $store->id) {
+            abort(403, 'ไม่มีสิทธิ์');
+        }
+
+        $terminal->delete();
+
+        return back()->with('success', 'ลบ Terminal สำเร็จ');
     }
 }

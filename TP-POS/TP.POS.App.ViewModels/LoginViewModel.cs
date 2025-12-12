@@ -20,6 +20,8 @@ public class LoginViewModel : BaseViewModel
     private bool _isServerConnected;
     private Color _glowColor = Color.FromArgb("#6022C55E"); // Default: สีเขียว
     private string _connectionStatusText = "กำลังตรวจสอบการเชื่อมต่อ...";
+    private string _deviceCode = string.Empty;
+    private bool _needsFirstTimeSetup;
 
     #endregion
 
@@ -141,6 +143,31 @@ public class LoginViewModel : BaseViewModel
         set => SetProperty(ref _connectionStatusText, value);
     }
 
+    /// <summary>
+    /// รหัสเครื่อง (Device Code) - ใช้ Product Key ที่เข้ารหัส
+    /// แสดงในหน้า Login เพื่อให้ Admin ใช้ลงทะเบียน
+    /// </summary>
+    public string DeviceCode
+    {
+        get => _deviceCode;
+        set => SetProperty(ref _deviceCode, value);
+    }
+
+    /// <summary>
+    /// ต้องตั้งค่าครั้งแรกหรือไม่
+    /// ถ้ายังไม่ได้ตั้งค่า จะแสดงปุ่ม Setup เด่นๆ
+    /// </summary>
+    public bool NeedsFirstTimeSetup
+    {
+        get => _needsFirstTimeSetup;
+        set => SetProperty(ref _needsFirstTimeSetup, value);
+    }
+
+    /// <summary>
+    /// มีชื่อร้านหรือไม่ (สำหรับแสดง/ซ่อน UI)
+    /// </summary>
+    public bool HasShopName => !string.IsNullOrWhiteSpace(ShopName);
+
     #endregion
 
     #region Commands
@@ -181,10 +208,72 @@ public class LoginViewModel : BaseViewModel
             RememberMe = true;
         }
 
+        // โหลด Device Code (Product Key) - ใช้ตรงกับ Key ที่เข้ารหัส
+        DeviceCode = GetOrCreateDeviceCode();
+
+        // ตรวจสอบว่าต้องตั้งค่าครั้งแรกหรือไม่
+        var serverUrl = Preferences.Get("server_url", string.Empty);
+        var apiKey = Preferences.Get("api_key", string.Empty);
+        NeedsFirstTimeSetup = string.IsNullOrEmpty(serverUrl) || string.IsNullOrEmpty(apiKey);
+
+        // แจ้งเตือนว่า ShopName เปลี่ยน
+        OnPropertyChanged(nameof(HasShopName));
+
         // ตรวจสอบการเชื่อมต่อ Server (ทำใน background)
         _ = CheckServerConnectionAsync();
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// ดึงหรือสร้าง Device Code (Product Key)
+    /// ใช้ตรงกับ Key ที่เข้ารหัสใน LicenseService
+    /// </summary>
+    private string GetOrCreateDeviceCode()
+    {
+        // ดึง Product Key ที่บันทึกไว้
+        var productKey = Preferences.Get("product_key", string.Empty);
+
+        if (!string.IsNullOrEmpty(productKey))
+            return productKey;
+
+        // ถ้ายังไม่มี ให้สร้างใหม่โดยใช้ Logic เดียวกับ LicenseService
+        try
+        {
+            // สร้าง unique string จาก device info
+            var deviceName = DeviceInfo.Name;
+            var deviceModel = DeviceInfo.Model;
+            var deviceManufacturer = DeviceInfo.Manufacturer;
+            var platform = DeviceInfo.Platform.ToString();
+            var timestamp = DateTime.UtcNow.Ticks.ToString();
+
+            var rawData = $"{deviceName}|{deviceModel}|{deviceManufacturer}|{platform}|{timestamp}|thaipromp123";
+
+            // Hash ด้วย SHA256
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(rawData));
+            var hashString = Convert.ToBase64String(hashBytes)
+                .Replace("+", "")
+                .Replace("/", "")
+                .Replace("=", "")
+                .ToUpper();
+
+            // แปลงเป็น format TP-POS-XXXX-XXXX-XXXX-XXXX
+            productKey = $"TP-POS-{hashString[..4]}-{hashString[4..8]}-{hashString[8..12]}-{hashString[12..16]}";
+
+            // บันทึก Product Key
+            Preferences.Set("product_key", productKey);
+
+            return productKey;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"GetOrCreateDeviceCode error: {ex}");
+            // Fallback: ใช้ GUID
+            productKey = $"TP-POS-{Guid.NewGuid():N}"[..24].ToUpper();
+            Preferences.Set("product_key", productKey);
+            return productKey;
+        }
     }
 
     /// <summary>

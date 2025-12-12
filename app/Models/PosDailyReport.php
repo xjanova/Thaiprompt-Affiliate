@@ -9,23 +9,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * POS Daily Report Model
  *
- * รายงานยอดขายรายวันจากเครื่อง POS
+ * เก็บรายงานสรุปยอดขายรายวันของแต่ละ Terminal
  *
  * @property int $id
- * @property int $pos_terminal_id
- * @property int $shop_id
- * @property \Carbon\Carbon $report_date วันที่รายงาน
- * @property float $total_sales ยอดขายรวม
- * @property int $total_orders จำนวนออเดอร์
- * @property int $total_items จำนวนรายการสินค้า
- * @property float $cash_sales ยอดขายเงินสด
- * @property float $card_sales ยอดขายบัตร
- * @property float $other_sales ยอดขายอื่นๆ
- * @property float $discount_total ส่วนลดรวม
- * @property float $tax_total ภาษีรวม
- * @property array|null $hourly_sales ยอดขายรายชั่วโมง
- * @property array|null $top_products สินค้าขายดี
- * @property \Carbon\Carbon|null $synced_at เวลาที่ sync ข้อมูล
+ * @property int $terminal_id
+ * @property \Carbon\Carbon $report_date
+ * @property float $total_sales
+ * @property int $total_transactions
+ * @property float $total_cash
+ * @property float $total_card
+ * @property float $total_qr
+ * @property float $total_discount
+ * @property float $total_tax
+ * @property int $items_sold
+ * @property array|null $hourly_sales
+ * @property array|null $top_products
+ * @property \Carbon\Carbon|null $synced_at
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -34,172 +33,152 @@ class PosDailyReport extends Model
     use HasFactory;
 
     /**
-     * The table associated with the model.
-     *
-     * @var string
+     * ชื่อตาราง
      */
     protected $table = 'pos_daily_reports';
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
+     * คอลัมน์ที่สามารถกรอกได้
      */
     protected $fillable = [
-        'pos_terminal_id',
-        'shop_id',
+        'terminal_id',
         'report_date',
         'total_sales',
-        'total_orders',
-        'total_items',
-        'cash_sales',
-        'card_sales',
-        'other_sales',
-        'discount_total',
-        'tax_total',
+        'total_transactions',
+        'total_cash',
+        'total_card',
+        'total_qr',
+        'total_discount',
+        'total_tax',
+        'items_sold',
         'hourly_sales',
         'top_products',
         'synced_at',
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Attribute Casting
      */
     protected $casts = [
         'report_date' => 'date',
         'total_sales' => 'decimal:2',
-        'cash_sales' => 'decimal:2',
-        'card_sales' => 'decimal:2',
-        'other_sales' => 'decimal:2',
-        'discount_total' => 'decimal:2',
-        'tax_total' => 'decimal:2',
-        'total_orders' => 'integer',
-        'total_items' => 'integer',
+        'total_cash' => 'decimal:2',
+        'total_card' => 'decimal:2',
+        'total_qr' => 'decimal:2',
+        'total_discount' => 'decimal:2',
+        'total_tax' => 'decimal:2',
+        'total_transactions' => 'integer',
+        'items_sold' => 'integer',
         'hourly_sales' => 'array',
         'top_products' => 'array',
         'synced_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
     ];
 
+    // =========================================
+    // Relationships
+    // =========================================
+
     /**
-     * ความสัมพันธ์กับ POS Terminal
-     *
-     * @return BelongsTo
+     * POS Terminal ที่รายงานนี้เป็นของ
      */
     public function terminal(): BelongsTo
     {
-        return $this->belongsTo(PosTerminal::class, 'pos_terminal_id');
+        return $this->belongsTo(PosTerminal::class, 'terminal_id');
     }
 
+    // =========================================
+    // Scopes
+    // =========================================
+
     /**
-     * ความสัมพันธ์กับร้านค้า
-     *
-     * @return BelongsTo
+     * ค้นหาตามวันที่
      */
-    public function shop(): BelongsTo
+    public function scopeForDate($query, $date)
     {
-        return $this->belongsTo(Shop::class);
+        return $query->whereDate('report_date', $date);
     }
 
     /**
-     * Scope: รายงานของวันนี้
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * ค้นหาตามช่วงวันที่
      */
-    public function scopeToday($query)
-    {
-        return $query->where('report_date', today());
-    }
-
-    /**
-     * Scope: รายงานในช่วงวันที่
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $startDate
-     * @param string $endDate
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeDateRange($query, string $startDate, string $endDate)
+    public function scopeBetweenDates($query, $startDate, $endDate)
     {
         return $query->whereBetween('report_date', [$startDate, $endDate]);
     }
 
     /**
-     * คำนวณ average order value
-     *
-     * @return float
+     * ค้นหาตาม Terminal ID
      */
-    public function getAverageOrderValueAttribute(): float
+    public function scopeForTerminal($query, $terminalId)
     {
-        if ($this->total_orders === 0) {
+        return $query->where('terminal_id', $terminalId);
+    }
+
+    // =========================================
+    // Helper Methods
+    // =========================================
+
+    /**
+     * คำนวณยอดขายเฉลี่ยต่อ transaction
+     */
+    public function getAverageTransactionValue(): float
+    {
+        if ($this->total_transactions === 0) {
             return 0;
         }
 
-        return round($this->total_sales / $this->total_orders, 2);
+        return round($this->total_sales / $this->total_transactions, 2);
     }
 
     /**
-     * คำนวณ average items per order
-     *
-     * @return float
+     * คำนวณสัดส่วนการชำระเงิน
      */
-    public function getAverageItemsPerOrderAttribute(): float
+    public function getPaymentBreakdown(): array
     {
-        if ($this->total_orders === 0) {
-            return 0;
+        $total = $this->total_sales;
+        if ($total === 0) {
+            return [
+                'cash' => ['amount' => 0, 'percentage' => 0],
+                'card' => ['amount' => 0, 'percentage' => 0],
+                'qr' => ['amount' => 0, 'percentage' => 0],
+            ];
         }
 
-        return round($this->total_items / $this->total_orders, 2);
+        return [
+            'cash' => [
+                'amount' => $this->total_cash,
+                'percentage' => round(($this->total_cash / $total) * 100, 1),
+            ],
+            'card' => [
+                'amount' => $this->total_card,
+                'percentage' => round(($this->total_card / $total) * 100, 1),
+            ],
+            'qr' => [
+                'amount' => $this->total_qr,
+                'percentage' => round(($this->total_qr / $total) * 100, 1),
+            ],
+        ];
     }
 
     /**
-     * หาชั่วโมงที่ขายดีที่สุด
-     *
-     * @return int|null
+     * ดึงชั่วโมงที่ขายดีที่สุด
      */
-    public function getPeakHourAttribute(): ?int
+    public function getPeakHour(): ?int
     {
-        if (!$this->hourly_sales || empty($this->hourly_sales)) {
+        if (empty($this->hourly_sales)) {
             return null;
         }
 
-        $maxHour = null;
         $maxSales = 0;
+        $peakHour = null;
 
         foreach ($this->hourly_sales as $hour => $sales) {
             if ($sales > $maxSales) {
                 $maxSales = $sales;
-                $maxHour = (int) $hour;
+                $peakHour = (int) $hour;
             }
         }
 
-        return $maxHour;
-    }
-
-    /**
-     * สร้างหรืออัพเดทรายงานวันนี้
-     *
-     * @param int $terminalId
-     * @param array $data
-     * @return static
-     */
-    public static function updateOrCreateToday(int $terminalId, array $data): static
-    {
-        $terminal = PosTerminal::findOrFail($terminalId);
-
-        return static::updateOrCreate(
-            [
-                'pos_terminal_id' => $terminalId,
-                'report_date' => today(),
-            ],
-            array_merge($data, [
-                'shop_id' => $terminal->shop_id,
-                'synced_at' => now(),
-            ])
-        );
+        return $peakHour;
     }
 }
