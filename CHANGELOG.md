@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.379.0] - 2025-12-12
+
+### ✨ Features
+- feat: เพิ่มหน้า Seller Dashboard สำหรับลงทะเบียน POS Terminal (7cfa52a4)
+### 🐛 Bug Fixes
+- fix: ปรับ UI Login ให้กระชับไม่ล้นจอ (f0f3fe30)
+- fix: ซ่อน scrollbar ในหน้า Login (c4170a3f)
+### 🔧 Other Changes
+- Merge pull request #2261 from xjanova/charming-elbakyan (82a17587)
+
 ## [v3.378.3] - 2025-12-11
 
 ### ✨ Features
