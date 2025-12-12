@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.380.0] - 2025-12-12
+
+### ✨ Features
+- Merge pull request #2263 from xjanova/charming-elbakyan (bce70820)
+- feat: เพิ่ม ping endpoint และปรับปรุง POS Terminal API (375b60a7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.379.1] - 2025-12-12
 
 ### ✨ Features
