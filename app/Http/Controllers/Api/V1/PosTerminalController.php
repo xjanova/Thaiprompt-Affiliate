@@ -37,9 +37,12 @@ use Illuminate\Support\Facades\Validator;
 class PosTerminalController extends Controller
 {
     /**
-     * Secret key สำหรับ decode Product Key
+     * ดึง Secret Key จาก config (ไม่ hardcode ใน code)
      */
-    private const SECRET_KEY = 'thaipromp123';
+    private function getSecretKey(): string
+    {
+        return config('pos.secret_key', env('POS_SECRET_KEY', ''));
+    }
 
     /**
      * Ping endpoint สำหรับทดสอบการเชื่อมต่อ
@@ -1204,14 +1207,14 @@ class PosTerminalController extends Controller
             if ($decoded === false) {
                 // ถ้า decode ไม่ได้ → ใช้ raw value เป็น device_id
                 return [
-                    'device_id' => hash('sha256', $encryptedKey . self::SECRET_KEY),
+                    'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
                     'raw_key' => $encryptedKey,
                     'decoded_method' => 'hash_fallback',
                 ];
             }
 
             // ลอง XOR decrypt ด้วย secret key
-            $decrypted = $this->xorDecrypt($decoded, self::SECRET_KEY);
+            $decrypted = $this->xorDecrypt($decoded, $this->getSecretKey());
 
             // ลอง parse เป็น JSON
             $data = json_decode($decrypted, true);
@@ -1237,7 +1240,7 @@ class PosTerminalController extends Controller
 
             // Fallback: hash the key
             return [
-                'device_id' => hash('sha256', $encryptedKey . self::SECRET_KEY),
+                'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
                 'raw_key' => $encryptedKey,
                 'decoded_method' => 'hash_fallback',
             ];
@@ -1250,7 +1253,7 @@ class PosTerminalController extends Controller
 
             // Fallback: hash the key
             return [
-                'device_id' => hash('sha256', $encryptedKey . self::SECRET_KEY),
+                'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
                 'raw_key' => $encryptedKey,
                 'decoded_method' => 'error_fallback',
             ];

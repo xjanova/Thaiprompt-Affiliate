@@ -22,11 +22,6 @@ public class LicenseService : ILicenseService
     #region Constants
 
     /// <summary>
-    /// Secret Key สำหรับสร้าง/ตรวจสอบ Product Key
-    /// </summary>
-    private const string SECRET_KEY = "thaipromp123";
-
-    /// <summary>
     /// Prefix สำหรับ Product Key
     /// </summary>
     private const string PRODUCT_KEY_PREFIX = "TP-POS";
@@ -41,11 +36,57 @@ public class LicenseService : ILicenseService
     private const string PREF_SERVER_URL = "server_url";
     private const string PREF_SHOP_CODE = "shop_code";
     private const string PREF_TERMINAL_ID = "terminal_id";
+    private const string PREF_SECRET_KEY = "pos_secret_key";
 
     /// <summary>
     /// Interval สำหรับตรวจสอบสถานะ (มิลลิวินาที)
     /// </summary>
     private const int STATUS_CHECK_INTERVAL = 60000; // 1 นาที
+
+    /// <summary>
+    /// Default Secret Key (ใช้เมื่อยังไม่ได้ตั้งค่า)
+    /// ⚠️ ควรตั้งค่าผ่าน SetSecretKey() หรือ Environment Variable
+    /// </summary>
+    private const string DEFAULT_SECRET_KEY = "";
+
+    #endregion
+
+    #region Secret Key Management
+
+    /// <summary>
+    /// ดึง Secret Key จาก settings หรือ environment variable
+    /// </summary>
+    private string GetSecretKey()
+    {
+        // 1. ลองดึงจาก Preferences (ที่ตั้งค่าไว้ในแอป)
+        var savedKey = Preferences.Get(PREF_SECRET_KEY, string.Empty);
+        if (!string.IsNullOrEmpty(savedKey))
+            return savedKey;
+
+        // 2. ลองดึงจาก Environment Variable
+        var envKey = Environment.GetEnvironmentVariable("POS_SECRET_KEY");
+        if (!string.IsNullOrEmpty(envKey))
+            return envKey;
+
+        // 3. ใช้ Default (ควรตั้งค่าก่อนใช้งาน)
+        return DEFAULT_SECRET_KEY;
+    }
+
+    /// <summary>
+    /// ตั้งค่า Secret Key (เรียกจาก Setup Page)
+    /// </summary>
+    public void SetSecretKey(string secretKey)
+    {
+        if (!string.IsNullOrWhiteSpace(secretKey))
+        {
+            Preferences.Set(PREF_SECRET_KEY, secretKey);
+        }
+    }
+
+    /// <summary>
+    /// ตรวจสอบว่า Secret Key ถูกตั้งค่าแล้วหรือยัง
+    /// </summary>
+    public bool HasSecretKey => !string.IsNullOrEmpty(GetSecretKey());
 
     #endregion
 
@@ -116,7 +157,7 @@ public class LicenseService : ILicenseService
 
         // สร้าง unique string จาก device + timestamp
         var timestamp = DateTime.UtcNow.Ticks.ToString();
-        var rawData = $"{deviceId}|{timestamp}|{SECRET_KEY}";
+        var rawData = $"{deviceId}|{timestamp}|{GetSecretKey()}";
 
         // Hash ด้วย SHA256
         using var sha256 = SHA256.Create();
@@ -185,7 +226,7 @@ public class LicenseService : ILicenseService
             var platform = DeviceInfo.Platform.ToString();
 
             // รวมข้อมูลแล้ว hash
-            var rawData = $"{deviceName}|{deviceModel}|{deviceManufacturer}|{platform}|{SECRET_KEY}";
+            var rawData = $"{deviceName}|{deviceModel}|{deviceManufacturer}|{platform}|{GetSecretKey()}";
 
             using var sha256 = SHA256.Create();
             var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(rawData));
@@ -775,7 +816,7 @@ public class LicenseService : ILicenseService
     {
         try
         {
-            var key = DeriveKey(SECRET_KEY);
+            var key = DeriveKey(GetSecretKey());
             using var aes = Aes.Create();
             aes.Key = key;
             aes.GenerateIV();
@@ -805,7 +846,7 @@ public class LicenseService : ILicenseService
     {
         try
         {
-            var key = DeriveKey(SECRET_KEY);
+            var key = DeriveKey(GetSecretKey());
             var fullData = Convert.FromBase64String(encryptedText);
 
             using var aes = Aes.Create();
