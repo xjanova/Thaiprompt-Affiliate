@@ -251,9 +251,12 @@ class MobileApiController extends Controller
         }
 
         try {
-            // ลบรูปเดิมถ้ามี
-            if ($user->avatar && \Storage::disk('public')->exists($user->avatar)) {
-                \Storage::disk('public')->delete($user->avatar);
+            // ลบรูปเดิมถ้ามี (แยก path จาก URL ก่อน)
+            if ($user->avatar) {
+                $oldPath = str_replace(\Storage::disk('public')->url(''), '', $user->avatar);
+                if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                    \Storage::disk('public')->delete($oldPath);
+                }
             }
 
             // อัพโหลดรูปใหม่
@@ -1348,8 +1351,8 @@ class MobileApiController extends Controller
             $kycPath = 'kyc/' . $user->id;
             $type = $request->type;
 
-            // อัพโหลดรูป
-            $imagePath = $request->file('image')->store($kycPath, 'private');
+            // อัพโหลดรูป (ใช้ disk 'local' เพื่อเก็บไฟล์แบบ private)
+            $imagePath = $request->file('image')->store($kycPath, 'local');
 
             // หา or สร้าง KYC draft
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)
