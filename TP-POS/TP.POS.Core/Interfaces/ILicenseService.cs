@@ -239,6 +239,18 @@ public interface ILicenseService
     /// </summary>
     /// <returns>Device ID</returns>
     string GetDeviceId();
+
+    /// <summary>
+    /// ตั้งค่า Secret Key สำหรับเข้ารหัส/ถอดรหัส
+    /// ⚠️ ต้องตั้งค่าให้ตรงกับ Backend
+    /// </summary>
+    /// <param name="secretKey">Secret Key</param>
+    void SetSecretKey(string secretKey);
+
+    /// <summary>
+    /// ตรวจสอบว่า Secret Key ถูกตั้งค่าแล้วหรือยัง
+    /// </summary>
+    bool HasSecretKey { get; }
 }
 
 /// <summary>
