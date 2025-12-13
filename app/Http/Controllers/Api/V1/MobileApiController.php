@@ -4585,36 +4585,40 @@ class MobileApiController extends Controller
             $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
             $seller = \App\Models\User::where('email', $email)->first();
 
-            if (!$seller) {
-                return response()->json([
-                    'success' => true,
-                    'data' => null,
-                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
-                ]);
+            // Fallback: ถ้าไม่มี official seller ให้ใช้สินค้าทั้งหมดในระบบ
+            if ($seller) {
+                // นับจำนวนสินค้าที่ active ของ official seller
+                $productCount = Product::where('seller_id', $seller->id)
+                    ->where('is_active', true)
+                    ->count();
+
+                // นับจำนวนสินค้าแนะนำ
+                $featuredCount = Product::where('seller_id', $seller->id)
+                    ->where('is_active', true)
+                    ->where('is_featured', true)
+                    ->count();
+
+                $sellerId = $seller->id;
+            } else {
+                // Fallback: นับสินค้าทั้งหมดในระบบ
+                $productCount = Product::where('is_active', true)->count();
+                $featuredCount = Product::where('is_active', true)
+                    ->where('is_featured', true)
+                    ->count();
+                $sellerId = null;
             }
-
-            // นับจำนวนสินค้าที่ active
-            $productCount = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
-                ->count();
-
-            // นับจำนวนสินค้าแนะนำ
-            $featuredCount = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
-                ->where('is_featured', true)
-                ->count();
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => 'premium',
-                    'sellerId' => $seller->id,
+                    'sellerId' => $sellerId,
                     'name' => config('shop.official_shop.name', 'Official Shop'),
                     'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
                     'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
                     'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
                     'rating' => 5.0,
-                    'ratingCount' => $productCount > 0 ? $productCount * 5 : 100, // ใช้จำนวนสินค้าคูณ 5 เป็น rating count
+                    'ratingCount' => $productCount > 0 ? $productCount * 5 : 100,
                     'isOfficial' => true,
                     'isPremium' => true,
                     'productCount' => $productCount,
@@ -4654,23 +4658,20 @@ class MobileApiController extends Controller
             $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
             $seller = \App\Models\User::where('email', $email)->first();
 
-            if (!$seller) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
-                ]);
-            }
-
             $page = $request->get('page', 1);
             $limit = min($request->get('limit', 10), 50);
             $category = $request->get('category');
             $featured = $request->boolean('featured', false);
             $search = $request->get('search');
 
-            $query = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
-                ->with('category');
+            // สร้าง query สำหรับสินค้า
+            $query = Product::where('is_active', true)->with('category');
+
+            // ถ้ามี official seller ให้ filter เฉพาะสินค้าของ seller นั้น
+            // ถ้าไม่มี ให้ใช้สินค้าทั้งหมดในระบบ (fallback)
+            if ($seller) {
+                $query->where('seller_id', $seller->id);
+            }
 
             // กรองตามหมวดหมู่
             if ($category) {
