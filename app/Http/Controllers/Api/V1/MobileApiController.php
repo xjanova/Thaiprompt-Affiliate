@@ -24,6 +24,51 @@ use Illuminate\Support\Str;
  */
 class MobileApiController extends Controller
 {
+    /**
+     * Cache สำหรับ Official Seller
+     *
+     * @var User|null
+     */
+    protected static ?User $officialSeller = null;
+
+    // =====================================================
+    // Official Shop Helper (ใช้ร่วมกับ OfficialShopAdminController)
+    // =====================================================
+
+    /**
+     * สร้างหรือดึง Official Shop Seller
+     * ใช้ logic เดียวกันกับ OfficialShopAdminController
+     *
+     * @return User
+     */
+    protected function getOrCreateOfficialSeller(): User
+    {
+        // ใช้ cache ถ้ามี
+        if (self::$officialSeller !== null) {
+            return self::$officialSeller;
+        }
+
+        $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+
+        // หา Official Seller จาก email
+        $seller = User::where('email', $email)->first();
+
+        if (!$seller) {
+            // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
+            $seller = User::create([
+                'name' => config('shop.official_shop.name', 'Official Shop'),
+                'email' => $email,
+                'password' => Hash::make(Str::random(32)),
+                'role' => 'seller',
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        self::$officialSeller = $seller;
+
+        return $seller;
+    }
+
     // =====================================================
     // Authentication
     // =====================================================
@@ -4581,38 +4626,25 @@ class MobileApiController extends Controller
     public function getPremiumStore(): JsonResponse
     {
         try {
-            // ดึง Official Seller
-            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
-            $seller = \App\Models\User::where('email', $email)->first();
+            // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
+            $seller = $this->getOrCreateOfficialSeller();
 
-            // Fallback: ถ้าไม่มี official seller ให้ใช้สินค้าทั้งหมดในระบบ
-            if ($seller) {
-                // นับจำนวนสินค้าที่ active ของ official seller
-                $productCount = Product::where('seller_id', $seller->id)
-                    ->where('is_active', true)
-                    ->count();
+            // นับจำนวนสินค้าที่ active ของ official seller
+            $productCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->count();
 
-                // นับจำนวนสินค้าแนะนำ
-                $featuredCount = Product::where('seller_id', $seller->id)
-                    ->where('is_active', true)
-                    ->where('is_featured', true)
-                    ->count();
-
-                $sellerId = $seller->id;
-            } else {
-                // Fallback: นับสินค้าทั้งหมดในระบบ
-                $productCount = Product::where('is_active', true)->count();
-                $featuredCount = Product::where('is_active', true)
-                    ->where('is_featured', true)
-                    ->count();
-                $sellerId = null;
-            }
+            // นับจำนวนสินค้าแนะนำ
+            $featuredCount = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->where('is_featured', true)
+                ->count();
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'id' => 'premium',
-                    'sellerId' => $sellerId,
+                    'sellerId' => $seller->id,
                     'name' => config('shop.official_shop.name', 'Official Shop'),
                     'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
                     'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
@@ -4654,9 +4686,8 @@ class MobileApiController extends Controller
     public function getPremiumStoreProducts(Request $request): JsonResponse
     {
         try {
-            // ดึง Official Seller
-            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
-            $seller = \App\Models\User::where('email', $email)->first();
+            // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
+            $seller = $this->getOrCreateOfficialSeller();
 
             $page = $request->get('page', 1);
             $limit = min($request->get('limit', 10), 50);
@@ -4664,14 +4695,10 @@ class MobileApiController extends Controller
             $featured = $request->boolean('featured', false);
             $search = $request->get('search');
 
-            // สร้าง query สำหรับสินค้า
-            $query = Product::where('is_active', true)->with('category');
-
-            // ถ้ามี official seller ให้ filter เฉพาะสินค้าของ seller นั้น
-            // ถ้าไม่มี ให้ใช้สินค้าทั้งหมดในระบบ (fallback)
-            if ($seller) {
-                $query->where('seller_id', $seller->id);
-            }
+            // ดึงเฉพาะสินค้าของ Official Shop
+            $query = Product::where('seller_id', $seller->id)
+                ->where('is_active', true)
+                ->with('category');
 
             // กรองตามหมวดหมู่
             if ($category) {
