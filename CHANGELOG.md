@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.382.1] - 2025-12-13
+
+### ✨ Features
+- Merge pull request #2266 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (c6bd6319)
+- feat(ai-core): add local Llama support with CPU-only installation (103e8432)
+- feat(ai-core): set Meta Llama 4 as default AI provider (00965f41)
+- feat(ai-core): add Meta Llama 4 support to AI Core system (b68a8d56)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.382.0] - 2025-12-13
 
 ### ✨ Features
