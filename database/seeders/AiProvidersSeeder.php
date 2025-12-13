@@ -81,6 +81,15 @@ class AiProvidersSeeder extends Seeder
         // DeepSeek Local
         $this->seedProvider('deepseek-local', $this->getDeepSeekLocalProviderData(), $providersAdded, $providersSkipped);
 
+        // Meta Llama (via Together AI)
+        $meta = $this->seedProvider('meta', $this->getMetaProviderData(), $providersAdded, $providersSkipped);
+        if ($meta) {
+            $this->seedModels($meta, $this->getMetaModels(), $modelsAdded, $modelsSkipped);
+        }
+
+        // Meta Llama Local (via Ollama)
+        $this->seedProvider('meta-local', $this->getMetaLocalProviderData(), $providersAdded, $providersSkipped);
+
         if ($providersAdded > 0) {
             $this->command->info("✅ Added {$providersAdded} new AI providers.");
         }
@@ -129,6 +138,15 @@ class AiProvidersSeeder extends Seeder
 
         // DeepSeek Local
         AiProvider::create($this->getDeepSeekLocalProviderData());
+
+        // Meta Llama (via Together AI)
+        $meta = AiProvider::create($this->getMetaProviderData());
+        foreach ($this->getMetaModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // Meta Llama Local (via Ollama)
+        AiProvider::create($this->getMetaLocalProviderData());
     }
 
     /**
@@ -492,6 +510,207 @@ class AiProvidersSeeder extends Seeder
                 'input' => 0,
                 'output' => 0,
                 'note' => 'Free - Self-hosted',
+            ],
+        ];
+    }
+
+    /**
+     * Meta Llama Provider Data (via Together AI)
+     *
+     * Together AI เป็น API provider ที่รองรับ Meta Llama models
+     * ใช้ OpenAI-compatible API format
+     *
+     * สมัคร API key ได้ที่: https://together.ai
+     */
+    private function getMetaProviderData(): array
+    {
+        return [
+            'name' => 'meta',
+            'display_name' => 'Meta Llama (Together AI)',
+            'provider_type' => 'cloud',
+            'api_endpoint' => 'https://api.together.xyz/v1',
+            'api_version' => 'v1',
+            'is_active' => true,
+            'is_available' => true,
+            'config' => [
+                'api_key_required' => true,
+                'api_key_url' => 'https://together.ai',
+                'openai_compatible' => true,
+                'logo_url' => 'https://cdn.simpleicons.org/meta/0668E1',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+            ],
+        ];
+    }
+
+    /**
+     * Meta Llama Models Data
+     *
+     * รองรับ Llama 4 และ Llama 3.x models ผ่าน Together AI
+     * Llama 4 เปิดตัวเมื่อ April 2025 มี 2 variants:
+     * - Llama 4 Scout: โมเดลขนาดเล็กกว่า เร็วและประหยัด
+     * - Llama 4 Maverick: MoE (Mixture of Experts) model ประสิทธิภาพสูง
+     */
+    private function getMetaModels(): array
+    {
+        $providerId = AiProvider::where('name', 'meta')->first()->id;
+
+        return [
+            // ==========================================
+            // Llama 4 Models (ล่าสุด - April 2025)
+            // ==========================================
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-4-Scout-17B-16E-Instruct',
+                'display_name' => 'Llama 4 Scout 17B',
+                'description' => 'โมเดล Llama 4 รุ่นเล็ก เร็วและคุ้มค่า รองรับ context 10M tokens',
+                'context_window' => 10000000, // 10M tokens
+                'max_output_tokens' => 8192,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00015,   // $0.15 per 1M tokens
+                    'output' => 0.0006,   // $0.60 per 1M tokens
+                ],
+            ],
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-4-Maverick-17B-128E-Instruct',
+                'display_name' => 'Llama 4 Maverick 17B',
+                'description' => 'โมเดล Llama 4 MoE (Mixture of Experts) ประสิทธิภาพสูง 17B active / 109B total params',
+                'context_window' => 1000000, // 1M tokens
+                'max_output_tokens' => 8192,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.0002,    // $0.20 per 1M tokens
+                    'output' => 0.0006,   // $0.60 per 1M tokens
+                ],
+            ],
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8',
+                'display_name' => 'Llama 4 Maverick 17B (FP8)',
+                'description' => 'Llama 4 Maverick รุ่น FP8 ประหยัดทรัพยากร แต่ยังคงคุณภาพสูง',
+                'context_window' => 1000000,
+                'max_output_tokens' => 8192,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00018,
+                    'output' => 0.0005,
+                ],
+            ],
+
+            // ==========================================
+            // Llama 3.x Models (สำรอง)
+            // ==========================================
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+                'display_name' => 'Llama 3.3 70B Turbo',
+                'description' => 'Llama 3.3 70B รุ่น Turbo เร็วและประหยัด',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00012,
+                    'output' => 0.0003,
+                ],
+            ],
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo',
+                'display_name' => 'Llama 3.2 11B Vision',
+                'description' => 'Llama 3.2 รองรับ vision/image input สำหรับ multimodal tasks',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00018,
+                    'output' => 0.00018,
+                ],
+            ],
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-3.1-8B-Instruct-Turbo',
+                'display_name' => 'Llama 3.1 8B Turbo',
+                'description' => 'โมเดลขนาดเล็ก เร็ว และประหยัดมาก เหมาะกับ tasks ง่ายๆ',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00006,
+                    'output' => 0.00006,
+                ],
+            ],
+            [
+                'provider_id' => $providerId,
+                'model_identifier' => 'meta-llama/Llama-3.1-405B-Instruct-Turbo',
+                'display_name' => 'Llama 3.1 405B Turbo',
+                'description' => 'โมเดลใหญ่ที่สุดของ Llama 3.1 สำหรับ tasks ที่ต้องการความแม่นยำสูงสุด',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.0005,
+                    'output' => 0.0015,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Meta Llama Local (Self-Hosted via Ollama) Provider Data
+     *
+     * สำหรับผู้ที่ต้องการ run Llama บน server ของตัวเอง
+     * ต้องติดตั้ง Ollama ก่อน: https://ollama.ai
+     */
+    private function getMetaLocalProviderData(): array
+    {
+        return [
+            'name' => 'meta-local',
+            'display_name' => 'Meta Llama (Self-Hosted)',
+            'provider_type' => 'self-hosted',
+            'api_endpoint' => 'http://localhost:11434/v1',
+            'api_version' => 'v1',
+            'is_active' => false,
+            'is_available' => false,
+            'config' => [
+                'api_key_required' => false,
+                'installation_required' => true,
+                'installation_url' => 'https://ollama.ai',
+                'logo_url' => 'https://cdn.simpleicons.org/meta/0668E1',
+                'supported_models' => [
+                    'llama3.2:3b',
+                    'llama3.1:8b',
+                    'llama3.1:70b',
+                ],
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+                'input' => 0,
+                'output' => 0,
+                'note' => 'Free - Self-hosted via Ollama',
             ],
         ];
     }
