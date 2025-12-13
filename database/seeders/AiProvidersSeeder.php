@@ -88,7 +88,10 @@ class AiProvidersSeeder extends Seeder
         }
 
         // Meta Llama Local (via Ollama)
-        $this->seedProvider('meta-local', $this->getMetaLocalProviderData(), $providersAdded, $providersSkipped);
+        $metaLocal = $this->seedProvider('meta-local', $this->getMetaLocalProviderData(), $providersAdded, $providersSkipped);
+        if ($metaLocal) {
+            $this->seedModels($metaLocal, $this->getMetaLocalModels(), $modelsAdded, $modelsSkipped);
+        }
 
         if ($providersAdded > 0) {
             $this->command->info("✅ Added {$providersAdded} new AI providers.");
@@ -146,7 +149,10 @@ class AiProvidersSeeder extends Seeder
         }
 
         // Meta Llama Local (via Ollama)
-        AiProvider::create($this->getMetaLocalProviderData());
+        $metaLocal = AiProvider::create($this->getMetaLocalProviderData());
+        foreach ($this->getMetaLocalModels() as $modelData) {
+            AiModel::create($modelData);
+        }
     }
 
     /**
@@ -684,33 +690,102 @@ class AiProvidersSeeder extends Seeder
      *
      * สำหรับผู้ที่ต้องการ run Llama บน server ของตัวเอง
      * ต้องติดตั้ง Ollama ก่อน: https://ollama.ai
+     *
+     * วิธีติดตั้ง:
+     * 1. รัน: ./scripts/install-llama-local.sh
+     * 2. หรือติดตั้งเอง: curl -fsSL https://ollama.com/install.sh | sh
+     * 3. ดาวน์โหลด model: ollama pull llama3.2:3b
      */
     private function getMetaLocalProviderData(): array
     {
         return [
             'name' => 'meta-local',
-            'display_name' => 'Meta Llama (Self-Hosted)',
+            'display_name' => 'Meta Llama (Local - Ollama)',
             'provider_type' => 'self-hosted',
             'api_endpoint' => 'http://localhost:11434/v1',
             'api_version' => 'v1',
-            'is_active' => false,
-            'is_available' => false,
+            'is_active' => true,  // เปิดใช้งานเป็น default
+            'is_available' => true,
             'config' => [
                 'api_key_required' => false,
                 'installation_required' => true,
+                'installation_script' => 'scripts/install-llama-local.sh',
                 'installation_url' => 'https://ollama.ai',
                 'logo_url' => 'https://cdn.simpleicons.org/meta/0668E1',
-                'supported_models' => [
-                    'llama3.2:3b',
-                    'llama3.1:8b',
-                    'llama3.1:70b',
-                ],
+                'is_free' => true,
+                'cpu_only' => true,
             ],
             'pricing' => [
                 'currency' => 'USD',
                 'input' => 0,
                 'output' => 0,
-                'note' => 'Free - Self-hosted via Ollama',
+                'note' => 'ฟรี - รันบน server ของคุณเอง',
+            ],
+        ];
+    }
+
+    /**
+     * Meta Llama Local Models Data (สำหรับ Ollama)
+     *
+     * Models ที่แนะนำสำหรับ CPU-only:
+     * - llama3.2:3b (4GB RAM) - เร็ว, ประหยัด
+     * - llama3.1:8b (8GB RAM) - คุณภาพดี
+     */
+    private function getMetaLocalModels(): array
+    {
+        $provider = AiProvider::where('name', 'meta-local')->first();
+        if (!$provider) {
+            return [];
+        }
+
+        return [
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'llama3.2:3b',
+                'display_name' => 'Llama 3.2 3B (Local)',
+                'description' => 'โมเดลขนาดเล็ก เร็ว เหมาะกับ CPU-only (ต้องการ ~4GB RAM)',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => false,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'llama3.1:8b',
+                'display_name' => 'Llama 3.1 8B (Local)',
+                'description' => 'โมเดลขนาดกลาง คุณภาพดี (ต้องการ ~8GB RAM)',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => false,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'llama3.2:1b',
+                'display_name' => 'Llama 3.2 1B (Local)',
+                'description' => 'โมเดลเล็กที่สุด เร็วมาก (ต้องการ ~2GB RAM)',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => false,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
             ],
         ];
     }
