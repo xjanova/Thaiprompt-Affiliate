@@ -192,9 +192,14 @@ class MobileApiController extends Controller
             ], 422);
         }
 
-        // รับ fields ที่อนุญาต
-        $allowedFields = ['name', 'phone', 'avatar', 'address', 'bio', 'bank_name', 'bank_account', 'bank_account_name'];
+        // รับ fields ที่อนุญาต (ใช้ profile_picture แทน avatar เพราะ User model ใช้ชื่อนี้ใน fillable)
+        $allowedFields = ['name', 'phone', 'address', 'bio', 'bank_name', 'bank_account', 'bank_account_name'];
         $updateData = $request->only($allowedFields);
+
+        // Handle avatar แยก เพราะ Mobile App ส่งมาเป็น 'avatar' แต่ DB ใช้ 'profile_picture'
+        if ($request->has('avatar')) {
+            $updateData['profile_picture'] = $request->avatar;
+        }
 
         // กรอง null values
         $updateData = array_filter($updateData, function ($value) {
@@ -1271,11 +1276,11 @@ class MobileApiController extends Controller
             // สร้าง directory สำหรับเก็บไฟล์ KYC
             $kycPath = 'kyc/' . $user->id;
 
-            // อัพโหลดรูปบัตรประชาชน
-            $idCardPath = $request->file('id_card_image')->store($kycPath, 'private');
+            // อัพโหลดรูปบัตรประชาชน (ใช้ 'local' disk เพื่อเก็บไฟล์แบบ private เหมือน uploadKycImage)
+            $idCardPath = $request->file('id_card_image')->store($kycPath, 'local');
 
             // อัพโหลดรูปถ่ายคู่บัตร
-            $selfiePath = $request->file('selfie_image')->store($kycPath, 'private');
+            $selfiePath = $request->file('selfie_image')->store($kycPath, 'local');
 
             // สร้าง KYC verification record
             $kyc = \App\Models\KycVerification::create([
@@ -1286,10 +1291,9 @@ class MobileApiController extends Controller
                 'submitted_at' => now(),
             ]);
 
-            // อัพเดทสถานะ KYC ของ user
-            $user->update([
-                'kyc_status' => 'pending',
-            ]);
+            // อัพเดทสถานะ KYC ของ user (ใช้ direct assignment เพราะ kyc_status อยู่ใน $guarded)
+            $user->kyc_status = 'pending';
+            $user->save();
 
             DB::commit();
 
@@ -1429,10 +1433,9 @@ class MobileApiController extends Controller
             'submitted_at' => now(),
         ]);
 
-        // อัพเดทสถานะ user
-        $user->update([
-            'kyc_status' => 'pending',
-        ]);
+        // อัพเดทสถานะ user (ใช้ direct assignment เพราะ kyc_status อยู่ใน $guarded)
+        $user->kyc_status = 'pending';
+        $user->save();
 
         return response()->json([
             'success' => true,
@@ -1597,10 +1600,10 @@ class MobileApiController extends Controller
             'profile' => 'profile_image',
         ];
 
-        // บันทึกไฟล์
+        // บันทึกไฟล์ (ใช้ 'local' disk แทน 'private' เพื่อให้ทำงานได้กับ default config)
         $path = $request->file('image')->store(
             "riders/{$rider->id}/{$type}",
-            'private'
+            'local'
         );
 
         // อัพเดท rider
