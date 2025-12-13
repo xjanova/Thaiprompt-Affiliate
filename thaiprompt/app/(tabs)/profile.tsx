@@ -174,8 +174,8 @@ export default function ProfileScreen() {
       if (user.avatar.startsWith('http')) {
         return user.avatar;
       }
-      // ถ้าเป็น relative path ต่อกับ base URL
-      const baseUrl = API_BASE_URL.replace('/api/v1', '');
+      // ถ้าเป็น relative path ต่อกับ base URL (รองรับหลาย format)
+      const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
       return `${baseUrl}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
     }
     return null;
