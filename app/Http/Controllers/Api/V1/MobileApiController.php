@@ -24,6 +24,51 @@ use Illuminate\Support\Str;
  */
 class MobileApiController extends Controller
 {
+    /**
+     * Cache สำหรับ Official Seller
+     *
+     * @var User|null
+     */
+    protected static ?User $officialSeller = null;
+
+    // =====================================================
+    // Official Shop Helper (ใช้ร่วมกับ OfficialShopAdminController)
+    // =====================================================
+
+    /**
+     * สร้างหรือดึง Official Shop Seller
+     * ใช้ logic เดียวกันกับ OfficialShopAdminController
+     *
+     * @return User
+     */
+    protected function getOrCreateOfficialSeller(): User
+    {
+        // ใช้ cache ถ้ามี
+        if (self::$officialSeller !== null) {
+            return self::$officialSeller;
+        }
+
+        $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
+
+        // หา Official Seller จาก email
+        $seller = User::where('email', $email)->first();
+
+        if (!$seller) {
+            // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
+            $seller = User::create([
+                'name' => config('shop.official_shop.name', 'Official Shop'),
+                'email' => $email,
+                'password' => Hash::make(Str::random(32)),
+                'role' => 'seller',
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        self::$officialSeller = $seller;
+
+        return $seller;
+    }
+
     // =====================================================
     // Authentication
     // =====================================================
@@ -192,9 +237,14 @@ class MobileApiController extends Controller
             ], 422);
         }
 
-        // รับ fields ที่อนุญาต
-        $allowedFields = ['name', 'phone', 'avatar', 'address', 'bio', 'bank_name', 'bank_account', 'bank_account_name'];
+        // รับ fields ที่อนุญาต (ใช้ profile_picture แทน avatar เพราะ User model ใช้ชื่อนี้ใน fillable)
+        $allowedFields = ['name', 'phone', 'address', 'bio', 'bank_name', 'bank_account', 'bank_account_name'];
         $updateData = $request->only($allowedFields);
+
+        // Handle avatar แยก เพราะ Mobile App ส่งมาเป็น 'avatar' แต่ DB ใช้ 'profile_picture'
+        if ($request->has('avatar')) {
+            $updateData['profile_picture'] = $request->avatar;
+        }
 
         // กรอง null values
         $updateData = array_filter($updateData, function ($value) {
@@ -1271,11 +1321,11 @@ class MobileApiController extends Controller
             // สร้าง directory สำหรับเก็บไฟล์ KYC
             $kycPath = 'kyc/' . $user->id;
 
-            // อัพโหลดรูปบัตรประชาชน
-            $idCardPath = $request->file('id_card_image')->store($kycPath, 'private');
+            // อัพโหลดรูปบัตรประชาชน (ใช้ 'local' disk เพื่อเก็บไฟล์แบบ private เหมือน uploadKycImage)
+            $idCardPath = $request->file('id_card_image')->store($kycPath, 'local');
 
             // อัพโหลดรูปถ่ายคู่บัตร
-            $selfiePath = $request->file('selfie_image')->store($kycPath, 'private');
+            $selfiePath = $request->file('selfie_image')->store($kycPath, 'local');
 
             // สร้าง KYC verification record
             $kyc = \App\Models\KycVerification::create([
@@ -1286,10 +1336,9 @@ class MobileApiController extends Controller
                 'submitted_at' => now(),
             ]);
 
-            // อัพเดทสถานะ KYC ของ user
-            $user->update([
-                'kyc_status' => 'pending',
-            ]);
+            // อัพเดทสถานะ KYC ของ user (ใช้ direct assignment เพราะ kyc_status อยู่ใน $guarded)
+            $user->kyc_status = 'pending';
+            $user->save();
 
             DB::commit();
 
@@ -1429,10 +1478,9 @@ class MobileApiController extends Controller
             'submitted_at' => now(),
         ]);
 
-        // อัพเดทสถานะ user
-        $user->update([
-            'kyc_status' => 'pending',
-        ]);
+        // อัพเดทสถานะ user (ใช้ direct assignment เพราะ kyc_status อยู่ใน $guarded)
+        $user->kyc_status = 'pending';
+        $user->save();
 
         return response()->json([
             'success' => true,
@@ -1597,10 +1645,10 @@ class MobileApiController extends Controller
             'profile' => 'profile_image',
         ];
 
-        // บันทึกไฟล์
+        // บันทึกไฟล์ (ใช้ 'local' disk แทน 'private' เพื่อให้ทำงานได้กับ default config)
         $path = $request->file('image')->store(
             "riders/{$rider->id}/{$type}",
-            'private'
+            'local'
         );
 
         // อัพเดท rider
@@ -4578,19 +4626,10 @@ class MobileApiController extends Controller
     public function getPremiumStore(): JsonResponse
     {
         try {
-            // ดึง Official Seller
-            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
-            $seller = \App\Models\User::where('email', $email)->first();
+            // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
+            $seller = $this->getOrCreateOfficialSeller();
 
-            if (!$seller) {
-                return response()->json([
-                    'success' => true,
-                    'data' => null,
-                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
-                ]);
-            }
-
-            // นับจำนวนสินค้าที่ active
+            // นับจำนวนสินค้าที่ active ของ official seller
             $productCount = Product::where('seller_id', $seller->id)
                 ->where('is_active', true)
                 ->count();
@@ -4611,7 +4650,7 @@ class MobileApiController extends Controller
                     'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
                     'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
                     'rating' => 5.0,
-                    'ratingCount' => $productCount > 0 ? $productCount * 5 : 100, // ใช้จำนวนสินค้าคูณ 5 เป็น rating count
+                    'ratingCount' => $productCount > 0 ? $productCount * 5 : 100,
                     'isOfficial' => true,
                     'isPremium' => true,
                     'productCount' => $productCount,
@@ -4647,17 +4686,8 @@ class MobileApiController extends Controller
     public function getPremiumStoreProducts(Request $request): JsonResponse
     {
         try {
-            // ดึง Official Seller
-            $email = config('shop.official_shop.seller_email', 'official-shop@thaiprompt.com');
-            $seller = \App\Models\User::where('email', $email)->first();
-
-            if (!$seller) {
-                return response()->json([
-                    'success' => true,
-                    'data' => [],
-                    'message' => 'ยังไม่มีร้านพรีเมี่ยมในระบบ',
-                ]);
-            }
+            // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
+            $seller = $this->getOrCreateOfficialSeller();
 
             $page = $request->get('page', 1);
             $limit = min($request->get('limit', 10), 50);
@@ -4665,6 +4695,7 @@ class MobileApiController extends Controller
             $featured = $request->boolean('featured', false);
             $search = $request->get('search');
 
+            // ดึงเฉพาะสินค้าของ Official Shop
             $query = Product::where('seller_id', $seller->id)
                 ->where('is_active', true)
                 ->with('category');

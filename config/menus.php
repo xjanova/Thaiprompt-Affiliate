@@ -219,6 +219,7 @@ return [
                 ['label' => 'คำสั่งซื้อ', 'route' => 'admin.ecommerce.orders.index'],
                 ['label' => 'หมวดหมู่', 'route' => 'admin.ecommerce.categories.index'],
                 ['label' => 'รีวิวสินค้า', 'route' => 'admin.ecommerce.reviews.index'],
+                ['label' => '⭐ Official Shop', 'route' => 'admin.official-shop.dashboard', 'badge' => 'Premium', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-yellow-500'],
             ],
         ],
 
