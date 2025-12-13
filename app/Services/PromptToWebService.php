@@ -316,8 +316,8 @@ EOT;
                 ->first();
         }
 
-        // Auto-select: prefer Claude, then OpenAI, then others
-        $preferredProviders = ['claude', 'openai', 'gemini', 'deepseek'];
+        // Auto-select: prefer Meta Llama 4, then Claude, then OpenAI, then others
+        $preferredProviders = ['meta', 'claude', 'openai', 'gemini', 'deepseek'];
 
         foreach ($preferredProviders as $name) {
             $provider = AiProvider::where('name', $name)
@@ -346,10 +346,13 @@ EOT;
         }
 
         // Auto-select: prefer models good for content generation
+        // For Meta Llama: prefer Llama 4 Scout or Maverick
         // For Claude: prefer sonnet or opus
         // For OpenAI: prefer GPT-4 or GPT-3.5-turbo
 
         $preferredModels = [
+            'meta-llama/Llama-4',           // Llama 4 (Scout or Maverick)
+            'meta-llama/Llama-3.3',         // Llama 3.3
             'claude-3-sonnet',
             'claude-3-opus',
             'gpt-4',

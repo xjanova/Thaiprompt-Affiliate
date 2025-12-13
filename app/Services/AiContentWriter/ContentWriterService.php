@@ -14,12 +14,17 @@ use Illuminate\Support\Facades\Log;
  * Content Writer Service
  *
  * Service หลักสำหรับระบบ AI Content Writer
- * รวมการทำงานของ OpenAI, Claude, และ Gemini
+ * รวมการทำงานของ Meta Llama, OpenAI, Claude, และ Gemini
  *
  * @package App\Services\AiContentWriter
  */
 class ContentWriterService
 {
+    /**
+     * Meta Llama Service (Default - Llama 4)
+     */
+    protected MetaLlamaService $metaLlama;
+
     /**
      * OpenAI Service
      */
@@ -40,6 +45,7 @@ class ContentWriterService
      */
     public function __construct()
     {
+        $this->metaLlama = new MetaLlamaService();
         $this->openAi = new OpenAiService();
         $this->claude = new ClaudeService();
         $this->gemini = new GeminiService();
@@ -57,6 +63,12 @@ class ContentWriterService
     public function getAvailableProviders(): array
     {
         return [
+            'meta' => [
+                'name' => 'Meta Llama 4 (Together AI)',
+                'configured' => $this->metaLlama->isConfigured(),
+                'models' => MetaLlamaService::MODELS,
+                'is_default' => true,
+            ],
             'openai' => [
                 'name' => 'OpenAI',
                 'configured' => $this->openAi->isConfigured(),
@@ -246,11 +258,12 @@ class ContentWriterService
         int $userId,
         array $options = []
     ): array {
-        $provider = $options['provider'] ?? 'openai';
+        $provider = $options['provider'] ?? 'meta'; // Default to Meta Llama 4
         $model = $options['model'] ?? $this->getDefaultModel($provider);
 
-        // สร้าง Content ตาม Provider
+        // สร้าง Content ตาม Provider (Meta Llama 4 เป็น default)
         $result = match ($provider) {
+            'meta' => $this->metaLlama->generateContent($systemPrompt, $userPrompt, array_merge($options, ['model' => $model])),
             'openai' => $this->openAi->generateContent($systemPrompt, $userPrompt, array_merge($options, ['model' => $model])),
             'claude' => $this->claude->generateContent($systemPrompt, $userPrompt, array_merge($options, ['model' => $model])),
             'gemini' => $this->gemini->generateContent($systemPrompt, $userPrompt, array_merge($options, ['model' => $model])),
@@ -291,10 +304,11 @@ class ContentWriterService
     protected function getDefaultModel(string $provider): string
     {
         return match ($provider) {
+            'meta' => 'meta-llama/Llama-4-Scout-17B-16E-Instruct', // Llama 4 Scout (default)
             'openai' => 'gpt-4o-mini',
             'claude' => 'claude-3-haiku-20240307',
             'gemini' => 'gemini-1.5-flash',
-            default => 'gpt-4o-mini',
+            default => 'meta-llama/Llama-4-Scout-17B-16E-Instruct', // Default to Llama 4
         };
     }
 
