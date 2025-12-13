@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.382.0] - 2025-12-13
+
+### ✨ Features
+- feat: เพิ่มเมนู Official Shop ในหมวดอีคอมเมิร์ซ (ffe92372)
+### 🐛 Bug Fixes
+- fix: ให้ร้านค้าพรีเมี่ยมโหลดสินค้าจากระบบหลังบ้านแอดมินโดยตรง (3ee3e0b8)
+- fix: แก้ไขร้านค้าพรีเมี่ยมไม่โหลดสินค้าเมื่อไม่มี official shop seller (554431b3)
+- fix: แก้ไขปัญหา profile update และ KYC upload ในแอพมือถือ (5e88eb1d)
+### 🔧 Other Changes
+- Merge pull request #2267 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (f441f15b)
+
 ## [v3.381.0] - 2025-12-12
 
 ### ✨ Features
