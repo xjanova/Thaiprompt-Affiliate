@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.1] - 2025-12-14
+
+### ✨ Features
+- feat(ai-core): add Llama installation UI with progress tracking (23b0f916)
+- feat(ai-dashboard): add beautiful AI Core Dashboard with Llama support (0bec4e59)
+- feat(ai-core): add Llama 4 installation script from Hugging Face (d49c3445)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2270 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (471b1f60)
+
 ## [v3.383.0] - 2025-12-14
 
 ### ✨ Features
