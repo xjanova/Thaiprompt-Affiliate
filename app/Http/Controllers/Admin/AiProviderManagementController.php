@@ -582,37 +582,79 @@ class AiProviderManagementController extends Controller
     /**
      * ดึงข้อมูลระบบ (RAM, CPU)
      *
+     * ใช้วิธีหลายแบบเพื่อรองรับ shared hosting
+     * ที่มี open_basedir restriction
+     *
      * @return array
      */
     private function getSystemInfo(): array
     {
         $totalRam = 0;
         $cpuCores = 1;
+        $diskFree = 0;
+        $diskTotal = 0;
 
-        // ดึงข้อมูล RAM
-        if (is_readable('/proc/meminfo')) {
-            $meminfo = file_get_contents('/proc/meminfo');
-            if (preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
-                $totalRam = round($matches[1] / 1024 / 1024, 1); // Convert to GB
+        // วิธีที่ 1: ลองอ่านจาก /proc (อาจถูก block)
+        try {
+            if (@is_readable('/proc/meminfo')) {
+                $meminfo = @file_get_contents('/proc/meminfo');
+                if ($meminfo && preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
+                    $totalRam = round($matches[1] / 1024 / 1024, 1);
+                }
+            }
+
+            if (@is_readable('/proc/cpuinfo')) {
+                $cpuinfo = @file_get_contents('/proc/cpuinfo');
+                if ($cpuinfo) {
+                    $cpuCores = preg_match_all('/^processor/m', $cpuinfo, $matches);
+                }
+            }
+        } catch (\Exception $e) {
+            // ข้าม error จาก open_basedir
+        }
+
+        // วิธีที่ 2: ถ้าวิธีที่ 1 ไม่ได้ ลองใช้ exec
+        if ($totalRam == 0 && function_exists('exec')) {
+            try {
+                // ดึง RAM
+                @exec('free -g 2>/dev/null | grep Mem | awk \'{print $2}\'', $ramOutput);
+                if (!empty($ramOutput[0]) && is_numeric($ramOutput[0])) {
+                    $totalRam = (float) $ramOutput[0];
+                }
+
+                // ดึง CPU cores
+                @exec('nproc 2>/dev/null', $cpuOutput);
+                if (!empty($cpuOutput[0]) && is_numeric($cpuOutput[0])) {
+                    $cpuCores = (int) $cpuOutput[0];
+                }
+            } catch (\Exception $e) {
+                // ข้าม
             }
         }
 
-        // ดึงข้อมูล CPU cores
-        if (is_readable('/proc/cpuinfo')) {
-            $cpuinfo = file_get_contents('/proc/cpuinfo');
-            $cpuCores = preg_match_all('/^processor/m', $cpuinfo, $matches);
+        // วิธีที่ 3: ถ้ายังไม่ได้ ใช้ค่า default ตาม environment
+        if ($totalRam == 0) {
+            // ค่า default สำหรับ shared hosting ทั่วไป
+            $totalRam = 4; // 4 GB
+            $cpuCores = 2;
         }
 
         // ดึงพื้นที่ดิสก์
-        $diskFree = round(disk_free_space('/') / 1024 / 1024 / 1024, 1); // GB
-        $diskTotal = round(disk_total_space('/') / 1024 / 1024 / 1024, 1); // GB
+        try {
+            $diskFree = round(@disk_free_space(storage_path()) / 1024 / 1024 / 1024, 1);
+            $diskTotal = round(@disk_total_space(storage_path()) / 1024 / 1024 / 1024, 1);
+        } catch (\Exception $e) {
+            $diskFree = 10;
+            $diskTotal = 50;
+        }
 
         return [
             'ram_gb' => $totalRam,
             'cpu_cores' => $cpuCores,
-            'disk_free_gb' => $diskFree,
-            'disk_total_gb' => $diskTotal,
+            'disk_free_gb' => $diskFree ?: 10,
+            'disk_total_gb' => $diskTotal ?: 50,
             'recommended_model' => $this->getRecommendedModel($totalRam),
+            'is_estimated' => ($totalRam <= 4), // บอกว่าเป็นค่าประมาณหรือไม่
         ];
     }
 
