@@ -163,6 +163,34 @@
                                 placeholder="1234567890-abcdefgh">
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">From LINE Developers Console → LINE Login Channel → LIFF tab</p>
                         </div>
+
+                        {{-- Custom LINE OA Name --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-tag text-blue-500 mr-1"></i> ชื่อ LINE OA (Custom)
+                            </label>
+                            <input type="text" name="custom_oa_name" value="{{ old('custom_oa_name', $settings->custom_oa_name) }}"
+                                class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="เช่น MyBrand Official">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                กำหนดชื่อ LINE OA ที่จะแสดงในระบบ (ถ้าไม่ใส่จะใช้ชื่อจากโทเค็นอัตโนมัติ)
+                            </p>
+                            @if($settings->custom_oa_name)
+                            <div class="mt-2 p-2 bg-green-50 dark:bg-green-900/30 rounded-lg border border-green-200 dark:border-green-700">
+                                <p class="text-xs text-green-700 dark:text-green-300 flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    กำลังใช้ชื่อ: <strong class="ml-1">{{ $settings->custom_oa_name }}</strong>
+                                </p>
+                            </div>
+                            @else
+                            <div class="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <p class="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    ยังไม่ได้กำหนดชื่อ - จะใช้ชื่อจาก LINE API อัตโนมัติ
+                                </p>
+                            </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
