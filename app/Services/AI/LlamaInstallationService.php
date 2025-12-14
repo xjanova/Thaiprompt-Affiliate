@@ -2,9 +2,9 @@
 
 namespace App\Services\AI;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Service สำหรับจัดการการติดตั้ง Llama AI
@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Log;
  * - llama.cpp (Hugging Face)
  *
  * มี Progress tracking และ status reporting
+ *
+ * หมายเหตุ: บน shared hosting จะไม่สามารถติดตั้งได้
+ * จะแสดงคำแนะนำแทน
  */
 class LlamaInstallationService
 {
@@ -47,6 +50,34 @@ class LlamaInstallationService
      */
     public function startInstallation(string $method = 'ollama', string $model = 'llama3.2:3b'): array
     {
+        // ตรวจสอบว่าสามารถติดตั้งได้หรือไม่
+        $canInstall = $this->checkInstallCapability();
+
+        if (!$canInstall['can_install']) {
+            // บันทึก log
+            $this->log("ไม่สามารถติดตั้งได้: {$canInstall['reason']}");
+
+            // อัพเดท progress เป็น error พร้อมคำแนะนำ
+            $this->updateProgress([
+                'status' => 'error',
+                'step' => 'checking_system',
+                'step_name' => 'ตรวจสอบระบบ',
+                'percentage' => 5,
+                'message' => $canInstall['reason'],
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $canInstall['reason'],
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ];
+        }
+
         // เคลียร์ progress เดิม
         $this->resetProgress();
 
@@ -86,12 +117,178 @@ class LlamaInstallationService
             escapeshellarg($logFile)
         );
 
-        exec($command);
+        @exec($command);
+
+        // ตรวจสอบว่า script รันได้จริงหรือไม่ (รอ 2 วินาที)
+        sleep(2);
+        $progress = $this->getProgress();
+
+        if ($progress['percentage'] == 0 && $progress['status'] === 'running') {
+            // Script ไม่ได้รัน - อาจเป็น shared hosting
+            $this->updateProgress([
+                'status' => 'error',
+                'step' => 'checking_system',
+                'step_name' => 'ตรวจสอบระบบ',
+                'percentage' => 5,
+                'message' => 'ไม่สามารถรัน background process ได้ เซิร์ฟเวอร์นี้อาจเป็น shared hosting',
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถรัน background process ได้',
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+            ];
+        }
 
         return [
             'success' => true,
             'message' => 'เริ่มการติดตั้งแล้ว',
             'progress_url' => '/admin/ai-providers/install/progress',
+        ];
+    }
+
+    /**
+     * ตรวจสอบความสามารถในการติดตั้ง
+     *
+     * @return array
+     */
+    private function checkInstallCapability(): array
+    {
+        // 1. ตรวจสอบ exec function
+        if (!function_exists('exec')) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function exec() ถูก disable - ไม่สามารถรันคำสั่งติดตั้งได้',
+            ];
+        }
+
+        // 2. ตรวจสอบว่า exec ถูก disable หรือไม่
+        $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('exec', $disabledFunctions)) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function exec() ถูก disable ใน php.ini',
+            ];
+        }
+
+        // 3. ตรวจสอบ proc_open (จำเป็นสำหรับ background process)
+        if (in_array('proc_open', $disabledFunctions)) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function proc_open() ถูก disable - ไม่สามารถรัน background process ได้',
+            ];
+        }
+
+        // 4. ทดสอบรันคำสั่งง่ายๆ
+        $output = [];
+        $returnCode = -1;
+        @exec('echo "test"', $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            return [
+                'can_install' => false,
+                'reason' => 'ไม่สามารถรันคำสั่ง shell ได้ - อาจเป็น shared hosting ที่มีการจำกัด',
+            ];
+        }
+
+        // 5. ตรวจสอบว่าสามารถเขียนไฟล์ script ได้
+        $scriptsDir = base_path('scripts');
+        if (!is_writable($scriptsDir)) {
+            return [
+                'can_install' => false,
+                'reason' => 'ไม่สามารถเขียนไฟล์ในโฟลเดอร์ scripts/ ได้',
+            ];
+        }
+
+        return [
+            'can_install' => true,
+            'reason' => 'พร้อมติดตั้ง',
+        ];
+    }
+
+    /**
+     * คำแนะนำการติดตั้งแบบ manual
+     *
+     * @param string $method
+     * @param string $model
+     * @return array
+     */
+    private function getManualInstructions(string $method, string $model): array
+    {
+        if ($method === 'ollama') {
+            return [
+                'title' => 'วิธีติดตั้ง Ollama บน VPS/Server ของคุณ',
+                'steps' => [
+                    '1. SSH เข้าสู่เซิร์ฟเวอร์ของคุณ',
+                    '2. รันคำสั่ง: curl -fsSL https://ollama.com/install.sh | sh',
+                    '3. เริ่ม Ollama: ollama serve',
+                    "4. ดาวน์โหลด Model: ollama pull {$model}",
+                    '5. ทดสอบ: curl http://localhost:11434/api/tags',
+                ],
+                'commands' => [
+                    'curl -fsSL https://ollama.com/install.sh | sh',
+                    'ollama serve &',
+                    "ollama pull {$model}",
+                ],
+            ];
+        }
+
+        return [
+            'title' => 'วิธีติดตั้ง Llama จาก Hugging Face',
+            'steps' => [
+                '1. SSH เข้าสู่เซิร์ฟเวอร์ที่มี RAM เพียงพอ',
+                '2. ติดตั้ง Python: sudo apt install python3 python3-pip',
+                '3. ติดตั้ง huggingface_hub: pip install huggingface_hub',
+                "4. ดาวน์โหลด Model: huggingface-cli download meta-llama/{$model}",
+                '5. ติดตั้ง llama.cpp สำหรับรัน inference',
+            ],
+            'commands' => [
+                'pip install huggingface_hub',
+                "huggingface-cli download meta-llama/{$model}",
+            ],
+        ];
+    }
+
+    /**
+     * ทางเลือกอื่นสำหรับใช้ AI
+     *
+     * @return array
+     */
+    private function getAlternativeOptions(): array
+    {
+        return [
+            [
+                'name' => 'Together AI (Meta Llama Cloud)',
+                'description' => 'ใช้ Llama 4 ผ่าน API โดยไม่ต้องติดตั้ง',
+                'url' => 'https://api.together.xyz',
+                'free_tier' => true,
+                'setup' => 'ไปที่ AI Providers > Meta > กรอก API Key',
+            ],
+            [
+                'name' => 'OpenAI',
+                'description' => 'ใช้ GPT-4 ผ่าน API',
+                'url' => 'https://platform.openai.com',
+                'free_tier' => false,
+                'setup' => 'ไปที่ AI Providers > OpenAI > กรอก API Key',
+            ],
+            [
+                'name' => 'Anthropic Claude',
+                'description' => 'ใช้ Claude 3 ผ่าน API',
+                'url' => 'https://console.anthropic.com',
+                'free_tier' => false,
+                'setup' => 'ไปที่ AI Providers > Anthropic > กรอก API Key',
+            ],
+            [
+                'name' => 'VPS แยกสำหรับ Ollama',
+                'description' => 'เช่า VPS (เช่น DigitalOcean, Vultr) เพื่อรัน Ollama',
+                'url' => 'https://www.digitalocean.com',
+                'free_tier' => false,
+                'setup' => 'เช่า VPS > ติดตั้ง Ollama > เชื่อมต่อผ่าน API',
+            ],
         ];
     }
 
@@ -186,8 +383,8 @@ class LlamaInstallationService
     public function cancelInstallation(): array
     {
         // หา process และ kill
-        exec("pkill -f 'install-llama-with-progress.sh'");
-        exec("pkill -f 'ollama pull'");
+        @exec("pkill -f 'install-llama-with-progress.sh' 2>/dev/null");
+        @exec("pkill -f 'ollama pull' 2>/dev/null");
 
         $this->updateProgress([
             'status' => 'cancelled',
@@ -221,8 +418,8 @@ class LlamaInstallationService
     private function createInstallScript(string $path): void
     {
         $script = $this->getInstallScriptContent();
-        file_put_contents($path, $script);
-        chmod($path, 0755);
+        @file_put_contents($path, $script);
+        @chmod($path, 0755);
     }
 
     /**
@@ -329,7 +526,6 @@ if [ "$METHOD" = "ollama" ]; then
     fi
 
     # Download model with progress tracking
-    # Ollama doesn't provide percentage, so we simulate based on model size
     update_progress "running" "downloading_model" "ดาวน์โหลด Model" 20 "กำลังดาวน์โหลด $MODEL... (อาจใช้เวลา 5-30 นาที)"
 
     # Pull model

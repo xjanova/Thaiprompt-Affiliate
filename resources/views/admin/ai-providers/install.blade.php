@@ -174,7 +174,72 @@
                 {{-- Error Card --}}
                 <div x-show="progress.status === 'error'" x-cloak
                      class="bg-gradient-to-br from-red-500/20 to-pink-500/20 backdrop-blur-xl rounded-3xl p-6 border border-red-500/30">
-                    <div class="text-center py-8">
+
+                    {{-- Shared Hosting Notice --}}
+                    <div x-show="progress.is_shared_hosting" class="mb-6">
+                        <div class="text-center py-4">
+                            <div class="text-5xl mb-3">⚠️</div>
+                            <h2 class="text-xl font-bold text-white mb-2">Shared Hosting ตรวจพบ</h2>
+                            <p class="text-yellow-300 text-sm" x-text="progress.message"></p>
+                        </div>
+
+                        {{-- Manual Instructions --}}
+                        <div x-show="progress.manual_instructions" class="mt-4 p-4 bg-gray-800/50 rounded-xl">
+                            <h3 class="text-white font-bold mb-3" x-text="progress.manual_instructions?.title"></h3>
+                            <ol class="text-sm text-gray-300 space-y-2 list-decimal list-inside">
+                                <template x-for="step in progress.manual_instructions?.steps || []">
+                                    <li x-text="step"></li>
+                                </template>
+                            </ol>
+
+                            {{-- Copy Commands --}}
+                            <div class="mt-4" x-show="progress.manual_instructions?.commands">
+                                <p class="text-gray-400 text-xs mb-2">คำสั่งสำหรับ copy:</p>
+                                <template x-for="cmd in progress.manual_instructions?.commands || []">
+                                    <div class="bg-gray-900 rounded-lg p-2 mb-2 flex items-center justify-between">
+                                        <code class="text-green-400 text-xs" x-text="cmd"></code>
+                                        <button @click="navigator.clipboard.writeText(cmd)"
+                                                class="text-gray-400 hover:text-white text-xs px-2 py-1">
+                                            📋 Copy
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Alternative Options --}}
+                        <div x-show="progress.alternative_options" class="mt-6">
+                            <h3 class="text-white font-bold mb-3">🌟 ทางเลือกอื่น (แนะนำ)</h3>
+                            <div class="grid gap-3">
+                                <template x-for="option in progress.alternative_options || []">
+                                    <div class="p-3 bg-gray-800/50 rounded-xl border border-gray-700">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="text-white font-medium" x-text="option.name"></h4>
+                                                <p class="text-gray-400 text-xs" x-text="option.description"></p>
+                                            </div>
+                                            <span x-show="option.free_tier" class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">ฟรี</span>
+                                        </div>
+                                        <p class="text-purple-300 text-xs mt-2" x-text="'💡 ' + option.setup"></p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-center gap-4">
+                            <a href="{{ route('admin.ai-providers.index') }}"
+                               class="px-6 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition">
+                                ไปตั้งค่า Cloud AI แทน
+                            </a>
+                            <button @click="resetProgress()"
+                                    class="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition">
+                                ลองใหม่
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Generic Error --}}
+                    <div x-show="!progress.is_shared_hosting" class="text-center py-8">
                         <div class="text-6xl mb-4">❌</div>
                         <h2 class="text-2xl font-bold text-white mb-2">เกิดข้อผิดพลาด</h2>
                         <p class="text-red-300" x-text="progress.message"></p>
