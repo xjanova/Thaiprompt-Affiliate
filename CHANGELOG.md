@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.0] - 2025-12-14
+
+### ✨ Features
+- feat: เพิ่มเอฟเฟคฟุ้งเบลอให้หิ่งห้อย (8dab0543)
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหาเปิดหน้าเติมเงินไม่ได้ในแอพมือถือ (725c5fc5)
+### 🔧 Other Changes
+- Merge pull request #2269 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (c1265af9)
+
 ## [v3.382.2] - 2025-12-14
 
 ### ✨ Features
