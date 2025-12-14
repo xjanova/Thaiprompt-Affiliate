@@ -346,17 +346,18 @@ EOT;
         }
 
         // Auto-select: prefer models good for content generation
-        // For Local Llama: prefer llama3.2:3b or llama3.1:8b
+        // For Local Llama: prefer Llama 4 Scout (64GB RAM) หรือ Llama 3.1 70B
         // For Meta Llama (Cloud): prefer Llama 4 Scout or Maverick
         // For Claude: prefer sonnet or opus
         // For OpenAI: prefer GPT-4 or GPT-3.5-turbo
 
         $preferredModels = [
-            'llama3.1:8b',                  // Local Llama 3.1 8B (best quality for local)
+            'llama-4-scout',                // Local Llama 4 Scout 17B (best for 64GB RAM)
+            'llama3.1:70b',                 // Local Llama 3.1 70B (high quality)
+            'llama3.1:8b',                  // Local Llama 3.1 8B (medium)
             'llama3.2:3b',                  // Local Llama 3.2 3B (fast)
-            'llama3.2:1b',                  // Local Llama 3.2 1B (fastest)
-            'meta-llama/Llama-4',           // Llama 4 (Scout or Maverick)
-            'meta-llama/Llama-3.3',         // Llama 3.3
+            'meta-llama/Llama-4',           // Cloud Llama 4 (Scout or Maverick)
+            'meta-llama/Llama-3.3',         // Cloud Llama 3.3
             'claude-3-sonnet',
             'claude-3-opus',
             'gpt-4',

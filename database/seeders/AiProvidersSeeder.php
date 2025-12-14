@@ -725,11 +725,12 @@ class AiProvidersSeeder extends Seeder
     }
 
     /**
-     * Meta Llama Local Models Data (สำหรับ Ollama)
+     * Meta Llama Local Models Data (สำหรับ Ollama/llama.cpp)
      *
      * Models ที่แนะนำสำหรับ CPU-only:
+     * - Llama 4 Scout 17B (12GB RAM) - ดีที่สุด, ภาษาไทยเยี่ยม
+     * - llama3.1:70b (40GB RAM) - คุณภาพสูงมาก
      * - llama3.2:3b (4GB RAM) - เร็ว, ประหยัด
-     * - llama3.1:8b (8GB RAM) - คุณภาพดี
      */
     private function getMetaLocalModels(): array
     {
@@ -739,6 +740,40 @@ class AiProvidersSeeder extends Seeder
         }
 
         return [
+            // Llama 4 Scout - แนะนำสำหรับ 64GB RAM
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'llama-4-scout-17b',
+                'display_name' => 'Llama 4 Scout 17B (Local)',
+                'description' => 'โมเดล Llama 4 ล่าสุด ภาษาไทยดีเยี่ยม รองรับ Vision (ต้องการ ~12GB RAM)',
+                'context_window' => 131072,
+                'max_output_tokens' => 8192,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
+            // Llama 3.1 70B - สำหรับ 64GB+ RAM
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'llama3.1:70b-instruct-q4_K_M',
+                'display_name' => 'Llama 3.1 70B (Local)',
+                'description' => 'โมเดลขนาดใหญ่ คุณภาพสูงมาก (ต้องการ ~40GB RAM)',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
             [
                 'provider_id' => $provider->id,
                 'model_identifier' => 'llama3.2:3b',
