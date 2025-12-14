@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AiProvider;
 use App\Models\AiModel;
 use App\Services\AI\LocalAiManager;
+use App\Services\AI\AiServiceFactory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AiProviderManagementController extends Controller
 {
@@ -22,19 +25,94 @@ class AiProviderManagementController extends Controller
      */
     public function index()
     {
-        $providers = AiProvider::with(['models' => function ($query) {
-            $query->where('is_active', true);
-        }])->get();
+        $providers = AiProvider::with(['models'])->get();
 
-        // ตรวจสอบสถานะ Local AI
+        // ตรวจสอบสถานะ Local AI (ทั้ง DeepSeek และ Meta Local)
         $localAiStatus = null;
-        $localProvider = $providers->firstWhere('name', 'deepseek-local');
+        $localProvider = $providers->firstWhere('name', 'deepseek-local')
+            ?? $providers->firstWhere('name', 'meta-local');
 
         if ($localProvider) {
             $localAiStatus = $this->localAiManager->getStatus();
         }
 
-        return view('admin.ai-providers.index', compact('providers', 'localAiStatus'));
+        // ดึง Meta Local provider แยก
+        $metaLocalProvider = $providers->firstWhere('name', 'meta-local');
+        $metaLocalStatus = null;
+        if ($metaLocalProvider) {
+            $metaLocalStatus = $this->checkMetaLocalStatus();
+        }
+
+        // Logo mapping สำหรับ Providers
+        $providerLogos = $this->getProviderLogos();
+
+        return view('admin.ai-providers.index', compact(
+            'providers',
+            'localAiStatus',
+            'metaLocalStatus',
+            'metaLocalProvider',
+            'providerLogos'
+        ));
+    }
+
+    /**
+     * รายการโลโก้ของ Providers
+     */
+    private function getProviderLogos(): array
+    {
+        return [
+            'openai' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenAI_Logo.svg/200px-OpenAI_Logo.svg.png',
+            'anthropic' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Anthropic_logo.svg/200px-Anthropic_logo.svg.png',
+            'google' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png',
+            'deepseek' => 'https://avatars.githubusercontent.com/u/139254846?s=200&v=4',
+            'deepseek-local' => 'https://avatars.githubusercontent.com/u/139254846?s=200&v=4',
+            'meta' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png',
+            'meta-local' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png',
+        ];
+    }
+
+    /**
+     * ตรวจสอบสถานะ Meta Local (Ollama/llama.cpp)
+     */
+    private function checkMetaLocalStatus(): array
+    {
+        try {
+            // ลองเชื่อมต่อกับ Ollama
+            $response = Http::timeout(5)->get('http://localhost:11434/api/tags');
+
+            if ($response->successful()) {
+                $models = $response->json()['models'] ?? [];
+                return [
+                    'running' => true,
+                    'endpoint' => 'http://localhost:11434',
+                    'models' => $models,
+                    'models_count' => count($models),
+                ];
+            }
+        } catch (\Exception $e) {
+            // ลอง llama.cpp server แทน
+            try {
+                $response = Http::timeout(5)->get('http://localhost:11434/health');
+                if ($response->successful()) {
+                    return [
+                        'running' => true,
+                        'endpoint' => 'http://localhost:11434',
+                        'models' => [],
+                        'models_count' => 1,
+                        'server_type' => 'llama.cpp',
+                    ];
+                }
+            } catch (\Exception $e2) {
+                // Server ไม่ทำงาน
+            }
+        }
+
+        return [
+            'running' => false,
+            'endpoint' => 'http://localhost:11434',
+            'models' => [],
+            'models_count' => 0,
+        ];
     }
 
     /**
@@ -97,38 +175,62 @@ class AiProviderManagementController extends Controller
         $provider = AiProvider::findOrFail($providerId);
 
         // ตรวจสอบตามประเภท provider
-        if ($provider->name === 'deepseek-local') {
-            return $this->testLocalProvider();
+        if (in_array($provider->name, ['deepseek-local', 'meta-local'])) {
+            return $this->testLocalProvider($provider);
         } else {
             return $this->testCloudProvider($provider);
         }
     }
 
     /**
-     * ทดสอบ Local Provider
+     * ทดสอบ Local Provider (Ollama/llama.cpp)
      */
-    private function testLocalProvider()
+    private function testLocalProvider(AiProvider $provider)
     {
-        $status = $this->localAiManager->getStatus();
+        $endpoint = $provider->api_endpoint ?? 'http://localhost:11434';
 
-        if (!$status['running']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ollama ไม่ได้ทำงาน',
-                'details' => $status,
-            ]);
+        try {
+            // ทดสอบเชื่อมต่อ Ollama
+            $response = Http::timeout(10)->get(str_replace('/v1', '', $endpoint) . '/api/tags');
+
+            if ($response->successful()) {
+                $models = $response->json()['models'] ?? [];
+                return response()->json([
+                    'success' => true,
+                    'message' => 'เชื่อมต่อ Local AI สำเร็จ (' . count($models) . ' models พร้อมใช้งาน)',
+                    'details' => [
+                        'status' => 'running',
+                        'models' => $models,
+                        'endpoint' => $endpoint,
+                    ],
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ลอง llama.cpp health check
+            try {
+                $response = Http::timeout(5)->get(str_replace('/v1', '', $endpoint) . '/health');
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'เชื่อมต่อ llama.cpp server สำเร็จ',
+                        'details' => [
+                            'status' => 'running',
+                            'server_type' => 'llama.cpp',
+                            'endpoint' => $endpoint,
+                        ],
+                    ]);
+                }
+            } catch (\Exception $e2) {
+                // ไม่สามารถเชื่อมต่อได้
+            }
         }
 
-        $loadedModels = $this->localAiManager->getLoadedModels();
-
         return response()->json([
-            'success' => true,
-            'message' => 'เชื่อมต่อ Local AI สำเร็จ',
+            'success' => false,
+            'message' => 'ไม่สามารถเชื่อมต่อ Local AI Server ได้ - ตรวจสอบว่า Ollama หรือ llama.cpp กำลังทำงาน',
             'details' => [
-                'status' => 'running',
-                'uptime' => $status['uptime'],
-                'loaded_models' => $loadedModels,
-                'endpoint' => $status['endpoint'],
+                'endpoint' => $endpoint,
+                'suggestion' => 'ลองรัน: ollama serve หรือ systemctl start llama-server',
             ],
         ]);
     }
@@ -138,24 +240,138 @@ class AiProviderManagementController extends Controller
      */
     private function testCloudProvider(AiProvider $provider)
     {
-        // TODO: ทดสอบการเชื่อมต่อกับ Cloud Provider แต่ละตัว
-        // ต้องมี API key ใน config
-
         $config = $provider->config ?? [];
 
-        if (empty($config['api_key'])) {
+        // Self-hosted ไม่ต้องใช้ API Key
+        if ($provider->provider_type !== 'self-hosted' && empty($config['api_key'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่พบ API Key',
+                'message' => 'ไม่พบ API Key - กรุณาตั้งค่า API Key ก่อน',
             ]);
         }
 
-        // ตัวอย่างการทดสอบ (ต้องเพิ่ม logic สำหรับแต่ละ provider)
-        return response()->json([
-            'success' => true,
-            'message' => 'ยังไม่ได้ implement การทดสอบ Cloud Provider',
-            'provider' => $provider->display_name,
+        try {
+            $endpoint = $provider->api_endpoint;
+            $headers = [
+                'Content-Type' => 'application/json',
+            ];
+
+            if (!empty($config['api_key'])) {
+                $headers['Authorization'] = 'Bearer ' . $config['api_key'];
+            }
+
+            // ทดสอบดึงรายการ models
+            $response = Http::withHeaders($headers)
+                ->timeout(15)
+                ->get($endpoint . '/models');
+
+            if ($response->successful()) {
+                $models = $response->json()['data'] ?? [];
+                return response()->json([
+                    'success' => true,
+                    'message' => 'เชื่อมต่อ ' . $provider->display_name . ' สำเร็จ!',
+                    'details' => [
+                        'models_available' => count($models),
+                        'endpoint' => $endpoint,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'การเชื่อมต่อล้มเหลว: ' . ($response->json()['error']['message'] ?? 'Unknown error'),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ทดสอบแชทกับ AI (Test Chat)
+     */
+    public function testChat(Request $request, $providerId)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+            'model_id' => 'required|exists:ai_models,id',
         ]);
+
+        $provider = AiProvider::findOrFail($providerId);
+        $model = AiModel::findOrFail($request->model_id);
+
+        try {
+            $endpoint = $provider->api_endpoint;
+            $config = $provider->config ?? [];
+
+            $headers = [
+                'Content-Type' => 'application/json',
+            ];
+
+            if (!empty($config['api_key'])) {
+                $headers['Authorization'] = 'Bearer ' . $config['api_key'];
+            }
+
+            $startTime = microtime(true);
+
+            $response = Http::withHeaders($headers)
+                ->timeout(60)
+                ->post($endpoint . '/chat/completions', [
+                    'model' => $model->model_identifier,
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'คุณเป็น AI Assistant ของระบบ Thaiprompt Affiliate ตอบภาษาไทยสั้นๆ กระชับ เข้าใจง่าย'
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $request->message
+                        ]
+                    ],
+                    'max_tokens' => 500,
+                    'temperature' => 0.7,
+                ]);
+
+            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $content = $data['choices'][0]['message']['content'] ?? '';
+                $usage = $data['usage'] ?? [];
+
+                return response()->json([
+                    'success' => true,
+                    'response' => $content,
+                    'model' => $model->display_name,
+                    'response_time_ms' => $responseTime,
+                    'usage' => [
+                        'prompt_tokens' => $usage['prompt_tokens'] ?? 0,
+                        'completion_tokens' => $usage['completion_tokens'] ?? 0,
+                        'total_tokens' => $usage['total_tokens'] ?? 0,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'AI ไม่ตอบกลับ: ' . ($response->json()['error']['message'] ?? 'Unknown error'),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Test Chat Error', [
+                'provider' => $provider->name,
+                'model' => $model->model_identifier,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
+        }
     }
 
     /**

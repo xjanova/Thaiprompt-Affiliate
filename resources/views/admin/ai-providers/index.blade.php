@@ -1,5 +1,5 @@
 @extends('layouts.admin-v3')
-@section('title', 'จัดการ AI Providers')
+@section('title', 'AI Core Dashboard - จัดการ AI Providers')
 
 @push('styles')
 <style>
@@ -9,142 +9,212 @@
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
-    .modern-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .ai-dashboard-container {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 50%, #1b263b 100%);
         min-height: 100vh;
         padding: 2rem;
     }
 
     .glass-card {
         background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(20px);
         border-radius: 24px;
         border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-        transition: all 0.3s ease;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .glass-card:hover {
-        box-shadow: 0 12px 48px 0 rgba(31, 38, 135, 0.25);
+        box-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.25);
         transform: translateY(-4px);
     }
 
-    .stat-card-modern {
-        background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
-        backdrop-filter: blur(10px);
+    .stat-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
         border-radius: 20px;
-        padding: 2rem;
+        padding: 1.5rem;
         border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
 
-    .stat-card-modern::before {
+    .stat-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
         transition: all 0.3s ease;
     }
 
-    .stat-card-modern:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 16px 48px 0 rgba(31, 38, 135, 0.2);
+    .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .stat-card.green::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .stat-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .stat-card.orange::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+
+    .stat-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.15);
     }
 
-    .stat-card-modern:hover::before {
-        height: 6px;
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
     }
 
-    .provider-card-modern {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
+    .stat-card.blue .stat-number { color: #3b82f6; }
+    .stat-card.green .stat-number { color: #10b981; }
+    .stat-card.purple .stat-number { color: #8b5cf6; }
+    .stat-card.orange .stat-number { color: #f59e0b; }
+
+    .provider-card {
+        background: rgba(255, 255, 255, 0.98);
         border-radius: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(0, 0, 0, 0.05);
         overflow: hidden;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
     }
 
-    .provider-logo {
-        transition: all 0.3s ease;
-    }
-
-    .provider-card-modern:hover .provider-logo {
-        transform: scale(1.1) rotate(5deg);
-    }
-
-    .provider-card-modern::before {
+    .provider-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         width: 6px;
         height: 100%;
-        background: linear-gradient(180deg, #667eea, #764ba2);
         transition: width 0.3s ease;
     }
 
-    .provider-card-modern:hover::before {
+    .provider-card.openai::before { background: linear-gradient(180deg, #10a37f, #00a67e); }
+    .provider-card.anthropic::before { background: linear-gradient(180deg, #d97706, #f59e0b); }
+    .provider-card.google::before { background: linear-gradient(180deg, #4285f4, #34a853, #fbbc05, #ea4335); }
+    .provider-card.meta::before, .provider-card.meta-local::before { background: linear-gradient(180deg, #0668E1, #00b4ff); }
+    .provider-card.deepseek::before, .provider-card.deepseek-local::before { background: linear-gradient(180deg, #536dfe, #304ffe); }
+
+    .provider-card:hover {
+        transform: translateX(4px);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .provider-card:hover::before {
         width: 10px;
     }
 
-    .provider-card-modern:hover {
-        transform: translateX(4px);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    .provider-logo {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        padding: 8px;
     }
 
-    .btn-modern {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
+    .provider-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .provider-card:hover .provider-logo {
+        transform: scale(1.1) rotate(3deg);
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 56px;
+        height: 28px;
+        background: #e5e7eb;
+        border-radius: 28px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .toggle-switch.active {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch.active::after {
+        left: 31px;
+    }
+
+    .btn-action {
+        padding: 0.75rem 1.25rem;
         border-radius: 12px;
         font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-modern::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s;
-    }
-
-    .btn-modern:hover::before {
-        width: 300px;
-        height: 300px;
-    }
-
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-    }
-
-    .badge-modern {
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+
+    .btn-action.primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-action.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-action.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-action.danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-action.secondary {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .badge-type {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
     }
 
     .badge-cloud {
@@ -157,388 +227,435 @@
         color: white;
     }
 
-    .model-item-modern {
-        background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.9));
+    .badge-self-hosted {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: white;
+    }
+
+    .model-item {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
         border-radius: 16px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         border: 1px solid rgba(0,0,0,0.05);
         transition: all 0.3s ease;
-        position: relative;
     }
 
-    .model-item-modern::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        background: linear-gradient(180deg, #667eea, #764ba2);
-        border-radius: 16px 0 0 16px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .model-item-modern:hover::before {
-        opacity: 1;
-    }
-
-    .model-item-modern:hover {
+    .model-item:hover {
         transform: translateX(4px);
         box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-
-    .toggle-modern {
-        position: relative;
-        width: 60px;
-        height: 32px;
-        background: #e5e7eb;
-        border-radius: 50px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .toggle-modern.active {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .toggle-modern::after {
-        content: '';
-        position: absolute;
-        top: 4px;
-        left: 4px;
-        width: 24px;
-        height: 24px;
         background: white;
-        border-radius: 50%;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
-    .toggle-modern.active::after {
-        left: 32px;
+    .model-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 50px;
+        font-size: 0.65rem;
+        font-weight: 600;
     }
 
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 24px;
-        border: 2px dashed rgba(102, 126, 234, 0.3);
+    .chat-container {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-radius: 20px;
+        overflow: hidden;
     }
 
-    .empty-state-icon {
-        width: 120px;
-        height: 120px;
-        margin: 0 auto 2rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
+    .chat-messages {
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 1.5rem;
+    }
+
+    .chat-message {
+        padding: 1rem;
+        border-radius: 16px;
+        margin-bottom: 1rem;
+        max-width: 85%;
+    }
+
+    .chat-message.user {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
         color: white;
-        animation: float 3s ease-in-out infinite;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
     }
 
-    @keyframes float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-20px); }
-    }
-
-    .tooltip-modern {
-        position: relative;
-    }
-
-    .tooltip-modern:hover::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 0.5rem 1rem;
-        background: rgba(0, 0, 0, 0.9);
+    .chat-message.ai {
+        background: rgba(255, 255, 255, 0.1);
         color: white;
-        border-radius: 8px;
-        font-size: 0.75rem;
-        white-space: nowrap;
-        margin-bottom: 0.5rem;
-        z-index: 1000;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
     }
 
-    .metric-number {
-        font-size: 3rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .section-title {
-        font-size: 2rem;
-        font-weight: 800;
-        color: white;
-        margin-bottom: 2rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
+    .chat-input-container {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .pulse-dot {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         animation: pulse 2s ease-in-out infinite;
     }
 
     @keyframes pulse {
-        0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-        }
-        50% {
-            opacity: 0.5;
-            transform: scale(1.2);
-        }
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
     }
 
-    .loading-shimmer {
-        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.5s infinite;
+    .status-online { background: #10b981; }
+    .status-offline { background: #ef4444; }
+
+    .llama-logo-container {
+        position: relative;
     }
 
-    @keyframes shimmer {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
+    .llama-logo-container::after {
+        content: '🦙';
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        font-size: 20px;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modal-overlay {
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 24px;
+        max-width: 700px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .input-modern {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .input-modern:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Toast styles */
+    .toast {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
 </style>
 @endpush
 
 @section('content')
-<div class="modern-container" x-data="aiProvidersManager()">
-    <!-- Toast Notification Container -->
+<div class="ai-dashboard-container" x-data="aiDashboard()">
+    <!-- Toast Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-3"></div>
 
-    <!-- Header Section -->
-    <div class="section-title">
-        <div class="pulse-dot bg-white"></div>
-        <span>AI Providers Management</span>
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="section-title">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-brain text-white text-xl"></i>
+                </div>
+                AI Core Dashboard
+            </h1>
+            <p class="text-gray-300 text-sm">จัดการ AI Providers, Models และทดสอบการทำงาน</p>
+        </div>
+
+        <div class="flex gap-3">
+            <button @click="refreshStatus()" class="btn-action primary">
+                <i class="fas fa-sync-alt"></i>
+                <span>รีเฟรช</span>
+            </button>
+            <a href="{{ route('admin.ai-monitoring.index') }}" class="btn-action secondary">
+                <i class="fas fa-chart-line"></i>
+                <span>Monitoring</span>
+            </a>
+        </div>
     </div>
 
     @if($providers->count() > 0)
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="stat-card-modern">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card blue">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-600 text-sm font-semibold mb-2">Total Providers</p>
-                    <p class="metric-number">{{ $providers->count() }}</p>
-                    <p class="text-xs text-gray-500 mt-2">All AI services</p>
+                    <p class="text-gray-500 text-xs font-semibold mb-1">PROVIDERS</p>
+                    <p class="stat-number">{{ $providers->count() }}</p>
+                    <p class="text-xs text-gray-400 mt-1">ทั้งหมด</p>
                 </div>
-                <div class="text-6xl opacity-20">
-                    <i class="fas fa-server"></i>
-                </div>
+                <i class="fas fa-server text-4xl text-blue-100"></i>
             </div>
         </div>
 
-        <div class="stat-card-modern">
+        <div class="stat-card green">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-600 text-sm font-semibold mb-2">Active Providers</p>
-                    <p class="metric-number">{{ $providers->where('is_active', true)->count() }}</p>
-                    <p class="text-xs text-gray-500 mt-2">Currently enabled</p>
+                    <p class="text-gray-500 text-xs font-semibold mb-1">ACTIVE</p>
+                    <p class="stat-number">{{ $providers->where('is_active', true)->count() }}</p>
+                    <p class="text-xs text-gray-400 mt-1">เปิดใช้งาน</p>
                 </div>
-                <div class="text-6xl opacity-20">
-                    <i class="fas fa-check-circle"></i>
-                </div>
+                <i class="fas fa-check-circle text-4xl text-green-100"></i>
             </div>
         </div>
 
-        <div class="stat-card-modern">
+        <div class="stat-card purple">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-600 text-sm font-semibold mb-2">Total Models</p>
-                    <p class="metric-number">{{ $providers->sum(fn($p) => $p->models->count()) }}</p>
-                    <p class="text-xs text-gray-500 mt-2">AI models available</p>
+                    <p class="text-gray-500 text-xs font-semibold mb-1">MODELS</p>
+                    <p class="stat-number">{{ $providers->sum(fn($p) => $p->models->count()) }}</p>
+                    <p class="text-xs text-gray-400 mt-1">โมเดลทั้งหมด</p>
                 </div>
-                <div class="text-6xl opacity-20">
-                    <i class="fas fa-brain"></i>
-                </div>
+                <i class="fas fa-robot text-4xl text-purple-100"></i>
             </div>
         </div>
 
-        <div class="stat-card-modern">
+        <div class="stat-card orange">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-600 text-sm font-semibold mb-2">Active Models</p>
-                    <p class="metric-number">{{ $providers->sum(fn($p) => $p->models->where('is_active', true)->count()) }}</p>
-                    <p class="text-xs text-gray-500 mt-2">Ready to use</p>
+                    <p class="text-gray-500 text-xs font-semibold mb-1">LOCAL AI</p>
+                    <p class="stat-number">
+                        @if($metaLocalStatus && $metaLocalStatus['running'])
+                            <i class="fas fa-circle text-green-500 text-lg"></i>
+                        @else
+                            <i class="fas fa-circle text-red-500 text-lg"></i>
+                        @endif
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                        @if($metaLocalStatus && $metaLocalStatus['running'])
+                            กำลังทำงาน
+                        @else
+                            ไม่ได้ทำงาน
+                        @endif
+                    </p>
                 </div>
-                <div class="text-6xl opacity-20">
-                    <i class="fas fa-rocket"></i>
-                </div>
+                <i class="fas fa-microchip text-4xl text-orange-100"></i>
             </div>
         </div>
     </div>
 
-    <!-- Local AI Status Panel (if exists) -->
-    @if($localAiStatus)
-    <div class="glass-card p-8 mb-8">
-        <div class="flex items-center justify-between mb-6">
+    <!-- Llama Local Status Panel -->
+    @if($metaLocalProvider)
+    <div class="glass-card p-6 mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg p-2 border border-gray-100">
-                    <img src="https://cdn.simpleicons.org/ollama/000000"
-                         alt="Ollama"
-                         class="w-full h-full object-contain provider-logo"
-                         onerror="this.onerror=null; this.parentElement.innerHTML='<i class=&quot;fas fa-microchip text-2xl text-gray-400&quot;></i>';">
+                <div class="llama-logo-container">
+                    <div class="provider-logo">
+                        <img src="{{ $providerLogos['meta-local'] ?? '' }}"
+                             alt="Meta Llama"
+                             onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png';">
+                    </div>
                 </div>
                 <div>
-                    <h3 class="text-2xl font-bold text-gray-800">Local AI Server</h3>
-                    <p class="text-gray-600">Ollama Self-Hosted Instance</p>
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        🦙 Llama 4 Local Server
+                        @if($metaLocalStatus && $metaLocalStatus['running'])
+                            <span class="inline-flex items-center gap-1 text-sm font-medium text-green-600">
+                                <span class="pulse-dot status-online"></span>
+                                Online
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 text-sm font-medium text-red-600">
+                                <span class="pulse-dot status-offline"></span>
+                                Offline
+                            </span>
+                        @endif
+                    </h3>
+                    <p class="text-gray-500 text-sm">Self-hosted via Ollama/llama.cpp • ฟรี ไม่เสียค่าใช้จ่าย</p>
                 </div>
             </div>
 
-            @if($localAiStatus['running'])
-                <span class="badge-modern bg-green-500 text-white">
-                    <span class="pulse-dot bg-white"></span>
-                    Running
-                </span>
-            @else
-                <span class="badge-modern bg-red-500 text-white">
-                    <i class="fas fa-circle"></i>
-                    Stopped
-                </span>
-            @endif
+            <div class="flex flex-wrap gap-3">
+                @if($metaLocalStatus && $metaLocalStatus['running'])
+                    <button @click="stopLocalAi()" class="btn-action danger">
+                        <i class="fas fa-stop"></i>
+                        หยุด
+                    </button>
+                    <button @click="restartLocalAi()" class="btn-action warning">
+                        <i class="fas fa-redo"></i>
+                        รีสตาร์ท
+                    </button>
+                @else
+                    <button @click="startLocalAi()" class="btn-action success">
+                        <i class="fas fa-play"></i>
+                        เริ่มต้น
+                    </button>
+                @endif
+                <button @click="testConnection({{ $metaLocalProvider->id }})" class="btn-action primary">
+                    <i class="fas fa-plug"></i>
+                    ทดสอบ
+                </button>
+            </div>
         </div>
 
-        @if($localAiStatus['running'])
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6">
-                <p class="text-blue-600 text-sm font-semibold mb-2">Endpoint</p>
-                <p class="text-blue-900 font-bold text-lg break-all">{{ $localAiStatus['endpoint'] }}</p>
+        @if($metaLocalStatus && $metaLocalStatus['running'])
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
+                <p class="text-blue-600 text-xs font-semibold mb-1">ENDPOINT</p>
+                <p class="text-blue-900 font-bold text-sm break-all">{{ $metaLocalStatus['endpoint'] }}</p>
             </div>
-            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
-                <p class="text-green-600 text-sm font-semibold mb-2">Uptime</p>
-                <p class="text-green-900 font-bold text-lg">{{ $localAiStatus['uptime'] }}</p>
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
+                <p class="text-green-600 text-xs font-semibold mb-1">MODELS พร้อมใช้</p>
+                <p class="text-green-900 font-bold text-lg">{{ $metaLocalStatus['models_count'] ?? 0 }}</p>
             </div>
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6">
-                <p class="text-purple-600 text-sm font-semibold mb-2">Loaded Models</p>
-                <p class="text-purple-900 font-bold text-lg">{{ $localAiStatus['loaded_models'] ?? 0 }}</p>
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4">
+                <p class="text-purple-600 text-xs font-semibold mb-1">SERVER TYPE</p>
+                <p class="text-purple-900 font-bold">{{ $metaLocalStatus['server_type'] ?? 'Ollama' }}</p>
+            </div>
+        </div>
+        @else
+        <div class="mt-6 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+            <div class="flex items-start gap-3">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                <div>
+                    <p class="text-yellow-800 font-semibold">ยังไม่ได้ติดตั้ง Llama 4 Local</p>
+                    <p class="text-yellow-700 text-sm mt-1">รันคำสั่งนี้เพื่อติดตั้ง:</p>
+                    <code class="block mt-2 p-3 bg-gray-900 text-green-400 rounded-lg text-sm font-mono">
+                        chmod +x scripts/install-llama4-huggingface.sh && ./scripts/install-llama4-huggingface.sh
+                    </code>
+                </div>
             </div>
         </div>
         @endif
-
-        <div class="flex gap-3">
-            @if($localAiStatus['running'])
-                <button @click="stopLocalAi" class="btn-modern bg-gradient-to-r from-red-500 to-red-600">
-                    <i class="fas fa-stop mr-2"></i>Stop Server
-                </button>
-                <button @click="restartLocalAi" class="btn-modern bg-gradient-to-r from-yellow-500 to-orange-600">
-                    <i class="fas fa-redo mr-2"></i>Restart
-                </button>
-            @else
-                <button @click="startLocalAi" class="btn-modern bg-gradient-to-r from-green-500 to-green-600">
-                    <i class="fas fa-play mr-2"></i>Start Server
-                </button>
-            @endif
-        </div>
     </div>
     @endif
 
     <!-- Providers List -->
+    <div class="section-title">
+        <i class="fas fa-layer-group"></i>
+        <span>AI Providers ({{ $providers->count() }})</span>
+    </div>
+
     <div class="space-y-6">
         @foreach($providers as $provider)
-        <div class="provider-card-modern">
-            <div class="p-8">
+        <div class="provider-card {{ $provider->name }}">
+            <div class="p-6">
                 <!-- Provider Header -->
-                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
-                    <div class="flex items-center gap-6">
-                        <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg p-3 border border-gray-100">
-                            @if(isset($provider->config['logo_url']))
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-4">
+                        <div class="provider-logo {{ in_array($provider->name, ['meta', 'meta-local']) ? 'llama-logo-container' : '' }}">
+                            @if(isset($providerLogos[$provider->name]))
+                                <img src="{{ $providerLogos[$provider->name] }}"
+                                     alt="{{ $provider->display_name }}"
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-robot text-3xl text-gray-400\'></i>';">
+                            @elseif(isset($provider->config['logo_url']))
                                 <img src="{{ $provider->config['logo_url'] }}"
                                      alt="{{ $provider->display_name }}"
-                                     class="w-full h-full object-contain provider-logo"
-                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=&quot;fas {{ $provider->provider_type === 'cloud' ? 'fa-cloud' : 'fa-server' }} text-3xl text-gray-400&quot;></i>';">
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-robot text-3xl text-gray-400\'></i>';">
                             @else
                                 <i class="fas {{ $provider->provider_type === 'cloud' ? 'fa-cloud' : 'fa-server' }} text-3xl text-gray-400"></i>
                             @endif
                         </div>
                         <div>
-                            <div class="flex items-center gap-3 mb-2">
-                                <h3 class="text-3xl font-bold text-gray-800">{{ $provider->display_name }}</h3>
-                                <span class="badge-modern {{ $provider->provider_type === 'cloud' ? 'badge-cloud' : 'badge-local' }}">
+                            <div class="flex items-center gap-3 mb-1">
+                                <h3 class="text-xl font-bold text-gray-800">{{ $provider->display_name }}</h3>
+                                <span class="badge-type {{ $provider->provider_type === 'cloud' ? 'badge-cloud' : ($provider->provider_type === 'self-hosted' ? 'badge-self-hosted' : 'badge-local') }}">
                                     {{ strtoupper($provider->provider_type) }}
                                 </span>
+                                @if(in_array($provider->name, ['meta', 'meta-local']))
+                                    <span class="text-xl">🦙</span>
+                                @endif
                             </div>
-                            <div class="flex items-center gap-4 text-gray-600">
-                                <span class="flex items-center gap-2">
-                                    <i class="fas fa-brain"></i>
-                                    <strong>{{ $provider->models->count() }}</strong> models
-                                </span>
-                                <span class="flex items-center gap-2">
-                                    <i class="fas fa-check-circle text-green-500"></i>
-                                    <strong>{{ $provider->models->where('is_active', true)->count() }}</strong> active
-                                </span>
+                            <div class="flex items-center gap-4 text-sm text-gray-500">
+                                <span><i class="fas fa-robot mr-1"></i>{{ $provider->models->count() }} models</span>
+                                <span><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ $provider->models->where('is_active', true)->count() }} active</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap gap-3">
-                        <!-- Toggle Provider -->
+                    <div class="flex items-center gap-3">
+                        <!-- Toggle -->
                         <button @click="toggleProvider({{ $provider->id }})"
-                                class="tooltip-modern"
-                                data-tooltip="Toggle Provider">
-                            <div class="toggle-modern" :class="{ 'active': providers[{{ $provider->id }}]?.is_active }"></div>
+                                class="toggle-switch"
+                                :class="{ 'active': providers[{{ $provider->id }}]?.is_active }"
+                                title="เปิด/ปิด Provider">
                         </button>
 
                         <!-- Test Connection -->
-                        <button @click="testConnection({{ $provider->id }})"
-                                class="btn-modern bg-gradient-to-r from-blue-500 to-blue-600 tooltip-modern"
-                                data-tooltip="Test Connection">
+                        <button @click="testConnection({{ $provider->id }})" class="btn-action primary" title="ทดสอบการเชื่อมต่อ">
                             <i class="fas fa-plug"></i>
                         </button>
 
+                        <!-- Test Chat -->
+                        @if($provider->models->where('is_active', true)->count() > 0)
+                        <button @click="openTestChat({{ $provider->id }})" class="btn-action success" title="ทดสอบแชท">
+                            <i class="fas fa-comments"></i>
+                        </button>
+                        @endif
+
                         <!-- Settings -->
-                        <button @click="openConfigModal({{ $provider->id }})"
-                                class="btn-modern bg-gradient-to-r from-purple-500 to-purple-600 tooltip-modern"
-                                data-tooltip="Configuration">
+                        <button @click="openConfig({{ $provider->id }})" class="btn-action secondary" title="ตั้งค่า">
                             <i class="fas fa-cog"></i>
                         </button>
 
-                        <!-- Expand -->
-                        <button @click="toggleModels({{ $provider->id }})"
-                                class="btn-modern bg-gradient-to-r from-gray-500 to-gray-600 tooltip-modern"
-                                data-tooltip="View Models">
+                        <!-- Expand Models -->
+                        <button @click="toggleModels({{ $provider->id }})" class="btn-action secondary" title="ดู Models">
                             <i class="fas" :class="expandedProviders.includes({{ $provider->id }}) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Provider Info Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">API Endpoint</p>
-                        <p class="text-sm font-bold text-gray-800 break-all">{{ $provider->api_endpoint ?? 'N/A' }}</p>
+                <!-- Provider Info -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-xs text-gray-500 font-semibold mb-1">API ENDPOINT</p>
+                        <p class="text-sm font-medium text-gray-800 break-all">{{ $provider->api_endpoint ?? 'N/A' }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">API Key Status</p>
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-xs text-gray-500 font-semibold mb-1">API KEY</p>
                         @if(isset($provider->config['api_key']) && !empty($provider->config['api_key']))
-                            <span class="inline-flex items-center gap-2 text-green-600 font-bold">
+                            <span class="inline-flex items-center gap-1 text-green-600 font-semibold text-sm">
                                 <i class="fas fa-check-circle"></i>
-                                Configured
+                                ตั้งค่าแล้ว
+                            </span>
+                        @elseif($provider->provider_type === 'self-hosted')
+                            <span class="inline-flex items-center gap-1 text-blue-600 font-semibold text-sm">
+                                <i class="fas fa-info-circle"></i>
+                                ไม่ต้องใช้
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-2 text-red-600 font-bold">
+                            <span class="inline-flex items-center gap-1 text-red-600 font-semibold text-sm">
                                 <i class="fas fa-times-circle"></i>
-                                Not Set
+                                ยังไม่ได้ตั้งค่า
                             </span>
                         @endif
                     </div>
-                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4">
-                        <p class="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">Last Updated</p>
-                        <p class="text-sm font-bold text-gray-800">{{ $provider->updated_at->diffForHumans() }}</p>
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-xs text-gray-500 font-semibold mb-1">PRICING</p>
+                        @if($provider->provider_type === 'self-hosted')
+                            <span class="text-green-600 font-bold text-sm">ฟรี (Self-hosted)</span>
+                        @elseif(isset($provider->pricing['input']))
+                            <span class="text-sm text-gray-800">
+                                ${{ $provider->pricing['input'] ?? 0 }}/{{ $provider->pricing['output'] ?? 0 }} per 1M
+                            </span>
+                        @else
+                            <span class="text-gray-500 text-sm">-</span>
+                        @endif
                     </div>
                 </div>
 
@@ -547,60 +664,57 @@
                      x-transition:enter="transition ease-out duration-300"
                      x-transition:enter-start="opacity-0 -translate-y-4"
                      x-transition:enter-end="opacity-100 translate-y-0"
-                     class="border-t pt-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-brain text-purple-500"></i>
-                        Available Models ({{ $provider->models->count() }})
+                     class="border-t pt-4">
+                    <h4 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-robot text-purple-500"></i>
+                        Models ({{ $provider->models->count() }})
                     </h4>
 
                     @if($provider->models->count() > 0)
-                    <div class="grid gap-4">
+                    <div class="grid gap-3">
                         @foreach($provider->models as $model)
-                        <div class="model-item-modern">
-                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                <div class="flex items-start gap-4 flex-1">
-                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br {{ $model->is_active ? 'from-green-500 to-emerald-500' : 'from-gray-400 to-gray-500' }} flex items-center justify-center text-white flex-shrink-0">
-                                        <i class="fas fa-robot"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <h5 class="font-bold text-gray-800 text-lg mb-1">{{ $model->display_name }}</h5>
-                                        <p class="text-xs text-gray-500 mb-2 font-mono">{{ $model->name }}</p>
-                                        @if($model->description)
-                                        <p class="text-sm text-gray-600">{{ $model->description }}</p>
-                                        @endif
-
-                                        <!-- Model Features -->
-                                        <div class="flex flex-wrap gap-2 mt-3">
-                                            @if($model->max_tokens)
-                                            <span class="text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-semibold">
-                                                <i class="fas fa-memory mr-1"></i>{{ number_format($model->max_tokens) }} tokens
-                                            </span>
-                                            @endif
-                                            @if($model->supports_vision ?? false)
-                                            <span class="text-xs bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-semibold">
+                        <div class="model-item">
+                            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h5 class="font-bold text-gray-800">{{ $model->display_name }}</h5>
+                                        @if($model->supports_vision ?? false)
+                                            <span class="model-badge bg-purple-100 text-purple-700">
                                                 <i class="fas fa-eye mr-1"></i>Vision
                                             </span>
-                                            @endif
-                                            @if($model->supports_functions ?? false)
-                                            <span class="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold">
+                                        @endif
+                                        @if($model->supports_functions ?? false)
+                                            <span class="model-badge bg-green-100 text-green-700">
                                                 <i class="fas fa-code mr-1"></i>Functions
                                             </span>
-                                            @endif
-                                        </div>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-gray-500 font-mono mb-1">{{ $model->model_identifier }}</p>
+                                    @if($model->description)
+                                    <p class="text-sm text-gray-600">{{ Str::limit($model->description, 100) }}</p>
+                                    @endif
+                                    <div class="flex gap-3 mt-2 text-xs text-gray-500">
+                                        @if($model->context_window)
+                                        <span><i class="fas fa-database mr-1"></i>{{ number_format($model->context_window) }} context</span>
+                                        @endif
+                                        @if($model->max_output_tokens)
+                                        <span><i class="fas fa-file-alt mr-1"></i>{{ number_format($model->max_output_tokens) }} max output</span>
+                                        @endif
                                     </div>
                                 </div>
 
-                                <button @click="toggleModel({{ $model->id }})" class="tooltip-modern" data-tooltip="Toggle Model">
-                                    <div class="toggle-modern" :class="{ 'active': models[{{ $model->id }}]?.is_active }"></div>
+                                <button @click="toggleModel({{ $model->id }})"
+                                        class="toggle-switch"
+                                        :class="{ 'active': models[{{ $model->id }}]?.is_active }">
                                 </button>
                             </div>
                         </div>
                         @endforeach
                     </div>
                     @else
-                    <div class="text-center py-12 text-gray-400">
-                        <i class="fas fa-inbox text-6xl mb-4"></i>
-                        <p class="text-lg">No models available</p>
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>ไม่มี models</p>
                     </div>
                     @endif
                 </div>
@@ -611,86 +725,146 @@
 
     @else
     <!-- Empty State -->
-    <div class="empty-state">
-        <div class="empty-state-icon">
-            <i class="fas fa-robot"></i>
+    <div class="glass-card p-12 text-center">
+        <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <i class="fas fa-robot text-4xl text-white"></i>
         </div>
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">No AI Providers Found</h2>
-        <p class="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
-            You haven't configured any AI providers yet. Run the seeder to populate with default providers.
-        </p>
-        <div class="bg-gray-50 rounded-xl p-6 max-w-xl mx-auto text-left">
-            <p class="text-sm font-semibold text-gray-700 mb-3">Run this command to seed providers:</p>
-            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
-                php artisan db:seed --class=AiProvidersSeeder
-            </div>
-        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-3">ยังไม่มี AI Providers</h2>
+        <p class="text-gray-600 mb-6">รันคำสั่งนี้เพื่อเพิ่ม providers:</p>
+        <code class="block p-4 bg-gray-900 text-green-400 rounded-xl font-mono text-sm">
+            php artisan db:seed --class=AiProvidersSeeder
+        </code>
     </div>
     @endif
 
-    <!-- Configuration Modal -->
+    <!-- Config Modal -->
     <div x-show="configModal.show"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
-         class="fixed inset-0 z-50 overflow-y-auto"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
          style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" @click="configModal.show = false"></div>
+        <div class="modal-content p-8" @click.away="configModal.show = false">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-cog text-purple-500"></i>
+                    ตั้งค่า Provider
+                </h3>
+                <button @click="configModal.show = false" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
 
-            <div class="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full p-8 z-10">
-                <div class="flex items-center justify-between mb-8">
-                    <h3 class="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
-                            <i class="fas fa-cog"></i>
+            <form @submit.prevent="saveConfig" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">API Endpoint</label>
+                    <input type="url" x-model="configModal.data.api_endpoint" class="input-modern" placeholder="https://api.example.com">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">API Key</label>
+                    <div class="relative">
+                        <input :type="configModal.showKey ? 'text' : 'password'"
+                               x-model="configModal.data.api_key"
+                               class="input-modern pr-12"
+                               placeholder="sk-...">
+                        <button type="button" @click="configModal.showKey = !configModal.showKey"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i class="fas" :class="configModal.showKey ? 'fa-eye-slash' : 'fa-eye'"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="flex-1 btn-action success py-3">
+                        <i class="fas fa-save"></i>
+                        บันทึก
+                    </button>
+                    <button type="button" @click="configModal.show = false" class="btn-action secondary py-3 px-6">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Test Chat Modal -->
+    <div x-show="chatModal.show"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
+         style="display: none;">
+        <div class="modal-content p-0 overflow-hidden" style="max-width: 600px;" @click.away="chatModal.show = false">
+            <!-- Chat Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                            <i class="fas fa-robot"></i>
                         </div>
-                        Provider Configuration
-                    </h3>
-                    <button @click="configModal.show = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="fas fa-times text-2xl"></i>
+                        <div>
+                            <h3 class="font-bold">ทดสอบ AI Chat</h3>
+                            <p class="text-sm text-white/80" x-text="chatModal.providerName"></p>
+                        </div>
+                    </div>
+                    <button @click="chatModal.show = false" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
 
-                <form @submit.prevent="saveConfig" class="space-y-6">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-3">API Endpoint</label>
-                        <input type="url" x-model="configModal.data.api_endpoint"
-                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 transition-all"
-                               placeholder="https://api.example.com">
-                    </div>
+                <!-- Model Select -->
+                <div class="mt-3">
+                    <select x-model="chatModal.selectedModel" class="w-full bg-white/20 text-white border border-white/30 rounded-lg px-3 py-2 text-sm">
+                        <option value="" class="text-gray-800">เลือก Model</option>
+                        <template x-for="model in chatModal.models" :key="model.id">
+                            <option :value="model.id" x-text="model.display_name" class="text-gray-800"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-3">API Key</label>
-                        <div class="relative">
-                            <input :type="configModal.showKey ? 'text' : 'password'"
-                                   x-model="configModal.data.api_key"
-                                   class="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 transition-all"
-                                   placeholder="sk-...">
-                            <button type="button" @click="configModal.showKey = !configModal.showKey"
-                                    class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <i class="fas" :class="configModal.showKey ? 'fa-eye-slash' : 'fa-eye'"></i>
-                            </button>
+            <!-- Chat Messages -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <template x-for="(msg, index) in chatModal.messages" :key="index">
+                        <div class="chat-message" :class="msg.role">
+                            <p x-text="msg.content"></p>
+                            <template x-if="msg.meta">
+                                <p class="text-xs mt-2 opacity-70">
+                                    <span x-text="msg.meta.model"></span> •
+                                    <span x-text="msg.meta.time + 'ms'"></span> •
+                                    <span x-text="msg.meta.tokens + ' tokens'"></span>
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Typing indicator -->
+                    <div x-show="chatModal.loading" class="chat-message ai">
+                        <div class="flex gap-1">
+                            <span class="w-2 h-2 bg-white/50 rounded-full animate-bounce"></span>
+                            <span class="w-2 h-2 bg-white/50 rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                            <span class="w-2 h-2 bg-white/50 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
                         </div>
                     </div>
+                </div>
 
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-3">Additional Configuration (JSON)</label>
-                        <textarea x-model="configModal.data.config"
-                                  rows="6"
-                                  class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 transition-all font-mono text-sm"
-                                  placeholder='{"timeout": 30}'></textarea>
-                    </div>
-
-                    <div class="flex gap-4 pt-4">
-                        <button type="submit" class="flex-1 btn-modern bg-gradient-to-r from-purple-500 to-purple-600 py-4 text-lg">
-                            <i class="fas fa-save mr-2"></i>Save Configuration
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                    <form @submit.prevent="sendTestMessage" class="flex gap-2">
+                        <input type="text"
+                               x-model="chatModal.input"
+                               placeholder="พิมพ์ข้อความทดสอบ..."
+                               class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+                               :disabled="chatModal.loading">
+                        <button type="submit"
+                                class="btn-action primary"
+                                :disabled="chatModal.loading || !chatModal.selectedModel">
+                            <i class="fas" :class="chatModal.loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
                         </button>
-                        <button type="button" @click="configModal.show = false"
-                                class="px-8 py-4 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -699,7 +873,7 @@
 
 @push('scripts')
 <script>
-function aiProvidersManager() {
+function aiDashboard() {
     return {
         providers: @json($providers->keyBy('id')->map(fn($p) => ['is_active' => $p->is_active])),
         models: @json($providers->flatMap(fn($p) => $p->models)->keyBy('id')->map(fn($m) => ['is_active' => $m->is_active])),
@@ -708,190 +882,220 @@ function aiProvidersManager() {
             show: false,
             providerId: null,
             showKey: false,
-            data: {
-                api_endpoint: '',
-                api_key: '',
-                config: ''
-            }
+            data: { api_endpoint: '', api_key: '' }
+        },
+        chatModal: {
+            show: false,
+            providerId: null,
+            providerName: '',
+            models: [],
+            selectedModel: '',
+            messages: [],
+            input: '',
+            loading: false
         },
 
         toggleModels(providerId) {
-            const index = this.expandedProviders.indexOf(providerId);
-            if (index === -1) {
+            const idx = this.expandedProviders.indexOf(providerId);
+            if (idx === -1) {
                 this.expandedProviders.push(providerId);
             } else {
-                this.expandedProviders.splice(index, 1);
+                this.expandedProviders.splice(idx, 1);
             }
         },
 
         async toggleProvider(providerId) {
             try {
-                const response = await fetch(`/admin/ai-providers/${providerId}/toggle`, {
+                const res = await fetch(`/admin/ai-providers/${providerId}/toggle`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 if (data.success) {
                     this.providers[providerId].is_active = data.is_active;
                     this.showToast(data.message, 'success');
                 } else {
-                    this.showToast(data.message || 'เกิดข้อผิดพลาด', 'error');
+                    this.showToast(data.message, 'error');
                 }
-            } catch (error) {
-                this.showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
             }
         },
 
         async toggleModel(modelId) {
             try {
-                const response = await fetch(`/admin/ai-providers/models/${modelId}/toggle`, {
+                const res = await fetch(`/admin/ai-providers/models/${modelId}/toggle`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 if (data.success) {
                     this.models[modelId].is_active = data.is_active;
                     this.showToast(data.message, 'success');
                 } else {
-                    this.showToast(data.message || 'เกิดข้อผิดพลาด', 'error');
+                    this.showToast(data.message, 'error');
                 }
-            } catch (error) {
-                this.showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
             }
         },
 
         async testConnection(providerId) {
             this.showToast('กำลังทดสอบการเชื่อมต่อ...', 'info');
-
             try {
-                const response = await fetch(`/admin/ai-providers/${providerId}/test`, {
+                const res = await fetch(`/admin/ai-providers/${providerId}/test`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
-                if (data.success) {
-                    this.showToast(data.message, 'success');
-                } else {
-                    this.showToast(data.message || 'การทดสอบล้มเหลว', 'error');
-                }
-            } catch (error) {
-                this.showToast('เกิดข้อผิดพลาดในการทดสอบ', 'error');
+                const data = await res.json();
+                this.showToast(data.message, data.success ? 'success' : 'error');
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
             }
         },
 
-        openConfigModal(providerId) {
+        openConfig(providerId) {
             const provider = @json($providers->keyBy('id'));
             this.configModal.providerId = providerId;
             this.configModal.data.api_endpoint = provider[providerId].api_endpoint || '';
             this.configModal.data.api_key = provider[providerId].config?.api_key || '';
-            this.configModal.data.config = JSON.stringify(provider[providerId].config || {}, null, 2);
             this.configModal.show = true;
         },
 
         async saveConfig() {
             try {
-                const response = await fetch(`/admin/ai-providers/${this.configModal.providerId}/config`, {
+                const res = await fetch(`/admin/ai-providers/${this.configModal.providerId}/config`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({
-                        api_endpoint: this.configModal.data.api_endpoint,
-                        api_key: this.configModal.data.api_key,
-                        config: JSON.parse(this.configModal.data.config || '{}')
-                    })
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify(this.configModal.data)
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 if (data.success) {
                     this.showToast(data.message, 'success');
                     this.configModal.show = false;
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    this.showToast(data.message || 'เกิดข้อผิดพลาด', 'error');
+                    this.showToast(data.message, 'error');
                 }
-            } catch (error) {
-                this.showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
             }
+        },
+
+        openTestChat(providerId) {
+            const provider = @json($providers->keyBy('id'));
+            this.chatModal.providerId = providerId;
+            this.chatModal.providerName = provider[providerId].display_name;
+            this.chatModal.models = provider[providerId].models.filter(m => m.is_active);
+            this.chatModal.selectedModel = this.chatModal.models[0]?.id || '';
+            this.chatModal.messages = [];
+            this.chatModal.input = '';
+            this.chatModal.show = true;
+        },
+
+        async sendTestMessage() {
+            if (!this.chatModal.input.trim() || !this.chatModal.selectedModel) return;
+
+            const userMsg = this.chatModal.input.trim();
+            this.chatModal.messages.push({ role: 'user', content: userMsg });
+            this.chatModal.input = '';
+            this.chatModal.loading = true;
+
+            // Scroll to bottom
+            this.$nextTick(() => {
+                const container = document.getElementById('chat-messages');
+                container.scrollTop = container.scrollHeight;
+            });
+
+            try {
+                const res = await fetch(`/admin/ai-providers/${this.chatModal.providerId}/test-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify({
+                        message: userMsg,
+                        model_id: this.chatModal.selectedModel
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    this.chatModal.messages.push({
+                        role: 'ai',
+                        content: data.response,
+                        meta: {
+                            model: data.model,
+                            time: data.response_time_ms,
+                            tokens: data.usage?.total_tokens || 0
+                        }
+                    });
+                } else {
+                    this.chatModal.messages.push({
+                        role: 'ai',
+                        content: '❌ ' + data.message
+                    });
+                }
+            } catch (e) {
+                this.chatModal.messages.push({
+                    role: 'ai',
+                    content: '❌ เกิดข้อผิดพลาดในการเชื่อมต่อ'
+                });
+            }
+
+            this.chatModal.loading = false;
+            this.$nextTick(() => {
+                const container = document.getElementById('chat-messages');
+                container.scrollTop = container.scrollHeight;
+            });
         },
 
         async startLocalAi() {
             this.showToast('กำลังเริ่มต้น Local AI...', 'info');
-
             try {
-                const response = await fetch('/admin/ai-providers/local/start', {
+                const res = await fetch('/admin/ai-providers/local/start', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) {
-                    setTimeout(() => location.reload(), 2000);
-                }
-            } catch (error) {
+                if (data.success) setTimeout(() => location.reload(), 2000);
+            } catch (e) {
                 this.showToast('เกิดข้อผิดพลาด', 'error');
             }
         },
 
         async stopLocalAi() {
             this.showToast('กำลังหยุด Local AI...', 'info');
-
             try {
-                const response = await fetch('/admin/ai-providers/local/stop', {
+                const res = await fetch('/admin/ai-providers/local/stop', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) {
-                    setTimeout(() => location.reload(), 2000);
-                }
-            } catch (error) {
+                if (data.success) setTimeout(() => location.reload(), 2000);
+            } catch (e) {
                 this.showToast('เกิดข้อผิดพลาด', 'error');
             }
         },
 
         async restartLocalAi() {
-            this.showToast('กำลัง Restart Local AI...', 'info');
-
+            this.showToast('กำลังรีสตาร์ท Local AI...', 'info');
             try {
-                const response = await fetch('/admin/ai-providers/local/restart', {
+                const res = await fetch('/admin/ai-providers/local/restart', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                 });
-                const data = await response.json();
-
+                const data = await res.json();
                 this.showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) {
-                    setTimeout(() => location.reload(), 2000);
-                }
-            } catch (error) {
+                if (data.success) setTimeout(() => location.reload(), 2000);
+            } catch (e) {
                 this.showToast('เกิดข้อผิดพลาด', 'error');
             }
+        },
+
+        refreshStatus() {
+            this.showToast('กำลังรีเฟรช...', 'info');
+            setTimeout(() => location.reload(), 500);
         },
 
         showToast(message, type = 'info') {
@@ -901,40 +1105,19 @@ function aiProvidersManager() {
                 warning: { bg: 'linear-gradient(135deg, #f59e0b, #d97706)', icon: 'exclamation-triangle' },
                 info: { bg: 'linear-gradient(135deg, #3b82f6, #2563eb)', icon: 'info-circle' }
             };
-
             const color = colors[type] || colors.info;
             const toast = document.createElement('div');
-            toast.className = 'transform transition-all duration-300 ease-out';
-            toast.style.animation = 'slideInRight 0.3s ease-out';
+            toast.className = 'toast';
             toast.innerHTML = `
-                <div class="rounded-2xl shadow-2xl p-4 flex items-center gap-3 min-w-[320px]" style="background: ${color.bg}; color: white;">
-                    <i class="fas fa-${color.icon} text-2xl"></i>
-                    <span class="font-semibold">${message}</span>
+                <div class="rounded-xl shadow-2xl p-4 flex items-center gap-3 min-w-[280px]" style="background: ${color.bg}; color: white;">
+                    <i class="fas fa-${color.icon} text-xl"></i>
+                    <span class="font-medium">${message}</span>
                 </div>
             `;
-
             document.getElementById('toast-container').appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'slideOutRight 0.3s ease-in';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => toast.remove(), 3500);
         }
     }
 }
-
-// Animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-    }
-`;
-document.head.appendChild(style);
 </script>
 @endpush

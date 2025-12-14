@@ -1209,6 +1209,7 @@ Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::post('/{id}/toggle', [AiProviderManagementController::class, 'toggleProvider'])->name('toggle');
     Route::match(['post', 'put'], '/{id}/config', [AiProviderManagementController::class, 'updateConfig'])->name('config');
     Route::post('/{id}/test', [AiProviderManagementController::class, 'testConnection'])->name('test');
+    Route::post('/{id}/test-chat', [AiProviderManagementController::class, 'testChat'])->name('test-chat');
     Route::get('/{id}/models', [AiProviderManagementController::class, 'getProviderModels'])->name('models');
     Route::post('/models/{id}/toggle', [AiProviderManagementController::class, 'toggleModel'])->name('models.toggle');
 
