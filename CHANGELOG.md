@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.3] - 2025-12-14
+
+### ✨ Features
+- feat(ai-core): add download progress tracking and cleanup on failure (c12164c8)
+### 🐛 Bug Fixes
+- fix(ai-core): detect shared hosting and show alternatives (d6d178d1)
+### 🔧 Other Changes
+- Merge pull request #2272 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (da482416)
+
 ## [v3.383.2] - 2025-12-14
 
 ### ✨ Features
