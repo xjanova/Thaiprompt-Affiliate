@@ -2,9 +2,9 @@
 
 namespace App\Services\AI;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Service สำหรับจัดการการติดตั้ง Llama AI
@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Log;
  * - llama.cpp (Hugging Face)
  *
  * มี Progress tracking และ status reporting
+ *
+ * หมายเหตุ: บน shared hosting จะไม่สามารถติดตั้งได้
+ * จะแสดงคำแนะนำแทน
  */
 class LlamaInstallationService
 {
@@ -47,6 +50,34 @@ class LlamaInstallationService
      */
     public function startInstallation(string $method = 'ollama', string $model = 'llama3.2:3b'): array
     {
+        // ตรวจสอบว่าสามารถติดตั้งได้หรือไม่
+        $canInstall = $this->checkInstallCapability();
+
+        if (!$canInstall['can_install']) {
+            // บันทึก log
+            $this->log("ไม่สามารถติดตั้งได้: {$canInstall['reason']}");
+
+            // อัพเดท progress เป็น error พร้อมคำแนะนำ
+            $this->updateProgress([
+                'status' => 'error',
+                'step' => 'checking_system',
+                'step_name' => 'ตรวจสอบระบบ',
+                'percentage' => 5,
+                'message' => $canInstall['reason'],
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => $canInstall['reason'],
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ];
+        }
+
         // เคลียร์ progress เดิม
         $this->resetProgress();
 
@@ -86,12 +117,178 @@ class LlamaInstallationService
             escapeshellarg($logFile)
         );
 
-        exec($command);
+        @exec($command);
+
+        // ตรวจสอบว่า script รันได้จริงหรือไม่ (รอ 2 วินาที)
+        sleep(2);
+        $progress = $this->getProgress();
+
+        if ($progress['percentage'] == 0 && $progress['status'] === 'running') {
+            // Script ไม่ได้รัน - อาจเป็น shared hosting
+            $this->updateProgress([
+                'status' => 'error',
+                'step' => 'checking_system',
+                'step_name' => 'ตรวจสอบระบบ',
+                'percentage' => 5,
+                'message' => 'ไม่สามารถรัน background process ได้ เซิร์ฟเวอร์นี้อาจเป็น shared hosting',
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+                'alternative_options' => $this->getAlternativeOptions(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถรัน background process ได้',
+                'is_shared_hosting' => true,
+                'manual_instructions' => $this->getManualInstructions($method, $model),
+            ];
+        }
 
         return [
             'success' => true,
             'message' => 'เริ่มการติดตั้งแล้ว',
             'progress_url' => '/admin/ai-providers/install/progress',
+        ];
+    }
+
+    /**
+     * ตรวจสอบความสามารถในการติดตั้ง
+     *
+     * @return array
+     */
+    private function checkInstallCapability(): array
+    {
+        // 1. ตรวจสอบ exec function
+        if (!function_exists('exec')) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function exec() ถูก disable - ไม่สามารถรันคำสั่งติดตั้งได้',
+            ];
+        }
+
+        // 2. ตรวจสอบว่า exec ถูก disable หรือไม่
+        $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions')));
+        if (in_array('exec', $disabledFunctions)) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function exec() ถูก disable ใน php.ini',
+            ];
+        }
+
+        // 3. ตรวจสอบ proc_open (จำเป็นสำหรับ background process)
+        if (in_array('proc_open', $disabledFunctions)) {
+            return [
+                'can_install' => false,
+                'reason' => 'PHP function proc_open() ถูก disable - ไม่สามารถรัน background process ได้',
+            ];
+        }
+
+        // 4. ทดสอบรันคำสั่งง่ายๆ
+        $output = [];
+        $returnCode = -1;
+        @exec('echo "test"', $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            return [
+                'can_install' => false,
+                'reason' => 'ไม่สามารถรันคำสั่ง shell ได้ - อาจเป็น shared hosting ที่มีการจำกัด',
+            ];
+        }
+
+        // 5. ตรวจสอบว่าสามารถเขียนไฟล์ script ได้
+        $scriptsDir = base_path('scripts');
+        if (!is_writable($scriptsDir)) {
+            return [
+                'can_install' => false,
+                'reason' => 'ไม่สามารถเขียนไฟล์ในโฟลเดอร์ scripts/ ได้',
+            ];
+        }
+
+        return [
+            'can_install' => true,
+            'reason' => 'พร้อมติดตั้ง',
+        ];
+    }
+
+    /**
+     * คำแนะนำการติดตั้งแบบ manual
+     *
+     * @param string $method
+     * @param string $model
+     * @return array
+     */
+    private function getManualInstructions(string $method, string $model): array
+    {
+        if ($method === 'ollama') {
+            return [
+                'title' => 'วิธีติดตั้ง Ollama บน VPS/Server ของคุณ',
+                'steps' => [
+                    '1. SSH เข้าสู่เซิร์ฟเวอร์ของคุณ',
+                    '2. รันคำสั่ง: curl -fsSL https://ollama.com/install.sh | sh',
+                    '3. เริ่ม Ollama: ollama serve',
+                    "4. ดาวน์โหลด Model: ollama pull {$model}",
+                    '5. ทดสอบ: curl http://localhost:11434/api/tags',
+                ],
+                'commands' => [
+                    'curl -fsSL https://ollama.com/install.sh | sh',
+                    'ollama serve &',
+                    "ollama pull {$model}",
+                ],
+            ];
+        }
+
+        return [
+            'title' => 'วิธีติดตั้ง Llama จาก Hugging Face',
+            'steps' => [
+                '1. SSH เข้าสู่เซิร์ฟเวอร์ที่มี RAM เพียงพอ',
+                '2. ติดตั้ง Python: sudo apt install python3 python3-pip',
+                '3. ติดตั้ง huggingface_hub: pip install huggingface_hub',
+                "4. ดาวน์โหลด Model: huggingface-cli download meta-llama/{$model}",
+                '5. ติดตั้ง llama.cpp สำหรับรัน inference',
+            ],
+            'commands' => [
+                'pip install huggingface_hub',
+                "huggingface-cli download meta-llama/{$model}",
+            ],
+        ];
+    }
+
+    /**
+     * ทางเลือกอื่นสำหรับใช้ AI
+     *
+     * @return array
+     */
+    private function getAlternativeOptions(): array
+    {
+        return [
+            [
+                'name' => 'Together AI (Meta Llama Cloud)',
+                'description' => 'ใช้ Llama 4 ผ่าน API โดยไม่ต้องติดตั้ง',
+                'url' => 'https://api.together.xyz',
+                'free_tier' => true,
+                'setup' => 'ไปที่ AI Providers > Meta > กรอก API Key',
+            ],
+            [
+                'name' => 'OpenAI',
+                'description' => 'ใช้ GPT-4 ผ่าน API',
+                'url' => 'https://platform.openai.com',
+                'free_tier' => false,
+                'setup' => 'ไปที่ AI Providers > OpenAI > กรอก API Key',
+            ],
+            [
+                'name' => 'Anthropic Claude',
+                'description' => 'ใช้ Claude 3 ผ่าน API',
+                'url' => 'https://console.anthropic.com',
+                'free_tier' => false,
+                'setup' => 'ไปที่ AI Providers > Anthropic > กรอก API Key',
+            ],
+            [
+                'name' => 'VPS แยกสำหรับ Ollama',
+                'description' => 'เช่า VPS (เช่น DigitalOcean, Vultr) เพื่อรัน Ollama',
+                'url' => 'https://www.digitalocean.com',
+                'free_tier' => false,
+                'setup' => 'เช่า VPS > ติดตั้ง Ollama > เชื่อมต่อผ่าน API',
+            ],
         ];
     }
 
@@ -186,8 +383,8 @@ class LlamaInstallationService
     public function cancelInstallation(): array
     {
         // หา process และ kill
-        exec("pkill -f 'install-llama-with-progress.sh'");
-        exec("pkill -f 'ollama pull'");
+        @exec("pkill -f 'install-llama-with-progress.sh' 2>/dev/null");
+        @exec("pkill -f 'ollama pull' 2>/dev/null");
 
         $this->updateProgress([
             'status' => 'cancelled',
@@ -221,8 +418,8 @@ class LlamaInstallationService
     private function createInstallScript(string $path): void
     {
         $script = $this->getInstallScriptContent();
-        file_put_contents($path, $script);
-        chmod($path, 0755);
+        @file_put_contents($path, $script);
+        @chmod($path, 0755);
     }
 
     /**
@@ -238,13 +435,22 @@ class LlamaInstallationService
 # Llama Installation Script with Progress Tracking
 # Usage: ./install-llama-with-progress.sh <method> <model> <progress_file> <log_file>
 #
+# Features:
+# - Real-time download progress with file size
+# - Automatic cleanup on failure
+# - Trap for interrupt signals
+#
 
 METHOD="${1:-ollama}"
 MODEL="${2:-llama3.2:3b}"
 PROGRESS_FILE="${3:-/tmp/llama-progress.json}"
 LOG_FILE="${4:-/tmp/llama-install.log}"
 
-# Function to update progress
+# Track downloaded files for cleanup
+DOWNLOAD_DIR=""
+DOWNLOADED_FILES=()
+
+# Function to update progress with more details
 update_progress() {
     local status="$1"
     local step="$2"
@@ -272,17 +478,77 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# Function to format bytes to human readable
+format_bytes() {
+    local bytes=$1
+    if [ $bytes -ge 1073741824 ]; then
+        echo "$(echo "scale=2; $bytes/1073741824" | bc) GB"
+    elif [ $bytes -ge 1048576 ]; then
+        echo "$(echo "scale=2; $bytes/1048576" | bc) MB"
+    elif [ $bytes -ge 1024 ]; then
+        echo "$(echo "scale=2; $bytes/1024" | bc) KB"
+    else
+        echo "$bytes B"
+    fi
+}
+
+# Cleanup function - removes downloaded files on failure
+cleanup_on_failure() {
+    log "Cleanup: Removing downloaded files..."
+    update_progress "error" "cleanup" "กำลังลบไฟล์" 0 "กำลังลบไฟล์ที่ดาวน์โหลดไม่สำเร็จ..."
+
+    # For Ollama - remove the model
+    if [ "$METHOD" = "ollama" ]; then
+        if command -v ollama &> /dev/null; then
+            log "Removing Ollama model: $MODEL"
+            ollama rm "$MODEL" 2>/dev/null
+        fi
+
+        # Remove partial downloads from Ollama cache
+        OLLAMA_MODELS_DIR="${HOME}/.ollama/models"
+        if [ -d "$OLLAMA_MODELS_DIR" ]; then
+            # Find and remove partial/temp files
+            find "$OLLAMA_MODELS_DIR" -name "*.part" -delete 2>/dev/null
+            find "$OLLAMA_MODELS_DIR" -name "*.tmp" -delete 2>/dev/null
+            log "Cleaned up Ollama cache"
+        fi
+    fi
+
+    # For Hugging Face - remove downloaded files
+    if [ "$METHOD" = "huggingface" ]; then
+        if [ -n "$DOWNLOAD_DIR" ] && [ -d "$DOWNLOAD_DIR" ]; then
+            log "Removing download directory: $DOWNLOAD_DIR"
+            rm -rf "$DOWNLOAD_DIR"
+        fi
+
+        # Remove from HuggingFace cache
+        HF_CACHE="${HOME}/.cache/huggingface"
+        if [ -d "$HF_CACHE" ]; then
+            # Remove partial downloads
+            find "$HF_CACHE" -name "*.incomplete" -delete 2>/dev/null
+            find "$HF_CACHE" -name "*.lock" -delete 2>/dev/null
+            log "Cleaned up HuggingFace cache"
+        fi
+    fi
+
+    log "Cleanup completed"
+}
+
+# Trap for cleanup on error or interrupt
+trap 'cleanup_on_failure; exit 1' ERR INT TERM
+
 log "Starting Llama installation - Method: $METHOD, Model: $MODEL"
 
 # Step 1: Check system (0-5%)
 update_progress "running" "checking_system" "ตรวจสอบระบบ" 0 "กำลังตรวจสอบระบบ..."
 log "Checking system requirements..."
 
-TOTAL_RAM=$(free -g | awk '/^Mem:/{print $2}')
-CPU_CORES=$(nproc)
+TOTAL_RAM=$(free -g 2>/dev/null | awk '/^Mem:/{print $2}' || echo "0")
+CPU_CORES=$(nproc 2>/dev/null || echo "1")
+DISK_FREE=$(df -BG . 2>/dev/null | tail -1 | awk '{print $4}' | tr -d 'G' || echo "0")
 
-log "System: RAM=${TOTAL_RAM}GB, CPU=${CPU_CORES} cores"
-update_progress "running" "checking_system" "ตรวจสอบระบบ" 5 "RAM: ${TOTAL_RAM}GB, CPU: ${CPU_CORES} cores"
+log "System: RAM=${TOTAL_RAM}GB, CPU=${CPU_CORES} cores, Disk Free=${DISK_FREE}GB"
+update_progress "running" "checking_system" "ตรวจสอบระบบ" 5 "RAM: ${TOTAL_RAM}GB, CPU: ${CPU_CORES} cores, พื้นที่ว่าง: ${DISK_FREE}GB"
 
 sleep 1
 
@@ -310,7 +576,7 @@ if [ "$METHOD" = "ollama" ]; then
 else
     # For Hugging Face method
     update_progress "running" "installing_dependencies" "ติดตั้ง Dependencies" 8 "กำลังติดตั้ง Python dependencies..."
-    pip install --quiet huggingface_hub >> "$LOG_FILE" 2>&1
+    pip install --quiet huggingface_hub tqdm >> "$LOG_FILE" 2>&1
     update_progress "running" "installing_dependencies" "ติดตั้ง Dependencies" 15 "ติดตั้ง dependencies สำเร็จ"
 fi
 
@@ -320,6 +586,8 @@ sleep 1
 update_progress "running" "downloading_model" "ดาวน์โหลด Model" 15 "เริ่มดาวน์โหลด $MODEL..."
 log "Downloading model: $MODEL"
 
+DOWNLOAD_START_TIME=$(date +%s)
+
 if [ "$METHOD" = "ollama" ]; then
     # Start Ollama service if not running
     if ! pgrep -x "ollama" > /dev/null; then
@@ -328,41 +596,129 @@ if [ "$METHOD" = "ollama" ]; then
         sleep 3
     fi
 
-    # Download model with progress tracking
-    # Ollama doesn't provide percentage, so we simulate based on model size
-    update_progress "running" "downloading_model" "ดาวน์โหลด Model" 20 "กำลังดาวน์โหลด $MODEL... (อาจใช้เวลา 5-30 นาที)"
+    # Get model size estimate first (if available)
+    update_progress "running" "downloading_model" "ดาวน์โหลด Model" 16 "กำลังตรวจสอบขนาด Model..."
 
-    # Pull model
-    ollama pull "$MODEL" 2>&1 | while read line; do
-        # Parse Ollama output for progress
-        if [[ "$line" =~ ([0-9]+)% ]]; then
+    # Pull model with detailed progress tracking
+    LAST_PERCENT=0
+    LAST_DOWNLOADED=""
+
+    ollama pull "$MODEL" 2>&1 | while IFS= read -r line; do
+        log "$line"
+
+        # Parse progress: "pulling abc123... 45% ▕████      ▏ 1.2 GB/2.5 GB"
+        if [[ "$line" =~ ([0-9]+)%.*([0-9.]+\ [KMGT]?B)/([0-9.]+\ [KMGT]?B) ]]; then
             PERCENT="${BASH_REMATCH[1]}"
-            # Map 0-100% to 15-75%
-            MAPPED_PERCENT=$((15 + (PERCENT * 60 / 100)))
+            DOWNLOADED="${BASH_REMATCH[2]}"
+            TOTAL="${BASH_REMATCH[3]}"
+
+            # Map 0-100% to 16-75%
+            MAPPED_PERCENT=$((16 + (PERCENT * 59 / 100)))
+
+            # Calculate speed
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - DOWNLOAD_START_TIME))
+            if [ $ELAPSED -gt 0 ]; then
+                # Rough speed calculation
+                SPEED_MSG="(${ELAPSED}s elapsed)"
+            else
+                SPEED_MSG=""
+            fi
+
+            update_progress "running" "downloading_model" "ดาวน์โหลด Model" $MAPPED_PERCENT "กำลังดาวน์โหลด: ${DOWNLOADED} / ${TOTAL} (${PERCENT}%) ${SPEED_MSG}"
+
+        # Simple percentage match
+        elif [[ "$line" =~ ([0-9]+)% ]]; then
+            PERCENT="${BASH_REMATCH[1]}"
+            MAPPED_PERCENT=$((16 + (PERCENT * 59 / 100)))
             update_progress "running" "downloading_model" "ดาวน์โหลด Model" $MAPPED_PERCENT "กำลังดาวน์โหลด $MODEL... ${PERCENT}%"
         fi
-        log "$line"
     done
 
-    if [ $? -ne 0 ]; then
-        update_progress "error" "downloading_model" "ดาวน์โหลด Model" 20 "ดาวน์โหลด Model ล้มเหลว"
-        log "ERROR: Failed to download model"
+    PULL_EXIT_CODE=${PIPESTATUS[0]}
+
+    if [ $PULL_EXIT_CODE -ne 0 ]; then
+        update_progress "error" "downloading_model" "ดาวน์โหลด Model" 20 "ดาวน์โหลด Model ล้มเหลว - กำลังลบไฟล์..."
+        log "ERROR: Failed to download model (exit code: $PULL_EXIT_CODE)"
+        cleanup_on_failure
         exit 1
     fi
 
     update_progress "running" "downloading_model" "ดาวน์โหลด Model" 75 "ดาวน์โหลด $MODEL สำเร็จ"
     log "Model downloaded successfully"
-else
-    # Hugging Face download
-    update_progress "running" "downloading_model" "ดาวน์โหลด Model" 20 "กำลังดาวน์โหลดจาก Hugging Face..."
 
-    # This would need Python script for actual progress
-    # For now, simulate progress
-    for i in $(seq 20 5 75); do
-        update_progress "running" "downloading_model" "ดาวน์โหลด Model" $i "กำลังดาวน์โหลด... ${i}%"
-        sleep 2
-    done
+else
+    # Hugging Face download with progress
+    DOWNLOAD_DIR="/tmp/llama-download-$$"
+    mkdir -p "$DOWNLOAD_DIR"
+
+    update_progress "running" "downloading_model" "ดาวน์โหลด Model" 18 "กำลังดาวน์โหลดจาก Hugging Face..."
+
+    # Create Python script for download with progress
+    cat > "$DOWNLOAD_DIR/download.py" << 'PYEOF'
+import os
+import sys
+import json
+from huggingface_hub import hf_hub_download, snapshot_download
+from huggingface_hub.utils import tqdm as hf_tqdm
+
+model_id = sys.argv[1]
+progress_file = sys.argv[2]
+log_file = sys.argv[3]
+
+def update_progress(percentage, message):
+    with open(progress_file, 'w') as f:
+        json.dump({
+            "status": "running",
+            "step": "downloading_model",
+            "step_name": "ดาวน์โหลด Model",
+            "percentage": percentage,
+            "message": message,
+            "method": "huggingface",
+            "model": model_id
+        }, f, ensure_ascii=False)
+
+def log(msg):
+    with open(log_file, 'a') as f:
+        f.write(f"[PYTHON] {msg}\n")
+
+try:
+    log(f"Starting download: {model_id}")
+    update_progress(20, f"เริ่มดาวน์โหลด {model_id}...")
+
+    # Try to download
+    local_dir = snapshot_download(
+        repo_id=model_id,
+        local_dir=os.path.dirname(progress_file) + "/model",
+        resume_download=True
+    )
+
+    update_progress(75, f"ดาวน์โหลดสำเร็จ: {local_dir}")
+    log(f"Download complete: {local_dir}")
+    print(local_dir)
+
+except Exception as e:
+    log(f"Download failed: {str(e)}")
+    update_progress(20, f"ดาวน์โหลดล้มเหลว: {str(e)}")
+    sys.exit(1)
+PYEOF
+
+    python3 "$DOWNLOAD_DIR/download.py" "$MODEL" "$PROGRESS_FILE" "$LOG_FILE" >> "$LOG_FILE" 2>&1
+
+    if [ $? -ne 0 ]; then
+        update_progress "error" "downloading_model" "ดาวน์โหลด Model" 20 "ดาวน์โหลดจาก Hugging Face ล้มเหลว - กำลังลบไฟล์..."
+        log "ERROR: Failed to download from Hugging Face"
+        cleanup_on_failure
+        exit 1
+    fi
+
+    update_progress "running" "downloading_model" "ดาวน์โหลด Model" 75 "ดาวน์โหลดสำเร็จ"
 fi
+
+# Calculate download time
+DOWNLOAD_END_TIME=$(date +%s)
+DOWNLOAD_DURATION=$((DOWNLOAD_END_TIME - DOWNLOAD_START_TIME))
+log "Download completed in ${DOWNLOAD_DURATION} seconds"
 
 sleep 1
 
@@ -401,22 +757,29 @@ if [ "$METHOD" = "ollama" ]; then
         log "API test passed"
 
         # Quick model test
-        TEST_RESPONSE=$(curl -s http://localhost:11434/api/generate -d "{\"model\": \"$MODEL\", \"prompt\": \"Hi\", \"stream\": false}" 2>/dev/null | head -c 100)
+        TEST_RESPONSE=$(curl -s -m 30 http://localhost:11434/api/generate -d "{\"model\": \"$MODEL\", \"prompt\": \"Hi\", \"stream\": false}" 2>/dev/null | head -c 100)
 
         if [ -n "$TEST_RESPONSE" ]; then
             update_progress "running" "testing" "ทดสอบระบบ" 98 "Model ตอบกลับปกติ"
             log "Model test passed"
+        else
+            log "Warning: Model did not respond to test prompt"
         fi
     else
-        update_progress "error" "testing" "ทดสอบระบบ" 90 "API ไม่ตอบกลับ"
+        update_progress "error" "testing" "ทดสอบระบบ" 90 "API ไม่ตอบกลับ - กำลังลบไฟล์..."
         log "ERROR: API test failed"
+        cleanup_on_failure
         exit 1
     fi
 fi
 
+# Disable trap before successful completion
+trap - ERR INT TERM
+
 # Complete!
-update_progress "completed" "completed" "เสร็จสิ้น" 100 "ติดตั้ง $MODEL สำเร็จ! พร้อมใช้งาน" ",\n    \"completed_at\": \"$(date -Iseconds)\""
-log "Installation completed successfully!"
+TOTAL_TIME=$(($(date +%s) - DOWNLOAD_START_TIME + 5))
+update_progress "completed" "completed" "เสร็จสิ้น" 100 "ติดตั้ง $MODEL สำเร็จ! (ใช้เวลา ${TOTAL_TIME} วินาที)" ",\n    \"completed_at\": \"$(date -Iseconds)\",\n    \"duration_seconds\": $TOTAL_TIME"
+log "Installation completed successfully in ${TOTAL_TIME} seconds!"
 
 echo "Installation complete!"
 BASH;
