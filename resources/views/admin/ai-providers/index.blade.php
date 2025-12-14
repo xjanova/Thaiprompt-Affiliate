@@ -388,6 +388,10 @@
         </div>
 
         <div class="flex gap-3">
+            <a href="{{ route('admin.ai-providers.install') }}" class="btn-action primary" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">
+                <span class="text-xl mr-1">🦙</span>
+                <span>ติดตั้ง Llama</span>
+            </a>
             <button @click="refreshStatus()" class="btn-action primary">
                 <i class="fas fa-sync-alt"></i>
                 <span>รีเฟรช</span>

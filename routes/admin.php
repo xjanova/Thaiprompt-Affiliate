@@ -1219,6 +1219,13 @@ Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::post('/local/restart', [AiProviderManagementController::class, 'restartLocalAi'])->name('local.restart');
     Route::get('/local/status', [AiProviderManagementController::class, 'getLocalAiStatus'])->name('local.status');
     Route::post('/local/load-model', [AiProviderManagementController::class, 'loadModel'])->name('local.load-model');
+
+    // Llama Installation
+    Route::get('/install', [AiProviderManagementController::class, 'installPage'])->name('install');
+    Route::post('/install/start', [AiProviderManagementController::class, 'startInstall'])->name('install.start');
+    Route::get('/install/progress', [AiProviderManagementController::class, 'getInstallProgress'])->name('install.progress');
+    Route::post('/install/cancel', [AiProviderManagementController::class, 'cancelInstall'])->name('install.cancel');
+    Route::get('/install/log', [AiProviderManagementController::class, 'getInstallLog'])->name('install.log');
 });
 
 // AI Monitoring & Analytics

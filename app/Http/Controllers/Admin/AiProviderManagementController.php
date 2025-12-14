@@ -7,6 +7,7 @@ use App\Models\AiProvider;
 use App\Models\AiModel;
 use App\Services\AI\LocalAiManager;
 use App\Services\AI\AiServiceFactory;
+use App\Services\AI\LlamaInstallationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -462,5 +463,177 @@ class AiProviderManagementController extends Controller
             'message' => $model->is_active ? 'เปิดใช้งาน Model แล้ว' : 'ปิดใช้งาน Model แล้ว',
             'is_active' => $model->is_active,
         ]);
+    }
+
+    // =====================================================
+    // Llama Installation Methods
+    // =====================================================
+
+    /**
+     * หน้าติดตั้ง Llama
+     *
+     * @return \Illuminate\View\View
+     */
+    public function installPage()
+    {
+        $installService = new LlamaInstallationService();
+        $progress = $installService->getProgress();
+
+        // รายการ Models ที่สามารถติดตั้งได้
+        $availableModels = [
+            'ollama' => [
+                ['id' => 'llama3.2:1b', 'name' => 'Llama 3.2 1B', 'size' => '~1GB', 'ram' => '4GB', 'description' => 'เล็กที่สุด เร็วมาก'],
+                ['id' => 'llama3.2:3b', 'name' => 'Llama 3.2 3B', 'size' => '~2GB', 'ram' => '8GB', 'description' => 'สมดุลระหว่างความเร็วและคุณภาพ'],
+                ['id' => 'llama3.1:8b', 'name' => 'Llama 3.1 8B', 'size' => '~4.7GB', 'ram' => '16GB', 'description' => 'คุณภาพดี แนะนำ'],
+                ['id' => 'llama3.1:70b-instruct-q4_K_M', 'name' => 'Llama 3.1 70B', 'size' => '~40GB', 'ram' => '64GB', 'description' => 'คุณภาพสูงสุด'],
+            ],
+            'huggingface' => [
+                ['id' => 'Llama-4-Scout-17B-16E-Instruct-Q5_K_M', 'name' => 'Llama 4 Scout 17B', 'size' => '~12GB', 'ram' => '32GB', 'description' => 'Llama 4 รุ่นล่าสุด'],
+                ['id' => 'Meta-Llama-3.1-70B-Instruct-Q4_K_M', 'name' => 'Llama 3.1 70B GGUF', 'size' => '~40GB', 'ram' => '64GB', 'description' => 'คุณภาพสูงมาก'],
+            ],
+        ];
+
+        // ข้อมูลระบบ
+        $systemInfo = $this->getSystemInfo();
+
+        return view('admin.ai-providers.install', compact(
+            'progress',
+            'availableModels',
+            'systemInfo'
+        ));
+    }
+
+    /**
+     * เริ่มติดตั้ง Llama
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function startInstall(Request $request)
+    {
+        $request->validate([
+            'method' => 'required|in:ollama,huggingface',
+            'model' => 'required|string',
+        ]);
+
+        $installService = new LlamaInstallationService();
+
+        // ตรวจสอบว่ากำลังติดตั้งอยู่หรือไม่
+        if ($installService->isInstalling()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กำลังติดตั้งอยู่แล้ว กรุณารอจนกว่าจะเสร็จ',
+            ], 400);
+        }
+
+        $result = $installService->startInstallation(
+            $request->method,
+            $request->model
+        );
+
+        return response()->json($result);
+    }
+
+    /**
+     * ดึง Progress การติดตั้ง
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInstallProgress()
+    {
+        $installService = new LlamaInstallationService();
+        $progress = $installService->getProgress();
+
+        return response()->json([
+            'success' => true,
+            'data' => $progress,
+        ]);
+    }
+
+    /**
+     * ยกเลิกการติดตั้ง
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelInstall()
+    {
+        $installService = new LlamaInstallationService();
+        $result = $installService->cancelInstallation();
+
+        return response()->json($result);
+    }
+
+    /**
+     * ดึง Log การติดตั้ง
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInstallLog()
+    {
+        $installService = new LlamaInstallationService();
+        $log = $installService->getLog();
+
+        return response()->json([
+            'success' => true,
+            'log' => $log,
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูลระบบ (RAM, CPU)
+     *
+     * @return array
+     */
+    private function getSystemInfo(): array
+    {
+        $totalRam = 0;
+        $cpuCores = 1;
+
+        // ดึงข้อมูล RAM
+        if (is_readable('/proc/meminfo')) {
+            $meminfo = file_get_contents('/proc/meminfo');
+            if (preg_match('/MemTotal:\s+(\d+)\s+kB/', $meminfo, $matches)) {
+                $totalRam = round($matches[1] / 1024 / 1024, 1); // Convert to GB
+            }
+        }
+
+        // ดึงข้อมูล CPU cores
+        if (is_readable('/proc/cpuinfo')) {
+            $cpuinfo = file_get_contents('/proc/cpuinfo');
+            $cpuCores = preg_match_all('/^processor/m', $cpuinfo, $matches);
+        }
+
+        // ดึงพื้นที่ดิสก์
+        $diskFree = round(disk_free_space('/') / 1024 / 1024 / 1024, 1); // GB
+        $diskTotal = round(disk_total_space('/') / 1024 / 1024 / 1024, 1); // GB
+
+        return [
+            'ram_gb' => $totalRam,
+            'cpu_cores' => $cpuCores,
+            'disk_free_gb' => $diskFree,
+            'disk_total_gb' => $diskTotal,
+            'recommended_model' => $this->getRecommendedModel($totalRam),
+        ];
+    }
+
+    /**
+     * แนะนำ Model ตาม RAM ที่มี
+     *
+     * @param float $ramGb
+     * @return string
+     */
+    private function getRecommendedModel(float $ramGb): string
+    {
+        if ($ramGb >= 64) {
+            return 'llama3.1:70b-instruct-q4_K_M';
+        } elseif ($ramGb >= 32) {
+            return 'llama3.1:8b';
+        } elseif ($ramGb >= 16) {
+            return 'llama3.1:8b';
+        } elseif ($ramGb >= 8) {
+            return 'llama3.2:3b';
+        } else {
+            return 'llama3.2:1b';
+        }
     }
 }
