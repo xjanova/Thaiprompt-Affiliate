@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.2] - 2025-12-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2271 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (17c2a64c)
+- fix(ai-core): handle shared hosting restrictions (open_basedir, proc_open) (58115c74)
+### 🔧 Other Changes
+
+
 ## [v3.383.1] - 2025-12-14
 
 ### ✨ Features
