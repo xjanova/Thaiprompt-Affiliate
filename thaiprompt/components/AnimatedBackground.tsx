@@ -69,21 +69,35 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         animatedStyle,
       ]}
     >
+      {/* Outer glow layer (ฟุ้งเบลอมากสุด) */}
       <View
         style={[
-          styles.particleInner,
+          styles.particleGlow,
           {
-            width: particle.size,
-            height: particle.size,
+            width: particle.size * 8,
+            height: particle.size * 8,
             backgroundColor: particle.color,
-            shadowColor: particle.color,
-            shadowOpacity: 0.8,
-            shadowRadius: particle.size * 2,
-            shadowOffset: { width: 0, height: 0 },
+            opacity: 0.08,
+            marginLeft: -particle.size * 3.5,
+            marginTop: -particle.size * 3.5,
           },
         ]}
       />
-      {/* Glow effect */}
+      {/* Middle glow layer (ฟุ้งเบลอกลาง) */}
+      <View
+        style={[
+          styles.particleGlow,
+          {
+            width: particle.size * 5,
+            height: particle.size * 5,
+            backgroundColor: particle.color,
+            opacity: 0.15,
+            marginLeft: -particle.size * 2,
+            marginTop: -particle.size * 2,
+          },
+        ]}
+      />
+      {/* Inner glow layer (ฟุ้งใกล้แกน) */}
       <View
         style={[
           styles.particleGlow,
@@ -94,6 +108,21 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
             opacity: 0.3,
             marginLeft: -particle.size,
             marginTop: -particle.size,
+          },
+        ]}
+      />
+      {/* Core (แกนกลางสว่างสุด) */}
+      <View
+        style={[
+          styles.particleInner,
+          {
+            width: particle.size,
+            height: particle.size,
+            backgroundColor: particle.color,
+            shadowColor: particle.color,
+            shadowOpacity: 1,
+            shadowRadius: particle.size * 4,
+            shadowOffset: { width: 0, height: 0 },
           },
         ]}
       />

@@ -112,9 +112,19 @@ export default function WalletTopupScreen() {
 
     try {
       // เปิดหน้าเติมเงินบนเว็บพร้อมจำนวนเงิน
-      const topupUrl = `${API_BASE_URL.replace('/api', '')}/user/wallet/topup?amount=${amount}&from_app=1`;
-      await Linking.openURL(topupUrl);
+      // API_BASE_URL = 'https://main.thaiprompt.online/api/v1'
+      // ต้องเอาเฉพาะ domain: 'https://main.thaiprompt.online'
+      const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
+      const topupUrl = `${baseUrl}/user/wallet/topup?amount=${amount}&from_app=1`;
+
+      const canOpen = await Linking.canOpenURL(topupUrl);
+      if (canOpen) {
+        await Linking.openURL(topupUrl);
+      } else {
+        Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดหน้าชำระเงินได้ กรุณาลองใหม่อีกครั้ง');
+      }
     } catch (error) {
+      console.error('Open topup URL error:', error);
       Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดหน้าชำระเงินได้');
     } finally {
       setIsSubmitting(false);
