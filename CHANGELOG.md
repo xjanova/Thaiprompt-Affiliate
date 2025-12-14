@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.382.2] - 2025-12-14
+
+### ✨ Features
+- Merge pull request #2268 from xjanova/claude/add-line-oa-input-01BLYpyq32rAVwynG1tgbwDU (71f0d0e7)
+- feat(line-oa): add custom LINE OA name input field (1ba521f4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.382.1] - 2025-12-13
 
 ### ✨ Features
