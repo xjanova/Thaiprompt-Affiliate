@@ -103,15 +103,19 @@ export default function WalletTopupScreen() {
     }
   }, [isAuthenticated]);
 
-  // โหลดวิธีชำระเงิน
+  // โหลดวิธีชำระเงิน (กรอง wallet ออกเพื่อป้องกันการ pump เงิน)
   const loadPaymentMethods = useCallback(async () => {
     setLoadingMethods(true);
     try {
       console.log('📋 Loading deposit methods...');
       const response = await getDepositMethods();
       if (response?.success && response.methods) {
-        console.log('📋 Got methods:', response.methods.length);
-        setPaymentMethods(response.methods);
+        // กรอง wallet/balance ออก - ไม่ให้ใช้ wallet เติม wallet (ป้องกัน pump เงิน)
+        const filteredMethods = response.methods.filter(
+          (method) => method.category !== 'wallet' && method.id !== 'wallet' && method.id !== 'balance'
+        );
+        console.log('📋 Got methods:', filteredMethods.length, '(filtered wallet out)');
+        setPaymentMethods(filteredMethods);
       }
     } catch (error) {
       console.error('Load payment methods error:', error);
