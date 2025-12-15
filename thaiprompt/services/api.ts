@@ -1,6 +1,7 @@
 /**
  * API Service สำหรับติดต่อกับ Backend
  * แปลงจาก .NET MAUI ApiService.cs
+ * + Sync Status Integration
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
@@ -12,6 +13,7 @@ import {
   APP_CONFIG,
   ERROR_MESSAGES,
 } from '@/constants';
+import { useSyncStore } from '@/stores/syncStore';
 import type {
   LoginRequest,
   LoginResponse,
@@ -88,8 +90,17 @@ export const setAuthHeader = (token: string): void => {
 // Request Interceptor
 // =====================================================
 
+// Track active requests สำหรับ sync status
+let activeRequests = 0;
+
 apiClient.interceptors.request.use(
   async (config) => {
+    // เริ่ม sync status
+    activeRequests++;
+    if (activeRequests === 1) {
+      useSyncStore.getState().startSync();
+    }
+
     // ถ้ายังไม่มี token ใน header ให้โหลดจาก storage
     if (!config.headers['Authorization']) {
       const token = await loadAuthToken();
@@ -100,6 +111,11 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    // ลด request count และอัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      useSyncStore.getState().failSync('Request failed');
+    }
     return Promise.reject(error);
   }
 );
@@ -109,8 +125,30 @@ apiClient.interceptors.request.use(
 // =====================================================
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Request สำเร็จ - อัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      useSyncStore.getState().completeSync();
+    }
+    return response;
+  },
   async (error: AxiosError) => {
+    // Request ล้มเหลว - อัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      const errorMsg = error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+      useSyncStore.getState().failSync(errorMsg);
+
+      // Reset เป็น online หลังจาก 3 วินาที (ถ้ายังเชื่อมต่อได้)
+      setTimeout(() => {
+        const { isConnected } = useSyncStore.getState();
+        if (isConnected) {
+          useSyncStore.getState().setStatus('online');
+        }
+      }, 3000);
+    }
+
     if (error.response?.status === 401) {
       // Token หมดอายุ - ล้างข้อมูล
       await clearAuthToken();
