@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.12] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(api): show all products in premium store instead of official only (301c395c)
+- fix(mobile): rewrite KYC upload with fetch API and block re-entry (1ea1e9d2)
+### 🔧 Other Changes
+- Merge pull request #2281 from xjanova/claude/fix-profile-upload-error-xLzWn (2021d33b)
+
 ## [v3.383.11] - 2025-12-15
 
 ### ✨ Features
