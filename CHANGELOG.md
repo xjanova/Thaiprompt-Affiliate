@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.9] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): implement native checkout flow with local cart integration (d896532c)
+### 🐛 Bug Fixes
+- fix(mobile): rewrite KYC upload with fetch API and block re-entry (765c93cf)
+- fix(mobile): rewrite profile APIs and filter wallet from topup (198418b7)
+### 🔧 Other Changes
+- Merge pull request #2278 from xjanova/claude/fix-profile-upload-error-xLzWn (dc23d4da)
+
 ## [v3.383.8] - 2025-12-15
 
 ### ✨ Features
