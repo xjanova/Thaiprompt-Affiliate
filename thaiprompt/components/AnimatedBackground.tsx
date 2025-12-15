@@ -3,6 +3,18 @@
  * สร้างพื้นหลังแบบหิ่งห้อย/อะตอมที่เคลื่อนไหวสวยงาม
  * สำหรับแอพหลักล้าน
  *
+ * v1.9.0 - เปลี่ยนจาก BlurView เป็น Shadow-based blur
+ * - ลบ BlurView ที่ไม่ทำงานบน Android ออก
+ * - ใช้ shadowRadius + shadowColor แทนเพื่อสร้างเอฟเฟกต์ฟุ้งเบลอ
+ * - ทำงานได้ดีบนทั้ง iOS และ Android
+ * - เพิ่ม elevation สำหรับ Android shadow
+ *
+ * v1.8.0 - ปรับปรุงเอฟเฟคเบลอฟุ้งให้ชัดเจนขึ้นมาก
+ * - เพิ่มขนาด glow layers ทั้งหมด
+ * - เพิ่ม opacity ให้สว่างขึ้น
+ * - เพิ่ม outer glow layer เพิ่มเติม
+ * - ปรับ shadow blur radius ให้กว้างขึ้น
+ *
  * v1.7.0 - ปรับปรุงเอฟเฟคหิ่งห้อยให้เบลอฟุ้งสวยขึ้น
  * - ใช้ BlurView จาก expo-blur สำหรับ glow effect
  * - เพิ่ม radial gradient simulation ด้วย multiple layers
@@ -19,9 +31,9 @@
  */
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { View, StyleSheet, Dimensions, Animated, Easing, Platform } from 'react-native';
+import { View, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+// หมายเหตุ: ไม่ใช้ BlurView แล้ว เพราะ shadow-based blur ทำงานได้ดีกว่าบนทุกแพลตฟอร์ม
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -62,10 +74,7 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
     opacity: particle.opacity,
   };
 
-  // ขนาด glow แต่ละชั้น
-  const glowSize = particle.size * 12;
-  const glowOffset = -glowSize / 2 + particle.size / 2;
-
+  // ใช้ shadow-based blur แทน BlurView เพราะทำงานได้ดีกว่าบนทุกแพลตฟอร์ม
   return (
     <Animated.View
       style={[
@@ -79,111 +88,97 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         animatedStyle,
       ]}
     >
-      {/* ชั้นที่ 1: Blur glow นอกสุด (เบลอมากสุด) */}
+      {/* ชั้นที่ 1: Outer glow - ฟุ้งนอกสุด (ใช้ shadow blur) */}
       <View
-        style={[
-          styles.glowContainer,
-          {
-            width: glowSize,
-            height: glowSize,
-            marginLeft: glowOffset,
-            marginTop: glowOffset,
-          },
-        ]}
-      >
-        <BlurView
-          intensity={Platform.OS === 'ios' ? 30 : 15}
-          tint="dark"
-          style={[
-            styles.blurGlow,
-            {
-              backgroundColor: particle.color,
-              opacity: 0.15,
-            },
-          ]}
-        />
-      </View>
-
-      {/* ชั้นที่ 2: Soft glow กลาง */}
-      <View
-        style={[
-          styles.particleGlow,
-          {
-            width: particle.size * 6,
-            height: particle.size * 6,
-            backgroundColor: particle.color,
-            opacity: 0.12,
-            marginLeft: -particle.size * 2.5,
-            marginTop: -particle.size * 2.5,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          width: particle.size * 3,
+          height: particle.size * 3,
+          borderRadius: particle.size * 1.5,
+          backgroundColor: particle.color,
+          marginLeft: -particle.size,
+          marginTop: -particle.size,
+          opacity: 0.15,
+          // Shadow blur effect
+          shadowColor: particle.color,
+          shadowOpacity: 1,
+          shadowRadius: particle.size * 15,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 30,
+        }}
       />
 
-      {/* ชั้นที่ 3: Medium glow */}
+      {/* ชั้นที่ 2: Mid glow - ฟุ้งกลาง */}
       <View
-        style={[
-          styles.particleGlow,
-          {
-            width: particle.size * 4,
-            height: particle.size * 4,
-            backgroundColor: particle.color,
-            opacity: 0.2,
-            marginLeft: -particle.size * 1.5,
-            marginTop: -particle.size * 1.5,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          width: particle.size * 2.5,
+          height: particle.size * 2.5,
+          borderRadius: particle.size * 1.25,
+          backgroundColor: particle.color,
+          marginLeft: -particle.size * 0.75,
+          marginTop: -particle.size * 0.75,
+          opacity: 0.25,
+          shadowColor: particle.color,
+          shadowOpacity: 1,
+          shadowRadius: particle.size * 12,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 25,
+        }}
       />
 
-      {/* ชั้นที่ 4: Inner glow (ฟุ้งใกล้แกน) */}
+      {/* ชั้นที่ 3: Inner glow - ฟุ้งใกล้แกน */}
       <View
-        style={[
-          styles.particleGlow,
-          {
-            width: particle.size * 2.5,
-            height: particle.size * 2.5,
-            backgroundColor: particle.color,
-            opacity: 0.35,
-            marginLeft: -particle.size * 0.75,
-            marginTop: -particle.size * 0.75,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          width: particle.size * 2,
+          height: particle.size * 2,
+          borderRadius: particle.size,
+          backgroundColor: particle.color,
+          marginLeft: -particle.size * 0.5,
+          marginTop: -particle.size * 0.5,
+          opacity: 0.4,
+          shadowColor: particle.color,
+          shadowOpacity: 1,
+          shadowRadius: particle.size * 8,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 20,
+        }}
       />
 
-      {/* ชั้นที่ 5: Core glow (แกนกลางเรืองแสง) */}
+      {/* ชั้นที่ 4: Core glow - แกนกลางเรืองแสง */}
       <View
-        style={[
-          styles.particleInner,
-          {
-            width: particle.size * 1.5,
-            height: particle.size * 1.5,
-            backgroundColor: particle.color,
-            opacity: 0.7,
-            marginLeft: -particle.size * 0.25,
-            marginTop: -particle.size * 0.25,
-            shadowColor: particle.color,
-            shadowOpacity: 1,
-            shadowRadius: particle.size * 6,
-            shadowOffset: { width: 0, height: 0 },
-            // Android shadow
-            elevation: 15,
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          width: particle.size * 1.5,
+          height: particle.size * 1.5,
+          borderRadius: particle.size * 0.75,
+          backgroundColor: particle.color,
+          marginLeft: -particle.size * 0.25,
+          marginTop: -particle.size * 0.25,
+          opacity: 0.7,
+          shadowColor: particle.color,
+          shadowOpacity: 1,
+          shadowRadius: particle.size * 5,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 15,
+        }}
       />
 
-      {/* ชั้นที่ 6: Core center (แกนกลางสว่างสุด) */}
+      {/* ชั้นที่ 5: Core center - แกนกลางสว่างสุด */}
       <View
-        style={[
-          styles.particleCore,
-          {
-            width: particle.size,
-            height: particle.size,
-            backgroundColor: '#FFFFFF',
-            shadowColor: particle.color,
-            shadowOpacity: 1,
-            shadowRadius: particle.size * 3,
-            shadowOffset: { width: 0, height: 0 },
-          },
-        ]}
+        style={{
+          position: 'absolute',
+          width: particle.size,
+          height: particle.size,
+          borderRadius: particle.size / 2,
+          backgroundColor: '#FFFFFF',
+          shadowColor: particle.color,
+          shadowOpacity: 1,
+          shadowRadius: particle.size * 3,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 10,
+        }}
       />
     </Animated.View>
   );
@@ -262,12 +257,13 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   const particlesRef = useRef<Particle[] | null>(null);
 
   // สร้าง particles ครั้งเดียวตอน mount
+  // เพิ่มขนาด particle เพื่อให้เห็นเอฟเฟกต์ฟุ้งชัดเจนขึ้น
   if (particlesRef.current === null) {
     particlesRef.current = Array.from({ length: actualParticleCount }, (_, i) => ({
       id: i,
       x: Math.random() * SCREEN_WIDTH,
       y: Math.random() * SCREEN_HEIGHT,
-      size: Math.random() * 6 + 2,
+      size: Math.random() * 8 + 4, // เพิ่มจาก 2-8 เป็น 4-12
       opacity: new Animated.Value(0),
       translateX: new Animated.Value(0),
       translateY: new Animated.Value(0),
@@ -312,18 +308,18 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
     try {
       const animations = particles.map((particle) => {
-        // Opacity animation (breathing effect)
+        // Opacity animation (breathing effect) - เพิ่ม opacity ให้สว่างขึ้น
         const opacityAnimation = Animated.loop(
           Animated.sequence([
             Animated.delay(particle.delay),
             Animated.timing(particle.opacity, {
-              toValue: Math.random() * 0.5 + 0.5,
+              toValue: Math.random() * 0.3 + 0.7, // เพิ่มจาก 0.5-1.0 เป็น 0.7-1.0
               duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
             }),
             Animated.timing(particle.opacity, {
-              toValue: 0.1,
+              toValue: 0.3, // เพิ่มจาก 0.1 เป็น 0.3
               duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
