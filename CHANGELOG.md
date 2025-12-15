@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.15] - 2025-12-15
+
+### ✨ Features
+- Merge pull request #2284 from xjanova/claude/line-oa-registration-check-gXbcU (b3962dae)
+- feat(line): add LINE OA registration check with session tracking (150e5ae7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.14] - 2025-12-15
 
 ### ✨ Features
