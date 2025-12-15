@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.8] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile): replace BlurView with shadow-based blur effect (870e4919)
+- fix(mobile): enhance firefly blur effect visibility (a3a359b4)
+### 🔧 Other Changes
+- Merge pull request #2277 from xjanova/claude/fix-profile-upload-error-xLzWn (ec205c22)
+
 ## [v3.383.7] - 2025-12-15
 
 ### ✨ Features
