@@ -55,13 +55,17 @@ class MobileApiController extends Controller
 
         if (!$seller) {
             // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
+            // ⚠️ หมายเหตุ: role อยู่ใน $guarded ดังนั้นต้องใช้ direct assignment
             $seller = User::create([
                 'name' => config('shop.official_shop.name', 'Official Shop'),
                 'email' => $email,
                 'password' => Hash::make(Str::random(32)),
-                'role' => 'seller',
                 'email_verified_at' => now(),
             ]);
+
+            // Set role ด้วย direct assignment เพราะ role อยู่ใน $guarded
+            $seller->role = 'seller';
+            $seller->save();
         }
 
         self::$officialSeller = $seller;
