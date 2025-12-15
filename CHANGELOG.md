@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.10] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2279 from xjanova/claude/fix-profile-upload-error-xLzWn (9c319bb4)
+- chore(mobile): update EAS projectId to 9fc18c2e-b74b-40e6-af00-ae136471d9fa (ba9c1873)
+- chore(mobile): update EAS project ID and owner (9335eaa4)
+
 ## [v3.383.9] - 2025-12-15
 
 ### ✨ Features
