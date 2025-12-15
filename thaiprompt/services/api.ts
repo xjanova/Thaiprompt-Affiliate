@@ -1072,6 +1072,7 @@ export const getKycStatus = async (): Promise<{
 
 /**
  * อัพโหลดรูปภาพ KYC
+ * ใช้ fetch API โดยตรง (ไม่ใช้ axios) เพราะ axios มีปัญหากับ FormData ใน React Native
  */
 export const uploadKycImage = async (
   imageUri: string,
@@ -1088,7 +1089,14 @@ export const uploadKycImage = async (
   message?: string;
 }> => {
   try {
-    const formData = new FormData();
+    // ดึง token จาก SecureStore
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบใหม่',
+      };
+    }
 
     // แปลง URI ให้ถูกต้องสำหรับ React Native
     let fileUri = imageUri;
@@ -1103,44 +1111,55 @@ export const uploadKycImage = async (
     // ตรวจสอบ extension โดยละเลย query string
     const cleanFilename = filename.split('?')[0];
     const match = /\.(\w+)$/.exec(cleanFilename);
-    let fileType = 'image/jpeg';
+    let mimeType = 'image/jpeg';
     if (match) {
       const ext = match[1].toLowerCase();
-      if (ext === 'png') fileType = 'image/png';
-      else if (ext === 'gif') fileType = 'image/gif';
-      else if (ext === 'webp') fileType = 'image/webp';
-      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
-      else fileType = `image/${ext}`;
+      if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
+      else mimeType = `image/${ext}`;
     }
 
+    // สร้าง FormData
+    const formData = new FormData();
     formData.append('image', {
       uri: fileUri,
       name: cleanFilename || `${type}.jpg`,
-      type: fileType,
-    } as unknown as Blob);
+      type: mimeType,
+    } as any);
     formData.append('type', type);
 
-    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: fileType, kycType: type });
+    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: mimeType, kycType: type });
 
-    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
-    const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
+    // ใช้ fetch API (ทำงานได้ดีกว่า axios กับ FormData ใน React Native)
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.KYC_UPLOAD}`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // ไม่ต้องตั้ง Content-Type - fetch จะสร้าง boundary ให้เอง
       },
-      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
+      body: formData,
     });
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('🪪 KYC upload failed:', result);
       return {
         success: false,
-        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
       };
     }
+
+    console.log('🪪 KYC upload success:', result);
+    return result;
+  } catch (error: any) {
+    console.error('🪪 KYC upload error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
     };
   }
 };

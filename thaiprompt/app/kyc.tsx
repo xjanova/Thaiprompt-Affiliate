@@ -855,6 +855,9 @@ const ApprovedView = ({ isDark }: { isDark: boolean }) => (
 
     <Text style={[statusStyles.title, isDark && statusStyles.titleDark]}>ยืนยันตัวตนสำเร็จ!</Text>
     <Text style={statusStyles.subtitle}>บัญชีของคุณได้รับการยืนยันแล้ว</Text>
+    <Text style={[statusStyles.subtitle, { marginTop: 8, fontSize: 13, color: '#9CA3AF' }]}>
+      ✓ ไม่สามารถทำ KYC ซ้ำได้
+    </Text>
 
     <View style={[statusStyles.benefitCard, isDark && statusStyles.benefitCardDark]}>
       <Text style={[statusStyles.benefitTitle, isDark && statusStyles.benefitTitleDark]}>ฟีเจอร์ที่ปลดล็อค:</Text>
@@ -1059,7 +1062,25 @@ export default function KycScreen() {
     try {
       const response = await getKycStatus();
       if (response?.success && response.data) {
-        setStatus(response.data.status as KycStatus);
+        const kycStatus = response.data.status as KycStatus;
+        setStatus(kycStatus);
+
+        // ถ้า KYC ผ่านแล้ว (approved) ให้แสดง alert แล้ว redirect กลับ
+        if (kycStatus === 'approved') {
+          Alert.alert(
+            'ยืนยันตัวตนแล้ว',
+            'บัญชีของคุณได้รับการยืนยันตัวตนเรียบร้อยแล้ว ไม่สามารถทำ KYC ซ้ำได้',
+            [
+              {
+                text: 'ตกลง',
+                onPress: () => router.back(),
+              },
+            ]
+          );
+          setIsLoading(false);
+          return;
+        }
+
         if (response.data.submission) {
           setHasIdCard(response.data.submission.hasIdCard);
           setHasSelfie(response.data.submission.hasSelfie);
