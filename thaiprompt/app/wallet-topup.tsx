@@ -28,8 +28,7 @@ import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { getWallet } from '@/services/api';
-import { formatCurrency } from '@/constants';
-import { API_BASE_URL } from '@/services/api';
+import { formatCurrency, API_BASE_URL } from '@/constants';
 
 // จำนวนเงินด่วน
 const QUICK_AMOUNTS = [100, 300, 500, 1000, 2000, 5000, 10000];
@@ -117,15 +116,17 @@ export default function WalletTopupScreen() {
       const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
       const topupUrl = `${baseUrl}/user/wallet/topup?amount=${amount}&from_app=1`;
 
-      const canOpen = await Linking.canOpenURL(topupUrl);
-      if (canOpen) {
-        await Linking.openURL(topupUrl);
-      } else {
-        Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดหน้าชำระเงินได้ กรุณาลองใหม่อีกครั้ง');
-      }
+      console.log('🔗 Opening topup URL:', topupUrl);
+
+      // เปิด URL โดยตรง - ไม่ต้องเช็ค canOpenURL เพราะ https URL เปิดได้เสมอ
+      // canOpenURL อาจ return false บน Android/iOS ถ้าไม่มี config queries ใน manifest
+      await Linking.openURL(topupUrl);
     } catch (error) {
       console.error('Open topup URL error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเปิดหน้าชำระเงินได้');
+      Alert.alert(
+        'เกิดข้อผิดพลาด',
+        'ไม่สามารถเปิดหน้าชำระเงินได้ กรุณาลองใหม่อีกครั้ง หรือเปิดผ่านเว็บไซต์โดยตรง'
+      );
     } finally {
       setIsSubmitting(false);
     }

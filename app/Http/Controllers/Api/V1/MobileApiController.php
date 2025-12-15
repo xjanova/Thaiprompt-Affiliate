@@ -55,13 +55,17 @@ class MobileApiController extends Controller
 
         if (!$seller) {
             // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
+            // ⚠️ หมายเหตุ: role อยู่ใน $guarded ดังนั้นต้องใช้ direct assignment
             $seller = User::create([
                 'name' => config('shop.official_shop.name', 'Official Shop'),
                 'email' => $email,
                 'password' => Hash::make(Str::random(32)),
-                'role' => 'seller',
                 'email_verified_at' => now(),
             ]);
+
+            // Set role ด้วย direct assignment เพราะ role อยู่ใน $guarded
+            $seller->role = 'seller';
+            $seller->save();
         }
 
         self::$officialSeller = $seller;
@@ -1296,14 +1300,17 @@ class MobileApiController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'id_card_image' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
-            'selfie_image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            // รองรับ heic/heif สำหรับ iPhone และ webp สำหรับ Android
+            'id_card_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120', // 5MB max
+            'selfie_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120',
         ], [
             'id_card_image.required' => 'กรุณาอัพโหลดรูปบัตรประชาชน',
             'id_card_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'id_card_image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'id_card_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
             'selfie_image.required' => 'กรุณาอัพโหลดรูปถ่ายคู่บัตร',
             'selfie_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'selfie_image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'selfie_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
         ]);
 
@@ -1377,11 +1384,13 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            // รองรับ heic/heif สำหรับ iPhone และ webp สำหรับ Android
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120',
             'type' => 'required|in:id_card,selfie',
         ], [
             'image.required' => 'กรุณาอัพโหลดรูปภาพ',
             'image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
             'type.required' => 'กรุณาระบุประเภทเอกสาร',
             'type.in' => 'ประเภทเอกสารไม่ถูกต้อง',
