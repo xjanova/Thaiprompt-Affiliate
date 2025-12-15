@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.13] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2282 from xjanova/claude/fix-profile-upload-error-xLzWn (2dda972f)
+- fix(mobile): correct avatar upload endpoint to /mobile/profile/avatar (6cfe7c59)
+### 🔧 Other Changes
+
+
 ## [v3.383.12] - 2025-12-15
 
 ### ✨ Features
