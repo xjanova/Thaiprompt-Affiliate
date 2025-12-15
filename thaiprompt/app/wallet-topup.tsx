@@ -19,13 +19,13 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
-  Linking,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
 import { getWallet, getWebSessionUrl } from '@/services/api';
 import { formatCurrency } from '@/constants';
@@ -122,15 +122,32 @@ export default function WalletTopupScreen() {
         return;
       }
 
-      console.log('🔗 Opening topup URL:', result.url);
+      console.log('🔗 Opening topup URL in WebBrowser:', result.url);
 
-      // เปิด URL พร้อม authentication
-      await Linking.openURL(result.url);
+      // เปิด URL ใน in-app browser (ไม่ออกไปเบราว์เซอร์ภายนอก)
+      const browserResult = await WebBrowser.openBrowserAsync(result.url, {
+        // แสดง toolbar และปุ่มปิด
+        showTitle: true,
+        enableBarCollapsing: true,
+        // สีของ toolbar ให้ตรงกับธีมแอพ
+        toolbarColor: '#3B82F6',
+        controlsColor: '#FFFFFF',
+        // iOS specific
+        dismissButtonStyle: 'close',
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+      });
+
+      console.log('🔗 Browser closed:', browserResult.type);
+
+      // รีโหลด wallet หลังจากปิด browser (กรณีเติมเงินสำเร็จ)
+      if (browserResult.type === 'dismiss' || browserResult.type === 'cancel') {
+        loadWallet();
+      }
     } catch (error) {
       console.error('Open topup URL error:', error);
       Alert.alert(
         'เกิดข้อผิดพลาด',
-        'ไม่สามารถเปิดหน้าชำระเงินได้ กรุณาลองใหม่อีกครั้ง หรือเปิดผ่านเว็บไซต์โดยตรง'
+        'ไม่สามารถเปิดหน้าชำระเงินได้ กรุณาลองใหม่อีกครั้ง'
       );
     } finally {
       setIsSubmitting(false);
