@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
+use App\Models\LineRegistrationSession;
 use App\Models\MlmProspect;
 use App\Models\User;
 use App\Models\AiBotProfile;
@@ -296,6 +297,11 @@ class LineWebhookController extends Controller
 
     /**
      * Handle follow event (user adds bot as friend)
+     *
+     * เมื่อผู้ใช้เพิ่มเพื่อน LINE OA:
+     * 1. ตรวจสอบว่ามี LineRegistrationSession ที่รออยู่หรือไม่
+     * 2. ถ้ามี → อัพเดทสถานะเป็น followed
+     * 3. ส่งข้อความต้อนรับ
      */
     private function handleFollowEvent(array $event, LineOaSetting $settings): void
     {
@@ -307,10 +313,14 @@ class LineWebhookController extends Controller
 
         Log::info('LINE follow event', ['line_user_id' => $lineUserId]);
 
+        $lineService = app(LineService::class);
+
+        // ✅ อัพเดท LineRegistrationSession (ถ้ามี)
+        // สำหรับหน้าเว็บที่กำลัง polling อยู่
+        $this->updateRegistrationSessionOnFollow($lineUserId);
+
         // Check if user exists
         $user = User::where('line_user_id', $lineUserId)->first();
-
-        $lineService = app(LineService::class);
 
         if ($user) {
             // Existing user followed again
@@ -324,6 +334,64 @@ class LineWebhookController extends Controller
                 $lineUserId,
                 $settings->welcome_message
             );
+        }
+    }
+
+    /**
+     * อัพเดท LineRegistrationSession เมื่อผู้ใช้ follow LINE OA
+     *
+     * ค้นหา session ที่ pending อยู่และยังไม่มี line_user_id
+     * จากนั้น link กับ LINE User ID ที่ follow มา
+     *
+     * @param string $lineUserId
+     * @return void
+     */
+    private function updateRegistrationSessionOnFollow(string $lineUserId): void
+    {
+        try {
+            // ตรวจสอบว่า table มีอยู่หรือไม่
+            if (!\Illuminate\Support\Facades\Schema::hasTable('line_registration_sessions')) {
+                return;
+            }
+
+            // ค้นหา session ที่รออยู่ โดยดูจาก LINE User ID
+            // (อาจจะ match จาก IP address หรือ metadata ในอนาคต)
+            $session = LineRegistrationSession::where('status', LineRegistrationSession::STATUS_PENDING)
+                ->whereNull('line_user_id')
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // ถ้าไม่มี session ที่รออยู่ ลองค้นหา session ที่มี line_user_id แล้ว
+            if (!$session) {
+                $session = LineRegistrationSession::where('line_user_id', $lineUserId)
+                    ->where('status', LineRegistrationSession::STATUS_PENDING)
+                    ->where(function ($query) {
+                        $query->whereNull('expires_at')
+                            ->orWhere('expires_at', '>', now());
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+
+            if ($session) {
+                // อัพเดทสถานะเป็น followed
+                $session->markAsFollowed($lineUserId);
+
+                Log::info('LineRegistrationSession updated to followed', [
+                    'session_id' => $session->id,
+                    'session_token' => $session->session_token,
+                    'line_user_id' => $lineUserId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to update LineRegistrationSession on follow', [
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

@@ -314,6 +314,25 @@ Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.thr
     Route::match(['GET', 'HEAD'], '/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
 });
 
+// LINE Registration - บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร
+// ✅ ระบบใหม่: polling session + auto-redirect หลังสมัครเสร็จ
+Route::prefix('line/registration')->name('line.registration.')->group(function () {
+    // หน้าสมัครสมาชิก - แสดง QR Code และ polling status
+    Route::get('/', [\App\Http\Controllers\LineRegistrationController::class, 'showRegister'])->name('register');
+
+    // API: เช็คสถานะ session (สำหรับ polling)
+    Route::get('/status/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'checkStatus'])->name('status');
+
+    // API: บันทึกการคลิกปุ่มเพิ่มเพื่อน
+    Route::post('/click/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'recordAddFriendClick'])->name('click');
+
+    // หน้า complete - auto-login และ redirect ไปอัพเดทข้อมูล
+    Route::get('/complete/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'completeRegistration'])->name('complete');
+
+    // API: ยกเลิก session
+    Route::post('/cancel/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'cancelSession'])->name('cancel');
+});
+
 // LINE Membership Signup System (New AI-Powered Signup)
 // ⚠️ Affiliate: LINE membership signup สำคัญสำหรับระบบ affiliate
 Route::prefix('line/membership')->name('line.membership.')->group(function () {
