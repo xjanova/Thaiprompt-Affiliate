@@ -3437,5 +3437,245 @@ export const getWebSessionUrl = async (
   }
 };
 
+// =====================================================
+// ⭐ Payment API - ชำระเงินและเติมเงินในแอพ
+// =====================================================
+
+/**
+ * Payment Method Type
+ */
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  category: 'qr' | 'card' | 'bank' | 'wallet' | 'other';
+  fees?: {
+    fixed?: number;
+    percent?: number;
+  };
+  limits?: {
+    min?: number;
+    max?: number;
+  };
+  enabled: boolean;
+}
+
+/**
+ * Payment Transaction Type
+ */
+export interface PaymentTransaction {
+  transaction_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'expired';
+  status_label: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  // QR Code (PromptPay)
+  qr_code?: string;
+  qr_code_url?: string;
+  // Redirect (Card payments)
+  redirect_url?: string;
+  redirect_required?: boolean;
+  // Deep Link (TrueMoney)
+  deep_link?: string;
+  // Bank Transfer
+  bank_info?: {
+    bank_name: string;
+    bank_code?: string;
+    account_number: string;
+    account_name: string;
+    branch?: string;
+    ref_no?: string;
+    instructions?: string;
+  };
+  // Stripe
+  client_secret?: string;
+  // Expiry
+  expired_at?: string;
+}
+
+/**
+ * ดึงวิธีการชำระเงินที่ใช้ได้
+ */
+export const getPaymentMethods = async (): Promise<{
+  success: boolean;
+  methods?: PaymentMethod[];
+  grouped?: Record<string, PaymentMethod[]>;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/methods');
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        methods: response.data.data?.methods || [],
+        grouped: response.data.data?.grouped || {},
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงวิธีการชำระเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Get payment methods error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงวิธีการชำระเงินได้',
+    };
+  }
+};
+
+/**
+ * ดึงวิธีการเติมเงิน (Deposit)
+ */
+export const getDepositMethods = async (): Promise<{
+  success: boolean;
+  methods?: PaymentMethod[];
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/deposit-methods');
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        methods: response.data.data || [],
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงวิธีการเติมเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Get deposit methods error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงวิธีการเติมเงินได้',
+    };
+  }
+};
+
+/**
+ * เริ่มต้นการเติมเงิน Wallet
+ */
+export const initializeWalletTopup = async (
+  amount: number,
+  paymentMethod: string
+): Promise<{
+  success: boolean;
+  transaction?: PaymentTransaction;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post('/wallet/topup', {
+      amount,
+      payment_method: paymentMethod,
+    });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        transaction: response.data.data,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถเริ่มการเติมเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Initialize wallet topup error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถเริ่มการเติมเงินได้',
+    };
+  }
+};
+
+/**
+ * ตรวจสอบสถานะการชำระเงิน
+ */
+export const checkPaymentStatus = async (
+  transactionId: string
+): Promise<{
+  success: boolean;
+  status?: string;
+  statusLabel?: string;
+  data?: PaymentTransaction;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get(`/payment/${transactionId}/status`);
+
+    if (response.data?.success) {
+      const data = response.data.data;
+      return {
+        success: true,
+        status: data.status,
+        statusLabel: data.status_label,
+        data,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถตรวจสอบสถานะได้',
+    };
+  } catch (error: any) {
+    console.error('Check payment status error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถตรวจสอบสถานะได้',
+    };
+  }
+};
+
+/**
+ * ดึงประวัติการชำระเงิน
+ */
+export const getPaymentHistory = async (params?: {
+  type?: 'order_payment' | 'wallet_topup';
+  page?: number;
+  per_page?: number;
+}): Promise<{
+  success: boolean;
+  transactions?: PaymentTransaction[];
+  pagination?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/history', { params });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        transactions: response.data.data?.transactions || [],
+        pagination: response.data.data?.pagination,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงประวัติได้',
+    };
+  } catch (error: any) {
+    console.error('Get payment history error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงประวัติได้',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
