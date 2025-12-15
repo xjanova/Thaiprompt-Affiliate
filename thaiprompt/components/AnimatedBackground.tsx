@@ -3,6 +3,12 @@
  * สร้างพื้นหลังแบบหิ่งห้อย/อะตอมที่เคลื่อนไหวสวยงาม
  * สำหรับแอพหลักล้าน
  *
+ * v1.8.0 - ปรับปรุงเอฟเฟคเบลอฟุ้งให้ชัดเจนขึ้นมาก
+ * - เพิ่มขนาด glow layers ทั้งหมด
+ * - เพิ่ม opacity ให้สว่างขึ้น
+ * - เพิ่ม outer glow layer เพิ่มเติม
+ * - ปรับ shadow blur radius ให้กว้างขึ้น
+ *
  * v1.7.0 - ปรับปรุงเอฟเฟคหิ่งห้อยให้เบลอฟุ้งสวยขึ้น
  * - ใช้ BlurView จาก expo-blur สำหรับ glow effect
  * - เพิ่ม radial gradient simulation ด้วย multiple layers
@@ -62,8 +68,8 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
     opacity: particle.opacity,
   };
 
-  // ขนาด glow แต่ละชั้น
-  const glowSize = particle.size * 12;
+  // ขนาด glow แต่ละชั้น - ขยายใหญ่ขึ้นเพื่อให้เห็นฟุ้งชัดเจน
+  const glowSize = particle.size * 20; // เพิ่มจาก 12 เป็น 20
   const glowOffset = -glowSize / 2 + particle.size / 2;
 
   return (
@@ -79,6 +85,21 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         animatedStyle,
       ]}
     >
+      {/* ชั้นที่ 0: Outer blur glow (ฟุ้งนอกสุด - ใหม่) */}
+      <View
+        style={[
+          styles.particleGlow,
+          {
+            width: particle.size * 16,
+            height: particle.size * 16,
+            backgroundColor: particle.color,
+            opacity: 0.08,
+            marginLeft: -particle.size * 7.5,
+            marginTop: -particle.size * 7.5,
+          },
+        ]}
+      />
+
       {/* ชั้นที่ 1: Blur glow นอกสุด (เบลอมากสุด) */}
       <View
         style={[
@@ -92,19 +113,34 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         ]}
       >
         <BlurView
-          intensity={Platform.OS === 'ios' ? 30 : 15}
+          intensity={Platform.OS === 'ios' ? 50 : 25}
           tint="dark"
           style={[
             styles.blurGlow,
             {
               backgroundColor: particle.color,
-              opacity: 0.15,
+              opacity: 0.25,
             },
           ]}
         />
       </View>
 
-      {/* ชั้นที่ 2: Soft glow กลาง */}
+      {/* ชั้นที่ 2: Soft glow กลาง - ขยายใหญ่ขึ้น */}
+      <View
+        style={[
+          styles.particleGlow,
+          {
+            width: particle.size * 10,
+            height: particle.size * 10,
+            backgroundColor: particle.color,
+            opacity: 0.15,
+            marginLeft: -particle.size * 4.5,
+            marginTop: -particle.size * 4.5,
+          },
+        ]}
+      />
+
+      {/* ชั้นที่ 3: Medium glow - ขยายใหญ่ขึ้น */}
       <View
         style={[
           styles.particleGlow,
@@ -112,24 +148,9 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
             width: particle.size * 6,
             height: particle.size * 6,
             backgroundColor: particle.color,
-            opacity: 0.12,
+            opacity: 0.25,
             marginLeft: -particle.size * 2.5,
             marginTop: -particle.size * 2.5,
-          },
-        ]}
-      />
-
-      {/* ชั้นที่ 3: Medium glow */}
-      <View
-        style={[
-          styles.particleGlow,
-          {
-            width: particle.size * 4,
-            height: particle.size * 4,
-            backgroundColor: particle.color,
-            opacity: 0.2,
-            marginLeft: -particle.size * 1.5,
-            marginTop: -particle.size * 1.5,
           },
         ]}
       />
@@ -139,12 +160,12 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         style={[
           styles.particleGlow,
           {
-            width: particle.size * 2.5,
-            height: particle.size * 2.5,
+            width: particle.size * 4,
+            height: particle.size * 4,
             backgroundColor: particle.color,
-            opacity: 0.35,
-            marginLeft: -particle.size * 0.75,
-            marginTop: -particle.size * 0.75,
+            opacity: 0.4,
+            marginLeft: -particle.size * 1.5,
+            marginTop: -particle.size * 1.5,
           },
         ]}
       />
@@ -154,18 +175,18 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
         style={[
           styles.particleInner,
           {
-            width: particle.size * 1.5,
-            height: particle.size * 1.5,
+            width: particle.size * 2,
+            height: particle.size * 2,
             backgroundColor: particle.color,
-            opacity: 0.7,
-            marginLeft: -particle.size * 0.25,
-            marginTop: -particle.size * 0.25,
+            opacity: 0.8,
+            marginLeft: -particle.size * 0.5,
+            marginTop: -particle.size * 0.5,
             shadowColor: particle.color,
             shadowOpacity: 1,
-            shadowRadius: particle.size * 6,
+            shadowRadius: particle.size * 10,
             shadowOffset: { width: 0, height: 0 },
             // Android shadow
-            elevation: 15,
+            elevation: 20,
           },
         ]}
       />
@@ -180,7 +201,7 @@ const FireflyParticle = React.memo(({ particle }: { particle: Particle }) => {
             backgroundColor: '#FFFFFF',
             shadowColor: particle.color,
             shadowOpacity: 1,
-            shadowRadius: particle.size * 3,
+            shadowRadius: particle.size * 5,
             shadowOffset: { width: 0, height: 0 },
           },
         ]}
@@ -262,12 +283,13 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   const particlesRef = useRef<Particle[] | null>(null);
 
   // สร้าง particles ครั้งเดียวตอน mount
+  // เพิ่มขนาด particle เพื่อให้เห็นเอฟเฟกต์ฟุ้งชัดเจนขึ้น
   if (particlesRef.current === null) {
     particlesRef.current = Array.from({ length: actualParticleCount }, (_, i) => ({
       id: i,
       x: Math.random() * SCREEN_WIDTH,
       y: Math.random() * SCREEN_HEIGHT,
-      size: Math.random() * 6 + 2,
+      size: Math.random() * 8 + 4, // เพิ่มจาก 2-8 เป็น 4-12
       opacity: new Animated.Value(0),
       translateX: new Animated.Value(0),
       translateY: new Animated.Value(0),
@@ -312,18 +334,18 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
     try {
       const animations = particles.map((particle) => {
-        // Opacity animation (breathing effect)
+        // Opacity animation (breathing effect) - เพิ่ม opacity ให้สว่างขึ้น
         const opacityAnimation = Animated.loop(
           Animated.sequence([
             Animated.delay(particle.delay),
             Animated.timing(particle.opacity, {
-              toValue: Math.random() * 0.5 + 0.5,
+              toValue: Math.random() * 0.3 + 0.7, // เพิ่มจาก 0.5-1.0 เป็น 0.7-1.0
               duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
             }),
             Animated.timing(particle.opacity, {
-              toValue: 0.1,
+              toValue: 0.3, // เพิ่มจาก 0.1 เป็น 0.3
               duration: particle.speed,
               easing: Easing.inOut(Easing.sine),
               useNativeDriver: true,
