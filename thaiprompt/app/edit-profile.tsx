@@ -1,9 +1,10 @@
 /**
- * Edit Profile Screen - หน้าแก้ไขโปรไฟล์ Premium Design
- * รองรับ Avatar Upload และ Sync กับเว็บ
+ * Edit Profile Screen - เขียนใหม่ทั้งหมด
+ * - Design สะอาด ใช้ StyleSheet ล้วน
+ * - Upload และ Update ใช้ fetch API ตรงๆ
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,763 +13,548 @@ import {
   Alert,
   Image,
   ActivityIndicator,
+  TextInput,
+  StyleSheet,
+  StatusBar,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  Easing,
-  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
+import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { updateProfile, uploadAvatar, deleteAvatar, changePassword } from '@/services/api';
-import { GlassCard, Input, Button } from '@/components';
-import { isValidPassword, VALIDATION } from '@/constants';
+import { API_BASE_URL, STORAGE_KEYS } from '@/constants';
 
-// Avatar Component with Edit Button
-const AvatarSection = ({
-  avatar,
-  name,
-  isUploading,
-  onPress,
-  isDark,
-}: {
-  avatar?: string | null;
-  name: string;
-  isUploading: boolean;
-  onPress: () => void;
-  isDark: boolean;
-}) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+// =====================================================
+// API Functions - เขียนตรงๆ ไม่ผ่าน api.ts
+// =====================================================
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.95,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Animated.View
-      style={{
-        transform: [{ scale: scaleAnim }],
-        alignItems: 'center',
-      }}
-    >
-      <Pressable
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        disabled={isUploading}
-      >
-        <View
-          className="w-32 h-32 rounded-full items-center justify-center"
-          style={{
-            shadowColor: '#3B82F6',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.4,
-            shadowRadius: 15,
-            elevation: 10,
-          }}
-        >
-          {/* Gradient Border */}
-          <LinearGradient
-            colors={['#3B82F6', '#8B5CF6', '#06B6D4', '#3B82F6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: 9999,
-              padding: 4,
-            }}
-          >
-            <View className={`w-full h-full rounded-full overflow-hidden items-center justify-center ${
-              isDark ? 'bg-gray-800' : 'bg-white'
-            }`}>
-              {avatar ? (
-                <Image
-                  source={{ uri: avatar }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <Text className="text-6xl">
-                  {name?.charAt(0)?.toUpperCase() || '👤'}
-                </Text>
-              )}
-            </View>
-          </LinearGradient>
-
-          {/* Edit Badge */}
-          <View
-            className="absolute bottom-0 right-0 w-10 h-10 rounded-full items-center justify-center"
-            style={{
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 6,
-            }}
-          >
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6']}
-              style={{
-                width: '100%',
-                height: '100%',
-                borderRadius: 9999,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text style={{ fontSize: 18 }}>📷</Text>
-              )}
-            </LinearGradient>
-          </View>
-        </View>
-      </Pressable>
-
-      <Text className={`text-sm mt-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-        แตะเพื่อเปลี่ยนรูปโปรไฟล์
-      </Text>
-    </Animated.View>
-  );
+const getToken = async (): Promise<string | null> => {
+  return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
 };
 
-// Section Header Component
-const SectionHeader = ({
-  icon,
-  title,
+const updateProfileApi = async (data: {
+  name?: string;
+  phone?: string;
+  address?: string;
+  bio?: string;
+  bank_name?: string;
+  bank_account?: string;
+  bank_account_name?: string;
+}): Promise<{ success: boolean; message?: string; data?: any }> => {
+  const token = await getToken();
+  if (!token) {
+    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
+  }
+
+  try {
+    console.log('📝 Updating profile...', data);
+
+    const response = await fetch(`${API_BASE_URL}/profile`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    console.log('📝 Update result:', response.status, result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || `อัพเดทไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    return result;
+  } catch (error: any) {
+    console.error('❌ Update profile error:', error);
+    return {
+      success: false,
+      message: error.message || 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+const uploadAvatarApi = async (
+  imageUri: string
+): Promise<{ success: boolean; message?: string; data?: any }> => {
+  const token = await getToken();
+  if (!token) {
+    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
+  }
+
+  try {
+    const filename = imageUri.split('/').pop() || 'avatar.jpg';
+    const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+
+    console.log('📸 Uploading avatar...', { filename, mimeType });
+
+    const formData = new FormData();
+    formData.append('avatar', {
+      uri: imageUri,
+      name: filename,
+      type: mimeType,
+    } as any);
+
+    const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+      body: formData,
+    });
+
+    const result = await response.json();
+    console.log('📸 Upload result:', response.status, result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    return result;
+  } catch (error: any) {
+    console.error('❌ Upload avatar error:', error);
+    return {
+      success: false,
+      message: error.message || 'เกิดข้อผิดพลาด',
+    };
+  }
+};
+
+// =====================================================
+// Input Component
+// =====================================================
+
+const FormInput = ({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType = 'default',
+  multiline = false,
+  editable = true,
   isDark,
 }: {
-  icon: string;
-  title: string;
+  label: string;
+  value: string;
+  onChangeText?: (text: string) => void;
+  placeholder?: string;
+  keyboardType?: 'default' | 'phone-pad' | 'email-address' | 'numeric';
+  multiline?: boolean;
+  editable?: boolean;
   isDark: boolean;
 }) => (
-  <View className="flex-row items-center mb-4">
-    <LinearGradient
-      colors={['rgba(59, 130, 246, 0.2)', 'rgba(139, 92, 246, 0.2)']}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-      }}
-    >
-      <Text style={{ fontSize: 20 }}>{icon}</Text>
-    </LinearGradient>
-    <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-      {title}
-    </Text>
+  <View style={styles.inputGroup}>
+    <Text style={[styles.inputLabel, isDark && styles.textGray300]}>{label}</Text>
+    <TextInput
+      style={[
+        styles.input,
+        isDark && styles.inputDark,
+        multiline && styles.inputMultiline,
+        !editable && styles.inputDisabled,
+      ]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor="#9CA3AF"
+      keyboardType={keyboardType}
+      multiline={multiline}
+      numberOfLines={multiline ? 3 : 1}
+      editable={editable}
+    />
   </View>
 );
 
+// =====================================================
+// Main Component
+// =====================================================
+
 export default function EditProfileScreen() {
-  const { user, updateUser, refreshUser, isAuthenticated } = useAuthStore();
+  const { user, updateUser, isAuthenticated } = useAuthStore();
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
-  // Form states - โหลดข้อมูลจาก user
+  // Form states
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [address, setAddress] = useState(user?.address || '');
   const [bio, setBio] = useState(user?.bio || '');
-
-  // Bank info states - โหลดข้อมูลจาก user
   const [bankName, setBankName] = useState(user?.bank_name || '');
   const [bankAccount, setBankAccount] = useState(user?.bank_account || '');
   const [bankAccountName, setBankAccountName] = useState(user?.bank_account_name || '');
 
-  // Password change states
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Error states
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  // Get avatar URL
+  const getAvatarUrl = () => {
+    if (user?.avatar) {
+      if (user.avatar.startsWith('http')) return user.avatar;
+      const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
+      return `${baseUrl}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
+    }
+    return null;
+  };
 
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  // Handle pick image
+  const handlePickImage = async () => {
+    Alert.alert('เปลี่ยนรูปโปรไฟล์', 'เลือกวิธีการ', [
+      {
+        text: '📷 ถ่ายรูป',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้ใช้กล้อง');
+            return;
+          }
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 500,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
 
-  // Handle avatar selection
-  const handleAvatarPress = useCallback(() => {
-    Alert.alert(
-      'เปลี่ยนรูปโปรไฟล์',
-      'เลือกวิธีการเปลี่ยนรูป',
-      [
-        {
-          text: '📷 ถ่ายรูป',
-          onPress: async () => {
-            try {
-              const { status } = await ImagePicker.requestCameraPermissionsAsync();
-              console.log('📷 Camera permission:', status);
-              if (status !== 'granted') {
-                Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพใช้กล้อง');
-                return;
-              }
-
-              console.log('📷 Launching camera...');
-              const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-              });
-
-              if (!result.canceled && result.assets[0]) {
-                handleUploadAvatar(result.assets[0].uri);
-              }
-            } catch (error: any) {
-              console.error('Camera error:', error);
-              Alert.alert('เกิดข้อผิดพลาด', error?.message || 'ไม่สามารถเปิดกล้องได้');
-            }
-          },
+          if (!result.canceled && result.assets[0]) {
+            await handleUploadAvatar(result.assets[0].uri);
+          }
         },
-        {
-          text: '🖼️ เลือกจากแกลเลอรี่',
-          onPress: async () => {
-            try {
-              // ขอ permission media library ก่อน
-              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-              console.log('🖼️ Media library permission:', status);
-              if (status !== 'granted') {
-                Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพ');
-                return;
-              }
+      },
+      {
+        text: '🖼️ แกลเลอรี่',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้เข้าถึงรูปภาพ');
+            return;
+          }
 
-              console.log('🖼️ Launching image library...');
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-              });
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
 
-              if (!result.canceled && result.assets[0]) {
-                handleUploadAvatar(result.assets[0].uri);
-              }
-            } catch (error: any) {
-              console.error('Gallery error:', error);
-              Alert.alert('เกิดข้อผิดพลาด', error?.message || 'ไม่สามารถเปิดแกลเลอรี่ได้');
-            }
-          },
+          if (!result.canceled && result.assets[0]) {
+            await handleUploadAvatar(result.assets[0].uri);
+          }
         },
-        ...(user?.avatar
-          ? [
-              {
-                text: 'ลบรูปโปรไฟล์',
-                style: 'destructive' as const,
-                onPress: handleDeleteAvatar,
-              },
-            ]
-          : []),
-        { text: 'ยกเลิก', style: 'cancel' as const },
-      ]
-    );
-  }, [user?.avatar]);
+      },
+      { text: 'ยกเลิก', style: 'cancel' },
+    ]);
+  };
 
   // Upload avatar
-  const handleUploadAvatar = async (imageUri: string) => {
+  const handleUploadAvatar = async (uri: string) => {
     setIsUploading(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    try {
-      const response = await uploadAvatar(imageUri);
+    const result = await uploadAvatarApi(uri);
 
-      if (response.success && response.data) {
-        updateUser({ avatar: response.data.avatarUrl });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('สำเร็จ', 'อัพโหลดรูปโปรไฟล์เรียบร้อย');
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('ผิดพลาด', response.message || 'อัพโหลดไม่สำเร็จ');
-      }
-    } catch (error) {
-      console.error('Upload avatar error:', error);
-      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการอัพโหลด');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Delete avatar
-  const handleDeleteAvatar = async () => {
-    Alert.alert(
-      'ยืนยันการลบ',
-      'คุณต้องการลบรูปโปรไฟล์หรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ลบ',
-          style: 'destructive',
-          onPress: async () => {
-            setIsUploading(true);
-            try {
-              const response = await deleteAvatar();
-              if (response.success) {
-                updateUser({ avatar: null });
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                Alert.alert('สำเร็จ', 'ลบรูปโปรไฟล์เรียบร้อย');
-              } else {
-                Alert.alert('ผิดพลาด', response.message || 'ลบรูปไม่สำเร็จ');
-              }
-            } catch (error) {
-              Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาด');
-            } finally {
-              setIsUploading(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'กรุณากรอกชื่อ';
+    if (result.success && result.data?.avatarUrl) {
+      updateUser({ avatar: result.data.avatarUrl });
+      Alert.alert('สำเร็จ', 'อัพโหลดรูปโปรไฟล์เรียบร้อย');
+    } else {
+      Alert.alert('ผิดพลาด', result.message || 'อัพโหลดไม่สำเร็จ');
     }
 
-    if (phone.trim() && !/^[0-9]{9,10}$/.test(phone.replace(/-/g, ''))) {
-      newErrors.phone = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setIsUploading(false);
   };
 
   // Save profile
   const handleSave = async () => {
-    if (!validateForm()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    if (!name.trim()) {
+      Alert.alert('กรุณากรอกข้อมูล', 'กรุณากรอกชื่อ');
       return;
     }
 
     setIsSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    try {
-      const response = await updateProfile({
+    const result = await updateProfileApi({
+      name: name.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      bio: bio.trim(),
+      bank_name: bankName.trim(),
+      bank_account: bankAccount.trim(),
+      bank_account_name: bankAccountName.trim(),
+    });
+
+    if (result.success) {
+      // Update local user data
+      updateUser({
         name: name.trim(),
-        phone: phone.trim().replace(/-/g, ''),
+        phone: phone.trim(),
         address: address.trim(),
         bio: bio.trim(),
         bank_name: bankName.trim(),
         bank_account: bankAccount.trim(),
         bank_account_name: bankAccountName.trim(),
       });
-
-      if (response.success && response.data) {
-        updateUser(response.data);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', [
-          { text: 'ตกลง', onPress: () => router.back() },
-        ]);
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('ผิดพลาด', response.message || 'บันทึกไม่สำเร็จ');
-      }
-    } catch (error) {
-      console.error('Save profile error:', error);
-      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาดในการบันทึก');
-    } finally {
-      setIsSaving(false);
+      Alert.alert('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', [
+        { text: 'ตกลง', onPress: () => router.back() },
+      ]);
+    } else {
+      Alert.alert('ผิดพลาด', result.message || 'บันทึกไม่สำเร็จ');
     }
+
+    setIsSaving(false);
   };
 
-  // Change password
-  const handleChangePassword = async () => {
-    // Validate
-    if (!currentPassword) {
-      Alert.alert('ผิดพลาด', 'กรุณากรอกรหัสผ่านปัจจุบัน');
-      return;
-    }
-
-    if (!isValidPassword(newPassword)) {
-      Alert.alert('ผิดพลาด', `รหัสผ่านใหม่ต้องมี ${VALIDATION.MIN_PASSWORD_LENGTH}-${VALIDATION.MAX_PASSWORD_LENGTH} ตัวอักษร`);
-      return;
-    }
-
-    if (newPassword !== confirmNewPassword) {
-      Alert.alert('ผิดพลาด', 'รหัสผ่านใหม่ไม่ตรงกัน');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    try {
-      const response = await changePassword({
-        current_password: currentPassword,
-        new_password: newPassword,
-        new_password_confirmation: confirmNewPassword,
-      });
-
-      if (response.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อย');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmNewPassword('');
-        setShowPasswordSection(false);
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('ผิดพลาด', response.message || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
-      }
-    } catch (error) {
-      console.error('Change password error:', error);
-      Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาด');
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
-
-  // If not authenticated
+  // Not authenticated
   if (!isAuthenticated) {
     return (
-      <View style={{ flex: 1, backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F0F23' : '#F9FAFB'} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
           <Text style={{ fontSize: 80 }}>👤</Text>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16, color: isDark ? '#FFFFFF' : '#1F2937' }}>
-            แก้ไขโปรไฟล์
-          </Text>
-          <Text style={{ color: '#6B7280', textAlign: 'center', marginTop: 8 }}>
-            กรุณาเข้าสู่ระบบเพื่อแก้ไขโปรไฟล์
-          </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            style={{ backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 12, marginTop: 24 }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>เข้าสู่ระบบ</Text>
+          <Text style={[styles.title, isDark && styles.textWhite]}>แก้ไขโปรไฟล์</Text>
+          <Text style={styles.subtitle}>กรุณาเข้าสู่ระบบก่อน</Text>
+          <Pressable style={styles.loginBtn} onPress={() => router.push('/login')}>
+            <Text style={styles.loginBtnText}>เข้าสู่ระบบ</Text>
           </Pressable>
         </View>
       </View>
     );
   }
 
+  const avatarUrl = getAvatarUrl();
+
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0F0F23' : '#F9FAFB' }}>
-      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#1E3A8A' : '#3B82F6'} />
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <StatusBar barStyle="light-content" />
+
       {/* Header */}
-      <LinearGradient
-        colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-        style={{
-          paddingHorizontal: 20,
-          paddingTop: 50,
-          paddingBottom: 32,
-        }}
+      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.header}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>←</Text>
+        </Pressable>
+        <Text style={styles.headerTitle}>แก้ไขโปรไฟล์</Text>
+        <Pressable style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Text style={styles.saveBtnText}>บันทึก</Text>
+          )}
+        </Pressable>
+      </LinearGradient>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-          <View className="flex-row items-center justify-between mb-6">
-            <Pressable
-              onPress={() => router.back()}
-              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center"
-            >
-              <Text style={{ fontSize: 24, color: 'white' }}>←</Text>
-            </Pressable>
-            <Text className="text-white text-xl font-bold">แก้ไขโปรไฟล์</Text>
-            <Pressable
-              onPress={handleSave}
-              disabled={isSaving}
-              className="px-4 py-2 rounded-full bg-white/20"
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text className="text-white font-semibold">บันทึก</Text>
-              )}
-            </Pressable>
-          </View>
-
-          {/* Avatar */}
-          <AvatarSection
-            avatar={user?.avatar}
-            name={user?.name || ''}
-            isUploading={isUploading}
-            onPress={handleAvatarPress}
-            isDark={isDark}
-          />
-        </LinearGradient>
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          className="flex-1"
-        >
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName="px-5 py-6 pb-20"
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Animated.View
-              style={{
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              }}
-            >
-              {/* Personal Info Section */}
-              <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="👤" title="ข้อมูลส่วนตัว" isDark={isDark} />
-
-                <Input
-                  label="ชื่อ-นามสกุล"
-                  placeholder="กรอกชื่อ-นามสกุล"
-                  value={name}
-                  onChangeText={(text) => {
-                    setName(text);
-                    setErrors({ ...errors, name: '' });
-                  }}
-                  error={errors.name}
-                  leftIcon="person"
-                />
-
-                <Input
-                  label="อีเมล"
-                  value={user?.email || ''}
-                  leftIcon="mail"
-                  editable={false}
-                />
-
-                <Input
-                  label="เบอร์โทรศัพท์"
-                  placeholder="08X-XXX-XXXX"
-                  value={phone}
-                  onChangeText={(text) => {
-                    setPhone(text);
-                    setErrors({ ...errors, phone: '' });
-                  }}
-                  error={errors.phone}
-                  leftIcon="call"
-                  keyboardType="phone-pad"
-                />
-
-                <Input
-                  label="ที่อยู่ (ไม่บังคับ)"
-                  placeholder="กรอกที่อยู่"
-                  value={address}
-                  onChangeText={setAddress}
-                  leftIcon="location"
-                  multiline
-                  numberOfLines={3}
-                />
-
-                <Input
-                  label="แนะนำตัว (Bio)"
-                  placeholder="เขียนแนะนำตัวคุณ..."
-                  value={bio}
-                  onChangeText={setBio}
-                  leftIcon="document-text"
-                  multiline
-                  numberOfLines={3}
-                />
-              </GlassCard>
-
-              {/* Bank Info Section */}
-              <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="💰" title="ข้อมูลธนาคาร" isDark={isDark} />
-
-                <Input
-                  label="ชื่อธนาคาร"
-                  placeholder="เช่น ธนาคารกสิกรไทย"
-                  value={bankName}
-                  onChangeText={setBankName}
-                  leftIcon="business"
-                />
-
-                <Input
-                  label="เลขบัญชี"
-                  placeholder="XXX-X-XXXXX-X"
-                  value={bankAccount}
-                  onChangeText={setBankAccount}
-                  leftIcon="card"
-                  keyboardType="numeric"
-                />
-
-                <Input
-                  label="ชื่อบัญชี"
-                  placeholder="ชื่อเจ้าของบัญชี"
-                  value={bankAccountName}
-                  onChangeText={setBankAccountName}
-                  leftIcon="person"
-                />
-              </GlassCard>
-
-              {/* Change Password Section */}
-              <GlassCard style={{ marginBottom: 16 }}>
-                <Pressable
-                  onPress={() => setShowPasswordSection(!showPasswordSection)}
-                  className="flex-row items-center justify-between"
-                >
-                  <View className="flex-row items-center">
-                    <LinearGradient
-                      colors={['rgba(239, 68, 68, 0.2)', 'rgba(239, 68, 68, 0.1)']}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 12,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 12,
-                      }}
-                    >
-                      <Text style={{ fontSize: 20 }}>🔑</Text>
-                    </LinearGradient>
-                    <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                      เปลี่ยนรหัสผ่าน
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Avatar Section */}
+          <View style={styles.avatarSection}>
+            <Pressable onPress={handlePickImage} disabled={isUploading}>
+              <View style={styles.avatarContainer}>
+                {isUploading ? (
+                  <View style={[styles.avatar, styles.avatarLoading]}>
+                    <ActivityIndicator size="large" color="#3B82F6" />
+                  </View>
+                ) : avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <Text style={styles.avatarText}>
+                      {user?.name?.charAt(0)?.toUpperCase() || '?'}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 24, color: isDark ? '#9CA3AF' : '#6B7280' }}>
-                    {showPasswordSection ? '▲' : '▼'}
-                  </Text>
-                </Pressable>
-
-                {showPasswordSection && (
-                  <View className="mt-4">
-                    <Input
-                      label="รหัสผ่านปัจจุบัน"
-                      placeholder="กรอกรหัสผ่านปัจจุบัน"
-                      value={currentPassword}
-                      onChangeText={setCurrentPassword}
-                      leftIcon="lock-closed"
-                      isPassword
-                    />
-
-                    <Input
-                      label="รหัสผ่านใหม่"
-                      placeholder="อย่างน้อย 8 ตัวอักษร"
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      leftIcon="lock-open"
-                      isPassword
-                    />
-
-                    <Input
-                      label="ยืนยันรหัสผ่านใหม่"
-                      placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                      value={confirmNewPassword}
-                      onChangeText={setConfirmNewPassword}
-                      leftIcon="shield-checkmark"
-                      isPassword
-                    />
-
-                    <Pressable
-                      onPress={handleChangePassword}
-                      disabled={isChangingPassword}
-                      className="mt-4"
-                    >
-                      <LinearGradient
-                        colors={['#EF4444', '#DC2626']}
-                        style={{
-                          paddingVertical: 16,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                        }}
-                      >
-                        {isChangingPassword ? (
-                          <ActivityIndicator color="white" />
-                        ) : (
-                          <Text className="text-white font-bold">เปลี่ยนรหัสผ่าน</Text>
-                        )}
-                      </LinearGradient>
-                    </Pressable>
-                  </View>
                 )}
-              </GlassCard>
-
-              {/* Referral Info */}
-              <GlassCard style={{ marginBottom: 16 }}>
-                <SectionHeader icon="📤" title="รหัสแนะนำ" isDark={isDark} />
-
-                <View className={`rounded-xl p-4 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                  <Text className={`text-center text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                    {user?.referralCode || 'ไม่มีรหัส'}
-                  </Text>
-                  <Text className={`text-center text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    แชร์รหัสนี้เพื่อชวนเพื่อน
-                  </Text>
+                <View style={styles.avatarBadge}>
+                  <Text style={{ fontSize: 14 }}>📷</Text>
                 </View>
+              </View>
+            </Pressable>
+            <Text style={[styles.avatarHint, isDark && styles.textGray400]}>
+              แตะเพื่อเปลี่ยนรูป
+            </Text>
+          </View>
 
-                <Pressable
-                  onPress={() => router.push('/referral')}
-                  className="flex-row items-center justify-center mt-4 py-3"
-                >
-                  <Text style={{ fontSize: 20 }}>📤</Text>
-                  <Text className="text-primary-500 font-medium ml-2">
-                    ดูลิงก์แนะนำเพื่อน
-                  </Text>
-                </Pressable>
-              </GlassCard>
+          {/* Personal Info */}
+          <View style={[styles.section, isDark && styles.sectionDark]}>
+            <Text style={[styles.sectionTitle, isDark && styles.textWhite]}>👤 ข้อมูลส่วนตัว</Text>
 
-              {/* Save Button */}
-              <Pressable onPress={handleSave} disabled={isSaving}>
-                <LinearGradient
-                  colors={['#3B82F6', '#8B5CF6']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    paddingVertical: 16,
-                    borderRadius: 16,
-                    alignItems: 'center',
-                    shadowColor: '#3B82F6',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  }}
-                >
-                  {isSaving ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <View className="flex-row items-center">
-                      <Text style={{ fontSize: 24 }}>✅</Text>
-                      <Text className="text-white font-bold text-lg ml-2">บันทึกการเปลี่ยนแปลง</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            <FormInput
+              label="ชื่อ-นามสกุล"
+              value={name}
+              onChangeText={setName}
+              placeholder="กรอกชื่อ-นามสกุล"
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="อีเมล"
+              value={user?.email || ''}
+              placeholder="อีเมล"
+              editable={false}
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="เบอร์โทรศัพท์"
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="08X-XXX-XXXX"
+              keyboardType="phone-pad"
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="ที่อยู่"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="กรอกที่อยู่ (ไม่บังคับ)"
+              multiline
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="แนะนำตัว (Bio)"
+              value={bio}
+              onChangeText={setBio}
+              placeholder="เขียนแนะนำตัว..."
+              multiline
+              isDark={isDark}
+            />
+          </View>
+
+          {/* Bank Info */}
+          <View style={[styles.section, isDark && styles.sectionDark]}>
+            <Text style={[styles.sectionTitle, isDark && styles.textWhite]}>💰 ข้อมูลธนาคาร</Text>
+
+            <FormInput
+              label="ชื่อธนาคาร"
+              value={bankName}
+              onChangeText={setBankName}
+              placeholder="เช่น ธนาคารกสิกรไทย"
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="เลขบัญชี"
+              value={bankAccount}
+              onChangeText={setBankAccount}
+              placeholder="XXX-X-XXXXX-X"
+              keyboardType="numeric"
+              isDark={isDark}
+            />
+
+            <FormInput
+              label="ชื่อบัญชี"
+              value={bankAccountName}
+              onChangeText={setBankAccountName}
+              placeholder="ชื่อเจ้าของบัญชี"
+              isDark={isDark}
+            />
+          </View>
+
+          {/* Referral Code */}
+          <View style={[styles.section, isDark && styles.sectionDark]}>
+            <Text style={[styles.sectionTitle, isDark && styles.textWhite]}>📤 รหัสแนะนำ</Text>
+            <View style={[styles.referralBox, isDark && styles.referralBoxDark]}>
+              <Text style={[styles.referralCode, isDark && styles.textWhite]}>
+                {user?.referralCode || `TP${String(user?.id || 0).padStart(6, '0')}`}
+              </Text>
+              <Text style={[styles.referralHint, isDark && styles.textGray400]}>
+                แชร์รหัสนี้เพื่อชวนเพื่อน
+              </Text>
+            </View>
+          </View>
+
+          {/* Save Button */}
+          <Pressable style={styles.submitBtn} onPress={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <View style={[styles.btnGradientDisabled]}>
+                <ActivityIndicator color="#FFF" />
+              </View>
+            ) : (
+              <LinearGradient colors={['#3B82F6', '#8B5CF6']} style={styles.btnGradient}>
+                <Text style={{ fontSize: 20 }}>✅</Text>
+                <Text style={styles.btnText}>บันทึกการเปลี่ยนแปลง</Text>
+              </LinearGradient>
+            )}
+          </Pressable>
+
+          <View style={{ height: 50 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
+
+// =====================================================
+// Styles
+// =====================================================
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  containerDark: { backgroundColor: '#111827' },
+  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', marginTop: 16 },
+  textWhite: { color: '#FFFFFF' },
+  textGray300: { color: '#D1D5DB' },
+  textGray400: { color: '#9CA3AF' },
+  subtitle: { fontSize: 16, color: '#6B7280', textAlign: 'center', marginTop: 8 },
+  loginBtn: { backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginTop: 24 },
+  loginBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 20 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  backIcon: { fontSize: 24, color: '#FFF' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  saveBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)' },
+  saveBtnText: { color: '#FFF', fontWeight: '600' },
+
+  // Content
+  content: { flex: 1, paddingHorizontal: 16 },
+
+  // Avatar
+  avatarSection: { alignItems: 'center', paddingVertical: 24 },
+  avatarContainer: { position: 'relative' },
+  avatar: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#3B82F6' },
+  avatarLoading: { backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' },
+  avatarPlaceholder: { backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: 40, color: '#FFF', fontWeight: 'bold' },
+  avatarBadge: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: '#3B82F6', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  avatarHint: { fontSize: 13, color: '#6B7280', marginTop: 8 },
+
+  // Section
+  section: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
+  sectionDark: { backgroundColor: '#1F2937' },
+  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937', marginBottom: 16 },
+
+  // Input
+  inputGroup: { marginBottom: 16 },
+  inputLabel: { fontSize: 14, color: '#6B7280', marginBottom: 8 },
+  input: { backgroundColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: '#1F2937', borderWidth: 1, borderColor: '#E5E7EB' },
+  inputDark: { backgroundColor: '#374151', color: '#FFF', borderColor: '#4B5563' },
+  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
+  inputDisabled: { opacity: 0.6 },
+
+  // Referral
+  referralBox: { backgroundColor: '#F3F4F6', borderRadius: 12, padding: 16, alignItems: 'center' },
+  referralBoxDark: { backgroundColor: '#374151' },
+  referralCode: { fontSize: 24, fontWeight: 'bold', color: '#3B82F6', letterSpacing: 2 },
+  referralHint: { fontSize: 13, color: '#6B7280', marginTop: 4 },
+
+  // Submit Button
+  submitBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 8 },
+  btnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 10 },
+  btnGradientDisabled: { backgroundColor: '#9CA3AF', paddingVertical: 16, alignItems: 'center' },
+  btnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+});
