@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.14] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2283 from xjanova/claude/fix-profile-upload-error-xLzWn (f45bbace)
+- fix(mobile): use /kyc/confirm endpoint instead of /kyc/submit (6f179fdf)
+### 🔧 Other Changes
+
+
 ## [v3.383.13] - 2025-12-15
 
 ### ✨ Features
