@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.7] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): implement native payment flow for wallet topup (fa88a693)
+- feat(mobile): use in-app WebBrowser for wallet topup instead of external browser (3370db76)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2276 from xjanova/claude/fix-profile-upload-error-xLzWn (0a89a748)
+
 ## [v3.383.6] - 2025-12-15
 
 ### ✨ Features
