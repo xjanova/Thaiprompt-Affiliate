@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.5] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2274 from xjanova/claude/fix-profile-upload-error-xLzWn (896605b7)
+- chore(mobile): sync app version to 3.383.4 (7244877d)
+
 ## [v3.383.4] - 2025-12-15
 
 ### ✨ Features
