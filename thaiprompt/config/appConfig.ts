@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '1.8.1',
-  BUILD_NUMBER: 28,
-  BUILD_DATE: '2025-12-11-SHOP-FIX', // Fix shopping routes, add stores page
+  VERSION: '3.383.4',
+  BUILD_NUMBER: 29,
+  BUILD_DATE: '2025-12-15-CHECKOUT-NATIVE', // Native checkout flow, cart integration
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
