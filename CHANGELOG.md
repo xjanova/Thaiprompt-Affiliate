@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.6] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): add sync status indicator in tab bar (cedbfd0b)
+### 🐛 Bug Fixes
+- fix(api): remove duplicate method declarations in MobileApiController (ce3af50b)
+- fix(mobile): add web session authentication for wallet topup (298f57e2)
+### 🔧 Other Changes
+- Merge pull request #2275 from xjanova/claude/fix-profile-upload-error-xLzWn (790640fb)
+
 ## [v3.383.5] - 2025-12-15
 
 ### ✨ Features
