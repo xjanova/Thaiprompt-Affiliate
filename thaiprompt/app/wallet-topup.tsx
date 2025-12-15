@@ -27,8 +27,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
-import { getWallet } from '@/services/api';
-import { formatCurrency, API_BASE_URL } from '@/constants';
+import { getWallet, getWebSessionUrl } from '@/services/api';
+import { formatCurrency } from '@/constants';
 
 // จำนวนเงินด่วน
 const QUICK_AMOUNTS = [100, 300, 500, 1000, 2000, 5000, 10000];
@@ -110,17 +110,22 @@ export default function WalletTopupScreen() {
     setIsSubmitting(true);
 
     try {
-      // เปิดหน้าเติมเงินบนเว็บพร้อมจำนวนเงิน
-      // API_BASE_URL = 'https://main.thaiprompt.online/api/v1'
-      // ต้องเอาเฉพาะ domain: 'https://main.thaiprompt.online'
-      const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
-      const topupUrl = `${baseUrl}/user/wallet/topup?amount=${amount}&from_app=1`;
+      // สร้าง web session URL พร้อม authentication
+      console.log('🔐 Getting web session URL...');
+      const result = await getWebSessionUrl('/user/wallet/topup', {
+        amount: amount,
+        from_app: 1,
+      });
 
-      console.log('🔗 Opening topup URL:', topupUrl);
+      if (!result.success || !result.url) {
+        Alert.alert('เกิดข้อผิดพลาด', result.message || 'ไม่สามารถเปิดหน้าเติมเงินได้');
+        return;
+      }
 
-      // เปิด URL โดยตรง - ไม่ต้องเช็ค canOpenURL เพราะ https URL เปิดได้เสมอ
-      // canOpenURL อาจ return false บน Android/iOS ถ้าไม่มี config queries ใน manifest
-      await Linking.openURL(topupUrl);
+      console.log('🔗 Opening topup URL:', result.url);
+
+      // เปิด URL พร้อม authentication
+      await Linking.openURL(result.url);
     } catch (error) {
       console.error('Open topup URL error:', error);
       Alert.alert(

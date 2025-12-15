@@ -3390,5 +3390,52 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   }
 };
 
+// =====================================================
+// ⭐ Web Session - เปิดหน้าเว็บพร้อม authentication
+// =====================================================
+
+/**
+ * สร้าง URL สำหรับเปิดหน้าเว็บพร้อม authentication
+ * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
+ *
+ * @param redirectPath - path ที่ต้องการ redirect ไป (เช่น /user/wallet/topup)
+ * @param queryParams - query params เพิ่มเติม (เช่น { amount: 1000 })
+ */
+export const getWebSessionUrl = async (
+  redirectPath: string,
+  queryParams?: Record<string, string | number>
+): Promise<{
+  success: boolean;
+  url?: string;
+  expiresIn?: number;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post('/web-session', {
+      redirect_path: redirectPath,
+      query_params: queryParams,
+    });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        url: response.data.data?.url,
+        expiresIn: response.data.data?.expires_in,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถสร้าง session ได้',
+    };
+  } catch (error: any) {
+    console.error('Get web session URL error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถสร้าง session ได้',
+    };
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };

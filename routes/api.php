@@ -245,6 +245,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/jobs/{jobId}/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateJobStatus']);
         });
 
+        // Web Session (สำหรับเปิดหน้าเว็บจาก Mobile App พร้อม authentication)
+        Route::post('/web-session', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'generateWebSessionToken']);
+
         // Support Tickets (Mobile App)
         Route::prefix('tickets')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTickets']);

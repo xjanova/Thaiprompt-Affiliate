@@ -288,11 +288,11 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120', // max 5MB, รองรับ iPhone HEIC/HEIF
         ], [
             'avatar.required' => 'กรุณาเลือกรูปภาพ',
             'avatar.image' => 'ไฟล์ต้องเป็นรูปภาพ',
-            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp',
+            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic, heif',
             'avatar.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
         ]);
 
@@ -5159,6 +5159,69 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Web Session API (สำหรับเปิดหน้าเว็บจากแอพ)
+    // =====================================================
+
+    /**
+     * สร้าง one-time token สำหรับเปิดหน้าเว็บพร้อม authentication
+     *
+     * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function generateWebSessionToken(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $redirectPath = $request->input('redirect_path', '/user/wallet/topup');
+
+            // สร้าง one-time token
+            $token = Str::random(64);
+            $tokenHash = hash('sha256', $token);
+
+            // บันทึกลง Cache (หมดอายุใน 5 นาที)
+            $cacheKey = 'web_session_token:' . $tokenHash;
+            \Cache::put($cacheKey, [
+                'user_id' => $user->id,
+                'redirect_path' => $redirectPath,
+                'created_at' => now()->toISOString(),
+                'ip' => $request->ip(),
+            ], now()->addMinutes(5));
+
+            // สร้าง URL
+            $baseUrl = rtrim(config('app.url'), '/');
+            $webUrl = $baseUrl . '/mobile-web-session?token=' . $token;
+
+            // ถ้ามี query params เพิ่มเติม (เช่น amount)
+            if ($request->has('query_params')) {
+                $queryParams = $request->input('query_params');
+                if (is_array($queryParams)) {
+                    $webUrl .= '&' . http_build_query($queryParams);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้าง session token สำเร็จ',
+                'data' => [
+                    'url' => $webUrl,
+                    'expires_in' => 300, // 5 นาที (วินาที)
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Generate Web Session Token Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้าง session token ได้',
             ], 500);
         }
     }
