@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.4] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): improve firefly glow effect with blur (d8211681)
+### 🐛 Bug Fixes
+- fix(mobile): fix premium store - use direct assignment for seller role (7942e25a)
+- fix(mobile): fix wallet topup page unable to open payment URL (ef5632a5)
+- fix(kyc): add support for heic/heif and webp image formats (cf4b1aa8)
+- fix(mobile): fix change password API - use POST method and correct field names (73db1547)
+### 🔧 Other Changes
+- Merge pull request #2273 from xjanova/claude/fix-profile-upload-error-xLzWn (b84a9249)
+- chore(mobile): sync app version to 3.383.3 (a8d23fad)
+
 ## [v3.383.3] - 2025-12-14
 
 ### ✨ Features
