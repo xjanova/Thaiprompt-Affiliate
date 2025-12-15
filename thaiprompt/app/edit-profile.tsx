@@ -104,7 +104,7 @@ const uploadAvatarApi = async (
       type: mimeType,
     } as any);
 
-    const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
+    const response = await fetch(`${API_BASE_URL}/mobile/profile/avatar`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
