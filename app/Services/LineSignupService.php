@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LineRegistrationSession;
 use App\Models\LineSignupFlow;
 use App\Models\MlmProspect;
 use App\Models\MlmMember;
@@ -290,10 +291,15 @@ class LineSignupService
             // Send success message
             $this->sendSuccessMessage($prospect, $user);
 
+            // ✅ อัพเดท LineRegistrationSession (ถ้ามี)
+            // สำหรับหน้าเว็บที่ polling อยู่จะได้รับทราบว่าสมัครเสร็จแล้ว
+            $this->updateRegistrationSession($prospect->line_user_id, $user->id);
+
             Log::info('Signup completed successfully', [
                 'prospect_id' => $prospect->id,
                 'user_id' => $user->id,
                 'rate_limits_cleared' => true,
+                'registration_session_updated' => true,
             ]);
 
         } catch (\Exception $e) {
@@ -766,5 +772,63 @@ class LineSignupService
     {
         $data = [$field => $value];
         return $this->duplicateService->checkAllDuplicates($data);
+    }
+
+    /**
+     * อัพเดท LineRegistrationSession เมื่อสมัครเสร็จ
+     *
+     * ใช้สำหรับ update สถานะ session ของหน้าเว็บ
+     * เพื่อให้หน้าเว็บที่ polling อยู่สามารถ redirect ไปหน้าอัพเดทข้อมูลได้อัตโนมัติ
+     *
+     * @param string $lineUserId LINE User ID ของผู้สมัคร
+     * @param int $userId User ID ที่สร้างใหม่
+     * @return void
+     */
+    private function updateRegistrationSession(string $lineUserId, int $userId): void
+    {
+        try {
+            // ตรวจสอบว่า table มีอยู่หรือไม่ (เผื่อยังไม่ได้ migrate)
+            if (!Schema::hasTable('line_registration_sessions')) {
+                return;
+            }
+
+            // ค้นหา session ที่ active อยู่สำหรับ LINE User ID นี้
+            $session = LineRegistrationSession::where('line_user_id', $lineUserId)
+                ->whereIn('status', [
+                    LineRegistrationSession::STATUS_PENDING,
+                    LineRegistrationSession::STATUS_FOLLOWED,
+                    LineRegistrationSession::STATUS_IN_PROGRESS,
+                ])
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($session) {
+                // อัพเดทสถานะเป็น completed
+                $session->markAsCompleted($userId);
+
+                Log::info('LineRegistrationSession updated to completed', [
+                    'session_id' => $session->id,
+                    'session_token' => $session->session_token,
+                    'line_user_id' => $lineUserId,
+                    'user_id' => $userId,
+                ]);
+            } else {
+                Log::info('No active LineRegistrationSession found for LINE user', [
+                    'line_user_id' => $lineUserId,
+                    'user_id' => $userId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ไม่ให้ error นี้กระทบการสมัครหลัก
+            Log::warning('Failed to update LineRegistrationSession', [
+                'line_user_id' => $lineUserId,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
