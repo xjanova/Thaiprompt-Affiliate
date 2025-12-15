@@ -288,11 +288,11 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120', // max 5MB, รองรับ iPhone HEIC/HEIF
         ], [
             'avatar.required' => 'กรุณาเลือกรูปภาพ',
             'avatar.image' => 'ไฟล์ต้องเป็นรูปภาพ',
-            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp',
+            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic, heif',
             'avatar.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
         ]);
 
@@ -548,144 +548,11 @@ class MobileApiController extends Controller
     // Cart (ใช้ Session/Cache สำหรับ Guest, DB สำหรับ User)
     // =====================================================
 
-    /**
-     * ดึงตะกร้าสินค้า
-     *
-     * @return JsonResponse
-     */
-    public function getCart(): JsonResponse
-    {
-        $user = Auth::user();
-
-        // ดึง cart จาก cache หรือ DB
-        $cart = $this->getUserCart($user);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'items' => $cart['items'] ?? [],
-                'total' => $cart['total'] ?? 0,
-                'itemCount' => $cart['item_count'] ?? 0,
-            ],
-        ]);
-    }
-
-    /**
-     * เพิ่มสินค้าลงตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function addToCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $product = Product::find($request->product_id);
-
-        if (!$product || !$product->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'สินค้าไม่พร้อมจำหน่าย',
-            ], 400);
-        }
-
-        // เพิ่มลง cart
-        $cart = $this->addItemToCart($user, $product, $request->quantity);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'เพิ่มสินค้าลงตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
-
-    /**
-     * อัพเดทจำนวนสินค้าในตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function updateCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $cart = $this->updateCartItem($user, $request->product_id, $request->quantity);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'อัพเดทตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
-
-    /**
-     * ลบสินค้าออกจากตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function removeFromCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $cart = $this->removeCartItem($user, $request->product_id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'ลบสินค้าออกจากตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
+    // NOTE: Cart public methods (getCart, addToCart, updateCartItem, removeFromCart, clearCart)
+    // ถูกย้ายไปส่วนท้ายของไฟล์ (ดู line ~3400+) เพื่อใช้ DB-based cart แทน cache-based
 
     // =====================================================
-    // Cart Helper Methods
+    // Cart Helper Methods (Legacy - สำหรับ backward compatibility)
     // =====================================================
 
     /**
@@ -758,9 +625,9 @@ class MobileApiController extends Controller
     }
 
     /**
-     * อัพเดทจำนวนสินค้าใน cart
+     * อัพเดทจำนวนสินค้าใน cart (Legacy - cache-based)
      */
-    private function updateCartItem($user, int $productId, int $quantity): array
+    private function updateCartItemInCache($user, int $productId, int $quantity): array
     {
         $cart = $this->getUserCart($user);
         $items = $cart['items'] ?? [];
@@ -796,11 +663,11 @@ class MobileApiController extends Controller
     }
 
     /**
-     * ลบสินค้าออกจาก cart
+     * ลบสินค้าออกจาก cart (Legacy - cache-based)
      */
-    private function removeCartItem($user, int $productId): array
+    private function removeCartItemFromCache($user, int $productId): array
     {
-        return $this->updateCartItem($user, $productId, 0);
+        return $this->updateCartItemInCache($user, $productId, 0);
     }
 
     // =====================================================
@@ -5159,6 +5026,69 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Web Session API (สำหรับเปิดหน้าเว็บจากแอพ)
+    // =====================================================
+
+    /**
+     * สร้าง one-time token สำหรับเปิดหน้าเว็บพร้อม authentication
+     *
+     * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function generateWebSessionToken(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $redirectPath = $request->input('redirect_path', '/user/wallet/topup');
+
+            // สร้าง one-time token
+            $token = Str::random(64);
+            $tokenHash = hash('sha256', $token);
+
+            // บันทึกลง Cache (หมดอายุใน 5 นาที)
+            $cacheKey = 'web_session_token:' . $tokenHash;
+            \Cache::put($cacheKey, [
+                'user_id' => $user->id,
+                'redirect_path' => $redirectPath,
+                'created_at' => now()->toISOString(),
+                'ip' => $request->ip(),
+            ], now()->addMinutes(5));
+
+            // สร้าง URL
+            $baseUrl = rtrim(config('app.url'), '/');
+            $webUrl = $baseUrl . '/mobile-web-session?token=' . $token;
+
+            // ถ้ามี query params เพิ่มเติม (เช่น amount)
+            if ($request->has('query_params')) {
+                $queryParams = $request->input('query_params');
+                if (is_array($queryParams)) {
+                    $webUrl .= '&' . http_build_query($queryParams);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้าง session token สำเร็จ',
+                'data' => [
+                    'url' => $webUrl,
+                    'expires_in' => 300, // 5 นาที (วินาที)
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Generate Web Session Token Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้าง session token ได้',
             ], 500);
         }
     }
