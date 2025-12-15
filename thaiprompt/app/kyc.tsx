@@ -129,7 +129,8 @@ const submitKyc = async (): Promise<{ success: boolean; message?: string }> => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/kyc/submit`, {
+    // ใช้ /kyc/confirm แทน /kyc/submit เพราะรูปถูก upload แยกไว้แล้ว
+    const response = await fetch(`${API_BASE_URL}/kyc/confirm`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
