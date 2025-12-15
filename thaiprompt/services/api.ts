@@ -1072,6 +1072,7 @@ export const getKycStatus = async (): Promise<{
 
 /**
  * อัพโหลดรูปภาพ KYC
+ * ใช้ fetch API โดยตรง (ไม่ใช้ axios) เพราะ axios มีปัญหากับ FormData ใน React Native
  */
 export const uploadKycImage = async (
   imageUri: string,
@@ -1088,7 +1089,14 @@ export const uploadKycImage = async (
   message?: string;
 }> => {
   try {
-    const formData = new FormData();
+    // ดึง token จาก SecureStore
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบใหม่',
+      };
+    }
 
     // แปลง URI ให้ถูกต้องสำหรับ React Native
     let fileUri = imageUri;
@@ -1103,44 +1111,55 @@ export const uploadKycImage = async (
     // ตรวจสอบ extension โดยละเลย query string
     const cleanFilename = filename.split('?')[0];
     const match = /\.(\w+)$/.exec(cleanFilename);
-    let fileType = 'image/jpeg';
+    let mimeType = 'image/jpeg';
     if (match) {
       const ext = match[1].toLowerCase();
-      if (ext === 'png') fileType = 'image/png';
-      else if (ext === 'gif') fileType = 'image/gif';
-      else if (ext === 'webp') fileType = 'image/webp';
-      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
-      else fileType = `image/${ext}`;
+      if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
+      else mimeType = `image/${ext}`;
     }
 
+    // สร้าง FormData
+    const formData = new FormData();
     formData.append('image', {
       uri: fileUri,
       name: cleanFilename || `${type}.jpg`,
-      type: fileType,
-    } as unknown as Blob);
+      type: mimeType,
+    } as any);
     formData.append('type', type);
 
-    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: fileType, kycType: type });
+    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: mimeType, kycType: type });
 
-    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
-    const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
+    // ใช้ fetch API (ทำงานได้ดีกว่า axios กับ FormData ใน React Native)
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.KYC_UPLOAD}`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // ไม่ต้องตั้ง Content-Type - fetch จะสร้าง boundary ให้เอง
       },
-      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
+      body: formData,
     });
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('🪪 KYC upload failed:', result);
       return {
         success: false,
-        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
       };
     }
+
+    console.log('🪪 KYC upload success:', result);
+    return result;
+  } catch (error: any) {
+    console.error('🪪 KYC upload error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
     };
   }
 };
@@ -2600,6 +2619,10 @@ export const sendDeviceHeartbeat = async (deviceId: string): Promise<{
 
 /**
  * อัพเดทข้อมูลโปรไฟล์
+ * ใช้ fetch API แทน axios เพื่อความเสถียร
+ *
+ * @param data - ข้อมูลที่ต้องการอัพเดท
+ * @returns Promise พร้อม user data ที่อัพเดทแล้ว
  */
 export const updateProfile = async (data: {
   name?: string;
@@ -2615,33 +2638,63 @@ export const updateProfile = async (data: {
   message?: string;
 }> => {
   try {
-    const response = await apiClient.put(API_ENDPOINTS.PROFILE_UPDATE, data);
+    // ดึง token สำหรับ authentication
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+      };
+    }
 
-    // อัพเดท user data ใน storage
-    if (response.data.success && response.data.data) {
+    console.log('📝 Updating profile:', data);
+
+    // ใช้ fetch API
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.PROFILE_UPDATE}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    // Parse response
+    const responseData = await response.json();
+    console.log('📝 Update profile response:', response.status, responseData);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: responseData?.message || `อัพเดทไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    // อัพเดท user data ใน storage ถ้าสำเร็จ
+    if (responseData.success && responseData.data) {
       await SecureStore.setItemAsync(
         STORAGE_KEYS.USER_DATA,
-        JSON.stringify(response.data.data)
+        JSON.stringify(responseData.data)
       );
     }
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'อัพเดทข้อมูลไม่สำเร็จ',
-      };
-    }
+    return responseData;
+  } catch (error: any) {
+    console.error('📝 Update profile error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error?.message || 'เกิดข้อผิดพลาดในการอัพเดท กรุณาลองใหม่',
     };
   }
 };
 
 /**
  * อัพโหลดรูปโปรไฟล์ (Avatar)
+ * ใช้ fetch API แทน axios เพราะ axios ไม่ handle FormData ได้ดีใน React Native
+ *
+ * @param imageUri - URI ของรูปภาพจาก ImagePicker
+ * @returns Promise พร้อม avatarUrl และ user data
  */
 export const uploadAvatar = async (imageUri: string): Promise<{
   success: boolean;
@@ -2652,65 +2705,90 @@ export const uploadAvatar = async (imageUri: string): Promise<{
   message?: string;
 }> => {
   try {
-    const formData = new FormData();
-
-    // แปลง URI ให้ถูกต้องสำหรับ React Native
-    let fileUri = imageUri;
-    // ถ้าเป็น content:// หรือ file:// ใช้ได้เลย
-    // ถ้าไม่มี scheme ให้เพิ่ม file://
-    if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
-      fileUri = `file://${fileUri}`;
+    // ดึง token สำหรับ authentication
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+      };
     }
 
+    // เตรียม file URI - ใช้ตามที่ได้รับมาจาก ImagePicker
+    // ImagePicker ใน Expo ส่ง URI ที่ถูกต้องมาแล้ว (file:// หรือ content://)
+    const fileUri = imageUri;
+
+    // หา filename และ extension
     const filename = imageUri.split('/').pop() || 'avatar.jpg';
-    // ตรวจสอบ extension โดยละเลย query string
-    const cleanFilename = filename.split('?')[0];
+    const cleanFilename = filename.split('?')[0]; // ตัด query string ออก
+
+    // หา mime type จาก extension
     const match = /\.(\w+)$/.exec(cleanFilename);
-    let fileType = 'image/jpeg';
+    let mimeType = 'image/jpeg';
     if (match) {
       const ext = match[1].toLowerCase();
-      if (ext === 'png') fileType = 'image/png';
-      else if (ext === 'gif') fileType = 'image/gif';
-      else if (ext === 'webp') fileType = 'image/webp';
-      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
-      else fileType = `image/${ext}`;
+      const mimeTypes: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        heic: 'image/heic',
+        heif: 'image/heif',
+      };
+      mimeType = mimeTypes[ext] || 'image/jpeg';
     }
 
+    console.log('📸 Uploading avatar with fetch:', {
+      uri: fileUri,
+      name: cleanFilename,
+      type: mimeType,
+    });
+
+    // สร้าง FormData สำหรับ React Native
+    const formData = new FormData();
     formData.append('avatar', {
       uri: fileUri,
       name: cleanFilename || 'avatar.jpg',
-      type: fileType,
-    } as unknown as Blob);
+      type: mimeType,
+    } as any);
 
-    console.log('📸 Uploading avatar:', { uri: fileUri, name: cleanFilename, type: fileType });
-
-    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
-    const response = await apiClient.post(API_ENDPOINTS.AVATAR_UPLOAD, formData, {
+    // ใช้ fetch API (ทำงานได้ดีกว่า axios กับ FormData ใน React Native)
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AVATAR_UPLOAD}`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // ไม่ต้องตั้ง Content-Type - fetch จะสร้าง boundary ให้เอง
       },
-      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
+      body: formData,
     });
 
-    // อัพเดท user data ใน storage
-    if (response.data.success && response.data.data?.user) {
+    // Parse response
+    const responseData = await response.json();
+    console.log('📸 Upload response:', response.status, responseData);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: responseData?.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    // อัพเดท user data ใน storage ถ้าสำเร็จ
+    if (responseData.success && responseData.data?.user) {
       await SecureStore.setItemAsync(
         STORAGE_KEYS.USER_DATA,
-        JSON.stringify(response.data.data.user)
+        JSON.stringify(responseData.data.user)
       );
     }
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
-      };
-    }
+    return responseData;
+  } catch (error: any) {
+    console.error('📸 Upload avatar error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error?.message || 'เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่',
     };
   }
 };
