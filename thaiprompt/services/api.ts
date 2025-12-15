@@ -2713,7 +2713,14 @@ export const changePassword = async (data: {
   message?: string;
 }> => {
   try {
-    const response = await apiClient.put(API_ENDPOINTS.CHANGE_PASSWORD, data);
+    // Backend ต้องการ field ชื่อ 'password' และ 'password_confirmation'
+    // แต่ Mobile App ใช้ 'new_password' และ 'new_password_confirmation'
+    const requestData = {
+      current_password: data.current_password,
+      password: data.new_password,
+      password_confirmation: data.new_password_confirmation,
+    };
+    const response = await apiClient.post(API_ENDPOINTS.CHANGE_PASSWORD, requestData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
