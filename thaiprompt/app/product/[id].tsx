@@ -1,6 +1,8 @@
 /**
- * Product Detail Screen - Premium Version with Wallet Payment
- * แก้ปัญหาจอขาว + เพิ่มระบบชำระเงินผ่าน Wallet
+ * Product Detail Screen - Premium Version
+ * - ใช้ local cartStore สำหรับจัดการตะกร้า
+ * - ซื้อเลย จะเพิ่มสินค้าลงตะกร้าแล้วไปหน้า checkout
+ * - ชำระเงินทั้งหมดจะทำในหน้า checkout (Native Payment Flow)
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,14 +18,15 @@ import {
   StyleSheet,
   StatusBar,
   Image,
-  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore } from '@/stores/cartStore';
 import { formatCurrency, API_BASE_URL } from '@/constants';
-import { getProduct, addToCart, createOrder, getWallet } from '@/services/api';
+import { getProduct, getWallet } from '@/services/api';
+import type { Product as ProductType } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -49,6 +52,7 @@ interface Product {
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isAuthenticated, token } = useAuthStore();
+  const { addItem: addToCartStore } = useCartStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,10 +61,8 @@ export default function ProductDetailScreen() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Payment modal
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  // Wallet balance สำหรับแสดงข้อมูล
   const [walletBalance, setWalletBalance] = useState(0);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // โหลดข้อมูลสินค้า
   const fetchProduct = useCallback(async () => {
@@ -128,7 +130,7 @@ export default function ProductDetailScreen() {
     fetchWalletBalance();
   }, [fetchProduct, fetchWalletBalance]);
 
-  // เพิ่มลงตะกร้า
+  // เพิ่มลงตะกร้า (ใช้ local cartStore)
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
       Alert.alert('กรุณาเข้าสู่ระบบ', 'คุณต้องเข้าสู่ระบบก่อนเพิ่มสินค้าลงตะกร้า', [
@@ -141,16 +143,28 @@ export default function ProductDetailScreen() {
 
     setIsAddingToCart(true);
     try {
-      const response = await addToCart(product.id, quantity);
+      // แปลง Product เป็น ProductType สำหรับ cartStore
+      const productForCart: ProductType = {
+        id: product.id.toString(),
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        discount_price: product.original_price && product.original_price > product.price
+          ? product.price : undefined,
+        image: product.image || product.images?.[0],
+        category: product.category || '',
+        commission_rate: product.commission_rate,
+        rating: 0,
+        review_count: 0,
+      };
 
-      if (response?.success) {
-        Alert.alert('สำเร็จ! ✓', `เพิ่ม ${product.name} ลงตะกร้าแล้ว`, [
-          { text: 'ดูตะกร้า', onPress: () => router.push('/shopping') },
-          { text: 'ช้อปต่อ', style: 'cancel' },
-        ]);
-      } else {
-        Alert.alert('เกิดข้อผิดพลาด', response?.message || 'ไม่สามารถเพิ่มสินค้าได้');
-      }
+      // เพิ่มลง cartStore (local)
+      addToCartStore(productForCart, quantity);
+
+      Alert.alert('สำเร็จ! ✓', `เพิ่ม ${product.name} ลงตะกร้าแล้ว`, [
+        { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
+        { text: 'ช้อปต่อ', style: 'cancel' },
+      ]);
     } catch (err: any) {
       Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถเพิ่มสินค้าได้');
     } finally {
@@ -158,7 +172,7 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // ซื้อเลย (เปิด payment modal)
+  // ซื้อเลย (เพิ่มตะกร้าแล้วไป checkout)
   const handleBuyNow = async () => {
     if (!isAuthenticated) {
       Alert.alert('กรุณาเข้าสู่ระบบ', 'คุณต้องเข้าสู่ระบบก่อนซื้อสินค้า', [
@@ -168,56 +182,29 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    // โหลดยอดเงินใหม่ก่อนเปิด modal
-    await fetchWalletBalance();
-    setShowPaymentModal(true);
-  };
-
-  // ชำระเงินผ่าน Wallet
-  const handleWalletPayment = async () => {
     if (!product) return;
 
-    const totalAmount = product.price * quantity;
-
-    if (walletBalance < totalAmount) {
-      Alert.alert(
-        'ยอดเงินไม่พอ',
-        `ยอดเงินในกระเป๋า: ${formatCurrency(walletBalance)}\nต้องชำระ: ${formatCurrency(totalAmount)}\n\nต้องการเติมเงินหรือไม่?`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เติมเงิน', onPress: () => {
-            setShowPaymentModal(false);
-            router.push('/wallet-topup');
-          }},
-        ]
-      );
-      return;
-    }
-
-    setIsProcessingPayment(true);
-
     try {
-      const response = await createOrder({
-        items: [{ product_id: product.id, quantity }],
-        payment_method: 'wallet',
-      });
+      // แปลง Product เป็น ProductType สำหรับ cartStore
+      const productForCart: ProductType = {
+        id: product.id.toString(),
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        discount_price: product.original_price && product.original_price > product.price
+          ? product.price : undefined,
+        image: product.image || product.images?.[0],
+        category: product.category || '',
+        commission_rate: product.commission_rate,
+        rating: 0,
+        review_count: 0,
+      };
 
-      if (response?.success) {
-        setShowPaymentModal(false);
-        Alert.alert(
-          'ซื้อสำเร็จ! ✓',
-          `สั่งซื้อ ${product.name} x${quantity} สำเร็จแล้ว\n\nหักจากกระเป๋า: ${formatCurrency(totalAmount)}`,
-          [{ text: 'ดูคำสั่งซื้อ', onPress: () => router.push('/commissions') }]
-        );
-        // อัพเดทยอดเงิน
-        fetchWalletBalance();
-      } else {
-        Alert.alert('เกิดข้อผิดพลาด', response?.message || 'ไม่สามารถสร้างคำสั่งซื้อได้');
-      }
+      // เพิ่มลง cartStore แล้วไป checkout
+      addToCartStore(productForCart, quantity);
+      router.push('/checkout');
     } catch (err: any) {
-      Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถชำระเงินได้');
-    } finally {
-      setIsProcessingPayment(false);
+      Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถดำเนินการได้');
     }
   };
 
@@ -423,7 +410,7 @@ export default function ProductDetailScreen() {
 
       {/* Bottom Action Bar */}
       <View style={styles.bottomBar}>
-        <Pressable style={styles.bottomIconButton} onPress={() => router.push('/shopping')}>
+        <Pressable style={styles.bottomIconButton} onPress={() => router.push('/cart')}>
           <Text style={{ fontSize: 24 }}>🛒</Text>
         </Pressable>
         <Pressable
@@ -447,99 +434,6 @@ export default function ProductDetailScreen() {
           </LinearGradient>
         </Pressable>
       </View>
-
-      {/* Payment Modal */}
-      <Modal visible={showPaymentModal} transparent animationType="slide" onRequestClose={() => setShowPaymentModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Header */}
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>ชำระเงิน</Text>
-              <Pressable onPress={() => setShowPaymentModal(false)}>
-                <Text style={{ fontSize: 24 }}>✕</Text>
-              </Pressable>
-            </View>
-
-            {/* Order Summary */}
-            <View style={styles.orderSummary}>
-              <Text style={styles.summaryTitle}>สรุปคำสั่งซื้อ</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>{product.name} x{quantity}</Text>
-                <Text style={styles.summaryValue}>{formatCurrency(totalPrice)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>PV ที่จะได้รับ</Text>
-                <Text style={[styles.summaryValue, { color: '#FFD700' }]}>⭐ {pv * quantity}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabelBold}>ยอดชำระทั้งหมด</Text>
-                <Text style={styles.summaryTotal}>{formatCurrency(totalPrice)}</Text>
-              </View>
-            </View>
-
-            {/* Wallet Balance */}
-            <View style={styles.walletSection}>
-              <View style={styles.walletHeader}>
-                <Text style={{ fontSize: 24 }}>💰</Text>
-                <Text style={styles.walletTitle}>ชำระผ่านกระเป๋าเงิน</Text>
-              </View>
-              <View style={styles.walletBalance}>
-                <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
-                <Text style={[
-                  styles.balanceValue,
-                  walletBalance < totalPrice && { color: '#EF4444' }
-                ]}>
-                  {formatCurrency(walletBalance)}
-                </Text>
-              </View>
-              {walletBalance < totalPrice && (
-                <View style={styles.insufficientWarning}>
-                  <Text style={{ fontSize: 16 }}>⚠️</Text>
-                  <Text style={styles.insufficientText}>ยอดเงินไม่เพียงพอ</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Payment Button */}
-            <Pressable
-              style={[
-                styles.payButton,
-                (isProcessingPayment || walletBalance < totalPrice) && styles.payButtonDisabled
-              ]}
-              onPress={handleWalletPayment}
-              disabled={isProcessingPayment || walletBalance < totalPrice}
-            >
-              {isProcessingPayment ? (
-                <ActivityIndicator color="#FFF" />
-              ) : walletBalance < totalPrice ? (
-                <>
-                  <Text style={{ fontSize: 20 }}>➕</Text>
-                  <Text style={styles.payButtonText}>เติมเงิน</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={{ fontSize: 20 }}>✓</Text>
-                  <Text style={styles.payButtonText}>ยืนยันชำระเงิน</Text>
-                </>
-              )}
-            </Pressable>
-
-            {/* Top up link */}
-            {walletBalance < totalPrice && (
-              <Pressable
-                style={styles.topupLink}
-                onPress={() => {
-                  setShowPaymentModal(false);
-                  router.push('/wallet-topup');
-                }}
-              >
-                <Text style={styles.topupLinkText}>ไปเติมเงิน →</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -604,31 +498,4 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   buyGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },
   buyButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-
-  // Modal styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#1F2937', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF' },
-  orderSummary: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 16, marginBottom: 16 },
-  summaryTitle: { fontSize: 14, fontWeight: '600', color: '#9CA3AF', marginBottom: 12 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  summaryLabel: { color: '#D1D5DB', fontSize: 14 },
-  summaryValue: { color: '#FFF', fontSize: 14, fontWeight: '500' },
-  summaryDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginVertical: 12 },
-  summaryLabelBold: { color: '#FFF', fontSize: 15, fontWeight: '600' },
-  summaryTotal: { color: '#FF6B35', fontSize: 20, fontWeight: 'bold' },
-  walletSection: { backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' },
-  walletHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  walletTitle: { color: '#10B981', fontSize: 16, fontWeight: '600' },
-  walletBalance: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  balanceLabel: { color: '#9CA3AF', fontSize: 14 },
-  balanceValue: { color: '#10B981', fontSize: 20, fontWeight: 'bold' },
-  insufficientWarning: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, backgroundColor: 'rgba(239,68,68,0.1)', padding: 10, borderRadius: 8 },
-  insufficientText: { color: '#EF4444', fontSize: 13 },
-  payButton: { backgroundColor: '#10B981', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 8 },
-  payButtonDisabled: { backgroundColor: '#374151' },
-  payButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  topupLink: { alignItems: 'center', paddingVertical: 16 },
-  topupLinkText: { color: '#3B82F6', fontSize: 15, fontWeight: '500' },
 });
