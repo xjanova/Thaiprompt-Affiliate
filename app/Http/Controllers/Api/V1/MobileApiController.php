@@ -4505,15 +4505,17 @@ class MobileApiController extends Controller
             // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
             $seller = $this->getOrCreateOfficialSeller();
 
-            // นับจำนวนสินค้าที่ active ของ official seller
-            $productCount = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
+            // นับจำนวนสินค้าที่ active ทั้งหมด (ไม่เฉพาะ Official เพื่อให้ตรงกับที่แสดงในแอพ)
+            $productCount = Product::where('is_active', true)->count();
+
+            // นับจำนวนสินค้าแนะนำทั้งหมด
+            $featuredCount = Product::where('is_active', true)
+                ->where('is_featured', true)
                 ->count();
 
-            // นับจำนวนสินค้าแนะนำ
-            $featuredCount = Product::where('seller_id', $seller->id)
+            // นับจำนวนสินค้า Official Shop (สำหรับแสดงใน UI)
+            $officialProductCount = Product::where('seller_id', $seller->id)
                 ->where('is_active', true)
-                ->where('is_featured', true)
                 ->count();
 
             return response()->json([
@@ -4521,8 +4523,8 @@ class MobileApiController extends Controller
                 'data' => [
                     'id' => 'premium',
                     'sellerId' => $seller->id,
-                    'name' => config('shop.official_shop.name', 'Official Shop'),
-                    'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
+                    'name' => config('shop.official_shop.name', 'Thaiprompt Shop'),
+                    'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง คอมมิชชั่นสูง'),
                     'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
                     'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
                     'rating' => 5.0,
@@ -4530,14 +4532,15 @@ class MobileApiController extends Controller
                     'isOfficial' => true,
                     'isPremium' => true,
                     'productCount' => $productCount,
+                    'officialProductCount' => $officialProductCount,
                     'featuredCount' => $featuredCount,
                     'verified' => true,
                     'commissionRate' => config('shop.official_shop.default_commission_rate', 25),
                     'features' => [
                         'สินค้าของแท้ 100%',
                         'รับประกันคุณภาพ',
-                        'จัดส่งฟรีเมื่อซื้อครบ 500 บาท',
-                        'คืนสินค้าได้ภายใน 30 วัน',
+                        'คอมมิชชั่นสูง',
+                        'จัดส่งรวดเร็ว',
                     ],
                 ],
             ]);
@@ -4570,11 +4573,19 @@ class MobileApiController extends Controller
             $category = $request->get('category');
             $featured = $request->boolean('featured', false);
             $search = $request->get('search');
+            $officialOnly = $request->boolean('official_only', false);
 
-            // ดึงเฉพาะสินค้าของ Official Shop
-            $query = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
+            // เริ่มต้น query สำหรับสินค้า active ทั้งหมด
+            $query = Product::where('is_active', true)
                 ->with('category');
+
+            // ถ้าต้องการเฉพาะ Official Shop หรือมีสินค้า Official Shop
+            if ($officialOnly) {
+                $query->where('seller_id', $seller->id);
+            } else {
+                // ดึงทุกสินค้า แต่ให้ Official Shop มาก่อน
+                $query->orderByRaw("CASE WHEN seller_id = ? THEN 0 ELSE 1 END", [$seller->id]);
+            }
 
             // กรองตามหมวดหมู่
             if ($category) {
