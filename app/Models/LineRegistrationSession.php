@@ -157,26 +157,42 @@ class LineRegistrationSession extends Model
             }
         }
 
-        // ✅ FALLBACK: ถ้าไม่มี sponsor → ใช้ Super Admin (user_id = 1) เป็น default
+        // ✅ FALLBACK: ถ้าไม่มี sponsor → ใช้ Super Admin เป็น default
         // สำคัญ: ต้องมี sponsor เสมอเพื่อต่อสายงาน MLM
         if (!$sponsorUserId) {
-            // ลองหา Super Admin (user_id = 1)
-            $superAdmin = User::find(1);
+            // ลองหา Super Admin (หลายวิธีเพื่อความปลอดภัย)
+            $superAdmin = User::where('email', 'superadmin@thaiprompt.com')->first()
+                ?? User::where('is_super_admin', true)->first()
+                ?? User::where('role', 'admin')->first()
+                ?? User::find(1);
+
             if ($superAdmin) {
                 $sponsorUserId = $superAdmin->id;
 
-                // หา MLM member ของ Super Admin
-                $adminMlmMember = MlmMember::where('user_id', $sponsorUserId)
+                // หา MLM member ของ Super Admin (ลอง member_code ADMIN-0001 ก่อน)
+                $adminMlmMember = MlmMember::where('member_code', 'ADMIN-0001')
                     ->where('status', 'active')
                     ->first();
+
+                // ถ้าไม่พบ ลองหาจาก user_id
+                if (!$adminMlmMember) {
+                    $adminMlmMember = MlmMember::where('user_id', $sponsorUserId)
+                        ->where('status', 'active')
+                        ->first();
+                }
 
                 if ($adminMlmMember) {
                     $sponsorMlmMemberId = $adminMlmMember->id;
                 }
 
                 \Illuminate\Support\Facades\Log::info('LineRegistrationSession: Using Super Admin as default sponsor', [
+                    'super_admin_email' => $superAdmin->email,
                     'sponsor_user_id' => $sponsorUserId,
                     'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                    'ip_address' => $ipAddress,
+                ]);
+            } else {
+                \Illuminate\Support\Facades\Log::warning('LineRegistrationSession: No Super Admin found for default sponsor', [
                     'ip_address' => $ipAddress,
                 ]);
             }
