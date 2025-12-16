@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.17] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2286 from xjanova/claude/line-oa-registration-check-gXbcU (6ad7bdc3)
+- feat(line): require LINE UID for user verification (193150ec)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.16] - 2025-12-16
 
 ### ✨ Features
