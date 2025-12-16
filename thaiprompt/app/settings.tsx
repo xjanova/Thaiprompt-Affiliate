@@ -38,7 +38,6 @@ import {
   PhoneIcon,
   GlobeIcon,
   ShieldCheckIcon,
-  LockIcon,
   BellIcon,
   MailIcon,
   FingerprintIcon,
@@ -204,21 +203,6 @@ export default function SettingsScreen() {
   const [isGpsLoading, setIsGpsLoading] = useState(false);
 
   // Handlers
-  const handleChangePassword = () => {
-    if (!isAuthenticated) {
-      Alert.alert('แจ้งเตือน', 'กรุณาเข้าสู่ระบบก่อน');
-      return;
-    }
-    Alert.alert(
-      'เปลี่ยนรหัสผ่าน',
-      'ระบบจะส่งลิงก์เปลี่ยนรหัสผ่านไปยังอีเมลของคุณ',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ส่งลิงก์', onPress: () => Alert.alert('สำเร็จ', 'ส่งลิงก์ไปยังอีเมลแล้ว') },
-      ]
-    );
-  };
-
   const handleKYC = () => {
     router.push('/kyc');
   };
@@ -441,14 +425,6 @@ export default function SettingsScreen() {
           title="ยืนยันตัวตน (KYC)"
           subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
           onPress={handleKYC}
-          isDark={isDark}
-        />
-        <SettingItem
-          icon={LockIcon}
-          iconColor="#7B2CBF"
-          title="เปลี่ยนรหัสผ่าน"
-          subtitle="เปลี่ยนรหัสผ่านเข้าสู่ระบบ"
-          onPress={handleChangePassword}
           isDark={isDark}
         />
 

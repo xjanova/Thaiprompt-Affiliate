@@ -318,9 +318,9 @@ class MobileApiController extends Controller
             $filename = 'avatars/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('', $filename, 'public');
 
-            // อัพเดทข้อมูลผู้ใช้
+            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง (ไม่ใช้ avatar mutator)
             $avatarUrl = \Storage::disk('public')->url($path);
-            $user->avatar = $avatarUrl;
+            $user->profile_picture = $avatarUrl;
             $user->save();
 
             return response()->json([
@@ -368,8 +368,8 @@ class MobileApiController extends Controller
                 }
             }
 
-            // อัพเดทข้อมูลผู้ใช้
-            $user->avatar = null;
+            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง
+            $user->profile_picture = null;
             $user->save();
 
             return response()->json([
@@ -1195,11 +1195,11 @@ class MobileApiController extends Controller
             // สร้าง directory สำหรับเก็บไฟล์ KYC
             $kycPath = 'kyc/' . $user->id;
 
-            // อัพโหลดรูปบัตรประชาชน (ใช้ 'local' disk เพื่อเก็บไฟล์แบบ private เหมือน uploadKycImage)
-            $idCardPath = $request->file('id_card_image')->store($kycPath, 'local');
+            // อัพโหลดรูปบัตรประชาชน (ใช้ 'public' disk เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
+            $idCardPath = $request->file('id_card_image')->store($kycPath, 'public');
 
             // อัพโหลดรูปถ่ายคู่บัตร
-            $selfiePath = $request->file('selfie_image')->store($kycPath, 'local');
+            $selfiePath = $request->file('selfie_image')->store($kycPath, 'public');
 
             // สร้าง KYC verification record
             $kyc = \App\Models\KycVerification::create([
@@ -1276,8 +1276,8 @@ class MobileApiController extends Controller
             $kycPath = 'kyc/' . $user->id;
             $type = $request->type;
 
-            // อัพโหลดรูป (ใช้ disk 'local' เพื่อเก็บไฟล์แบบ private)
-            $imagePath = $request->file('image')->store($kycPath, 'local');
+            // อัพโหลดรูป (ใช้ disk 'public' เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
+            $imagePath = $request->file('image')->store($kycPath, 'public');
 
             // หา or สร้าง KYC draft
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)

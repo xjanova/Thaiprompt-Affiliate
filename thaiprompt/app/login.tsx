@@ -400,11 +400,6 @@ export default function LoginScreen() {
               {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
             </View>
 
-            {/* Forgot Password */}
-            <Pressable style={styles.forgotButton}>
-              <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
-            </Pressable>
-
             {/* Login Button */}
             <Pressable
               style={[styles.loginButton, isLoading && styles.buttonDisabled]}
@@ -624,14 +619,6 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 12,
     marginTop: 4,
-  },
-  forgotButton: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
-  },
-  forgotText: {
-    color: '#3B82F6',
-    fontSize: 14,
   },
   loginButton: {
     borderRadius: 14,
