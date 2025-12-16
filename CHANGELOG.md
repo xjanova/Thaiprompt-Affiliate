@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.20] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(line): improve Super Admin fallback for sponsor lookup (b5ccf557)
+- fix(kyc): handle draft status in user dashboard (2d2eb801)
+### 🔧 Other Changes
+- Merge pull request #2289 from xjanova/claude/line-oa-registration-check-gXbcU (b26de4a2)
+
 ## [v3.383.19] - 2025-12-16
 
 ### ✨ Features
