@@ -129,7 +129,11 @@
 
     {{-- Main Content --}}
     <div class="relative z-10 min-h-screen flex items-center justify-center p-4 py-8">
-        <div class="w-full max-w-2xl animate-fade-in-up">
+        <div class="w-full max-w-6xl animate-fade-in-up">
+            <div class="grid lg:grid-cols-5 gap-6">
+
+            {{-- Left Side - Registration (3 cols) --}}
+            <div class="lg:col-span-3">
             <div class="glass-card rounded-3xl shadow-2xl p-6 sm:p-10">
 
                 {{-- Header --}}
@@ -360,6 +364,149 @@
                     </a>
                 </div>
             </div>
+            </div>
+            {{-- END Left Side --}}
+
+            {{-- Right Side - Benefits & Stats (2 cols) - Hidden on mobile --}}
+            <div class="lg:col-span-2 space-y-4 hidden lg:block">
+
+                {{-- Signup Rewards --}}
+                @if(isset($signupRewards) && $signupRewards->count() > 0)
+                <div class="glass-card rounded-2xl p-5 border border-green-500/30">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-gift text-white"></i>
+                        </div>
+                        รับรางวัลเมื่อสมัคร!
+                    </h3>
+                    <div class="space-y-3">
+                        @foreach($signupRewards->take(4) as $reward)
+                        <div class="flex items-center gap-3 bg-white/5 rounded-xl p-3">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                                 style="background-color: {{ $reward->badge_color }}20; color: {{ $reward->badge_color }}">
+                                {!! $reward->getIconHtml() !!}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-white text-sm truncate">{{ $reward->name }}</p>
+                                <p class="text-xs text-slate-400">{{ $reward->getDisplayText() }}</p>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @if($signupRewards->count() > 4)
+                    <p class="text-xs text-center text-slate-400 mt-3">และอีก {{ $signupRewards->count() - 4 }} รางวัล!</p>
+                    @endif
+                </div>
+                @endif
+
+                {{-- Live Stats --}}
+                <div class="glass-card rounded-2xl p-5">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-green-400"></i>
+                        สถิติสด
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between bg-green-500/10 rounded-xl p-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-users text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400">สมาชิกทั้งหมด</p>
+                                    <p class="text-xl font-bold text-white" id="memberCount">0</p>
+                                </div>
+                            </div>
+                            <span class="text-green-400 text-xs font-semibold animate-pulse">
+                                <i class="fas fa-arrow-up mr-1"></i>+<span id="memberIncrement">0</span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-blue-500/10 rounded-xl p-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-money-bill-wave text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400">รายได้สะสม</p>
+                                    <p class="text-xl font-bold text-white">฿<span id="totalEarnings">0</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between bg-purple-500/10 rounded-xl p-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-user-plus text-white"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-slate-400">สมัครวันนี้</p>
+                                    <p class="text-xl font-bold text-white" id="todaySignups">0</p>
+                                </div>
+                            </div>
+                            <span class="text-purple-400 text-xs font-semibold">
+                                <i class="fas fa-fire mr-1"></i>Hot!
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-white/10">
+                        <div class="flex items-center text-xs text-slate-400">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                            อัพเดทแบบเรียลไทม์
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Benefits --}}
+                <div class="glass-card rounded-2xl p-5">
+                    <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <i class="fas fa-star text-amber-400"></i>
+                        ทำไมต้องเลือกเรา?
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-percentage text-purple-400 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white text-sm">คอมมิชชั่นสูง</p>
+                                <p class="text-xs text-slate-400">รับค่าคอมมิชชั่นสูงสุดในตลาด</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-clock text-green-400 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white text-sm">ถอนเงินรวดเร็ว</p>
+                                <p class="text-xs text-slate-400">ระบบถอนเงินอัตโนมัติ ภายใน 24 ชม.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-headset text-blue-400 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white text-sm">ซัพพอร์ต 24/7</p>
+                                <p class="text-xs text-slate-400">ทีมงานพร้อมช่วยเหลือตลอด 24 ชม.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-shield-alt text-pink-400 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white text-sm">ปลอดภัย 100%</p>
+                                <p class="text-xs text-slate-400">ระบบรักษาความปลอดภัยระดับสูง</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{-- END Right Side --}}
+
+            </div>
+            {{-- END Grid --}}
 
             {{-- Security Badge --}}
             <div class="mt-6 text-center">
@@ -467,6 +614,62 @@
                 },
             };
         }
+
+        // Stats Animation Script
+        function animateCounter(element, start, end, duration, decimals = 0) {
+            if (!element) return;
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = decimals > 0
+                    ? current.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    : Math.floor(current).toLocaleString('en-US');
+            }, 16);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const baseMembers = 8547;
+            const baseEarnings = 2847653.50;
+            const baseTodaySignups = 127;
+
+            animateCounter(document.getElementById('memberCount'), 0, baseMembers, 2000);
+            animateCounter(document.getElementById('totalEarnings'), 0, baseEarnings, 2000, 2);
+            animateCounter(document.getElementById('todaySignups'), 0, baseTodaySignups, 2000);
+
+            const memberIncEl = document.getElementById('memberIncrement');
+            if (memberIncEl) memberIncEl.textContent = '3';
+
+            setInterval(() => {
+                const memberInc = Math.floor(Math.random() * 3) + 1;
+                const earningsInc = (Math.random() * 2000 + 500).toFixed(2);
+                const todayInc = Math.floor(Math.random() * 2) + 1;
+
+                if (memberIncEl) memberIncEl.textContent = memberInc;
+
+                const memberEl = document.getElementById('memberCount');
+                const earningsEl = document.getElementById('totalEarnings');
+                const todayEl = document.getElementById('todaySignups');
+
+                if (memberEl) {
+                    const current = parseInt(memberEl.textContent.replace(/,/g, ''));
+                    animateCounter(memberEl, current, current + memberInc, 800);
+                }
+                if (earningsEl) {
+                    const current = parseFloat(earningsEl.textContent.replace(/,/g, ''));
+                    animateCounter(earningsEl, current, current + parseFloat(earningsInc), 800, 2);
+                }
+                if (todayEl) {
+                    const current = parseInt(todayEl.textContent.replace(/,/g, ''));
+                    animateCounter(todayEl, current, current + todayInc, 800);
+                }
+            }, 5000);
+        });
     </script>
 </body>
 </html>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
 use App\Models\LineRegistrationSession;
+use App\Models\LineSignupReward;
 use App\Models\MlmMember;
 use App\Models\User;
 use App\Services\LineService;
@@ -57,6 +58,9 @@ class LineRegistrationController extends Controller
             $sponsor = User::find($session->sponsor_user_id);
         }
 
+        // ดึงข้อมูลรางวัลเมื่อสมัคร (สำหรับ free signup)
+        $signupRewards = LineSignupReward::getAvailableRewards(null, $sponsor !== null);
+
         Log::info('LINE Registration: Session created', [
             'session_token' => $session->session_token,
             'referral_code' => $referralCode,
@@ -69,6 +73,7 @@ class LineRegistrationController extends Controller
             'sponsor' => $sponsor,
             'qrCodeUrl' => $this->getLineOaQrCodeUrl($lineSettings),
             'addFriendUrl' => $this->getLineOaAddFriendUrl($lineSettings),
+            'signupRewards' => $signupRewards,
         ]);
     }
 
