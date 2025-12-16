@@ -10,6 +10,15 @@ class AiServiceFactory
 {
     /**
      * สร้าง AI Service จาก Provider และ Model
+     *
+     * รองรับ providers:
+     * - openai: OpenAI GPT models
+     * - anthropic: Anthropic Claude models
+     * - deepseek: DeepSeek (cloud via OpenAI-compatible API)
+     * - deepseek-local: DeepSeek self-hosted via Ollama
+     * - google: Google Gemini models
+     * - meta: Meta Llama models (via Together AI - OpenAI-compatible)
+     * - meta-local: Meta Llama self-hosted via Ollama
      */
     public static function create(AiProvider $provider, AiModel $model): BaseAiService
     {
@@ -19,6 +28,8 @@ class AiServiceFactory
             'deepseek' => new OpenAiService($provider, $model), // DeepSeek ใช้ OpenAI-compatible API
             'deepseek-local' => new LocalAiService($provider, $model),
             'google' => new OpenAiService($provider, $model), // Gemini ก็ใช้ OpenAI-compatible
+            'meta' => new OpenAiService($provider, $model), // Meta Llama via Together AI (OpenAI-compatible)
+            'meta-local' => new LocalAiService($provider, $model), // Meta Llama self-hosted via Ollama
             default => throw new \Exception("Unsupported provider: {$provider->name}"),
         };
     }

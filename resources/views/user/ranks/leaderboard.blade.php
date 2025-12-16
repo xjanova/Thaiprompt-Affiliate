@@ -65,9 +65,9 @@
                     <div class="text-xl font-bold">{{ number_format($leaderboard[1]['points'] ?? 0) }}</div>
                 </div>
                 @if($leaderboard[1]['rank'])
-                <div class="mt-3 text-xs opacity-90">
-                    <i class="{{ $leaderboard[1]['rank']->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[1]['rank']->name_th ?? $leaderboard[1]['rank']->name }}
+                <div class="mt-3 flex items-center justify-center gap-1 text-xs opacity-90">
+                    <x-rank-icon :rank="$leaderboard[1]['rank']" size="xs" />
+                    <span>{{ $leaderboard[1]['rank']->name_th ?? $leaderboard[1]['rank']->name }}</span>
                 </div>
                 @endif
             </div>
@@ -93,9 +93,9 @@
                     <div class="text-3xl font-bold">{{ number_format($leaderboard[0]['points'] ?? 0) }}</div>
                 </div>
                 @if($leaderboard[0]['rank'])
-                <div class="mt-4 text-sm opacity-90">
-                    <i class="{{ $leaderboard[0]['rank']->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[0]['rank']->name_th ?? $leaderboard[0]['rank']->name }}
+                <div class="mt-4 flex items-center justify-center gap-1 text-sm opacity-90">
+                    <x-rank-icon :rank="$leaderboard[0]['rank']" size="sm" />
+                    <span>{{ $leaderboard[0]['rank']->name_th ?? $leaderboard[0]['rank']->name }}</span>
                 </div>
                 @endif
             </div>
@@ -116,9 +116,9 @@
                     <div class="text-xl font-bold">{{ number_format($leaderboard[2]['points'] ?? 0) }}</div>
                 </div>
                 @if($leaderboard[2]['rank'])
-                <div class="mt-3 text-xs opacity-90">
-                    <i class="{{ $leaderboard[2]['rank']->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[2]['rank']->name_th ?? $leaderboard[2]['rank']->name }}
+                <div class="mt-3 flex items-center justify-center gap-1 text-xs opacity-90">
+                    <x-rank-icon :rank="$leaderboard[2]['rank']" size="xs" />
+                    <span>{{ $leaderboard[2]['rank']->name_th ?? $leaderboard[2]['rank']->name }}</span>
                 </div>
                 @endif
             </div>
@@ -197,9 +197,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($rank)
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-amber-600 rounded-full flex items-center justify-center text-white">
-                                    <i class="{{ $rank->icon ?? 'fas fa-star' }} text-sm"></i>
-                                </div>
+                                <x-rank-icon :rank="$rank" size="sm" />
                                 <div>
                                     <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ app()->getLocale() === 'th' ? ($rank->name_th ?? $rank->name) : $rank->name }}

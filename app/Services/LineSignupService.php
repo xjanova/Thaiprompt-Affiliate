@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\LineRegistrationSession;
 use App\Models\LineSignupFlow;
 use App\Models\MlmProspect;
 use App\Models\MlmMember;
+use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -290,10 +292,15 @@ class LineSignupService
             // Send success message
             $this->sendSuccessMessage($prospect, $user);
 
+            // ✅ อัพเดท LineRegistrationSession (ถ้ามี)
+            // สำหรับหน้าเว็บที่ polling อยู่จะได้รับทราบว่าสมัครเสร็จแล้ว
+            $this->updateRegistrationSession($prospect->line_user_id, $user->id);
+
             Log::info('Signup completed successfully', [
                 'prospect_id' => $prospect->id,
                 'user_id' => $user->id,
                 'rate_limits_cleared' => true,
+                'registration_session_updated' => true,
             ]);
 
         } catch (\Exception $e) {
@@ -640,8 +647,190 @@ class LineSignupService
             [$flexMessage]
         );
 
+        // ส่งลิงก์ดาวน์โหลดแอพ (ถ้ามี)
+        $this->sendAppDownloadMessage($prospect->line_user_id);
+
         // Send sponsor friend add request
         $this->prospectService->sendSponsorFriendRequest($prospect, $this->lineService);
+    }
+
+    /**
+     * ส่งข้อความลิงก์ดาวน์โหลดแอพ
+     *
+     * ดึงลิงก์จาก SiteSetting:
+     * - APK: app_apk_url (ถ้า app_apk_enabled = true)
+     * - Play Store: app_playstore_url (ถ้า app_playstore_enabled = true)
+     * - App Store: app_appstore_url (ถ้า app_appstore_enabled = true)
+     *
+     * ถ้าไม่มีลิงก์ใดๆ → ส่งข้อความแนะนำดาวน์โหลดเฉยๆ
+     *
+     * @param string $lineUserId
+     * @return void
+     */
+    private function sendAppDownloadMessage(string $lineUserId): void
+    {
+        try {
+            $settings = SiteSetting::getSetting();
+
+            // ตรวจสอบว่าเปิดใช้งาน section ดาวน์โหลดหรือไม่
+            if (!$settings->app_download_enabled) {
+                return; // ไม่แสดงอะไร
+            }
+
+            $appName = $settings->app_name ?? 'TP Ultra';
+            $hasAnyLink = false;
+            $downloadButtons = [];
+
+            // APK Direct Download
+            if ($settings->app_apk_enabled && !empty($settings->app_apk_url)) {
+                $hasAnyLink = true;
+                $downloadButtons[] = [
+                    'type' => 'button',
+                    'style' => 'primary',
+                    'color' => '#00C8FF',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => '📱 ดาวน์โหลด APK',
+                        'uri' => $settings->app_apk_url,
+                    ],
+                ];
+            }
+
+            // Google Play Store
+            if ($settings->app_playstore_enabled && !empty($settings->app_playstore_url)) {
+                $hasAnyLink = true;
+                $downloadButtons[] = [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => '▶️ Play Store',
+                        'uri' => $settings->app_playstore_url,
+                    ],
+                ];
+            }
+
+            // Apple App Store
+            if ($settings->app_appstore_enabled && !empty($settings->app_appstore_url)) {
+                $hasAnyLink = true;
+                $downloadButtons[] = [
+                    'type' => 'button',
+                    'style' => 'secondary',
+                    'action' => [
+                        'type' => 'uri',
+                        'label' => '🍎 App Store',
+                        'uri' => $settings->app_appstore_url,
+                    ],
+                ];
+            }
+
+            // ถ้ามีลิงก์อย่างน้อย 1 ลิงก์ → สร้าง Flex Message
+            if ($hasAnyLink) {
+                $appDescription = $settings->app_description ?? 'แอปพลิเคชั่นสำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา';
+
+                $flexMessage = [
+                    'type' => 'flex',
+                    'altText' => "📲 ดาวน์โหลดแอพ {$appName}",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'hero' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => '📲',
+                                    'size' => '4xl',
+                                    'align' => 'center',
+                                ],
+                            ],
+                            'backgroundColor' => '#0099FF',
+                            'paddingAll' => 'lg',
+                        ],
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => "ดาวน์โหลดแอพ {$appName}",
+                                    'weight' => 'bold',
+                                    'size' => 'lg',
+                                    'color' => '#0099FF',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => $appDescription,
+                                    'size' => 'sm',
+                                    'color' => '#666666',
+                                    'wrap' => true,
+                                    'margin' => 'md',
+                                ],
+                                [
+                                    'type' => 'separator',
+                                    'margin' => 'lg',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => '✨ ฟีเจอร์เด่น:',
+                                    'size' => 'sm',
+                                    'color' => '#888888',
+                                    'margin' => 'lg',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => '• ดูยอดรายได้และคอมมิชชั่น\n• ตรวจสอบสายงานและทีม\n• รับการแจ้งเตือนทันที\n• ถอนเงินได้ง่าย',
+                                    'size' => 'xs',
+                                    'color' => '#999999',
+                                    'wrap' => true,
+                                    'margin' => 'sm',
+                                ],
+                            ],
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'contents' => $downloadButtons,
+                        ],
+                    ],
+                ];
+
+                $this->lineService->sendPushMessage(
+                    $lineUserId,
+                    "📲 แนะนำดาวน์โหลดแอพ {$appName}",
+                    [$flexMessage]
+                );
+
+                Log::info('App download message sent', [
+                    'line_user_id' => $lineUserId,
+                    'app_name' => $appName,
+                    'has_apk' => $settings->app_apk_enabled && !empty($settings->app_apk_url),
+                    'has_playstore' => $settings->app_playstore_enabled && !empty($settings->app_playstore_url),
+                    'has_appstore' => $settings->app_appstore_enabled && !empty($settings->app_appstore_url),
+                ]);
+            } else {
+                // ไม่มีลิงก์ → ส่งข้อความแนะนำเฉยๆ
+                $this->lineService->sendPushMessage(
+                    $lineUserId,
+                    "📲 แนะนำดาวน์โหลดแอพ {$appName}\n\n" .
+                    "เพื่อความสะดวกในการจัดการธุรกิจ Affiliate ของคุณ\n" .
+                    "สามารถดาวน์โหลดแอพได้จาก Play Store หรือ App Store เร็วๆ นี้\n\n" .
+                    "ติดตามข่าวสารได้ที่ LINE OA นี้"
+                );
+
+                Log::info('App download recommendation sent (no links)', [
+                    'line_user_id' => $lineUserId,
+                    'app_name' => $appName,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ไม่ให้ error กระทบการสมัครหลัก
+            Log::warning('Failed to send app download message', [
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -766,5 +955,63 @@ class LineSignupService
     {
         $data = [$field => $value];
         return $this->duplicateService->checkAllDuplicates($data);
+    }
+
+    /**
+     * อัพเดท LineRegistrationSession เมื่อสมัครเสร็จ
+     *
+     * ใช้สำหรับ update สถานะ session ของหน้าเว็บ
+     * เพื่อให้หน้าเว็บที่ polling อยู่สามารถ redirect ไปหน้าอัพเดทข้อมูลได้อัตโนมัติ
+     *
+     * @param string $lineUserId LINE User ID ของผู้สมัคร
+     * @param int $userId User ID ที่สร้างใหม่
+     * @return void
+     */
+    private function updateRegistrationSession(string $lineUserId, int $userId): void
+    {
+        try {
+            // ตรวจสอบว่า table มีอยู่หรือไม่ (เผื่อยังไม่ได้ migrate)
+            if (!Schema::hasTable('line_registration_sessions')) {
+                return;
+            }
+
+            // ค้นหา session ที่ active อยู่สำหรับ LINE User ID นี้
+            $session = LineRegistrationSession::where('line_user_id', $lineUserId)
+                ->whereIn('status', [
+                    LineRegistrationSession::STATUS_PENDING,
+                    LineRegistrationSession::STATUS_FOLLOWED,
+                    LineRegistrationSession::STATUS_IN_PROGRESS,
+                ])
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($session) {
+                // อัพเดทสถานะเป็น completed
+                $session->markAsCompleted($userId);
+
+                Log::info('LineRegistrationSession updated to completed', [
+                    'session_id' => $session->id,
+                    'session_token' => $session->session_token,
+                    'line_user_id' => $lineUserId,
+                    'user_id' => $userId,
+                ]);
+            } else {
+                Log::info('No active LineRegistrationSession found for LINE user', [
+                    'line_user_id' => $lineUserId,
+                    'user_id' => $userId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ไม่ให้ error นี้กระทบการสมัครหลัก
+            Log::warning('Failed to update LineRegistrationSession', [
+                'line_user_id' => $lineUserId,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -254,12 +254,21 @@ class DashboardController extends Controller
 
         // กำหนด kycStatus จาก KycVerification หรือ User
         if ($latestKyc) {
-            $kycStatus = $latestKyc->status; // pending, approved, rejected
+            $kycStatus = $latestKyc->status; // draft, pending, approved, rejected
+
+            // ⚠️ ถ้า status เป็น 'draft' ให้แสดงเป็น 'not_submitted' (ยังไม่ได้ส่งเอกสารครบ)
+            // เพราะ 'draft' หมายถึงกำลัง upload รูปอยู่ ยังไม่ submit
+            $displayStatus = ($kycStatus === 'draft') ? 'not_submitted' : $kycStatus;
 
             // Sync kyc_status ถ้าไม่ตรงกัน (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
-            if ($user->kyc_status !== $kycStatus) {
-                $user->forceFill(['kyc_status' => $kycStatus])->save();
+            // ⚠️ ไม่ sync 'draft' เพราะ users.kyc_status ไม่รองรับค่านี้
+            $validStatuses = ['pending', 'approved', 'rejected', 'not_submitted'];
+            if (in_array($displayStatus, $validStatuses) && $user->kyc_status !== $displayStatus) {
+                $user->forceFill(['kyc_status' => $displayStatus])->save();
             }
+
+            // ใช้ displayStatus สำหรับแสดงผล
+            $kycStatus = $displayStatus;
         } else {
             $kycStatus = $user->kyc_status ?? 'not_submitted';
         }

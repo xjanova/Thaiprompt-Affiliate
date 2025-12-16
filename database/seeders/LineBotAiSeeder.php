@@ -47,10 +47,17 @@ class LineBotAiSeeder extends Seeder
             return;
         }
 
-        // ดึง AI Provider แรก (แนะนำ: OpenAI)
-        $provider = AiProvider::where('name', 'openai')
-            ->orWhere('display_name', 'like', '%OpenAI%')
+        // ดึง AI Provider (แนะนำ: Meta Llama 4)
+        $provider = AiProvider::where('name', 'meta')
+            ->orWhere('display_name', 'like', '%Llama%')
             ->first();
+
+        // ถ้าไม่มี Meta ให้ลอง OpenAI
+        if (!$provider) {
+            $provider = AiProvider::where('name', 'openai')
+                ->orWhere('display_name', 'like', '%OpenAI%')
+                ->first();
+        }
 
         // ถ้าไม่มี OpenAI ให้ดึง provider แรกที่มี
         if (!$provider) {
@@ -62,11 +69,19 @@ class LineBotAiSeeder extends Seeder
             return;
         }
 
-        // ดึง GPT-4 model หรือ model แรกที่มี
+        // ดึง Llama 4 model หรือ model แรกที่มี
         $model = AiModel::where('provider_id', $provider->id)
-            ->where('model_identifier', 'gpt-4')
-            ->orWhere('display_name', 'like', '%GPT-4%')
+            ->where('model_identifier', 'like', '%Llama-4%')
+            ->orWhere('display_name', 'like', '%Llama 4%')
             ->first();
+
+        // ถ้าไม่มี Llama 4 ให้ลอง GPT-4
+        if (!$model) {
+            $model = AiModel::where('provider_id', $provider->id)
+                ->where('model_identifier', 'gpt-4')
+                ->orWhere('display_name', 'like', '%GPT-4%')
+                ->first();
+        }
 
         if (!$model) {
             $model = AiModel::where('provider_id', $provider->id)->first();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
+use App\Models\LineRegistrationSession;
 use App\Models\MlmProspect;
 use App\Models\User;
 use App\Models\AiBotProfile;
@@ -192,7 +193,7 @@ class LineWebhookController extends Controller
         }
 
         if ($isSignupRequest && !$user) {
-            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่ (ไม่มี sponsor)
+            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่
             $lineService = app(LineService::class);
 
             // ดึง LINE profile
@@ -209,20 +210,44 @@ class LineWebhookController extends Controller
                 ];
             }
 
-            // สร้าง prospect ใหม่ (ไม่มี sponsor - จะใช้ Super Admin auto-placement)
+            // ✅ ดึง sponsor จาก LineRegistrationSession (ถ้ามี)
+            // สำหรับผู้ใช้ที่มาจากหน้าสมัครใหม่ที่มี referral code
+            $sponsorMlmMemberId = null;
+            $sponsorUserId = null;
+
+            $registrationSession = LineRegistrationSession::findByLineUserId($lineUserId);
+            if ($registrationSession) {
+                $sponsorMlmMemberId = $registrationSession->sponsor_mlm_member_id;
+                $sponsorUserId = $registrationSession->sponsor_user_id;
+
+                Log::info('Found sponsor from LineRegistrationSession', [
+                    'line_user_id' => $lineUserId,
+                    'session_id' => $registrationSession->id,
+                    'sponsor_user_id' => $sponsorUserId,
+                    'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                    'referral_code' => $registrationSession->referral_code,
+                ]);
+
+                // อัพเดทสถานะ session เป็น in_progress
+                $registrationSession->markAsInProgress();
+            }
+
+            // สร้าง prospect ใหม่ (พร้อม sponsor จาก session ถ้ามี)
             $prospect = MlmProspect::create([
                 'line_user_id' => $lineUserId,
                 'line_display_name' => $lineProfile['displayName'] ?? 'User',
                 'line_picture_url' => $lineProfile['pictureUrl'] ?? null,
-                'sponsor_mlm_member_id' => null, // ไม่มี sponsor
-                'sponsor_user_id' => null,
+                'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                'sponsor_user_id' => $sponsorUserId,
                 'status' => 'pending',
                 'conversation_started_at' => now(),
             ]);
 
-            Log::info('Created prospect without sponsor (auto-placement)', [
+            Log::info('Created prospect for signup', [
                 'prospect_id' => $prospect->id,
                 'line_user_id' => $lineUserId,
+                'has_sponsor' => $sponsorUserId !== null,
+                'sponsor_user_id' => $sponsorUserId,
             ]);
 
             // เริ่ม signup flow
@@ -297,9 +322,11 @@ class LineWebhookController extends Controller
     /**
      * Handle follow event (user adds bot as friend)
      *
-     * เมื่อผู้ใช้เพิ่มเพื่อน LINE OA จะส่ง:
-     * 1. ข้อความต้อนรับ
-     * 2. แนะนำให้ดาวน์โหลดแอพ TP UltraAPP
+     * เมื่อผู้ใช้เพิ่มเพื่อน LINE OA:
+     * 1. ตรวจสอบว่ามี LineRegistrationSession ที่รออยู่หรือไม่
+     * 2. ถ้ามี → อัพเดทสถานะเป็น followed
+     * 3. ส่งข้อความต้อนรับ
+     * 4. แนะนำให้ดาวน์โหลดแอพ TP UltraAPP
      */
     private function handleFollowEvent(array $event, LineOaSetting $settings): void
     {
@@ -311,10 +338,14 @@ class LineWebhookController extends Controller
 
         Log::info('LINE follow event', ['line_user_id' => $lineUserId]);
 
+        $lineService = app(LineService::class);
+
+        // ✅ อัพเดท LineRegistrationSession (ถ้ามี)
+        // สำหรับหน้าเว็บที่กำลัง polling อยู่
+        $this->updateRegistrationSessionOnFollow($lineUserId);
+
         // Check if user exists
         $user = User::where('line_user_id', $lineUserId)->first();
-
-        $lineService = app(LineService::class);
 
         // ข้อมูลแอพสำหรับแนะนำ
         $appDownloadMessage = $this->getAppDownloadMessage();
@@ -360,6 +391,64 @@ class LineWebhookController extends Controller
         $message .= "🌐 หรือใช้งานผ่านเว็บ:\n{$webUrl}";
 
         return $message;
+    }
+
+    /**
+     * อัพเดท LineRegistrationSession เมื่อผู้ใช้ follow LINE OA
+     *
+     * ค้นหา session ที่ pending อยู่และยังไม่มี line_user_id
+     * จากนั้น link กับ LINE User ID ที่ follow มา
+     *
+     * @param string $lineUserId
+     * @return void
+     */
+    private function updateRegistrationSessionOnFollow(string $lineUserId): void
+    {
+        try {
+            // ตรวจสอบว่า table มีอยู่หรือไม่
+            if (!\Illuminate\Support\Facades\Schema::hasTable('line_registration_sessions')) {
+                return;
+            }
+
+            // ค้นหา session ที่รออยู่ โดยดูจาก LINE User ID
+            // (อาจจะ match จาก IP address หรือ metadata ในอนาคต)
+            $session = LineRegistrationSession::where('status', LineRegistrationSession::STATUS_PENDING)
+                ->whereNull('line_user_id')
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // ถ้าไม่มี session ที่รออยู่ ลองค้นหา session ที่มี line_user_id แล้ว
+            if (!$session) {
+                $session = LineRegistrationSession::where('line_user_id', $lineUserId)
+                    ->where('status', LineRegistrationSession::STATUS_PENDING)
+                    ->where(function ($query) {
+                        $query->whereNull('expires_at')
+                            ->orWhere('expires_at', '>', now());
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+            }
+
+            if ($session) {
+                // อัพเดทสถานะเป็น followed
+                $session->markAsFollowed($lineUserId);
+
+                Log::info('LineRegistrationSession updated to followed', [
+                    'session_id' => $session->id,
+                    'session_token' => $session->session_token,
+                    'line_user_id' => $lineUserId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to update LineRegistrationSession on follow', [
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

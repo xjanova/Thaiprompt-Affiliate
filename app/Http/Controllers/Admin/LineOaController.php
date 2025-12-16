@@ -36,6 +36,8 @@ class LineOaController extends Controller
             'messaging_channel_id' => ['nullable', 'string', 'max:255'],
             'channel_access_token' => ['nullable', 'string'],
             'liff_id' => ['nullable', 'string', 'max:255'],
+            // Custom LINE OA Name
+            'custom_oa_name' => ['nullable', 'string', 'max:255'],
             'require_line_registration' => ['boolean'],
             'enable_line_messaging' => ['boolean'],
             'welcome_message' => ['nullable', 'string'],

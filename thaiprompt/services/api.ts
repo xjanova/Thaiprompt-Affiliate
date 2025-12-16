@@ -1,6 +1,7 @@
 /**
  * API Service สำหรับติดต่อกับ Backend
  * แปลงจาก .NET MAUI ApiService.cs
+ * + Sync Status Integration
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
@@ -12,6 +13,7 @@ import {
   APP_CONFIG,
   ERROR_MESSAGES,
 } from '@/constants';
+import { useSyncStore } from '@/stores/syncStore';
 import type {
   LoginRequest,
   LoginResponse,
@@ -88,8 +90,17 @@ export const setAuthHeader = (token: string): void => {
 // Request Interceptor
 // =====================================================
 
+// Track active requests สำหรับ sync status
+let activeRequests = 0;
+
 apiClient.interceptors.request.use(
   async (config) => {
+    // เริ่ม sync status
+    activeRequests++;
+    if (activeRequests === 1) {
+      useSyncStore.getState().startSync();
+    }
+
     // ถ้ายังไม่มี token ใน header ให้โหลดจาก storage
     if (!config.headers['Authorization']) {
       const token = await loadAuthToken();
@@ -100,6 +111,11 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    // ลด request count และอัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      useSyncStore.getState().failSync('Request failed');
+    }
     return Promise.reject(error);
   }
 );
@@ -109,8 +125,30 @@ apiClient.interceptors.request.use(
 // =====================================================
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Request สำเร็จ - อัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      useSyncStore.getState().completeSync();
+    }
+    return response;
+  },
   async (error: AxiosError) => {
+    // Request ล้มเหลว - อัพเดท sync status
+    activeRequests = Math.max(0, activeRequests - 1);
+    if (activeRequests === 0) {
+      const errorMsg = error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+      useSyncStore.getState().failSync(errorMsg);
+
+      // Reset เป็น online หลังจาก 3 วินาที (ถ้ายังเชื่อมต่อได้)
+      setTimeout(() => {
+        const { isConnected } = useSyncStore.getState();
+        if (isConnected) {
+          useSyncStore.getState().setStatus('online');
+        }
+      }, 3000);
+    }
+
     if (error.response?.status === 401) {
       // Token หมดอายุ - ล้างข้อมูล
       await clearAuthToken();
@@ -1034,6 +1072,7 @@ export const getKycStatus = async (): Promise<{
 
 /**
  * อัพโหลดรูปภาพ KYC
+ * ใช้ fetch API โดยตรง (ไม่ใช้ axios) เพราะ axios มีปัญหากับ FormData ใน React Native
  */
 export const uploadKycImage = async (
   imageUri: string,
@@ -1050,7 +1089,14 @@ export const uploadKycImage = async (
   message?: string;
 }> => {
   try {
-    const formData = new FormData();
+    // ดึง token จาก SecureStore
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบใหม่',
+      };
+    }
 
     // แปลง URI ให้ถูกต้องสำหรับ React Native
     let fileUri = imageUri;
@@ -1065,44 +1111,55 @@ export const uploadKycImage = async (
     // ตรวจสอบ extension โดยละเลย query string
     const cleanFilename = filename.split('?')[0];
     const match = /\.(\w+)$/.exec(cleanFilename);
-    let fileType = 'image/jpeg';
+    let mimeType = 'image/jpeg';
     if (match) {
       const ext = match[1].toLowerCase();
-      if (ext === 'png') fileType = 'image/png';
-      else if (ext === 'gif') fileType = 'image/gif';
-      else if (ext === 'webp') fileType = 'image/webp';
-      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
-      else fileType = `image/${ext}`;
+      if (ext === 'png') mimeType = 'image/png';
+      else if (ext === 'gif') mimeType = 'image/gif';
+      else if (ext === 'webp') mimeType = 'image/webp';
+      else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
+      else mimeType = `image/${ext}`;
     }
 
+    // สร้าง FormData
+    const formData = new FormData();
     formData.append('image', {
       uri: fileUri,
       name: cleanFilename || `${type}.jpg`,
-      type: fileType,
-    } as unknown as Blob);
+      type: mimeType,
+    } as any);
     formData.append('type', type);
 
-    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: fileType, kycType: type });
+    console.log('🪪 Uploading KYC image:', { uri: fileUri, name: cleanFilename, type: mimeType, kycType: type });
 
-    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
-    const response = await apiClient.post(API_ENDPOINTS.KYC_UPLOAD, formData, {
+    // ใช้ fetch API (ทำงานได้ดีกว่า axios กับ FormData ใน React Native)
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.KYC_UPLOAD}`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // ไม่ต้องตั้ง Content-Type - fetch จะสร้าง boundary ให้เอง
       },
-      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
+      body: formData,
     });
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('🪪 KYC upload failed:', result);
       return {
         success: false,
-        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
+        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
       };
     }
+
+    console.log('🪪 KYC upload success:', result);
+    return result;
+  } catch (error: any) {
+    console.error('🪪 KYC upload error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่',
     };
   }
 };
@@ -2562,6 +2619,10 @@ export const sendDeviceHeartbeat = async (deviceId: string): Promise<{
 
 /**
  * อัพเดทข้อมูลโปรไฟล์
+ * ใช้ fetch API แทน axios เพื่อความเสถียร
+ *
+ * @param data - ข้อมูลที่ต้องการอัพเดท
+ * @returns Promise พร้อม user data ที่อัพเดทแล้ว
  */
 export const updateProfile = async (data: {
   name?: string;
@@ -2577,33 +2638,63 @@ export const updateProfile = async (data: {
   message?: string;
 }> => {
   try {
-    const response = await apiClient.put(API_ENDPOINTS.PROFILE_UPDATE, data);
+    // ดึง token สำหรับ authentication
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+      };
+    }
 
-    // อัพเดท user data ใน storage
-    if (response.data.success && response.data.data) {
+    console.log('📝 Updating profile:', data);
+
+    // ใช้ fetch API
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.PROFILE_UPDATE}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    // Parse response
+    const responseData = await response.json();
+    console.log('📝 Update profile response:', response.status, responseData);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: responseData?.message || `อัพเดทไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    // อัพเดท user data ใน storage ถ้าสำเร็จ
+    if (responseData.success && responseData.data) {
       await SecureStore.setItemAsync(
         STORAGE_KEYS.USER_DATA,
-        JSON.stringify(response.data.data)
+        JSON.stringify(responseData.data)
       );
     }
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'อัพเดทข้อมูลไม่สำเร็จ',
-      };
-    }
+    return responseData;
+  } catch (error: any) {
+    console.error('📝 Update profile error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error?.message || 'เกิดข้อผิดพลาดในการอัพเดท กรุณาลองใหม่',
     };
   }
 };
 
 /**
  * อัพโหลดรูปโปรไฟล์ (Avatar)
+ * ใช้ fetch API แทน axios เพราะ axios ไม่ handle FormData ได้ดีใน React Native
+ *
+ * @param imageUri - URI ของรูปภาพจาก ImagePicker
+ * @returns Promise พร้อม avatarUrl และ user data
  */
 export const uploadAvatar = async (imageUri: string): Promise<{
   success: boolean;
@@ -2614,65 +2705,90 @@ export const uploadAvatar = async (imageUri: string): Promise<{
   message?: string;
 }> => {
   try {
-    const formData = new FormData();
-
-    // แปลง URI ให้ถูกต้องสำหรับ React Native
-    let fileUri = imageUri;
-    // ถ้าเป็น content:// หรือ file:// ใช้ได้เลย
-    // ถ้าไม่มี scheme ให้เพิ่ม file://
-    if (!fileUri.startsWith('file://') && !fileUri.startsWith('content://')) {
-      fileUri = `file://${fileUri}`;
+    // ดึง token สำหรับ authentication
+    const token = await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
+    if (!token) {
+      return {
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+      };
     }
 
+    // เตรียม file URI - ใช้ตามที่ได้รับมาจาก ImagePicker
+    // ImagePicker ใน Expo ส่ง URI ที่ถูกต้องมาแล้ว (file:// หรือ content://)
+    const fileUri = imageUri;
+
+    // หา filename และ extension
     const filename = imageUri.split('/').pop() || 'avatar.jpg';
-    // ตรวจสอบ extension โดยละเลย query string
-    const cleanFilename = filename.split('?')[0];
+    const cleanFilename = filename.split('?')[0]; // ตัด query string ออก
+
+    // หา mime type จาก extension
     const match = /\.(\w+)$/.exec(cleanFilename);
-    let fileType = 'image/jpeg';
+    let mimeType = 'image/jpeg';
     if (match) {
       const ext = match[1].toLowerCase();
-      if (ext === 'png') fileType = 'image/png';
-      else if (ext === 'gif') fileType = 'image/gif';
-      else if (ext === 'webp') fileType = 'image/webp';
-      else if (ext === 'heic' || ext === 'heif') fileType = 'image/heic';
-      else fileType = `image/${ext}`;
+      const mimeTypes: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+        heic: 'image/heic',
+        heif: 'image/heif',
+      };
+      mimeType = mimeTypes[ext] || 'image/jpeg';
     }
 
+    console.log('📸 Uploading avatar with fetch:', {
+      uri: fileUri,
+      name: cleanFilename,
+      type: mimeType,
+    });
+
+    // สร้าง FormData สำหรับ React Native
+    const formData = new FormData();
     formData.append('avatar', {
       uri: fileUri,
       name: cleanFilename || 'avatar.jpg',
-      type: fileType,
-    } as unknown as Blob);
+      type: mimeType,
+    } as any);
 
-    console.log('📸 Uploading avatar:', { uri: fileUri, name: cleanFilename, type: fileType });
-
-    // สำคัญ: ไม่ต้องตั้ง Content-Type เอง ให้ axios สร้าง boundary ให้
-    const response = await apiClient.post(API_ENDPOINTS.AVATAR_UPLOAD, formData, {
+    // ใช้ fetch API (ทำงานได้ดีกว่า axios กับ FormData ใน React Native)
+    const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AVATAR_UPLOAD}`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        // ไม่ต้องตั้ง Content-Type - fetch จะสร้าง boundary ให้เอง
       },
-      transformRequest: (data) => data, // ป้องกัน axios แปลง FormData
+      body: formData,
     });
 
-    // อัพเดท user data ใน storage
-    if (response.data.success && response.data.data?.user) {
+    // Parse response
+    const responseData = await response.json();
+    console.log('📸 Upload response:', response.status, responseData);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: responseData?.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
+      };
+    }
+
+    // อัพเดท user data ใน storage ถ้าสำเร็จ
+    if (responseData.success && responseData.data?.user) {
       await SecureStore.setItemAsync(
         STORAGE_KEYS.USER_DATA,
-        JSON.stringify(response.data.data.user)
+        JSON.stringify(responseData.data.user)
       );
     }
 
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'อัพโหลดรูปภาพไม่สำเร็จ',
-      };
-    }
+    return responseData;
+  } catch (error: any) {
+    console.error('📸 Upload avatar error:', error);
     return {
       success: false,
-      message: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+      message: error?.message || 'เกิดข้อผิดพลาดในการอัพโหลด กรุณาลองใหม่',
     };
   }
 };
@@ -2713,7 +2829,14 @@ export const changePassword = async (data: {
   message?: string;
 }> => {
   try {
-    const response = await apiClient.put(API_ENDPOINTS.CHANGE_PASSWORD, data);
+    // Backend ต้องการ field ชื่อ 'password' และ 'password_confirmation'
+    // แต่ Mobile App ใช้ 'new_password' และ 'new_password_confirmation'
+    const requestData = {
+      current_password: data.current_password,
+      password: data.new_password,
+      password_confirmation: data.new_password_confirmation,
+    };
+    const response = await apiClient.post(API_ENDPOINTS.CHANGE_PASSWORD, requestData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -3342,6 +3465,293 @@ export const getUnreadMessageCount = async (): Promise<number> => {
   } catch (error) {
     console.error('Get unread message count error:', error);
     return 0;
+  }
+};
+
+// =====================================================
+// ⭐ Web Session - เปิดหน้าเว็บพร้อม authentication
+// =====================================================
+
+/**
+ * สร้าง URL สำหรับเปิดหน้าเว็บพร้อม authentication
+ * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
+ *
+ * @param redirectPath - path ที่ต้องการ redirect ไป (เช่น /user/wallet/topup)
+ * @param queryParams - query params เพิ่มเติม (เช่น { amount: 1000 })
+ */
+export const getWebSessionUrl = async (
+  redirectPath: string,
+  queryParams?: Record<string, string | number>
+): Promise<{
+  success: boolean;
+  url?: string;
+  expiresIn?: number;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post('/web-session', {
+      redirect_path: redirectPath,
+      query_params: queryParams,
+    });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        url: response.data.data?.url,
+        expiresIn: response.data.data?.expires_in,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถสร้าง session ได้',
+    };
+  } catch (error: any) {
+    console.error('Get web session URL error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถสร้าง session ได้',
+    };
+  }
+};
+
+// =====================================================
+// ⭐ Payment API - ชำระเงินและเติมเงินในแอพ
+// =====================================================
+
+/**
+ * Payment Method Type
+ */
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  category: 'qr' | 'card' | 'bank' | 'wallet' | 'other';
+  fees?: {
+    fixed?: number;
+    percent?: number;
+  };
+  limits?: {
+    min?: number;
+    max?: number;
+  };
+  enabled: boolean;
+}
+
+/**
+ * Payment Transaction Type
+ */
+export interface PaymentTransaction {
+  transaction_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'expired';
+  status_label: string;
+  amount: number;
+  currency: string;
+  payment_method: string;
+  // QR Code (PromptPay)
+  qr_code?: string;
+  qr_code_url?: string;
+  // Redirect (Card payments)
+  redirect_url?: string;
+  redirect_required?: boolean;
+  // Deep Link (TrueMoney)
+  deep_link?: string;
+  // Bank Transfer
+  bank_info?: {
+    bank_name: string;
+    bank_code?: string;
+    account_number: string;
+    account_name: string;
+    branch?: string;
+    ref_no?: string;
+    instructions?: string;
+  };
+  // Stripe
+  client_secret?: string;
+  // Expiry
+  expired_at?: string;
+}
+
+/**
+ * ดึงวิธีการชำระเงินที่ใช้ได้
+ */
+export const getPaymentMethods = async (): Promise<{
+  success: boolean;
+  methods?: PaymentMethod[];
+  grouped?: Record<string, PaymentMethod[]>;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/methods');
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        methods: response.data.data?.methods || [],
+        grouped: response.data.data?.grouped || {},
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงวิธีการชำระเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Get payment methods error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงวิธีการชำระเงินได้',
+    };
+  }
+};
+
+/**
+ * ดึงวิธีการเติมเงิน (Deposit)
+ */
+export const getDepositMethods = async (): Promise<{
+  success: boolean;
+  methods?: PaymentMethod[];
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/deposit-methods');
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        methods: response.data.data || [],
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงวิธีการเติมเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Get deposit methods error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงวิธีการเติมเงินได้',
+    };
+  }
+};
+
+/**
+ * เริ่มต้นการเติมเงิน Wallet
+ */
+export const initializeWalletTopup = async (
+  amount: number,
+  paymentMethod: string
+): Promise<{
+  success: boolean;
+  transaction?: PaymentTransaction;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post('/wallet/topup', {
+      amount,
+      payment_method: paymentMethod,
+    });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        transaction: response.data.data,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถเริ่มการเติมเงินได้',
+    };
+  } catch (error: any) {
+    console.error('Initialize wallet topup error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถเริ่มการเติมเงินได้',
+    };
+  }
+};
+
+/**
+ * ตรวจสอบสถานะการชำระเงิน
+ */
+export const checkPaymentStatus = async (
+  transactionId: string
+): Promise<{
+  success: boolean;
+  status?: string;
+  statusLabel?: string;
+  data?: PaymentTransaction;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get(`/payment/${transactionId}/status`);
+
+    if (response.data?.success) {
+      const data = response.data.data;
+      return {
+        success: true,
+        status: data.status,
+        statusLabel: data.status_label,
+        data,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถตรวจสอบสถานะได้',
+    };
+  } catch (error: any) {
+    console.error('Check payment status error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถตรวจสอบสถานะได้',
+    };
+  }
+};
+
+/**
+ * ดึงประวัติการชำระเงิน
+ */
+export const getPaymentHistory = async (params?: {
+  type?: 'order_payment' | 'wallet_topup';
+  page?: number;
+  per_page?: number;
+}): Promise<{
+  success: boolean;
+  transactions?: PaymentTransaction[];
+  pagination?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/payment/history', { params });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        transactions: response.data.data?.transactions || [],
+        pagination: response.data.data?.pagination,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงประวัติได้',
+    };
+  } catch (error: any) {
+    console.error('Get payment history error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงประวัติได้',
+    };
   }
 };
 

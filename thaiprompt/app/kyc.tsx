@@ -1,10 +1,11 @@
 /**
- * KYC Screen - หน้ายืนยันตัวตนแบบ Premium
- * ใช้ expo-camera (CameraView) + expo-file-system สำหรับเซฟรูป
- * แก้ไขปัญหาเข้าถึงพื้นที่เก็บไฟล์ไม่ได้
+ * KYC Screen - เขียนใหม่ทั้งหมด
+ * - Design ใหม่ที่สวยงาม
+ * - Upload ใช้ fetch API ตรงๆ
+ * - ไม่ใช้ NativeWind (ใช้ StyleSheet ล้วน)
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,1020 +14,139 @@ import {
   Alert,
   Image,
   ActivityIndicator,
-  Animated,
-  Easing,
   Dimensions,
-  Modal,
-  Platform,
   StyleSheet,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
-import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
+import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { getKycStatus, uploadKycImage, confirmKycSubmission } from '@/services/api';
+import { API_BASE_URL, STORAGE_KEYS } from '@/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// KYC Status type
-type KycStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected' | 'draft';
+type KycStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 type ImageType = 'id_card' | 'selfie';
 
 // =====================================================
-// Camera Modal Component - ใช้ CameraView โดยตรง
+// API Functions - เขียนตรงๆ ไม่ผ่าน api.ts
 // =====================================================
 
-const CameraModal = ({
-  visible,
-  onClose,
-  onCapture,
-  imageType,
-  facing = 'back',
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onCapture: (uri: string) => void;
-  imageType: ImageType;
-  facing?: CameraType;
-}) => {
-  const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState<CameraType>(facing);
-
-  useEffect(() => {
-    if (visible && !permission?.granted) {
-      requestPermission();
-    }
-  }, [visible]);
-
-  const handleCapture = async () => {
-    if (!cameraRef.current || isCapturing) return;
-
-    setIsCapturing(true);
-    try {
-      // ถ่ายรูป
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
-        skipProcessing: false,
-      });
-
-      if (photo?.uri) {
-        // สร้าง directory สำหรับเก็บรูป KYC ถ้ายังไม่มี
-        const kycDir = `${FileSystem.documentDirectory}kyc/`;
-        const dirInfo = await FileSystem.getInfoAsync(kycDir);
-        if (!dirInfo.exists) {
-          await FileSystem.makeDirectoryAsync(kycDir, { intermediates: true });
-        }
-
-        // สร้างชื่อไฟล์ใหม่
-        const fileName = `${imageType}_${Date.now()}.jpg`;
-        const newUri = `${kycDir}${fileName}`;
-
-        // คัดลอกไฟล์ไปยัง document directory (ที่แอพมี permission เข้าถึงได้)
-        await FileSystem.copyAsync({
-          from: photo.uri,
-          to: newUri,
-        });
-
-        // ตรวจสอบว่าไฟล์ถูก save สำเร็จ
-        const fileInfo = await FileSystem.getInfoAsync(newUri);
-        if (fileInfo.exists) {
-          console.log('Photo saved successfully:', newUri);
-          onCapture(newUri);
-          onClose();
-        } else {
-          throw new Error('ไม่สามารถบันทึกรูปได้');
-        }
-      }
-    } catch (error) {
-      console.error('Capture error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถถ่ายรูปได้ กรุณาลองใหม่');
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const toggleCameraFacing = () => {
-    setCameraFacing(current => (current === 'back' ? 'front' : 'back'));
-  };
-
-  if (!visible) return null;
-
-  return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={cameraStyles.container}>
-        {/* Header */}
-        <View style={cameraStyles.header}>
-          <Pressable style={cameraStyles.closeButton} onPress={onClose}>
-            <Text style={cameraStyles.closeIcon}>✕</Text>
-          </Pressable>
-          <Text style={cameraStyles.headerTitle}>
-            {imageType === 'id_card' ? 'ถ่ายรูปบัตรประชาชน' : 'ถ่ายรูปคู่บัตร (เซลฟี่)'}
-          </Text>
-          <Pressable style={cameraStyles.flipButton} onPress={toggleCameraFacing}>
-            <Text style={cameraStyles.flipIcon}>🔄</Text>
-          </Pressable>
-        </View>
-
-        {/* Camera */}
-        {permission?.granted ? (
-          <CameraView
-            ref={cameraRef}
-            style={cameraStyles.camera}
-            facing={cameraFacing}
-          >
-            {/* Guide overlay */}
-            <View style={cameraStyles.overlay}>
-              {imageType === 'id_card' ? (
-                // กรอบสำหรับบัตรประชาชน (แนวนอน)
-                <View style={cameraStyles.idCardFrame}>
-                  <View style={cameraStyles.cornerTL} />
-                  <View style={cameraStyles.cornerTR} />
-                  <View style={cameraStyles.cornerBL} />
-                  <View style={cameraStyles.cornerBR} />
-                </View>
-              ) : (
-                // กรอบสำหรับเซลฟี่ (วงกลม + พื้นที่บัตร)
-                <View style={cameraStyles.selfieFrame}>
-                  <View style={cameraStyles.faceCircle} />
-                  <View style={cameraStyles.cardHint}>
-                    <Text style={cameraStyles.cardHintText}>🪪 ถือบัตรไว้ตรงนี้</Text>
-                  </View>
-                </View>
-              )}
-            </View>
-          </CameraView>
-        ) : (
-          <View style={cameraStyles.noPermission}>
-            <Text style={{ fontSize: 60 }}>📷</Text>
-            <Text style={cameraStyles.noPermissionText}>ไม่สามารถเข้าถึงกล้องได้</Text>
-            <Pressable style={cameraStyles.permissionButton} onPress={requestPermission}>
-              <Text style={cameraStyles.permissionButtonText}>ขออนุญาตอีกครั้ง</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* Footer */}
-        <View style={cameraStyles.footer}>
-          <Text style={cameraStyles.hint}>
-            {imageType === 'id_card'
-              ? 'วางบัตรในกรอบ ให้เห็นข้อมูลชัดเจน'
-              : 'ถือบัตรข้างใบหน้า ให้เห็นทั้งหน้าและบัตร'}
-          </Text>
-
-          {/* Capture Button */}
-          <Pressable
-            style={[cameraStyles.captureButton, isCapturing && cameraStyles.captureButtonDisabled]}
-            onPress={handleCapture}
-            disabled={isCapturing || !permission?.granted}
-          >
-            {isCapturing ? (
-              <ActivityIndicator color="#FFF" size="large" />
-            ) : (
-              <View style={cameraStyles.captureInner} />
-            )}
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
+const getToken = async (): Promise<string | null> => {
+  return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
 };
 
-const cameraStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeIcon: {
-    fontSize: 24,
-    color: '#FFF',
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  flipButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flipIcon: {
-    fontSize: 24,
-  },
-  camera: {
-    flex: 1,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  idCardFrame: {
-    width: SCREEN_WIDTH - 60,
-    height: (SCREEN_WIDTH - 60) * 0.63, // อัตราส่วนบัตร
-    borderWidth: 3,
-    borderColor: '#3B82F6',
-    borderRadius: 12,
-    position: 'relative',
-  },
-  cornerTL: {
-    position: 'absolute',
-    top: -3,
-    left: -3,
-    width: 30,
-    height: 30,
-    borderTopWidth: 5,
-    borderLeftWidth: 5,
-    borderColor: '#FFF',
-    borderTopLeftRadius: 12,
-  },
-  cornerTR: {
-    position: 'absolute',
-    top: -3,
-    right: -3,
-    width: 30,
-    height: 30,
-    borderTopWidth: 5,
-    borderRightWidth: 5,
-    borderColor: '#FFF',
-    borderTopRightRadius: 12,
-  },
-  cornerBL: {
-    position: 'absolute',
-    bottom: -3,
-    left: -3,
-    width: 30,
-    height: 30,
-    borderBottomWidth: 5,
-    borderLeftWidth: 5,
-    borderColor: '#FFF',
-    borderBottomLeftRadius: 12,
-  },
-  cornerBR: {
-    position: 'absolute',
-    bottom: -3,
-    right: -3,
-    width: 30,
-    height: 30,
-    borderBottomWidth: 5,
-    borderRightWidth: 5,
-    borderColor: '#FFF',
-    borderBottomRightRadius: 12,
-  },
-  selfieFrame: {
-    alignItems: 'center',
-  },
-  faceCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 3,
-    borderColor: '#3B82F6',
-    borderStyle: 'dashed',
-  },
-  cardHint: {
-    marginTop: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  cardHintText: {
-    color: '#FFF',
-    fontSize: 14,
-  },
-  noPermission: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  noPermissionText: {
-    color: '#FFF',
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 20,
-  },
-  permissionButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  permissionButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  footer: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  hint: {
-    color: '#FFF',
-    fontSize: 14,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderWidth: 4,
-    borderColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  captureButtonDisabled: {
-    opacity: 0.5,
-  },
-  captureInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFF',
-  },
-});
+const fetchKycStatus = async () => {
+  const token = await getToken();
+  if (!token) return null;
 
-// =====================================================
-// Step Indicator Component
-// =====================================================
-
-const StepIndicator = ({
-  currentStep,
-  hasIdCard,
-  hasSelfie,
-  isDark,
-}: {
-  currentStep: number;
-  hasIdCard: boolean;
-  hasSelfie: boolean;
-  isDark: boolean;
-}) => {
-  const steps = [
-    { label: 'บัตรประชาชน', icon: '🪪', completed: hasIdCard },
-    { label: 'รูปถ่ายคู่บัตร', icon: '👤', completed: hasSelfie },
-    { label: 'ยืนยัน', icon: '✓', completed: false },
-  ];
-
-  return (
-    <View style={stepStyles.container}>
-      {steps.map((step, index) => {
-        const isActive = index === currentStep;
-        const isCompleted = step.completed;
-        const isPast = index < currentStep || isCompleted;
-
-        return (
-          <React.Fragment key={index}>
-            {/* Step Circle */}
-            <View style={stepStyles.stepContainer}>
-              <View
-                style={[
-                  stepStyles.circle,
-                  isCompleted && stepStyles.circleCompleted,
-                  isActive && !isCompleted && stepStyles.circleActive,
-                  !isCompleted && !isActive && (isDark ? stepStyles.circleDark : stepStyles.circleLight),
-                ]}
-              >
-                {isCompleted ? (
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    style={stepStyles.circleGradient}
-                  >
-                    <Text style={{ fontSize: 28 }}>✓</Text>
-                  </LinearGradient>
-                ) : isActive ? (
-                  <LinearGradient
-                    colors={['#3B82F6', '#2563EB']}
-                    style={stepStyles.circleGradient}
-                  >
-                    <Text style={{ fontSize: 24 }}>{step.icon}</Text>
-                  </LinearGradient>
-                ) : (
-                  <Text style={{ fontSize: 24, color: isDark ? '#6B7280' : '#9CA3AF' }}>
-                    {step.icon}
-                  </Text>
-                )}
-              </View>
-              <Text
-                style={[
-                  stepStyles.label,
-                  (isActive || isCompleted) && (isDark ? stepStyles.labelActiveDark : stepStyles.labelActive),
-                ]}
-              >
-                {step.label}
-              </Text>
-            </View>
-
-            {/* Connector Line */}
-            {index < steps.length - 1 && (
-              <View style={stepStyles.connector}>
-                {isPast ? (
-                  <LinearGradient
-                    colors={['#10B981', '#10B981']}
-                    style={stepStyles.connectorFill}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  />
-                ) : (
-                  <View style={[stepStyles.connectorEmpty, isDark && stepStyles.connectorEmptyDark]} />
-                )}
-              </View>
-            )}
-          </React.Fragment>
-        );
-      })}
-    </View>
-  );
+  try {
+    const response = await fetch(`${API_BASE_URL}/kyc/status`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    const data = await response.json();
+    console.log('📋 KYC Status:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Fetch KYC status error:', error);
+    return null;
+  }
 };
 
-const stepStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-  },
-  stepContainer: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  circle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleCompleted: {},
-  circleActive: {
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  circleDark: {
-    backgroundColor: '#374151',
-  },
-  circleLight: {
-    backgroundColor: '#E5E7EB',
-  },
-  circleGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 12,
-    marginTop: 8,
-    textAlign: 'center',
-    color: '#9CA3AF',
-  },
-  labelActive: {
-    color: '#1F2937',
-    fontWeight: '600',
-  },
-  labelActiveDark: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  connector: {
-    flex: 1,
-    height: 4,
-    marginHorizontal: 4,
-    marginTop: -24,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  connectorFill: {
-    height: '100%',
-  },
-  connectorEmpty: {
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-  },
-  connectorEmptyDark: {
-    backgroundColor: '#374151',
-  },
-});
+const uploadKycFile = async (
+  imageUri: string,
+  type: ImageType
+): Promise<{ success: boolean; message?: string; data?: any }> => {
+  const token = await getToken();
+  if (!token) {
+    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
+  }
 
-// =====================================================
-// Upload Card Component
-// =====================================================
+  try {
+    // อ่านไฟล์เป็น base64
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
-const UploadCard = ({
-  title,
-  subtitle,
-  icon,
-  imageUri,
-  isUploaded,
-  isUploading,
-  onTakePhoto,
-  onPickFromGallery,
-  aspectRatio,
-  isDark,
-}: {
-  title: string;
-  subtitle: string;
-  icon: string;
-  imageUri: string | null;
-  isUploaded: boolean;
-  isUploading: boolean;
-  onTakePhoto: () => void;
-  onPickFromGallery: () => void;
-  aspectRatio: [number, number];
-  isDark: boolean;
-}) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0)).current;
+    // หา mime type
+    const filename = imageUri.split('/').pop() || `${type}.jpg`;
+    const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
-  useEffect(() => {
-    if (isUploaded) {
-      Animated.spring(scaleAnim, {
-        toValue: 1.02,
-        useNativeDriver: true,
-      }).start(() => {
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-        }).start();
-      });
+    console.log(`📤 Uploading ${type}...`, { filename, mimeType, size: base64.length });
 
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: false,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0,
-            duration: 1500,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: false,
-          }),
-        ])
-      ).start();
+    // สร้าง FormData
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      name: filename,
+      type: mimeType,
+    } as any);
+    formData.append('type', type);
+
+    const response = await fetch(`${API_BASE_URL}/kyc/upload`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+      body: formData,
+    });
+
+    const result = await response.json();
+    console.log(`📤 Upload ${type} result:`, response.status, result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
+      };
     }
-  }, [isUploaded]);
 
-  const height = aspectRatio[0] > aspectRatio[1] ? 180 : 240;
-
-  return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      <View
-        style={[
-          uploadStyles.card,
-          isUploaded && uploadStyles.cardUploaded,
-          isDark ? uploadStyles.cardDark : uploadStyles.cardLight,
-        ]}
-      >
-        {/* Header */}
-        <View style={uploadStyles.header}>
-          <View style={[uploadStyles.iconBox, isUploaded ? uploadStyles.iconBoxUploaded : uploadStyles.iconBoxDefault]}>
-            <Text style={{ fontSize: 22 }}>
-              {isUploaded ? '✅' : icon === 'card' ? '🪪' : '👤'}
-            </Text>
-          </View>
-          <View style={uploadStyles.headerText}>
-            <Text style={[uploadStyles.title, isDark && uploadStyles.titleDark]}>{title}</Text>
-            <Text style={uploadStyles.subtitle}>{subtitle}</Text>
-          </View>
-          {isUploaded && (
-            <View style={uploadStyles.badge}>
-              <Text style={uploadStyles.badgeText}>อัพโหลดแล้ว</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Preview Area */}
-        <View style={[uploadStyles.previewArea, { height }]}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={uploadStyles.previewImage} resizeMode="cover" />
-          ) : isUploaded ? (
-            <View style={uploadStyles.uploadedPlaceholder}>
-              <Text style={{ fontSize: 56 }}>✅</Text>
-              <Text style={uploadStyles.uploadedText}>รูปภาพถูกอัพโหลดแล้ว</Text>
-              <Text style={uploadStyles.uploadedHint}>แตะเพื่อเปลี่ยนรูป</Text>
-            </View>
-          ) : (
-            <View style={uploadStyles.emptyPlaceholder}>
-              <Text style={{ fontSize: 48 }}>📷</Text>
-              <Text style={[uploadStyles.emptyText, isDark && uploadStyles.emptyTextDark]}>
-                เลือกวิธีถ่ายรูป
-              </Text>
-            </View>
-          )}
-
-          {/* Uploading Overlay */}
-          {isUploading && (
-            <View style={uploadStyles.uploadingOverlay}>
-              <View style={uploadStyles.uploadingBox}>
-                <ActivityIndicator size="large" color="#3B82F6" />
-                <Text style={uploadStyles.uploadingText}>กำลังอัพโหลด...</Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Action Buttons */}
-        <View style={uploadStyles.actions}>
-          <Pressable
-            style={[uploadStyles.actionButton, uploadStyles.cameraButton]}
-            onPress={onTakePhoto}
-            disabled={isUploading}
-          >
-            <Text style={{ fontSize: 20 }}>📷</Text>
-            <Text style={uploadStyles.actionButtonText}>ถ่ายรูป</Text>
-          </Pressable>
-
-          <Pressable
-            style={[uploadStyles.actionButton, uploadStyles.galleryButton]}
-            onPress={onPickFromGallery}
-            disabled={isUploading}
-          >
-            <Text style={{ fontSize: 20 }}>🖼️</Text>
-            <Text style={uploadStyles.actionButtonTextDark}>แกลเลอรี่</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Animated.View>
-  );
+    return result;
+  } catch (error: any) {
+    console.error(`❌ Upload ${type} error:`, error);
+    return {
+      success: false,
+      message: error.message || 'เกิดข้อผิดพลาดในการอัพโหลด',
+    };
+  }
 };
 
-const uploadStyles = StyleSheet.create({
-  card: {
-    borderRadius: 20,
-    marginBottom: 24,
-    overflow: 'hidden',
-  },
-  cardLight: {
-    backgroundColor: '#FFF',
-  },
-  cardDark: {
-    backgroundColor: '#1F2937',
-  },
-  cardUploaded: {
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    paddingBottom: 0,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconBoxDefault: {
-    backgroundColor: '#EBF5FF',
-  },
-  iconBoxUploaded: {
-    backgroundColor: '#D1FAE5',
-  },
-  headerText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  titleDark: {
-    color: '#FFF',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  previewArea: {
-    margin: 16,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
-  },
-  previewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  uploadedPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#D1FAE5',
-  },
-  uploadedText: {
-    color: '#059669',
-    fontWeight: '500',
-    marginTop: 8,
-  },
-  uploadedHint: {
-    color: '#10B981',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  emptyPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  emptyText: {
-    color: '#6B7280',
-    marginTop: 12,
-    fontSize: 15,
-  },
-  emptyTextDark: {
-    color: '#9CA3AF',
-  },
-  uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  uploadingBox: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  uploadingText: {
-    color: '#1F2937',
-    marginTop: 12,
-    fontWeight: '500',
-  },
-  actions: {
-    flexDirection: 'row',
-    padding: 16,
-    paddingTop: 0,
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  cameraButton: {
-    backgroundColor: '#3B82F6',
-  },
-  galleryButton: {
-    backgroundColor: '#E5E7EB',
-  },
-  actionButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  actionButtonTextDark: {
-    color: '#374151',
-    fontWeight: '600',
-  },
-});
+const submitKyc = async (): Promise<{ success: boolean; message?: string }> => {
+  const token = await getToken();
+  if (!token) {
+    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
+  }
 
-// =====================================================
-// Status Views (Approved, Pending, Rejected)
-// =====================================================
+  try {
+    // ใช้ /kyc/confirm แทน /kyc/submit เพราะรูปถูก upload แยกไว้แล้ว
+    const response = await fetch(`${API_BASE_URL}/kyc/confirm`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
 
-const ApprovedView = ({ isDark }: { isDark: boolean }) => (
-  <View style={statusStyles.container}>
-    <LinearGradient
-      colors={['#10B981', '#059669', '#047857']}
-      style={statusStyles.iconCircle}
-    >
-      <Text style={{ fontSize: 56 }}>🛡️</Text>
-    </LinearGradient>
-
-    <Text style={[statusStyles.title, isDark && statusStyles.titleDark]}>ยืนยันตัวตนสำเร็จ!</Text>
-    <Text style={statusStyles.subtitle}>บัญชีของคุณได้รับการยืนยันแล้ว</Text>
-
-    <View style={[statusStyles.benefitCard, isDark && statusStyles.benefitCardDark]}>
-      <Text style={[statusStyles.benefitTitle, isDark && statusStyles.benefitTitleDark]}>ฟีเจอร์ที่ปลดล็อค:</Text>
-      {['ถอนเงินได้ไม่จำกัด', 'รับค่าคอมมิชชั่นทันที', 'เข้าถึง Premium Features'].map((item, i) => (
-        <View key={i} style={statusStyles.benefitRow}>
-          <Text style={{ fontSize: 18 }}>✅</Text>
-          <Text style={[statusStyles.benefitText, isDark && statusStyles.benefitTextDark]}>{item}</Text>
-        </View>
-      ))}
-    </View>
-
-    <Pressable onPress={() => router.back()}>
-      <LinearGradient colors={['#10B981', '#059669']} style={statusStyles.button}>
-        <Text style={statusStyles.buttonText}>กลับหน้าหลัก</Text>
-      </LinearGradient>
-    </Pressable>
-  </View>
-);
-
-const PendingView = ({ isDark }: { isDark: boolean }) => (
-  <View style={statusStyles.container}>
-    <View style={[statusStyles.iconCircle, { backgroundColor: '#FEF3C7' }]}>
-      <Text style={{ fontSize: 56 }}>⏰</Text>
-    </View>
-
-    <Text style={[statusStyles.title, isDark && statusStyles.titleDark]}>รอการตรวจสอบ</Text>
-    <Text style={statusStyles.subtitle}>เอกสารของคุณอยู่ระหว่างการตรวจสอบ</Text>
-    <Text style={statusStyles.hint}>⏱️ คาดว่าจะแล้วเสร็จภายใน 24-48 ชั่วโมง</Text>
-
-    <Pressable style={[statusStyles.secondaryButton, isDark && statusStyles.secondaryButtonDark]} onPress={() => router.back()}>
-      <Text style={[statusStyles.secondaryButtonText, isDark && statusStyles.secondaryButtonTextDark]}>กลับหน้าหลัก</Text>
-    </Pressable>
-  </View>
-);
-
-const RejectedView = ({ reason, onRetry, isDark }: { reason: string | null; onRetry: () => void; isDark: boolean }) => (
-  <View style={statusStyles.container}>
-    <View style={[statusStyles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
-      <Text style={{ fontSize: 56 }}>❌</Text>
-    </View>
-
-    <Text style={[statusStyles.title, isDark && statusStyles.titleDark]}>การยืนยันถูกปฏิเสธ</Text>
-
-    {reason && (
-      <View style={statusStyles.reasonCard}>
-        <Text style={statusStyles.reasonTitle}>เหตุผล:</Text>
-        <Text style={statusStyles.reasonText}>{reason}</Text>
-      </View>
-    )}
-
-    <Pressable onPress={onRetry}>
-      <LinearGradient colors={['#3B82F6', '#2563EB']} style={statusStyles.button}>
-        <Text style={statusStyles.buttonText}>ส่งเอกสารใหม่</Text>
-      </LinearGradient>
-    </Pressable>
-  </View>
-);
-
-const statusStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  iconCircle: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  titleDark: {
-    color: '#FFF',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  hint: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 24,
-  },
-  benefitCard: {
-    backgroundColor: '#F0FDF4',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  benefitCardDark: {
-    backgroundColor: '#1F2937',
-  },
-  benefitTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  benefitTitleDark: {
-    color: '#FFF',
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  benefitText: {
-    fontSize: 14,
-    color: '#374151',
-  },
-  benefitTextDark: {
-    color: '#D1D5DB',
-  },
-  button: {
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    paddingHorizontal: 48,
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    marginTop: 24,
-  },
-  secondaryButtonDark: {
-    backgroundColor: '#374151',
-  },
-  secondaryButtonText: {
-    color: '#374151',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButtonTextDark: {
-    color: '#FFF',
-  },
-  reasonCard: {
-    backgroundColor: '#FEE2E2',
-    borderRadius: 12,
-    padding: 16,
-    width: '100%',
-    marginTop: 16,
-    marginBottom: 24,
-  },
-  reasonTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#B91C1C',
-    marginBottom: 4,
-  },
-  reasonText: {
-    fontSize: 14,
-    color: '#DC2626',
-  },
-});
+    const result = await response.json();
+    console.log('📋 Submit KYC result:', result);
+    return result;
+  } catch (error: any) {
+    console.error('❌ Submit KYC error:', error);
+    return { success: false, message: 'เกิดข้อผิดพลาด' };
+  }
+};
 
 // =====================================================
 // Main Component
@@ -1037,65 +157,50 @@ export default function KycScreen() {
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
+  // States
   const [status, setStatus] = useState<KycStatus>('not_submitted');
-  const [idCardImage, setIdCardImage] = useState<string | null>(null);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [idCardUri, setIdCardUri] = useState<string | null>(null);
+  const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [hasIdCard, setHasIdCard] = useState(false);
   const [hasSelfie, setHasSelfie] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isUploadingIdCard, setIsUploadingIdCard] = useState(false);
   const [isUploadingSelfie, setIsUploadingSelfie] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
-  // Camera modal state
+  // Camera states
   const [showCamera, setShowCamera] = useState(false);
   const [cameraType, setCameraType] = useState<ImageType>('id_card');
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
 
-  const currentStep = hasSelfie ? 2 : hasIdCard ? 1 : 0;
-
-  // Load KYC status
-  const loadKycStatus = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await getKycStatus();
-      if (response?.success && response.data) {
-        setStatus(response.data.status as KycStatus);
-        if (response.data.submission) {
-          setHasIdCard(response.data.submission.hasIdCard);
-          setHasSelfie(response.data.submission.hasSelfie);
-          setRejectionReason(response.data.submission.rejectionReason || null);
-        }
-      }
-    } catch (error) {
-      console.error('Load KYC status error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Load KYC status on mount
+  useEffect(() => {
+    loadStatus();
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadKycStatus();
+  const loadStatus = async () => {
+    setIsLoading(true);
+    const result = await fetchKycStatus();
+    if (result?.success && result.data) {
+      setStatus(result.data.status || 'not_submitted');
+      setHasIdCard(result.data.submission?.hasIdCard || false);
+      setHasSelfie(result.data.submission?.hasSelfie || false);
+      setRejectionReason(result.data.submission?.rejectionReason || null);
     }
-  }, [isAuthenticated, loadKycStatus]);
-
-  // Handle image from camera
-  const handleCameraCapture = async (uri: string, type: ImageType) => {
-    await handleImageSelected(uri, type);
+    setIsLoading(false);
   };
 
-  // Handle image from gallery - ใช้ ImagePicker.launchImageLibraryAsync
-  // หมายเหตุ: กล้องใช้ expo-camera (CameraView) แต่ gallery ใช้ expo-image-picker ได้ปกติ
-  const handlePickFromGallery = async (type: ImageType) => {
+  // Pick image from gallery
+  const pickImage = async (type: ImageType) => {
     try {
-      // ขอ permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้แอพเข้าถึงรูปภาพในแกลเลอรี่');
+        Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้เข้าถึงรูปภาพ');
         return;
       }
 
-      // เปิด gallery เลือกรูป
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -1103,121 +208,156 @@ export default function KycScreen() {
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        const selectedUri = result.assets[0].uri;
-
-        // สร้าง directory สำหรับเก็บรูป KYC ถ้ายังไม่มี
-        const kycDir = `${FileSystem.documentDirectory}kyc/`;
-        const dirInfo = await FileSystem.getInfoAsync(kycDir);
-        if (!dirInfo.exists) {
-          await FileSystem.makeDirectoryAsync(kycDir, { intermediates: true });
-        }
-
-        // สร้างชื่อไฟล์ใหม่
-        const fileName = `${type}_${Date.now()}.jpg`;
-        const newUri = `${kycDir}${fileName}`;
-
-        // คัดลอกไฟล์ไปยัง document directory (ที่แอพมี permission เข้าถึงได้)
-        await FileSystem.copyAsync({
-          from: selectedUri,
-          to: newUri,
-        });
-
-        // ตรวจสอบว่าไฟล์ถูก save สำเร็จ
-        const fileInfo = await FileSystem.getInfoAsync(newUri);
-        if (fileInfo.exists) {
-          console.log('Gallery image saved successfully:', newUri);
-          await handleImageSelected(newUri, type);
-        } else {
-          throw new Error('ไม่สามารถบันทึกรูปได้');
-        }
+      if (!result.canceled && result.assets[0]) {
+        await handleUpload(result.assets[0].uri, type);
       }
     } catch (error) {
-      console.error('Gallery error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเลือกรูปได้ กรุณาลองใหม่');
+      console.error('Pick image error:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถเลือกรูปได้');
     }
   };
 
-  // Upload image
-  const handleImageSelected = async (uri: string, type: ImageType) => {
-    const setUploading = type === 'id_card' ? setIsUploadingIdCard : setIsUploadingSelfie;
-    setUploading(true);
+  // Take photo with camera
+  const takePhoto = async () => {
+    if (!cameraRef.current) return;
 
     try {
-      const response = await uploadKycImage(uri, type);
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+      });
 
-      if (response.success && response.data) {
-        if (type === 'id_card') {
-          setIdCardImage(uri);
-          setHasIdCard(response.data.hasIdCard);
-        } else {
-          setSelfieImage(uri);
-          setHasSelfie(response.data.hasSelfie);
-        }
-      } else {
-        Alert.alert('อัพโหลดไม่สำเร็จ', response.message || 'กรุณาลองใหม่');
+      if (photo?.uri) {
+        setShowCamera(false);
+        await handleUpload(photo.uri, cameraType);
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถอัพโหลดได้');
-    } finally {
-      setUploading(false);
+      console.error('Take photo error:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถถ่ายรูปได้');
     }
+  };
+
+  // Handle upload
+  const handleUpload = async (uri: string, type: ImageType) => {
+    const setUploading = type === 'id_card' ? setIsUploadingIdCard : setIsUploadingSelfie;
+    const setUri = type === 'id_card' ? setIdCardUri : setSelfieUri;
+    const setHas = type === 'id_card' ? setHasIdCard : setHasSelfie;
+
+    setUploading(true);
+    setUri(uri);
+
+    const result = await uploadKycFile(uri, type);
+
+    if (result.success) {
+      setHas(true);
+      Alert.alert('สำเร็จ', `อัพโหลด${type === 'id_card' ? 'บัตรประชาชน' : 'รูปเซลฟี่'}เรียบร้อย`);
+    } else {
+      setUri(null);
+      Alert.alert('ผิดพลาด', result.message || 'อัพโหลดไม่สำเร็จ');
+    }
+
+    setUploading(false);
   };
 
   // Submit KYC
-  const handleSubmitKyc = async () => {
+  const handleSubmit = async () => {
     if (!hasIdCard || !hasSelfie) {
-      Alert.alert('ข้อมูลไม่ครบ', 'กรุณาอัพโหลดรูปให้ครบ');
+      Alert.alert('ข้อมูลไม่ครบ', 'กรุณาอัพโหลดรูปบัตรประชาชนและรูปเซลฟี่');
       return;
     }
 
     Alert.alert('ยืนยันส่งเอกสาร', 'คุณต้องการส่งเอกสารยืนยันตัวตน?', [
       { text: 'ยกเลิก', style: 'cancel' },
       {
-        text: '✅ ส่งเอกสาร',
+        text: 'ส่งเอกสาร',
         onPress: async () => {
-          setIsLoading(true);
-          try {
-            const response = await confirmKycSubmission();
-            if (response.success) {
-              setStatus('pending');
-            } else {
-              Alert.alert('ผิดพลาด', response.message || 'ส่งไม่สำเร็จ');
-            }
-          } catch (error) {
-            Alert.alert('ผิดพลาด', 'เกิดข้อผิดพลาด');
-          } finally {
-            setIsLoading(false);
+          setIsSubmitting(true);
+          const result = await submitKyc();
+          setIsSubmitting(false);
+
+          if (result.success) {
+            setStatus('pending');
+            Alert.alert('สำเร็จ', 'ส่งเอกสารเรียบร้อย รอการตรวจสอบภายใน 24-48 ชั่วโมง');
+          } else {
+            Alert.alert('ผิดพลาด', result.message || 'ส่งเอกสารไม่สำเร็จ');
           }
         },
       },
     ]);
   };
 
-  const handleRetry = () => {
-    setStatus('not_submitted');
-    setIdCardImage(null);
-    setSelfieImage(null);
-    setHasIdCard(false);
-    setHasSelfie(false);
-    setRejectionReason(null);
+  // Open camera modal
+  const openCamera = async (type: ImageType) => {
+    if (!cameraPermission?.granted) {
+      const result = await requestCameraPermission();
+      if (!result.granted) {
+        Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้ใช้กล้อง');
+        return;
+      }
+    }
+    setCameraType(type);
+    setShowCamera(true);
   };
 
-  // Not logged in
+  // =====================================================
+  // Render - Not Authenticated
+  // =====================================================
   if (!isAuthenticated) {
     return (
-      <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#111827' : '#F9FAFB'} />
-        <View style={mainStyles.center}>
-          <LinearGradient colors={['#3B82F6', '#2563EB']} style={mainStyles.loginIcon}>
-            <Text style={{ fontSize: 48 }}>🛡️</Text>
-          </LinearGradient>
-          <Text style={[mainStyles.loginTitle, isDark && mainStyles.textLight]}>ยืนยันตัวตน (KYC)</Text>
-          <Text style={mainStyles.loginSubtitle}>เข้าสู่ระบบเพื่อยืนยันตัวตน</Text>
-          <Pressable onPress={() => router.push('/login')}>
-            <LinearGradient colors={['#3B82F6', '#2563EB']} style={mainStyles.loginButton}>
-              <Text style={mainStyles.loginButtonText}>เข้าสู่ระบบ</Text>
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
+          <Text style={styles.bigIcon}>🛡️</Text>
+          <Text style={[styles.title, isDark && styles.textWhite]}>ยืนยันตัวตน (KYC)</Text>
+          <Text style={styles.subtitle}>กรุณาเข้าสู่ระบบก่อน</Text>
+          <Pressable style={styles.loginBtn} onPress={() => router.push('/login')}>
+            <Text style={styles.loginBtnText}>เข้าสู่ระบบ</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // =====================================================
+  // Render - Loading
+  // =====================================================
+  if (isLoading) {
+    return (
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={[styles.subtitle, { marginTop: 16 }]}>กำลังโหลด...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // =====================================================
+  // Render - Approved
+  // =====================================================
+  if (status === 'approved') {
+    return (
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
+          <View style={styles.successCircle}>
+            <Text style={{ fontSize: 60 }}>✅</Text>
+          </View>
+          <Text style={[styles.title, isDark && styles.textWhite, { marginTop: 24 }]}>
+            ยืนยันตัวตนสำเร็จ!
+          </Text>
+          <Text style={styles.subtitle}>บัญชีของคุณได้รับการยืนยันแล้ว</Text>
+
+          <View style={[styles.benefitBox, isDark && styles.benefitBoxDark]}>
+            <Text style={[styles.benefitTitle, isDark && styles.textWhite]}>ฟีเจอร์ที่ปลดล็อค:</Text>
+            {['✓ ถอนเงินได้ไม่จำกัด', '✓ รับคอมมิชชั่นทันที', '✓ Premium Features'].map((item, i) => (
+              <Text key={i} style={[styles.benefitItem, isDark && styles.textGray300]}>{item}</Text>
+            ))}
+          </View>
+
+          <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+            <LinearGradient colors={['#10B981', '#059669']} style={styles.btnGradient}>
+              <Text style={styles.btnText}>กลับหน้าหลัก</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -1225,272 +365,416 @@ export default function KycScreen() {
     );
   }
 
-  // Loading
-  if (isLoading && status === 'not_submitted') {
+  // =====================================================
+  // Render - Pending
+  // =====================================================
+  if (status === 'pending') {
     return (
-      <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#111827' : '#F9FAFB'} />
-        <View style={mainStyles.center}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={[mainStyles.loadingText, isDark && mainStyles.textLight]}>กำลังโหลด...</Text>
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
+          <View style={[styles.pendingCircle]}>
+            <Text style={{ fontSize: 60 }}>⏳</Text>
+          </View>
+          <Text style={[styles.title, isDark && styles.textWhite, { marginTop: 24 }]}>
+            รอการตรวจสอบ
+          </Text>
+          <Text style={styles.subtitle}>เอกสารของคุณอยู่ระหว่างการตรวจสอบ</Text>
+          <Text style={[styles.subtitle, { marginTop: 16 }]}>⏱️ คาดว่าจะแล้วเสร็จภายใน 24-48 ชั่วโมง</Text>
+
+          <Pressable style={[styles.secondaryBtn, isDark && styles.secondaryBtnDark]} onPress={() => router.back()}>
+            <Text style={[styles.secondaryBtnText, isDark && styles.textWhite]}>กลับหน้าหลัก</Text>
+          </Pressable>
         </View>
       </View>
     );
   }
 
-  return (
-    <View style={[mainStyles.container, isDark && mainStyles.containerDark]}>
-      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#1E3A8A' : '#3B82F6'} />
-      {/* Header */}
-      <LinearGradient
-        colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-        style={mainStyles.header}
-      >
-          <Pressable style={mainStyles.backButton} onPress={() => router.back()}>
-            <Text style={mainStyles.backIcon}>←</Text>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={mainStyles.headerTitle}>ยืนยันตัวตน (KYC)</Text>
-            <Text style={mainStyles.headerSubtitle}>เพื่อปลดล็อคฟีเจอร์ทั้งหมด</Text>
+  // =====================================================
+  // Render - Rejected
+  // =====================================================
+  if (status === 'rejected') {
+    return (
+      <View style={[styles.container, isDark && styles.containerDark]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={styles.centerContent}>
+          <View style={styles.rejectedCircle}>
+            <Text style={{ fontSize: 60 }}>❌</Text>
           </View>
-        </LinearGradient>
+          <Text style={[styles.title, isDark && styles.textWhite, { marginTop: 24 }]}>
+            ถูกปฏิเสธ
+          </Text>
 
-        {/* Content */}
-        {status === 'approved' ? (
-          <ApprovedView isDark={isDark} />
-        ) : status === 'pending' ? (
-          <PendingView isDark={isDark} />
-        ) : status === 'rejected' ? (
-          <RejectedView reason={rejectionReason} onRetry={handleRetry} isDark={isDark} />
-        ) : (
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-            <StepIndicator currentStep={currentStep} hasIdCard={hasIdCard} hasSelfie={hasSelfie} isDark={isDark} />
-
-            <View style={{ paddingHorizontal: 16 }}>
-              {/* Info Card */}
-              <View style={[mainStyles.infoCard, isDark && mainStyles.infoCardDark]}>
-                <Text style={{ fontSize: 24 }}>ℹ️</Text>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[mainStyles.infoTitle, isDark && mainStyles.infoTitleDark]}>เอกสารที่ต้องใช้</Text>
-                  <Text style={[mainStyles.infoText, isDark && mainStyles.infoTextDark]}>
-                    • รูปบัตรประชาชน (ด้านหน้า ชัดเจน){'\n'}• รูปถ่ายคู่บัตร (ถือบัตรข้างหน้า)
-                  </Text>
-                </View>
-              </View>
-
-              {/* ID Card Upload */}
-              <UploadCard
-                title="รูปบัตรประชาชน"
-                subtitle="ด้านหน้า ชัดเจน อ่านตัวอักษรได้"
-                icon="card"
-                imageUri={idCardImage}
-                isUploaded={hasIdCard}
-                isUploading={isUploadingIdCard}
-                onTakePhoto={() => {
-                  setCameraType('id_card');
-                  setShowCamera(true);
-                }}
-                onPickFromGallery={() => handlePickFromGallery('id_card')}
-                aspectRatio={[16, 10]}
-                isDark={isDark}
-              />
-
-              {/* Selfie Upload */}
-              <UploadCard
-                title="รูปถ่ายคู่บัตร (เซลฟี่)"
-                subtitle="ถือบัตรข้างใบหน้า เห็นทั้งหน้าและบัตร"
-                icon="person"
-                imageUri={selfieImage}
-                isUploaded={hasSelfie}
-                isUploading={isUploadingSelfie}
-                onTakePhoto={() => {
-                  setCameraType('selfie');
-                  setShowCamera(true);
-                }}
-                onPickFromGallery={() => handlePickFromGallery('selfie')}
-                aspectRatio={[3, 4]}
-                isDark={isDark}
-              />
-
-              {/* Submit Button */}
-              <Pressable
-                onPress={handleSubmitKyc}
-                disabled={!hasIdCard || !hasSelfie || isLoading}
-                style={{ marginBottom: 32 }}
-              >
-                {hasIdCard && hasSelfie && !isLoading ? (
-                  <LinearGradient colors={['#10B981', '#059669']} style={mainStyles.submitButton}>
-                    <Text style={{ fontSize: 24 }}>🛡️</Text>
-                    <Text style={mainStyles.submitButtonText}>ส่งเอกสารยืนยันตัวตน</Text>
-                  </LinearGradient>
-                ) : (
-                  <View style={[mainStyles.submitButtonDisabled, isDark && mainStyles.submitButtonDisabledDark]}>
-                    <Text style={{ fontSize: 24, color: '#9CA3AF' }}>🛡️</Text>
-                    <Text style={mainStyles.submitButtonTextDisabled}>
-                      {isLoading ? 'กำลังดำเนินการ...' : 'กรุณาอัพโหลดเอกสารให้ครบ'}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-
-              <Text style={mainStyles.footerHint}>เอกสารจะถูกตรวจสอบภายใน 24-48 ชั่วโมง</Text>
-              <View style={{ height: 50 }} />
+          {rejectionReason && (
+            <View style={styles.reasonBox}>
+              <Text style={styles.reasonTitle}>เหตุผล:</Text>
+              <Text style={styles.reasonText}>{rejectionReason}</Text>
             </View>
-          </ScrollView>
-        )}
+          )}
+
+          <Pressable
+            style={styles.primaryBtn}
+            onPress={() => {
+              setStatus('not_submitted');
+              setHasIdCard(false);
+              setHasSelfie(false);
+              setIdCardUri(null);
+              setSelfieUri(null);
+            }}
+          >
+            <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.btnGradient}>
+              <Text style={styles.btnText}>ส่งเอกสารใหม่</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
+  // =====================================================
+  // Render - Upload Form
+  // =====================================================
+  return (
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Header */}
+      <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.header}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backIcon}>←</Text>
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>ยืนยันตัวตน (KYC)</Text>
+          <Text style={styles.headerSubtitle}>เพื่อปลดล็อคฟีเจอร์ทั้งหมด</Text>
+        </View>
+      </LinearGradient>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Step Indicator */}
+        <View style={styles.stepRow}>
+          <View style={[styles.stepCircle, hasIdCard && styles.stepDone]}>
+            <Text style={styles.stepText}>{hasIdCard ? '✓' : '1'}</Text>
+          </View>
+          <View style={[styles.stepLine, hasIdCard && styles.stepLineDone]} />
+          <View style={[styles.stepCircle, hasSelfie && styles.stepDone]}>
+            <Text style={styles.stepText}>{hasSelfie ? '✓' : '2'}</Text>
+          </View>
+          <View style={[styles.stepLine, hasSelfie && styles.stepLineDone]} />
+          <View style={[styles.stepCircle, hasIdCard && hasSelfie && styles.stepDone]}>
+            <Text style={styles.stepText}>{hasIdCard && hasSelfie ? '✓' : '3'}</Text>
+          </View>
+        </View>
+
+        {/* Info Box */}
+        <View style={[styles.infoBox, isDark && styles.infoBoxDark]}>
+          <Text style={{ fontSize: 24 }}>ℹ️</Text>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={[styles.infoTitle, isDark && styles.textWhite]}>เอกสารที่ต้องใช้</Text>
+            <Text style={[styles.infoText, isDark && styles.textGray300]}>
+              1. รูปบัตรประชาชน (ด้านหน้า ชัดเจน){'\n'}
+              2. รูปเซลฟี่ถือบัตร (เห็นหน้าและบัตร)
+            </Text>
+          </View>
+        </View>
+
+        {/* ID Card Upload */}
+        <View style={[styles.uploadCard, isDark && styles.uploadCardDark, hasIdCard && styles.uploadCardDone]}>
+          <View style={styles.uploadHeader}>
+            <Text style={{ fontSize: 28 }}>{hasIdCard ? '✅' : '🪪'}</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.uploadTitle, isDark && styles.textWhite]}>รูปบัตรประชาชน</Text>
+              <Text style={styles.uploadSubtitle}>ด้านหน้า ชัดเจน</Text>
+            </View>
+            {hasIdCard && (
+              <View style={styles.doneBadge}>
+                <Text style={styles.doneBadgeText}>อัพโหลดแล้ว</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Preview */}
+          <View style={styles.previewBox}>
+            {isUploadingIdCard ? (
+              <View style={styles.uploadingBox}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.uploadingText}>กำลังอัพโหลด...</Text>
+              </View>
+            ) : idCardUri ? (
+              <Image source={{ uri: idCardUri }} style={styles.previewImage} resizeMode="cover" />
+            ) : hasIdCard ? (
+              <View style={styles.donePreview}>
+                <Text style={{ fontSize: 48 }}>✅</Text>
+                <Text style={styles.doneText}>อัพโหลดแล้ว</Text>
+              </View>
+            ) : (
+              <View style={styles.emptyPreview}>
+                <Text style={{ fontSize: 40 }}>📷</Text>
+                <Text style={[styles.emptyText, isDark && styles.textGray400]}>เลือกวิธีถ่ายรูป</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.uploadActions}>
+            <Pressable
+              style={styles.cameraBtn}
+              onPress={() => openCamera('id_card')}
+              disabled={isUploadingIdCard}
+            >
+              <Text style={{ fontSize: 18 }}>📷</Text>
+              <Text style={styles.cameraBtnText}>ถ่ายรูป</Text>
+            </Pressable>
+            <Pressable
+              style={styles.galleryBtn}
+              onPress={() => pickImage('id_card')}
+              disabled={isUploadingIdCard}
+            >
+              <Text style={{ fontSize: 18 }}>🖼️</Text>
+              <Text style={styles.galleryBtnText}>แกลเลอรี่</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Selfie Upload */}
+        <View style={[styles.uploadCard, isDark && styles.uploadCardDark, hasSelfie && styles.uploadCardDone]}>
+          <View style={styles.uploadHeader}>
+            <Text style={{ fontSize: 28 }}>{hasSelfie ? '✅' : '🤳'}</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.uploadTitle, isDark && styles.textWhite]}>รูปเซลฟี่ถือบัตร</Text>
+              <Text style={styles.uploadSubtitle}>เห็นหน้าและบัตรชัดเจน</Text>
+            </View>
+            {hasSelfie && (
+              <View style={styles.doneBadge}>
+                <Text style={styles.doneBadgeText}>อัพโหลดแล้ว</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Preview */}
+          <View style={[styles.previewBox, { height: 240 }]}>
+            {isUploadingSelfie ? (
+              <View style={styles.uploadingBox}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.uploadingText}>กำลังอัพโหลด...</Text>
+              </View>
+            ) : selfieUri ? (
+              <Image source={{ uri: selfieUri }} style={styles.previewImage} resizeMode="cover" />
+            ) : hasSelfie ? (
+              <View style={styles.donePreview}>
+                <Text style={{ fontSize: 48 }}>✅</Text>
+                <Text style={styles.doneText}>อัพโหลดแล้ว</Text>
+              </View>
+            ) : (
+              <View style={styles.emptyPreview}>
+                <Text style={{ fontSize: 40 }}>🤳</Text>
+                <Text style={[styles.emptyText, isDark && styles.textGray400]}>ถ่ายเซลฟี่ถือบัตร</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.uploadActions}>
+            <Pressable
+              style={styles.cameraBtn}
+              onPress={() => openCamera('selfie')}
+              disabled={isUploadingSelfie}
+            >
+              <Text style={{ fontSize: 18 }}>📷</Text>
+              <Text style={styles.cameraBtnText}>ถ่ายรูป</Text>
+            </Pressable>
+            <Pressable
+              style={styles.galleryBtn}
+              onPress={() => pickImage('selfie')}
+              disabled={isUploadingSelfie}
+            >
+              <Text style={{ fontSize: 18 }}>🖼️</Text>
+              <Text style={styles.galleryBtnText}>แกลเลอรี่</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Submit Button */}
+        <Pressable
+          style={[styles.submitBtn, (!hasIdCard || !hasSelfie) && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={!hasIdCard || !hasSelfie || isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFF" />
+          ) : hasIdCard && hasSelfie ? (
+            <LinearGradient colors={['#10B981', '#059669']} style={styles.btnGradient}>
+              <Text style={{ fontSize: 24 }}>🛡️</Text>
+              <Text style={styles.btnText}>ส่งเอกสารยืนยันตัวตน</Text>
+            </LinearGradient>
+          ) : (
+            <View style={[styles.btnGradient, { backgroundColor: '#374151' }]}>
+              <Text style={{ fontSize: 24 }}>🛡️</Text>
+              <Text style={[styles.btnText, { color: '#9CA3AF' }]}>กรุณาอัพโหลดให้ครบ</Text>
+            </View>
+          )}
+        </Pressable>
+
+        <Text style={styles.footerHint}>เอกสารจะถูกตรวจสอบภายใน 24-48 ชั่วโมง</Text>
+        <View style={{ height: 50 }} />
+      </ScrollView>
 
       {/* Camera Modal */}
-      <CameraModal
-        visible={showCamera}
-        onClose={() => setShowCamera(false)}
-        onCapture={(uri) => handleCameraCapture(uri, cameraType)}
-        imageType={cameraType}
-        facing={cameraType === 'selfie' ? 'front' : 'back'}
-      />
+      <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
+        <View style={styles.cameraContainer}>
+          <View style={styles.cameraHeader}>
+            <Pressable style={styles.cameraCloseBtn} onPress={() => setShowCamera(false)}>
+              <Text style={styles.cameraCloseText}>✕</Text>
+            </Pressable>
+            <Text style={styles.cameraTitle}>
+              {cameraType === 'id_card' ? 'ถ่ายรูปบัตรประชาชน' : 'ถ่ายเซลฟี่ถือบัตร'}
+            </Text>
+            <View style={{ width: 44 }} />
+          </View>
+
+          {cameraPermission?.granted ? (
+            <CameraView
+              ref={cameraRef}
+              style={styles.camera}
+              facing={cameraType === 'selfie' ? 'front' : 'back'}
+            >
+              <View style={styles.cameraOverlay}>
+                {cameraType === 'id_card' ? (
+                  <View style={styles.idCardFrame} />
+                ) : (
+                  <View style={styles.selfieFrame} />
+                )}
+              </View>
+            </CameraView>
+          ) : (
+            <View style={styles.noPermission}>
+              <Text style={{ fontSize: 48 }}>📷</Text>
+              <Text style={styles.noPermissionText}>ไม่สามารถเข้าถึงกล้องได้</Text>
+            </View>
+          )}
+
+          <View style={styles.cameraFooter}>
+            <Text style={styles.cameraHint}>
+              {cameraType === 'id_card'
+                ? 'วางบัตรในกรอบ ให้เห็นข้อมูลชัดเจน'
+                : 'ถือบัตรข้างใบหน้า ให้เห็นทั้งหน้าและบัตร'}
+            </Text>
+            <Pressable style={styles.captureBtn} onPress={takePhoto}>
+              <View style={styles.captureBtnInner} />
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-const mainStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  containerDark: {
-    backgroundColor: '#111827',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  textLight: {
-    color: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 24,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  backIcon: {
-    fontSize: 24,
-    color: '#FFF',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  loginIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  loginTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  loginSubtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 24,
-  },
-  loginButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  loginButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingText: {
-    color: '#6B7280',
-    marginTop: 12,
-  },
-  infoCard: {
-    flexDirection: 'row',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  infoCardDark: {
-    backgroundColor: '#1E3A8A',
-  },
-  infoTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1E40AF',
-    marginBottom: 4,
-  },
-  infoTitleDark: {
-    color: '#93C5FD',
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#3B82F6',
-    lineHeight: 20,
-  },
-  infoTextDark: {
-    color: '#BFDBFE',
-  },
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    gap: 10,
-  },
-  submitButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  submitButtonDisabled: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-    gap: 10,
-  },
-  submitButtonDisabledDark: {
-    backgroundColor: '#374151',
-  },
-  submitButtonTextDisabled: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footerHint: {
-    textAlign: 'center',
-    color: '#9CA3AF',
-    fontSize: 13,
-  },
+// =====================================================
+// Styles
+// =====================================================
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  containerDark: { backgroundColor: '#111827' },
+  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  bigIcon: { fontSize: 80 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', marginTop: 16 },
+  textWhite: { color: '#FFFFFF' },
+  textGray300: { color: '#D1D5DB' },
+  textGray400: { color: '#9CA3AF' },
+  subtitle: { fontSize: 16, color: '#6B7280', textAlign: 'center', marginTop: 8 },
+  loginBtn: { backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginTop: 24 },
+  loginBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+
+  // Success/Pending/Rejected
+  successCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#D1FAE5', justifyContent: 'center', alignItems: 'center' },
+  pendingCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#FEF3C7', justifyContent: 'center', alignItems: 'center' },
+  rejectedCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center' },
+  benefitBox: { backgroundColor: '#F0FDF4', borderRadius: 16, padding: 20, width: '100%', marginTop: 24 },
+  benefitBoxDark: { backgroundColor: '#1F2937' },
+  benefitTitle: { fontSize: 15, fontWeight: '600', color: '#1F2937', marginBottom: 12 },
+  benefitItem: { fontSize: 14, color: '#374151', marginBottom: 6 },
+  reasonBox: { backgroundColor: '#FEE2E2', borderRadius: 12, padding: 16, width: '100%', marginTop: 16 },
+  reasonTitle: { fontSize: 14, fontWeight: '600', color: '#B91C1C', marginBottom: 4 },
+  reasonText: { fontSize: 14, color: '#DC2626' },
+
+  // Buttons
+  primaryBtn: { borderRadius: 14, overflow: 'hidden', marginTop: 24, width: '100%' },
+  btnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 10 },
+  btnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  secondaryBtn: { backgroundColor: '#E5E7EB', paddingHorizontal: 32, paddingVertical: 16, borderRadius: 14, marginTop: 24 },
+  secondaryBtnDark: { backgroundColor: '#374151' },
+  secondaryBtnText: { color: '#374151', fontWeight: 'bold', fontSize: 16 },
+
+  // Header
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 24 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  backIcon: { fontSize: 24, color: '#FFF' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF' },
+  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+
+  // Content
+  content: { flex: 1, paddingHorizontal: 16 },
+
+  // Steps
+  stepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
+  stepCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E5E7EB', justifyContent: 'center', alignItems: 'center' },
+  stepDone: { backgroundColor: '#10B981' },
+  stepText: { fontSize: 16, fontWeight: 'bold', color: '#FFF' },
+  stepLine: { width: 50, height: 4, backgroundColor: '#E5E7EB', marginHorizontal: 8 },
+  stepLineDone: { backgroundColor: '#10B981' },
+
+  // Info Box
+  infoBox: { flexDirection: 'row', backgroundColor: '#EFF6FF', borderRadius: 16, padding: 16, marginBottom: 20 },
+  infoBoxDark: { backgroundColor: '#1E3A8A' },
+  infoTitle: { fontSize: 15, fontWeight: '600', color: '#1E40AF', marginBottom: 4 },
+  infoText: { fontSize: 13, color: '#3B82F6', lineHeight: 20 },
+
+  // Upload Card
+  uploadCard: { backgroundColor: '#FFF', borderRadius: 20, marginBottom: 20, overflow: 'hidden' },
+  uploadCardDark: { backgroundColor: '#1F2937' },
+  uploadCardDone: { borderWidth: 2, borderColor: '#10B981' },
+  uploadHeader: { flexDirection: 'row', alignItems: 'center', padding: 16 },
+  uploadTitle: { fontSize: 16, fontWeight: '600', color: '#1F2937' },
+  uploadSubtitle: { fontSize: 13, color: '#9CA3AF', marginTop: 2 },
+  doneBadge: { backgroundColor: '#10B981', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  doneBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+
+  // Preview
+  previewBox: { marginHorizontal: 16, height: 180, borderRadius: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: '#E5E7EB', overflow: 'hidden' },
+  previewImage: { width: '100%', height: '100%' },
+  uploadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)' },
+  uploadingText: { marginTop: 12, color: '#6B7280' },
+  donePreview: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#D1FAE5' },
+  doneText: { color: '#059669', fontWeight: '500', marginTop: 8 },
+  emptyPreview: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB' },
+  emptyText: { color: '#6B7280', marginTop: 12 },
+
+  // Upload Actions
+  uploadActions: { flexDirection: 'row', padding: 16, gap: 12 },
+  cameraBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#3B82F6', paddingVertical: 14, borderRadius: 12, gap: 8 },
+  cameraBtnText: { color: '#FFF', fontWeight: '600' },
+  galleryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB', paddingVertical: 14, borderRadius: 12, gap: 8 },
+  galleryBtnText: { color: '#374151', fontWeight: '600' },
+
+  // Submit
+  submitBtn: { borderRadius: 16, overflow: 'hidden', marginTop: 8 },
+  submitBtnDisabled: { opacity: 1 },
+  footerHint: { textAlign: 'center', color: '#9CA3AF', fontSize: 13, marginTop: 16 },
+
+  // Camera Modal
+  cameraContainer: { flex: 1, backgroundColor: '#000' },
+  cameraHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50, paddingHorizontal: 16, paddingBottom: 16 },
+  cameraCloseBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  cameraCloseText: { fontSize: 24, color: '#FFF' },
+  cameraTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  camera: { flex: 1 },
+  cameraOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
+  idCardFrame: { width: SCREEN_WIDTH - 60, height: (SCREEN_WIDTH - 60) * 0.63, borderWidth: 3, borderColor: '#3B82F6', borderRadius: 12 },
+  selfieFrame: { width: 200, height: 200, borderWidth: 3, borderColor: '#3B82F6', borderRadius: 100, borderStyle: 'dashed' },
+  noPermission: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  noPermissionText: { color: '#FFF', marginTop: 16 },
+  cameraFooter: { padding: 24, alignItems: 'center' },
+  cameraHint: { color: '#FFF', fontSize: 14, marginBottom: 20, textAlign: 'center' },
+  captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', borderWidth: 4, borderColor: '#FFF', justifyContent: 'center', alignItems: 'center' },
+  captureBtnInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFF' },
 });

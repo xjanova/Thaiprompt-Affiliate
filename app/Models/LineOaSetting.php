@@ -22,6 +22,7 @@ class LineOaSetting extends Model
         'messaging_channel_id',    // LINE Messaging API Channel ID (optional)
         'channel_access_token',    // LINE Messaging API Access Token
         'liff_id',
+        'custom_oa_name',          // ชื่อ LINE OA ที่กำหนดเอง (ถ้าไม่ใส่จะใช้ชื่อจากโทเค็น)
         'require_line_registration',
         'enable_line_messaging',
         'welcome_message',
@@ -96,6 +97,52 @@ class LineOaSetting extends Model
     public function getRegistrationSuccessMessageAttribute($value): string
     {
         return $value ?? "🎉 สมัครสมาชิกสำเร็จ!\n\nยินดีต้อนรับสู่ระบบ Affiliate ของเรา คุณได้เข้าร่วมทีมเรียบร้อยแล้ว\n\nคุณสามารถเข้าสู่ระบบและเริ่มต้นสร้างรายได้ได้ทันที!";
+    }
+
+    /**
+     * ดึงชื่อ LINE OA ที่จะแสดง
+     *
+     * ถ้ามีการกำหนด custom_oa_name จะใช้ชื่อนั้น
+     * ถ้าไม่ได้กำหนดจะ return null เพื่อให้ใช้ชื่อจาก API แทน
+     *
+     * @return string|null ชื่อ LINE OA หรือ null ถ้าไม่ได้กำหนด
+     */
+    public function getDisplayOaName(): ?string
+    {
+        return !empty($this->custom_oa_name) ? $this->custom_oa_name : null;
+    }
+
+    /**
+     * ดึงชื่อ LINE OA พร้อม fallback
+     *
+     * @param string|null $apiDisplayName ชื่อจาก LINE API
+     * @param string $default ค่าเริ่มต้นถ้าไม่มีชื่อเลย
+     * @return string
+     */
+    public function getOaNameWithFallback(?string $apiDisplayName = null, string $default = 'LINE OA'): string
+    {
+        // ใช้ชื่อที่กำหนดเองก่อน
+        if (!empty($this->custom_oa_name)) {
+            return $this->custom_oa_name;
+        }
+
+        // ถ้าไม่มีให้ใช้ชื่อจาก API
+        if (!empty($apiDisplayName)) {
+            return $apiDisplayName;
+        }
+
+        // ถ้าไม่มีทั้งคู่ใช้ค่า default
+        return $default;
+    }
+
+    /**
+     * ตรวจสอบว่ามีการกำหนดชื่อ LINE OA เองหรือไม่
+     *
+     * @return bool
+     */
+    public function hasCustomOaName(): bool
+    {
+        return !empty($this->custom_oa_name);
     }
 
     /**

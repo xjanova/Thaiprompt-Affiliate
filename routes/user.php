@@ -29,8 +29,25 @@ Route::get('/', function () {
     return redirect()->route('user.home');
 });
 
+// หน้าบังคับเชื่อมต่อ LINE (สำหรับ middleware require.line.uid)
+// ⚠️ ต้องไม่ติด middleware require.line.uid เอง (อยู่ใน exceptRoutes)
+Route::get('/line-required', function () {
+    // ถ้ามี LINE UID แล้ว redirect กลับไปหน้าเดิม
+    if (auth()->user()?->line_user_id) {
+        $redirect = session()->pull('line_redirect_after', route('user.dashboard'));
+        return redirect($redirect)->with('success', '✅ เชื่อมต่อ LINE เรียบร้อยแล้ว!');
+    }
+    return view('user.line-required');
+})->name('line-required');
+
+// ============================================
+// 🔒 Routes ที่ต้องมี LINE UID เพื่อยืนยันตัวตน
+// ============================================
 // หน้าหลักแบบ App-Like Interface (Hub Navigation)
-Route::get('/home', [DashboardController::class, 'home'])->name('home');
+// ⚠️ ใช้ soft mode เพื่อไม่บังคับ 100% แต่จะแสดง warning
+Route::get('/home', [DashboardController::class, 'home'])
+    ->middleware('require.line.uid:soft')
+    ->name('home');
 
 // หน้า Dashboard แบบเดิม (Stats, Charts, Activities)
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -71,8 +88,8 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
 });
 
-// Wallet Management (User)
-Route::prefix('wallet')->name('wallet.')->group(function () {
+// Wallet Management (User) - 🔒 ต้องมี LINE UID เพื่อยืนยันตัวตน
+Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
 
     // Topup Routes (ระบบเติมเงินแยกจากตะกร้าสินค้า)

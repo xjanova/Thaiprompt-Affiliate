@@ -316,8 +316,8 @@ EOT;
                 ->first();
         }
 
-        // Auto-select: prefer Claude, then OpenAI, then others
-        $preferredProviders = ['claude', 'openai', 'gemini', 'deepseek'];
+        // Auto-select: prefer Local Llama (ฟรี), then Meta Llama 4 (cloud), then others
+        $preferredProviders = ['meta-local', 'meta', 'claude', 'openai', 'gemini', 'deepseek'];
 
         foreach ($preferredProviders as $name) {
             $provider = AiProvider::where('name', $name)
@@ -346,10 +346,18 @@ EOT;
         }
 
         // Auto-select: prefer models good for content generation
+        // For Local Llama: prefer Llama 4 Scout (64GB RAM) หรือ Llama 3.1 70B
+        // For Meta Llama (Cloud): prefer Llama 4 Scout or Maverick
         // For Claude: prefer sonnet or opus
         // For OpenAI: prefer GPT-4 or GPT-3.5-turbo
 
         $preferredModels = [
+            'llama-4-scout',                // Local Llama 4 Scout 17B (best for 64GB RAM)
+            'llama3.1:70b',                 // Local Llama 3.1 70B (high quality)
+            'llama3.1:8b',                  // Local Llama 3.1 8B (medium)
+            'llama3.2:3b',                  // Local Llama 3.2 3B (fast)
+            'meta-llama/Llama-4',           // Cloud Llama 4 (Scout or Maverick)
+            'meta-llama/Llama-3.3',         // Cloud Llama 3.3
             'claude-3-sonnet',
             'claude-3-opus',
             'gpt-4',

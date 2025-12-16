@@ -63,7 +63,7 @@ class DatabaseSeeder extends Seeder
 
             // 5. AI & Integrations
             AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
-            AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
+            AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama 4)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
             AiRentalCloudProvidersSeeder::class, // 🆕 AI Rental Cloud GPU Providers (Google Colab, RunPod, Vast.ai, etc.)
             AiRentalModelSeeder::class,         // 🆕 AI Rental Models (Stable Diffusion, LLaMA, Whisper, CodeLlama, etc.)

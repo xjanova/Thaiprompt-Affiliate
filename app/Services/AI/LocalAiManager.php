@@ -2,10 +2,15 @@
 
 namespace App\Services\AI;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * จัดการ Local AI (Ollama)
+ *
+ * ใช้ HTTP requests แทน proc_open เพื่อรองรับ shared hosting
+ */
 class LocalAiManager
 {
     private string $serviceName = 'ollama';
@@ -13,6 +18,8 @@ class LocalAiManager
 
     /**
      * เริ่มต้น Ollama service
+     *
+     * @return array
      */
     public function start(): array
     {
@@ -62,6 +69,8 @@ class LocalAiManager
 
     /**
      * หยุด Ollama service
+     *
+     * @return array
      */
     public function stop(): array
     {
@@ -99,6 +108,8 @@ class LocalAiManager
 
     /**
      * Restart Ollama service
+     *
+     * @return array
      */
     public function restart(): array
     {
@@ -115,6 +126,8 @@ class LocalAiManager
 
     /**
      * ตรวจสอบสถานะ
+     *
+     * @return array
      */
     public function getStatus(): array
     {
@@ -133,6 +146,10 @@ class LocalAiManager
 
     /**
      * ตรวจสอบว่า Ollama ทำงานอยู่หรือไม่
+     *
+     * ใช้ HTTP request แทน Process
+     *
+     * @return bool
      */
     public function isRunning(): bool
     {
@@ -141,22 +158,16 @@ class LocalAiManager
             return Cache::get('ollama_status') === 'running';
         }
 
-        // ตรวจสอบด้วยการ ping API
+        // ตรวจสอบด้วยการ ping API ผ่าน HTTP
         try {
-            $result = Process::timeout(5)->run("curl -s -o /dev/null -w '%{http_code}' {$this->endpoint}/api/tags");
+            $response = Http::timeout(5)->get("{$this->endpoint}/api/tags");
 
-            if ($result->successful()) {
-                $httpCode = trim($result->output());
-                $running = $httpCode === '200';
-
-                if ($running) {
-                    Cache::put('ollama_status', 'running', 60);
-                }
-
-                return $running;
+            if ($response->successful()) {
+                Cache::put('ollama_status', 'running', 60);
+                return true;
             }
         } catch (\Exception $e) {
-            // Ignore
+            // ไม่สามารถเชื่อมต่อได้
         }
 
         return false;
@@ -164,14 +175,16 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูล process
+     *
+     * @return array|null
      */
     public function getProcessInfo(): ?array
     {
         try {
-            $result = Process::run('pgrep -a ollama');
+            $output = $this->runCommand('pgrep -a ollama');
 
-            if ($result->successful() && !empty(trim($result->output()))) {
-                $lines = explode("\n", trim($result->output()));
+            if (!empty($output)) {
+                $lines = explode("\n", trim($output));
                 $processes = [];
 
                 foreach ($lines as $line) {
@@ -203,6 +216,8 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูลการใช้ทรัพยากร
+     *
+     * @return array
      */
     public function getResourceUsage(): array
     {
@@ -241,16 +256,17 @@ class LocalAiManager
 
     /**
      * ดึงสถิติของ process
+     *
+     * @param string $pid
+     * @return array
      */
     private function getProcessStats(string $pid): array
     {
         try {
-            // ใช้ ps command เพื่อดึงข้อมูล CPU และ Memory
-            $result = Process::run("ps -p {$pid} -o %cpu,%mem,rss --no-headers");
+            $output = $this->runCommand("ps -p {$pid} -o %cpu,%mem,rss --no-headers");
 
-            if ($result->successful()) {
-                $output = trim($result->output());
-                $parts = preg_split('/\s+/', $output);
+            if (!empty($output)) {
+                $parts = preg_split('/\s+/', trim($output));
 
                 if (count($parts) >= 3) {
                     return [
@@ -275,15 +291,17 @@ class LocalAiManager
 
     /**
      * คำนวณ memory percent จากระบบทั้งหมด
+     *
+     * @param float $memoryMb
+     * @return float
      */
     private function calculateMemoryPercent(float $memoryMb): float
     {
         try {
-            $result = Process::run('free -m | grep Mem:');
+            $output = $this->runCommand('free -m | grep Mem:');
 
-            if ($result->successful()) {
-                $line = trim($result->output());
-                $parts = preg_split('/\s+/', $line);
+            if (!empty($output)) {
+                $parts = preg_split('/\s+/', trim($output));
 
                 if (count($parts) >= 2) {
                     $totalMemMb = (int) $parts[1];
@@ -299,22 +317,24 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูล GPU usage
+     *
+     * @return array|null
      */
     public function getGpuUsage(): ?array
     {
         try {
             // ตรวจสอบว่ามี nvidia-smi หรือไม่
-            $result = Process::run('which nvidia-smi');
+            $which = $this->runCommand('which nvidia-smi 2>/dev/null');
 
-            if (!$result->successful()) {
+            if (empty($which)) {
                 return null;
             }
 
             // ดึงข้อมูล GPU
-            $result = Process::run('nvidia-smi --query-gpu=index,name,utilization.gpu,utilization.memory,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits');
+            $output = $this->runCommand('nvidia-smi --query-gpu=index,name,utilization.gpu,utilization.memory,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits 2>/dev/null');
 
-            if ($result->successful()) {
-                $lines = explode("\n", trim($result->output()));
+            if (!empty($output)) {
+                $lines = explode("\n", trim($output));
                 $gpus = [];
 
                 foreach ($lines as $line) {
@@ -352,6 +372,8 @@ class LocalAiManager
 
     /**
      * ดึง uptime
+     *
+     * @return string|null
      */
     private function getUptime(): ?string
     {
@@ -363,10 +385,10 @@ class LocalAiManager
 
         try {
             $pid = $processInfo['processes'][0]['pid'];
-            $result = Process::run("ps -p {$pid} -o etime --no-headers");
+            $output = $this->runCommand("ps -p {$pid} -o etime --no-headers");
 
-            if ($result->successful()) {
-                return trim($result->output());
+            if (!empty($output)) {
+                return trim($output);
             }
         } catch (\Exception $e) {
             // Ignore
@@ -377,47 +399,73 @@ class LocalAiManager
 
     /**
      * พยายามเริ่ม service
+     *
+     * @return array
      */
     private function tryStartService(): array
     {
+        // ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
+        if (!$this->canExecuteCommands()) {
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถรันคำสั่งได้ (exec ถูก disable) กรุณาเริ่ม Ollama ด้วยตนเอง',
+                'manual_command' => 'ollama serve',
+            ];
+        }
+
         // วิธีที่ 1: systemctl (สำหรับ systemd)
-        $result = Process::run('systemctl start ollama 2>&1');
-        if ($result->successful()) {
+        $output = $this->runCommand('systemctl start ollama 2>&1');
+        if (strpos($output, 'error') === false && strpos($output, 'Failed') === false) {
             return ['success' => true, 'method' => 'systemctl'];
         }
 
         // วิธีที่ 2: service command
-        $result = Process::run('service ollama start 2>&1');
-        if ($result->successful()) {
+        $output = $this->runCommand('service ollama start 2>&1');
+        if (strpos($output, 'error') === false && strpos($output, 'Failed') === false) {
             return ['success' => true, 'method' => 'service'];
         }
 
         // วิธีที่ 3: รัน ollama serve โดยตรงใน background
-        $result = Process::run('nohup ollama serve > /tmp/ollama.log 2>&1 &');
-        if ($result->successful()) {
+        $this->runCommand('nohup ollama serve > /tmp/ollama.log 2>&1 &');
+        sleep(2); // รอให้เริ่ม
+
+        if ($this->isRunning()) {
             return ['success' => true, 'method' => 'direct'];
         }
 
         return [
             'success' => false,
             'message' => 'ไม่สามารถเริ่ม Ollama ได้ กรุณาเริ่มด้วยตนเอง',
+            'manual_command' => 'ollama serve',
         ];
     }
 
     /**
      * พยายามหยุด service
+     *
+     * @return array
      */
     private function tryStopService(): array
     {
+        // ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
+        if (!$this->canExecuteCommands()) {
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถรันคำสั่งได้ (exec ถูก disable) กรุณาหยุด Ollama ด้วยตนเอง',
+            ];
+        }
+
         // วิธีที่ 1: systemctl
-        $result = Process::run('systemctl stop ollama 2>&1');
-        if ($result->successful()) {
+        $this->runCommand('systemctl stop ollama 2>&1');
+        sleep(1);
+        if (!$this->isRunning()) {
             return ['success' => true, 'method' => 'systemctl'];
         }
 
         // วิธีที่ 2: service command
-        $result = Process::run('service ollama stop 2>&1');
-        if ($result->successful()) {
+        $this->runCommand('service ollama stop 2>&1');
+        sleep(1);
+        if (!$this->isRunning()) {
             return ['success' => true, 'method' => 'service'];
         }
 
@@ -425,9 +473,12 @@ class LocalAiManager
         $processInfo = $this->getProcessInfo();
         if ($processInfo['found']) {
             foreach ($processInfo['processes'] as $process) {
-                Process::run("kill {$process['pid']}");
+                $this->runCommand("kill {$process['pid']} 2>/dev/null");
             }
-            return ['success' => true, 'method' => 'kill'];
+            sleep(1);
+            if (!$this->isRunning()) {
+                return ['success' => true, 'method' => 'kill'];
+            }
         }
 
         return [
@@ -438,14 +489,23 @@ class LocalAiManager
 
     /**
      * รอจนกว่า service จะพร้อม
+     *
+     * @param int $maxSeconds
+     * @return bool
      */
     private function waitUntilReady(int $maxSeconds = 10): bool
     {
         $startTime = time();
 
         while ((time() - $startTime) < $maxSeconds) {
-            if ($this->isRunning()) {
-                return true;
+            // ใช้ HTTP check แทน
+            try {
+                $response = Http::timeout(2)->get("{$this->endpoint}/api/tags");
+                if ($response->successful()) {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                // ยังไม่พร้อม
             }
             sleep(1);
         }
@@ -455,6 +515,8 @@ class LocalAiManager
 
     /**
      * ดึงรายการโมเดลที่กำลังโหลดอยู่ใน memory
+     *
+     * @return array
      */
     public function getLoadedModels(): array
     {
@@ -463,10 +525,10 @@ class LocalAiManager
         }
 
         try {
-            $result = Process::run("curl -s {$this->endpoint}/api/ps");
+            $response = Http::timeout(10)->get("{$this->endpoint}/api/ps");
 
-            if ($result->successful()) {
-                $data = json_decode($result->output(), true);
+            if ($response->successful()) {
+                $data = $response->json();
 
                 if (isset($data['models'])) {
                     return array_map(function ($model) {
@@ -489,6 +551,9 @@ class LocalAiManager
 
     /**
      * ทำให้โมเดลพร้อมใช้งาน (load เข้า memory)
+     *
+     * @param string $modelName
+     * @return array
      */
     public function loadModel(string $modelName): array
     {
@@ -501,9 +566,12 @@ class LocalAiManager
 
         try {
             // ส่ง request เปล่าไปที่โมเดลเพื่อให้ load
-            $result = Process::timeout(30)->run("curl -s -X POST {$this->endpoint}/api/generate -d '{\"model\":\"{$modelName}\",\"prompt\":\"\"}'");
+            $response = Http::timeout(60)->post("{$this->endpoint}/api/generate", [
+                'model' => $modelName,
+                'prompt' => '',
+            ]);
 
-            if ($result->successful()) {
+            if ($response->successful()) {
                 return [
                     'success' => true,
                     'message' => 'โหลดโมเดลเข้า memory แล้ว',
@@ -524,6 +592,8 @@ class LocalAiManager
 
     /**
      * ดึงสถิติรวม
+     *
+     * @return array
      */
     public function getSummaryStats(): array
     {
@@ -538,5 +608,37 @@ class LocalAiManager
             'resource_usage' => $status['resource_usage'],
             'endpoint' => $this->endpoint,
         ];
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
+     *
+     * @return bool
+     */
+    private function canExecuteCommands(): bool
+    {
+        return function_exists('exec') &&
+               !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+    }
+
+    /**
+     * รันคำสั่ง shell อย่างปลอดภัย
+     *
+     * @param string $command
+     * @return string
+     */
+    private function runCommand(string $command): string
+    {
+        if (!$this->canExecuteCommands()) {
+            return '';
+        }
+
+        try {
+            $output = [];
+            @exec($command, $output);
+            return implode("\n", $output);
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 }

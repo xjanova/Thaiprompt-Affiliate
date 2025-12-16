@@ -1,14 +1,17 @@
 /**
  * Tab Layout - Premium Version with 3D Effect
  * เพิ่มมิติให้เมนูล่างและปุ่มรถเข็ญช๊อปปิ้ง
+ * + Sync Status Indicator
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Tabs, router, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, Platform, Pressable, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
 import { getUnreadNotificationCount } from '@/services/api';
 
 // Tab icons ใช้ emoji
@@ -315,6 +318,149 @@ const NotificationTabButton = ({
   );
 };
 
+// Sync Status Indicator Component - แสดงสถานะการ sync
+const SyncStatusBadge = () => {
+  const { status, lastSyncTime, isConnected } = useSyncStore();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0.5)).current;
+
+  const statusConfig = {
+    online: { icon: '🟢', color: '#10B981', label: 'ออนไลน์' },
+    offline: { icon: '🔴', color: '#EF4444', label: 'ออฟไลน์' },
+    syncing: { icon: '🔄', color: '#3B82F6', label: 'Syncing...' },
+    error: { icon: '⚠️', color: '#F59E0B', label: 'ผิดพลาด' },
+  };
+
+  const config = statusConfig[status];
+
+  // Animations
+  useEffect(() => {
+    // Glow pulse
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.3,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    glow.start();
+
+    return () => glow.stop();
+  }, [glowAnim]);
+
+  // Syncing animation
+  useEffect(() => {
+    if (status === 'syncing') {
+      const rotate = Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+      rotate.start();
+
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulse.start();
+
+      return () => {
+        rotate.stop();
+        pulse.stop();
+      };
+    }
+    rotateAnim.setValue(0);
+    pulseAnim.setValue(1);
+  }, [status, rotateAnim, pulseAnim]);
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  // Format last sync time
+  const getLastSyncText = () => {
+    if (!lastSyncTime) return '';
+    const diff = Date.now() - lastSyncTime.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'เมื่อสักครู่';
+    if (mins < 60) return `${mins}น.`;
+    return `${Math.floor(mins / 60)}ชม.`;
+  };
+
+  return (
+    <Pressable style={styles.syncContainer}>
+      <BlurView intensity={25} tint="dark" style={styles.syncBlur}>
+        <View style={styles.syncContent}>
+          {/* Glow effect */}
+          <Animated.View
+            style={[
+              styles.syncGlow,
+              {
+                backgroundColor: config.color,
+                opacity: glowAnim,
+              },
+            ]}
+          />
+
+          {/* Status icon */}
+          <Animated.View
+            style={[
+              styles.syncIconContainer,
+              { transform: [{ scale: pulseAnim }] },
+            ]}
+          >
+            <Animated.Text
+              style={[
+                styles.syncIcon,
+                status === 'syncing' && { transform: [{ rotate: spin }] },
+              ]}
+            >
+              {config.icon}
+            </Animated.Text>
+          </Animated.View>
+
+          {/* Status text */}
+          <View style={styles.syncTextContainer}>
+            <Text style={styles.syncLabel}>{config.label}</Text>
+            {status === 'online' && lastSyncTime && (
+              <Text style={styles.syncTime}>{getLastSyncText()}</Text>
+            )}
+          </View>
+
+          {/* Connection indicator */}
+          <Text style={styles.syncConnection}>
+            {isConnected ? '📶' : '📵'}
+          </Text>
+        </View>
+      </BlurView>
+    </Pressable>
+  );
+};
+
 // Tab Button Component with 3D effect
 const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active: string; inactive: string }; label: string }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -370,6 +516,13 @@ const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active:
 export default function TabLayout() {
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
+  const { startSync, completeSync } = useSyncStore();
+
+  // เริ่มต้น Sync Monitor
+  useEffect(() => {
+    const unsubscribe = initSyncMonitor();
+    return () => unsubscribe();
+  }, []);
 
   // ดึงจำนวนข้อความที่ยังไม่ได้อ่าน
   const fetchUnreadCount = useCallback(async () => {
@@ -411,6 +564,11 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Sync Status Badge - แสดงสถานะการ sync ด้านบน tab bar */}
+      <View style={styles.syncBadgeWrapper}>
+        <SyncStatusBadge />
+      </View>
+
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -690,5 +848,67 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  // Sync Status Badge Styles
+  syncBadgeWrapper: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 95 : 75,
+    left: 12,
+    zIndex: 100,
+  },
+  syncContainer: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  syncBlur: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  syncContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  syncGlow: {
+    position: 'absolute',
+    left: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  syncIconContainer: {
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  syncIcon: {
+    fontSize: 12,
+  },
+  syncTextContainer: {
+    marginLeft: 6,
+    marginRight: 6,
+  },
+  syncLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  syncTime: {
+    fontSize: 9,
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  syncConnection: {
+    fontSize: 12,
   },
 });

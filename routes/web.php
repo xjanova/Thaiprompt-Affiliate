@@ -259,6 +259,50 @@ Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
     Route::post('/deny', [\App\Http\Controllers\MobileLoginController::class, 'deny'])->name('deny');
 });
 
+// Mobile Web Session (เปิดหน้าเว็บจากแอพพร้อม authentication)
+// ใช้สำหรับ: Wallet topup, Payment pages, Settings
+Route::get('/mobile-web-session', function (\Illuminate\Http\Request $request) {
+    $token = $request->get('token');
+
+    if (!$token) {
+        return redirect('/login')->with('error', 'ลิงก์ไม่ถูกต้อง');
+    }
+
+    // ตรวจสอบ token
+    $tokenHash = hash('sha256', $token);
+    $cacheKey = 'web_session_token:' . $tokenHash;
+    $sessionData = \Cache::get($cacheKey);
+
+    if (!$sessionData) {
+        return redirect('/login')->with('error', 'ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาลองใหม่จากแอพ');
+    }
+
+    // ลบ token (ใช้ได้ครั้งเดียว)
+    \Cache::forget($cacheKey);
+
+    // ค้นหา user
+    $user = \App\Models\User::find($sessionData['user_id']);
+    if (!$user) {
+        return redirect('/login')->with('error', 'ไม่พบบัญชีผู้ใช้');
+    }
+
+    // Login user
+    \Auth::login($user);
+    $request->session()->regenerate();
+
+    // รับ query params เพิ่มเติม (เช่น amount)
+    $queryParams = $request->except(['token']);
+    $redirectPath = $sessionData['redirect_path'] ?? '/user/wallet/topup';
+
+    // เพิ่ม query params ลงใน redirect path
+    if (!empty($queryParams)) {
+        $redirectPath .= (strpos($redirectPath, '?') !== false ? '&' : '?') . http_build_query($queryParams);
+    }
+
+    // Redirect ไปหน้าที่ต้องการ
+    return redirect($redirectPath);
+})->name('mobile-web-session');
+
 // Language Switcher (Public - no auth required)
 Route::prefix('language')->name('language.')->group(function () {
     Route::get('/switch/{lang}', [\App\Http\Controllers\LanguageSwitcherController::class, 'switch'])->name('switch');
@@ -272,6 +316,25 @@ Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.thr
     Route::match(['GET', 'HEAD'], '/invite/{memberCode}', [\App\Http\Controllers\LineSignupController::class, 'inviteByMemberCode'])->name('invite');
     Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
     Route::match(['GET', 'HEAD'], '/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
+});
+
+// LINE Registration - บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร
+// ✅ ระบบใหม่: polling session + auto-redirect หลังสมัครเสร็จ
+Route::prefix('line/registration')->name('line.registration.')->group(function () {
+    // หน้าสมัครสมาชิก - แสดง QR Code และ polling status
+    Route::get('/', [\App\Http\Controllers\LineRegistrationController::class, 'showRegister'])->name('register');
+
+    // API: เช็คสถานะ session (สำหรับ polling)
+    Route::get('/status/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'checkStatus'])->name('status');
+
+    // API: บันทึกการคลิกปุ่มเพิ่มเพื่อน
+    Route::post('/click/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'recordAddFriendClick'])->name('click');
+
+    // หน้า complete - auto-login และ redirect ไปอัพเดทข้อมูล
+    Route::get('/complete/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'completeRegistration'])->name('complete');
+
+    // API: ยกเลิก session
+    Route::post('/cancel/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'cancelSession'])->name('cancel');
 });
 
 // LINE Membership Signup System (New AI-Powered Signup)

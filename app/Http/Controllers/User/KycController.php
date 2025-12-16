@@ -17,8 +17,13 @@ class KycController extends Controller
      *
      * แสดงหน้าสถานะการยืนยันตัวตน พร้อม sync kyc_status อัตโนมัติ
      *
-     * ⚠️ NOTE: kyc_status enum ในฐานข้อมูลคือ ['pending', 'approved', 'rejected', 'expired']
-     * - null = ยังไม่ได้ส่งเอกสาร (ใช้แทน 'not_submitted')
+     * kyc_status enum ในฐานข้อมูล: ['not_submitted', 'draft', 'pending', 'approved', 'rejected', 'expired']
+     * - not_submitted = ยังไม่ได้ส่งเอกสาร
+     * - draft = กำลัง upload รูป ยังไม่ submit
+     * - pending = รอตรวจสอบ
+     * - approved = ผ่านการยืนยัน
+     * - rejected = ไม่ผ่านการยืนยัน
+     * - expired = หมดอายุ
      */
     public function index()
     {
@@ -26,7 +31,12 @@ class KycController extends Controller
         $kycVerification = $user->latestKycVerification;
 
         // Sync kyc_status จาก KycVerification (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
-        if ($kycVerification && $user->kyc_status !== $kycVerification->status) {
+        // ⚠️ เฉพาะ status ที่ users.kyc_status รองรับ (ไม่รวม 'draft' เพราะหมายถึงยังไม่ submit)
+        // 'draft' จะถูก sync หลังจาก migration เพิ่ม enum value แล้ว
+        $syncableStatuses = ['pending', 'approved', 'rejected'];
+        if ($kycVerification &&
+            in_array($kycVerification->status, $syncableStatuses) &&
+            $user->kyc_status !== $kycVerification->status) {
             $user->forceFill(['kyc_status' => $kycVerification->status])->save();
             $user->refresh(); // รีเฟรชข้อมูล user
         }

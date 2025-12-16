@@ -2,7 +2,7 @@
   "expo": {
     "name": "TP UltraAPP",
     "slug": "thaiprompt",
-    "version": "1.6.8",
+    "version": "3.383.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -100,9 +100,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "6bfc1cff-7c16-4a7e-8727-c280c2287c22"
+        "projectId": "9fc18c2e-b74b-40e6-af00-ae136471d9fa"
       }
     },
-    "owner": "thaiprompt104"
+    "owner": "thaiprompt03"
   }
 }

@@ -55,13 +55,17 @@ class MobileApiController extends Controller
 
         if (!$seller) {
             // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
+            // ⚠️ หมายเหตุ: role อยู่ใน $guarded ดังนั้นต้องใช้ direct assignment
             $seller = User::create([
                 'name' => config('shop.official_shop.name', 'Official Shop'),
                 'email' => $email,
                 'password' => Hash::make(Str::random(32)),
-                'role' => 'seller',
                 'email_verified_at' => now(),
             ]);
+
+            // Set role ด้วย direct assignment เพราะ role อยู่ใน $guarded
+            $seller->role = 'seller';
+            $seller->save();
         }
 
         self::$officialSeller = $seller;
@@ -284,11 +288,11 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // max 5MB
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120', // max 5MB, รองรับ iPhone HEIC/HEIF
         ], [
             'avatar.required' => 'กรุณาเลือกรูปภาพ',
             'avatar.image' => 'ไฟล์ต้องเป็นรูปภาพ',
-            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp',
+            'avatar.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic, heif',
             'avatar.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
         ]);
 
@@ -544,144 +548,11 @@ class MobileApiController extends Controller
     // Cart (ใช้ Session/Cache สำหรับ Guest, DB สำหรับ User)
     // =====================================================
 
-    /**
-     * ดึงตะกร้าสินค้า
-     *
-     * @return JsonResponse
-     */
-    public function getCart(): JsonResponse
-    {
-        $user = Auth::user();
-
-        // ดึง cart จาก cache หรือ DB
-        $cart = $this->getUserCart($user);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'items' => $cart['items'] ?? [],
-                'total' => $cart['total'] ?? 0,
-                'itemCount' => $cart['item_count'] ?? 0,
-            ],
-        ]);
-    }
-
-    /**
-     * เพิ่มสินค้าลงตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function addToCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $product = Product::find($request->product_id);
-
-        if (!$product || !$product->is_active) {
-            return response()->json([
-                'success' => false,
-                'message' => 'สินค้าไม่พร้อมจำหน่าย',
-            ], 400);
-        }
-
-        // เพิ่มลง cart
-        $cart = $this->addItemToCart($user, $product, $request->quantity);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'เพิ่มสินค้าลงตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
-
-    /**
-     * อัพเดทจำนวนสินค้าในตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function updateCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $cart = $this->updateCartItem($user, $request->product_id, $request->quantity);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'อัพเดทตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
-
-    /**
-     * ลบสินค้าออกจากตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function removeFromCart(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'product_id' => 'required|exists:products,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $user = Auth::user();
-        $cart = $this->removeCartItem($user, $request->product_id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'ลบสินค้าออกจากตะกร้าแล้ว',
-            'data' => [
-                'items' => $cart['items'],
-                'total' => $cart['total'],
-                'itemCount' => $cart['item_count'],
-            ],
-        ]);
-    }
+    // NOTE: Cart public methods (getCart, addToCart, updateCartItem, removeFromCart, clearCart)
+    // ถูกย้ายไปส่วนท้ายของไฟล์ (ดู line ~3400+) เพื่อใช้ DB-based cart แทน cache-based
 
     // =====================================================
-    // Cart Helper Methods
+    // Cart Helper Methods (Legacy - สำหรับ backward compatibility)
     // =====================================================
 
     /**
@@ -754,9 +625,9 @@ class MobileApiController extends Controller
     }
 
     /**
-     * อัพเดทจำนวนสินค้าใน cart
+     * อัพเดทจำนวนสินค้าใน cart (Legacy - cache-based)
      */
-    private function updateCartItem($user, int $productId, int $quantity): array
+    private function updateCartItemInCache($user, int $productId, int $quantity): array
     {
         $cart = $this->getUserCart($user);
         $items = $cart['items'] ?? [];
@@ -792,11 +663,11 @@ class MobileApiController extends Controller
     }
 
     /**
-     * ลบสินค้าออกจาก cart
+     * ลบสินค้าออกจาก cart (Legacy - cache-based)
      */
-    private function removeCartItem($user, int $productId): array
+    private function removeCartItemFromCache($user, int $productId): array
     {
-        return $this->updateCartItem($user, $productId, 0);
+        return $this->updateCartItemInCache($user, $productId, 0);
     }
 
     // =====================================================
@@ -1298,14 +1169,17 @@ class MobileApiController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'id_card_image' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
-            'selfie_image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            // รองรับ heic/heif สำหรับ iPhone และ webp สำหรับ Android
+            'id_card_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120', // 5MB max
+            'selfie_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120',
         ], [
             'id_card_image.required' => 'กรุณาอัพโหลดรูปบัตรประชาชน',
             'id_card_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'id_card_image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'id_card_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
             'selfie_image.required' => 'กรุณาอัพโหลดรูปถ่ายคู่บัตร',
             'selfie_image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'selfie_image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'selfie_image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
         ]);
 
@@ -1379,11 +1253,13 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            // รองรับ heic/heif สำหรับ iPhone และ webp สำหรับ Android
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp,heic,heif|max:5120',
             'type' => 'required|in:id_card,selfie',
         ], [
             'image.required' => 'กรุณาอัพโหลดรูปภาพ',
             'image.image' => 'ไฟล์ต้องเป็นรูปภาพ',
+            'image.mimes' => 'รองรับเฉพาะไฟล์ jpeg, png, jpg, gif, webp, heic',
             'image.max' => 'ขนาดไฟล์ต้องไม่เกิน 5MB',
             'type.required' => 'กรุณาระบุประเภทเอกสาร',
             'type.in' => 'ประเภทเอกสารไม่ถูกต้อง',
@@ -4631,15 +4507,17 @@ class MobileApiController extends Controller
             // ดึงหรือสร้าง Official Seller (ใช้ logic เดียวกับ Admin Panel)
             $seller = $this->getOrCreateOfficialSeller();
 
-            // นับจำนวนสินค้าที่ active ของ official seller
-            $productCount = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
+            // นับจำนวนสินค้าที่ active ทั้งหมด (ไม่เฉพาะ Official เพื่อให้ตรงกับที่แสดงในแอพ)
+            $productCount = Product::where('is_active', true)->count();
+
+            // นับจำนวนสินค้าแนะนำทั้งหมด
+            $featuredCount = Product::where('is_active', true)
+                ->where('is_featured', true)
                 ->count();
 
-            // นับจำนวนสินค้าแนะนำ
-            $featuredCount = Product::where('seller_id', $seller->id)
+            // นับจำนวนสินค้า Official Shop (สำหรับแสดงใน UI)
+            $officialProductCount = Product::where('seller_id', $seller->id)
                 ->where('is_active', true)
-                ->where('is_featured', true)
                 ->count();
 
             return response()->json([
@@ -4647,8 +4525,8 @@ class MobileApiController extends Controller
                 'data' => [
                     'id' => 'premium',
                     'sellerId' => $seller->id,
-                    'name' => config('shop.official_shop.name', 'Official Shop'),
-                    'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง รับประกันแท้ 100%'),
+                    'name' => config('shop.official_shop.name', 'Thaiprompt Shop'),
+                    'description' => config('shop.official_shop.description', 'ร้านค้าทางการของระบบ สินค้าคุณภาพสูง คอมมิชชั่นสูง'),
                     'logo' => config('shop.official_shop.logo') ?: asset('images/premium-store-logo.png'),
                     'banner' => config('shop.official_shop.banner') ?: asset('images/premium-store-banner.png'),
                     'rating' => 5.0,
@@ -4656,14 +4534,15 @@ class MobileApiController extends Controller
                     'isOfficial' => true,
                     'isPremium' => true,
                     'productCount' => $productCount,
+                    'officialProductCount' => $officialProductCount,
                     'featuredCount' => $featuredCount,
                     'verified' => true,
                     'commissionRate' => config('shop.official_shop.default_commission_rate', 25),
                     'features' => [
                         'สินค้าของแท้ 100%',
                         'รับประกันคุณภาพ',
-                        'จัดส่งฟรีเมื่อซื้อครบ 500 บาท',
-                        'คืนสินค้าได้ภายใน 30 วัน',
+                        'คอมมิชชั่นสูง',
+                        'จัดส่งรวดเร็ว',
                     ],
                 ],
             ]);
@@ -4696,11 +4575,19 @@ class MobileApiController extends Controller
             $category = $request->get('category');
             $featured = $request->boolean('featured', false);
             $search = $request->get('search');
+            $officialOnly = $request->boolean('official_only', false);
 
-            // ดึงเฉพาะสินค้าของ Official Shop
-            $query = Product::where('seller_id', $seller->id)
-                ->where('is_active', true)
+            // เริ่มต้น query สำหรับสินค้า active ทั้งหมด
+            $query = Product::where('is_active', true)
                 ->with('category');
+
+            // ถ้าต้องการเฉพาะ Official Shop หรือมีสินค้า Official Shop
+            if ($officialOnly) {
+                $query->where('seller_id', $seller->id);
+            } else {
+                // ดึงทุกสินค้า แต่ให้ Official Shop มาก่อน
+                $query->orderByRaw("CASE WHEN seller_id = ? THEN 0 ELSE 1 END", [$seller->id]);
+            }
 
             // กรองตามหมวดหมู่
             if ($category) {
@@ -5152,6 +5039,69 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด',
+            ], 500);
+        }
+    }
+
+    // =====================================================
+    // Web Session API (สำหรับเปิดหน้าเว็บจากแอพ)
+    // =====================================================
+
+    /**
+     * สร้าง one-time token สำหรับเปิดหน้าเว็บพร้อม authentication
+     *
+     * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function generateWebSessionToken(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $redirectPath = $request->input('redirect_path', '/user/wallet/topup');
+
+            // สร้าง one-time token
+            $token = Str::random(64);
+            $tokenHash = hash('sha256', $token);
+
+            // บันทึกลง Cache (หมดอายุใน 5 นาที)
+            $cacheKey = 'web_session_token:' . $tokenHash;
+            \Cache::put($cacheKey, [
+                'user_id' => $user->id,
+                'redirect_path' => $redirectPath,
+                'created_at' => now()->toISOString(),
+                'ip' => $request->ip(),
+            ], now()->addMinutes(5));
+
+            // สร้าง URL
+            $baseUrl = rtrim(config('app.url'), '/');
+            $webUrl = $baseUrl . '/mobile-web-session?token=' . $token;
+
+            // ถ้ามี query params เพิ่มเติม (เช่น amount)
+            if ($request->has('query_params')) {
+                $queryParams = $request->input('query_params');
+                if (is_array($queryParams)) {
+                    $webUrl .= '&' . http_build_query($queryParams);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้าง session token สำเร็จ',
+                'data' => [
+                    'url' => $webUrl,
+                    'expires_in' => 300, // 5 นาที (วินาที)
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Generate Web Session Token Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถสร้าง session token ได้',
             ], 500);
         }
     }

@@ -2,6 +2,304 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.25] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข KYC upload ไม่แสดงรูป และลบปุ่มเปลี่ยนรหัสผ่านซ้ำซ้อน (3410409e)
+- fix: แก้ไขปัญหา avatar upload ไม่บันทึก และลบปุ่มลืมรหัสผ่าน (0647f4cb)
+### 🔧 Other Changes
+- Merge pull request #2294 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (6d7f397a)
+
+## [v3.383.24] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2293 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (a0e4b2a2)
+- feat(rank): create unified rank icon component and fix display issues (9c62c28f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.383.23] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2292 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (6d25adac)
+- fix(kyc): make KycController defensive against invalid enum values (5378c6e1)
+### 🔧 Other Changes
+
+
+## [v3.383.22] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2291 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (87718ec4)
+- fix(kyc): also add 'draft' to kyc_status enum (931bff53)
+### 🔧 Other Changes
+
+
+## [v3.383.21] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2290 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (fe79cfa7)
+- fix(kyc): add 'not_submitted' to kyc_status enum in users table (85751e3a)
+### 🔧 Other Changes
+
+
+## [v3.383.20] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(line): improve Super Admin fallback for sponsor lookup (b5ccf557)
+- fix(kyc): handle draft status in user dashboard (2d2eb801)
+### 🔧 Other Changes
+- Merge pull request #2289 from xjanova/claude/line-oa-registration-check-gXbcU (b26de4a2)
+
+## [v3.383.19] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2288 from xjanova/claude/line-oa-registration-check-gXbcU (f8d33ec9)
+- feat(ui): add premium login page with firefly effects (994ba258)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.383.18] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2287 from xjanova/claude/line-oa-registration-check-gXbcU (6ccb4ff2)
+- feat(line): always show sponsor on registration page (8005ab33)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.383.17] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2286 from xjanova/claude/line-oa-registration-check-gXbcU (6ad7bdc3)
+- feat(line): require LINE UID for user verification (193150ec)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.383.16] - 2025-12-16
+
+### ✨ Features
+- feat(line): send app download links after successful registration (6b582d75)
+- feat(ui): add firefly effect to LINE registration page (119512de)
+- feat(line): add signup rewards and incentives to LINE registration page (73a28e32)
+- feat(register): redirect all registration to LINE OA registration page (ae69fe74)
+### 🐛 Bug Fixes
+- fix(line): link referral chain from LineRegistrationSession to prospect (bfcb0577)
+### 🔧 Other Changes
+- Merge pull request #2285 from xjanova/claude/line-oa-registration-check-gXbcU (f0cf3710)
+
+## [v3.383.15] - 2025-12-15
+
+### ✨ Features
+- Merge pull request #2284 from xjanova/claude/line-oa-registration-check-gXbcU (b3962dae)
+- feat(line): add LINE OA registration check with session tracking (150e5ae7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.383.14] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2283 from xjanova/claude/fix-profile-upload-error-xLzWn (f45bbace)
+- fix(mobile): use /kyc/confirm endpoint instead of /kyc/submit (6f179fdf)
+### 🔧 Other Changes
+
+
+## [v3.383.13] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2282 from xjanova/claude/fix-profile-upload-error-xLzWn (2dda972f)
+- fix(mobile): correct avatar upload endpoint to /mobile/profile/avatar (6cfe7c59)
+### 🔧 Other Changes
+
+
+## [v3.383.12] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(api): show all products in premium store instead of official only (301c395c)
+- fix(mobile): rewrite KYC upload with fetch API and block re-entry (1ea1e9d2)
+### 🔧 Other Changes
+- Merge pull request #2281 from xjanova/claude/fix-profile-upload-error-xLzWn (2021d33b)
+
+## [v3.383.11] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2280 from xjanova/claude/fix-profile-upload-error-xLzWn (1ba693a0)
+- chore(mobile): update app version to 3.383.4 (5503a81b)
+
+## [v3.383.10] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2279 from xjanova/claude/fix-profile-upload-error-xLzWn (9c319bb4)
+- chore(mobile): update EAS projectId to 9fc18c2e-b74b-40e6-af00-ae136471d9fa (ba9c1873)
+- chore(mobile): update EAS project ID and owner (9335eaa4)
+
+## [v3.383.9] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): implement native checkout flow with local cart integration (d896532c)
+### 🐛 Bug Fixes
+- fix(mobile): rewrite KYC upload with fetch API and block re-entry (765c93cf)
+- fix(mobile): rewrite profile APIs and filter wallet from topup (198418b7)
+### 🔧 Other Changes
+- Merge pull request #2278 from xjanova/claude/fix-profile-upload-error-xLzWn (dc23d4da)
+
+## [v3.383.8] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(mobile): replace BlurView with shadow-based blur effect (870e4919)
+- fix(mobile): enhance firefly blur effect visibility (a3a359b4)
+### 🔧 Other Changes
+- Merge pull request #2277 from xjanova/claude/fix-profile-upload-error-xLzWn (ec205c22)
+
+## [v3.383.7] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): implement native payment flow for wallet topup (fa88a693)
+- feat(mobile): use in-app WebBrowser for wallet topup instead of external browser (3370db76)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2276 from xjanova/claude/fix-profile-upload-error-xLzWn (0a89a748)
+
+## [v3.383.6] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): add sync status indicator in tab bar (cedbfd0b)
+### 🐛 Bug Fixes
+- fix(api): remove duplicate method declarations in MobileApiController (ce3af50b)
+- fix(mobile): add web session authentication for wallet topup (298f57e2)
+### 🔧 Other Changes
+- Merge pull request #2275 from xjanova/claude/fix-profile-upload-error-xLzWn (790640fb)
+
+## [v3.383.5] - 2025-12-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2274 from xjanova/claude/fix-profile-upload-error-xLzWn (896605b7)
+- chore(mobile): sync app version to 3.383.4 (7244877d)
+
+## [v3.383.4] - 2025-12-15
+
+### ✨ Features
+- feat(mobile): improve firefly glow effect with blur (d8211681)
+### 🐛 Bug Fixes
+- fix(mobile): fix premium store - use direct assignment for seller role (7942e25a)
+- fix(mobile): fix wallet topup page unable to open payment URL (ef5632a5)
+- fix(kyc): add support for heic/heif and webp image formats (cf4b1aa8)
+- fix(mobile): fix change password API - use POST method and correct field names (73db1547)
+### 🔧 Other Changes
+- Merge pull request #2273 from xjanova/claude/fix-profile-upload-error-xLzWn (b84a9249)
+- chore(mobile): sync app version to 3.383.3 (a8d23fad)
+
+## [v3.383.3] - 2025-12-14
+
+### ✨ Features
+- feat(ai-core): add download progress tracking and cleanup on failure (c12164c8)
+### 🐛 Bug Fixes
+- fix(ai-core): detect shared hosting and show alternatives (d6d178d1)
+### 🔧 Other Changes
+- Merge pull request #2272 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (da482416)
+
+## [v3.383.2] - 2025-12-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2271 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (17c2a64c)
+- fix(ai-core): handle shared hosting restrictions (open_basedir, proc_open) (58115c74)
+### 🔧 Other Changes
+
+
+## [v3.383.1] - 2025-12-14
+
+### ✨ Features
+- feat(ai-core): add Llama installation UI with progress tracking (23b0f916)
+- feat(ai-dashboard): add beautiful AI Core Dashboard with Llama support (0bec4e59)
+- feat(ai-core): add Llama 4 installation script from Hugging Face (d49c3445)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2270 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (471b1f60)
+
+## [v3.383.0] - 2025-12-14
+
+### ✨ Features
+- feat: เพิ่มเอฟเฟคฟุ้งเบลอให้หิ่งห้อย (8dab0543)
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหาเปิดหน้าเติมเงินไม่ได้ในแอพมือถือ (725c5fc5)
+### 🔧 Other Changes
+- Merge pull request #2269 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (c1265af9)
+
+## [v3.382.2] - 2025-12-14
+
+### ✨ Features
+- Merge pull request #2268 from xjanova/claude/add-line-oa-input-01BLYpyq32rAVwynG1tgbwDU (71f0d0e7)
+- feat(line-oa): add custom LINE OA name input field (1ba521f4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.382.1] - 2025-12-13
+
+### ✨ Features
+- Merge pull request #2266 from xjanova/claude/install-llama4-ai-core-01U4ZGGsb92R4CxBJF12dy4j (c6bd6319)
+- feat(ai-core): add local Llama support with CPU-only installation (103e8432)
+- feat(ai-core): set Meta Llama 4 as default AI provider (00965f41)
+- feat(ai-core): add Meta Llama 4 support to AI Core system (b68a8d56)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.382.0] - 2025-12-13
+
+### ✨ Features
+- feat: เพิ่มเมนู Official Shop ในหมวดอีคอมเมิร์ซ (ffe92372)
+### 🐛 Bug Fixes
+- fix: ให้ร้านค้าพรีเมี่ยมโหลดสินค้าจากระบบหลังบ้านแอดมินโดยตรง (3ee3e0b8)
+- fix: แก้ไขร้านค้าพรีเมี่ยมไม่โหลดสินค้าเมื่อไม่มี official shop seller (554431b3)
+- fix: แก้ไขปัญหา profile update และ KYC upload ในแอพมือถือ (5e88eb1d)
+### 🔧 Other Changes
+- Merge pull request #2267 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (f441f15b)
+
 ## [v3.381.0] - 2025-12-12
 
 ### ✨ Features
