@@ -162,11 +162,108 @@ class Rank extends Model
             return null;
         }
 
+        // ถ้าเป็น emoji หรือ FontAwesome class ไม่ใช่ URL
+        if ($this->isIconEmoji() || $this->isIconFontAwesome()) {
+            return null;
+        }
+
         if (str_starts_with($this->icon, 'http')) {
             return $this->icon;
         }
 
         return asset($this->icon);
+    }
+
+    /**
+     * ตรวจสอบว่า icon เป็น emoji หรือไม่
+     */
+    public function isIconEmoji(): bool
+    {
+        if (!$this->icon) {
+            return false;
+        }
+
+        // Emoji pattern - ตรวจสอบว่ามี emoji character หรือไม่
+        $emojiPattern = '/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u';
+        return preg_match($emojiPattern, $this->icon) === 1;
+    }
+
+    /**
+     * ตรวจสอบว่า icon เป็น FontAwesome class หรือไม่
+     */
+    public function isIconFontAwesome(): bool
+    {
+        if (!$this->icon) {
+            return false;
+        }
+
+        // FontAwesome pattern: fa-, fas, far, fab, fal, fad
+        return preg_match('/^(fa[srlbd]?|fa)\s/', $this->icon) === 1;
+    }
+
+    /**
+     * ตรวจสอบว่า icon เป็น image path/URL หรือไม่
+     */
+    public function isIconImage(): bool
+    {
+        if (!$this->icon) {
+            return false;
+        }
+
+        // ถ้าเป็น URL หรือ path ที่มี extension รูปภาพ
+        if (str_starts_with($this->icon, 'http') || str_starts_with($this->icon, '/')) {
+            return true;
+        }
+
+        // ตรวจสอบ extension
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+        $extension = strtolower(pathinfo($this->icon, PATHINFO_EXTENSION));
+        return in_array($extension, $imageExtensions);
+    }
+
+    /**
+     * ดึง icon type สำหรับการ render
+     * @return string 'emoji'|'fontawesome'|'image'|'none'
+     */
+    public function getIconTypeAttribute(): string
+    {
+        if (!$this->icon) {
+            return 'none';
+        }
+
+        if ($this->isIconEmoji()) {
+            return 'emoji';
+        }
+
+        if ($this->isIconFontAwesome()) {
+            return 'fontawesome';
+        }
+
+        if ($this->isIconImage()) {
+            return 'image';
+        }
+
+        return 'none';
+    }
+
+    /**
+     * ดึง display icon - ใช้ badge_icon (emoji) ก่อน ถ้าไม่มีใช้ icon
+     * สำหรับแสดงผลแบบ emoji/text
+     */
+    public function getDisplayIconAttribute(): string
+    {
+        // ใช้ badge_icon (emoji) เป็นหลัก
+        if ($this->badge_icon) {
+            return $this->badge_icon;
+        }
+
+        // ถ้า icon เป็น emoji ใช้ได้เลย
+        if ($this->isIconEmoji()) {
+            return $this->icon;
+        }
+
+        // Fallback เป็นตัวอักษรแรกของชื่อ
+        return mb_substr($this->name ?? '?', 0, 1);
     }
 
     /**

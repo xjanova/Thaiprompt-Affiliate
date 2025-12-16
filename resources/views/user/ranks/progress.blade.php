@@ -23,8 +23,8 @@
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">ยศปัจจุบันของคุณ</h2>
             @if($user->currentRank)
                 <div class="inline-block">
-                    <div class="w-32 h-32 mx-auto bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-2xl">
-                        <span class="text-6xl">{{ $user->currentRank->icon ?? '🏅' }}</span>
+                    <div class="flex justify-center mb-4">
+                        <x-rank-icon :rank="$user->currentRank" size="2xl" />
                     </div>
                     <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">{{ $user->currentRank->name }}</h3>
                     <p class="text-gray-600 dark:text-gray-400">{{ $user->currentRank->description ?? '' }}</p>
@@ -93,10 +93,8 @@
                     <div class="relative bg-gradient-to-br {{ $isCurrentRank ? 'from-yellow-50 to-amber-50 border-2 border-yellow-400' : ($isAchieved ? 'from-green-50 to-emerald-50 border border-green-300' : 'from-gray-50 to-slate-50 border border-gray-300 dark:border-gray-600') }} rounded-xl p-6">
                         <div class="flex items-start gap-6">
                             <!-- Icon -->
-                            <div class="flex-shrink-0">
-                                <div class="w-16 h-16 bg-gradient-to-br {{ $isAchieved ? 'from-yellow-400 to-orange-500' : 'from-gray-400 to-gray-500' }} rounded-full flex items-center justify-center shadow-lg relative z-10">
-                                    <span class="text-3xl">{{ $rank->icon ?? '🏅' }}</span>
-                                </div>
+                            <div class="flex-shrink-0 relative z-10">
+                                <x-rank-icon :rank="$rank" size="lg" />
                             </div>
 
                             <!-- Content -->

@@ -146,8 +146,8 @@
             </h2>
             @if($member->rank)
                 <div class="text-center">
-                    <div class="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                        <span class="text-4xl">{{ $member->rank->icon ?? '🏅' }}</span>
+                    <div class="flex justify-center mb-4">
+                        <x-rank-icon :rank="$member->rank" size="xl" />
                     </div>
                     <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">{{ $member->rank->name }}</h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ $member->rank->description ?? '' }}</p>

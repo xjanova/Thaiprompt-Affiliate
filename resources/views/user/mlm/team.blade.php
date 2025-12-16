@@ -161,10 +161,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($referral->rank)
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xl">{{ $referral->rank->icon ?? '🏅' }}</span>
-                                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $referral->rank->name }}</span>
-                                    </div>
+                                    <x-rank-icon :rank="$referral->rank" size="sm" show-name />
                                 @else
                                     <span class="text-gray-400 text-sm">ไม่มียศ</span>
                                 @endif
