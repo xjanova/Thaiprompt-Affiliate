@@ -27,43 +27,23 @@ class RegisterController extends Controller
     /**
      * แสดงฟอร์มสมัครสมาชิก
      *
+     * ✅ เปลี่ยนมาใช้ระบบ LINE Registration ใหม่ทั้งหมด
+     * บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร และ auto-redirect หลังสมัครเสร็จ
+     *
      * @param Request $request
-     * @return \Illuminate\View\View
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function showRegistrationForm(Request $request)
     {
         $referralCode = $request->query('ref');
 
-        // ดึงข้อมูลผู้แนะนำ (MLM)
-        $referrerName = null;
-        $referrerPicture = null;
-        $defaultSponsorName = null;
-
-        if (!empty($referralCode)) {
-            // มีรหัสแนะนำ - ดึงข้อมูลผู้แนะนำ
-            $referrer = MlmMember::where('member_code', $referralCode)->with('user')->first();
-            if ($referrer && $referrer->user) {
-                $referrerName = $referrer->user->name;
-                $referrerPicture = $referrer->user->profile_picture ?? $referrer->user->line_picture_url;
-            }
-        } else {
-            // ไม่มีรหัสแนะนำ - ใช้ default sponsor
-            $defaultSponsorCode = Setting::get('default_sponsor_member_code');
-            if (!empty($defaultSponsorCode)) {
-                $defaultSponsor = MlmMember::where('member_code', $defaultSponsorCode)->with('user')->first();
-                if ($defaultSponsor && $defaultSponsor->user) {
-                    $defaultSponsorName = $defaultSponsor->user->name;
-                }
-            }
+        // ✅ Redirect ไปหน้า LINE Registration ใหม่เสมอ
+        $url = route('line.registration.register');
+        if ($referralCode) {
+            $url .= '?ref=' . urlencode($referralCode);
         }
 
-        // ตรวจสอบ LINE profile ใน session (สำหรับการสมัครผ่าน LINE)
-        $lineProfile = Session::get('line_temp_profile');
-
-        // ดึงรางวัลการสมัครสมาชิกที่ active สำหรับสมัครฟรี
-        $signupRewards = LineSignupReward::getAvailableRewards(null);
-
-        return view('auth.register', compact('referralCode', 'referrerName', 'referrerPicture', 'defaultSponsorName', 'lineProfile', 'signupRewards'));
+        return redirect($url);
     }
 
     /**
