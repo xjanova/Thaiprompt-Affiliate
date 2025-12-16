@@ -111,6 +111,65 @@
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
+
+        /* ✨ Firefly Effect */
+        .firefly {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .firefly::before,
+        .firefly::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transform-origin: center center;
+        }
+
+        .firefly::before {
+            background: radial-gradient(circle, rgba(167, 243, 208, 0.9) 0%, rgba(52, 211, 153, 0.6) 40%, transparent 70%);
+            animation: fireflyGlow 2s ease-in-out infinite alternate;
+        }
+
+        .firefly::after {
+            background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(167, 243, 208, 0.8) 30%, transparent 60%);
+            width: 4px;
+            height: 4px;
+            left: 1px;
+            top: 1px;
+            animation: fireflyCore 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes fireflyGlow {
+            0% { transform: scale(1); opacity: 0.4; }
+            100% { transform: scale(2.5); opacity: 0.8; }
+        }
+
+        @keyframes fireflyCore {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fireflyMove {
+            0% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -30px) scale(1.2); }
+            50% { transform: translate(100px, 20px) scale(0.8); }
+            75% { transform: translate(30px, 60px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        @keyframes fireflyFloat {
+            0%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            50% { transform: translateY(-100px) scale(1); }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-green-950 to-emerald-950 relative overflow-x-hidden"
@@ -126,6 +185,9 @@
         <div class="absolute top-0 -left-40 w-80 h-80 bg-green-600/20 rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 -right-40 w-80 h-80 bg-emerald-600/20 rounded-full blur-3xl"></div>
     </div>
+
+    {{-- ✨ Firefly Container --}}
+    <div id="fireflies" class="fixed inset-0 pointer-events-none z-0 overflow-hidden"></div>
 
     {{-- Main Content --}}
     <div class="relative z-10 min-h-screen flex items-center justify-center p-4 py-8">
@@ -669,7 +731,87 @@
                     animateCounter(todayEl, current, current + todayInc, 800);
                 }
             }, 5000);
+
+            // ✨ Firefly Effect - สร้างหิ่งห้อยสวยๆ
+            createFireflies();
         });
+
+        // ✨ Firefly Generator
+        function createFireflies() {
+            const container = document.getElementById('fireflies');
+            if (!container) return;
+
+            const fireflyCount = 25; // จำนวนหิ่งห้อย
+
+            for (let i = 0; i < fireflyCount; i++) {
+                createFirefly(container, i);
+            }
+        }
+
+        function createFirefly(container, index) {
+            const firefly = document.createElement('div');
+            firefly.className = 'firefly';
+
+            // Random position
+            const startX = Math.random() * 100;
+            const startY = Math.random() * 100;
+
+            // Random animation duration (8-20 seconds)
+            const moveDuration = 8 + Math.random() * 12;
+            const glowDelay = Math.random() * 3;
+
+            // Random movement path
+            const moveX1 = (Math.random() - 0.5) * 200;
+            const moveY1 = (Math.random() - 0.5) * 200;
+            const moveX2 = (Math.random() - 0.5) * 300;
+            const moveY2 = (Math.random() - 0.5) * 200;
+            const moveX3 = (Math.random() - 0.5) * 150;
+            const moveY3 = (Math.random() - 0.5) * 250;
+
+            // Random size (4-10px)
+            const size = 4 + Math.random() * 6;
+
+            // Random color (green to cyan spectrum)
+            const hue = 120 + Math.random() * 60; // 120-180 (green to cyan)
+
+            firefly.style.cssText = `
+                left: ${startX}%;
+                top: ${startY}%;
+                width: ${size}px;
+                height: ${size}px;
+                --glow-delay: ${glowDelay}s;
+                animation: fireflyCustomMove${index} ${moveDuration}s ease-in-out infinite;
+            `;
+
+            // Custom glow color
+            firefly.style.setProperty('--glow-color', `hsl(${hue}, 80%, 60%)`);
+
+            // Create unique keyframe animation for each firefly
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                @keyframes fireflyCustomMove${index} {
+                    0%, 100% {
+                        transform: translate(0, 0) scale(1);
+                        opacity: ${0.3 + Math.random() * 0.4};
+                    }
+                    25% {
+                        transform: translate(${moveX1}px, ${moveY1}px) scale(${0.8 + Math.random() * 0.4});
+                        opacity: ${0.5 + Math.random() * 0.5};
+                    }
+                    50% {
+                        transform: translate(${moveX2}px, ${moveY2}px) scale(${0.6 + Math.random() * 0.6});
+                        opacity: ${0.4 + Math.random() * 0.4};
+                    }
+                    75% {
+                        transform: translate(${moveX3}px, ${moveY3}px) scale(${0.9 + Math.random() * 0.3});
+                        opacity: ${0.6 + Math.random() * 0.4};
+                    }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+
+            container.appendChild(firefly);
+        }
     </script>
 </body>
 </html>
