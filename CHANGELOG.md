@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.26] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2295 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (4a01ca89)
+- fix: แก้ไข LINE Login ในแอพมือถือ และเพิ่มแนะนำแอพใน LINE OA (58bed63a)
+### 🔧 Other Changes
+- merge: รวม origin/claude/Main และแก้ไข conflict (5f779bdd)
+
 ## [v3.383.25] - 2025-12-16
 
 ### ✨ Features
