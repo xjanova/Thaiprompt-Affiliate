@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.16] - 2025-12-16
+
+### ✨ Features
+- feat(line): send app download links after successful registration (6b582d75)
+- feat(ui): add firefly effect to LINE registration page (119512de)
+- feat(line): add signup rewards and incentives to LINE registration page (73a28e32)
+- feat(register): redirect all registration to LINE OA registration page (ae69fe74)
+### 🐛 Bug Fixes
+- fix(line): link referral chain from LineRegistrationSession to prospect (bfcb0577)
+### 🔧 Other Changes
+- Merge pull request #2285 from xjanova/claude/line-oa-registration-check-gXbcU (f0cf3710)
+
 ## [v3.383.15] - 2025-12-15
 
 ### ✨ Features
