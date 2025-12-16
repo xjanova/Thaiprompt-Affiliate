@@ -1,14 +1,15 @@
 {{--
 /**
- * หน้าเข้าสู่ระบบ - Modern Login Page
+ * หน้าเข้าสู่ระบบ - Premium Login Page
  *
- * ออกแบบใหม่ให้สอดคล้องกับธีม V3:
- * - Deep Blue + Purple gradient background
+ * ออกแบบใหม่ระดับ Premium:
+ * - Firefly glowing effects
+ * - 3D floating elements
  * - Glassmorphism card
  * - Smooth animations
  * - Responsive & fit screen
  *
- * @version 2.0.0
+ * @version 3.0.0
  * @author Thaiprompt Team
  */
 --}}
@@ -53,20 +54,30 @@
             font-family: 'Kanit', 'Inter', sans-serif;
         }
 
-        /* Floating animation */
+        /* ✨ Floating animation */
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(1deg); }
+            75% { transform: translateY(-4px) rotate(-1deg); }
         }
         .animate-float {
-            animation: float 4s ease-in-out infinite;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* ✨ Pulse glow */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4), 0 0 60px rgba(139, 92, 246, 0.2); }
+            50% { box-shadow: 0 0 50px rgba(99, 102, 241, 0.6), 0 0 80px rgba(139, 92, 246, 0.4); }
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 3s ease-in-out infinite;
         }
 
         /* Fade in up animation */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -74,19 +85,23 @@
             }
         }
         .animate-fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
+            animation: fadeInUp 0.8s ease-out;
         }
 
-        /* Glass effect */
+        /* ✨ Glass effect - Premium */
         .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         /* Input focus glow */
         .input-glow:focus {
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3), 0 0 20px rgba(99, 102, 241, 0.2);
         }
 
         /* Button shine effect */
@@ -101,27 +116,108 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
         }
         .btn-shine:hover::before {
             left: 100%;
         }
+
+        /* ✨ Firefly Effect */
+        .firefly {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .firefly::before,
+        .firefly::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transform-origin: center center;
+        }
+
+        .firefly::before {
+            background: radial-gradient(circle, rgba(129, 140, 248, 0.9) 0%, rgba(99, 102, 241, 0.6) 40%, transparent 70%);
+            animation: fireflyGlow 2s ease-in-out infinite alternate;
+        }
+
+        .firefly::after {
+            background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(199, 210, 254, 0.8) 30%, transparent 60%);
+            width: 4px;
+            height: 4px;
+            left: 1px;
+            top: 1px;
+            animation: fireflyCore 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes fireflyGlow {
+            0% { transform: scale(1); opacity: 0.3; }
+            100% { transform: scale(2.5); opacity: 0.8; }
+        }
+
+        @keyframes fireflyCore {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* ✨ Gradient border animation */
+        .gradient-border {
+            position: relative;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            background: linear-gradient(45deg, #6366f1, #8b5cf6, #d946ef, #6366f1);
+            background-size: 300% 300%;
+            animation: gradientRotate 4s linear infinite;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        @keyframes gradientRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ✨ Premium orb animation */
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(20px, -30px) scale(1.05); }
+            50% { transform: translate(-10px, 20px) scale(0.95); }
+            75% { transform: translate(-20px, -10px) scale(1.02); }
+        }
+        .orb-animate {
+            animation: orbFloat 15s ease-in-out infinite;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden">
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 relative overflow-x-hidden">
+    {{-- ✨ Firefly Container --}}
+    <div id="fireflies" class="fixed inset-0 pointer-events-none z-0 overflow-hidden"></div>
+
     {{-- Background Effects --}}
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         {{-- Grid Pattern --}}
-        <div class="absolute inset-0 opacity-[0.02]"
+        <div class="absolute inset-0 opacity-[0.015]"
              style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
                                       linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
-                    background-size: 50px 50px;">
+                    background-size: 60px 60px;">
         </div>
 
-        {{-- Gradient Orbs --}}
-        <div class="absolute top-0 -left-40 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 -right-40 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl"></div>
+        {{-- Premium Gradient Orbs --}}
+        <div class="absolute top-0 -left-40 w-96 h-96 bg-indigo-600/30 rounded-full blur-3xl orb-animate"></div>
+        <div class="absolute bottom-0 -right-40 w-96 h-96 bg-purple-600/25 rounded-full blur-3xl orb-animate" style="animation-delay: -5s;"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl orb-animate" style="animation-delay: -10s;"></div>
+        <div class="absolute top-1/4 right-1/4 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl orb-animate" style="animation-delay: -3s;"></div>
     </div>
 
     {{-- Main Content --}}
@@ -314,5 +410,143 @@
 
     {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {{-- ✨ Firefly Effect Generator --}}
+    <script>
+        /**
+         * สร้างเอฟเฟคหิ่งห้อยเรืองแสง
+         *
+         * หิ่งห้อยจะลอยขึ้นจากด้านล่างของหน้าจอ
+         * พร้อมแสงเรืองแสงสีน้ำเงิน/ม่วงสวยงาม
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('fireflies');
+            if (!container) return;
+
+            // จำนวนหิ่งห้อย - ปรับตามขนาดหน้าจอ
+            const isMobile = window.innerWidth < 768;
+            const fireflyCount = isMobile ? 15 : 25;
+
+            // สร้างหิ่งห้อยแต่ละตัว
+            for (let i = 0; i < fireflyCount; i++) {
+                createFirefly(container, i);
+            }
+        });
+
+        /**
+         * สร้างหิ่งห้อยตัวเดียว
+         *
+         * @param {HTMLElement} container - container element
+         * @param {number} index - ลำดับหิ่งห้อย (สำหรับ delay)
+         */
+        function createFirefly(container, index) {
+            const firefly = document.createElement('div');
+            firefly.className = 'firefly';
+
+            // สุ่มตำแหน่งเริ่มต้น
+            const startX = Math.random() * 100;
+            const startY = 100 + Math.random() * 20; // เริ่มจากด้านล่าง
+
+            // ตั้งค่าตำแหน่งและ animation
+            firefly.style.left = startX + 'vw';
+            firefly.style.bottom = -startY + 'px';
+
+            // สุ่มค่า animation
+            const duration = 15 + Math.random() * 25; // 15-40 วินาที
+            const delay = Math.random() * 10; // delay 0-10 วินาที
+            const drift = -50 + Math.random() * 100; // เบนซ้าย-ขวา
+
+            // สุ่มขนาด
+            const scale = 0.6 + Math.random() * 0.8; // 0.6-1.4x
+            firefly.style.transform = `scale(${scale})`;
+
+            // สุ่มสี (หลายโทนสี)
+            const colors = [
+                'rgba(129, 140, 248, 0.9)', // indigo
+                'rgba(167, 139, 250, 0.9)', // purple
+                'rgba(96, 165, 250, 0.9)',  // blue
+                'rgba(192, 132, 252, 0.9)', // violet
+                'rgba(129, 230, 217, 0.8)', // teal
+            ];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            // ตั้งค่า CSS Variables สำหรับ animation
+            firefly.style.setProperty('--duration', duration + 's');
+            firefly.style.setProperty('--delay', delay + 's');
+            firefly.style.setProperty('--drift', drift + 'px');
+            firefly.style.setProperty('--glow-color', color);
+
+            // สร้าง keyframe animation
+            const animationName = `fireflyFloat_${index}`;
+            const keyframes = `
+                @keyframes ${animationName} {
+                    0% {
+                        bottom: -20px;
+                        left: ${startX}vw;
+                        opacity: 0;
+                    }
+                    10% {
+                        opacity: ${0.5 + Math.random() * 0.5};
+                    }
+                    30% {
+                        left: calc(${startX}vw + ${drift * 0.3}px);
+                    }
+                    50% {
+                        left: calc(${startX}vw + ${drift}px);
+                    }
+                    70% {
+                        left: calc(${startX}vw + ${drift * 0.7}px);
+                    }
+                    90% {
+                        opacity: ${0.3 + Math.random() * 0.4};
+                    }
+                    100% {
+                        bottom: 110vh;
+                        left: calc(${startX}vw + ${drift * 0.5}px);
+                        opacity: 0;
+                    }
+                }
+            `;
+
+            // เพิ่ม keyframe ใหม่
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = keyframes;
+            document.head.appendChild(styleSheet);
+
+            // ใช้ animation
+            firefly.style.animation = `${animationName} ${duration}s ${delay}s ease-in-out infinite`;
+
+            // เพิ่ม glow effect
+            firefly.style.boxShadow = `0 0 6px 2px ${color}, 0 0 12px 4px ${color.replace('0.9', '0.4')}`;
+
+            container.appendChild(firefly);
+
+            // เพิ่ม twinkle effect
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    firefly.style.opacity = 0.3 + Math.random() * 0.7;
+                }
+            }, 500 + Math.random() * 1000);
+        }
+
+        // ปรับจำนวนหิ่งห้อยเมื่อ resize
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                const container = document.getElementById('fireflies');
+                if (container) {
+                    // ลบหิ่งห้อยเก่า
+                    container.innerHTML = '';
+                    // สร้างใหม่ตามขนาดหน้าจอ
+                    const isMobile = window.innerWidth < 768;
+                    const count = isMobile ? 15 : 25;
+                    for (let i = 0; i < count; i++) {
+                        createFirefly(container, i);
+                    }
+                }
+            }, 500);
+        });
+    </script>
 </body>
 </html>
