@@ -29,6 +29,16 @@ Route::get('/', function () {
     return redirect()->route('user.home');
 });
 
+// หน้าบังคับเชื่อมต่อ LINE (สำหรับ middleware require.line.uid)
+Route::get('/line-required', function () {
+    // ถ้ามี LINE UID แล้ว redirect กลับไปหน้าเดิม
+    if (auth()->user()?->line_user_id) {
+        $redirect = session()->pull('line_redirect_after', route('user.dashboard'));
+        return redirect($redirect)->with('success', '✅ เชื่อมต่อ LINE เรียบร้อยแล้ว!');
+    }
+    return view('user.line-required');
+})->name('line-required');
+
 // หน้าหลักแบบ App-Like Interface (Hub Navigation)
 Route::get('/home', [DashboardController::class, 'home'])->name('home');
 
