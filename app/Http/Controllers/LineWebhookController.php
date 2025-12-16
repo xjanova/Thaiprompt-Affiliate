@@ -193,7 +193,7 @@ class LineWebhookController extends Controller
         }
 
         if ($isSignupRequest && !$user) {
-            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่ (ไม่มี sponsor)
+            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่
             $lineService = app(LineService::class);
 
             // ดึง LINE profile
@@ -210,20 +210,44 @@ class LineWebhookController extends Controller
                 ];
             }
 
-            // สร้าง prospect ใหม่ (ไม่มี sponsor - จะใช้ Super Admin auto-placement)
+            // ✅ ดึง sponsor จาก LineRegistrationSession (ถ้ามี)
+            // สำหรับผู้ใช้ที่มาจากหน้าสมัครใหม่ที่มี referral code
+            $sponsorMlmMemberId = null;
+            $sponsorUserId = null;
+
+            $registrationSession = LineRegistrationSession::findByLineUserId($lineUserId);
+            if ($registrationSession) {
+                $sponsorMlmMemberId = $registrationSession->sponsor_mlm_member_id;
+                $sponsorUserId = $registrationSession->sponsor_user_id;
+
+                Log::info('Found sponsor from LineRegistrationSession', [
+                    'line_user_id' => $lineUserId,
+                    'session_id' => $registrationSession->id,
+                    'sponsor_user_id' => $sponsorUserId,
+                    'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                    'referral_code' => $registrationSession->referral_code,
+                ]);
+
+                // อัพเดทสถานะ session เป็น in_progress
+                $registrationSession->markAsInProgress();
+            }
+
+            // สร้าง prospect ใหม่ (พร้อม sponsor จาก session ถ้ามี)
             $prospect = MlmProspect::create([
                 'line_user_id' => $lineUserId,
                 'line_display_name' => $lineProfile['displayName'] ?? 'User',
                 'line_picture_url' => $lineProfile['pictureUrl'] ?? null,
-                'sponsor_mlm_member_id' => null, // ไม่มี sponsor
-                'sponsor_user_id' => null,
+                'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                'sponsor_user_id' => $sponsorUserId,
                 'status' => 'pending',
                 'conversation_started_at' => now(),
             ]);
 
-            Log::info('Created prospect without sponsor (auto-placement)', [
+            Log::info('Created prospect for signup', [
                 'prospect_id' => $prospect->id,
                 'line_user_id' => $lineUserId,
+                'has_sponsor' => $sponsorUserId !== null,
+                'sponsor_user_id' => $sponsorUserId,
             ]);
 
             // เริ่ม signup flow
