@@ -1321,11 +1321,11 @@ class MobileApiController extends Controller
             // สร้าง directory สำหรับเก็บไฟล์ KYC
             $kycPath = 'kyc/' . $user->id;
 
-            // อัพโหลดรูปบัตรประชาชน (ใช้ 'local' disk เพื่อเก็บไฟล์แบบ private เหมือน uploadKycImage)
-            $idCardPath = $request->file('id_card_image')->store($kycPath, 'local');
+            // อัพโหลดรูปบัตรประชาชน (ใช้ 'public' disk เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
+            $idCardPath = $request->file('id_card_image')->store($kycPath, 'public');
 
             // อัพโหลดรูปถ่ายคู่บัตร
-            $selfiePath = $request->file('selfie_image')->store($kycPath, 'local');
+            $selfiePath = $request->file('selfie_image')->store($kycPath, 'public');
 
             // สร้าง KYC verification record
             $kyc = \App\Models\KycVerification::create([
@@ -1400,8 +1400,8 @@ class MobileApiController extends Controller
             $kycPath = 'kyc/' . $user->id;
             $type = $request->type;
 
-            // อัพโหลดรูป (ใช้ disk 'local' เพื่อเก็บไฟล์แบบ private)
-            $imagePath = $request->file('image')->store($kycPath, 'local');
+            // อัพโหลดรูป (ใช้ disk 'public' เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
+            $imagePath = $request->file('image')->store($kycPath, 'public');
 
             // หา or สร้าง KYC draft
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)
