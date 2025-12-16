@@ -31,8 +31,12 @@ class KycController extends Controller
         $kycVerification = $user->latestKycVerification;
 
         // Sync kyc_status จาก KycVerification (แก้ไขข้อมูลเก่าที่ไม่ได้ถูก sync)
-        // รองรับทุก status: draft, pending, approved, rejected
-        if ($kycVerification && $user->kyc_status !== $kycVerification->status) {
+        // ⚠️ เฉพาะ status ที่ users.kyc_status รองรับ (ไม่รวม 'draft' เพราะหมายถึงยังไม่ submit)
+        // 'draft' จะถูก sync หลังจาก migration เพิ่ม enum value แล้ว
+        $syncableStatuses = ['pending', 'approved', 'rejected'];
+        if ($kycVerification &&
+            in_array($kycVerification->status, $syncableStatuses) &&
+            $user->kyc_status !== $kycVerification->status) {
             $user->forceFill(['kyc_status' => $kycVerification->status])->save();
             $user->refresh(); // รีเฟรชข้อมูล user
         }
