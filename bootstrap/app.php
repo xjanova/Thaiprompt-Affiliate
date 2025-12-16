@@ -78,6 +78,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
             // Provider LINE connection middleware
             'provider.line.required' => \App\Http\Middleware\EnsureProviderLineConnected::class,
+            // User LINE connection middleware (general use)
+            'require.line.uid' => \App\Http\Middleware\RequireLineUid::class,
             // Food Passport API Rate Limiting (CRITICAL for TPIX blockchain protection)
             'food-passport.ratelimit' => \App\Http\Middleware\FoodPassportRateLimiter::class,
             // TPIX Blockchain & Token middleware
