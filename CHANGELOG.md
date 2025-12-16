@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.18] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2287 from xjanova/claude/line-oa-registration-check-gXbcU (6ccb4ff2)
+- feat(line): always show sponsor on registration page (8005ab33)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.17] - 2025-12-16
 
 ### ✨ Features
