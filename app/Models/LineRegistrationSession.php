@@ -116,6 +116,10 @@ class LineRegistrationSession extends Model
     /**
      * สร้าง session ใหม่
      *
+     * ⚠️ IMPORTANT: ต้องมี sponsor เสมอ!
+     * - ถ้ามี referral_code → ใช้ sponsor จาก code นั้น
+     * - ถ้าไม่มี → ใช้ Super Admin (user_id = 1) เป็น default
+     *
      * @param string|null $referralCode รหัสผู้แนะนำ (ถ้ามี)
      * @param string|null $ipAddress IP Address
      * @param string|null $userAgent User Agent
@@ -150,6 +154,31 @@ class LineRegistrationSession extends Model
                         $sponsorMlmMemberId = $mlmMember->id;
                     }
                 }
+            }
+        }
+
+        // ✅ FALLBACK: ถ้าไม่มี sponsor → ใช้ Super Admin (user_id = 1) เป็น default
+        // สำคัญ: ต้องมี sponsor เสมอเพื่อต่อสายงาน MLM
+        if (!$sponsorUserId) {
+            // ลองหา Super Admin (user_id = 1)
+            $superAdmin = User::find(1);
+            if ($superAdmin) {
+                $sponsorUserId = $superAdmin->id;
+
+                // หา MLM member ของ Super Admin
+                $adminMlmMember = MlmMember::where('user_id', $sponsorUserId)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($adminMlmMember) {
+                    $sponsorMlmMemberId = $adminMlmMember->id;
+                }
+
+                \Illuminate\Support\Facades\Log::info('LineRegistrationSession: Using Super Admin as default sponsor', [
+                    'sponsor_user_id' => $sponsorUserId,
+                    'sponsor_mlm_member_id' => $sponsorMlmMemberId,
+                    'ip_address' => $ipAddress,
+                ]);
             }
         }
 

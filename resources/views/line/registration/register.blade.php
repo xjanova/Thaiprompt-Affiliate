@@ -226,29 +226,81 @@
                     </div>
                 </div>
 
-                {{-- Sponsor Info (ถ้ามี) --}}
+                {{-- ✨ Sponsor Info (บังคับแสดงเสมอ - สำคัญสำหรับการต่อสายงาน) --}}
                 @if($sponsor)
-                <div class="mb-6 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-2xl p-4">
-                    <div class="flex items-center gap-4">
-                        @if($sponsor->line_picture_url || $sponsor->avatar_url)
-                            <img src="{{ $sponsor->line_picture_url ?? $sponsor->avatar_url }}"
-                                 alt="{{ $sponsor->name }}"
-                                 class="w-14 h-14 rounded-full object-cover ring-2 ring-indigo-400/50">
-                        @else
-                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center ring-2 ring-indigo-400/50">
-                                <i class="fas fa-user text-white text-xl"></i>
-                            </div>
-                        @endif
-                        <div class="flex-1">
-                            <p class="text-indigo-300 text-sm font-medium">
-                                <i class="fas fa-handshake mr-1"></i> คุณได้รับเชิญจาก
-                            </p>
-                            <p class="text-white font-bold text-lg">{{ $sponsor->name }}</p>
+                <div class="mb-8 relative overflow-hidden">
+                    {{-- Background Glow --}}
+                    <div class="absolute inset-0 bg-gradient-to-r from-indigo-600/30 via-purple-500/20 to-pink-500/30 rounded-3xl blur-xl"></div>
+
+                    {{-- Main Card --}}
+                    <div class="relative bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-2 border-indigo-400/40 rounded-3xl p-5 backdrop-blur-sm">
+                        {{-- Header Badge --}}
+                        <div class="flex justify-center -mt-8 mb-4">
+                            <span class="px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-lg shadow-purple-500/30">
+                                <i class="fas fa-handshake mr-1"></i> ผู้แนะนำของคุณ
+                            </span>
                         </div>
-                        <div class="flex-shrink-0">
-                            <div class="w-10 h-10 bg-green-500/30 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-green-400"></i>
+
+                        <div class="flex items-center gap-4">
+                            {{-- Avatar with fancy border --}}
+                            <div class="relative">
+                                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 rounded-full blur opacity-70 animate-pulse"></div>
+                                @if($sponsor->line_picture_url || $sponsor->profile_picture)
+                                    <img src="{{ $sponsor->line_picture_url ?? asset('storage/' . $sponsor->profile_picture) }}"
+                                         alt="{{ $sponsor->name }}"
+                                         class="relative w-16 h-16 rounded-full object-cover ring-2 ring-white/50 shadow-xl">
+                                @else
+                                    <div class="relative w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 via-purple-500 to-pink-500 flex items-center justify-center ring-2 ring-white/50 shadow-xl">
+                                        <span class="text-white text-2xl font-bold">{{ mb_substr($sponsor->name, 0, 1) }}</span>
+                                    </div>
+                                @endif
+                                {{-- Online indicator --}}
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
+                                    <i class="fas fa-check text-white text-[8px]"></i>
+                                </div>
                             </div>
+
+                            {{-- Info --}}
+                            <div class="flex-1 min-w-0">
+                                <p class="text-white font-bold text-xl truncate">{{ $sponsor->name }}</p>
+                                @if($sponsor->mlmMember && $sponsor->mlmMember->member_code)
+                                <p class="text-indigo-300/80 text-sm">
+                                    <i class="fas fa-id-badge mr-1"></i>
+                                    รหัส: {{ $sponsor->mlmMember->member_code }}
+                                </p>
+                                @endif
+                            </div>
+
+                            {{-- Verified badge --}}
+                            <div class="flex-shrink-0 text-center">
+                                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30 transform -rotate-3 hover:rotate-0 transition-transform">
+                                    <i class="fas fa-user-shield text-white text-lg"></i>
+                                </div>
+                                <p class="text-green-400 text-[10px] font-semibold mt-1">Verified</p>
+                            </div>
+                        </div>
+
+                        {{-- Benefits under sponsor --}}
+                        <div class="mt-4 pt-4 border-t border-white/10">
+                            <p class="text-slate-400 text-xs text-center">
+                                <i class="fas fa-gift text-pink-400 mr-1"></i>
+                                สมัครภายใต้ผู้แนะนำนี้เพื่อรับสิทธิพิเศษ!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                @else
+                {{-- Fallback: ถ้าไม่มี sponsor (ไม่ควรเกิดขึ้น แต่เผื่อไว้) --}}
+                <div class="mb-6 bg-gradient-to-r from-slate-500/20 to-gray-500/20 border border-slate-500/30 rounded-2xl p-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-slate-400 to-gray-600 flex items-center justify-center ring-2 ring-slate-400/50">
+                            <i class="fas fa-building text-white text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-slate-300 text-sm font-medium">
+                                <i class="fas fa-handshake mr-1"></i> สมัครภายใต้
+                            </p>
+                            <p class="text-white font-bold text-lg">{{ config('app.name', 'TP-Affiliate') }}</p>
                         </div>
                     </div>
                 </div>
