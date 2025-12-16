@@ -314,9 +314,9 @@ class MobileApiController extends Controller
             $filename = 'avatars/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('', $filename, 'public');
 
-            // อัพเดทข้อมูลผู้ใช้
+            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง (ไม่ใช้ avatar mutator)
             $avatarUrl = \Storage::disk('public')->url($path);
-            $user->avatar = $avatarUrl;
+            $user->profile_picture = $avatarUrl;
             $user->save();
 
             return response()->json([
@@ -364,8 +364,8 @@ class MobileApiController extends Controller
                 }
             }
 
-            // อัพเดทข้อมูลผู้ใช้
-            $user->avatar = null;
+            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง
+            $user->profile_picture = null;
             $user->save();
 
             return response()->json([
