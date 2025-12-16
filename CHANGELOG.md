@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.19] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2288 from xjanova/claude/line-oa-registration-check-gXbcU (f8d33ec9)
+- feat(ui): add premium login page with firefly effects (994ba258)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.18] - 2025-12-16
 
 ### ✨ Features
