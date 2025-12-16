@@ -296,6 +296,10 @@ class LineWebhookController extends Controller
 
     /**
      * Handle follow event (user adds bot as friend)
+     *
+     * เมื่อผู้ใช้เพิ่มเพื่อน LINE OA จะส่ง:
+     * 1. ข้อความต้อนรับ
+     * 2. แนะนำให้ดาวน์โหลดแอพ TP UltraAPP
      */
     private function handleFollowEvent(array $event, LineOaSetting $settings): void
     {
@@ -312,19 +316,50 @@ class LineWebhookController extends Controller
 
         $lineService = app(LineService::class);
 
+        // ข้อมูลแอพสำหรับแนะนำ
+        $appDownloadMessage = $this->getAppDownloadMessage();
+
         if ($user) {
             // Existing user followed again
-            $lineService->sendPushMessage(
-                $lineUserId,
-                "ยินดีต้อนรับกลับมา {$user->name}! 🎉"
-            );
+            $welcomeMessage = "ยินดีต้อนรับกลับมา {$user->name}! 🎉\n\n";
+            $welcomeMessage .= "📱 เปิดแอพ TP UltraAPP เพื่อประสบการณ์ที่ดีกว่า:\n";
+            $welcomeMessage .= "thaiprompt://\n\n";
+            $welcomeMessage .= $appDownloadMessage;
+
+            $lineService->sendPushMessage($lineUserId, $welcomeMessage);
         } else {
-            // New follower
+            // New follower - ส่ง welcome message ตามด้วยแนะนำแอพ
             $lineService->sendPushMessage(
                 $lineUserId,
                 $settings->welcome_message
             );
+
+            // ส่งข้อความแนะนำแอพแยก
+            $appMessage = "📱 ดาวน์โหลดแอพ TP UltraAPP\n";
+            $appMessage .= "เพื่อประสบการณ์การใช้งานที่ดีที่สุด!\n\n";
+            $appMessage .= $appDownloadMessage;
+
+            $lineService->sendPushMessage($lineUserId, $appMessage);
         }
+    }
+
+    /**
+     * สร้างข้อความแนะนำดาวน์โหลดแอพ
+     *
+     * @return string
+     */
+    private function getAppDownloadMessage(): string
+    {
+        // ดึง URL จาก config หรือใช้ค่า default
+        $iosUrl = config('app.ios_app_url', 'https://apps.apple.com/app/tp-ultraapp/id0000000000');
+        $androidUrl = config('app.android_app_url', 'https://play.google.com/store/apps/details?id=com.thaiprompt.affiliate');
+        $webUrl = config('app.url', 'https://thaiprompt.com');
+
+        $message = "🍎 iOS (App Store):\n{$iosUrl}\n\n";
+        $message .= "🤖 Android (Play Store):\n{$androidUrl}\n\n";
+        $message .= "🌐 หรือใช้งานผ่านเว็บ:\n{$webUrl}";
+
+        return $message;
     }
 
     /**

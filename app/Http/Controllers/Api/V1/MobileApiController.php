@@ -900,9 +900,10 @@ class MobileApiController extends Controller
         $referralCode = $request->get('ref');
 
         // สร้าง callback URL สำหรับ mobile
-        // Mobile app จะใช้ deep link หรือ universal link
+        // ใช้ web route แทน API route เพราะ LINE OAuth redirect มาเป็น GET request
+        // Web route จะ redirect ไป app deep link (thaiprompt://login?code=xxx&state=yyy)
         $redirectUri = config('services.line.mobile_redirect_uri')
-            ?? url('/api/v1/auth/line/mobile-callback');
+            ?? url('/auth/line/mobile-callback');
 
         $authUrl = $lineService->getAuthorizationUrl($state, $redirectUri);
 
@@ -942,8 +943,9 @@ class MobileApiController extends Controller
 
         try {
             // แลก code เป็น access token
+            // ใช้ web route redirect URI เหมือนกับตอนขอ auth URL
             $redirectUri = config('services.line.mobile_redirect_uri')
-                ?? url('/api/v1/auth/line/mobile-callback');
+                ?? url('/auth/line/mobile-callback');
 
             $tokenData = $lineService->getAccessToken($request->code, $redirectUri);
             $accessToken = $tokenData['access_token'];
