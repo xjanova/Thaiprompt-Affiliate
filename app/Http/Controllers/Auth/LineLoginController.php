@@ -340,6 +340,80 @@ class LineLoginController extends Controller
     private const AUTH_CODE_EXPIRY = 60;
 
     /**
+     * Handle LINE Login callback สำหรับ Mobile App
+     *
+     * รับ GET request จาก LINE OAuth แล้ว redirect ไป app deep link
+     * เพราะ LINE OAuth รองรับแค่ HTTPS redirect URI ไม่รองรับ custom scheme
+     *
+     * @param Request $request
+     * @return RedirectResponse|View
+     */
+    public function mobileCallback(Request $request): RedirectResponse|View
+    {
+        // รับ code และ state จาก LINE OAuth
+        $code = $request->get('code');
+        $state = $request->get('state');
+        $error = $request->get('error');
+        $errorDescription = $request->get('error_description');
+
+        // ถ้า LINE ส่ง error กลับมา
+        if ($error) {
+            Log::warning('LINE Mobile Login error from LINE', [
+                'error' => $error,
+                'error_description' => $errorDescription,
+            ]);
+
+            // Redirect ไป app deep link พร้อม error
+            $deepLink = 'thaiprompt://login?' . http_build_query([
+                'error' => $error,
+                'error_description' => $errorDescription ?? 'LINE Login failed',
+            ]);
+
+            return $this->renderMobileRedirectPage($deepLink, 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ LINE');
+        }
+
+        // ตรวจสอบว่ามี code หรือไม่
+        if (!$code) {
+            Log::warning('LINE Mobile Login - missing code');
+
+            $deepLink = 'thaiprompt://login?' . http_build_query([
+                'error' => 'missing_code',
+                'error_description' => 'Authorization code not received',
+            ]);
+
+            return $this->renderMobileRedirectPage($deepLink, 'ไม่ได้รับ authorization code');
+        }
+
+        Log::info('LINE Mobile Login callback received', [
+            'has_code' => !empty($code),
+            'state' => $state,
+        ]);
+
+        // สร้าง deep link URL พร้อม code และ state
+        $deepLink = 'thaiprompt://login?' . http_build_query([
+            'code' => $code,
+            'state' => $state ?? '',
+        ]);
+
+        return $this->renderMobileRedirectPage($deepLink, 'กำลังกลับสู่แอป...');
+    }
+
+    /**
+     * แสดงหน้า redirect ไป mobile app
+     *
+     * @param string $deepLink URL ของ deep link
+     * @param string $message ข้อความที่แสดง
+     * @return View
+     */
+    protected function renderMobileRedirectPage(string $deepLink, string $message): View
+    {
+        return view('auth.line-mobile-redirect', [
+            'deepLink' => $deepLink,
+            'message' => $message,
+        ]);
+    }
+
+    /**
      * Authorize mobile app หลังจาก LINE login สำเร็จ
      *
      * สร้าง auth_code และ redirect กลับไปแอพผ่าน deep link

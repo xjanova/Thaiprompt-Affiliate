@@ -221,6 +221,10 @@ Route::middleware('guest')->group(function () {
     })->name('line.register.guide');
 });
 
+// LINE Login Mobile App Callback (public - รับ callback จาก LINE OAuth แล้ว redirect ไป app deep link)
+Route::match(['GET', 'HEAD'], '/auth/line/mobile-callback', [LineLoginController::class, 'mobileCallback'])
+    ->name('line.mobile.callback');
+
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Public Recruit Page Routes
