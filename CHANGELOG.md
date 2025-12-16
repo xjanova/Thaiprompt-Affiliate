@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.24] - 2025-12-16
+
+### ✨ Features
+- Merge pull request #2293 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (a0e4b2a2)
+- feat(rank): create unified rank icon component and fix display issues (9c62c28f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.23] - 2025-12-16
 
 ### ✨ Features
