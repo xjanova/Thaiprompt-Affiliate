@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.25] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข KYC upload ไม่แสดงรูป และลบปุ่มเปลี่ยนรหัสผ่านซ้ำซ้อน (3410409e)
+- fix: แก้ไขปัญหา avatar upload ไม่บันทึก และลบปุ่มลืมรหัสผ่าน (0647f4cb)
+### 🔧 Other Changes
+- Merge pull request #2294 from xjanova/claude/fix-profile-kyc-upload-01QKiVfVjdzb1JMBNunfjiVp (6d7f397a)
+
 ## [v3.383.24] - 2025-12-16
 
 ### ✨ Features
