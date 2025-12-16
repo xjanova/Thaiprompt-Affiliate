@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.21] - 2025-12-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2290 from xjanova/claude/fix-kyc-status-truncation-Mt9Kr (fe79cfa7)
+- fix(kyc): add 'not_submitted' to kyc_status enum in users table (85751e3a)
+### 🔧 Other Changes
+
+
 ## [v3.383.20] - 2025-12-16
 
 ### ✨ Features
