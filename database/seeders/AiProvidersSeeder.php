@@ -93,6 +93,12 @@ class AiProvidersSeeder extends Seeder
             $this->seedModels($metaLocal, $this->getMetaLocalModels(), $modelsAdded, $modelsSkipped);
         }
 
+        // PostXAgent AI Manager
+        $postxagent = $this->seedProvider('postxagent', $this->getPostXAgentProviderData(), $providersAdded, $providersSkipped);
+        if ($postxagent) {
+            $this->seedModels($postxagent, $this->getPostXAgentModels(), $modelsAdded, $modelsSkipped);
+        }
+
         if ($providersAdded > 0) {
             $this->command->info("✅ Added {$providersAdded} new AI providers.");
         }
@@ -151,6 +157,12 @@ class AiProvidersSeeder extends Seeder
         // Meta Llama Local (via Ollama)
         $metaLocal = AiProvider::create($this->getMetaLocalProviderData());
         foreach ($this->getMetaLocalModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // PostXAgent AI Manager
+        $postxagent = AiProvider::create($this->getPostXAgentProviderData());
+        foreach ($this->getPostXAgentModels() as $modelData) {
             AiModel::create($modelData);
         }
     }
@@ -824,4 +836,177 @@ class AiProvidersSeeder extends Seeder
             ],
         ];
     }
+
+    /**
+     * PostXAgent AI Manager Provider Data
+     *
+     * PostXAgent เป็นระบบ AI Manager ที่รันบน C# .NET 8.0
+     * รองรับหลาย AI providers ผ่าน API เดียว
+     *
+     * @see https://github.com/xjanova/PostXAgent
+     */
+    private function getPostXAgentProviderData(): array
+    {
+        return [
+            'name' => 'postxagent',
+            'display_name' => 'PostXAgent AI Manager',
+            'provider_type' => 'gateway',
+            'api_endpoint' => config('postxagent.api_url', 'http://localhost:8000/api/v1'),
+            'api_version' => 'v1',
+            'is_active' => config('postxagent.enabled', false),
+            'is_available' => false, // จะถูกอัพเดทจาก health check
+            'config' => [
+                'api_key_required' => false,
+                'gateway_type' => 'postxagent',
+                'supports_multiple_providers' => true,
+                'supports_signalr' => true,
+                'logo_url' => 'https://raw.githubusercontent.com/xjanova/PostXAgent/main/logo.png',
+                'description' => 'PostXAgent AI Manager - เชื่อมต่อหลาย AI providers ผ่าน API เดียว',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+                'note' => 'ราคาขึ้นกับ provider ที่เลือกใช้ใน PostXAgent',
+            ],
+        ];
+    }
+
+    /**
+     * PostXAgent Models Data
+     *
+     * รายการ AI models ที่ PostXAgent รองรับ
+     * models เหล่านี้เป็น virtual models ที่ PostXAgent จะ route ไปยัง actual provider
+     */
+    private function getPostXAgentModels(): array
+    {
+        $provider = AiProvider::where('name', 'postxagent')->first();
+        if (!$provider) {
+            return [];
+        }
+
+        return [
+            // Ollama models (local, free)
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:ollama:llama3.2:3b',
+                'display_name' => 'PostX - Llama 3.2 3B (Local)',
+                'description' => 'โมเดล Llama 3.2 3B รันบน PostXAgent - ฟรี ไม่มีค่าใช้จ่าย',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => false,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:ollama:llama3.1:8b',
+                'display_name' => 'PostX - Llama 3.1 8B (Local)',
+                'description' => 'โมเดล Llama 3.1 8B รันบน PostXAgent - ฟรี',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                ],
+            ],
+
+            // OpenAI models (via PostXAgent)
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:openai:gpt-4-turbo',
+                'display_name' => 'PostX - GPT-4 Turbo',
+                'description' => 'GPT-4 Turbo ผ่าน PostXAgent',
+                'context_window' => 128000,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.01,
+                    'output' => 0.03,
+                ],
+            ],
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:openai:gpt-3.5-turbo',
+                'display_name' => 'PostX - GPT-3.5 Turbo',
+                'description' => 'GPT-3.5 Turbo ผ่าน PostXAgent - เร็วและประหยัด',
+                'context_window' => 16385,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.0005,
+                    'output' => 0.0015,
+                ],
+            ],
+
+            // Claude models (via PostXAgent)
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:anthropic:claude-3-haiku',
+                'display_name' => 'PostX - Claude 3 Haiku',
+                'description' => 'Claude 3 Haiku ผ่าน PostXAgent - เร็วและประหยัด',
+                'context_window' => 200000,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => true,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00025,
+                    'output' => 0.00125,
+                ],
+            ],
+
+            // Gemini models (via PostXAgent)
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:gemini:gemini-pro',
+                'display_name' => 'PostX - Gemini Pro',
+                'description' => 'Google Gemini Pro ผ่าน PostXAgent',
+                'context_window' => 32768,
+                'max_output_tokens' => 2048,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0.00025,
+                    'output' => 0.0005,
+                ],
+            ],
+
+            // Auto-select model (PostXAgent จะเลือกให้อัตโนมัติ)
+            [
+                'provider_id' => $provider->id,
+                'model_identifier' => 'postxagent:auto',
+                'display_name' => 'PostX - Auto Select',
+                'description' => 'PostXAgent จะเลือก AI provider/model ที่ดีที่สุดให้อัตโนมัติ ตาม priority และ availability',
+                'context_window' => 131072,
+                'max_output_tokens' => 4096,
+                'supports_functions' => true,
+                'supports_vision' => false,
+                'supports_streaming' => true,
+                'is_active' => true,
+                'pricing' => [
+                    'input' => 0,
+                    'output' => 0,
+                    'note' => 'ราคาขึ้นกับ model ที่ถูกเลือกใช้',
+                ],
+            ],
+        ];
+    }
 }
+

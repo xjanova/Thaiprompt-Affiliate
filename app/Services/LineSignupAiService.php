@@ -3,11 +3,38 @@
 namespace App\Services;
 
 use App\Models\LineSignupSession;
+use App\Models\AiProvider;
+use App\Models\AiModel;
+use App\Services\AI\PostXAgentService;
+use App\Services\AI\PostXAgentHealthCheck;
+use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class LineSignupAiService
 {
+    /**
+     * PostXAgent Health Check Service
+     */
+    protected ?PostXAgentHealthCheck $healthCheck = null;
+
+    /**
+     * ใช้ PostXAgent หรือไม่
+     */
+    protected bool $usePostXAgent = false;
+
+    /**
+     * สร้าง instance
+     */
+    public function __construct()
+    {
+        // ตรวจสอบว่าเปิดใช้งาน PostXAgent สำหรับ LINE signup หรือไม่
+        if (config('postxagent.line_signup.enabled', false)) {
+            $this->healthCheck = new PostXAgentHealthCheck();
+            $this->usePostXAgent = $this->healthCheck->isAvailable();
+        }
+    }
+
     /**
      * Generate AI response with context awareness
      */
@@ -237,30 +264,227 @@ EOT;
 
     /**
      * Call AI service
+     *
+     * รองรับทั้ง PostXAgent และ fallback เป็น local AI
      */
     protected function callAiService(string $systemPrompt, string $userPrompt): string
     {
-        // This is a placeholder - integrate with your actual AI service
-        // Example: OpenAI, Claude, or local Ollama
-
         try {
-            // Example using cache for common questions
+            // ลองใช้ PostXAgent ก่อน (ถ้าเปิดใช้งานและพร้อม)
+            if ($this->usePostXAgent) {
+                $response = $this->callPostXAgent($systemPrompt, $userPrompt);
+
+                if ($response !== null) {
+                    return $response;
+                }
+
+                // PostXAgent ไม่สำเร็จ ลอง fallback
+                Log::info('LineSignupAi: PostXAgent failed, falling back to local');
+            }
+
+            // ลองใช้ AI provider จากระบบ
+            $response = $this->callSystemAiProvider($systemPrompt, $userPrompt);
+
+            if ($response !== null) {
+                return $response;
+            }
+
+            // Fallback สุดท้าย: ใช้ smart default response
             $cacheKey = 'ai_response_' . md5($systemPrompt . $userPrompt);
 
-            return Cache::remember($cacheKey, 3600, function () use ($systemPrompt, $userPrompt) {
-                // Call your AI service here
-                // For now, return a smart default response
+            return Cache::remember($cacheKey, 3600, function () use ($userPrompt) {
                 return $this->getSmartDefaultResponse($userPrompt);
             });
         } catch (\Exception $e) {
             Log::error('AI Service Error', [
                 'error' => $e->getMessage(),
-                'system_prompt' => $systemPrompt,
-                'user_prompt' => $userPrompt,
+                'use_postxagent' => $this->usePostXAgent,
             ]);
 
             return "ขออภัยค่ะ ตอนนี้ระบบ AI กำลังยุ่งอยู่ 🙏 แต่ไม่ต้องกังวลนะคะ คุณสามารถดำเนินการสมัครสมาชิกต่อได้เลย หรือหากมีคำถาม ติดต่อทีมงานได้ที่ Line: @thaiprompt 💚";
         }
+    }
+
+    /**
+     * เรียกใช้ PostXAgent AI
+     *
+     * @param string $systemPrompt
+     * @param string $userPrompt
+     * @return string|null
+     */
+    protected function callPostXAgent(string $systemPrompt, string $userPrompt): ?string
+    {
+        try {
+            // ดึง provider/model ที่ดีที่สุดจาก PostXAgent
+            $best = $this->healthCheck?->selectBestAvailableProvider();
+
+            if (!$best) {
+                Log::warning('LineSignupAi: No available provider from PostXAgent');
+                return null;
+            }
+
+            // สร้าง dummy AiProvider และ AiModel สำหรับ PostXAgent
+            $provider = new AiProvider([
+                'name' => 'postxagent',
+                'display_name' => 'PostXAgent - ' . ($best['provider']['name'] ?? 'Unknown'),
+                'api_endpoint' => config('postxagent.api_url'),
+                'is_active' => true,
+                'config' => [
+                    'postxagent_provider' => $best['provider']['id'] ?? $best['provider']['name'],
+                ],
+            ]);
+
+            $model = new AiModel([
+                'model_identifier' => $best['model']['id'] ?? $best['model']['name'] ?? 'default',
+                'display_name' => $best['model']['name'] ?? 'Default',
+                'max_output_tokens' => 2048,
+            ]);
+
+            $service = new PostXAgentService($provider, $model);
+
+            // เตรียม messages
+            $messages = [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
+            ];
+
+            $result = $service->chat($messages, [
+                'temperature' => 0.7,
+                'max_tokens' => 1024,
+            ]);
+
+            $content = $result['content'] ?? '';
+
+            if (!empty($content)) {
+                Log::info('LineSignupAi: PostXAgent response success', [
+                    'provider' => $best['provider']['name'] ?? 'unknown',
+                    'model' => $best['model']['name'] ?? 'unknown',
+                    'tokens' => $result['tokens'] ?? 0,
+                ]);
+
+                return $content;
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('LineSignupAi: PostXAgent call failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * เรียกใช้ AI provider จากระบบ (fallback)
+     *
+     * @param string $systemPrompt
+     * @param string $userPrompt
+     * @return string|null
+     */
+    protected function callSystemAiProvider(string $systemPrompt, string $userPrompt): ?string
+    {
+        try {
+            // หา provider ที่ active และพร้อมใช้งาน
+            $provider = AiProvider::where('is_active', true)
+                ->where('is_available', true)
+                ->whereIn('name', ['meta-local', 'deepseek-local', 'deepseek', 'openai'])
+                ->first();
+
+            if (!$provider) {
+                return null;
+            }
+
+            $model = $provider->models()->where('is_active', true)->first();
+
+            if (!$model) {
+                return null;
+            }
+
+            $service = AiServiceFactory::create($provider, $model);
+
+            $messages = [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
+            ];
+
+            $result = $service->chat($messages, [
+                'temperature' => 0.7,
+                'max_tokens' => 1024,
+            ]);
+
+            $content = $result['content'] ?? '';
+
+            if (!empty($content)) {
+                Log::info('LineSignupAi: System AI response success', [
+                    'provider' => $provider->name,
+                    'model' => $model->model_identifier,
+                ]);
+
+                return $content;
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('LineSignupAi: System AI call failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่า PostXAgent พร้อมใช้งานหรือไม่
+     *
+     * @return bool
+     */
+    public function isPostXAgentAvailable(): bool
+    {
+        return $this->usePostXAgent && $this->healthCheck?->isAvailable();
+    }
+
+    /**
+     * ดึงสถานะ AI providers ทั้งหมด
+     *
+     * @return array
+     */
+    public function getAiProvidersStatus(): array
+    {
+        $status = [
+            'postxagent' => [
+                'enabled' => config('postxagent.line_signup.enabled', false),
+                'available' => $this->isPostXAgentAvailable(),
+                'providers' => [],
+            ],
+            'system' => [
+                'available' => false,
+                'providers' => [],
+            ],
+        ];
+
+        // PostXAgent providers
+        if ($this->healthCheck) {
+            $status['postxagent']['providers'] = $this->healthCheck->getReadyProviders();
+        }
+
+        // System providers
+        $systemProviders = AiProvider::where('is_active', true)
+            ->where('is_available', true)
+            ->with(['models' => fn($q) => $q->where('is_active', true)])
+            ->get();
+
+        if ($systemProviders->isNotEmpty()) {
+            $status['system']['available'] = true;
+            $status['system']['providers'] = $systemProviders->map(function ($p) {
+                return [
+                    'name' => $p->display_name,
+                    'models' => $p->models->pluck('display_name')->toArray(),
+                ];
+            })->toArray();
+        }
+
+        return $status;
     }
 
     /**
