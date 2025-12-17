@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -281,9 +282,10 @@ class MobileApiController extends Controller
      * อัพโหลดรูปโปรไฟล์ (Avatar)
      *
      * @param Request $request
+     * @param ImageUploadService $imageUploadService
      * @return JsonResponse
      */
-    public function uploadAvatar(Request $request): JsonResponse
+    public function uploadAvatar(Request $request, ImageUploadService $imageUploadService): JsonResponse
     {
         $user = Auth::user();
 
@@ -305,23 +307,28 @@ class MobileApiController extends Controller
         }
 
         try {
-            // ลบรูปเดิมถ้ามี (แยก path จาก URL ก่อน)
-            if ($user->avatar) {
-                $oldPath = str_replace(\Storage::disk('public')->url(''), '', $user->avatar);
-                if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
-                    \Storage::disk('public')->delete($oldPath);
-                }
+            // ลบรูปเดิมถ้ามี (ใช้ ImageUploadService)
+            if ($user->profile_picture) {
+                $imageUploadService->deleteImage($user->profile_picture);
             }
 
-            // อัพโหลดรูปใหม่
-            $file = $request->file('avatar');
-            $filename = 'avatars/' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('', $filename, 'public');
+            // อัพโหลดรูปใหม่ด้วย ImageUploadService
+            // จะแปลงเป็น WebP และ resize อัตโนมัติ
+            $path = $imageUploadService->uploadImage(
+                $request->file('avatar'),
+                'avatars',  // directory
+                800,        // max width
+                800,        // max height
+                90          // quality
+            );
+            // Return: 'avatars/xxx.webp' (RELATIVE PATH)
 
-            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง (ไม่ใช้ avatar mutator)
-            $avatarUrl = \Storage::disk('public')->url($path);
-            $user->profile_picture = $avatarUrl;
+            // อัพเดทข้อมูลผู้ใช้ - บันทึก PATH (ไม่ใช่ URL!)
+            $user->profile_picture = $path;
             $user->save();
+
+            // สร้าง URL สำหรับ response
+            $avatarUrl = \Storage::disk('public')->url($path);
 
             return response()->json([
                 'success' => true,
@@ -333,6 +340,7 @@ class MobileApiController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'avatar' => $user->avatar,
+                        'profile_picture_url' => $user->profile_picture_url,
                     ],
                 ],
             ]);
@@ -352,23 +360,20 @@ class MobileApiController extends Controller
     /**
      * ลบรูปโปรไฟล์ (Avatar)
      *
+     * @param ImageUploadService $imageUploadService
      * @return JsonResponse
      */
-    public function deleteAvatar(): JsonResponse
+    public function deleteAvatar(ImageUploadService $imageUploadService): JsonResponse
     {
         $user = Auth::user();
 
         try {
-            // ลบรูปถ้ามี
-            if ($user->avatar) {
-                // แยก path จาก URL
-                $path = str_replace(\Storage::disk('public')->url(''), '', $user->avatar);
-                if (\Storage::disk('public')->exists($path)) {
-                    \Storage::disk('public')->delete($path);
-                }
+            // ลบรูปถ้ามี (ใช้ ImageUploadService)
+            if ($user->profile_picture) {
+                $imageUploadService->deleteImage($user->profile_picture);
             }
 
-            // อัพเดทข้อมูลผู้ใช้ - ใช้ profile_picture โดยตรง
+            // อัพเดทข้อมูลผู้ใช้
             $user->profile_picture = null;
             $user->save();
 
