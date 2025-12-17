@@ -19,6 +19,7 @@ class AiServiceFactory
      * - google: Google Gemini models
      * - meta: Meta Llama models (via Together AI - OpenAI-compatible)
      * - meta-local: Meta Llama self-hosted via Ollama
+     * - postxagent: PostXAgent AI Manager Core (C# .NET 8.0)
      */
     public static function create(AiProvider $provider, AiModel $model): BaseAiService
     {
@@ -30,6 +31,7 @@ class AiServiceFactory
             'google' => new OpenAiService($provider, $model), // Gemini ก็ใช้ OpenAI-compatible
             'meta' => new OpenAiService($provider, $model), // Meta Llama via Together AI (OpenAI-compatible)
             'meta-local' => new LocalAiService($provider, $model), // Meta Llama self-hosted via Ollama
+            'postxagent' => new PostXAgentService($provider, $model), // PostXAgent AI Manager
             default => throw new \Exception("Unsupported provider: {$provider->name}"),
         };
     }
