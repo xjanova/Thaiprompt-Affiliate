@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.383.28] - 2025-12-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2297 from xjanova/claude/fix-profile-picture-sync-WULMs (d516661c)
+- chore: ลบแอพมือถือเก่า ThaipromptAffiliateApp (.NET MAUI) (de899ea6)
+
 ## [v3.383.27] - 2025-12-17
 
 ### ✨ Features
