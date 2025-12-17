@@ -1226,6 +1226,17 @@ Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::get('/install/progress', [AiProviderManagementController::class, 'getInstallProgress'])->name('install.progress');
     Route::post('/install/cancel', [AiProviderManagementController::class, 'cancelInstall'])->name('install.cancel');
     Route::get('/install/log', [AiProviderManagementController::class, 'getInstallLog'])->name('install.log');
+
+    // PostXAgent AI Manager Control
+    Route::prefix('postxagent')->name('postxagent.')->group(function () {
+        Route::get('/status', [AiProviderManagementController::class, 'getPostXAgentStatus'])->name('status');
+        Route::post('/test', [AiProviderManagementController::class, 'testPostXAgentConnection'])->name('test');
+        Route::post('/clear-cache', [AiProviderManagementController::class, 'clearPostXAgentCache'])->name('clear-cache');
+        Route::get('/providers', [AiProviderManagementController::class, 'getPostXAgentProviders'])->name('providers');
+        Route::get('/providers/{providerId}/models', [AiProviderManagementController::class, 'getPostXAgentModels'])->name('providers.models');
+        Route::post('/config', [AiProviderManagementController::class, 'updatePostXAgentConfig'])->name('config');
+        Route::post('/test-chat', [AiProviderManagementController::class, 'testPostXAgentChat'])->name('test-chat');
+    });
 });
 
 // AI Monitoring & Analytics
