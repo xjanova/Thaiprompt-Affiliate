@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.384.0] - 2025-12-17
+
+### ✨ Features
+- Merge pull request #2298 from xjanova/claude/refactor-ai-architecture-dLPr5 (41c2c3ce)
+- feat: เพิ่ม PostXAgent AI Manager integration (8a8c2011)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.383.28] - 2025-12-17
 
 ### ✨ Features
