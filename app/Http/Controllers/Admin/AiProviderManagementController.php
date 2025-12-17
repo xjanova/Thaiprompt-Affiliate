@@ -8,9 +8,11 @@ use App\Models\AiModel;
 use App\Services\AI\LocalAiManager;
 use App\Services\AI\AiServiceFactory;
 use App\Services\AI\LlamaInstallationService;
+use App\Services\AI\PostXAgentHealthCheck;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class AiProviderManagementController extends Controller
 {
@@ -44,6 +46,13 @@ class AiProviderManagementController extends Controller
             $metaLocalStatus = $this->checkMetaLocalStatus();
         }
 
+        // ดึง PostXAgent provider และสถานะ
+        $postXAgentProvider = $providers->firstWhere('name', 'postxagent');
+        $postXAgentStatus = null;
+        if ($postXAgentProvider || config('postxagent.enabled', false)) {
+            $postXAgentStatus = $this->checkPostXAgentStatus();
+        }
+
         // Logo mapping สำหรับ Providers
         $providerLogos = $this->getProviderLogos();
 
@@ -52,6 +61,8 @@ class AiProviderManagementController extends Controller
             'localAiStatus',
             'metaLocalStatus',
             'metaLocalProvider',
+            'postXAgentProvider',
+            'postXAgentStatus',
             'providerLogos'
         ));
     }
@@ -69,6 +80,7 @@ class AiProviderManagementController extends Controller
             'deepseek-local' => 'https://avatars.githubusercontent.com/u/139254846?s=200&v=4',
             'meta' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png',
             'meta-local' => 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/200px-Meta_Platforms_Inc._logo.svg.png',
+            'postxagent' => 'https://raw.githubusercontent.com/xjanova/PostXAgent/main/docs/logo.png',
         ];
     }
 
@@ -114,6 +126,57 @@ class AiProviderManagementController extends Controller
             'models' => [],
             'models_count' => 0,
         ];
+    }
+
+    /**
+     * ตรวจสอบสถานะ PostXAgent AI Manager
+     *
+     * @return array
+     */
+    private function checkPostXAgentStatus(): array
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+            $status = $healthCheck->getStatus();
+
+            if ($status['online'] ?? false) {
+                $providers = $healthCheck->getAvailableProviders();
+
+                return [
+                    'running' => true,
+                    'online' => true,
+                    'version' => $status['version'] ?? 'unknown',
+                    'uptime' => $status['uptime'] ?? null,
+                    'endpoint' => config('postxagent.api_url', 'http://localhost:8000/api/v1'),
+                    'signalr_url' => config('postxagent.signalr_url', 'http://localhost:8000/hubs/ai'),
+                    'providers' => $providers,
+                    'providers_count' => count($providers),
+                    'active_providers' => $status['active_providers'] ?? [],
+                    'total_requests' => $status['total_requests'] ?? 0,
+                    'memory_usage' => $status['memory_usage'] ?? null,
+                    'cpu_usage' => $status['cpu_usage'] ?? null,
+                    'checked_at' => $status['checked_at'] ?? now()->toDateTimeString(),
+                ];
+            }
+
+            return [
+                'running' => false,
+                'online' => false,
+                'endpoint' => config('postxagent.api_url', 'http://localhost:8000/api/v1'),
+                'error' => $status['error'] ?? 'PostXAgent ไม่ตอบสนอง',
+                'checked_at' => $status['checked_at'] ?? now()->toDateTimeString(),
+            ];
+        } catch (\Exception $e) {
+            Log::warning('PostXAgent status check failed', ['error' => $e->getMessage()]);
+
+            return [
+                'running' => false,
+                'online' => false,
+                'endpoint' => config('postxagent.api_url', 'http://localhost:8000/api/v1'),
+                'error' => $e->getMessage(),
+                'checked_at' => now()->toDateTimeString(),
+            ];
+        }
     }
 
     /**
@@ -676,6 +739,289 @@ class AiProviderManagementController extends Controller
             return 'llama3.2:3b';
         } else {
             return 'llama3.2:1b';
+        }
+    }
+
+    // =====================================================
+    // PostXAgent AI Manager Methods
+    // =====================================================
+
+    /**
+     * ดึงสถานะ PostXAgent (API endpoint)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPostXAgentStatus()
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+            $status = $healthCheck->getStatus(true); // fresh = true เพื่อไม่ใช้ cache
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->checkPostXAgentStatus(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงสถานะ PostXAgent: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ PostXAgent
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testPostXAgentConnection()
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+
+            // Clear cache และทดสอบใหม่
+            $healthCheck->clearCache();
+            $status = $healthCheck->getStatus(true);
+
+            if ($status['online'] ?? false) {
+                $providers = $healthCheck->getAvailableProviders();
+                $readyProviders = array_filter($providers, fn($p) => $p['is_available'] ?? false);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'เชื่อมต่อ PostXAgent สำเร็จ! (' . count($readyProviders) . '/' . count($providers) . ' providers พร้อมใช้งาน)',
+                    'details' => [
+                        'version' => $status['version'] ?? 'unknown',
+                        'uptime' => $status['uptime'] ?? null,
+                        'providers' => $providers,
+                        'total_requests' => $status['total_requests'] ?? 0,
+                    ],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'PostXAgent ไม่ตอบสนอง - ' . ($status['error'] ?? 'Unknown error'),
+                'details' => [
+                    'endpoint' => config('postxagent.api_url'),
+                    'error' => $status['error'] ?? null,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถเชื่อมต่อ PostXAgent: ' . $e->getMessage(),
+                'details' => [
+                    'endpoint' => config('postxagent.api_url'),
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * ล้าง cache ของ PostXAgent
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function clearPostXAgentCache()
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck->clearCache();
+
+            // ล้าง cache อื่นๆ ที่เกี่ยวข้อง
+            Cache::forget('postxagent_status');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ล้าง cache PostXAgent สำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถล้าง cache: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายการ providers ที่ PostXAgent รองรับ
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPostXAgentProviders()
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+            $providers = $healthCheck->getAvailableProviders();
+
+            return response()->json([
+                'success' => true,
+                'data' => $providers,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงรายการ providers: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ดึงรายการ models ของ provider ใน PostXAgent
+     *
+     * @param string $providerId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPostXAgentModels(string $providerId)
+    {
+        try {
+            $healthCheck = new PostXAgentHealthCheck();
+            $models = $healthCheck->getAvailableModels($providerId);
+
+            return response()->json([
+                'success' => true,
+                'data' => $models,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงรายการ models: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * อัพเดทการตั้งค่า PostXAgent
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePostXAgentConfig(Request $request)
+    {
+        $request->validate([
+            'api_url' => 'sometimes|url',
+            'api_key' => 'sometimes|string',
+            'enabled' => 'sometimes|boolean',
+        ]);
+
+        try {
+            // อัพเดทใน provider record ถ้ามี
+            $provider = AiProvider::where('name', 'postxagent')->first();
+
+            if ($provider) {
+                $config = $provider->config ?? [];
+
+                if ($request->has('api_url')) {
+                    $provider->api_endpoint = $request->api_url;
+                }
+
+                if ($request->has('api_key')) {
+                    $config['api_key'] = $request->api_key;
+                    $provider->config = $config;
+                }
+
+                if ($request->has('enabled')) {
+                    $provider->is_active = $request->enabled;
+                }
+
+                $provider->save();
+            }
+
+            // Clear cache
+            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck->clearCache();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทการตั้งค่า PostXAgent สำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถอัพเดทการตั้งค่า: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ทดสอบ Chat กับ PostXAgent
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testPostXAgentChat(Request $request)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000',
+            'provider' => 'sometimes|string',
+            'model' => 'sometimes|string',
+        ]);
+
+        try {
+            $apiUrl = config('postxagent.api_url', 'http://localhost:8000/api/v1');
+            $authConfig = config('postxagent.auth', []);
+
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'X-Source' => 'thaiprompt-affiliate-admin',
+            ];
+
+            if (!empty($authConfig['api_key'])) {
+                $headers['X-API-Key'] = $authConfig['api_key'];
+            }
+
+            $startTime = microtime(true);
+
+            $response = Http::withHeaders($headers)
+                ->timeout(60)
+                ->post($apiUrl . '/ai/chat', [
+                    'provider' => $request->input('provider', config('postxagent.defaults.provider', 'ollama')),
+                    'model' => $request->input('model', config('postxagent.defaults.model', 'llama3.2:3b')),
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => 'คุณเป็น AI Assistant ของระบบ Thaiprompt Affiliate ตอบภาษาไทยสั้นๆ กระชับ',
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $request->message,
+                        ],
+                    ],
+                    'temperature' => 0.7,
+                    'max_tokens' => 500,
+                ]);
+
+            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return response()->json([
+                    'success' => true,
+                    'response' => $data['content'] ?? $data['message'] ?? '',
+                    'provider' => $request->input('provider', 'ollama'),
+                    'model' => $request->input('model', 'llama3.2:3b'),
+                    'response_time_ms' => $responseTime,
+                    'usage' => $data['usage'] ?? [],
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'PostXAgent ไม่ตอบกลับ: ' . ($response->json()['error'] ?? 'Unknown error'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PostXAgent Test Chat Error', [
+                'message' => $request->message,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
         }
     }
 }
