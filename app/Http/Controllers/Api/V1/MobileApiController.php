@@ -753,6 +753,42 @@ class MobileApiController extends Controller
     // =====================================================
 
     /**
+     * ตรวจสอบสถานะ LINE Login สำหรับ Mobile App
+     *
+     * @return JsonResponse
+     */
+    public function lineStatus(): JsonResponse
+    {
+        try {
+            $lineService = app(\App\Services\LineService::class);
+
+            // ตรวจสอบว่า LINE Login ถูก configure และ enabled หรือไม่
+            $isConfigured = $lineService->isConfigured();
+            $settings = $lineService->getSettings();
+
+            // ตรวจสอบว่ามี settings และ is_active
+            $isEnabled = $settings && $settings->is_active;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'enabled' => $isEnabled,
+                    'configured' => $isConfigured,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'data' => [
+                    'enabled' => false,
+                    'configured' => false,
+                ],
+                'message' => 'ไม่สามารถตรวจสอบสถานะ LINE Login ได้',
+            ]);
+        }
+    }
+
+    /**
      * ดึง LINE Login URL สำหรับ Mobile App
      *
      * @param Request $request
