@@ -277,7 +277,36 @@ export default function RootLayout() {
       // Listener สำหรับเมื่อได้รับ notification (แอพเปิดอยู่)
       receivedSubscription = addNotificationReceivedListener((notification) => {
         try {
-          console.log('📩 Notification received:', notification?.request?.content?.title);
+          const title = notification?.request?.content?.title || 'แจ้งเตือน';
+          const body = notification?.request?.content?.body || '';
+          console.log('📩 Notification received:', title);
+
+          // แสดง alert เมื่อได้รับ notification (เพราะ app เปิดอยู่)
+          // ใช้ setTimeout เพื่อให้ UI render เสร็จก่อน
+          setTimeout(() => {
+            try {
+              Alert.alert(
+                title,
+                body,
+                [
+                  {
+                    text: 'ดูเลย',
+                    onPress: () => {
+                      // นำทางไปหน้า notifications
+                      router.push('/notifications');
+                    },
+                  },
+                  {
+                    text: 'ปิด',
+                    style: 'cancel',
+                  },
+                ],
+                { cancelable: true }
+              );
+            } catch (alertError) {
+              console.warn('Alert error:', alertError);
+            }
+          }, 100);
         } catch (e) {
           console.warn('Notification received handler error:', e);
         }
