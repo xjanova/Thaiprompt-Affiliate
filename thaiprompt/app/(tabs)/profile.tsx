@@ -214,8 +214,16 @@ export default function ProfileScreen() {
         const response = await uploadAvatar(result.assets[0].uri);
 
         if (response.success && response.data) {
-          // อัพเดท user ใน store
-          updateUser({ avatar: response.data.avatarUrl });
+          // อัพเดท user ใน store ด้วยข้อมูลจาก API
+          if (response.data.user) {
+            updateUser(response.data.user);
+          } else if (response.data.avatarUrl) {
+            updateUser({ avatar: response.data.avatarUrl });
+          }
+
+          // Refresh user data จาก server เพื่อให้แน่ใจว่าข้อมูลตรงกัน
+          await refreshUser();
+
           Alert.alert('สำเร็จ', 'เปลี่ยนรูปโปรไฟล์แล้ว');
         } else {
           Alert.alert('ผิดพลาด', response.message || 'ไม่สามารถอัพโหลดรูปได้');
@@ -252,7 +260,16 @@ export default function ProfileScreen() {
         const response = await uploadAvatar(result.assets[0].uri);
 
         if (response.success && response.data) {
-          updateUser({ avatar: response.data.avatarUrl });
+          // อัพเดท user ใน store ด้วยข้อมูลจาก API
+          if (response.data.user) {
+            updateUser(response.data.user);
+          } else if (response.data.avatarUrl) {
+            updateUser({ avatar: response.data.avatarUrl });
+          }
+
+          // Refresh user data จาก server เพื่อให้แน่ใจว่าข้อมูลตรงกัน
+          await refreshUser();
+
           Alert.alert('สำเร็จ', 'เปลี่ยนรูปโปรไฟล์แล้ว');
         } else {
           Alert.alert('ผิดพลาด', response.message || 'ไม่สามารถอัพโหลดรูปได้');

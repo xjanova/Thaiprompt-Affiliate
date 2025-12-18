@@ -1253,7 +1253,7 @@ class MobileApiController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function uploadKycImage(Request $request): JsonResponse
+    public function uploadKycImage(Request $request, ImageUploadService $imageUploadService): JsonResponse
     {
         $user = Auth::user();
 
@@ -1279,12 +1279,16 @@ class MobileApiController extends Controller
         }
 
         try {
-            // สร้าง directory สำหรับเก็บไฟล์ KYC
-            $kycPath = 'kyc/' . $user->id;
             $type = $request->type;
 
-            // อัพโหลดรูป (ใช้ disk 'public' เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
-            $imagePath = $request->file('image')->store($kycPath, 'public');
+            // อัพโหลดรูปด้วย ImageUploadService (แปลง WebP + resize)
+            $imagePath = $imageUploadService->uploadImage(
+                $request->file('image'),
+                'kyc/' . $user->id,  // directory
+                1600,                 // max width (KYC ต้องการความละเอียดสูง)
+                1600,                 // max height
+                95                    // quality (สูงเพื่อให้อ่าน ID card ชัดเจน)
+            );
 
             // หา or สร้าง KYC draft
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)
@@ -1306,14 +1310,22 @@ class MobileApiController extends Controller
                 $kyc->update([$column => $imagePath]);
             }
 
+            // สร้าง URL สำหรับแสดงรูป
+            $imageUrl = \Storage::disk('public')->url($imagePath);
+            $idCardUrl = $kyc->id_card_image ? \Storage::disk('public')->url($kyc->id_card_image) : null;
+            $selfieUrl = $kyc->selfie_image ? \Storage::disk('public')->url($kyc->selfie_image) : null;
+
             return response()->json([
                 'success' => true,
                 'message' => 'อัพโหลดรูปภาพสำเร็จ',
                 'data' => [
                     'kycId' => $kyc->id,
                     'type' => $type,
+                    'imageUrl' => $imageUrl,  // URL ของรูปที่อัพโหลด (สำหรับ preview)
                     'hasIdCard' => !empty($kyc->id_card_image),
                     'hasSelfie' => !empty($kyc->selfie_image),
+                    'idCardUrl' => $idCardUrl,   // URL รูปบัตรประชาชน
+                    'selfieUrl' => $selfieUrl,   // URL รูป selfie
                     'canSubmit' => !empty($kyc->id_card_image) && !empty($kyc->selfie_image),
                 ],
             ]);
