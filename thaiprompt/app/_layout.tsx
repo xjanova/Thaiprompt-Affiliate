@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
