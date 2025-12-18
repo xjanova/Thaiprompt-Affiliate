@@ -35,8 +35,8 @@ const TPIX_COIN_IMAGE = require('@/assets/images/TPIX1.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Wiki URL สำหรับ TPIX
-const TPIX_WIKI_URL = 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/features/crypto-tpix/TPIX_TOKEN_SYSTEM.md';
+// Wiki URL สำหรับ TPIX - ลิงก์ไปยังเว็บหลักของเรา
+const TPIX_WIKI_URL = 'https://main.thaiprompt.online/docs/tpix-token';
 
 // จำนวน particles
 const PARTICLE_COUNT = 30;
