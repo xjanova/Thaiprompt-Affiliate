@@ -53,41 +53,16 @@ class LineBotAiController extends Controller
             ->with('success', 'สร้างการตั้งค่า AI สำเร็จ');
     }
 
+    /**
+     * แก้ไขการตั้งค่า AI - redirect ไปหน้า settings
+     *
+     * @deprecated ใช้ line-recruitment/settings แทน
+     */
     public function edit($id)
     {
-        $aiSetting = LineBotAiSetting::with('knowledgeBases')->findOrFail($id);
-        return view('admin.line-bot.ai.edit', compact('aiSetting'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $setting = LineBotAiSetting::findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'provider' => 'required|in:openai,deepseek,anthropic,gemini,custom',
-            'api_key' => 'required|string',
-            'api_endpoint' => 'nullable|string|url',
-            'model' => 'required|string',
-            'temperature' => 'required|numeric|min:0|max:2',
-            'max_tokens' => 'required|integer|min:1',
-            'system_prompt' => 'nullable|string',
-            'enable_conversation_history' => 'boolean',
-            'conversation_memory_limit' => 'integer|min:1',
-            'is_active' => 'boolean',
-            'enable_fallback' => 'boolean',
-            'fallback_message' => 'nullable|string',
-        ]);
-
-        if ($request->is_active && !$setting->is_active) {
-            LineBotAiSetting::where('is_active', true)->update(['is_active' => false]);
-        }
-
-        $setting->update($validated);
-        LineBotAiSetting::clearCache();
-
-        return redirect()->route('admin.line-bot.ai.index')
-            ->with('success', 'อัปเดตการตั้งค่า AI สำเร็จ');
+        // Redirect ไปหน้า settings ที่สมบูรณ์กว่า
+        return redirect()->route('admin.line-recruitment.settings')
+            ->with('info', 'กรุณาใช้หน้าตั้งค่าระบบรับสมัครแทน');
     }
 
     public function destroy($id)
