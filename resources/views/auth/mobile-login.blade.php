@@ -248,6 +248,12 @@
             {{-- Login Card --}}
             <div class="glass-card rounded-2xl p-6 shadow-2xl">
 
+                @php
+                    // ตรวจสอบว่า LINE Login ถูกตั้งค่าแล้วหรือไม่
+                    $lineSettings = \App\Models\LineOaSetting::getActive();
+                    $showLineLogin = $lineSettings && $lineSettings->login_channel_id && $lineSettings->channel_secret;
+                @endphp
+
                 {{-- Success Message --}}
                 @if(session('success'))
                     <div class="mb-4 p-4 rounded-xl bg-green-500/20 border border-green-500/30 animate-fade-in-up">
@@ -289,7 +295,8 @@
                     </div>
                 @endif
 
-                {{-- ⭐ LINE Login - ให้อยู่ด้านบนเพื่อความโดดเด่น --}}
+                {{-- ⭐ LINE Login - แสดงเมื่อตั้งค่าแล้ว --}}
+                @if($showLineLogin)
                 <div class="mb-6">
                     <a href="{{ route('line.login', ['mobile_token' => $token, 'state' => $state]) }}"
                        class="line-btn w-full flex items-center justify-center gap-3 py-4 px-6 text-white font-bold rounded-xl text-lg">
@@ -310,6 +317,7 @@
                         <span class="px-4 bg-slate-900/50 text-slate-500 rounded-full">หรือใช้อีเมล</span>
                     </div>
                 </div>
+                @endif
 
                 {{-- Email Login Form --}}
                 <form method="POST" action="{{ route('mobile-login.login') }}" id="loginForm">
