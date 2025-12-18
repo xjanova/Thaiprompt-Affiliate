@@ -31,6 +31,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
+import { checkLineLoginStatus } from '@/services/api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -123,6 +124,8 @@ export default function LoginScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [isLineLoading, setIsLineLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLineLoginEnabled, setIsLineLoginEnabled] = useState(false);
+  const [isCheckingLineStatus, setIsCheckingLineStatus] = useState(true);
 
   // ถ้า login แล้ว ให้ไปหน้า tabs โดยตรง
   useEffect(() => {
@@ -134,6 +137,24 @@ export default function LoginScreen() {
   useEffect(() => {
     return () => clearError();
   }, [clearError]);
+
+  // ตรวจสอบสถานะ LINE Login เมื่อเปิดหน้า
+  useEffect(() => {
+    const checkLineStatus = async () => {
+      setIsCheckingLineStatus(true);
+      try {
+        const status = await checkLineLoginStatus();
+        // แสดงปุ่ม LINE Login เฉพาะเมื่อเปิดใช้งานและตั้งค่าเรียบร้อยแล้ว
+        setIsLineLoginEnabled(status.success && status.enabled && status.configured);
+      } catch (error) {
+        console.error('Check LINE status error:', error);
+        setIsLineLoginEnabled(false);
+      } finally {
+        setIsCheckingLineStatus(false);
+      }
+    };
+    checkLineStatus();
+  }, []);
 
   // Handle LINE OAuth callback
   useEffect(() => {
@@ -432,28 +453,32 @@ export default function LoginScreen() {
             </View>
           </Animated.View>
 
-          {/* Social Login Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>หรือ</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* Social Login Divider - แสดงเฉพาะเมื่อ LINE Login เปิดใช้งาน */}
+          {isLineLoginEnabled && (
+            <>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>หรือ</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* LINE Login */}
-          <Pressable
-            style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
-            onPress={handleLineLogin}
-            disabled={isLoading || isLineLoading}
-          >
-            {isLineLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Text style={{ fontSize: 24 }}>💬</Text>
-                <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
-              </>
-            )}
-          </Pressable>
+              {/* LINE Login Button */}
+              <Pressable
+                style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
+                onPress={handleLineLogin}
+                disabled={isLoading || isLineLoading}
+              >
+                {isLineLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Text style={{ fontSize: 24 }}>💬</Text>
+                    <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
+                  </>
+                )}
+              </Pressable>
+            </>
+          )}
 
           <View style={styles.bottomSpace} />
           </ScrollView>

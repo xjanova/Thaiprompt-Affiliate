@@ -610,6 +610,39 @@ export const getReferralStats = async (): Promise<ReferralStats | null> => {
 // =====================================================
 
 /**
+ * ตรวจสอบสถานะ LINE Login ว่าเปิดใช้งานหรือไม่
+ */
+export const checkLineLoginStatus = async (): Promise<{
+  success: boolean;
+  enabled: boolean;
+  configured: boolean;
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get<{
+      success: boolean;
+      data: { enabled: boolean; configured: boolean };
+      message?: string;
+    }>(API_ENDPOINTS.LINE_LOGIN_STATUS || '/api/v1/auth/line/status');
+    return {
+      success: response.data.success,
+      enabled: response.data.data?.enabled || false,
+      configured: response.data.data?.configured || false,
+      message: response.data.message,
+    };
+  } catch (error) {
+    console.error('Check LINE Login status error:', error);
+    // ถ้า error ให้ถือว่าไม่พร้อมใช้งาน
+    return {
+      success: false,
+      enabled: false,
+      configured: false,
+      message: 'ไม่สามารถตรวจสอบสถานะ LINE Login ได้',
+    };
+  }
+};
+
+/**
  * ดึง LINE Login URL
  */
 export const getLineLoginUrl = async (): Promise<{
