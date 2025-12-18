@@ -96,6 +96,7 @@ Route::prefix('v1')->group(function () {
 
     // LINE Login สำหรับ Mobile App (public)
     Route::prefix('auth/line')->group(function () {
+        Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineStatus']);
         Route::get('/mobile-url', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getLineLoginUrl']);
         Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
     });

@@ -25,6 +25,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  Easing,
 } from 'react-native';
 import { APP_INFO } from '@/config/appConfig';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -85,13 +86,13 @@ const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
           Animated.timing(translateX, {
             toValue: endX,
             duration: duration,
-            easing: Animated.bezier(0.4, 0, 0.6, 1),
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
             useNativeDriver: true,
           }),
           Animated.timing(translateY, {
             toValue: endY,
             duration: duration,
-            easing: Animated.bezier(0.4, 0, 0.6, 1),
+            easing: Easing.bezier(0.4, 0, 0.6, 1),
             useNativeDriver: true,
           }),
           // Pulse opacity

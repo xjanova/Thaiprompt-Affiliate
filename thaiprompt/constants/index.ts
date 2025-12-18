@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   ME: '/me',
 
   // LINE Login (Mobile App)
+  LINE_LOGIN_STATUS: '/auth/line/status',
   LINE_LOGIN_URL: '/auth/line/mobile-url',
   LINE_LOGIN_CALLBACK: '/auth/line/mobile-callback',
 
