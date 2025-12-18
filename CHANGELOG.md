@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.387.0] - 2025-12-18
+
+### ✨ Features
+- feat: เพิ่ม PostXAgent เป็น AI provider หลักสำหรับระบบ LINE Bot (ec775e0a)
+### 🐛 Bug Fixes
+- fix: ป้องกันการ reset รางวัลที่ admin แก้ไขเมื่อ seed ใหม่ (9412fc14)
+- fix: แก้ไขชื่อ route export-conversations ให้ถูกต้อง (5051da0e)
+### 🔧 Other Changes
+- Merge pull request #2303 from xjanova/claude/fix-rewards-session-column-UMcfK (0c7b0486)
+
 ## [v3.386.0] - 2025-12-18
 
 ### ✨ Features
