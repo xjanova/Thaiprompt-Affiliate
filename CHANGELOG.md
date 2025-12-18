@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.385.1] - 2025-12-18
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2300 from xjanova/claude/fix-profile-picture-sync-WULMs (eb44c802)
+- fix: แก้ไขปัญหารูปโปรไฟล์และ KYC ไม่แสดงในแอพมือถือ (60039844)
+### 🔧 Other Changes
+
+
 ## [v3.385.0] - 2025-12-17
 
 ### ✨ Features
