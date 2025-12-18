@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.386.0] - 2025-12-18
+
+### ✨ Features
+- feat: เพิ่มหิ่งห้อย RGB ล่องลอยในหน้า Login เพื่อความสวยงาม (ee654c1f)
+- feat: เพิ่มการตรวจสอบสถานะ LINE Login ก่อนแสดงปุ่ม (76734644)
+- feat: เปลี่ยนจากการเปิดบราวเซอร์ภายนอกเป็น WebView ภายในแอพ (60f1dba1)
+### 🐛 Bug Fixes
+- fix: แสดง Alert เมื่อได้รับ Push Notification ขณะเปิดแอพ (f31ab36b)
+- fix: เปลี่ยนลิงก์ TPIX Wiki จาก GitHub เป็นเว็บหลักของเรา (9a62dd07)
+### 🔧 Other Changes
+- Merge pull request #2302 from xjanova/claude/fix-profile-picture-sync-WULMs (31e26f11)
+- refactor: ปรับปรุง Tab Bar และเปลี่ยนปุ่มรถเข็นเป็น Floating Button (8e1b2f69)
+- chore: ซิงค์เวอร์ชั่นแอพให้ตรงกันทุกไฟล์ v3.383.26 (22cfe1dc)
+
 ## [v3.385.2] - 2025-12-18
 
 ### ✨ Features
