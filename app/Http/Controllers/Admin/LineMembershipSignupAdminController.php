@@ -136,7 +136,7 @@ class LineMembershipSignupAdminController extends Controller
             'conversations' => function ($query) {
                 $query->orderBy('created_at');
             },
-            'rewards',
+            'rewardClaims.reward', // โหลด reward claims พร้อม reward template
         ]);
 
         return view('admin.line-membership-signup.session-details', compact('session'));

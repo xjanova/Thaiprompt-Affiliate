@@ -94,11 +94,24 @@ class LineSignupSession extends Model
     }
 
     /**
-     * Get rewards for this session
+     * Get reward claims for this session
+     *
+     * ดึงรางวัลที่ผู้ใช้ได้รับจาก session นี้
+     * ใช้ LineSignupRewardClaim ซึ่งเก็บประวัติการรับรางวัล
+     */
+    public function rewardClaims(): HasMany
+    {
+        return $this->hasMany(LineSignupRewardClaim::class, 'signup_session_id');
+    }
+
+    /**
+     * Get rewards for this session (alias for backward compatibility)
+     *
+     * @deprecated ใช้ rewardClaims() แทน
      */
     public function rewards(): HasMany
     {
-        return $this->hasMany(LineSignupReward::class, 'session_id');
+        return $this->rewardClaims();
     }
 
     /**
