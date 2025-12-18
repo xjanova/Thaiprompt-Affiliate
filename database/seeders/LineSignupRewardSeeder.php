@@ -286,11 +286,13 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * สร้าง Coupon Templates
+     *
+     * ใช้ firstOrCreate เพื่อไม่ให้ reset ค่าที่ admin แก้ไขไปแล้ว
      */
     protected function createCouponTemplates(): void
     {
         // Template สำหรับฟรี
-        CouponTemplate::updateOrCreate(
+        CouponTemplate::firstOrCreate(
             ['code_prefix' => 'WELCOME10'],
             [
                 'name' => 'ส่วนลด 10% สำหรับสมาชิกใหม่',
@@ -309,7 +311,7 @@ class LineSignupRewardSeeder extends Seeder
         );
 
         // Template สำหรับแพคเกจ
-        CouponTemplate::updateOrCreate(
+        CouponTemplate::firstOrCreate(
             ['code_prefix' => 'PREMIUM20'],
             [
                 'name' => 'ส่วนลด 20% สำหรับสมาชิกพรีเมี่ยม',
@@ -330,11 +332,14 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * สร้างรางวัลสำหรับสมัครฟรี
+     *
+     * ใช้ firstOrCreate เพื่อไม่ให้ reset ค่าที่ admin แก้ไขไปแล้ว
+     * ถ้ารางวัลมีอยู่แล้ว จะไม่ถูกเปลี่ยนแปลง
      */
     protected function createFreeSignupRewards(): void
     {
         // 1. แต้ม Wallet
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'แต้มต้อนรับสมาชิกฟรี',
                 'signup_type' => 'free',
@@ -354,7 +359,7 @@ class LineSignupRewardSeeder extends Seeder
         );
 
         // 2. เหรียญ TPIX
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'เหรียญ TPIX ฟรี',
                 'signup_type' => 'free',
@@ -376,7 +381,7 @@ class LineSignupRewardSeeder extends Seeder
         // 3. คูปองส่วนลด
         $template = CouponTemplate::where('code_prefix', 'WELCOME10')->first();
         if ($template) {
-            LineSignupReward::updateOrCreate(
+            LineSignupReward::firstOrCreate(
                 [
                     'name' => 'คูปองส่วนลด 10%',
                     'signup_type' => 'free',
@@ -397,7 +402,7 @@ class LineSignupRewardSeeder extends Seeder
         }
 
         // 4. คะแนน XP
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'คะแนนประสบการณ์',
                 'signup_type' => 'free',
@@ -418,11 +423,14 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * สร้างรางวัลสำหรับสมัครด้วยแพคเกจ
+     *
+     * ใช้ firstOrCreate เพื่อไม่ให้ reset ค่าที่ admin แก้ไขไปแล้ว
+     * ถ้ารางวัลมีอยู่แล้ว จะไม่ถูกเปลี่ยนแปลง
      */
     protected function createPackageRewards(): void
     {
         // 1. แต้ม Wallet (แพคเกจ)
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'แต้มโบนัสแพคเกจ',
                 'signup_type' => 'package',
@@ -442,7 +450,7 @@ class LineSignupRewardSeeder extends Seeder
         );
 
         // 2. เหรียญ TPIX (แพคเกจ)
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'เหรียญ TPIX พรีเมี่ยม',
                 'signup_type' => 'package',
@@ -464,7 +472,7 @@ class LineSignupRewardSeeder extends Seeder
         // 3. คูปองพรีเมี่ยม
         $template = CouponTemplate::where('code_prefix', 'PREMIUM20')->first();
         if ($template) {
-            LineSignupReward::updateOrCreate(
+            LineSignupReward::firstOrCreate(
                 [
                     'name' => 'คูปองพรีเมี่ยม 20%',
                     'signup_type' => 'package',
@@ -485,7 +493,7 @@ class LineSignupRewardSeeder extends Seeder
         }
 
         // 4. คะแนน Rank
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'คะแนน Rank โบนัส',
                 'signup_type' => 'package',
@@ -505,7 +513,7 @@ class LineSignupRewardSeeder extends Seeder
         );
 
         // 5. คะแนน XP (แพคเกจ)
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'คะแนนประสบการณ์พิเศษ',
                 'signup_type' => 'package',
@@ -524,7 +532,7 @@ class LineSignupRewardSeeder extends Seeder
         );
 
         // 6. ลูกทีมฟรี (สำหรับแพคเกจระดับสูง)
-        LineSignupReward::updateOrCreate(
+        LineSignupReward::firstOrCreate(
             [
                 'name' => 'ดาวน์ไลน์ฟรี',
                 'signup_type' => 'package',

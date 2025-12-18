@@ -99,18 +99,90 @@
                                     </select>
                                 </div>
 
-                                <div>
+                                {{-- API Key (สำหรับ provider อื่นๆ) --}}
+                                <div x-show="$el.closest('form').querySelector('[name=provider]').value !== 'postxagent'">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
                                     <input type="password" name="api_key" placeholder="ไม่เปลี่ยนให้เว้นว่าง"
                                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
                                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ปัจจุบัน: {{ $setting->getMaskedApiKey() }}</p>
                                 </div>
 
+                                {{-- PostXAgent Configuration --}}
+                                @if($setting->provider === 'postxagent')
+                                <div class="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border border-purple-200 dark:border-purple-800 space-y-4">
+                                    <h5 class="font-medium text-purple-900 dark:text-purple-100 flex items-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                                        </svg>
+                                        PostXAgent Configuration
+                                    </h5>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Host</label>
+                                            <input type="text" name="postxagent_host" value="{{ $setting->postxagent_host }}"
+                                                   placeholder="localhost หรือ postx.example.com"
+                                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Port</label>
+                                            <input type="number" name="postxagent_api_port" value="{{ $setting->postxagent_api_port ?? 5000 }}" min="1" max="65535"
+                                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SignalR Port</label>
+                                            <input type="number" name="postxagent_signalr_port" value="{{ $setting->postxagent_signalr_port ?? 5002 }}" min="1" max="65535"
+                                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Timeout (วินาที)</label>
+                                            <input type="number" name="postxagent_timeout" value="{{ $setting->postxagent_timeout ?? 30 }}" min="1" max="300"
+                                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
+                                        <input type="password" name="postxagent_api_key" placeholder="ไม่เปลี่ยนให้เว้นว่าง"
+                                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ปัจจุบัน: {{ $setting->getMaskedPostXAgentApiKey() }}</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Preferred Provider</label>
+                                            <select name="postxagent_preferred_provider"
+                                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                                <option value="auto" {{ ($setting->postxagent_preferred_provider ?? 'auto') === 'auto' ? 'selected' : '' }}>Auto (เลือกอัตโนมัติ)</option>
+                                                <option value="ollama" {{ $setting->postxagent_preferred_provider === 'ollama' ? 'selected' : '' }}>Ollama (Local)</option>
+                                                <option value="openai" {{ $setting->postxagent_preferred_provider === 'openai' ? 'selected' : '' }}>OpenAI</option>
+                                                <option value="anthropic" {{ $setting->postxagent_preferred_provider === 'anthropic' ? 'selected' : '' }}>Anthropic (Claude)</option>
+                                                <option value="google" {{ $setting->postxagent_preferred_provider === 'google' ? 'selected' : '' }}>Google (Gemini)</option>
+                                                <option value="huggingface" {{ $setting->postxagent_preferred_provider === 'huggingface' ? 'selected' : '' }}>HuggingFace</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" name="postxagent_use_ssl" value="1" {{ $setting->postxagent_use_ssl ? 'checked' : '' }}
+                                                       class="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                                                <span class="text-sm text-gray-700 dark:text-gray-300">Use SSL/HTTPS</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
-                                    <input type="text" name="model" value="{{ $setting->model }}" required
-                                           placeholder="gpt-4, gemini-pro, claude-3-sonnet"
+                                    <input type="text" name="model" value="{{ $setting->model }}"
+                                           placeholder="gpt-4, gemini-pro, claude-3-sonnet (ไม่จำเป็นสำหรับ PostXAgent)"
                                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
+                                    @if($setting->provider === 'postxagent')
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PostXAgent จะเลือก model อัตโนมัติตาม Preferred Provider</p>
+                                    @endif
                                 </div>
                             </div>
 
