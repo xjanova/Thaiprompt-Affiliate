@@ -264,8 +264,18 @@ export default function EditProfileScreen() {
 
     const result = await uploadAvatarApi(uri);
 
-    if (result.success && result.data?.avatarUrl) {
-      updateUser({ avatar: result.data.avatarUrl });
+    if (result.success) {
+      // ใช้ user object จาก API response (มีข้อมูลล่าสุด)
+      if (result.data?.user) {
+        updateUser(result.data.user);
+      } else if (result.data?.avatarUrl) {
+        // Fallback: ถ้าไม่มี user object ให้ใช้ avatarUrl
+        updateUser({ avatar: result.data.avatarUrl });
+      }
+
+      // Refresh user data จาก server เพื่อให้แน่ใจว่าข้อมูลตรงกัน
+      await refreshUser();
+
       Alert.alert('สำเร็จ', 'อัพโหลดรูปโปรไฟล์เรียบร้อย');
     } else {
       Alert.alert('ผิดพลาด', result.message || 'อัพโหลดไม่สำเร็จ');
