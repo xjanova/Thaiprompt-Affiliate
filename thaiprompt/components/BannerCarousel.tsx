@@ -16,7 +16,6 @@ import {
   Pressable,
   Dimensions,
   ScrollView,
-  Linking,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
@@ -24,6 +23,7 @@ import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getBanners, trackBannerClick, type Banner } from '@/services/api';
+import { openUrl } from '@/utils/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -130,16 +130,16 @@ export default function BannerCarousel({
         router.push(banner.link as never);
         break;
       case 'external':
-        // Open external URL
+        // เปิด URL ใน WebView ภายในแอพ
         try {
-          await Linking.openURL(banner.link);
+          await openUrl(banner.link, banner.title);
         } catch (error) {
           console.error('Cannot open URL:', error);
         }
         break;
       default:
         if (banner.link.startsWith('http')) {
-          await Linking.openURL(banner.link);
+          await openUrl(banner.link, banner.title);
         } else {
           router.push(banner.link as never);
         }

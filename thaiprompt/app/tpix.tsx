@@ -21,7 +21,6 @@ import {
   Pressable,
   Animated,
   Easing,
-  Linking,
   StatusBar,
   ScrollView,
   Image,
@@ -29,6 +28,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
+import { openUrl } from '@/utils/navigation';
 
 // รูปภาพ TPIX เหรียญทอง 3D
 const TPIX_COIN_IMAGE = require('@/assets/images/TPIX1.png');
@@ -454,7 +454,8 @@ export default function TPIXScreen() {
   }, []);
 
   const handleOpenWiki = () => {
-    Linking.openURL(TPIX_WIKI_URL);
+    // เปิด Wiki ใน WebView ภายในแอพ
+    openUrl(TPIX_WIKI_URL, 'TPIX Token - Wiki', '📖');
   };
 
   const handleGoBack = () => {
