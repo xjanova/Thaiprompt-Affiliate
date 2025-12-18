@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.388.0] - 2025-12-18
+
+### ✨ Features
+- Merge pull request #2305 from xjanova/claude/fix-rewards-session-column-UMcfK (a37e0f42)
+- feat: upgrade mobile-login.blade.php ด้วย Premium V3 UI (dbc76b06)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.387.1] - 2025-12-18
 
 ### ✨ Features
