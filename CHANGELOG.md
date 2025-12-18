@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.389.1] - 2025-12-18
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2308 from xjanova/claude/update-ai-providers-seeder-BdrGQ (b6adb95b)
+- fix: เพิ่ม 'gateway' ให้กับ provider_type enum ในตาราง ai_providers (25b98de9)
+### 🔧 Other Changes
+
+
 ## [v3.389.0] - 2025-12-18
 
 ### ✨ Features
