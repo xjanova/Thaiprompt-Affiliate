@@ -261,10 +261,10 @@
                                 <span>Test</span>
                             </button>
                         </div>
-                        <a href="{{ route('admin.line-bot.ai.edit', $setting->id) }}"
+                        <a href="{{ route('admin.line-recruitment.settings') }}"
                            class="block w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-center text-sm font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                            <i class="fas fa-edit"></i>
-                            <span>แก้ไขการตั้งค่า</span>
+                            <i class="fas fa-cog"></i>
+                            <span>ตั้งค่าระบบรับสมัคร</span>
                         </a>
                     </div>
                 </div>

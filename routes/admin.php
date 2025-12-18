@@ -703,8 +703,7 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::get('/', [LineBotAiController::class, 'index'])->name('index');
         Route::get('/create', [LineBotAiController::class, 'create'])->name('create');
         Route::post('/', [LineBotAiController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [LineBotAiController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [LineBotAiController::class, 'update'])->name('update');
+        // ลบ edit/update - ใช้ line-recruitment/settings แทน
         Route::delete('/{id}', [LineBotAiController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/test', [LineBotAiController::class, 'test'])->name('test');
 
