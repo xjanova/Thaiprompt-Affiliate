@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.388.1] - 2025-12-18
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2306 from xjanova/claude/fix-rewards-session-column-UMcfK (52801d9c)
+- fix: เพิ่มเงื่อนไขตรวจสอบ LINE settings ก่อนแสดงปุ่ม LINE Login (7fccc10f)
+### 🔧 Other Changes
+
+
 ## [v3.388.0] - 2025-12-18
 
 ### ✨ Features
