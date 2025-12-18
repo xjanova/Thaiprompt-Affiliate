@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.6',
-  BUILD_NUMBER: 31,
-  BUILD_DATE: '2025-12-15-CHECKOUT-NATIVE', // Native checkout flow, cart integration
+  VERSION: '3.383.26',
+  BUILD_NUMBER: 32,
+  BUILD_DATE: '2025-12-18-FIREFLIES-LOGIN', // Added RGB fireflies animation, WebView integration, LINE login check
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

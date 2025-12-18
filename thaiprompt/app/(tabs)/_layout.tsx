@@ -81,124 +81,6 @@ const CartBadge = ({ count }: { count: number }) => {
   );
 };
 
-// Cart Button Component - ปุ่มตะกร้าตรงกลาง
-const CartButton = () => {
-  const totalItems = useCartStore((state) => state.totalItems);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0.5)).current;
-
-  useEffect(() => {
-    // Glow pulse animation
-    const glowLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0.5,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ])
-    );
-    glowLoop.start();
-
-    return () => glowLoop.stop();
-  }, [glowAnim]);
-
-  const handlePressIn = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 0.9,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 5,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handlePress = () => {
-    router.push('/cart');
-  };
-
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '-10deg'],
-  });
-
-  return (
-    <View style={styles.cartButtonContainer}>
-      {/* Glow effect */}
-      <Animated.View
-        style={[
-          styles.cartGlow,
-          {
-            opacity: glowAnim,
-            transform: [{ scale: glowAnim.interpolate({
-              inputRange: [0.5, 1],
-              outputRange: [1, 1.3],
-            }) }],
-          },
-        ]}
-      />
-
-      <Pressable
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-      >
-        <Animated.View
-          style={[
-            styles.cartButton,
-            {
-              transform: [{ scale: scaleAnim }, { rotate }],
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={['#3B82F6', '#2563EB', '#1D4ED8']}
-            style={styles.cartButtonGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            {/* 3D inner shadow */}
-            <View style={styles.cartButtonInner}>
-              <Text style={styles.cartEmoji}>🛒</Text>
-            </View>
-          </LinearGradient>
-
-          {/* Cart Badge */}
-          <CartBadge count={totalItems} />
-        </Animated.View>
-      </Pressable>
-    </View>
-  );
-};
-
 // Notification Badge Component - แสดงจำนวนข้อความที่ยังไม่ได้อ่าน
 const NotificationBadge = ({ count }: { count: number }) => {
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -318,7 +200,109 @@ const NotificationTabButton = ({
   );
 };
 
-// Sync Status Indicator Component - แสดงสถานะการ sync
+// Floating Cart Button Component - ปุ่มรถเข็นลอย (แสดงเฉพาะเมื่อมีสินค้า)
+const FloatingCartButton = () => {
+  const totalItems = useCartStore((state) => state.totalItems);
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  // แสดง/ซ่อน animation เมื่อมี/ไม่มีสินค้า
+  useEffect(() => {
+    if (totalItems > 0) {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 80,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.spring(scaleAnim, {
+        toValue: 0,
+        tension: 80,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [totalItems, scaleAnim]);
+
+  const handlePressIn = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0.85,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 5,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handlePress = () => {
+    router.push('/cart');
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-10deg'],
+  });
+
+  // ไม่แสดงถ้าไม่มีสินค้า
+  if (totalItems === 0) {
+    return null;
+  }
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.floatingCartContainer}
+    >
+      <Animated.View
+        style={[
+          styles.floatingCart,
+          {
+            transform: [{ scale: scaleAnim }, { rotate }],
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={['#3B82F6', '#2563EB', '#1D4ED8']}
+          style={styles.floatingCartGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.floatingCartInner}>
+            <Text style={styles.floatingCartEmoji}>🛒</Text>
+          </View>
+        </LinearGradient>
+
+        {/* Badge */}
+        <CartBadge count={totalItems} />
+      </Animated.View>
+    </Pressable>
+  );
+};
+
+// Sync Status Indicator Component - แสดงเฉพาะเมื่อ offline
 const SyncStatusBadge = () => {
   const { status, lastSyncTime, isConnected } = useSyncStore();
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -333,6 +317,11 @@ const SyncStatusBadge = () => {
   };
 
   const config = statusConfig[status];
+
+  // ซ่อนเมื่อ online และ connected
+  if (status === 'online' && isConnected) {
+    return null;
+  }
 
   // Animations
   useEffect(() => {
@@ -564,10 +553,13 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Sync Status Badge - แสดงสถานะการ sync ด้านบน tab bar */}
+      {/* Sync Status Badge - แสดงเฉพาะเมื่อ offline */}
       <View style={styles.syncBadgeWrapper}>
         <SyncStatusBadge />
       </View>
+
+      {/* Floating Cart Button - แสดงเฉพาะเมื่อมีสินค้า */}
+      <FloatingCartButton />
 
       <Tabs
         screenOptions={{
@@ -580,7 +572,7 @@ export default function TabLayout() {
             <View style={styles.tabBarBackground}>
               {/* Top border gradient */}
               <LinearGradient
-                colors={['rgba(59, 130, 246, 0.3)', 'rgba(139, 92, 246, 0.2)', 'rgba(59, 130, 246, 0.1)']}
+                colors={['rgba(59, 130, 246, 0.4)', 'rgba(139, 92, 246, 0.3)', 'rgba(236, 72, 153, 0.2)']}
                 style={styles.tabBarTopBorder}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -612,19 +604,6 @@ export default function TabLayout() {
             tabBarIcon: ({ focused }) => (
               <TabButton focused={focused} icon={TAB_ICONS.network} label="สายงาน" />
             ),
-          }}
-        />
-        {/* Placeholder for cart button */}
-        <Tabs.Screen
-          name="cart-placeholder"
-          options={{
-            title: '',
-            tabBarButton: () => <CartButton />,
-          }}
-          listeners={{
-            tabPress: (e) => {
-              e.preventDefault();
-            },
           }}
         />
         <Tabs.Screen
@@ -751,55 +730,47 @@ const styles = StyleSheet.create({
   tabEmojiActive: {
     fontSize: 20,
   },
-  // Cart Button Styles
-  cartButtonContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -30,
-    width: 70,
-  },
-  cartGlow: {
+  // Floating Cart Button Styles - ปุ่มรถเข็นลอย
+  floatingCartContainer: {
     position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    bottom: Platform.OS === 'ios' ? 100 : 80,
+    right: 20,
+    zIndex: 999,
   },
-  cartButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  floatingCart: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     // 3D shadow
     shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 16,
   },
-  cartButtonGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  floatingCartGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
-  cartButtonInner: {
+  floatingCartInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 27,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
     // Inner highlight
     borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderTopColor: 'rgba(255, 255, 255, 0.35)',
     borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.15)',
   },
-  cartEmoji: {
-    fontSize: 28,
+  floatingCartEmoji: {
+    fontSize: 32,
   },
   // Cart Badge Styles
   cartBadge: {

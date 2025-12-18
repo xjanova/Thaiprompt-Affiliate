@@ -16,7 +16,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Linking,
   ActivityIndicator,
   StatusBar,
   Dimensions,
@@ -29,6 +28,7 @@ import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import { openUrl } from '@/utils/navigation';
 
 // ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
 // import { AnimatedBackground } from '@/components/AnimatedBackground';
@@ -175,16 +175,12 @@ export default function QRScannerScreen() {
     }
   };
 
-  // Open link
+  // Open link - เปิดใน WebView ภายในแอพ
   const handleOpenLink = async () => {
     if (scannedData && isUrl(scannedData)) {
       try {
-        const supported = await Linking.canOpenURL(scannedData);
-        if (supported) {
-          await Linking.openURL(scannedData);
-        } else {
-          Alert.alert('ไม่สามารถเปิดลิงก์', 'URL นี้ไม่รองรับ');
-        }
+        // เปิด URL ใน WebView ภายในแอพ (ไม่ใช่ external browser)
+        await openUrl(scannedData, 'QR Code', '🔗');
       } catch (error) {
         Alert.alert('ผิดพลาด', 'ไม่สามารถเปิดลิงก์ได้');
       }

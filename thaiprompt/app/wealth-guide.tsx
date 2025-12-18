@@ -15,11 +15,11 @@ import {
   StatusBar,
   Modal,
   Dimensions,
-  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { openUrl } from '@/utils/navigation';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -295,9 +295,13 @@ export default function WealthGuideScreen() {
     setSelectedChapter(null);
   };
 
-  // เปิดเว็บเวอร์ชัน Pro
+  // เปิดเว็บเวอร์ชัน Pro ใน WebView
   const handleOpenWebVersion = () => {
-    Linking.openURL('https://thaiprompt.com/user/wealth-guide-pro');
+    openUrl(
+      'https://thaiprompt.com/user/wealth-guide-pro',
+      'คู่มือเสริมทางเศรษฐี Pro',
+      '💎'
+    );
   };
 
   // Render content block

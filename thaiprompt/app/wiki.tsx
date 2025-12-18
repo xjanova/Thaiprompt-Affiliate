@@ -25,6 +25,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useAppStore } from '@/stores/appStore';
+import { openUrl } from '@/utils/navigation';
 
 // Wiki Categories
 const WIKI_CATEGORIES = [
@@ -207,11 +208,13 @@ export default function WikiScreen() {
   const isDark = resolvedTheme === 'dark';
 
   const handleContact = () => {
+    // เปิดอีเมลใน external app (mailto: special URL)
     Linking.openURL('mailto:support@thaiprompt.com');
   };
 
   const handleWebsite = () => {
-    Linking.openURL('https://main.thaiprompt.online');
+    // เปิดเว็บไซต์ใน WebView ภายในแอพ
+    openUrl('https://main.thaiprompt.online', 'Thaiprompt', '🌐');
   };
 
   return (

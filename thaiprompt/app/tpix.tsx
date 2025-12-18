@@ -21,7 +21,6 @@ import {
   Pressable,
   Animated,
   Easing,
-  Linking,
   StatusBar,
   ScrollView,
   Image,
@@ -29,14 +28,15 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
+import { openUrl } from '@/utils/navigation';
 
 // รูปภาพ TPIX เหรียญทอง 3D
 const TPIX_COIN_IMAGE = require('@/assets/images/TPIX1.png');
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Wiki URL สำหรับ TPIX
-const TPIX_WIKI_URL = 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/features/crypto-tpix/TPIX_TOKEN_SYSTEM.md';
+// Wiki URL สำหรับ TPIX - ลิงก์ไปยังเว็บหลักของเรา
+const TPIX_WIKI_URL = 'https://main.thaiprompt.online/docs/tpix-token';
 
 // จำนวน particles
 const PARTICLE_COUNT = 30;
@@ -454,7 +454,8 @@ export default function TPIXScreen() {
   }, []);
 
   const handleOpenWiki = () => {
-    Linking.openURL(TPIX_WIKI_URL);
+    // เปิด Wiki ใน WebView ภายในแอพ
+    openUrl(TPIX_WIKI_URL, 'TPIX Token - Wiki', '📖');
   };
 
   const handleGoBack = () => {

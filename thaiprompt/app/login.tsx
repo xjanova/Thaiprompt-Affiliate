@@ -31,8 +31,132 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuthStore } from '@/stores/authStore';
+import { checkLineLoginStatus } from '@/services/api';
 
 const { width, height } = Dimensions.get('window');
+
+// Firefly Component - หิ่งห้อย RGB ล่องลอย
+const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  // สุ่มตำแหน่งเริ่มต้น
+  const startX = Math.random() * width;
+  const startY = Math.random() * height;
+
+  // สุ่มสี RGB
+  const colors = [
+    '#3B82F6', // Blue
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#10B981', // Green
+    '#F59E0B', // Amber
+    '#EF4444', // Red
+    '#06B6D4', // Cyan
+    '#F97316', // Orange
+  ];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+
+  useEffect(() => {
+    // สุ่มเส้นทางการเคลื่อนที่
+    const createPath = () => {
+      const endX = (Math.random() - 0.5) * width * 0.8;
+      const endY = (Math.random() - 0.5) * height * 0.8;
+
+      Animated.sequence([
+        Animated.delay(delay),
+        // Fade in
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]),
+        // เคลื่อนที่แบบหิ่งห้อย
+        Animated.parallel([
+          Animated.timing(translateX, {
+            toValue: endX,
+            duration: duration,
+            easing: Animated.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: endY,
+            duration: duration,
+            easing: Animated.bezier(0.4, 0, 0.6, 1),
+            useNativeDriver: true,
+          }),
+          // Pulse opacity
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(opacity, {
+                toValue: 0.3,
+                duration: 1000,
+                useNativeDriver: true,
+              }),
+              Animated.timing(opacity, {
+                toValue: 1,
+                duration: 1000,
+                useNativeDriver: true,
+              }),
+            ])
+          ),
+          // Pulse scale
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(scale, {
+                toValue: 0.7,
+                duration: 1200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(scale, {
+                toValue: 1.2,
+                duration: 1200,
+                useNativeDriver: true,
+              }),
+            ])
+          ),
+        ]),
+      ]).start(() => {
+        // Reset และเริ่มใหม่
+        translateX.setValue(0);
+        translateY.setValue(0);
+        opacity.setValue(0);
+        scale.setValue(0.5);
+        createPath();
+      });
+    };
+
+    createPath();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.firefly,
+        {
+          left: startX,
+          top: startY,
+          opacity,
+          transform: [{ translateX }, { translateY }, { scale }],
+        },
+      ]}
+    >
+      {/* Outer glow */}
+      <View style={[styles.fireflyGlow, { backgroundColor: color, opacity: 0.4 }]} />
+      {/* Inner core */}
+      <View style={[styles.fireflyCore, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+};
 
 // Floating Orb Animation Component
 const FloatingOrb = ({ delay, size, color, position }: {
@@ -123,6 +247,8 @@ export default function LoginScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [isLineLoading, setIsLineLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLineLoginEnabled, setIsLineLoginEnabled] = useState(false);
+  const [isCheckingLineStatus, setIsCheckingLineStatus] = useState(true);
 
   // ถ้า login แล้ว ให้ไปหน้า tabs โดยตรง
   useEffect(() => {
@@ -134,6 +260,24 @@ export default function LoginScreen() {
   useEffect(() => {
     return () => clearError();
   }, [clearError]);
+
+  // ตรวจสอบสถานะ LINE Login เมื่อเปิดหน้า
+  useEffect(() => {
+    const checkLineStatus = async () => {
+      setIsCheckingLineStatus(true);
+      try {
+        const status = await checkLineLoginStatus();
+        // แสดงปุ่ม LINE Login เฉพาะเมื่อเปิดใช้งานและตั้งค่าเรียบร้อยแล้ว
+        setIsLineLoginEnabled(status.success && status.enabled && status.configured);
+      } catch (error) {
+        console.error('Check LINE status error:', error);
+        setIsLineLoginEnabled(false);
+      } finally {
+        setIsCheckingLineStatus(false);
+      }
+    };
+    checkLineStatus();
+  }, []);
 
   // Handle LINE OAuth callback
   useEffect(() => {
@@ -275,6 +419,28 @@ export default function LoginScreen() {
       <FloatingOrb delay={500} size={100} color="rgba(139,92,246,0.15)" position={{ top: 200, right: -30 }} />
       <FloatingOrb delay={1000} size={80} color="rgba(236,72,153,0.15)" position={{ bottom: 200, left: 30 }} />
       <FloatingOrb delay={1500} size={120} color="rgba(16,185,129,0.1)" position={{ bottom: 100, right: -40 }} />
+
+      {/* RGB Fireflies - หิ่งห้อยล่องลอย */}
+      <Firefly delay={0} duration={8000} />
+      <Firefly delay={200} duration={9000} />
+      <Firefly delay={400} duration={7500} />
+      <Firefly delay={600} duration={8500} />
+      <Firefly delay={800} duration={9500} />
+      <Firefly delay={1000} duration={7000} />
+      <Firefly delay={1200} duration={8200} />
+      <Firefly delay={1400} duration={9200} />
+      <Firefly delay={1600} duration={7800} />
+      <Firefly delay={1800} duration={8800} />
+      <Firefly delay={2000} duration={9800} />
+      <Firefly delay={2200} duration={7200} />
+      <Firefly delay={2400} duration={8400} />
+      <Firefly delay={2600} duration={9400} />
+      <Firefly delay={2800} duration={7600} />
+      <Firefly delay={3000} duration={8600} />
+      <Firefly delay={3200} duration={9600} />
+      <Firefly delay={3400} duration={7400} />
+      <Firefly delay={3600} duration={8300} />
+      <Firefly delay={3800} duration={9100} />
 
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
 
@@ -432,28 +598,32 @@ export default function LoginScreen() {
             </View>
           </Animated.View>
 
-          {/* Social Login Divider */}
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>หรือ</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* Social Login Divider - แสดงเฉพาะเมื่อ LINE Login เปิดใช้งาน */}
+          {isLineLoginEnabled && (
+            <>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>หรือ</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* LINE Login */}
-          <Pressable
-            style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
-            onPress={handleLineLogin}
-            disabled={isLoading || isLineLoading}
-          >
-            {isLineLoading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Text style={{ fontSize: 24 }}>💬</Text>
-                <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
-              </>
-            )}
-          </Pressable>
+              {/* LINE Login Button */}
+              <Pressable
+                style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
+                onPress={handleLineLogin}
+                disabled={isLoading || isLineLoading}
+              >
+                {isLineLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <>
+                    <Text style={{ fontSize: 24 }}>💬</Text>
+                    <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
+                  </>
+                )}
+              </Pressable>
+            </>
+          )}
 
           <View style={styles.bottomSpace} />
           </ScrollView>
@@ -684,5 +854,34 @@ const styles = StyleSheet.create({
   },
   bottomSpace: {
     height: 40,
+  },
+  // Firefly Styles - หิ่งห้อย RGB
+  firefly: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fireflyGlow: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fireflyCore: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 10,
   },
 });

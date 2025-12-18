@@ -13,7 +13,6 @@ import {
   Switch,
   StyleSheet,
   Alert,
-  Linking,
   StatusBar,
   ActivityIndicator,
   Platform,
@@ -28,6 +27,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
+import { openUrl } from '@/utils/navigation';
 
 // Import SVG Icons
 import {
@@ -220,11 +220,19 @@ export default function SettingsScreen() {
   };
 
   const handlePrivacyPolicy = () => {
-    Linking.openURL(APP_INFO.PRIVACY_URL || 'https://main.thaiprompt.online/privacy');
+    openUrl(
+      APP_INFO.PRIVACY_URL || 'https://main.thaiprompt.online/privacy',
+      'นโยบายความเป็นส่วนตัว',
+      '📄'
+    );
   };
 
   const handleTermsOfService = () => {
-    Linking.openURL(APP_INFO.TERMS_URL || 'https://main.thaiprompt.online/terms');
+    openUrl(
+      APP_INFO.TERMS_URL || 'https://main.thaiprompt.online/terms',
+      'ข้อกำหนดการใช้งาน',
+      '📋'
+    );
   };
 
   const handleRateApp = () => {
