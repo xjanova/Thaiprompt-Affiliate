@@ -257,19 +257,34 @@
                 @endif
             </div>
 
-            {{-- Rewards --}}
+            {{-- Reward Claims --}}
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                 <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-gift text-yellow-500"></i>
                     Rewards
                 </h2>
 
-                @if($session->rewards && $session->rewards->count() > 0)
+                @if($session->rewardClaims && $session->rewardClaims->count() > 0)
                 <div class="space-y-2">
-                    @foreach($session->rewards as $reward)
-                    <div class="flex items-center gap-2 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg">
-                        <i class="fas fa-star text-yellow-500"></i>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $reward->reward_type }}</span>
+                    @foreach($session->rewardClaims as $claim)
+                    <div class="flex items-center justify-between gap-2 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-500"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {{ $claim->reward->name ?? $claim->reward_type }}
+                                </span>
+                                @if($claim->amount > 0)
+                                <span class="text-xs text-gray-500 dark:text-gray-400">({{ number_format($claim->amount, 2) }})</span>
+                                @endif
+                            </div>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded-full
+                            {{ $claim->status === 'claimed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                               ($claim->status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                               'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400') }}">
+                            {{ $claim->status }}
+                        </span>
                     </div>
                     @endforeach
                 </div>
