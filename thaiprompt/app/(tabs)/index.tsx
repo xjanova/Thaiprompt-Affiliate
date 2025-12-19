@@ -32,6 +32,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { BannerCarousel, ErrorBoundary } from '@/components';
 import * as SecureStore from 'expo-secure-store';
+import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 // ปรับขนาดปุ่มให้รองรับภาพ 16:9
@@ -616,14 +617,22 @@ export default function HomeScreen() {
             style={styles.profileButton}
             onPress={() => router.push('/(tabs)/profile')}
           >
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6']}
-              style={styles.profileGradient}
-            >
-              <Text style={styles.profileText}>
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </Text>
-            </LinearGradient>
+            {/* ⭐ แสดง avatar จริงถ้ามี หรือแสดงตัวอักษรย่อ */}
+            {getAvatarUrl(user?.avatar) ? (
+              <Image
+                source={{ uri: getAvatarUrl(user?.avatar)! }}
+                style={styles.profileAvatar}
+              />
+            ) : (
+              <LinearGradient
+                colors={['#3B82F6', '#8B5CF6']}
+                style={styles.profileGradient}
+              >
+                <Text style={styles.profileText}>
+                  {getAvatarInitial(user?.name)}
+                </Text>
+              </LinearGradient>
+            )}
           </Pressable>
         </View>
 
@@ -800,6 +809,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  profileAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
   },
   profileText: {
     fontSize: 20,

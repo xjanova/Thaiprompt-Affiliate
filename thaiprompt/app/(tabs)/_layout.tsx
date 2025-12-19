@@ -6,7 +6,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Tabs, router, useFocusEffect } from 'expo-router';
-import { View, Text, StyleSheet, Platform, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, Animated, Easing, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 // ⭐ ลบ BlurView เพราะอาจ crash บน Android บางรุ่น
 // import { BlurView } from 'expo-blur';
@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
 import { getUnreadNotificationCount } from '@/services/api';
 import { ErrorBoundary } from '@/components';
+import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
 
 // Tab icons ใช้ emoji
 const TAB_ICONS = {
@@ -505,8 +506,73 @@ const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active:
   );
 };
 
+// ⭐ Profile Tab Button with Avatar
+const ProfileTabButton = ({ focused, user }: { focused: boolean; user: any }) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const avatarUrl = getAvatarUrl(user?.avatar);
+
+  useEffect(() => {
+    if (focused) {
+      Animated.spring(scaleAnim, {
+        toValue: 1.1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [focused, scaleAnim]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      {focused ? (
+        <View style={styles.activeTabContainer}>
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.profileTabAvatar}
+            />
+          ) : (
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              style={styles.activeTab}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.tabHighlight} />
+              <Text style={styles.tabEmojiActive}>
+                {getAvatarInitial(user?.name)}
+              </Text>
+            </LinearGradient>
+          )}
+          <View style={styles.tabShadow} />
+        </View>
+      ) : (
+        <View style={styles.inactiveTab}>
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.profileTabAvatarInactive}
+            />
+          ) : (
+            <Text style={styles.tabEmoji}>
+              {getAvatarInitial(user?.name)}
+            </Text>
+          )}
+        </View>
+      )}
+    </Animated.View>
+  );
+};
+
 export default function TabLayout() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState(0);
   const { startSync, completeSync } = useSyncStore();
 
@@ -648,7 +714,7 @@ export default function TabLayout() {
           options={{
             title: 'โปรไฟล์',
             tabBarIcon: ({ focused }) => (
-              <TabButton focused={focused} icon={TAB_ICONS.profile} label="โปรไฟล์" />
+              <ProfileTabButton focused={focused} user={user} />
             ),
           }}
         />
@@ -737,6 +803,20 @@ const styles = StyleSheet.create({
   },
   tabEmojiActive: {
     fontSize: 20,
+  },
+  // ⭐ Profile Tab Avatar Styles
+  profileTabAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+  },
+  profileTabAvatarInactive: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    opacity: 0.7,
   },
   // Floating Cart Button Styles - ปุ่มรถเข็นลอย
   floatingCartContainer: {

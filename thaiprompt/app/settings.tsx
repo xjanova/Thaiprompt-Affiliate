@@ -28,6 +28,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 import { openUrl } from '@/utils/navigation';
+import { getAvatarInitial } from '@/utils/user';
 
 // Import SVG Icons
 import {
@@ -359,7 +360,7 @@ export default function SettingsScreen() {
             >
               <View style={styles.avatarContainer}>
                 <Text style={styles.avatarText}>
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                  {getAvatarInitial(user?.name)}
                 </Text>
               </View>
               <Text style={styles.profileName}>{user.name}</Text>

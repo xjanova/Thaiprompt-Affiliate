@@ -18,9 +18,11 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { router } from 'expo-router';
-import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+// ⭐ ลบ react-native-reanimated เพราะอาจทำให้ crash
+// import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getBanners, trackBannerClick, type Banner } from '@/services/api';
 import { openUrl } from '@/utils/navigation';
@@ -51,6 +53,21 @@ export default function BannerCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ⭐ ใช้ native Animated แทน reanimated (ต้องประกาศก่อน return)
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Fade in animation เมื่อโหลด banner เสร็จ
+  useEffect(() => {
+    if (!loading && banners.length > 0) {
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [loading, banners.length, fadeAnim]);
 
   // โหลด banners จาก server (เพิ่ม error handling)
   const loadBanners = useCallback(async () => {
@@ -176,7 +193,7 @@ export default function BannerCarousel({
   }
 
   return (
-    <Animated.View entering={FadeIn.delay(100)}>
+    <Animated.View style={{ opacity: fadeAnim }}>
       <ScrollView
         ref={scrollViewRef}
         horizontal
@@ -189,9 +206,8 @@ export default function BannerCarousel({
         snapToInterval={SCREEN_WIDTH - 32}
       >
         {banners.map((banner, index) => (
-          <Animated.View
+          <View
             key={banner.id}
-            entering={FadeInRight.delay(index * 100)}
             style={[styles.bannerWrapper, { width: SCREEN_WIDTH - 32 }]}
           >
             <Pressable
@@ -237,7 +253,7 @@ export default function BannerCarousel({
                 )}
               </View>
             </Pressable>
-          </Animated.View>
+          </View>
         ))}
       </ScrollView>
 
