@@ -2,6 +2,23 @@
 
 @section('title', 'สร้าง Banner ใหม่')
 
+@push('styles')
+{{-- Cropper.js CSS --}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+<style>
+    .cropper-container {
+        max-height: 400px;
+    }
+    .crop-preview {
+        overflow: hidden;
+        width: 300px;
+        height: 100px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container mx-auto px-4 py-6">
     {{-- Header --}}
@@ -23,8 +40,11 @@
 
     {{-- Form --}}
     <form action="{{ route('admin.mobile-app.banners.store') }}" method="POST" enctype="multipart/form-data"
-          x-data="bannerForm()" class="max-w-4xl">
+          x-data="bannerForm()" class="max-w-4xl" @submit="prepareSubmit($event)">
         @csrf
+
+        {{-- Hidden input สำหรับรูปที่ครอปแล้ว --}}
+        <input type="hidden" name="cropped_image" x-ref="croppedImageInput">
 
         <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 space-y-6">
             {{-- Title --}}
@@ -43,12 +63,15 @@
                 @enderror
             </div>
 
-            {{-- Image Upload --}}
+            {{-- Image Upload with Cropper --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     รูปภาพ Banner <span class="text-red-500">*</span>
                 </label>
-                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6
+
+                {{-- Upload Area --}}
+                <div x-show="!imagePreview"
+                     class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6
                             hover:border-orange-500 dark:hover:border-orange-400 transition cursor-pointer"
                      @click="$refs.imageInput.click()"
                      @dragover.prevent="dragging = true"
@@ -59,7 +82,7 @@
                     <input type="file" name="image" x-ref="imageInput" accept="image/*"
                            class="hidden" @change="handleImageChange($event)">
 
-                    <div x-show="!imagePreview" class="text-center">
+                    <div class="text-center">
                         <div class="text-4xl mb-2">📁</div>
                         <p class="text-gray-600 dark:text-gray-400">
                             คลิกหรือลากไฟล์มาวางที่นี่
@@ -68,34 +91,82 @@
                             แนะนำขนาด 1200x400 pixels (อัตราส่วน 3:1)
                         </p>
                     </div>
+                </div>
 
-                    <div x-show="imagePreview" class="text-center">
-                        <img :src="imagePreview" alt="Preview"
-                             class="max-h-48 mx-auto rounded-lg mb-3">
-                        <button type="button" @click.stop="removeImage()"
-                                class="text-red-500 hover:text-red-600 text-sm">
-                            🗑️ ลบรูปภาพ
+                {{-- Cropper Area --}}
+                <div x-show="imagePreview" x-cloak class="space-y-4">
+                    {{-- Image Cropper --}}
+                    <div class="bg-gray-100 dark:bg-gray-900 rounded-xl p-4">
+                        <img x-ref="cropperImage" :src="imagePreview" alt="Crop Preview"
+                             class="max-w-full" style="display: block; max-height: 400px;">
+                    </div>
+
+                    {{-- Cropper Controls --}}
+                    <div class="flex flex-wrap items-center gap-2">
+                        {{-- Zoom --}}
+                        <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-300">ซูม:</span>
+                            <button type="button" @click="zoom(-0.1)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition">
+                                ➖
+                            </button>
+                            <button type="button" @click="zoom(0.1)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition">
+                                ➕
+                            </button>
+                        </div>
+
+                        {{-- Rotate --}}
+                        <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-300">หมุน:</span>
+                            <button type="button" @click="rotate(-90)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition">
+                                ↺
+                            </button>
+                            <button type="button" @click="rotate(90)"
+                                    class="w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-500 transition">
+                                ↻
+                            </button>
+                        </div>
+
+                        {{-- Reset --}}
+                        <button type="button" @click="resetCrop()"
+                                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                            🔄 รีเซ็ต
+                        </button>
+
+                        {{-- Remove --}}
+                        <button type="button" @click="removeImage()"
+                                class="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition">
+                            🗑️ ลบรูป
                         </button>
                     </div>
+
+                    {{-- Preview --}}
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ตัวอย่าง:</span>
+                        <div class="crop-preview dark:border-gray-600"></div>
+                    </div>
                 </div>
+
                 @error('image')
                     <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- Link URL --}}
+            {{-- Link --}}
             <div>
                 <label for="link_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     ลิงก์เมื่อคลิก
                 </label>
-                <input type="url" name="link_url" id="link_url"
+                <input type="text" name="link_url" id="link_url"
                        value="{{ old('link_url') }}"
                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
                               bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                               focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                       placeholder="https://example.com/promotion">
+                       placeholder="เช่น /products, /promotions, https://example.com">
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    URL ที่จะเปิดเมื่อผู้ใช้คลิกที่ Banner (ไม่บังคับ)
+                    ลิงก์ภายใน (เช่น /products) หรือ URL ภายนอก (ไม่บังคับ)
                 </p>
                 @error('link_url')
                     <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
@@ -201,40 +272,150 @@
     </form>
 </div>
 
+{{-- Cropper.js --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
 @push('scripts')
 <script>
+    /**
+     * Banner Form Component พร้อม Image Cropper
+     *
+     * ฟีเจอร์:
+     * - อัพโหลดรูปภาพ (คลิกหรือลาก)
+     * - ครอป/ปรับขนาดรูป
+     * - ซูมเข้า/ออก
+     * - หมุนรูป
+     */
     function bannerForm() {
         return {
             dragging: false,
             imagePreview: null,
+            cropper: null,
 
+            /**
+             * เมื่อเลือกไฟล์
+             */
             handleImageChange(event) {
                 const file = event.target.files[0];
                 if (file) {
-                    this.showPreview(file);
+                    this.loadImage(file);
                 }
             },
 
+            /**
+             * เมื่อลากไฟล์มาวาง
+             */
             handleDrop(event) {
                 this.dragging = false;
                 const file = event.dataTransfer.files[0];
                 if (file && file.type.startsWith('image/')) {
                     this.$refs.imageInput.files = event.dataTransfer.files;
-                    this.showPreview(file);
+                    this.loadImage(file);
                 }
             },
 
-            showPreview(file) {
+            /**
+             * โหลดรูปและเริ่ม cropper
+             */
+            loadImage(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.imagePreview = e.target.result;
+
+                    // รอให้ DOM อัพเดทก่อนเริ่ม cropper
+                    this.$nextTick(() => {
+                        this.initCropper();
+                    });
                 };
                 reader.readAsDataURL(file);
             },
 
+            /**
+             * เริ่มต้น Cropper.js
+             */
+            initCropper() {
+                // ทำลาย cropper เดิมถ้ามี
+                if (this.cropper) {
+                    this.cropper.destroy();
+                }
+
+                const image = this.$refs.cropperImage;
+                if (!image) return;
+
+                this.cropper = new Cropper(image, {
+                    aspectRatio: 3 / 1,  // อัตราส่วน 3:1 สำหรับ banner
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 1,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false,
+                    preview: '.crop-preview',
+                });
+            },
+
+            /**
+             * ซูมเข้า/ออก
+             */
+            zoom(ratio) {
+                if (this.cropper) {
+                    this.cropper.zoom(ratio);
+                }
+            },
+
+            /**
+             * หมุนรูป
+             */
+            rotate(degree) {
+                if (this.cropper) {
+                    this.cropper.rotate(degree);
+                }
+            },
+
+            /**
+             * รีเซ็ตการครอป
+             */
+            resetCrop() {
+                if (this.cropper) {
+                    this.cropper.reset();
+                }
+            },
+
+            /**
+             * ลบรูป
+             */
             removeImage() {
+                if (this.cropper) {
+                    this.cropper.destroy();
+                    this.cropper = null;
+                }
                 this.imagePreview = null;
                 this.$refs.imageInput.value = '';
+                this.$refs.croppedImageInput.value = '';
+            },
+
+            /**
+             * เตรียมข้อมูลก่อน submit
+             */
+            prepareSubmit(event) {
+                if (this.cropper) {
+                    // ดึงรูปที่ครอปแล้วเป็น base64
+                    const canvas = this.cropper.getCroppedCanvas({
+                        width: 1200,
+                        height: 400,
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high',
+                    });
+
+                    if (canvas) {
+                        // แปลงเป็น base64 และใส่ใน hidden input
+                        this.$refs.croppedImageInput.value = canvas.toDataURL('image/jpeg', 0.9);
+                    }
+                }
             }
         };
     }
