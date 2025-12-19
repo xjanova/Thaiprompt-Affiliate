@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.391.0] - 2025-12-19
+
+### ✨ Features
+- feat: เพิ่ม Banner Cache System สำหรับหน้าแรก (32393122)
+### 🐛 Bug Fixes
+- fix: เพิ่ม null checks ใน BannerCarousel เพื่อป้องกันหน้าแรก crash (06a251be)
+- fix: เพิ่ม null checks เพิ่มเติมเพื่อป้องกัน crash ในแอพมือถือ (5141c55e)
+- fix: เพิ่ม null checks เพื่อป้องกัน crash (ERR-14621E, ERR-E586A8) (ddfa7ebc)
+### 🔧 Other Changes
+- Merge pull request #2319 from xjanova/claude/fix-thaiprompt-mobile-errors-lhF6Z (c5cb7898)
+
 ## [v3.390.3] - 2025-12-19
 
 ### ✨ Features
