@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.391.1] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เขียน SyncStatusBadge ใหม่แบบง่ายเพื่อแก้ Hooks violation (4326bce3)
+- fix: แก้ไข React Hooks violation ใน SyncStatusBadge (06422f10)
+### 🔧 Other Changes
+- Merge pull request #2320 from xjanova/claude/fix-thaiprompt-mobile-errors-lhF6Z (94b28285)
+
 ## [v3.391.0] - 2025-12-19
 
 ### ✨ Features
