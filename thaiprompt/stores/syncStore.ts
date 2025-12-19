@@ -88,29 +88,57 @@ export const useSyncStore = create<SyncState>((set) => ({
 
 /**
  * Hook สำหรับเริ่มต้น network monitor และ sync status
+ * ⭐ เพิ่ม error handling เพื่อป้องกัน crash
  */
 export const initSyncMonitor = (): (() => void) => {
   const { setConnected, startSync, completeSync } = useSyncStore.getState();
 
-  // Subscribe to network changes
-  const unsubscribe = NetInfo.addEventListener((state) => {
-    const connected = state.isConnected ?? false;
-    setConnected(connected);
+  let unsubscribe: (() => void) | null = null;
 
-    // ถ้ากลับมา online ให้ trigger sync
-    if (connected) {
-      startSync();
-      // Simulate sync completion (ในการใช้งานจริงจะเรียก API)
-      setTimeout(() => {
-        completeSync();
-      }, 1500);
+  try {
+    // Subscribe to network changes
+    unsubscribe = NetInfo.addEventListener((state) => {
+      try {
+        const connected = state.isConnected ?? false;
+        setConnected(connected);
+
+        // ถ้ากลับมา online ให้ trigger sync
+        if (connected) {
+          startSync();
+          // Simulate sync completion (ในการใช้งานจริงจะเรียก API)
+          setTimeout(() => {
+            completeSync();
+          }, 1500);
+        }
+      } catch (error) {
+        console.warn('Network state change handler error:', error);
+      }
+    });
+
+    // Initial check
+    NetInfo.fetch()
+      .then((state) => {
+        setConnected(state.isConnected ?? false);
+      })
+      .catch((error) => {
+        console.warn('Initial network check error:', error);
+        // ถือว่า online ถ้า check ไม่ได้
+        setConnected(true);
+      });
+  } catch (error) {
+    console.warn('initSyncMonitor error:', error);
+    // ถ้า NetInfo ไม่ทำงาน ถือว่า online
+    setConnected(true);
+  }
+
+  // Return cleanup function ที่ปลอดภัย
+  return () => {
+    try {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    } catch (error) {
+      console.warn('Cleanup sync monitor error:', error);
     }
-  });
-
-  // Initial check
-  NetInfo.fetch().then((state) => {
-    setConnected(state.isConnected ?? false);
-  });
-
-  return unsubscribe;
+  };
 };

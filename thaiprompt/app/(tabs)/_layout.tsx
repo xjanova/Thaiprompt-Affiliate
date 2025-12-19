@@ -522,11 +522,14 @@ export default function TabLayout() {
 
     try {
       const response = await getUnreadNotificationCount();
-      if (response?.success && typeof response.data?.count === 'number') {
-        setUnreadCount(response.data.count);
+      // ⭐ แก้ไข: ใช้ unreadCount แทน count (ตาม API response type)
+      if (response?.success && typeof response.data?.unreadCount === 'number') {
+        setUnreadCount(response.data.unreadCount);
       }
     } catch (error) {
       console.log('Failed to fetch unread count:', error);
+      // ไม่ให้ crash - ตั้งค่าเป็น 0
+      setUnreadCount(0);
     }
   }, [isAuthenticated]);
 
