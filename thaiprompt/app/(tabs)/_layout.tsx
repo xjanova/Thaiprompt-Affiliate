@@ -306,140 +306,74 @@ const FloatingCartButton = () => {
 };
 
 // Sync Status Indicator Component - แสดงเฉพาะเมื่อ offline
+// ⭐ เขียนใหม่แบบง่ายเพื่อป้องกัน React Hooks violation
 const SyncStatusBadge = () => {
-  const { status, lastSyncTime, isConnected } = useSyncStore();
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const glowAnim = useRef(new Animated.Value(0.5)).current;
+  // ⭐ ดึงค่าจาก store แบบปลอดภัย
+  const syncState = useSyncStore();
+  const status = syncState?.status ?? 'online';
+  const lastSyncTime = syncState?.lastSyncTime ?? null;
+  const isConnected = syncState?.isConnected ?? true;
 
-  const statusConfig = {
+  // ⭐ ประกาศ config ก่อนใช้งาน
+  const statusConfig: Record<string, { icon: string; color: string; label: string }> = {
     online: { icon: '🟢', color: '#10B981', label: 'ออนไลน์' },
     offline: { icon: '🔴', color: '#EF4444', label: 'ออฟไลน์' },
     syncing: { icon: '🔄', color: '#3B82F6', label: 'Syncing...' },
     error: { icon: '⚠️', color: '#F59E0B', label: 'ผิดพลาด' },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.offline;
 
-  // ซ่อนเมื่อ online และ connected
-  if (status === 'online' && isConnected) {
+  // ⭐ คำนวณว่าควรแสดงหรือไม่ (ซ่อนเมื่อ online และ connected)
+  const shouldShow = !(status === 'online' && isConnected);
+
+  // ⭐ Format last sync time - ใช้ useCallback เพื่อ memoize
+  const getLastSyncText = useCallback(() => {
+    if (!lastSyncTime) return '';
+    try {
+      const syncDate = lastSyncTime instanceof Date ? lastSyncTime : new Date(lastSyncTime);
+      const diff = Date.now() - syncDate.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'เมื่อสักครู่';
+      if (mins < 60) return `${mins}น.`;
+      return `${Math.floor(mins / 60)}ชม.`;
+    } catch {
+      return '';
+    }
+  }, [lastSyncTime]);
+
+  // ⭐ ถ้าไม่ต้องแสดง ให้ return null (หลัง hooks ทั้งหมด)
+  if (!shouldShow) {
     return null;
   }
 
-  // Animations
-  useEffect(() => {
-    // Glow pulse
-    const glow = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0.3,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ])
-    );
-    glow.start();
-
-    return () => glow.stop();
-  }, [glowAnim]);
-
-  // Syncing animation
-  useEffect(() => {
-    if (status === 'syncing') {
-      const rotate = Animated.loop(
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
-      rotate.start();
-
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-
-      return () => {
-        rotate.stop();
-        pulse.stop();
-      };
-    }
-    rotateAnim.setValue(0);
-    pulseAnim.setValue(1);
-  }, [status, rotateAnim, pulseAnim]);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  // Format last sync time
-  const getLastSyncText = () => {
-    if (!lastSyncTime) return '';
-    const diff = Date.now() - lastSyncTime.getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'เมื่อสักครู่';
-    if (mins < 60) return `${mins}น.`;
-    return `${Math.floor(mins / 60)}ชม.`;
-  };
-
+  // ⭐ Render แบบง่าย ไม่มี animation ที่ซับซ้อน
   return (
     <Pressable style={styles.syncContainer}>
-      {/* ⭐ เปลี่ยนจาก BlurView เป็น View ธรรมดา */}
       <View style={[styles.syncBlur, { backgroundColor: 'rgba(15, 23, 42, 0.95)' }]}>
         <View style={styles.syncContent}>
-          {/* Glow effect */}
-          <Animated.View
+          {/* Glow effect - static */}
+          <View
             style={[
               styles.syncGlow,
               {
                 backgroundColor: config.color,
-                opacity: glowAnim,
+                opacity: 0.6,
               },
             ]}
           />
 
-          {/* Status icon */}
-          <Animated.View
-            style={[
-              styles.syncIconContainer,
-              { transform: [{ scale: pulseAnim }] },
-            ]}
-          >
-            <Animated.Text
-              style={[
-                styles.syncIcon,
-                status === 'syncing' && { transform: [{ rotate: spin }] },
-              ]}
-            >
+          {/* Status icon - static */}
+          <View style={styles.syncIconContainer}>
+            <Text style={styles.syncIcon}>
               {config.icon}
-            </Animated.Text>
-          </Animated.View>
+            </Text>
+          </View>
 
           {/* Status text */}
           <View style={styles.syncTextContainer}>
             <Text style={styles.syncLabel}>{config.label}</Text>
-            {status === 'online' && lastSyncTime && (
+            {lastSyncTime && (
               <Text style={styles.syncTime}>{getLastSyncText()}</Text>
             )}
           </View>
