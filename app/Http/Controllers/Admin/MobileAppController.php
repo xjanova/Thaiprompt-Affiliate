@@ -434,7 +434,8 @@ class MobileAppController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
-            'image' => ['required', 'image', 'max:2048'],
+            'image' => ['required_without:cropped_image', 'nullable', 'image', 'max:5120'],
+            'cropped_image' => ['nullable', 'string'],
             'link_url' => ['nullable', 'string', 'max:500'],
             'link_type' => ['nullable', 'in:internal,external,product,category'],
             'link_target' => ['nullable', 'string', 'max:100'],
@@ -444,11 +445,17 @@ class MobileAppController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        // Upload image
-        if ($request->hasFile('image')) {
+        // ใช้รูปที่ครอปแล้ว (base64) หรือรูปต้นฉบับ
+        if (!empty($request->cropped_image)) {
+            // แปลง base64 เป็นไฟล์และบันทึก
+            $validated['image'] = $this->saveCroppedImage($request->cropped_image, 'banners');
+        } elseif ($request->hasFile('image')) {
             $path = $request->file('image')->store('banners', 'public');
             $validated['image'] = '/storage/' . $path;
         }
+
+        // ลบ cropped_image ออกจาก validated data
+        unset($validated['cropped_image']);
 
         // แปลง link_url เป็น link สำหรับ model
         $validated['link'] = $validated['link_url'] ?? null;
@@ -490,7 +497,8 @@ class MobileAppController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:100'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'cropped_image' => ['nullable', 'string'],
             'link_url' => ['nullable', 'string', 'max:500'],
             'link_type' => ['nullable', 'in:internal,external,product,category'],
             'link_target' => ['nullable', 'string', 'max:100'],
@@ -500,11 +508,17 @@ class MobileAppController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        // Upload new image if provided
-        if ($request->hasFile('image')) {
+        // ใช้รูปที่ครอปแล้ว (base64) หรือรูปต้นฉบับ
+        if (!empty($request->cropped_image)) {
+            // แปลง base64 เป็นไฟล์และบันทึก
+            $validated['image'] = $this->saveCroppedImage($request->cropped_image, 'banners');
+        } elseif ($request->hasFile('image')) {
             $path = $request->file('image')->store('banners', 'public');
             $validated['image'] = '/storage/' . $path;
         }
+
+        // ลบ cropped_image ออกจาก validated data
+        unset($validated['cropped_image']);
 
         // แปลง link_url เป็น link สำหรับ model
         $validated['link'] = $validated['link_url'] ?? null;
@@ -576,5 +590,32 @@ class MobileAppController extends Controller
             'success' => true,
             'message' => 'อัปเดทลำดับสำเร็จ',
         ]);
+    }
+
+    /**
+     * บันทึกรูปที่ครอปแล้ว (base64) เป็นไฟล์
+     *
+     * @param string $base64Image รูปในรูปแบบ base64
+     * @param string $folder โฟลเดอร์สำหรับเก็บรูป
+     * @return string path ของรูปที่บันทึก
+     */
+    private function saveCroppedImage(string $base64Image, string $folder = 'banners'): string
+    {
+        // แยก data:image/jpeg;base64, ออกจาก base64 string
+        $imageData = $base64Image;
+        if (str_contains($base64Image, ',')) {
+            [, $imageData] = explode(',', $base64Image, 2);
+        }
+
+        // ถอดรหัส base64
+        $decodedImage = base64_decode($imageData);
+
+        // สร้างชื่อไฟล์
+        $filename = $folder . '/' . uniqid() . '_' . time() . '.jpg';
+
+        // บันทึกไฟล์
+        \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $decodedImage);
+
+        return '/storage/' . $filename;
     }
 }
