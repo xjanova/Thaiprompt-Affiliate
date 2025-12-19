@@ -12,10 +12,14 @@
 
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { registerPushToken, removePushToken } from './api';
 import { APP_INFO } from '@/config/appConfig';
+
+// Key สำหรับเก็บ device_id
+const DEVICE_ID_STORAGE_KEY = 'device_id';
 
 // =====================================================
 // State
@@ -154,16 +158,36 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
       return null;
     }
 
-    // ลงทะเบียน token กับ server (non-blocking)
+    // ดึง device_id จาก storage (ถ้ามี)
+    let deviceId: string | null = null;
+    try {
+      deviceId = await SecureStore.getItemAsync(DEVICE_ID_STORAGE_KEY);
+    } catch (e) {
+      console.warn('⚠️ Failed to get device_id from storage:', e);
+    }
+
+    // ถ้ายังไม่มี device_id ให้สร้างใหม่และบันทึก
+    if (!deviceId) {
+      deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      try {
+        await SecureStore.setItemAsync(DEVICE_ID_STORAGE_KEY, deviceId);
+        console.log('📱 Generated new device_id:', deviceId);
+      } catch (e) {
+        console.warn('⚠️ Failed to save device_id:', e);
+      }
+    }
+
+    // ลงทะเบียน token กับ server
     try {
       const deviceInfo = {
         token,
         platform: Platform.OS as 'android' | 'ios',
-        device_id: undefined, // จะดึงใน API
+        device_id: deviceId || undefined,
         device_name: Device.modelName || undefined,
         app_version: APP_INFO.VERSION,
       };
 
+      console.log('📤 Registering push token with device_id:', deviceId);
       const response = await registerPushToken(deviceInfo);
 
       if (response.success) {

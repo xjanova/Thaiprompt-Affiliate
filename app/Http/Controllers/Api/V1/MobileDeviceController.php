@@ -171,6 +171,9 @@ class MobileDeviceController extends Controller
     /**
      * ลงทะเบียน Push Token
      *
+     * รองรับทั้งกรณีที่มีและไม่มี device_id
+     * จะสร้าง device record เสมอเพื่อให้ push notification ทำงานได้
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -184,41 +187,51 @@ class MobileDeviceController extends Controller
             'app_version' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $device = null;
         $userId = auth('sanctum')->id();
+        $deviceId = $validated['device_id'] ?? null;
 
-        // ถ้ามี device_id ให้หา/สร้างเครื่อง
-        if ($validated['device_id'] ?? null) {
-            $device = MobileDevice::updateOrCreate(
-                ['device_id' => $validated['device_id']],
-                [
-                    'platform' => $validated['platform'],
-                    'device_model' => $validated['device_name'] ?? null,
-                    'app_version' => $validated['app_version'] ?? null,
-                    'push_token' => $validated['token'],
-                    'is_active' => true,
-                    'last_active_at' => now(),
-                    'user_id' => $userId,
-                ]
-            );
-        } else {
-            // ถ้าไม่มี device_id แต่มี user_id ให้อัปเดท token ของ user
-            if ($userId) {
-                $device = MobileDevice::where('user_id', $userId)
-                    ->where('platform', $validated['platform'])
-                    ->first();
+        // ถ้าไม่มี device_id ให้ลองหาจาก push_token หรือสร้างใหม่
+        if (!$deviceId) {
+            // ลองหา device จาก push_token ที่เคยลงทะเบียนไว้
+            $existingDevice = MobileDevice::where('push_token', $validated['token'])->first();
 
-                if ($device) {
-                    $device->update(['push_token' => $validated['token']]);
-                }
+            if ($existingDevice) {
+                $deviceId = $existingDevice->device_id;
+            } else {
+                // สร้าง device_id ใหม่
+                $deviceId = $validated['platform'] . '_' . time() . '_' . bin2hex(random_bytes(4));
             }
         }
+
+        // สร้างหรืออัพเดท device record
+        $device = MobileDevice::updateOrCreate(
+            ['device_id' => $deviceId],
+            [
+                'platform' => $validated['platform'],
+                'device_model' => $validated['device_name'] ?? null,
+                'app_version' => $validated['app_version'] ?? null,
+                'push_token' => $validated['token'],
+                'is_active' => true,
+                'last_active_at' => now(),
+                'user_id' => $userId ?? null,
+            ]
+        );
+
+        // Log สำหรับ debugging
+        \Log::info('Push token registered', [
+            'device_id' => $device->device_id,
+            'platform' => $device->platform,
+            'user_id' => $userId,
+            'token_prefix' => substr($validated['token'], 0, 30) . '...',
+            'is_new' => $device->wasRecentlyCreated,
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Push token registered',
             'data' => [
-                'deviceLinked' => $device !== null,
+                'deviceLinked' => true,
+                'deviceId' => $device->device_id,
             ],
         ]);
     }
