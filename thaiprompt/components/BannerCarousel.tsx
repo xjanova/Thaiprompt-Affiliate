@@ -6,6 +6,11 @@
  * - link ปลายทาง (สินค้า, หมวดหมู่, หน้าภายใน, URL ภายนอก)
  * - ลำดับการแสดง
  * - ระยะเวลาแสดง (start/end date)
+ *
+ * ⭐ Features:
+ * - Cache รูปภาพ banner ไว้ใน device
+ * - ตรวจสอบ banner ใหม่เฉพาะครั้งแรกของวัน
+ * - ใช้รูปจาก cache ถ้ายังไม่มีการเปลี่ยนแปลง
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -24,7 +29,8 @@ import { router } from 'expo-router';
 // ⭐ ลบ react-native-reanimated เพราะอาจทำให้ crash
 // import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getBanners, trackBannerClick, type Banner } from '@/services/api';
+import { trackBannerClick, type Banner } from '@/services/api';
+import { getBannersWithCache, type CachedBanner } from '@/services/bannerCache';
 import { openUrl } from '@/utils/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -48,7 +54,8 @@ export default function BannerCarousel({
   isDark = true,
   onBannerPress,
 }: BannerCarouselProps) {
-  const [banners, setBanners] = useState<Banner[]>([]);
+  // ⭐ ใช้ CachedBanner แทน Banner เพื่อรองรับรูปที่ cache ไว้
+  const [banners, setBanners] = useState<CachedBanner[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -69,19 +76,26 @@ export default function BannerCarousel({
     }
   }, [loading, banners.length, fadeAnim]);
 
-  // โหลด banners จาก server (เพิ่ม error handling)
+  /**
+   * โหลด banners โดยใช้ cache system
+   * - ครั้งแรกของวัน: ตรวจสอบกับ server และ download รูปใหม่ถ้ามีการเปลี่ยนแปลง
+   * - ครั้งต่อไป: ใช้รูปจาก cache ทันที
+   */
   const loadBanners = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await getBanners(position);
-      if (result?.success && Array.isArray(result.data)) {
-        // ⭐ กรองเฉพาะ banners ที่มีข้อมูลครบถ้วน เพื่อป้องกัน crash
-        const validBanners = result.data.filter(
+
+      // ⭐ ใช้ getBannersWithCache แทน getBanners
+      // จะตรวจสอบ banner ใหม่เฉพาะครั้งแรกของวัน
+      const cachedBanners = await getBannersWithCache(position);
+
+      if (Array.isArray(cachedBanners) && cachedBanners.length > 0) {
+        // กรองเฉพาะ banners ที่มีข้อมูลครบถ้วน เพื่อป้องกัน crash
+        const validBanners = cachedBanners.filter(
           (banner) => banner && banner.id != null
         );
         setBanners(validBanners);
       } else {
-        // ถ้าข้อมูลไม่ถูกต้อง ให้ set empty array
         setBanners([]);
       }
     } catch (error) {
@@ -227,9 +241,10 @@ export default function BannerCarousel({
               })}
             >
               <View style={[styles.bannerContainer, { height }]}>
-                {banner?.image ? (
+                {/* ⭐ ใช้รูปจาก cache ถ้ามี ไม่งั้นใช้ URL จาก server */}
+                {(banner?.cachedImageUri || banner?.image) ? (
                   <Image
-                    source={{ uri: banner.image }}
+                    source={{ uri: banner.cachedImageUri || banner.image }}
                     style={styles.bannerImage}
                     resizeMode="cover"
                   />
