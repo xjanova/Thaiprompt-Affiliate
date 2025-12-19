@@ -71,7 +71,7 @@
                          @drop.prevent="handleDrop($event)"
                          :class="{ 'border-orange-500 bg-orange-50 dark:bg-orange-900/20': dragging }">
 
-                        <input type="file" name="image" ref="imageInput" accept="image/*"
+                        <input type="file" name="image" x-ref="imageInput" accept="image/*"
                                class="hidden" @change="handleImageChange($event)">
 
                         <div x-show="!newImagePreview" class="text-center">
