@@ -271,8 +271,17 @@
                 {{-- Submit Buttons --}}
                 <div class="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="submit"
-                            class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition">
-                        💾 บันทึกการแก้ไข
+                            :disabled="submitting"
+                            :class="{ 'opacity-50 cursor-not-allowed': submitting }"
+                            class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition flex items-center gap-2">
+                        <span x-show="!submitting">💾 บันทึกการแก้ไข</span>
+                        <span x-show="submitting" class="flex items-center gap-2">
+                            <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            กำลังบันทึก...
+                        </span>
                     </button>
                     <a href="{{ route('admin.mobile-app.banners.index') }}"
                        class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600
@@ -398,6 +407,7 @@
             existingImage: existingImage,
             newImagePreview: null,
             cropper: null,
+            submitting: false,
 
             /**
              * เมื่อเลือกไฟล์
@@ -509,6 +519,12 @@
              * เตรียมข้อมูลก่อน submit
              */
             prepareSubmit(event) {
+                // ป้องกัน double submit
+                if (this.submitting) {
+                    event.preventDefault();
+                    return;
+                }
+
                 if (this.cropper) {
                     // ดึงรูปที่ครอปแล้วเป็น base64
                     const canvas = this.cropper.getCroppedCanvas({
@@ -520,9 +536,15 @@
 
                     if (canvas) {
                         // แปลงเป็น base64 และใส่ใน hidden input
-                        this.$refs.croppedImageInput.value = canvas.toDataURL('image/jpeg', 0.9);
+                        this.$refs.croppedImageInput.value = canvas.toDataURL('image/jpeg', 0.85);
+
+                        // ⭐ ลบ file input เพื่อไม่ส่งซ้ำกับ cropped_image
+                        this.$refs.imageInput.value = '';
                     }
                 }
+
+                // แสดง loading state
+                this.submitting = true;
             }
         };
     }
