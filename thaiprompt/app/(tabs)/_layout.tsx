@@ -709,12 +709,13 @@ export default function TabLayout() {
                 onPress={handleNotificationPress}
               />
             ),
-            tabBarButton: (props) => (
+            tabBarButton: (props: any) => (
               <Pressable
-                {...props}
                 onPress={handleNotificationPress}
-                style={props.style}
-              />
+                style={props.style as any}
+              >
+                {props.children}
+              </Pressable>
             ),
           }}
         />

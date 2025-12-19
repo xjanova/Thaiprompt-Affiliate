@@ -193,6 +193,7 @@ export interface ReferralTreeNode {
 export interface ReferralsData {
   referrals: Referral[];
   totalReferrals: number;
+  activeReferrals?: number;
   totalEarnings: number;
   tree: ReferralTreeNode;
 }
