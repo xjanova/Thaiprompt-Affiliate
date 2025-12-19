@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.393.2] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา avatar ไม่แสดงในแอพและ banner navigation (1a2f35ab)
+- fix: แก้ไข internal routes และเพิ่ม help text สำหรับ banner links (77956f47)
+### 🔧 Other Changes
+- Merge pull request #2324 from xjanova/claude/fix-banner-upload-EAJ8I (fa3329c3)
+
 ## [v3.393.1] - 2025-12-19
 
 ### ✨ Features
