@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.389.5] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: อัพเดท expo และ expo-router ตาม SDK 52 requirements (83963a49)
+### 🔧 Other Changes
+- Merge pull request #2312 from xjanova/claude/fix-line-login-mobile-qJoAk (bbeb6c43)
+- chore: อัพเดทเวอร์ชั่น 3.383.27 (Build 33) (51d8804a)
+
 ## [v3.389.4] - 2025-12-19
 
 ### ✨ Features
