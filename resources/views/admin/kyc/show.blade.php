@@ -255,7 +255,7 @@
         </h2>
 
         <div class="grid md:grid-cols-2 gap-6">
-            <!-- ID Card Image -->
+            <!-- ID Card Image (Thumbnail) -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
@@ -264,18 +264,27 @@
                         <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
                     @endif
                 </h3>
-                <div class="border dark:border-slate-700 rounded-lg overflow-hidden">
-                    <img src="{{ asset('storage/' . $kycVerification->id_card_image) }}"
-                         alt="ID Document"
-                         class="w-full h-auto cursor-pointer hover:opacity-90 transition"
-                         onclick="openImageModal(this.src)">
+                <div class="border dark:border-slate-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-700 relative group cursor-pointer"
+                     onclick="openImageModal('{{ asset('storage/' . $kycVerification->id_card_image) }}')">
+                    <!-- Thumbnail container with fixed aspect ratio -->
+                    <div class="aspect-[4/3] flex items-center justify-center">
+                        <img src="{{ asset('storage/' . $kycVerification->id_card_image) }}"
+                             alt="ID Document"
+                             class="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105">
+                    </div>
+                    <!-- Overlay on hover -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 text-white font-medium flex items-center gap-2">
+                            <i class="fas fa-search-plus text-2xl"></i>
+                        </span>
+                    </div>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                    <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยาย
+                    <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยายดูภาพเต็ม
                 </p>
             </div>
 
-            <!-- Selfie Image -->
+            <!-- Selfie Image (Thumbnail) -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
@@ -284,15 +293,69 @@
                         <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
                     @endif
                 </h3>
-                <div class="border dark:border-slate-700 rounded-lg overflow-hidden">
-                    <img src="{{ asset('storage/' . $kycVerification->selfie_image) }}"
-                         alt="Selfie with ID Card"
-                         class="w-full h-auto cursor-pointer hover:opacity-90 transition"
-                         onclick="openImageModal(this.src)">
+                <div class="border dark:border-slate-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-700 relative group cursor-pointer"
+                     onclick="openImageModal('{{ asset('storage/' . $kycVerification->selfie_image) }}')">
+                    <!-- Thumbnail container with fixed aspect ratio -->
+                    <div class="aspect-[4/3] flex items-center justify-center">
+                        <img src="{{ asset('storage/' . $kycVerification->selfie_image) }}"
+                             alt="Selfie with ID Card"
+                             class="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105">
+                    </div>
+                    <!-- Overlay on hover -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                        <span class="opacity-0 group-hover:opacity-100 text-white font-medium flex items-center gap-2">
+                            <i class="fas fa-search-plus text-2xl"></i>
+                        </span>
+                    </div>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                    <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยาย
+                    <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยายดูภาพเต็ม
                 </p>
+            </div>
+        </div>
+
+        <!-- Image Format Info -->
+        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p class="text-xs text-blue-800 dark:text-blue-300">
+                <i class="fas fa-info-circle mr-1"></i>
+                <strong>รูปแบบไฟล์:</strong> รูปภาพถูกบันทึกในรูปแบบ WebP เพื่อประหยัดพื้นที่จัดเก็บและรักษาคุณภาพ
+            </p>
+        </div>
+    </div>
+
+    <!-- Data Privacy Policy Card -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            <i class="fas fa-shield-alt mr-2"></i>นโยบายการจัดเก็บข้อมูล
+        </h2>
+
+        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-check text-green-600 dark:text-green-400 text-xs"></i>
+                </div>
+                <p>รูปภาพเอกสารถูกบันทึกในรูปแบบ <strong class="text-gray-900 dark:text-white">WebP</strong> คุณภาพสูงเพื่อประหยัดพื้นที่จัดเก็บ</p>
+            </div>
+
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <i class="fas fa-check text-green-600 dark:text-green-400 text-xs"></i>
+                </div>
+                <p>ข้อมูล KYC จะถูก <strong class="text-gray-900 dark:text-white">เก็บรักษาอย่างปลอดภัย</strong> ตามมาตรฐานความปลอดภัยของระบบ</p>
+            </div>
+
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <i class="fas fa-trash-alt text-red-600 dark:text-red-400 text-xs"></i>
+                </div>
+                <p><strong class="text-red-600 dark:text-red-400">สำคัญ:</strong> เมื่อผู้ใช้ลบบัญชี รูปภาพ KYC และข้อมูลที่เกี่ยวข้อง <strong class="text-gray-900 dark:text-white">จะถูกลบออกโดยอัตโนมัติ</strong> เพื่อปกป้องความเป็นส่วนตัว</p>
+            </div>
+
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <i class="fas fa-eye-slash text-blue-600 dark:text-blue-400 text-xs"></i>
+                </div>
+                <p>รูปภาพและข้อมูลส่วนตัวจะ <strong class="text-gray-900 dark:text-white">ไม่ถูกเปิดเผย</strong> ต่อบุคคลภายนอกโดยไม่ได้รับอนุญาต</p>
             </div>
         </div>
     </div>
