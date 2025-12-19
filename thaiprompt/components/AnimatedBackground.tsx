@@ -315,13 +315,13 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
             Animated.timing(particle.opacity, {
               toValue: Math.random() * 0.3 + 0.7, // เพิ่มจาก 0.5-1.0 เป็น 0.7-1.0
               duration: particle.speed,
-              easing: Easing.inOut(Easing.sine),
+              easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
             }),
             Animated.timing(particle.opacity, {
               toValue: 0.3, // เพิ่มจาก 0.1 เป็น 0.3
               duration: particle.speed,
-              easing: Easing.inOut(Easing.sine),
+              easing: Easing.inOut(Easing.sin),
               useNativeDriver: true,
             }),
           ])
@@ -336,13 +336,13 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
               Animated.timing(particle.translateX, {
                 toValue: (Math.random() - 0.5) * moveRange,
                 duration: particle.speed * 1.5,
-                easing: Easing.inOut(Easing.sine),
+                easing: Easing.inOut(Easing.sin),
                 useNativeDriver: true,
               }),
               Animated.timing(particle.translateY, {
                 toValue: (Math.random() - 0.5) * moveRange,
                 duration: particle.speed * 1.5,
-                easing: Easing.inOut(Easing.sine),
+                easing: Easing.inOut(Easing.sin),
                 useNativeDriver: true,
               }),
             ]),
@@ -350,13 +350,13 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
               Animated.timing(particle.translateX, {
                 toValue: 0,
                 duration: particle.speed * 1.5,
-                easing: Easing.inOut(Easing.sine),
+                easing: Easing.inOut(Easing.sin),
                 useNativeDriver: true,
               }),
               Animated.timing(particle.translateY, {
                 toValue: 0,
                 duration: particle.speed * 1.5,
-                easing: Easing.inOut(Easing.sine),
+                easing: Easing.inOut(Easing.sin),
                 useNativeDriver: true,
               }),
             ]),
@@ -414,7 +414,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
     <View style={styles.container}>
       {/* Gradient Background */}
       <LinearGradient
-        colors={gradientColors as unknown as string[]}
+        colors={[...gradientColors]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -463,19 +463,19 @@ const FloatingOrb: React.FC<OrbProps> = ({ size, color, x, y, duration, delay })
         Animated.timing(translateY, {
           toValue: -30,
           duration: duration,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
           toValue: 30,
           duration: duration,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(translateY, {
           toValue: 0,
           duration: duration,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
       ])
@@ -487,19 +487,19 @@ const FloatingOrb: React.FC<OrbProps> = ({ size, color, x, y, duration, delay })
         Animated.timing(translateX, {
           toValue: 20,
           duration: duration * 1.2,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(translateX, {
           toValue: -20,
           duration: duration * 1.2,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(translateX, {
           toValue: 0,
           duration: duration * 1.2,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
       ])

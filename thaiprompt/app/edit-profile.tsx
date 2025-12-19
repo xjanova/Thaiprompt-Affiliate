@@ -183,7 +183,7 @@ const FormInput = ({
 // =====================================================
 
 export default function EditProfileScreen() {
-  const { user, updateUser, isAuthenticated } = useAuthStore();
+  const { user, updateUser, isAuthenticated, refreshUser } = useAuthStore();
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
