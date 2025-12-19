@@ -506,26 +506,39 @@ const TabButton = ({ focused, icon, label }: { focused: boolean; icon: { active:
   );
 };
 
-// ⭐ Profile Tab Button with Avatar
+// ⭐ Profile Tab Button with Avatar (เพิ่ม error handling)
 const ProfileTabButton = ({ focused, user }: { focused: boolean; user: any }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const avatarUrl = getAvatarUrl(user?.avatar);
+
+  // ⭐ Safe avatar URL - ป้องกัน crash
+  let avatarUrl: string | null = null;
+  let initial = 'U';
+  try {
+    avatarUrl = getAvatarUrl(user?.avatar);
+    initial = getAvatarInitial(user?.name);
+  } catch (e) {
+    console.log('ProfileTabButton avatar error:', e);
+  }
 
   useEffect(() => {
-    if (focused) {
-      Animated.spring(scaleAnim, {
-        toValue: 1.1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
+    try {
+      if (focused) {
+        Animated.spring(scaleAnim, {
+          toValue: 1.1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }).start();
+      }
+    } catch (e) {
+      // Ignore animation errors
     }
   }, [focused, scaleAnim]);
 
@@ -546,9 +559,7 @@ const ProfileTabButton = ({ focused, user }: { focused: boolean; user: any }) =>
               end={{ x: 1, y: 1 }}
             >
               <View style={styles.tabHighlight} />
-              <Text style={styles.tabEmojiActive}>
-                {getAvatarInitial(user?.name)}
-              </Text>
+              <Text style={styles.tabEmojiActive}>{initial}</Text>
             </LinearGradient>
           )}
           <View style={styles.tabShadow} />
@@ -561,9 +572,7 @@ const ProfileTabButton = ({ focused, user }: { focused: boolean; user: any }) =>
               style={styles.profileTabAvatarInactive}
             />
           ) : (
-            <Text style={styles.tabEmoji}>
-              {getAvatarInitial(user?.name)}
-            </Text>
+            <Text style={styles.tabEmoji}>{initial}</Text>
           )}
         </View>
       )}

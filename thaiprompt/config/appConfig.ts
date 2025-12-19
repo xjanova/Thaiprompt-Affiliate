@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.31',
-  BUILD_NUMBER: 37,
-  BUILD_DATE: '2025-12-19-AVATAR-TAB-BAR', // Avatar in tab bar
+  VERSION: '3.383.32',
+  BUILD_NUMBER: 38,
+  BUILD_DATE: '2025-12-19-FIX-AVATAR-CRASH', // Fixed avatar crash with try-catch
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
