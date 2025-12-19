@@ -434,6 +434,9 @@ export default function RootLayout() {
 
         {/* QR Scanner */}
         <Stack.Screen name="qr-scanner" options={{ headerShown: false }} />
+
+        {/* WebView - สำหรับเปิด URL จาก Banner */}
+        <Stack.Screen name="webview" options={{ headerShown: false }} />
       </Stack>
     </View>
   );

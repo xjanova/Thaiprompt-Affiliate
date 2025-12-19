@@ -8,7 +8,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Tabs, router, useFocusEffect } from 'expo-router';
 import { View, Text, StyleSheet, Platform, Pressable, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+// ⭐ ลบ BlurView เพราะอาจ crash บน Android บางรุ่น
+// import { BlurView } from 'expo-blur';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
@@ -402,7 +403,8 @@ const SyncStatusBadge = () => {
 
   return (
     <Pressable style={styles.syncContainer}>
-      <BlurView intensity={25} tint="dark" style={styles.syncBlur}>
+      {/* ⭐ เปลี่ยนจาก BlurView เป็น View ธรรมดา */}
+      <View style={[styles.syncBlur, { backgroundColor: 'rgba(15, 23, 42, 0.95)' }]}>
         <View style={styles.syncContent}>
           {/* Glow effect */}
           <Animated.View
@@ -445,7 +447,7 @@ const SyncStatusBadge = () => {
             {isConnected ? '📶' : '📵'}
           </Text>
         </View>
-      </BlurView>
+      </View>
     </Pressable>
   );
 };
