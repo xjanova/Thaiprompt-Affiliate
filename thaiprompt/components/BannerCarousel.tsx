@@ -160,6 +160,26 @@ export default function BannerCarousel({
       // Default navigation
       if (!banner.link) return;
 
+      // ⭐ รายการ routes ที่มีอยู่ในแอพ (ป้องกัน navigation ไปยัง route ที่ไม่มี)
+      const validInternalRoutes = [
+        '/dashboard', '/shopping', '/register', '/wallet', '/referral',
+        '/services', '/academy', '/support', '/tpix', '/stores', '/cart',
+        '/orders', '/commissions', '/leaderboard', '/login', '/main-menu',
+        '/notifications', '/settings', '/privacy', '/terms', '/rank',
+        '/mlm-tree', '/wealth-guide', '/watch-earn', '/wiki', '/kyc',
+        '/edit-profile', '/notification-settings', '/wallet-history',
+        '/wallet-topup', '/wallet-transfer', '/wallet-withdraw', '/coming-soon',
+      ];
+
+      // ตรวจสอบว่าเป็น internal route ที่ถูกต้องหรือไม่
+      const isValidInternalRoute = (link: string): boolean => {
+        // ถ้าเริ่มต้นด้วย /product/ หรือ /store/ หรือ /order/ ถือว่าถูกต้อง (dynamic routes)
+        if (link.startsWith('/product/') || link.startsWith('/store/') || link.startsWith('/order/')) {
+          return true;
+        }
+        return validInternalRoutes.includes(link);
+      };
+
       switch (banner.linkType) {
         case 'product':
           router.push(`/product/${banner.linkTarget}`);
@@ -172,8 +192,13 @@ export default function BannerCarousel({
           });
           break;
         case 'internal':
-          // Navigate to internal route
-          router.push(banner.link as never);
+          // ⭐ ตรวจสอบก่อนว่า route มีอยู่หรือไม่
+          if (isValidInternalRoute(banner.link)) {
+            router.push(banner.link as never);
+          } else {
+            console.warn('Invalid internal route:', banner.link);
+            // ไม่ทำอะไร - อยู่หน้าเดิม
+          }
           break;
         case 'external':
           // เปิด URL ใน WebView ภายในแอพ
@@ -186,8 +211,11 @@ export default function BannerCarousel({
         default:
           if (banner.link?.startsWith('http')) {
             await openUrl(banner.link, banner.title);
-          } else if (banner.link) {
+          } else if (banner.link && isValidInternalRoute(banner.link)) {
             router.push(banner.link as never);
+          } else {
+            console.warn('Invalid or unsupported link:', banner.link);
+            // ไม่ทำอะไร - อยู่หน้าเดิม
           }
       }
     } catch (error) {

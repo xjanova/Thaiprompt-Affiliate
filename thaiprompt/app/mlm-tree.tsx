@@ -20,6 +20,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   StatusBar,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -33,6 +34,7 @@ import {
   TreeNode,
 } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -45,6 +47,7 @@ interface MemberStats {
   name: string;
   email?: string;
   avatar?: string;
+  profile_picture_url?: string;
   rank?: {
     id: number;
     name: string;
@@ -194,16 +197,23 @@ const TreeNodeItem = ({
           )}
 
           {/* Avatar */}
-          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
+          {/* ⭐ แสดงรูป avatar ถ้ามี หรือแสดงตัวอักษรย่อ */}
           <View style={styles.avatarContainer}>
-            <LinearGradient
-              colors={isRoot ? ['#F59E0B', '#EF4444'] : ['#3B82F6', '#8B5CF6']}
-              style={styles.avatar}
-            >
-              <Text style={styles.avatarText}>
-                {(node?.name || 'U').charAt(0).toUpperCase()}
-              </Text>
-            </LinearGradient>
+            {(node?.profile_picture_url || getAvatarUrl(node?.avatar)) ? (
+              <Image
+                source={{ uri: node.profile_picture_url || getAvatarUrl(node.avatar) || '' }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <LinearGradient
+                colors={isRoot ? ['#F59E0B', '#EF4444'] : ['#3B82F6', '#8B5CF6']}
+                style={styles.avatar}
+              >
+                <Text style={styles.avatarText}>
+                  {getAvatarInitial(node?.name)}
+                </Text>
+              </LinearGradient>
+            )}
 
             {/* Active indicator */}
             <View style={[styles.activeIndicator, { backgroundColor: statusColor }]} />
@@ -613,6 +623,7 @@ export default function MLMTreeScreen() {
         name: node.name,
         email: node.email,
         avatar: node.avatar,
+        profile_picture_url: node.profile_picture_url,
         rank: node.rank,
         statistics: node.statistics || { directReferrals: node.childrenCount, totalTeamMembers: 0, monthlyPV: 0, totalSales: 0 },
         joinedAt: node.joinedAt,
@@ -856,6 +867,7 @@ const styles = StyleSheet.create({
   expandBtnPlaceholder: { width: 32, height: 32, marginRight: 12 },
   avatarContainer: { position: 'relative' },
   avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  avatarImage: { width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: '#3B82F6' },
   avatarText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   activeIndicator: { position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: 8, borderWidth: 3, borderColor: '#1F2937' },
   nodeInfo: { flex: 1, marginLeft: 12 },
