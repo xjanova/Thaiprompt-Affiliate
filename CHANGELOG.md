@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.393.3] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข Push Notification ให้ทำงานได้ถูกต้อง (97107963)
+- fix: ปรับปรุงหน้า KYC admin - รูปเป็น thumbnail และลบรูปเมื่อลบบัญชี (41359558)
+### 🔧 Other Changes
+- Merge pull request #2325 from xjanova/claude/fix-kyc-images-aApTb (05280a58)
+
 ## [v3.393.2] - 2025-12-19
 
 ### ✨ Features
