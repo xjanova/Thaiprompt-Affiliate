@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.29',
-  BUILD_NUMBER: 35,
-  BUILD_DATE: '2025-12-19-FIX-BANNER-CRASH', // Fixed BannerCarousel reanimated crash
+  VERSION: '3.383.30',
+  BUILD_NUMBER: 36,
+  BUILD_DATE: '2025-12-19-AVATAR-UTILITY', // Centralized avatar utility
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

@@ -26,6 +26,7 @@ import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { API_BASE_URL, STORAGE_KEYS } from '@/constants';
+import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
 
 // =====================================================
 // API Functions - เขียนตรงๆ ไม่ผ่าน api.ts
@@ -199,15 +200,7 @@ export default function EditProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Get avatar URL
-  const getAvatarUrl = () => {
-    if (user?.avatar) {
-      if (user.avatar.startsWith('http')) return user.avatar;
-      const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
-      return `${baseUrl}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
-    }
-    return null;
-  };
+  // ⭐ ใช้ utility function สำหรับ avatar URL
 
   // Handle pick image
   const handlePickImage = async () => {
@@ -341,7 +334,7 @@ export default function EditProfileScreen() {
     );
   }
 
-  const avatarUrl = getAvatarUrl();
+  const avatarUrl = getAvatarUrl(user?.avatar);
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -380,7 +373,7 @@ export default function EditProfileScreen() {
                 ) : (
                   <View style={[styles.avatar, styles.avatarPlaceholder]}>
                     <Text style={styles.avatarText}>
-                      {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                      {getAvatarInitial(user?.name)}
                     </Text>
                   </View>
                 )}
