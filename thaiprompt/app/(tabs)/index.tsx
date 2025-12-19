@@ -30,7 +30,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
-import { BannerCarousel } from '@/components';
+import { BannerCarousel, ErrorBoundary } from '@/components';
 import * as SecureStore from 'expo-secure-store';
 
 const { width, height: screenHeight } = Dimensions.get('window');
@@ -495,16 +495,22 @@ export default function HomeScreen() {
   const [greeting, setGreeting] = useState(getGreeting());
   const [pinnedItems, setPinnedItems] = useState<string[]>([]);
 
-  // Load pinned items from storage
+  // Load pinned items from storage (เพิ่ม error handling)
   useEffect(() => {
     const loadPinnedItems = async () => {
       try {
         const saved = await SecureStore.getItemAsync(PINNED_ITEMS_KEY);
         if (saved) {
-          setPinnedItems(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          // ⭐ ตรวจสอบว่าเป็น array ก่อนใช้งาน
+          if (Array.isArray(parsed)) {
+            setPinnedItems(parsed);
+          }
         }
       } catch (error) {
         console.log('Load pinned items error:', error);
+        // ⭐ Reset เป็น empty array ถ้า load ไม่สำเร็จ
+        setPinnedItems([]);
       }
     };
     loadPinnedItems();
@@ -571,6 +577,7 @@ export default function HomeScreen() {
   };
 
   return (
+    <ErrorBoundary>
     <View style={styles.container}>
       {/* Gradient Background */}
       <LinearGradient
@@ -742,6 +749,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </View>
+    </ErrorBoundary>
   );
 }
 
