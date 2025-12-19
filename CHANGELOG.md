@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.393.0] - 2025-12-19
+
+### ✨ Features
+- Merge pull request #2322 from xjanova/claude/fix-banner-upload-EAJ8I (e4c002e2)
+- feat: เพิ่มระบบครอปรูปและแก้ไข link field สำหรับ Mobile Banner (8f5316b5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.392.0] - 2025-12-19
 
 ### ✨ Features
