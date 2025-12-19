@@ -175,11 +175,12 @@ const CommissionItem = ({
       </View>
 
       {/* From User */}
-      {commission.from_user && (
+      {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
+      {commission?.from_user && (
         <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           <Text style={{ fontSize: 20 }}>👤</Text>
           <Text className="text-gray-500 dark:text-gray-400 text-sm ml-2">
-            จาก {commission.from_user.name}
+            จาก {commission.from_user?.name || 'ไม่ระบุชื่อ'}
           </Text>
         </View>
       )}

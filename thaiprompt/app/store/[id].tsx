@@ -241,10 +241,10 @@ export default function StoreDetailScreen() {
         </View>
       </View>
 
-      {/* Store Info */}
+      {/* Store Info - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
       <View style={styles.storeInfoContainer}>
         <View style={styles.storeNameRow}>
-          <Text style={styles.storeName}>{store.name}</Text>
+          <Text style={styles.storeName}>{store?.name || 'ร้านค้า'}</Text>
           {store.isOfficial && (
             <View style={styles.officialBadge}>
               <Text style={{ fontSize: 12 }}>✅</Text>
@@ -263,20 +263,20 @@ export default function StoreDetailScreen() {
           <Text style={styles.storeDescription}>{store.description}</Text>
         )}
 
-        {/* Stats Row */}
+        {/* Stats Row - ⭐ เพิ่ม null checks */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>⭐ {store.rating.toFixed(1)}</Text>
+            <Text style={styles.statValue}>⭐ {(store?.rating ?? 0).toFixed(1)}</Text>
             <Text style={styles.statLabel}>คะแนน</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{store.productCount}</Text>
+            <Text style={styles.statValue}>{store?.productCount ?? 0}</Text>
             <Text style={styles.statLabel}>สินค้า</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{store.followerCount || 0}</Text>
+            <Text style={styles.statValue}>{store?.followerCount ?? 0}</Text>
             <Text style={styles.statLabel}>ผู้ติดตาม</Text>
           </View>
         </View>
@@ -285,7 +285,7 @@ export default function StoreDetailScreen() {
       {/* Products Section Title */}
       <View style={styles.productsSectionHeader}>
         <Text style={styles.productsSectionTitle}>สินค้าในร้าน</Text>
-        <Text style={styles.productsCount}>{store.productCount} รายการ</Text>
+        <Text style={styles.productsCount}>{store?.productCount ?? 0} รายการ</Text>
       </View>
     </View>
   );

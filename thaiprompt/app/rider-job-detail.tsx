@@ -261,10 +261,10 @@ const FeeBreakdownCard = ({
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
 
-  // คำนวณค่าส่ง
+  // คำนวณค่าส่ง - ⭐ เพิ่ม null checks เพื่อป้องกัน crash
   const feeResult = calculateDeliveryFee(
-    { latitude: job.pickup.latitude, longitude: job.pickup.longitude },
-    { latitude: job.delivery.latitude, longitude: job.delivery.longitude },
+    { latitude: job?.pickup?.latitude ?? 0, longitude: job?.pickup?.longitude ?? 0 },
+    { latitude: job?.delivery?.latitude ?? 0, longitude: job?.delivery?.longitude ?? 0 },
     {
       isRushHour: isRushHour(),
       isLateNight: isLateNight(),
@@ -976,23 +976,27 @@ export default function RiderJobDetailScreen() {
           {/* Fee Breakdown */}
           <FeeBreakdownCard job={job} />
 
-          {/* Pickup Location */}
-          <LocationCard
-            type="pickup"
-            location={job.pickup}
-            currentLocation={currentLocation}
-            onNavigate={() => navigateTo(job.pickup.latitude, job.pickup.longitude)}
-            onCall={() => job.pickup.contactPhone && callContact(job.pickup.contactPhone)}
-          />
+          {/* Pickup Location - ⭐ เพิ่ม null checks */}
+          {job?.pickup && (
+            <LocationCard
+              type="pickup"
+              location={job.pickup}
+              currentLocation={currentLocation}
+              onNavigate={() => navigateTo(job.pickup?.latitude ?? 0, job.pickup?.longitude ?? 0)}
+              onCall={() => job.pickup?.contactPhone && callContact(job.pickup.contactPhone)}
+            />
+          )}
 
-          {/* Delivery Location */}
-          <LocationCard
-            type="delivery"
-            location={job.delivery}
-            currentLocation={currentLocation}
-            onNavigate={() => navigateTo(job.delivery.latitude, job.delivery.longitude)}
-            onCall={() => job.delivery.contactPhone && callContact(job.delivery.contactPhone)}
-          />
+          {/* Delivery Location - ⭐ เพิ่ม null checks */}
+          {job?.delivery && (
+            <LocationCard
+              type="delivery"
+              location={job.delivery}
+              currentLocation={currentLocation}
+              onNavigate={() => navigateTo(job.delivery?.latitude ?? 0, job.delivery?.longitude ?? 0)}
+              onCall={() => job.delivery?.contactPhone && callContact(job.delivery.contactPhone)}
+            />
+          )}
 
           {/* Current GPS Location */}
           {currentLocation && (

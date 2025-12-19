@@ -229,30 +229,32 @@ const OrderDetailTab = ({
         </View>
       </Animated.View>
 
-      {/* Shipping Address */}
-      <Animated.View
-        entering={FadeInDown.delay(400)}
-        className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-      >
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          ที่อยู่จัดส่ง
-        </Text>
-        <View className="flex-row items-start">
-          <Ionicons name="location" size={20} color="#3B82F6" />
-          <View className="flex-1 ml-2">
-            <Text className="text-base font-medium text-gray-900 dark:text-white">
-              {order.shipping.name}
-            </Text>
-            <Text className="text-gray-500 dark:text-gray-400 mt-1">
-              {order.shipping.phone}
-            </Text>
-            <Text className="text-gray-600 dark:text-gray-300 mt-2">
-              {order.shipping.address}, {order.shipping.subdistrict}, {order.shipping.district},{' '}
-              {order.shipping.province} {order.shipping.postal_code}
-            </Text>
+      {/* Shipping Address - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
+      {order?.shipping && (
+        <Animated.View
+          entering={FadeInDown.delay(400)}
+          className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
+        >
+          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            ที่อยู่จัดส่ง
+          </Text>
+          <View className="flex-row items-start">
+            <Ionicons name="location" size={20} color="#3B82F6" />
+            <View className="flex-1 ml-2">
+              <Text className="text-base font-medium text-gray-900 dark:text-white">
+                {order.shipping?.name || 'ไม่ระบุชื่อ'}
+              </Text>
+              <Text className="text-gray-500 dark:text-gray-400 mt-1">
+                {order.shipping?.phone || '-'}
+              </Text>
+              <Text className="text-gray-600 dark:text-gray-300 mt-2">
+                {order.shipping?.address || ''}, {order.shipping?.subdistrict || ''}, {order.shipping?.district || ''},{' '}
+                {order.shipping?.province || ''} {order.shipping?.postal_code || ''}
+              </Text>
+            </View>
           </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      )}
 
       {/* Cancel Button */}
       {canCancel && (

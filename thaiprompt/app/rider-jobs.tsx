@@ -123,9 +123,9 @@ const JobCard = ({
         </View>
       </View>
 
-      {/* Title */}
+      {/* Title - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
       <Text className="text-gray-900 dark:text-white font-bold text-lg mb-3">
-        {job.title}
+        {job?.title || 'งานจัดส่ง'}
       </Text>
 
       {/* Pickup Location */}
@@ -138,7 +138,7 @@ const JobCard = ({
             รับของ
           </Text>
           <Text className="text-gray-800 dark:text-gray-200 text-sm" numberOfLines={2}>
-            {job.pickup.address}
+            {job?.pickup?.address || 'ไม่ระบุที่อยู่'}
           </Text>
         </View>
       </View>
@@ -158,7 +158,7 @@ const JobCard = ({
             ส่งที่
           </Text>
           <Text className="text-gray-800 dark:text-gray-200 text-sm" numberOfLines={2}>
-            {job.delivery.address}
+            {job?.delivery?.address || 'ไม่ระบุที่อยู่'}
           </Text>
         </View>
       </View>
