@@ -200,8 +200,8 @@ export default function DashboardScreen() {
                   </Text>
                 </View>
 
-                {/* Growth Badge */}
-                {stats && (
+                {/* Growth Badge - ⭐ เพิ่ม null check สำหรับ growthPercentage */}
+                {stats && stats.growthPercentage != null && (
                   <View
                     className={`px-3 py-1.5 rounded-full ${
                       stats.growthPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'

@@ -662,9 +662,10 @@ export default function ShoppingScreen() {
     setRefreshing(false);
   };
 
-  // Filter products
+  // Filter products - ⭐ เพิ่ม null check เพื่อป้องกัน crash
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const productName = product?.name || '';
+    const matchesSearch = productName.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 

@@ -61,13 +61,13 @@ const StoreCard = ({
       )}
     </View>
 
-    {/* Store Info */}
+    {/* Store Info - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
     <View style={styles.storeInfo}>
-      <Text style={styles.storeName} numberOfLines={1}>{store.name}</Text>
+      <Text style={styles.storeName} numberOfLines={1}>{store?.name || 'ร้านค้า'}</Text>
       <View style={styles.storeRating}>
         <Text style={styles.ratingEmoji}>⭐</Text>
         <Text style={styles.storeRatingText}>
-          {store.rating.toFixed(1)} • {store.productCount} สินค้า
+          {(store?.rating ?? 0).toFixed(1)} • {store?.productCount ?? 0} สินค้า
         </Text>
       </View>
     </View>
