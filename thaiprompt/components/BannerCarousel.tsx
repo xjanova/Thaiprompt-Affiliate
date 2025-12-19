@@ -75,7 +75,11 @@ export default function BannerCarousel({
       setLoading(true);
       const result = await getBanners(position);
       if (result?.success && Array.isArray(result.data)) {
-        setBanners(result.data);
+        // ⭐ กรองเฉพาะ banners ที่มีข้อมูลครบถ้วน เพื่อป้องกัน crash
+        const validBanners = result.data.filter(
+          (banner) => banner && banner.id != null
+        );
+        setBanners(validBanners);
       } else {
         // ถ้าข้อมูลไม่ถูกต้อง ให้ set empty array
         setBanners([]);
@@ -124,9 +128,14 @@ export default function BannerCarousel({
 
   // Handle banner press (เพิ่ม error handling)
   const handleBannerPress = async (banner: Banner) => {
+    // ⭐ ป้องกัน crash ถ้า banner เป็น null/undefined
+    if (!banner) return;
+
     try {
-      // Track click (non-blocking)
-      trackBannerClick(banner.id).catch(() => {});
+      // Track click (non-blocking) - ตรวจสอบ id ก่อน
+      if (banner.id != null) {
+        trackBannerClick(banner.id).catch(() => {});
+      }
 
       // Custom handler
       if (onBannerPress) {
@@ -207,7 +216,7 @@ export default function BannerCarousel({
       >
         {banners.map((banner, index) => (
           <View
-            key={banner.id}
+            key={banner?.id ?? `banner-${index}`}
             style={[styles.bannerWrapper, { width: SCREEN_WIDTH - 32 }]}
           >
             <Pressable
@@ -218,7 +227,7 @@ export default function BannerCarousel({
               })}
             >
               <View style={[styles.bannerContainer, { height }]}>
-                {banner.image ? (
+                {banner?.image ? (
                   <Image
                     source={{ uri: banner.image }}
                     style={styles.bannerImage}
@@ -237,13 +246,13 @@ export default function BannerCarousel({
                         isDark ? styles.textLight : styles.textDark,
                       ]}
                     >
-                      {banner.title}
+                      {banner?.title || 'โปรโมชั่น'}
                     </Text>
                   </View>
                 )}
 
                 {/* Title Overlay */}
-                {banner.title && banner.image && (
+                {banner?.title && banner?.image && (
                   <LinearGradient
                     colors={['transparent', 'rgba(0,0,0,0.7)']}
                     style={styles.titleOverlay}
