@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.393.1] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2323 from xjanova/claude/fix-banner-upload-EAJ8I (b4934e54)
+- fix: แก้ไขปัญหาบันทึกช้าและเพิ่ม loading state (55022e58)
+### 🔧 Other Changes
+
+
 ## [v3.393.0] - 2025-12-19
 
 ### ✨ Features
