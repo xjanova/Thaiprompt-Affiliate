@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.392.0] - 2025-12-19
+
+### ✨ Features
+- feat: เพิ่ม MobileBannerSeeder สำหรับ 3 sample banners (71f5a2aa)
+### 🐛 Bug Fixes
+- fix: แก้ไข Alpine.js ref attribute เป็น x-ref สำหรับ banner upload (2dbb44b8)
+### 🔧 Other Changes
+- Merge pull request #2321 from xjanova/claude/fix-banner-upload-EAJ8I (53cd8903)
+
 ## [v3.391.1] - 2025-12-19
 
 ### ✨ Features
