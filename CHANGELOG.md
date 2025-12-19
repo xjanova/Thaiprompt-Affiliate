@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.390.0] - 2025-12-19
+
+### ✨ Features
+- feat: แสดง avatar ในแท็บโปรไฟล์ที่บาร์ด้านล่าง (03d85989)
+- feat: สร้าง centralized avatar utility (e512d49a)
+### 🐛 Bug Fixes
+- fix: แก้ไข BannerCarousel crash และปรับปรุง avatar URL (996c0fcf)
+### 🔧 Other Changes
+- Merge pull request #2315 from xjanova/claude/fix-line-login-mobile-qJoAk (54c8765a)
+
 ## [v3.389.7] - 2025-12-19
 
 ### ✨ Features
