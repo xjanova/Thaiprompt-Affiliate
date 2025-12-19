@@ -3076,6 +3076,7 @@ class MobileApiController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'avatar' => $user->avatar,
+                    'profile_picture_url' => $user->profile_picture_url,
                     'rank' => $user->currentRank ? [
                         'name' => $user->currentRank->name,
                         'nameTh' => $user->currentRank->name_th ?? $user->currentRank->name,
@@ -3109,6 +3110,7 @@ class MobileApiController extends Controller
                 'id' => $child->id,
                 'name' => $child->name,
                 'avatar' => $child->avatar,
+                'profile_picture_url' => $child->profile_picture_url,
                 'level' => $currentDepth + 1,
                 'rank' => $child->currentRank ? [
                     'name' => $child->currentRank->name,
@@ -3149,6 +3151,136 @@ class MobileApiController extends Controller
         return \App\Models\User::where('sponsor_id', $userId)
             ->where('created_at', '>=', now()->subDays(30))
             ->count();
+    }
+
+    /**
+     * ดึง children ของ member ใน MLM tree
+     *
+     * @param int $userId
+     * @return JsonResponse
+     */
+    public function getTeamTreeChildren(int $userId): JsonResponse
+    {
+        $user = Auth::user();
+
+        // ตรวจสอบว่า userId เป็นสมาชิกในทีมหรือไม่
+        $isMember = \App\Models\User::where('id', $userId)
+            ->whereNotNull('sponsor_id')
+            ->exists();
+
+        if (!$isMember && $userId !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบสมาชิก',
+            ], 404);
+        }
+
+        $children = $this->buildTeamTree($userId, 2);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'children' => $children,
+            ],
+        ]);
+    }
+
+    /**
+     * ค้นหาสมาชิกในทีม
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function searchTeamMember(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $query = $request->get('q', '');
+        $limit = min($request->get('limit', 20), 50);
+
+        if (strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        // ค้นหาสมาชิกในทีม (ทุกระดับ)
+        $members = \App\Models\User::whereNotNull('sponsor_id')
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                    ->orWhere('email', 'like', "%{$query}%")
+                    ->orWhere('id', 'like', "%{$query}%");
+            })
+            ->with('currentRank:id,name,name_th,icon,color')
+            ->limit($limit)
+            ->get()
+            ->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'email' => $member->email,
+                    'avatar' => $member->avatar,
+                    'profile_picture_url' => $member->profile_picture_url,
+                    'rank' => $member->currentRank ? [
+                        'name' => $member->currentRank->name,
+                        'nameTh' => $member->currentRank->name_th ?? $member->currentRank->name,
+                        'icon' => $member->currentRank->icon,
+                        'color' => $member->currentRank->color,
+                    ] : null,
+                    'joinedAt' => $member->created_at->format('Y-m-d'),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $members,
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล profile ของสมาชิกในทีม
+     *
+     * @param int $userId
+     * @return JsonResponse
+     */
+    public function getMemberProfile(int $userId): JsonResponse
+    {
+        $member = \App\Models\User::with('currentRank:id,name,name_th,icon,color')
+            ->find($userId);
+
+        if (!$member) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบสมาชิก',
+            ], 404);
+        }
+
+        $directReferrals = \App\Models\User::where('sponsor_id', $userId)->count();
+        $totalTeam = $this->countTotalTeam($userId);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $member->id,
+                'name' => $member->name,
+                'email' => $member->email,
+                'avatar' => $member->avatar,
+                'profile_picture_url' => $member->profile_picture_url,
+                'rank' => $member->currentRank ? [
+                    'id' => $member->currentRank->id,
+                    'name' => $member->currentRank->name,
+                    'nameTh' => $member->currentRank->name_th ?? $member->currentRank->name,
+                    'icon' => $member->currentRank->icon,
+                    'color' => $member->currentRank->color,
+                ] : null,
+                'statistics' => [
+                    'directReferrals' => $directReferrals,
+                    'totalTeamMembers' => $totalTeam,
+                ],
+                'joinedAt' => $member->created_at->format('Y-m-d'),
+                'isActive' => $member->created_at >= now()->subDays(30),
+            ],
+        ]);
     }
 
     // =====================================================

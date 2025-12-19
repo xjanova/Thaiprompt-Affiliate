@@ -322,6 +322,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/team-tree', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTeamTree']);
         });
 
+        // ⭐ MLM Tree routes สำหรับ Mobile App (alias ของ affiliate routes)
+        Route::prefix('mobile/mlm')->group(function () {
+            Route::get('/tree', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTeamTree']);
+            Route::get('/tree/{userId}/children', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getTeamTreeChildren']);
+            Route::get('/search', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'searchTeamMember']);
+            Route::get('/member/{userId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getMemberProfile']);
+        });
+
         // Commission System (Mobile App)
         Route::prefix('mobile/commissions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCommissions']);

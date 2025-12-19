@@ -119,6 +119,18 @@ class User extends Authenticatable
     ];
 
     /**
+     * Accessors ที่ต้องการรวมใน JSON/Array output
+     *
+     * ⭐ สำคัญ: avatar ต้องอยู่ใน appends เพื่อให้ Mobile App ได้รับข้อมูล
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'avatar',                // สำหรับ Mobile App compatibility
+        'profile_picture_url',   // URL เต็มของรูปโปรไฟล์
+    ];
+
+    /**
      * Avatar accessor สำหรับ Mobile App compatibility
      * เป็น alias ของ profile_picture เพื่อให้ใช้งานกับ Mobile App ได้
      *
