@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.26',
-  BUILD_NUMBER: 32,
-  BUILD_DATE: '2025-12-18-FIREFLIES-LOGIN', // Added RGB fireflies animation, WebView integration, LINE login check
+  VERSION: '3.383.27',
+  BUILD_NUMBER: 33,
+  BUILD_DATE: '2025-12-19-FIX-LOGIN-CRASH', // Fixed crash after login (BlurView, NetInfo, Alert import)
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

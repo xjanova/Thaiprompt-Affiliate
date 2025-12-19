@@ -1,6 +1,6 @@
 {
   "name": "thaiprompt-affiliate",
-  "version": "3.383.26",
+  "version": "3.383.27",
   "description": "Thaiprompt Affiliate Mobile App - React Native + Expo",
   "main": "expo-router/entry",
   "scripts": {
