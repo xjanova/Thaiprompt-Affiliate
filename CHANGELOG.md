@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.389.7] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2314 from xjanova/claude/fix-line-login-mobile-qJoAk (f1a09b78)
+- fix: ปรับปรุง ErrorBoundary ให้แสดงรหัส error และรายละเอียดเสมอ (31f84286)
+### 🔧 Other Changes
+
+
 ## [v3.389.6] - 2025-12-19
 
 ### ✨ Features
