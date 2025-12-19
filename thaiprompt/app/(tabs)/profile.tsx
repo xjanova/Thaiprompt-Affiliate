@@ -167,16 +167,34 @@ export default function ProfileScreen() {
   // ใช้ referralCode จาก user ถ้ามี หรือใช้ memberCode
   const referralCode = user?.referralCode || memberCode;
 
-  // Get avatar URL
+  // Get avatar URL (⭐ ปรับปรุงให้รองรับหลาย format)
   const getAvatarUrl = () => {
     if (user?.avatar) {
+      console.log('🖼️ Original avatar:', user.avatar);
+
       // ถ้าเป็น full URL ใช้เลย
       if (user.avatar.startsWith('http')) {
+        console.log('🖼️ Using full URL:', user.avatar);
         return user.avatar;
       }
-      // ถ้าเป็น relative path ต่อกับ base URL (รองรับหลาย format)
+
+      // ถ้าเป็น relative path ต่อกับ base URL
       const baseUrl = API_BASE_URL.replace(/\/api\/v\d+$/, '').replace(/\/api$/, '');
-      return `${baseUrl}${user.avatar.startsWith('/') ? '' : '/'}${user.avatar}`;
+      let avatarPath = user.avatar;
+
+      // ถ้า path ไม่ขึ้นต้นด้วย / ให้เพิ่ม
+      if (!avatarPath.startsWith('/')) {
+        avatarPath = '/' + avatarPath;
+      }
+
+      // ถ้า path ขึ้นต้นด้วย /storage ใช้เลย, ถ้าไม่ให้เพิ่ม /storage
+      if (!avatarPath.startsWith('/storage')) {
+        avatarPath = '/storage' + avatarPath;
+      }
+
+      const finalUrl = `${baseUrl}${avatarPath}`;
+      console.log('🖼️ Constructed avatar URL:', finalUrl);
+      return finalUrl;
     }
     return null;
   };

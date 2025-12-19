@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.28',
-  BUILD_NUMBER: 34,
-  BUILD_DATE: '2025-12-19-FIX-WHITE-SCREEN', // Fixed white screen after login (ErrorBoundary)
+  VERSION: '3.383.29',
+  BUILD_NUMBER: 35,
+  BUILD_DATE: '2025-12-19-FIX-BANNER-CRASH', // Fixed BannerCarousel reanimated crash
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs
