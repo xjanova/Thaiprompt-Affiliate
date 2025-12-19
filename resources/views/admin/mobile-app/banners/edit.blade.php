@@ -179,10 +179,29 @@
                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
                                   bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                                   focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                           placeholder="เช่น /products, /promotions, https://example.com">
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        ลิงก์ภายใน (เช่น /products) หรือ URL ภายนอก (ไม่บังคับ)
-                    </p>
+                           placeholder="เช่น /dashboard, /shopping, https://example.com">
+                    <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p class="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">📱 Routes ภายในแอพที่ใช้ได้:</p>
+                        <p class="text-xs text-blue-600 dark:text-blue-400">
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/dashboard</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/shopping</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/register</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/wallet</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/referral</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/services</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/academy</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/support</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/tpix</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/stores</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/cart</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/orders</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/commissions</code>
+                            <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">/leaderboard</code>
+                        </p>
+                        <p class="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                            💡 หรือใช้ URL ภายนอก เช่น <code class="bg-blue-100 dark:bg-blue-900/50 px-1 rounded">https://line.me/...</code>
+                        </p>
+                    </div>
                     @error('link_url')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                     @enderror

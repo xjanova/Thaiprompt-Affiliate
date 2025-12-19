@@ -31,11 +31,14 @@ class MobileBannerSeeder extends Seeder
         }
 
         // Sample Banners
+        // ⚠️ link ต้องเป็น route ที่มีอยู่ในแอพ หรือ URL ภายนอก
+        // Routes ที่ใช้ได้: /dashboard, /register, /shopping, /wallet, /referral,
+        //                   /services, /academy, /support, /tpix, /stores, /cart เป็นต้น
         $banners = [
             [
                 'title' => 'ยินดีต้อนรับสู่ TP-Affiliate',
                 'image' => '/images/banners/welcome-banner.jpg',
-                'link' => '/about',
+                'link' => '/dashboard',  // ใช้ /dashboard แทน /about เพราะไม่มี route /about
                 'link_type' => 'internal',
                 'link_target' => null,
                 'position' => 'top',
@@ -59,7 +62,7 @@ class MobileBannerSeeder extends Seeder
             [
                 'title' => 'ติดตามข่าวสารและโปรโมชั่น',
                 'image' => '/images/banners/news-banner.jpg',
-                'link' => 'https://line.me',
+                'link' => 'https://line.me/R/ti/p/@thaiprompt',
                 'link_type' => 'external',
                 'link_target' => null,
                 'position' => 'middle',
