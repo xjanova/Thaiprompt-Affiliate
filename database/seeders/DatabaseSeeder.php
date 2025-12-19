@@ -166,6 +166,9 @@ class DatabaseSeeder extends Seeder
             // 19. Menu Management System
             MenuItemSeeder::class,              // 🆕 ระบบจัดการเมนู (นำเข้าจาก config/menus.php)
             AcademyMenuSeeder::class,           // 🎓 เมนู Academy สำหรับ User Dashboard
+
+            // 20. Mobile App System
+            MobileBannerSeeder::class,          // 📱 Mobile App Banners (3 ตัวอย่าง: Welcome, Promo, News)
         ]);
 
         $this->command->info('');
