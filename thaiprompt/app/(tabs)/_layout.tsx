@@ -14,6 +14,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
 import { getUnreadNotificationCount } from '@/services/api';
+import { ErrorBoundary } from '@/components';
 
 // Tab icons ใช้ emoji
 const TAB_ICONS = {
@@ -557,6 +558,7 @@ export default function TabLayout() {
   };
 
   return (
+    <ErrorBoundary>
     <View style={{ flex: 1 }}>
       {/* Sync Status Badge - แสดงเฉพาะเมื่อ offline */}
       <View style={styles.syncBadgeWrapper}>
@@ -652,6 +654,7 @@ export default function TabLayout() {
         />
       </Tabs>
     </View>
+    </ErrorBoundary>
   );
 }
 

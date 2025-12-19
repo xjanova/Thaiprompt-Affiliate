@@ -47,9 +47,9 @@
 
 export const APP_INFO = {
   NAME: 'TP UltraAPP',
-  VERSION: '3.383.27',
-  BUILD_NUMBER: 33,
-  BUILD_DATE: '2025-12-19-FIX-LOGIN-CRASH', // Fixed crash after login (BlurView, NetInfo, Alert import)
+  VERSION: '3.383.28',
+  BUILD_NUMBER: 34,
+  BUILD_DATE: '2025-12-19-FIX-WHITE-SCREEN', // Fixed white screen after login (ErrorBoundary)
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs

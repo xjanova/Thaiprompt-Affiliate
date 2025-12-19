@@ -19,3 +19,6 @@ export {
 
 // Admin Control Components
 export { default as BannerCarousel } from './BannerCarousel';
+
+// Error Handling
+export { default as ErrorBoundary } from './ErrorBoundary';

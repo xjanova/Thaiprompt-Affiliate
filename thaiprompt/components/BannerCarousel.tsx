@@ -52,16 +52,21 @@ export default function BannerCarousel({
   const scrollViewRef = useRef<ScrollView>(null);
   const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
 
-  // โหลด banners จาก server
+  // โหลด banners จาก server (เพิ่ม error handling)
   const loadBanners = useCallback(async () => {
     try {
       setLoading(true);
       const result = await getBanners(position);
-      if (result?.success && result.data) {
+      if (result?.success && Array.isArray(result.data)) {
         setBanners(result.data);
+      } else {
+        // ถ้าข้อมูลไม่ถูกต้อง ให้ set empty array
+        setBanners([]);
       }
     } catch (error) {
       console.error('Load banners error:', error);
+      // ⭐ Set empty array เมื่อ error เพื่อป้องกัน crash
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -100,49 +105,53 @@ export default function BannerCarousel({
     setCurrentIndex(index);
   };
 
-  // Handle banner press
+  // Handle banner press (เพิ่ม error handling)
   const handleBannerPress = async (banner: Banner) => {
-    // Track click
-    await trackBannerClick(banner.id);
+    try {
+      // Track click (non-blocking)
+      trackBannerClick(banner.id).catch(() => {});
 
-    // Custom handler
-    if (onBannerPress) {
-      onBannerPress(banner);
-      return;
-    }
+      // Custom handler
+      if (onBannerPress) {
+        onBannerPress(banner);
+        return;
+      }
 
-    // Default navigation
-    if (!banner.link) return;
+      // Default navigation
+      if (!banner.link) return;
 
-    switch (banner.linkType) {
-      case 'product':
-        router.push(`/product/${banner.linkTarget}`);
-        break;
-      case 'category':
-        // Navigate to category
-        router.push({
-          pathname: '/shopping',
-          params: { category: banner.linkTarget },
-        });
-        break;
-      case 'internal':
-        // Navigate to internal route
-        router.push(banner.link as never);
-        break;
-      case 'external':
-        // เปิด URL ใน WebView ภายในแอพ
-        try {
-          await openUrl(banner.link, banner.title);
-        } catch (error) {
-          console.error('Cannot open URL:', error);
-        }
-        break;
-      default:
-        if (banner.link.startsWith('http')) {
-          await openUrl(banner.link, banner.title);
-        } else {
+      switch (banner.linkType) {
+        case 'product':
+          router.push(`/product/${banner.linkTarget}`);
+          break;
+        case 'category':
+          // Navigate to category
+          router.push({
+            pathname: '/shopping',
+            params: { category: banner.linkTarget },
+          });
+          break;
+        case 'internal':
+          // Navigate to internal route
           router.push(banner.link as never);
-        }
+          break;
+        case 'external':
+          // เปิด URL ใน WebView ภายในแอพ
+          try {
+            await openUrl(banner.link, banner.title);
+          } catch (error) {
+            console.error('Cannot open URL:', error);
+          }
+          break;
+        default:
+          if (banner.link?.startsWith('http')) {
+            await openUrl(banner.link, banner.title);
+          } else if (banner.link) {
+            router.push(banner.link as never);
+          }
+      }
+    } catch (error) {
+      console.error('Banner press error:', error);
     }
   };
 
