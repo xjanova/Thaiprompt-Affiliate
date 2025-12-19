@@ -319,15 +319,16 @@ const SyncStatusBadge = () => {
     error: { icon: '⚠️', color: '#F59E0B', label: 'ผิดพลาด' },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.offline;
 
-  // ซ่อนเมื่อ online และ connected
-  if (status === 'online' && isConnected) {
-    return null;
-  }
+  // ⭐ ย้าย shouldShow มาก่อน useEffect เพื่อใช้ใน condition
+  const shouldShow = !(status === 'online' && isConnected);
 
-  // Animations
+  // Animations - ⭐ ต้องเรียก hooks ทุกครั้งไม่ว่า shouldShow จะเป็นอะไร
   useEffect(() => {
+    // ไม่ต้อง animate ถ้าไม่แสดง
+    if (!shouldShow) return;
+
     // Glow pulse
     const glow = Animated.loop(
       Animated.sequence([
@@ -348,10 +349,12 @@ const SyncStatusBadge = () => {
     glow.start();
 
     return () => glow.stop();
-  }, [glowAnim]);
+  }, [glowAnim, shouldShow]);
 
-  // Syncing animation
+  // Syncing animation - ⭐ ต้องเรียก hooks ทุกครั้ง
   useEffect(() => {
+    if (!shouldShow) return;
+
     if (status === 'syncing') {
       const rotate = Animated.loop(
         Animated.timing(rotateAnim, {
@@ -386,7 +389,7 @@ const SyncStatusBadge = () => {
     }
     rotateAnim.setValue(0);
     pulseAnim.setValue(1);
-  }, [status, rotateAnim, pulseAnim]);
+  }, [status, rotateAnim, pulseAnim, shouldShow]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
@@ -402,6 +405,11 @@ const SyncStatusBadge = () => {
     if (mins < 60) return `${mins}น.`;
     return `${Math.floor(mins / 60)}ชม.`;
   };
+
+  // ⭐ ซ่อนเมื่อ online และ connected - return null หลัง hooks ทั้งหมด
+  if (!shouldShow) {
+    return null;
+  }
 
   return (
     <Pressable style={styles.syncContainer}>
