@@ -194,13 +194,14 @@ const TreeNodeItem = ({
           )}
 
           {/* Avatar */}
+          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
           <View style={styles.avatarContainer}>
             <LinearGradient
               colors={isRoot ? ['#F59E0B', '#EF4444'] : ['#3B82F6', '#8B5CF6']}
               style={styles.avatar}
             >
               <Text style={styles.avatarText}>
-                {node.name.charAt(0).toUpperCase()}
+                {(node?.name || 'U').charAt(0).toUpperCase()}
               </Text>
             </LinearGradient>
 
@@ -212,7 +213,7 @@ const TreeNodeItem = ({
           <View style={styles.nodeInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.nodeName} numberOfLines={1}>
-                {node.name}
+                {node?.name || 'ไม่ระบุชื่อ'}
                 {isRoot && ' (คุณ)'}
               </Text>
               {node.rank && (
@@ -279,6 +280,7 @@ const MemberDetailModal = ({
           </View>
 
           {/* Header */}
+          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
           <View style={styles.modalHeader}>
             <View style={styles.modalAvatarContainer}>
               <LinearGradient
@@ -287,15 +289,15 @@ const MemberDetailModal = ({
               >
                 <View style={styles.modalAvatarInner}>
                   <Text style={styles.modalAvatarText}>
-                    {member.name.charAt(0).toUpperCase()}
+                    {(member?.name || 'U').charAt(0).toUpperCase()}
                   </Text>
                 </View>
               </LinearGradient>
               <View style={[styles.modalStatusDot, { backgroundColor: statusColor }]} />
             </View>
 
-            <Text style={styles.modalName}>{member.name}</Text>
-            {member.email && <Text style={styles.modalEmail}>{member.email}</Text>}
+            <Text style={styles.modalName}>{member?.name || 'ไม่ระบุชื่อ'}</Text>
+            {member?.email && <Text style={styles.modalEmail}>{member.email}</Text>}
             {member.rank && (
               <View style={styles.modalRankContainer}>
                 <RankBadge rank={member.rank} size="medium" />
@@ -417,12 +419,13 @@ const SelfCard = ({ user }: { user: { id: number; name: string; email?: string }
 
         <View style={styles.selfCardContent}>
           {/* Avatar */}
+          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
           <LinearGradient colors={['#F59E0B', '#EF4444']} style={styles.selfAvatar}>
-            <Text style={styles.selfAvatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.selfAvatarText}>{(user?.name || 'U').charAt(0).toUpperCase()}</Text>
           </LinearGradient>
 
-          <Text style={styles.selfName}>{user.name}</Text>
-          {user.email && <Text style={styles.selfEmail}>{user.email}</Text>}
+          <Text style={styles.selfName}>{user?.name || 'ไม่ระบุชื่อ'}</Text>
+          {user?.email && <Text style={styles.selfEmail}>{user.email}</Text>}
 
           <View style={styles.selfBadge}>
             <Text style={{ fontSize: 16 }}>⭐</Text>

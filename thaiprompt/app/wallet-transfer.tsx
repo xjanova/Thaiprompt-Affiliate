@@ -302,6 +302,7 @@ export default function WalletTransferScreen() {
           )}
 
           {/* แสดงข้อมูลผู้รับ */}
+          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
           {recipient && (
             <View style={[styles.recipientCard, isDark && styles.cardDark]}>
               <View style={styles.recipientAvatar}>
@@ -310,14 +311,14 @@ export default function WalletTransferScreen() {
                 ) : (
                   <LinearGradient colors={['#8B5CF6', '#EC4899']} style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarText}>
-                      {recipient.name.charAt(0).toUpperCase()}
+                      {(recipient.name || 'U').charAt(0).toUpperCase()}
                     </Text>
                   </LinearGradient>
                 )}
               </View>
               <View style={styles.recipientInfo}>
                 <Text style={[styles.recipientName, isDark && styles.textLight]}>
-                  {recipient.name}
+                  {recipient.name || 'ไม่ระบุชื่อ'}
                 </Text>
                 <Text style={[styles.recipientAddress, isDark && styles.textMuted]}>
                   {recipient.walletAddress}

@@ -358,13 +358,14 @@ export default function SettingsScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.profileGradient}
             >
+              {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
               <View style={styles.avatarContainer}>
                 <Text style={styles.avatarText}>
                   {getAvatarInitial(user?.name)}
                 </Text>
               </View>
-              <Text style={styles.profileName}>{user.name}</Text>
-              <Text style={styles.profileEmail}>{user.email}</Text>
+              <Text style={styles.profileName}>{user?.name || 'ไม่ระบุชื่อ'}</Text>
+              <Text style={styles.profileEmail}>{user?.email || ''}</Text>
               <Pressable
                 onPress={() => router.push('/(tabs)/profile')}
                 style={({ pressed }) => [

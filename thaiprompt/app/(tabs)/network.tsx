@@ -95,8 +95,16 @@ const StatCard = ({
 };
 
 // Premium Member Card Component
+// ⭐ เพิ่ม null check เพื่อป้องกัน crash (ERR-14621E, ERR-E586A8)
 const MemberCard = ({ member, index }: { member: Referral; index: number }) => {
-  const isActive = member.status === 'active';
+  // ⭐ Safe access - ป้องกัน crash เมื่อ member.user เป็น null/undefined
+  const userName = member?.user?.name || 'ไม่ระบุชื่อ';
+  const userEmail = member?.user?.email || '';
+  const userInitial = userName.charAt(0).toUpperCase() || 'U';
+  const memberLevel = member?.level || 1;
+  const memberEarnings = member?.earnings || 0;
+  const isActive = member?.status === 'active';
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -131,26 +139,26 @@ const MemberCard = ({ member, index }: { member: Referral; index: number }) => {
         {/* Avatar with gradient border */}
         <View style={styles.memberAvatarWrapper}>
           <LinearGradient
-            colors={[getLevelColor(member.level), getLevelColor(member.level) + '60']}
+            colors={[getLevelColor(memberLevel), getLevelColor(memberLevel) + '60']}
             style={styles.memberAvatarBorder}
           >
             <View style={styles.memberAvatar}>
               <Text style={styles.memberAvatarText}>
-                {member.user.name.charAt(0).toUpperCase()}
+                {userInitial}
               </Text>
             </View>
           </LinearGradient>
           {/* Level badge */}
-          <View style={[styles.levelBadge, { backgroundColor: getLevelColor(member.level) }]}>
-            <Text style={styles.levelBadgeText}>{member.level}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: getLevelColor(memberLevel) }]}>
+            <Text style={styles.levelBadgeText}>{memberLevel}</Text>
           </View>
         </View>
 
         {/* Info */}
         <View style={styles.memberInfo}>
-          <Text style={styles.memberName}>{member.user.name}</Text>
+          <Text style={styles.memberName}>{userName}</Text>
           <Text style={styles.memberEmail} numberOfLines={1}>
-            {member.user.email}
+            {userEmail}
           </Text>
           {/* Active status indicator */}
           <View style={styles.statusRow}>
@@ -164,7 +172,7 @@ const MemberCard = ({ member, index }: { member: Referral; index: number }) => {
         {/* Earnings */}
         <View style={styles.memberRight}>
           <Text style={styles.earningsLabel}>รายได้</Text>
-          <Text style={styles.memberEarnings}>{formatCurrency(member.earnings)}</Text>
+          <Text style={styles.memberEarnings}>{formatCurrency(memberEarnings)}</Text>
         </View>
       </Pressable>
     </Animated.View>
