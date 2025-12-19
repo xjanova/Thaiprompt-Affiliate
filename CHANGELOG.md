@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.390.3] - 2025-12-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2318 from xjanova/claude/fix-line-login-mobile-qJoAk (ee2d2ae0)
+- chore: เปลี่ยน Expo projectId และ owner เป็น thaiprompt04 (bcbdb544)
+
 ## [v3.390.2] - 2025-12-19
 
 ### ✨ Features
