@@ -80,6 +80,40 @@ const MENU_ITEMS = [
   { id: 'coming-soon', title: 'เร็วๆ นี้', icon: '🚀', colors: ['#A855F7', '#9333EA'], glowColor: '#A855F7', route: '/coming-soon', hasImage: true },
 ] as const;
 
+// ⭐ Profile Avatar Button Component (ป้องกัน crash)
+const ProfileAvatarButton = ({ user }: { user: any }) => {
+  // Safe avatar URL - ป้องกัน crash
+  let avatarUrl: string | null = null;
+  let initial = 'U';
+  try {
+    avatarUrl = getAvatarUrl(user?.avatar);
+    initial = getAvatarInitial(user?.name);
+  } catch (e) {
+    console.log('ProfileAvatarButton error:', e);
+  }
+
+  return (
+    <Pressable
+      style={styles.profileButton}
+      onPress={() => router.push('/(tabs)/profile')}
+    >
+      {avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={styles.profileAvatar}
+        />
+      ) : (
+        <LinearGradient
+          colors={['#3B82F6', '#8B5CF6']}
+          style={styles.profileGradient}
+        >
+          <Text style={styles.profileText}>{initial}</Text>
+        </LinearGradient>
+      )}
+    </Pressable>
+  );
+};
+
 // จำนวนหิ่งห้อย (ลดจำนวนเพื่อไม่ให้แอพหนัก)
 const NUM_FIREFLIES = 12;
 
@@ -613,27 +647,7 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Pressable
-            style={styles.profileButton}
-            onPress={() => router.push('/(tabs)/profile')}
-          >
-            {/* ⭐ แสดง avatar จริงถ้ามี หรือแสดงตัวอักษรย่อ */}
-            {getAvatarUrl(user?.avatar) ? (
-              <Image
-                source={{ uri: getAvatarUrl(user?.avatar)! }}
-                style={styles.profileAvatar}
-              />
-            ) : (
-              <LinearGradient
-                colors={['#3B82F6', '#8B5CF6']}
-                style={styles.profileGradient}
-              >
-                <Text style={styles.profileText}>
-                  {getAvatarInitial(user?.name)}
-                </Text>
-              </LinearGradient>
-            )}
-          </Pressable>
+          <ProfileAvatarButton user={user} />
         </View>
 
         {/* ⭐ Banner Carousel จาก Admin */}
