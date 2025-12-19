@@ -1224,6 +1224,22 @@ class User extends Authenticatable
                 $user->menu_theme_preference = 'arrow-x';
             }
         });
+
+        // ลบข้อมูล KYC และรูปภาพเมื่อผู้ใช้ถูกลบ (Privacy Protection)
+        static::deleting(function ($user) {
+            // ลบ KYC verifications ทั้งหมดของ user
+            // Observer จะจัดการลบรูปภาพโดยอัตโนมัติ
+            if ($user->kycVerifications()->exists()) {
+                $user->kycVerifications()->each(function ($kycVerification) {
+                    $kycVerification->delete();
+                });
+
+                \Log::info('Deleted KYC verifications for user deletion', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                ]);
+            }
+        });
     }
 
     /**

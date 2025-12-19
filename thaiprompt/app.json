@@ -61,6 +61,13 @@
       "expo-secure-store",
       "expo-dev-client",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#3B82F6"
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
