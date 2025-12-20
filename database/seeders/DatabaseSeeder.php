@@ -104,6 +104,7 @@ class DatabaseSeeder extends Seeder
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
             StoreTrophySeeder::class,           // 🏆 Trophy สำหรับร้านค้า (Sales, Rating, Followers, Products)
             OfficialShopSettingSeeder::class,   // ⚙️ การตั้งค่า Official Shop (AI Selection, Best Sellers)
+            StoreRatingSeeder::class,           // ⭐ ระบบคะแนนร้านค้า (Store Rating - แยกจาก Trophy)
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
             SoftwareProductSeeder::class,       // ระบบผลิตภัณฑ์ซอฟต์แวร์ (MLM, E-commerce, Affiliate systems)
 

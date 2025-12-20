@@ -362,4 +362,24 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         Route::post('/manage/shifts', [StaffController::class, 'storeShift'])->name('shifts.store');
         Route::delete('/manage/shifts/{shift}', [StaffController::class, 'destroyShift'])->name('shifts.destroy');
     });
+
+    // ========================================
+    // STORE RATING - คะแนนร้านค้า (Seller ดูและตอบกลับ)
+    // ========================================
+    Route::prefix('store-rating')->name('store-rating.')->group(function () {
+        // Dashboard คะแนน
+        Route::get('/', [\App\Http\Controllers\Seller\StoreRatingController::class, 'index'])->name('index');
+
+        // ดูทั้งหมด
+        Route::get('/all', [\App\Http\Controllers\Seller\StoreRatingController::class, 'all'])->name('all');
+
+        // สถิติ
+        Route::get('/statistics', [\App\Http\Controllers\Seller\StoreRatingController::class, 'statistics'])->name('statistics');
+
+        // ดูรายละเอียด
+        Route::get('/{rating}', [\App\Http\Controllers\Seller\StoreRatingController::class, 'show'])->name('show');
+
+        // ตอบกลับรีวิว
+        Route::post('/{rating}/respond', [\App\Http\Controllers\Seller\StoreRatingController::class, 'respond'])->name('respond');
+    });
 });
