@@ -322,7 +322,7 @@
                 <span class="text-sm font-semibold text-center">รายงาน</span>
             </a>
 
-            <a href="{{ route('seller.marketing') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+            <a href="{{ route('seller.marketing.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
                 <span class="text-3xl mb-2">📢</span>
                 <span class="text-sm font-semibold text-center">การตลาด</span>
             </a>
