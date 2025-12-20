@@ -2,7 +2,7 @@
 
 @section('title', $pageTitle ?? 'จัดการหน้าแรก')
 
-@section('styles')
+@push('styles')
 <style>
     /* ซ่อน scrollbar แต่ยังเลื่อนได้ */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -226,7 +226,7 @@
         border-color: rgba(255,255,255,0.2);
     }
 </style>
-@endsection
+@endpush
 
 @section('content')
 <div x-data="homepageManager()" x-init="init()" class="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 overflow-hidden">
@@ -1148,7 +1148,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 @include('admin.homepage-manager.partials.scripts')
-@endsection
+@endpush
