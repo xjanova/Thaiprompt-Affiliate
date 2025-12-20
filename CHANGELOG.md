@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.394.2] - 2025-12-20
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2328 from xjanova/claude/fix-seller-marketing-route-K6Fm4 (840ef3e0)
+- fix: เพิ่มการตรวจสอบ null สำหรับ vendorStore ใน MarketingController (fd685860)
+### 🔧 Other Changes
+
+
 ## [v3.394.1] - 2025-12-20
 
 ### ✨ Features
