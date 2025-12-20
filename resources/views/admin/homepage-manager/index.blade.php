@@ -2,7 +2,7 @@
 
 @section('title', $pageTitle ?? 'จัดการหน้าแรก')
 
-@section('styles')
+@push('styles')
 <style>
     /* ซ่อน scrollbar แต่ยังเลื่อนได้ */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -226,7 +226,7 @@
         border-color: rgba(255,255,255,0.2);
     }
 </style>
-@endsection
+@endpush
 
 @section('content')
 <div x-data="homepageManager()" x-init="init()" class="h-screen flex flex-col bg-gray-100 dark:bg-gray-900 overflow-hidden">
@@ -374,7 +374,7 @@
             {{-- Elements Tab --}}
             <div x-show="leftPanelTab === 'elements'" class="flex-1 overflow-y-auto hide-scrollbar p-3 space-y-4">
                 {{-- Add Section Button --}}
-                <button @click="addSection()" class="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center justify-center font-medium">
+                <button @click="showInsertSectionModal()" class="w-full py-3 border-2 border-dashed border-indigo-300 dark:border-indigo-600 rounded-xl text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition flex items-center justify-center font-medium">
                     <i class="fas fa-plus-circle mr-2"></i> เพิ่ม Section ใหม่
                 </button>
 
@@ -385,7 +385,7 @@
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
                         <template x-for="(label, type) in sectionTypes" :key="type">
-                            <button @click="addSection(type)" class="element-card p-3 text-left border border-gray-200 dark:border-gray-600 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition group">
+                            <button @click="showInsertSectionModal(type)" class="element-card p-3 text-left border border-gray-200 dark:border-gray-600 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition group">
                                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mb-2">
                                     <i class="fas text-white text-sm" :class="getSectionIcon(type)"></i>
                                 </div>
@@ -457,6 +457,174 @@
                         </template>
                     </div>
                 </div>
+
+                {{-- Media Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-photo-video mr-2"></i> Media
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in mediaElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- E-commerce Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-shopping-cart mr-2"></i> E-commerce
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in ecommerceElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Marketing Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-bullhorn mr-2"></i> Marketing
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in marketingElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Data & Charts Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i> Data & Charts
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in dataElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Navigation Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-compass mr-2"></i> Navigation
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in navigationElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Social Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-users mr-2"></i> Social
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in socialElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Effects & Decorations --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-sparkles mr-2"></i> Effects
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in effectElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Utility Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-tools mr-2"></i> Utility
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in utilityElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             {{-- Blocks Tab --}}
@@ -509,13 +677,13 @@
         <div class="flex-1 bg-gray-200 dark:bg-gray-900 overflow-auto relative" id="canvas-wrapper">
             {{-- Floating Quick Actions --}}
             <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl px-4 py-2 border border-gray-200 dark:border-gray-700">
-                <button @click="addSection('hero')" class="quick-action-btn bg-gradient-to-br from-indigo-500 to-purple-600 text-white" title="Add Hero Section">
+                <button @click="showInsertSectionModal('hero')" class="quick-action-btn bg-gradient-to-br from-indigo-500 to-purple-600 text-white" title="Add Hero Section">
                     <i class="fas fa-star"></i>
                 </button>
-                <button @click="addSection('features')" class="quick-action-btn bg-gradient-to-br from-green-500 to-emerald-600 text-white" title="Add Features Section">
+                <button @click="showInsertSectionModal('features')" class="quick-action-btn bg-gradient-to-br from-green-500 to-emerald-600 text-white" title="Add Features Section">
                     <i class="fas fa-th-large"></i>
                 </button>
-                <button @click="addSection('cta')" class="quick-action-btn bg-gradient-to-br from-orange-500 to-red-600 text-white" title="Add CTA Section">
+                <button @click="showInsertSectionModal('cta')" class="quick-action-btn bg-gradient-to-br from-orange-500 to-red-600 text-white" title="Add CTA Section">
                     <i class="fas fa-bullhorn"></i>
                 </button>
                 <div class="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
@@ -648,7 +816,7 @@
                             <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มี Section</h3>
                             <p class="text-gray-500 mb-6">เริ่มต้นสร้างหน้าแรกของคุณ</p>
                             <div class="flex items-center space-x-3">
-                                <button @click="addSection('hero')" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-lg shadow-indigo-500/25">
+                                <button @click="showInsertSectionModal('hero')" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition shadow-lg shadow-indigo-500/25">
                                     <i class="fas fa-plus mr-2"></i> เพิ่ม Hero Section
                                 </button>
                                 <button @click="leftPanelTab = 'templates'" class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
@@ -728,6 +896,17 @@
                                     <input type="checkbox" x-model="selectedSection.is_fullwidth" @change="updateSection()" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
+                            </div>
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center">
+                                    <i class="fas mr-2 text-sm" :class="selectedSection.is_active ? 'fa-eye text-green-500' : 'fa-eye-slash text-red-500'"></i>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">เปิดใช้งาน Section</span>
+                                </div>
+                                <button @click="toggleSection(selectedSection)" class="relative inline-flex items-center cursor-pointer">
+                                    <div class="w-11 h-6 rounded-full transition-colors" :class="selectedSection.is_active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'">
+                                        <div class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-5 w-5 transition-transform" :class="selectedSection.is_active && 'translate-x-full'"></div>
+                                    </div>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1148,7 +1327,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 @include('admin.homepage-manager.partials.scripts')
-@endsection
+@endpush

@@ -132,6 +132,9 @@ class HomepageManagerController extends Controller
             'animation_delay' => 'nullable|integer|min:0',
             'settings' => 'nullable|array',
             'responsive_settings' => 'nullable|array',
+            // ตำแหน่งแทรก section
+            'insert_position' => 'nullable|string|in:first,last,after',
+            'insert_after_id' => 'nullable|integer|exists:homepage_sections,id',
         ]);
 
         if ($validator->fails()) {
@@ -143,10 +146,30 @@ class HomepageManagerController extends Controller
         }
 
         try {
-            // หาลำดับสูงสุดแล้ว +1
-            $maxOrder = HomepageSection::max('order') ?? -1;
-            $data = $request->all();
-            $data['order'] = $maxOrder + 1;
+            $data = $request->except(['insert_position', 'insert_after_id']);
+            $insertPosition = $request->input('insert_position', 'last');
+            $insertAfterId = $request->input('insert_after_id');
+
+            // คำนวณ order ตามตำแหน่งที่เลือก
+            if ($insertPosition === 'first') {
+                // แทรกด้านบนสุด - เลื่อน order ของ sections อื่นทั้งหมด
+                HomepageSection::query()->increment('order');
+                $data['order'] = 0;
+            } elseif ($insertPosition === 'after' && $insertAfterId) {
+                // แทรกหลัง section ที่ระบุ
+                $afterSection = HomepageSection::find($insertAfterId);
+                if ($afterSection) {
+                    $newOrder = $afterSection->order + 1;
+                    // เลื่อน order ของ sections ที่มี order >= newOrder
+                    HomepageSection::where('order', '>=', $newOrder)->increment('order');
+                    $data['order'] = $newOrder;
+                } else {
+                    $data['order'] = (HomepageSection::max('order') ?? -1) + 1;
+                }
+            } else {
+                // แทรกท้ายสุด (default)
+                $data['order'] = (HomepageSection::max('order') ?? -1) + 1;
+            }
 
             $section = HomepageSection::create($data);
 

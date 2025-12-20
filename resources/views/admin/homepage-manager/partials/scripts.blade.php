@@ -113,6 +113,106 @@ function homepageManager() {
             { type: 'carousel', label: 'Carousel', desc: 'สไลด์', icon: 'fa-images', color: 'linear-gradient(135deg, #ec4899, #db2777)' },
             { type: 'progress', label: 'Progress', desc: 'แถบความคืบหน้า', icon: 'fa-tasks', color: 'linear-gradient(135deg, #10b981, #059669)' },
             { type: 'rating', label: 'Rating', desc: 'ให้คะแนน', icon: 'fa-star', color: 'linear-gradient(135deg, #fbbf24, #f59e0b)' },
+            { type: 'modal', label: 'Popup Modal', desc: 'ป๊อปอัพ', icon: 'fa-window-restore', color: 'linear-gradient(135deg, #7c3aed, #6d28d9)' },
+            { type: 'tooltip', label: 'Tooltip', desc: 'คำอธิบาย', icon: 'fa-comment-dots', color: 'linear-gradient(135deg, #475569, #334155)' },
+        ],
+
+        // 🎬 Media Elements - สื่อมัลติมีเดีย
+        mediaElements: [
+            { type: 'audio', label: 'Audio Player', desc: 'เครื่องเล่นเสียง', icon: 'fa-music', color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+            { type: 'lottie', label: 'Lottie Animation', desc: 'แอนิเมชัน Lottie', icon: 'fa-magic', color: 'linear-gradient(135deg, #f472b6, #ec4899)' },
+            { type: 'before-after', label: 'Before/After', desc: 'เปรียบเทียบรูป', icon: 'fa-columns', color: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+            { type: 'gallery-masonry', label: 'Gallery Masonry', desc: 'แกลเลอรี่แบบ Masonry', icon: 'fa-th-large', color: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+            { type: 'lightbox', label: 'Lightbox Gallery', desc: 'แกลเลอรี่ขยายรูป', icon: 'fa-expand', color: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+            { type: 'video-bg', label: 'Video Background', desc: 'พื้นหลังวิดีโอ', icon: 'fa-film', color: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+            { type: 'youtube-embed', label: 'YouTube Embed', desc: 'ฝัง YouTube', icon: 'fa-youtube', color: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+            { type: 'spotify-embed', label: 'Spotify Embed', desc: 'ฝัง Spotify', icon: 'fa-spotify', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+        ],
+
+        // 🛒 E-commerce Elements - สำหรับขายของ
+        ecommerceElements: [
+            { type: 'product-card', label: 'Product Card', desc: 'การ์ดสินค้า', icon: 'fa-box', color: 'linear-gradient(135deg, #f97316, #ea580c)' },
+            { type: 'price-tag', label: 'Price Tag', desc: 'ป้ายราคา', icon: 'fa-tag', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+            { type: 'add-to-cart', label: 'Add to Cart', desc: 'ปุ่มเพิ่มลงตะกร้า', icon: 'fa-cart-plus', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'sale-badge', label: 'Sale Badge', desc: 'ป้ายลดราคา', icon: 'fa-percent', color: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+            { type: 'stock-status', label: 'Stock Status', desc: 'สถานะสต็อก', icon: 'fa-cubes', color: 'linear-gradient(135deg, #eab308, #ca8a04)' },
+            { type: 'wishlist-btn', label: 'Wishlist Button', desc: 'ปุ่มรายการโปรด', icon: 'fa-heart', color: 'linear-gradient(135deg, #ec4899, #db2777)' },
+            { type: 'quick-view', label: 'Quick View', desc: 'ดูสินค้าเร็ว', icon: 'fa-eye', color: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+            { type: 'product-slider', label: 'Product Slider', desc: 'สไลด์สินค้า', icon: 'fa-shopping-bag', color: 'linear-gradient(135deg, #a855f7, #9333ea)' },
+        ],
+
+        // 📢 Marketing Elements - สำหรับโปรโมท
+        marketingElements: [
+            { type: 'announcement-bar', label: 'Announcement Bar', desc: 'แถบประกาศ', icon: 'fa-bullhorn', color: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+            { type: 'banner-promo', label: 'Promo Banner', desc: 'แบนเนอร์โปรโมชั่น', icon: 'fa-ad', color: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+            { type: 'floating-cta', label: 'Floating CTA', desc: 'ปุ่มลอยตัว', icon: 'fa-rocket', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+            { type: 'newsletter', label: 'Newsletter Form', desc: 'ฟอร์มสมัครข่าวสาร', icon: 'fa-newspaper', color: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+            { type: 'trust-badges', label: 'Trust Badges', desc: 'ป้ายความน่าเชื่อถือ', icon: 'fa-shield-alt', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+            { type: 'testimonial-card', label: 'Testimonial Card', desc: 'การ์ดรีวิว', icon: 'fa-quote-left', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'client-logos', label: 'Client Logos', desc: 'โลโก้ลูกค้า', icon: 'fa-handshake', color: 'linear-gradient(135deg, #64748b, #475569)' },
+            { type: 'popup-exit', label: 'Exit Popup', desc: 'ป๊อปอัพก่อนออก', icon: 'fa-door-open', color: 'linear-gradient(135deg, #f43f5e, #e11d48)' },
+        ],
+
+        // 📊 Data & Charts Elements - แสดงข้อมูล
+        dataElements: [
+            { type: 'chart-bar', label: 'Bar Chart', desc: 'กราฟแท่ง', icon: 'fa-chart-bar', color: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+            { type: 'chart-line', label: 'Line Chart', desc: 'กราฟเส้น', icon: 'fa-chart-line', color: 'linear-gradient(135deg, #10b981, #059669)' },
+            { type: 'chart-pie', label: 'Pie Chart', desc: 'กราฟวงกลม', icon: 'fa-chart-pie', color: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+            { type: 'stats-card', label: 'Stats Card', desc: 'การ์ดสถิติ', icon: 'fa-tachometer-alt', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+            { type: 'table-data', label: 'Data Table', desc: 'ตารางข้อมูล', icon: 'fa-table', color: 'linear-gradient(135deg, #64748b, #475569)' },
+            { type: 'timeline', label: 'Timeline', desc: 'ไทม์ไลน์', icon: 'fa-stream', color: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+            { type: 'comparison', label: 'Comparison Table', desc: 'ตารางเปรียบเทียบ', icon: 'fa-balance-scale', color: 'linear-gradient(135deg, #ec4899, #db2777)' },
+            { type: 'kpi-card', label: 'KPI Card', desc: 'การ์ด KPI', icon: 'fa-bullseye', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+        ],
+
+        // 🧭 Navigation Elements - การนำทาง
+        navigationElements: [
+            { type: 'nav-menu', label: 'Navigation Menu', desc: 'เมนูนำทาง', icon: 'fa-bars', color: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+            { type: 'breadcrumb', label: 'Breadcrumb', desc: 'เบรดครัมบ์', icon: 'fa-ellipsis-h', color: 'linear-gradient(135deg, #64748b, #475569)' },
+            { type: 'pagination', label: 'Pagination', desc: 'แบ่งหน้า', icon: 'fa-pager', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'anchor-link', label: 'Anchor Link', desc: 'ลิงก์ภายในหน้า', icon: 'fa-anchor', color: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+            { type: 'back-to-top', label: 'Back to Top', desc: 'กลับด้านบน', icon: 'fa-arrow-up', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+            { type: 'scroll-indicator', label: 'Scroll Indicator', desc: 'แถบความคืบหน้าเลื่อน', icon: 'fa-grip-lines', color: 'linear-gradient(135deg, #f97316, #ea580c)' },
+            { type: 'mega-menu', label: 'Mega Menu', desc: 'เมกะเมนู', icon: 'fa-th', color: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+            { type: 'sidebar-nav', label: 'Sidebar Navigation', desc: 'เมนูข้าง', icon: 'fa-columns', color: 'linear-gradient(135deg, #475569, #334155)' },
+        ],
+
+        // 👥 Social & Community Elements - โซเชียล
+        socialElements: [
+            { type: 'share-buttons', label: 'Share Buttons', desc: 'ปุ่มแชร์', icon: 'fa-share-alt', color: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+            { type: 'like-button', label: 'Like Button', desc: 'ปุ่มถูกใจ', icon: 'fa-thumbs-up', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'social-feed', label: 'Social Feed', desc: 'ฟีดโซเชียล', icon: 'fa-rss', color: 'linear-gradient(135deg, #f97316, #ea580c)' },
+            { type: 'profile-card', label: 'Profile Card', desc: 'การ์ดโปรไฟล์', icon: 'fa-user-circle', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+            { type: 'team-member', label: 'Team Member', desc: 'การ์ดทีมงาน', icon: 'fa-users', color: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+            { type: 'follow-button', label: 'Follow Button', desc: 'ปุ่มติดตาม', icon: 'fa-user-plus', color: 'linear-gradient(135deg, #ec4899, #db2777)' },
+            { type: 'comments', label: 'Comments Section', desc: 'ส่วนแสดงความคิดเห็น', icon: 'fa-comments', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+            { type: 'live-chat', label: 'Live Chat Widget', desc: 'วิดเจ็ตแชท', icon: 'fa-comment-alt', color: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+        ],
+
+        // ✨ Effects & Decorations - เอฟเฟกต์ตกแต่ง
+        effectElements: [
+            { type: 'gradient-bg', label: 'Gradient Background', desc: 'พื้นหลังไล่สี', icon: 'fa-palette', color: 'linear-gradient(135deg, #f472b6, #ec4899)' },
+            { type: 'parallax', label: 'Parallax Effect', desc: 'เอฟเฟกต์ Parallax', icon: 'fa-layer-group', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'particles', label: 'Particles', desc: 'อนุภาคลอย', icon: 'fa-snowflake', color: 'linear-gradient(135deg, #0ea5e9, #0284c7)' },
+            { type: 'blob', label: 'Blob Shape', desc: 'รูปทรง Blob', icon: 'fa-circle', color: 'linear-gradient(135deg, #a855f7, #9333ea)' },
+            { type: 'wave', label: 'Wave Divider', desc: 'เส้นแบ่งคลื่น', icon: 'fa-water', color: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+            { type: 'shape-divider', label: 'Shape Divider', desc: 'เส้นแบ่งรูปทรง', icon: 'fa-draw-polygon', color: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+            { type: 'glassmorphism', label: 'Glassmorphism', desc: 'กล่องกระจก', icon: 'fa-square', color: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1))' },
+            { type: 'text-animation', label: 'Text Animation', desc: 'ข้อความเคลื่อนไหว', icon: 'fa-font', color: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+            { type: 'cursor-effect', label: 'Cursor Effect', desc: 'เอฟเฟกต์เคอร์เซอร์', icon: 'fa-mouse-pointer', color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+            { type: 'noise-texture', label: 'Noise Texture', desc: 'พื้นผิว Noise', icon: 'fa-braille', color: 'linear-gradient(135deg, #64748b, #475569)' },
+        ],
+
+        // 🔧 Utility Elements - เครื่องมืออื่นๆ
+        utilityElements: [
+            { type: 'search-box', label: 'Search Box', desc: 'ช่องค้นหา', icon: 'fa-search', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+            { type: 'language-switcher', label: 'Language Switcher', desc: 'เปลี่ยนภาษา', icon: 'fa-globe', color: 'linear-gradient(135deg, #3b82f6, #2563eb)' },
+            { type: 'dark-mode-toggle', label: 'Dark Mode Toggle', desc: 'สลับโหมดมืด', icon: 'fa-moon', color: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+            { type: 'cookie-consent', label: 'Cookie Consent', desc: 'แจ้งเตือน Cookie', icon: 'fa-cookie-bite', color: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+            { type: 'print-button', label: 'Print Button', desc: 'ปุ่มพิมพ์', icon: 'fa-print', color: 'linear-gradient(135deg, #64748b, #475569)' },
+            { type: 'qr-code', label: 'QR Code', desc: 'คิวอาร์โค้ด', icon: 'fa-qrcode', color: 'linear-gradient(135deg, #1e293b, #0f172a)' },
+            { type: 'copy-to-clipboard', label: 'Copy to Clipboard', desc: 'ปุ่มคัดลอก', icon: 'fa-copy', color: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+            { type: 'code-block', label: 'Code Block', desc: 'บล็อกโค้ด', icon: 'fa-terminal', color: 'linear-gradient(135deg, #0f172a, #1e293b)' },
         ],
 
         prebuiltBlocks: {
@@ -294,10 +394,29 @@ function homepageManager() {
         },
 
         /**
+         * Get all elements combined
+         */
+        getAllElements() {
+            return [
+                ...this.basicElements,
+                ...this.advancedElements,
+                ...this.interactiveElements,
+                ...this.mediaElements,
+                ...this.ecommerceElements,
+                ...this.marketingElements,
+                ...this.dataElements,
+                ...this.navigationElements,
+                ...this.socialElements,
+                ...this.effectElements,
+                ...this.utilityElements,
+            ];
+        },
+
+        /**
          * Get element icon
          */
         getElementIcon(type) {
-            const allElements = [...this.basicElements, ...this.advancedElements, ...this.interactiveElements];
+            const allElements = this.getAllElements();
             const elem = allElements.find(e => e.type === type);
             return elem?.icon || 'fa-cube';
         },
@@ -429,10 +548,34 @@ function homepageManager() {
             return match ? match[1] : '';
         },
 
+        // ตัวแปรสำหรับ modal เลือกตำแหน่งแทรก
+        showInsertModal: false,
+        insertType: 'custom',
+        insertPosition: 'last', // first, last, after
+        insertAfterId: null,
+
+        /**
+         * เปิด modal เลือกตำแหน่งแทรก section
+         */
+        showInsertSectionModal(type = 'custom') {
+            this.insertType = type;
+            this.insertPosition = 'last';
+            this.insertAfterId = null;
+            this.showInsertModal = true;
+        },
+
+        /**
+         * ยืนยันเพิ่ม section ที่ตำแหน่งที่เลือก
+         */
+        async confirmInsertSection() {
+            this.showInsertModal = false;
+            await this.addSection(this.insertType, this.insertPosition, this.insertAfterId);
+        },
+
         /**
          * Add new section
          */
-        async addSection(type = 'custom') {
+        async addSection(type = 'custom', insertPosition = 'last', insertAfterId = null) {
             const newSection = {
                 name: this.sectionTypes[type] || 'New Section',
                 type: type,
@@ -451,6 +594,9 @@ function homepageManager() {
                 animation: { type: 'fadeIn', delay: 0 },
                 elements: [],
                 expanded: true,
+                // ส่งตำแหน่งแทรกไปให้ API
+                insert_position: insertPosition,
+                insert_after_id: insertAfterId,
             };
 
             try {
@@ -464,7 +610,21 @@ function homepageManager() {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    this.sections.push({ ...data.data, expanded: true });
+                    // แทรก section ตามตำแหน่งที่เลือก
+                    if (insertPosition === 'first') {
+                        this.sections.unshift({ ...data.data, expanded: true });
+                    } else if (insertPosition === 'after' && insertAfterId) {
+                        const index = this.sections.findIndex(s => s.id === insertAfterId);
+                        if (index !== -1) {
+                            this.sections.splice(index + 1, 0, { ...data.data, expanded: true });
+                        } else {
+                            this.sections.push({ ...data.data, expanded: true });
+                        }
+                    } else {
+                        this.sections.push({ ...data.data, expanded: true });
+                    }
+                    // Reload sections เพื่อให้ order ถูกต้อง
+                    await this.loadSections();
                     this.saveToHistory();
                     this.showToast('เพิ่ม Section สำเร็จ', 'success');
                 }
@@ -601,9 +761,19 @@ function homepageManager() {
          * Toggle section visibility
          */
         async toggleSection(section) {
+            const wasActive = section.is_active;
             section.is_active = !section.is_active;
             this.selectedSection = section;
-            await this.updateSection();
+
+            try {
+                await this.updateSection();
+                const statusText = section.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+                this.showToast(`${statusText} Section "${section.name}" สำเร็จ`, 'success');
+            } catch (error) {
+                // กรณีเกิดข้อผิดพลาด ให้ย้อนกลับค่าเดิม
+                section.is_active = wasActive;
+                this.showToast('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ Section', 'error');
+            }
         },
 
         /**
@@ -687,7 +857,7 @@ function homepageManager() {
         },
 
         getElementLabel(type) {
-            const allElements = [...this.basicElements, ...this.advancedElements, ...this.interactiveElements];
+            const allElements = this.getAllElements();
             const elem = allElements.find(e => e.type === type);
             return elem?.label || type;
         },
