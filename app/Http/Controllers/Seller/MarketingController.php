@@ -36,11 +36,17 @@ class MarketingController extends Controller
      * หน้าหลัก Marketing Dashboard
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         // สินค้าที่อยู่ใน Official Shop
         $officialProducts = OfficialShopProduct::where('store_id', $store->id)
@@ -87,11 +93,17 @@ class MarketingController extends Controller
      * หน้าเลือกสินค้าเพื่อโปรโมท
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function selectProductForPromotion(Request $request): View
+    public function selectProductForPromotion(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         // ตรวจสอบสิทธิ์
         $promoCheck = NewProductPromotion::canStorePromote($store->id);
@@ -121,6 +133,18 @@ class MarketingController extends Controller
     {
         $store = $request->user()->vendorStore;
         $user = $request->user();
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
+                ], 403);
+            }
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         // ตรวจสอบว่าเป็นสินค้าของร้านนี้
         if ($product->store_id !== $store->id) {
@@ -152,11 +176,17 @@ class MarketingController extends Controller
      * แสดงประวัติโปรโมทสินค้าใหม่
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function promotionHistory(Request $request): View
+    public function promotionHistory(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         $promotions = NewProductPromotion::where('store_id', $store->id)
             ->with('product')
@@ -173,11 +203,17 @@ class MarketingController extends Controller
      * แสดงรายละเอียด Warnings
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function warnings(Request $request): View
+    public function warnings(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         $warnings = OfficialShopWarning::where('store_id', $store->id)
             ->with(['product', 'officialShopProduct'])
@@ -194,11 +230,17 @@ class MarketingController extends Controller
      * แสดงสินค้าที่อยู่ใน Official Shop
      *
      * @param Request $request
-     * @return View
+     * @return View|RedirectResponse
      */
-    public function officialShopProducts(Request $request): View
+    public function officialShopProducts(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         $products = OfficialShopProduct::where('store_id', $store->id)
             ->with(['product.category'])
@@ -221,6 +263,14 @@ class MarketingController extends Controller
     public function previewScore(Request $request, Product $product): JsonResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
+            ], 403);
+        }
 
         // ตรวจสอบว่าเป็นสินค้าของร้านนี้
         if ($product->store_id !== $store->id) {
@@ -316,6 +366,14 @@ class MarketingController extends Controller
     {
         $store = $request->user()->vendorStore;
 
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
+            ], 403);
+        }
+
         $cooldown = StorePromotionCooldown::where('store_id', $store->id)
             ->where('promotion_type', 'new_product')
             ->first();
@@ -346,6 +404,12 @@ class MarketingController extends Controller
     public function requestEditLockedProduct(Request $request, Product $product): RedirectResponse
     {
         $store = $request->user()->vendorStore;
+
+        // ตรวจสอบว่ามี store หรือไม่
+        if (!$store) {
+            return redirect()->route('seller.onboarding.index')
+                ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
+        }
 
         // ตรวจสอบว่าเป็นสินค้าของร้านนี้
         if ($product->store_id !== $store->id) {
