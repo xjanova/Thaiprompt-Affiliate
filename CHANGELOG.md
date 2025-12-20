@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.396.0] - 2025-12-20
+
+### ✨ Features
+- feat: เพิ่ม toggle เปิด/ปิดใช้งาน Section พร้อม toast notification (fea741cc)
+- feat: เพิ่มระบบเลือกตำแหน่งแทรก Section และ render elements ครบทุกประเภท (3fdcf56d)
+- feat: เพิ่ม Elements และ Tools ใหม่สำหรับ Homepage Manager (f08652c6)
+### 🐛 Bug Fixes
+- fix: แก้ไข Homepage Manager toolbox ไม่แสดง elements (86144d8b)
+### 🔧 Other Changes
+- Merge pull request #2330 from xjanova/claude/admin-homepage-manager-jHGYp (92f57e79)
+
 ## [v3.395.0] - 2025-12-20
 
 ### ✨ Features
