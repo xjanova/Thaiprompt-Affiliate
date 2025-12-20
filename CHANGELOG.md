@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.394.0] - 2025-12-20
+
+### ✨ Features
+- feat: ระบบ AI Selection สำหรับ Official Shop (5087eda6)
+- feat: ระบบฟีเจอร์ร้านค้าระดับ Premium (795277b8)
+- feat: เพิ่มระบบ KYC และ Onboarding สำหรับ Seller (43506fd4)
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา Product และ Service สำหรับ Official Shop (8605401b)
+### 🔧 Other Changes
+- Merge pull request #2326 from xjanova/claude/kyc-shop-packages-AmdTd (6967d174)
+
 ## [v3.393.4] - 2025-12-19
 
 ### ✨ Features
