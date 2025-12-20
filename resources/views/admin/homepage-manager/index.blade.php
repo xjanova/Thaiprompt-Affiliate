@@ -457,6 +457,174 @@
                         </template>
                     </div>
                 </div>
+
+                {{-- Media Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-photo-video mr-2"></i> Media
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in mediaElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- E-commerce Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-shopping-cart mr-2"></i> E-commerce
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in ecommerceElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Marketing Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-bullhorn mr-2"></i> Marketing
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in marketingElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Data & Charts Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i> Data & Charts
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in dataElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Navigation Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-compass mr-2"></i> Navigation
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in navigationElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Social Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-users mr-2"></i> Social
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in socialElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Effects & Decorations --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-sparkles mr-2"></i> Effects
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in effectElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                {{-- Utility Elements --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center">
+                        <i class="fas fa-tools mr-2"></i> Utility
+                    </h3>
+                    <div class="space-y-1">
+                        <template x-for="(elem, index) in utilityElements" :key="index">
+                            <div draggable="true" @dragstart="dragElementType($event, elem.type)" class="element-card flex items-center p-2.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" :style="'background:' + elem.color">
+                                    <i class="fas text-white text-sm" :class="elem.icon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-gray-700 dark:text-gray-300" x-text="elem.label"></div>
+                                    <div class="text-xs text-gray-400" x-text="elem.desc"></div>
+                                </div>
+                                <i class="fas fa-grip-vertical text-gray-300"></i>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
 
             {{-- Blocks Tab --}}

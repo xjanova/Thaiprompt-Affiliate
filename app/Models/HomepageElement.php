@@ -81,16 +81,119 @@ class HomepageElement extends Model
      * @var array<string, string>
      */
     public const TYPES = [
+        // Basic Elements
         'heading' => 'Heading (H1-H6)',
         'text' => 'Text/Paragraph',
         'image' => 'Image',
         'button' => 'Button',
         'video' => 'Video',
         'icon' => 'Icon',
-        'shape' => 'Shape/Divider',
-        'html' => 'Custom HTML',
+        'divider' => 'Divider',
         'spacer' => 'Spacer',
+
+        // Advanced Elements
         'container' => 'Container/Box',
+        'card' => 'Card',
+        'grid' => 'Grid Layout',
+        'list' => 'List',
+        'html' => 'Custom HTML',
+        'map' => 'Map',
+        'social' => 'Social Links',
+        'logo' => 'Logo',
+
+        // Interactive Elements
+        'counter' => 'Counter',
+        'timer' => 'Countdown Timer',
+        'form' => 'Form',
+        'tabs' => 'Tabs',
+        'accordion' => 'Accordion',
+        'carousel' => 'Carousel/Slider',
+        'progress' => 'Progress Bar',
+        'rating' => 'Rating',
+        'modal' => 'Popup Modal',
+        'tooltip' => 'Tooltip',
+
+        // Media Elements
+        'audio' => 'Audio Player',
+        'lottie' => 'Lottie Animation',
+        'before-after' => 'Before/After Slider',
+        'gallery-masonry' => 'Gallery Masonry',
+        'lightbox' => 'Lightbox Gallery',
+        'video-bg' => 'Video Background',
+        'youtube-embed' => 'YouTube Embed',
+        'spotify-embed' => 'Spotify Embed',
+
+        // E-commerce Elements
+        'product-card' => 'Product Card',
+        'price-tag' => 'Price Tag',
+        'add-to-cart' => 'Add to Cart Button',
+        'sale-badge' => 'Sale Badge',
+        'stock-status' => 'Stock Status',
+        'wishlist-btn' => 'Wishlist Button',
+        'quick-view' => 'Quick View',
+        'product-slider' => 'Product Slider',
+
+        // Marketing Elements
+        'announcement-bar' => 'Announcement Bar',
+        'banner-promo' => 'Promo Banner',
+        'floating-cta' => 'Floating CTA',
+        'newsletter' => 'Newsletter Form',
+        'trust-badges' => 'Trust Badges',
+        'testimonial-card' => 'Testimonial Card',
+        'client-logos' => 'Client Logos',
+        'popup-exit' => 'Exit Intent Popup',
+
+        // Data & Charts Elements
+        'chart-bar' => 'Bar Chart',
+        'chart-line' => 'Line Chart',
+        'chart-pie' => 'Pie Chart',
+        'stats-card' => 'Stats Card',
+        'table-data' => 'Data Table',
+        'timeline' => 'Timeline',
+        'comparison' => 'Comparison Table',
+        'kpi-card' => 'KPI Card',
+
+        // Navigation Elements
+        'nav-menu' => 'Navigation Menu',
+        'breadcrumb' => 'Breadcrumb',
+        'pagination' => 'Pagination',
+        'anchor-link' => 'Anchor Link',
+        'back-to-top' => 'Back to Top',
+        'scroll-indicator' => 'Scroll Indicator',
+        'mega-menu' => 'Mega Menu',
+        'sidebar-nav' => 'Sidebar Navigation',
+
+        // Social Elements
+        'share-buttons' => 'Share Buttons',
+        'like-button' => 'Like Button',
+        'social-feed' => 'Social Feed',
+        'profile-card' => 'Profile Card',
+        'team-member' => 'Team Member Card',
+        'follow-button' => 'Follow Button',
+        'comments' => 'Comments Section',
+        'live-chat' => 'Live Chat Widget',
+
+        // Effects & Decorations
+        'gradient-bg' => 'Gradient Background',
+        'parallax' => 'Parallax Effect',
+        'particles' => 'Particles',
+        'blob' => 'Blob Shape',
+        'wave' => 'Wave Divider',
+        'shape-divider' => 'Shape Divider',
+        'glassmorphism' => 'Glassmorphism Box',
+        'text-animation' => 'Text Animation',
+        'cursor-effect' => 'Cursor Effect',
+        'noise-texture' => 'Noise Texture',
+
+        // Utility Elements
+        'search-box' => 'Search Box',
+        'language-switcher' => 'Language Switcher',
+        'dark-mode-toggle' => 'Dark Mode Toggle',
+        'cookie-consent' => 'Cookie Consent',
+        'print-button' => 'Print Button',
+        'qr-code' => 'QR Code',
+        'copy-to-clipboard' => 'Copy to Clipboard',
+        'code-block' => 'Code Block',
     ];
 
     /**
