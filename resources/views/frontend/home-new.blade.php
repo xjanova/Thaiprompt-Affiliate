@@ -1076,6 +1076,14 @@
 </section>
 
 {{-- ================================================================
+    DYNAMIC SECTIONS - From Homepage Manager
+    สามารถแก้ไขผ่าน Admin Panel ที่ /admin/homepage-manager
+================================================================ --}}
+@if(isset($sections) && $sections->count() > 0)
+    @include('frontend.partials.homepage-sections', ['sections' => $sections])
+@endif
+
+{{-- ================================================================
     CTA SECTION - Call to Action
 ================================================================ --}}
 <section class="py-24 lg:py-32 bg-white dark:bg-slate-900">
