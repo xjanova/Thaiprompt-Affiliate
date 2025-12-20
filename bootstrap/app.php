@@ -82,6 +82,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'require.line.uid' => \App\Http\Middleware\RequireLineUid::class,
             // Food Passport API Rate Limiting (CRITICAL for TPIX blockchain protection)
             'food-passport.ratelimit' => \App\Http\Middleware\FoodPassportRateLimiter::class,
+            // Seller/Vendor KYC and Store verification middleware
+            'kyc.verified' => \App\Http\Middleware\EnsureKycVerified::class,
+            'has.vendor.store' => \App\Http\Middleware\EnsureHasVendorStore::class,
             // TPIX Blockchain & Token middleware
             'tpix.token.ownership' => \App\Http\Middleware\CheckTokenOwnership::class,
             'tpix.rate.limit' => \App\Http\Middleware\RateLimitTokenOperations::class,
