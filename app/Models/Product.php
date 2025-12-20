@@ -144,6 +144,16 @@ class Product extends Model
     }
 
     /**
+     * ร้านค้าเจ้าของสินค้า
+     *
+     * @return BelongsTo
+     */
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
+
+    /**
      * Get the category
      */
     public function category(): BelongsTo
@@ -225,6 +235,36 @@ class Product extends Model
     public function unblockedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'unblocked_by');
+    }
+
+    /**
+     * รายการใน Official Shop
+     *
+     * @return HasMany
+     */
+    public function officialShopProducts(): HasMany
+    {
+        return $this->hasMany(OfficialShopProduct::class, 'product_id');
+    }
+
+    /**
+     * โปรโมทสินค้าใหม่
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function newProductPromotion()
+    {
+        return $this->hasOne(NewProductPromotion::class, 'product_id');
+    }
+
+    /**
+     * สินค้าขายดีรายเดือน
+     *
+     * @return HasMany
+     */
+    public function bestSellerRecords(): HasMany
+    {
+        return $this->hasMany(BestSellerMonthly::class, 'product_id');
     }
 
     /**

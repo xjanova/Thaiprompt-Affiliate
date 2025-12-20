@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -212,6 +213,38 @@ class VendorStore extends Model
     public function marketingCampaigns(): HasMany
     {
         return $this->hasMany(VendorMarketingCampaign::class, 'store_id');
+    }
+
+    /**
+     * ผู้ติดตามร้านค้า
+     */
+    public function followers(): HasMany
+    {
+        return $this->hasMany(StoreFollower::class, 'store_id');
+    }
+
+    /**
+     * Trophy ที่ร้านค้าได้รับ
+     */
+    public function trophyAchievements(): HasMany
+    {
+        return $this->hasMany(StoreTrophyAchievement::class, 'store_id');
+    }
+
+    /**
+     * Premium Store record
+     */
+    public function premiumStore(): HasOne
+    {
+        return $this->hasOne(PremiumStore::class, 'store_id');
+    }
+
+    /**
+     * คูปองของร้านค้า
+     */
+    public function coupons(): HasMany
+    {
+        return $this->hasMany(Coupon::class, 'store_id');
     }
 
     /**

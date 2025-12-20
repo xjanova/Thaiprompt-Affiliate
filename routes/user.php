@@ -456,6 +456,39 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
     Route::get('/products', [MarketplaceController::class, 'products'])->name('products');
 });
 
+// Product & Store Interactions (User)
+Route::prefix('interactions')->name('interactions.')->group(function () {
+    // รายการโปรด (Wishlist)
+    Route::get('/wishlist', [\App\Http\Controllers\User\ProductInteractionController::class, 'wishlist'])->name('wishlist');
+    Route::get('/recently-viewed', [\App\Http\Controllers\User\ProductInteractionController::class, 'recentlyViewed'])->name('recently-viewed');
+    Route::get('/following-stores', [\App\Http\Controllers\User\ProductInteractionController::class, 'followingStores'])->name('following-stores');
+
+    // Product Interactions
+    Route::post('/products/{product}/like', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleLike'])->name('products.like');
+    Route::post('/products/{product}/favorite', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleFavorite'])->name('products.favorite');
+    Route::put('/products/{product}/favorite', [\App\Http\Controllers\User\ProductInteractionController::class, 'updateFavorite'])->name('products.favorite.update');
+    Route::get('/products/{product}/status', [\App\Http\Controllers\User\ProductInteractionController::class, 'getProductStatus'])->name('products.status');
+
+    // Store Interactions
+    Route::post('/stores/{store}/follow', [\App\Http\Controllers\User\ProductInteractionController::class, 'toggleFollow'])->name('stores.follow');
+    Route::put('/stores/{store}/follow-settings', [\App\Http\Controllers\User\ProductInteractionController::class, 'updateFollowSettings'])->name('stores.follow.settings');
+    Route::get('/stores/{store}/status', [\App\Http\Controllers\User\ProductInteractionController::class, 'getStoreStatus'])->name('stores.status');
+});
+
+// Coupon System (User)
+Route::prefix('coupons')->name('coupons.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\CouponController::class, 'index'])->name('index');
+    Route::get('/available', [\App\Http\Controllers\User\CouponController::class, 'available'])->name('available');
+    Route::post('/{coupon}/collect', [\App\Http\Controllers\User\CouponController::class, 'collect'])->name('collect');
+    Route::get('/history', [\App\Http\Controllers\User\CouponController::class, 'history'])->name('history');
+});
+
+// Premium Stores (User)
+Route::prefix('premium-stores')->name('premium-stores.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\PremiumStoreController::class, 'index'])->name('index');
+    Route::get('/{store}', [\App\Http\Controllers\User\PremiumStoreController::class, 'show'])->name('show');
+});
+
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {
     Route::get('/', [InvestmentController::class, 'index'])->name('index');

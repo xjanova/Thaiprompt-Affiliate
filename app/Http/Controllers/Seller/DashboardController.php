@@ -20,26 +20,23 @@ use Illuminate\Validation\Rules\Password;
 class DashboardController extends Controller
 {
     /**
-     * Display seller dashboard
+     * แสดง Dashboard หลักของ Seller
+     *
+     * หมายเหตุ: Route นี้ถูกป้องกันด้วย middleware kyc.verified และ has.vendor.store
+     * ดังนั้น user จะมี store ที่ active แน่นอนเมื่อเข้ามาถึงตรงนี้
      */
     public function index()
     {
         $user = Auth::user();
         $sellerId = $user->id;
 
-        // Get or create vendor store
+        // ดึง vendor store ที่มีอยู่ (middleware รับประกันว่าจะมี)
         $store = VendorStore::where('user_id', $sellerId)->first();
 
+        // ถ้าไม่มี store (ไม่ควรเกิดขึ้นเพราะมี middleware) ให้ redirect ไป onboarding
         if (!$store) {
-            // Create default store for seller
-            $store = VendorStore::create([
-                'user_id' => $sellerId,
-                'store_name' => $user->name . "'s Store",
-                'store_slug' => \Str::slug($user->name . '-store-' . $sellerId),
-                'status' => 'active',
-                'subscription_status' => 'trial',
-                'trial_ends_at' => now()->addDays(30),
-            ]);
+            return redirect()->route('seller.onboarding.index')
+                ->with('info', 'กรุณาตั้งค่าร้านค้าของคุณก่อน');
         }
 
         // Get package information
