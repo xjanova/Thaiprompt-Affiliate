@@ -102,6 +102,7 @@ class DatabaseSeeder extends Seeder
             // WalletTopupPackagesSeeder::class,   // ❌ ยกเลิก - ระบบเติมเงินไม่ใช้สินค้าแล้ว ใช้ PaymentTransaction โดยตรง
             VendorPackageSeeder::class,         // แพคเกจสำหรับผู้ขาย/Vendor
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
+            StoreTrophySeeder::class,           // 🏆 Trophy สำหรับร้านค้า (Sales, Rating, Followers, Products)
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
             SoftwareProductSeeder::class,       // ระบบผลิตภัณฑ์ซอฟต์แวร์ (MLM, E-commerce, Affiliate systems)
 

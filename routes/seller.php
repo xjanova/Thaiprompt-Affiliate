@@ -121,6 +121,42 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
     });
 
     // ========================================
+    // STORE TROPHIES & PREMIUM STATUS
+    // ========================================
+    Route::prefix('achievements')->name('achievements.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Seller\AchievementController::class, 'index'])->name('index');
+        Route::get('/trophies', [\App\Http\Controllers\Seller\AchievementController::class, 'trophies'])->name('trophies');
+        Route::get('/premium-status', [\App\Http\Controllers\Seller\AchievementController::class, 'premiumStatus'])->name('premium-status');
+        Route::post('/trophies/{trophy}/toggle-display', [\App\Http\Controllers\Seller\AchievementController::class, 'toggleTrophyDisplay'])->name('trophies.toggle-display');
+    });
+
+    // ========================================
+    // STORE COUPONS
+    // ========================================
+    Route::prefix('coupons')->name('coupons.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Seller\CouponController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Seller\CouponController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Seller\CouponController::class, 'store'])->name('store');
+        Route::get('/{coupon}/edit', [\App\Http\Controllers\Seller\CouponController::class, 'edit'])->name('edit');
+        Route::put('/{coupon}', [\App\Http\Controllers\Seller\CouponController::class, 'update'])->name('update');
+        Route::delete('/{coupon}', [\App\Http\Controllers\Seller\CouponController::class, 'destroy'])->name('destroy');
+        Route::post('/{coupon}/toggle-active', [\App\Http\Controllers\Seller\CouponController::class, 'toggleActive'])->name('toggle-active');
+    });
+
+    // ========================================
+    // AI SALES ASSISTANT
+    // ========================================
+    Route::prefix('ai-assistant')->name('ai-assistant.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Seller\AiAssistantController::class, 'index'])->name('index');
+        Route::get('/settings', [\App\Http\Controllers\Seller\AiAssistantController::class, 'settings'])->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\Seller\AiAssistantController::class, 'updateSettings'])->name('settings.update');
+        Route::get('/conversations', [\App\Http\Controllers\Seller\AiAssistantController::class, 'conversations'])->name('conversations');
+        Route::get('/conversations/{conversation}', [\App\Http\Controllers\Seller\AiAssistantController::class, 'showConversation'])->name('conversations.show');
+        Route::get('/analytics', [\App\Http\Controllers\Seller\AiAssistantController::class, 'analytics'])->name('analytics');
+        Route::post('/test', [\App\Http\Controllers\Seller\AiAssistantController::class, 'testBot'])->name('test');
+    });
+
+    // ========================================
     // VENDOR STORE SETTINGS
     // ========================================
     Route::prefix('store')->name('store.')->group(function () {

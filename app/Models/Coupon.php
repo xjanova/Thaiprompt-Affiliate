@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -64,6 +65,22 @@ class Coupon extends Model
     public function template(): BelongsTo
     {
         return $this->belongsTo(CouponTemplate::class);
+    }
+
+    /**
+     * ความสัมพันธ์กับร้านค้า
+     */
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
+
+    /**
+     * ความสัมพันธ์กับ UserCoupon (คูปองที่ผู้ใช้เก็บ)
+     */
+    public function userCoupons(): HasMany
+    {
+        return $this->hasMany(UserCoupon::class);
     }
 
     /**
