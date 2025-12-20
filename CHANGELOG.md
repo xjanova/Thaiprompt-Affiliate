@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.395.0] - 2025-12-20
+
+### ✨ Features
+- Merge pull request #2329 from xjanova/claude/kyc-shop-packages-AmdTd (f84cc75f)
+- feat: ระบบ Store Rating - ให้คะแนนร้านค้า (แยกจาก Trophy) (7a842c9a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.394.2] - 2025-12-20
 
 ### ✨ Features
