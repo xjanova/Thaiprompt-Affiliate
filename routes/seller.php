@@ -49,7 +49,31 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
     });
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
+
+    // ========================================
+    // MARKETING - โปรโมทสินค้า, Official Shop
+    // ========================================
+    Route::prefix('marketing')->name('marketing.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Seller\MarketingController::class, 'index'])->name('index');
+
+        // โปรโมทสินค้าใหม่
+        Route::get('/select-product', [\App\Http\Controllers\Seller\MarketingController::class, 'selectProductForPromotion'])->name('select-product');
+        Route::post('/promote/{product}', [\App\Http\Controllers\Seller\MarketingController::class, 'requestPromotion'])->name('promote');
+        Route::get('/promotion-history', [\App\Http\Controllers\Seller\MarketingController::class, 'promotionHistory'])->name('promotion-history');
+
+        // Official Shop
+        Route::get('/official-products', [\App\Http\Controllers\Seller\MarketingController::class, 'officialShopProducts'])->name('official-products');
+        Route::get('/warnings', [\App\Http\Controllers\Seller\MarketingController::class, 'warnings'])->name('warnings');
+
+        // Preview AI Score
+        Route::get('/preview-score/{product}', [\App\Http\Controllers\Seller\MarketingController::class, 'previewScore'])->name('preview-score');
+
+        // Cooldown Status
+        Route::get('/cooldown-status', [\App\Http\Controllers\Seller\MarketingController::class, 'getCooldownStatus'])->name('cooldown-status');
+
+        // Request edit locked product (redirect to ticket)
+        Route::post('/request-edit/{product}', [\App\Http\Controllers\Seller\MarketingController::class, 'requestEditLockedProduct'])->name('request-edit');
+    });
 
     // QR Scanner - redirect ไปหน้า QR Scanner สาธารณะ
     Route::get('/qr-scanner', function () {

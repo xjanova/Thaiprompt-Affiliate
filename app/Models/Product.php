@@ -228,6 +228,36 @@ class Product extends Model
     }
 
     /**
+     * รายการใน Official Shop
+     *
+     * @return HasMany
+     */
+    public function officialShopProducts(): HasMany
+    {
+        return $this->hasMany(OfficialShopProduct::class, 'product_id');
+    }
+
+    /**
+     * โปรโมทสินค้าใหม่
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function newProductPromotion()
+    {
+        return $this->hasOne(NewProductPromotion::class, 'product_id');
+    }
+
+    /**
+     * สินค้าขายดีรายเดือน
+     *
+     * @return HasMany
+     */
+    public function bestSellerRecords(): HasMany
+    {
+        return $this->hasMany(BestSellerMonthly::class, 'product_id');
+    }
+
+    /**
      * Scope: Only active products
      */
     public function scopeActive($query)

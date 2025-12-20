@@ -1315,6 +1315,42 @@ Route::prefix('official-shop')->name('official-shop.')->group(function () {
 
     // Import existing products to Official Shop
     Route::post('/import', [\App\Http\Controllers\Admin\OfficialShopAdminController::class, 'importToOfficial'])->name('import');
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AI Selection - คัดเลือกสินค้าจากร้านค้าต่างๆ เข้า Official Shop
+    // ═══════════════════════════════════════════════════════════════════════
+    Route::prefix('selection')->name('selection.')->group(function () {
+        // Dashboard
+        Route::get('/', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'index'])->name('index');
+
+        // AI Selection
+        Route::post('/run', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'runSelection'])->name('run');
+
+        // Warnings
+        Route::get('/warnings', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'warnings'])->name('warnings');
+        Route::post('/warnings/process', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'processWarnings'])->name('warnings.process');
+
+        // Remove product
+        Route::delete('/products/{entry}', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'removeProduct'])->name('products.remove');
+
+        // Add product manually
+        Route::post('/products/{product}/add', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'addProductManually'])->name('products.add');
+
+        // Preview score
+        Route::get('/products/{product}/preview-score', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'previewScore'])->name('products.preview-score');
+
+        // Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'settings'])->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'updateSettings'])->name('settings.update');
+
+        // New Product Promotions
+        Route::get('/new-promotions', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'newProductPromotions'])->name('new-promotions');
+        Route::delete('/new-promotions/{promotion}', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'cancelPromotion'])->name('new-promotions.cancel');
+
+        // Best Sellers
+        Route::get('/best-sellers', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'bestSellers'])->name('best-sellers');
+        Route::post('/best-sellers/calculate', [\App\Http\Controllers\Admin\OfficialShopSelectionController::class, 'calculateBestSellers'])->name('best-sellers.calculate');
+    });
 });
 
 // E-Commerce Management
