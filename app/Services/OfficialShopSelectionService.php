@@ -85,7 +85,10 @@ class OfficialShopSelectionService
         // คะแนนจากร้านค้า (ถ้ามี)
         if ($store) {
             // 4. Followers Score (0-100)
-            $followersCount = $store->followers_count ?? 0;
+            // ใช้ relationship count หรือ attribute (ถ้ามี)
+            $followersCount = method_exists($store, 'followers')
+                ? $store->followers()->count()
+                : ($store->followers_count ?? 0);
             $followersScore = min(100, ($followersCount / 500) * 100); // 500+ followers = 100%
             $breakdown['followers'] = [
                 'raw' => $followersCount,
@@ -118,7 +121,10 @@ class OfficialShopSelectionService
             $totalScore += $ageScore * $weights['age'];
 
             // 7. Trophies Score (0-100)
-            $trophyPoints = $store->trophy_points ?? 0;
+            // นับจำนวน trophy achievements หรือใช้ attribute (ถ้ามี)
+            $trophyPoints = method_exists($store, 'trophyAchievements')
+                ? $store->trophyAchievements()->count() * 10 // 10 คะแนนต่อ 1 trophy
+                : ($store->trophy_points ?? 0);
             $trophyScore = min(100, ($trophyPoints / 100) * 100); // 100+ points = 100%
             $breakdown['trophies'] = [
                 'raw' => $trophyPoints,

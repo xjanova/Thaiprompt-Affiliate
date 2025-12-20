@@ -144,6 +144,16 @@ class Product extends Model
     }
 
     /**
+     * ร้านค้าเจ้าของสินค้า
+     *
+     * @return BelongsTo
+     */
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
+    }
+
+    /**
      * Get the category
      */
     public function category(): BelongsTo
