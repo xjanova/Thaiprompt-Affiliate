@@ -548,10 +548,34 @@ function homepageManager() {
             return match ? match[1] : '';
         },
 
+        // ตัวแปรสำหรับ modal เลือกตำแหน่งแทรก
+        showInsertModal: false,
+        insertType: 'custom',
+        insertPosition: 'last', // first, last, after
+        insertAfterId: null,
+
+        /**
+         * เปิด modal เลือกตำแหน่งแทรก section
+         */
+        showInsertSectionModal(type = 'custom') {
+            this.insertType = type;
+            this.insertPosition = 'last';
+            this.insertAfterId = null;
+            this.showInsertModal = true;
+        },
+
+        /**
+         * ยืนยันเพิ่ม section ที่ตำแหน่งที่เลือก
+         */
+        async confirmInsertSection() {
+            this.showInsertModal = false;
+            await this.addSection(this.insertType, this.insertPosition, this.insertAfterId);
+        },
+
         /**
          * Add new section
          */
-        async addSection(type = 'custom') {
+        async addSection(type = 'custom', insertPosition = 'last', insertAfterId = null) {
             const newSection = {
                 name: this.sectionTypes[type] || 'New Section',
                 type: type,
@@ -570,6 +594,9 @@ function homepageManager() {
                 animation: { type: 'fadeIn', delay: 0 },
                 elements: [],
                 expanded: true,
+                // ส่งตำแหน่งแทรกไปให้ API
+                insert_position: insertPosition,
+                insert_after_id: insertAfterId,
             };
 
             try {
@@ -583,7 +610,21 @@ function homepageManager() {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    this.sections.push({ ...data.data, expanded: true });
+                    // แทรก section ตามตำแหน่งที่เลือก
+                    if (insertPosition === 'first') {
+                        this.sections.unshift({ ...data.data, expanded: true });
+                    } else if (insertPosition === 'after' && insertAfterId) {
+                        const index = this.sections.findIndex(s => s.id === insertAfterId);
+                        if (index !== -1) {
+                            this.sections.splice(index + 1, 0, { ...data.data, expanded: true });
+                        } else {
+                            this.sections.push({ ...data.data, expanded: true });
+                        }
+                    } else {
+                        this.sections.push({ ...data.data, expanded: true });
+                    }
+                    // Reload sections เพื่อให้ order ถูกต้อง
+                    await this.loadSections();
                     this.saveToHistory();
                     this.showToast('เพิ่ม Section สำเร็จ', 'success');
                 }

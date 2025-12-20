@@ -317,6 +317,93 @@
     </div>
 </div>
 
+{{-- Insert Position Modal - เลือกตำแหน่งแทรก Section --}}
+<div x-show="showInsertModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showInsertModal = false">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 m-4" @click.stop x-transition>
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3">
+                    <i class="fas fa-layer-group text-white"></i>
+                </div>
+                เลือกตำแหน่งแทรก Section
+            </h3>
+            <button @click="showInsertModal = false" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                <i class="fas fa-times text-gray-500"></i>
+            </button>
+        </div>
+
+        {{-- Section Type Badge --}}
+        <div class="mb-6">
+            <div class="inline-flex items-center px-4 py-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
+                <i class="fas fa-cube mr-2"></i>
+                <span class="font-medium" x-text="sectionTypes[insertType] || 'Section ใหม่'"></span>
+            </div>
+        </div>
+
+        {{-- Position Options --}}
+        <div class="space-y-3 mb-6">
+            {{-- First Position --}}
+            <label class="flex items-center p-4 border-2 rounded-xl cursor-pointer transition"
+                   :class="insertPosition === 'first' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
+                <input type="radio" name="insert_position" value="first" x-model="insertPosition" class="hidden">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center mr-4">
+                    <i class="fas fa-arrow-up text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium text-gray-900 dark:text-white">บนสุด</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">แทรกที่ตำแหน่งแรกสุด</div>
+                </div>
+                <i class="fas fa-check text-indigo-500" x-show="insertPosition === 'first'"></i>
+            </label>
+
+            {{-- Last Position --}}
+            <label class="flex items-center p-4 border-2 rounded-xl cursor-pointer transition"
+                   :class="insertPosition === 'last' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'">
+                <input type="radio" name="insert_position" value="last" x-model="insertPosition" class="hidden">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mr-4">
+                    <i class="fas fa-arrow-down text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium text-gray-900 dark:text-white">ล่างสุด</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">แทรกที่ตำแหน่งสุดท้าย</div>
+                </div>
+                <i class="fas fa-check text-indigo-500" x-show="insertPosition === 'last'"></i>
+            </label>
+
+            {{-- After Specific Section --}}
+            <label class="flex items-start p-4 border-2 rounded-xl cursor-pointer transition"
+                   :class="insertPosition === 'after' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-indigo-300'"
+                   x-show="sections.length > 0">
+                <input type="radio" name="insert_position" value="after" x-model="insertPosition" class="hidden">
+                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center mr-4 flex-shrink-0">
+                    <i class="fas fa-arrow-right text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-medium text-gray-900 dark:text-white mb-2">ต่อจาก Section</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-3">เลือก section ที่ต้องการแทรกต่อจาก</div>
+                    <select x-model.number="insertAfterId" x-show="insertPosition === 'after'"
+                            class="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 transition">
+                        <template x-for="section in sections" :key="section.id">
+                            <option :value="section.id" x-text="section.name + ' (' + (section.type_label || section.type) + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+                <i class="fas fa-check text-indigo-500 flex-shrink-0 mt-2" x-show="insertPosition === 'after'"></i>
+            </label>
+        </div>
+
+        {{-- Action Buttons --}}
+        <div class="flex justify-end space-x-3">
+            <button @click="showInsertModal = false" class="px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                ยกเลิก
+            </button>
+            <button @click="confirmInsertSection()" class="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition flex items-center shadow-lg shadow-indigo-500/25">
+                <i class="fas fa-plus-circle mr-2"></i> เพิ่ม Section
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- Loading Overlay --}}
 <div x-show="loading" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 text-center shadow-2xl">
