@@ -714,3 +714,24 @@ Route::prefix('rider')->name('rider.')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\User\RiderController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\User\RiderController::class, 'updateSettings'])->name('settings.update');
 });
+
+// ========================================
+// STORE RATING - ให้คะแนนร้านค้า
+// ========================================
+Route::prefix('store-rating')->name('store-rating.')->group(function () {
+    // ประวัติการให้คะแนน
+    Route::get('/history', [\App\Http\Controllers\User\StoreRatingController::class, 'history'])->name('history');
+
+    // ให้คะแนนร้านค้า
+    Route::get('/{store}/create', [\App\Http\Controllers\User\StoreRatingController::class, 'create'])->name('create');
+    Route::post('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'store'])->name('store');
+
+    // ดูคะแนนร้านค้า (public)
+    Route::get('/{store}', [\App\Http\Controllers\User\StoreRatingController::class, 'showStoreRatings'])->name('show');
+
+    // ลบคะแนน
+    Route::delete('/{rating}', [\App\Http\Controllers\User\StoreRatingController::class, 'destroy'])->name('destroy');
+
+    // กด helpful
+    Route::post('/{rating}/helpful', [\App\Http\Controllers\User\StoreRatingController::class, 'markHelpful'])->name('helpful');
+});
