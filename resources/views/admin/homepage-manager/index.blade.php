@@ -897,6 +897,17 @@
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-indigo-500 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                                 </label>
                             </div>
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center">
+                                    <i class="fas mr-2 text-sm" :class="selectedSection.is_active ? 'fa-eye text-green-500' : 'fa-eye-slash text-red-500'"></i>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">เปิดใช้งาน Section</span>
+                                </div>
+                                <button @click="toggleSection(selectedSection)" class="relative inline-flex items-center cursor-pointer">
+                                    <div class="w-11 h-6 rounded-full transition-colors" :class="selectedSection.is_active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'">
+                                        <div class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-5 w-5 transition-transform" :class="selectedSection.is_active && 'translate-x-full'"></div>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
                     </div>
 

@@ -761,9 +761,19 @@ function homepageManager() {
          * Toggle section visibility
          */
         async toggleSection(section) {
+            const wasActive = section.is_active;
             section.is_active = !section.is_active;
             this.selectedSection = section;
-            await this.updateSection();
+
+            try {
+                await this.updateSection();
+                const statusText = section.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
+                this.showToast(`${statusText} Section "${section.name}" สำเร็จ`, 'success');
+            } catch (error) {
+                // กรณีเกิดข้อผิดพลาด ให้ย้อนกลับค่าเดิม
+                section.is_active = wasActive;
+                this.showToast('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ Section', 'error');
+            }
         },
 
         /**
