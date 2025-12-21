@@ -201,16 +201,16 @@
                         class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600
                                bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                                focus:ring-2 focus:ring-orange-500 focus:border-transparent transition">
-                    <option value="top" {{ old('position', 'top') == 'top' ? 'selected' : '' }}>
-                        🔝 ด้านบน (Top)
+                    <option value="home" {{ old('position', 'home') == 'home' ? 'selected' : '' }}>
+                        🏠 หน้าหลัก (Home)
                     </option>
-                    <option value="middle" {{ old('position') == 'middle' ? 'selected' : '' }}>
-                        ➖ ตรงกลาง (Middle)
-                    </option>
-                    <option value="bottom" {{ old('position') == 'bottom' ? 'selected' : '' }}>
-                        🔽 ด้านล่าง (Bottom)
+                    <option value="shop" {{ old('position') == 'shop' ? 'selected' : '' }}>
+                        🛒 หน้าช้อป (Shop)
                     </option>
                 </select>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    📍 เลือกว่า Banner จะแสดงที่หน้าไหนในแอพ
+                </p>
                 @error('position')
                     <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                 @enderror

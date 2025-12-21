@@ -32,7 +32,7 @@ import { formatCurrency, API_BASE_URL } from '@/constants';
 import {
   checkout,
   getWallet,
-  getDepositMethods,
+  getPaymentMethods,
   getPaymentStatus,
   type CheckoutRequest,
 } from '@/services/api';
@@ -119,35 +119,68 @@ export default function CheckoutScreen() {
   // โหลด payment methods
   const loadPaymentMethods = useCallback(async () => {
     try {
-      const response = await getDepositMethods();
+      const response = await getPaymentMethods();
       if (response?.success && response.methods) {
-        // Map และรวมกับ default methods
-        const serverMethods = response.methods.map((m: any) => ({
-          id: m.id,
-          name: m.name,
-          icon: m.icon || '💳',
-          description: m.description || '',
-          category: m.category || 'other',
-          isAvailable: m.is_available !== false,
-        }));
+        // Map และแปลงข้อมูลจาก server
+        const serverMethods: PaymentMethod[] = response.methods
+          .filter((m: any) => m.enabled !== false)  // กรองเฉพาะที่เปิดใช้งาน
+          .map((m: any) => ({
+            // ถ้า id เป็น cash_on_delivery ให้เปลี่ยนเป็น cod เพื่อความสอดคล้อง
+            id: m.id === 'cash_on_delivery' ? 'cod' : m.id,
+            name: m.id === 'cash_on_delivery' ? 'เก็บเงินปลายทาง' : m.name,
+            icon: m.icon || '💳',
+            description: m.description || '',
+            category: m.category || 'other',
+            isAvailable: m.enabled !== false,
+          }));
 
-        // เพิ่ม wallet และ cod ถ้าไม่มี
-        const hasWallet = serverMethods.some((m: PaymentMethod) => m.id === 'wallet');
-        const hasCod = serverMethods.some((m: PaymentMethod) => m.id === 'cod');
+        // ตรวจสอบว่ามี methods ที่จำเป็นหรือไม่
+        const hasWallet = serverMethods.some((m) => m.id === 'wallet');
+        const hasCod = serverMethods.some((m) => m.id === 'cod');
+        const hasPromptPay = serverMethods.some((m) => m.id === 'promptpay');
+        const hasBank = serverMethods.some((m) => m.id === 'bank_transfer' || m.id === 'bank');
 
+        // สร้างรายการ methods โดยไม่ให้ซ้ำ
         const allMethods: PaymentMethod[] = [];
+
+        // เพิ่ม wallet ถ้าไม่มี
         if (!hasWallet) {
           allMethods.push(DEFAULT_PAYMENT_METHODS[0]); // wallet
         }
+
+        // เพิ่ม methods จาก server
         allMethods.push(...serverMethods);
+
+        // เพิ่ม promptpay ถ้าไม่มี
+        if (!hasPromptPay) {
+          allMethods.push(DEFAULT_PAYMENT_METHODS[1]); // promptpay
+        }
+
+        // เพิ่ม bank ถ้าไม่มี
+        if (!hasBank) {
+          allMethods.push(DEFAULT_PAYMENT_METHODS[2]); // bank
+        }
+
+        // เพิ่ม COD ถ้าไม่มี
         if (!hasCod) {
           allMethods.push(DEFAULT_PAYMENT_METHODS[3]); // cod
         }
 
-        setPaymentMethods(allMethods.length > 0 ? allMethods : DEFAULT_PAYMENT_METHODS);
+        // กรอง duplicates โดยใช้ id
+        const uniqueMethods = allMethods.filter(
+          (method, index, self) =>
+            index === self.findIndex((m) => m.id === method.id)
+        );
+
+        setPaymentMethods(uniqueMethods.length > 0 ? uniqueMethods : DEFAULT_PAYMENT_METHODS);
+      } else {
+        // ถ้า API ไม่สำเร็จ ใช้ default
+        setPaymentMethods(DEFAULT_PAYMENT_METHODS);
       }
     } catch (error) {
       console.error('Load payment methods error:', error);
+      // ใช้ default methods เมื่อเกิด error
+      setPaymentMethods(DEFAULT_PAYMENT_METHODS);
     }
   }, []);
 

@@ -675,7 +675,7 @@ export default function ShoppingScreen() {
       {/* Banner โฆษณา */}
       <View style={styles.bannerContainer}>
         <BannerCarousel
-          position="top"
+          position="shop"
           height={160}
           autoPlay={true}
           autoPlayInterval={5000}

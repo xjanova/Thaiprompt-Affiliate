@@ -182,7 +182,7 @@ export const shouldRefreshBanners = async (): Promise<boolean> => {
  * ดึง banners จาก cache
  */
 export const getCachedBanners = async (
-  position: 'top' | 'middle' | 'bottom' = 'top'
+  position: 'home' | 'shop' = 'home'
 ): Promise<CachedBanner[] | null> => {
   try {
     const cachedDataStr = await AsyncStorage.getItem(STORAGE_KEYS.BANNER_DATA);
@@ -220,7 +220,7 @@ export const getCachedBanners = async (
  * โหลด banners จาก API และ cache รูปภาพ
  */
 export const loadAndCacheBanners = async (
-  position: 'top' | 'middle' | 'bottom' = 'top'
+  position: 'home' | 'shop' = 'home'
 ): Promise<CachedBanner[]> => {
   try {
     console.log(`Loading banners from API for position: ${position}`);
@@ -307,7 +307,7 @@ export const loadAndCacheBanners = async (
  * - ถ้าไม่ใช่: ใช้ cache
  */
 export const getBannersWithCache = async (
-  position: 'top' | 'middle' | 'bottom' = 'top',
+  position: 'home' | 'shop' = 'home',
   forceRefresh: boolean = false
 ): Promise<CachedBanner[]> => {
   try {

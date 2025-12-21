@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $link ลิงก์เมื่อคลิก
  * @property string $link_type ประเภทลิงก์ (internal, external, product, category)
  * @property string|null $link_target เป้าหมาย (product_id, category_id, etc.)
- * @property string $position ตำแหน่ง (top, middle, bottom)
+ * @property string $position ตำแหน่ง (home = หน้าหลัก, shop = หน้าช้อป)
  * @property int $sort_order ลำดับการแสดง
  * @property bool $is_active สถานะเปิด/ปิด
  * @property \Carbon\Carbon|null $start_date วันเริ่มแสดง
@@ -75,12 +75,23 @@ class MobileBanner extends Model
     ];
 
     /**
+     * ตำแหน่งที่ใช้ได้
+     */
+    public const POSITION_HOME = 'home';
+    public const POSITION_SHOP = 'shop';
+
+    public const POSITIONS = [
+        self::POSITION_HOME => 'หน้าหลัก',
+        self::POSITION_SHOP => 'หน้าช้อป',
+    ];
+
+    /**
      * The model's default values.
      *
      * @var array
      */
     protected $attributes = [
-        'position' => 'top',
+        'position' => 'home',  // home = หน้าหลัก, shop = หน้าช้อป
         'link_type' => 'internal',
         'is_active' => true,
         'view_count' => 0,
