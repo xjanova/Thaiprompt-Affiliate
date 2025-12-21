@@ -2504,7 +2504,7 @@ export interface Banner {
   link?: string;
   linkType?: 'internal' | 'external' | 'product' | 'category';
   linkTarget?: string;
-  position: 'top' | 'middle' | 'bottom';
+  position: 'home' | 'shop';  // home = หน้าหลัก, shop = หน้าช้อป
   isActive: boolean;
   sortOrder: number;
 }
@@ -2514,11 +2514,11 @@ export interface Banner {
  *
  * Admin สามารถ:
  * - เพิ่ม/แก้ไข/ลบ banner
- * - กำหนดตำแหน่ง (top, middle, bottom)
+ * - กำหนดตำแหน่ง (home = หน้าหลัก, shop = หน้าช้อป)
  * - กำหนด link ปลายทาง
  * - กำหนดระยะเวลาแสดง
  */
-export const getBanners = async (position?: 'top' | 'middle' | 'bottom'): Promise<{
+export const getBanners = async (position?: 'home' | 'shop'): Promise<{
   success: boolean;
   data?: Banner[];
   message?: string;

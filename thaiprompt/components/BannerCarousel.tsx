@@ -36,7 +36,7 @@ import { openUrl } from '@/utils/navigation';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface BannerCarouselProps {
-  position?: 'top' | 'middle' | 'bottom';
+  position?: 'home' | 'shop';
   height?: number;
   autoPlay?: boolean;
   autoPlayInterval?: number;
@@ -46,7 +46,7 @@ interface BannerCarouselProps {
 }
 
 export default function BannerCarousel({
-  position = 'top',
+  position = 'home',
   height = 180,
   autoPlay = true,
   autoPlayInterval = 5000,

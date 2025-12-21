@@ -653,7 +653,7 @@ export default function HomeScreen() {
         {/* ⭐ Banner Carousel จาก Admin */}
         <View style={styles.bannerSection}>
           <BannerCarousel
-            position="top"
+            position="home"
             height={160}
             autoPlay={true}
             autoPlayInterval={5000}

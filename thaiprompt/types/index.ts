@@ -307,7 +307,7 @@ export interface Banner {
   link?: string;
   linkType?: 'internal' | 'external' | 'product' | 'category';
   linkTarget?: string;
-  position: 'top' | 'middle' | 'bottom';
+  position: 'home' | 'shop';  // home = หน้าหลัก, shop = หน้าช้อป
   isActive: boolean;
   startDate?: string;
   endDate?: string;
