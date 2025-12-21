@@ -4024,6 +4024,26 @@ class MobileApiController extends Controller
                 }
             }
 
+            // ดึงข้อมูลที่อยู่จัดส่ง (ถ้ามี)
+            $shippingAddressSnapshot = null;
+            if ($request->shipping_address_id) {
+                $shippingAddress = \App\Models\UserAddress::where('id', $request->shipping_address_id)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if ($shippingAddress) {
+                    $shippingAddressSnapshot = [
+                        'name' => $shippingAddress->name,
+                        'phone' => $shippingAddress->phone,
+                        'address' => $shippingAddress->address,
+                        'subdistrict' => $shippingAddress->subdistrict,
+                        'district' => $shippingAddress->district,
+                        'province' => $shippingAddress->province,
+                        'postal_code' => $shippingAddress->postal_code,
+                    ];
+                }
+            }
+
             // สร้าง Order
             $order = Order::create([
                 'user_id' => $user->id,
@@ -4033,11 +4053,11 @@ class MobileApiController extends Controller
                 'payment_status' => $request->payment_method === 'wallet' ? 'paid' : 'pending',
                 'subtotal' => $totalPrice,
                 'shipping_fee' => $shippingFee,
-                'discount' => $discount,
-                'total' => $grandTotal,
-                'pv_total' => $totalPV,
-                'promo_code' => $request->promo_code,
-                'note' => $request->note,
+                'discount_amount' => $discount,
+                'total_amount' => $grandTotal,
+                'shipping_address_id' => $request->shipping_address_id,
+                'shipping_address_snapshot' => $shippingAddressSnapshot,
+                'customer_notes' => $request->note,
             ]);
 
             // สร้าง Order Items
@@ -4085,9 +4105,13 @@ class MobileApiController extends Controller
                     'orderNumber' => $order->order_number,
                     'status' => $order->status,
                     'paymentStatus' => $order->payment_status,
-                    'total' => $order->total,
+                    'total' => $order->total_amount,
+                    'subtotal' => $order->subtotal,
+                    'shippingFee' => $order->shipping_fee,
+                    'discount' => $order->discount_amount,
                     'pvEarned' => $totalPV,
                     'paymentMethod' => $request->payment_method,
+                    'shippingAddress' => $shippingAddressSnapshot,
                 ],
             ]);
         } catch (\Exception $e) {

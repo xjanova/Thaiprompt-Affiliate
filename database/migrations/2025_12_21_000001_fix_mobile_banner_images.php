@@ -1,57 +1,78 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     /**
-     * แก้ไข image URLs ของ mobile banners ที่ใช้ path ที่ไม่มีไฟล์จริง
+     * แก้ไขระบบ Mobile Banners:
      *
-     * ปัญหา:
-     * 1. Seeder เดิมใช้ path /images/banners/xxx.jpg ที่ไม่มีไฟล์จริง
-     * 2. Banner ที่ 3 มี position = 'middle' ทำให้ไม่แสดงร่วมกับ banner อื่น
+     * 1. เปลี่ยน position จาก 'top/middle/bottom' เป็น 'home/shop'
+     *    - home = แบนเนอร์หน้าหลัก
+     *    - shop = แบนเนอร์หน้า shop
      *
-     * แก้ไข:
-     * 1. อัพเดท image URLs ให้ใช้ placeholder images ที่ทำงานได้
-     * 2. เปลี่ยน position เป็น 'top' ทั้งหมดเพื่อให้แสดงครบทุก banner
+     * 2. แก้ไข image URLs ที่ใช้ path ที่ไม่มีไฟล์จริง
      *
      * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mobile_banners มีอยู่หรือไม่
-        if (!DB::getSchemaBuilder()->hasTable('mobile_banners')) {
+        if (!Schema::hasTable('mobile_banners')) {
             return;
         }
 
-        // อัพเดท banners ที่ใช้ path เก่าที่ไม่มีไฟล์จริง
-        $oldPaths = [
-            '/images/banners/welcome-banner.jpg',
-            '/images/banners/promo-banner.jpg',
-            '/images/banners/news-banner.jpg',
-        ];
+        // 1. เปลี่ยน enum position จาก top/middle/bottom เป็น home/shop
+        // ก่อนอื่นต้องอัพเดทข้อมูลที่มีอยู่
+        DB::table('mobile_banners')
+            ->whereIn('position', ['top', 'middle', 'bottom'])
+            ->update(['position' => 'home']);
 
+        // เปลี่ยน column type เป็น enum ใหม่
+        Schema::table('mobile_banners', function (Blueprint $table) {
+            // ลบ column เดิมและสร้างใหม่ (MySQL ไม่รองรับการเปลี่ยน enum โดยตรง)
+            $table->string('position_new', 20)->default('home')->after('link_target');
+        });
+
+        // คัดลอกค่าจาก position เดิมไป position_new
+        DB::table('mobile_banners')->update(['position_new' => 'home']);
+
+        // ลบ column เดิม
+        Schema::table('mobile_banners', function (Blueprint $table) {
+            $table->dropColumn('position');
+        });
+
+        // เปลี่ยนชื่อ column ใหม่
+        Schema::table('mobile_banners', function (Blueprint $table) {
+            $table->renameColumn('position_new', 'position');
+        });
+
+        // เพิ่ม index
+        Schema::table('mobile_banners', function (Blueprint $table) {
+            $table->index('position');
+        });
+
+        // 2. อัพเดท image URLs ที่ใช้ path เก่าที่ไม่มีไฟล์จริง
         $newUrls = [
             '/images/banners/welcome-banner.jpg' => 'https://picsum.photos/seed/banner1/800/400',
             '/images/banners/promo-banner.jpg' => 'https://picsum.photos/seed/banner2/800/400',
             '/images/banners/news-banner.jpg' => 'https://picsum.photos/seed/banner3/800/400',
         ];
 
-        // อัพเดท image paths
         foreach ($newUrls as $oldPath => $newUrl) {
             DB::table('mobile_banners')
                 ->where('image', $oldPath)
                 ->update([
                     'image' => $newUrl,
-                    'position' => 'top',  // เปลี่ยนเป็น 'top' เพื่อให้แสดงรวมกัน
                     'updated_at' => now(),
                 ]);
         }
 
-        // อัพเดท sort_order ให้เรียงถูกต้อง
+        // 3. อัพเดท sort_order ให้เรียงถูกต้อง
         $banners = DB::table('mobile_banners')
-            ->where('position', 'top')
             ->orderBy('id')
             ->get();
 
@@ -70,6 +91,21 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // ไม่จำเป็นต้อง rollback เพราะเป็นการแก้ไขข้อมูลให้ถูกต้อง
+        if (!Schema::hasTable('mobile_banners')) {
+            return;
+        }
+
+        // เปลี่ยนกลับเป็น top/middle/bottom
+        Schema::table('mobile_banners', function (Blueprint $table) {
+            $table->dropIndex(['position']);
+        });
+
+        DB::table('mobile_banners')
+            ->where('position', 'home')
+            ->update(['position' => 'top']);
+
+        DB::table('mobile_banners')
+            ->where('position', 'shop')
+            ->update(['position' => 'middle']);
     }
 };

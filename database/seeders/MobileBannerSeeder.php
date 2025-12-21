@@ -37,14 +37,19 @@ class MobileBannerSeeder extends Seeder
         //
         // 📸 รูปภาพ: ใช้ placeholder images จาก picsum.photos สำหรับข้อมูลตัวอย่าง
         // Admin สามารถเปลี่ยนรูปได้จากหน้า /admin/mobile-app/banners
+        //
+        // 📍 ตำแหน่ง (position):
+        //   - home = แบนเนอร์หน้าหลัก
+        //   - shop = แบนเนอร์หน้าช้อป
         $banners = [
+            // === แบนเนอร์หน้าหลัก (home) ===
             [
                 'title' => 'ยินดีต้อนรับสู่ TP-Affiliate',
                 'image' => 'https://picsum.photos/seed/banner1/800/400',
-                'link' => '/dashboard',  // ใช้ /dashboard แทน /about เพราะไม่มี route /about
+                'link' => '/dashboard',
                 'link_type' => 'internal',
                 'link_target' => null,
-                'position' => 'top',
+                'position' => 'home',  // หน้าหลัก
                 'sort_order' => 1,
                 'is_active' => true,
                 'view_count' => 0,
@@ -56,7 +61,7 @@ class MobileBannerSeeder extends Seeder
                 'link' => '/register',
                 'link_type' => 'internal',
                 'link_target' => null,
-                'position' => 'top',
+                'position' => 'home',  // หน้าหลัก
                 'sort_order' => 2,
                 'is_active' => true,
                 'view_count' => 0,
@@ -68,8 +73,33 @@ class MobileBannerSeeder extends Seeder
                 'link' => 'https://line.me/R/ti/p/@thaiprompt',
                 'link_type' => 'external',
                 'link_target' => null,
-                'position' => 'top',  // เปลี่ยนเป็น 'top' เพื่อให้แสดงรวมกับ banner อื่น
+                'position' => 'home',  // หน้าหลัก
                 'sort_order' => 3,
+                'is_active' => true,
+                'view_count' => 0,
+                'click_count' => 0,
+            ],
+            // === แบนเนอร์หน้าช้อป (shop) ===
+            [
+                'title' => 'สินค้าลดราคาพิเศษ',
+                'image' => 'https://picsum.photos/seed/shop-banner1/800/400',
+                'link' => '/shopping',
+                'link_type' => 'internal',
+                'link_target' => null,
+                'position' => 'shop',  // หน้าช้อป
+                'sort_order' => 1,
+                'is_active' => true,
+                'view_count' => 0,
+                'click_count' => 0,
+            ],
+            [
+                'title' => 'สินค้าใหม่ประจำสัปดาห์',
+                'image' => 'https://picsum.photos/seed/shop-banner2/800/400',
+                'link' => '/shopping',
+                'link_type' => 'internal',
+                'link_target' => null,
+                'position' => 'shop',  // หน้าช้อป
+                'sort_order' => 2,
                 'is_active' => true,
                 'view_count' => 0,
                 'click_count' => 0,
