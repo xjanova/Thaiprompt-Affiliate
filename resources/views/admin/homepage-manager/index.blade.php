@@ -715,6 +715,10 @@
                                 {{-- Section Controls Bar --}}
                                 <div class="absolute -top-10 left-0 right-0 flex items-center justify-between px-2 opacity-0 group-hover:opacity-100 transition z-50">
                                     <div class="flex items-center space-x-1">
+                                        {{-- Drag Handle --}}
+                                        <div class="section-handle p-1.5 bg-white dark:bg-gray-700 rounded-lg shadow cursor-grab hover:bg-gray-100 transition" title="ลากเพื่อจัดเรียง">
+                                            <i class="fas fa-grip-vertical text-xs text-gray-400"></i>
+                                        </div>
                                         <span class="px-3 py-1 text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium shadow-lg" x-text="section.name"></span>
                                         <span class="px-2 py-1 text-xs bg-gray-800 text-white rounded" x-text="section.type_label || section.type"></span>
                                     </div>
