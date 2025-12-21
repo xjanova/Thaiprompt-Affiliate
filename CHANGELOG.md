@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.397.0] - 2025-12-21
+
+### ✨ Features
+- Merge pull request #2332 from xjanova/claude/admin-homepage-manager-jHGYp (5347a126)
+- feat: เพิ่ม Dynamic Section Renderer และ Drag Handle สำหรับ Homepage (0ac33f2e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.396.1] - 2025-12-21
 
 ### ✨ Features
