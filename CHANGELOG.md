@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.396.1] - 2025-12-21
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา COD ซ้ำและปรับปรุงระบบ payment methods ใน checkout (6f243ab3)
+- fix: อัพเดทแอพมือถือให้รองรับระบบ banner position ใหม่ (home/shop) (be4ce08c)
+- fix: แก้ไขระบบ mobile banner และ checkout API (6250887f)
+- fix: แก้ไข mobile banner images ไม่แสดงและจำนวนไม่ครบ (47418cdc)
+### 🔧 Other Changes
+- Merge pull request #2331 from xjanova/claude/fix-banner-slider-images-jobOF (4173d7a6)
+
 ## [v3.396.0] - 2025-12-20
 
 ### ✨ Features
