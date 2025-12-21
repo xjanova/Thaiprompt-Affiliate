@@ -34,10 +34,13 @@ class MobileBannerSeeder extends Seeder
         // ⚠️ link ต้องเป็น route ที่มีอยู่ในแอพ หรือ URL ภายนอก
         // Routes ที่ใช้ได้: /dashboard, /register, /shopping, /wallet, /referral,
         //                   /services, /academy, /support, /tpix, /stores, /cart เป็นต้น
+        //
+        // 📸 รูปภาพ: ใช้ placeholder images จาก picsum.photos สำหรับข้อมูลตัวอย่าง
+        // Admin สามารถเปลี่ยนรูปได้จากหน้า /admin/mobile-app/banners
         $banners = [
             [
                 'title' => 'ยินดีต้อนรับสู่ TP-Affiliate',
-                'image' => '/images/banners/welcome-banner.jpg',
+                'image' => 'https://picsum.photos/seed/banner1/800/400',
                 'link' => '/dashboard',  // ใช้ /dashboard แทน /about เพราะไม่มี route /about
                 'link_type' => 'internal',
                 'link_target' => null,
@@ -49,7 +52,7 @@ class MobileBannerSeeder extends Seeder
             ],
             [
                 'title' => 'โปรโมชั่นพิเศษ สมัครสมาชิกวันนี้',
-                'image' => '/images/banners/promo-banner.jpg',
+                'image' => 'https://picsum.photos/seed/banner2/800/400',
                 'link' => '/register',
                 'link_type' => 'internal',
                 'link_target' => null,
@@ -61,12 +64,12 @@ class MobileBannerSeeder extends Seeder
             ],
             [
                 'title' => 'ติดตามข่าวสารและโปรโมชั่น',
-                'image' => '/images/banners/news-banner.jpg',
+                'image' => 'https://picsum.photos/seed/banner3/800/400',
                 'link' => 'https://line.me/R/ti/p/@thaiprompt',
                 'link_type' => 'external',
                 'link_target' => null,
-                'position' => 'middle',
-                'sort_order' => 1,
+                'position' => 'top',  // เปลี่ยนเป็น 'top' เพื่อให้แสดงรวมกับ banner อื่น
+                'sort_order' => 3,
                 'is_active' => true,
                 'view_count' => 0,
                 'click_count' => 0,
