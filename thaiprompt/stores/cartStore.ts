@@ -262,9 +262,24 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   /**
    * Initialize - โหลดตะกร้าจาก storage และคำนวณในแอพ
+   *
+   * ⭐ IMPORTANT: ถ้ามี items ใน memory อยู่แล้ว (เช่น จากการกด "ซื้อเลย")
+   * จะไม่ overwrite แต่จะใช้ค่าใน memory และ sync กลับไป storage
    */
   initialize: async () => {
     try {
+      // เช็คว่ามี items ใน memory แล้วหรือไม่
+      const currentItems = get().items;
+
+      // ถ้ามี items ใน memory แล้ว ไม่ต้องโหลดจาก storage
+      // เพื่อป้องกัน overwrite สินค้าที่เพิ่งเพิ่มจาก "ซื้อเลย"
+      if (currentItems.length > 0) {
+        set({ isLoading: false, error: null });
+        // sync กลับไป storage เพื่อความปลอดภัย
+        saveCartToStorage(currentItems);
+        return;
+      }
+
       set({ isLoading: true, error: null });
 
       const items = await loadCartFromStorage();

@@ -67,6 +67,8 @@ export default function CheckoutScreen() {
     totalPrice,
     totalPV,
     summary,
+    isLoading: isCartLoading,
+    initialize: initializeCart,
     clearCart,
     checkout: cartCheckout,
   } = useCartStore();
@@ -184,9 +186,11 @@ export default function CheckoutScreen() {
     }
   }, []);
 
-  // Initial load
+  // Initial load - โหลด cart, wallet และ payment methods
   useFocusEffect(
     useCallback(() => {
+      // ⭐ CRITICAL: โหลด cart จาก storage ก่อนแสดงผล
+      initializeCart();
       loadWalletBalance();
       loadPaymentMethods();
 
@@ -197,7 +201,7 @@ export default function CheckoutScreen() {
           pollingRef.current = null;
         }
       };
-    }, [loadWalletBalance, loadPaymentMethods])
+    }, [initializeCart, loadWalletBalance, loadPaymentMethods])
   );
 
   // Apply promo code
@@ -376,8 +380,29 @@ export default function CheckoutScreen() {
     );
   };
 
-  // Empty cart
-  if (items.length === 0 && paymentStep === 'summary') {
+  // Loading cart state - รอ cart โหลดเสร็จก่อนตรวจสอบ
+  if (isCartLoading && paymentStep === 'summary') {
+    return (
+      <View style={styles.container}>
+        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'ชำระเงิน',
+            headerStyle: { backgroundColor: '#0F0F23' },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.processingText}>กำลังโหลดตะกร้า...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Empty cart - แสดงเมื่อโหลด cart เสร็จแล้วและไม่มีสินค้า
+  if (items.length === 0 && paymentStep === 'summary' && !isCartLoading) {
     return (
       <View style={styles.container}>
         <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
