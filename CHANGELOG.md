@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.398.1] - 2025-12-22
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2334 from xjanova/claude/fix-banner-slider-images-jobOF (f2572c8a)
+- fix: แก้ไขปัญหา "ซื้อเลย" แสดง "ไม่มีสินค้าในตะกร้า" และ sync cart กับ server (e6ec5b8f)
+### 🔧 Other Changes
+
+
 ## [v3.398.0] - 2025-12-22
 
 ### ✨ Features
