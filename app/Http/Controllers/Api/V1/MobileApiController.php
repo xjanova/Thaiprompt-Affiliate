@@ -5314,4 +5314,407 @@ class MobileApiController extends Controller
             ], 500);
         }
     }
+
+    // =====================================================
+    // Seller Order Management (Mobile App)
+    // =====================================================
+
+    /**
+     * ดึงรายการ Orders ที่ผู้ขายต้องจัดการ
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getSellerOrders(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            // ตรวจสอบว่าเป็น seller หรือไม่
+            if (!$user->is_seller && !$user->hasRole('seller')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'คุณไม่มีสิทธิ์เข้าถึงส่วนนี้',
+                ], 403);
+            }
+
+            $status = $request->get('status');
+            $perPage = $request->get('per_page', 20);
+
+            // ดึง orders ที่มีสินค้าของผู้ขาย
+            $query = Order::with([
+                'items' => function ($q) use ($user) {
+                    $q->where('seller_id', $user->id)->with('product:id,name,image');
+                },
+                'user:id,name,avatar',
+            ])
+                ->whereHas('items', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })
+                ->latest();
+
+            // Filter by status
+            if ($status && $status !== 'all') {
+                $query->where('status', $status);
+            }
+
+            $orders = $query->paginate($perPage);
+
+            // Statistics
+            $stats = [
+                'pending' => Order::pending()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
+                'processing' => Order::processing()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
+                'shipped' => Order::shipped()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
+                'completed' => Order::completed()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'orders' => $orders->items(),
+                    'pagination' => [
+                        'current_page' => $orders->currentPage(),
+                        'last_page' => $orders->lastPage(),
+                        'per_page' => $orders->perPage(),
+                        'total' => $orders->total(),
+                    ],
+                    'stats' => $stats,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Seller Orders Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูล Orders ได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดูรายละเอียด Order สำหรับผู้ขาย
+     *
+     * @param int $orderId
+     * @return JsonResponse
+     */
+    public function getSellerOrderDetail(int $orderId): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $order = Order::with([
+                'items' => function ($q) use ($user) {
+                    $q->where('seller_id', $user->id)->with('product');
+                },
+                'user:id,name,email,phone,avatar',
+                'shippingProviderRelation',
+                'trackingHistory',
+            ])
+                ->whereHas('items', function ($q) use ($user) {
+                    $q->where('seller_id', $user->id);
+                })
+                ->find($orderId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Order',
+                ], 404);
+            }
+
+            // คำนวณยอดสำหรับผู้ขาย
+            $sellerItems = $order->items;
+            $sellerTotal = $sellerItems->sum('total');
+            $sellerEarning = $sellerItems->sum('seller_earning');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => $order->status,
+                        'status_label' => $order->status_label,
+                        'payment_status' => $order->payment_status,
+                        'created_at' => $order->created_at->toISOString(),
+                        'shipped_at' => $order->shipped_at?->toISOString(),
+                        'delivered_at' => $order->delivered_at?->toISOString(),
+                    ],
+                    'customer' => [
+                        'name' => $order->user->name ?? 'ลูกค้า',
+                        'phone' => $order->shipping_address_snapshot['phone'] ?? null,
+                        'avatar' => $order->user->avatar ?? null,
+                    ],
+                    'shipping' => $order->shipping_address_snapshot,
+                    'items' => $sellerItems->map(fn($item) => [
+                        'id' => $item->id,
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name ?? $item->product?->name,
+                        'product_image' => $item->product?->image,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'total' => $item->total,
+                        'status' => $item->status,
+                    ]),
+                    'seller_total' => $sellerTotal,
+                    'seller_earning' => $sellerEarning,
+                    'tracking' => [
+                        'tracking_number' => $order->tracking_number,
+                        'shipping_provider' => $order->shippingProviderRelation ? [
+                            'id' => $order->shippingProviderRelation->id,
+                            'name' => $order->shippingProviderRelation->name,
+                            'logo' => $order->shippingProviderRelation->logo,
+                        ] : null,
+                        'tracking_url' => $order->tracking_url,
+                        'estimated_delivery_at' => $order->estimated_delivery_at?->toISOString(),
+                    ],
+                    'tracking_history' => $order->trackingHistory->map(fn($h) => [
+                        'id' => $h->id,
+                        'status' => $h->status,
+                        'title' => $h->title,
+                        'description' => $h->description,
+                        'location' => $h->location,
+                        'tracked_at' => $h->tracked_at->toISOString(),
+                    ]),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Seller Order Detail Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูล Order ได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพเดท Tracking Number สำหรับ Order
+     *
+     * @param Request $request
+     * @param int $orderId
+     * @return JsonResponse
+     */
+    public function updateOrderTracking(Request $request, int $orderId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'shipping_provider_id' => 'required|exists:shipping_providers,id',
+            'tracking_number' => 'required|string|max:100',
+            'estimated_delivery_at' => 'nullable|date',
+        ], [
+            'shipping_provider_id.required' => 'กรุณาเลือกบริษัทขนส่ง',
+            'shipping_provider_id.exists' => 'ไม่พบบริษัทขนส่ง',
+            'tracking_number.required' => 'กรุณากรอกหมายเลขพัสดุ',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = Auth::user();
+
+            $order = Order::whereHas('items', function ($q) use ($user) {
+                $q->where('seller_id', $user->id);
+            })->find($orderId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Order หรือคุณไม่มีสิทธิ์',
+                ], 404);
+            }
+
+            DB::beginTransaction();
+
+            // ดึงข้อมูล Shipping Provider
+            $shippingProvider = \App\Models\ShippingProvider::find($request->shipping_provider_id);
+
+            // อัพเดท Order
+            $order->shipping_provider_id = $request->shipping_provider_id;
+            $order->shipping_provider = $shippingProvider->name;
+            $order->tracking_number = $request->tracking_number;
+            $order->estimated_delivery_at = $request->estimated_delivery_at;
+            $order->status = 'shipped';
+            $order->shipped_at = now();
+            $order->save();
+
+            // อัพเดท items ของผู้ขาย
+            OrderItem::where('order_id', $orderId)
+                ->where('seller_id', $user->id)
+                ->update(['status' => 'shipped']);
+
+            // สร้าง tracking history
+            \App\Models\OrderTrackingHistory::createEntry(
+                $order,
+                'shipped',
+                'จัดส่งสินค้าแล้ว',
+                [
+                    'description' => "หมายเลขพัสดุ: {$request->tracking_number} ({$shippingProvider->name})",
+                    'tracking_number' => $request->tracking_number,
+                    'shipping_provider' => $shippingProvider->name,
+                    'created_by_type' => 'seller',
+                ]
+            );
+
+            DB::commit();
+
+            // สร้าง tracking URL
+            $trackingUrl = $shippingProvider->getTrackingLink($request->tracking_number);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกข้อมูลการจัดส่งเรียบร้อยแล้ว',
+                'data' => [
+                    'tracking_number' => $request->tracking_number,
+                    'shipping_provider' => $shippingProvider->name,
+                    'tracking_url' => $trackingUrl,
+                    'status' => 'shipped',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Update Order Tracking Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * เพิ่มประวัติ Tracking (สถานะการขนส่ง)
+     *
+     * @param Request $request
+     * @param int $orderId
+     * @return JsonResponse
+     */
+    public function addOrderTrackingHistory(Request $request, int $orderId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:processing,shipped,in_transit,out_for_delivery,delivered',
+            'description' => 'required|string|max:500',
+            'location' => 'nullable|string|max:255',
+        ], [
+            'status.required' => 'กรุณาเลือกสถานะ',
+            'status.in' => 'สถานะไม่ถูกต้อง',
+            'description.required' => 'กรุณากรอกรายละเอียด',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $user = Auth::user();
+
+            $order = Order::whereHas('items', function ($q) use ($user) {
+                $q->where('seller_id', $user->id);
+            })->find($orderId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Order หรือคุณไม่มีสิทธิ์',
+                ], 404);
+            }
+
+            // สถานะ label ภาษาไทย
+            $statusLabels = [
+                'processing' => 'กำลังเตรียมสินค้า',
+                'shipped' => 'จัดส่งแล้ว',
+                'in_transit' => 'อยู่ระหว่างขนส่ง',
+                'out_for_delivery' => 'กำลังนำส่ง',
+                'delivered' => 'ส่งถึงแล้ว',
+            ];
+
+            // สร้าง tracking history
+            $history = \App\Models\OrderTrackingHistory::createEntry(
+                $order,
+                $request->status,
+                $statusLabels[$request->status] ?? $request->status,
+                [
+                    'description' => $request->description,
+                    'location' => $request->location,
+                    'created_by_type' => 'seller',
+                ]
+            );
+
+            // อัพเดทสถานะ Order ถ้าเป็น delivered
+            if ($request->status === 'delivered') {
+                $order->update([
+                    'status' => 'delivered',
+                    'delivered_at' => now(),
+                ]);
+
+                // อัพเดท items
+                OrderItem::where('order_id', $orderId)
+                    ->where('seller_id', $user->id)
+                    ->update(['status' => 'delivered']);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกประวัติการจัดส่งเรียบร้อย',
+                'data' => [
+                    'id' => $history->id,
+                    'status' => $history->status,
+                    'title' => $history->title,
+                    'description' => $history->description,
+                    'location' => $history->location,
+                    'tracked_at' => $history->tracked_at->toISOString(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Add Order Tracking History Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้',
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงรายการบริษัทขนส่ง
+     *
+     * @return JsonResponse
+     */
+    public function getShippingProviders(): JsonResponse
+    {
+        try {
+            $providers = \App\Models\ShippingProvider::active()
+                ->ordered()
+                ->get()
+                ->map(fn($p) => [
+                    'id' => $p->id,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'name_en' => $p->name_en,
+                    'logo' => $p->logo,
+                    'hotline' => $p->hotline,
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $providers,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Get Shipping Providers Error', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลบริษัทขนส่งได้',
+            ], 500);
+        }
+    }
 }
