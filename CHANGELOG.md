@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.399.0] - 2025-12-22
+
+### ✨ Features
+- Merge pull request #2335 from xjanova/claude/fix-banner-slider-images-jobOF (bb1c5db2)
+- feat: อัพเดทเวอร์ชั่น 3.384.0 และเพิ่มปุ่มติดตามสินค้าในหน้ารายการคำสั่งซื้อ (dd5286c1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.398.1] - 2025-12-22
 
 ### ✨ Features
