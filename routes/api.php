@@ -307,6 +307,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/submit', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'submitVideoWatch']);
         });
 
+        // Seller Order Management (Mobile App) - จัดการ Orders สำหรับผู้ขาย
+        Route::prefix('seller/orders')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getSellerOrders']);
+            Route::get('/{orderId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getSellerOrderDetail']);
+            Route::post('/{orderId}/tracking', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateOrderTracking']);
+            Route::post('/{orderId}/tracking-history', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addOrderTrackingHistory']);
+        });
+
+        // Shipping Providers (Mobile App) - รายการบริษัทขนส่ง
+        Route::get('/seller/shipping-providers', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getShippingProviders']);
+
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRanks']);

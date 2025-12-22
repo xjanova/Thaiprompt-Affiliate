@@ -3788,5 +3788,245 @@ export const getPaymentHistory = async (params?: {
   }
 };
 
+// =====================================================
+// Seller Order Management API
+// =====================================================
+
+/**
+ * Seller Order Interface
+ */
+export interface SellerOrder {
+  id: number;
+  order_number: string;
+  status: string;
+  status_label: string;
+  payment_status: string;
+  created_at: string;
+  shipped_at: string | null;
+  delivered_at: string | null;
+  user: {
+    id: number;
+    name: string;
+    avatar: string | null;
+  };
+  items: Array<{
+    id: number;
+    product_id: number;
+    product_name: string;
+    product_image: string | null;
+    quantity: number;
+    price: number;
+    total: number;
+    status: string;
+  }>;
+}
+
+/**
+ * Seller Order Detail Interface
+ */
+export interface SellerOrderDetail {
+  order: {
+    id: number;
+    order_number: string;
+    status: string;
+    status_label: string;
+    payment_status: string;
+    created_at: string;
+    shipped_at: string | null;
+    delivered_at: string | null;
+  };
+  customer: {
+    name: string;
+    phone: string | null;
+    avatar: string | null;
+  };
+  shipping: {
+    name: string;
+    phone: string;
+    address: string;
+    province: string;
+    district: string;
+    subdistrict: string;
+    postal_code: string;
+  } | null;
+  items: Array<{
+    id: number;
+    product_id: number;
+    product_name: string;
+    product_image: string | null;
+    quantity: number;
+    price: number;
+    total: number;
+    status: string;
+  }>;
+  seller_total: number;
+  seller_earning: number;
+  tracking: {
+    tracking_number: string | null;
+    shipping_provider: {
+      id: number;
+      name: string;
+      logo: string | null;
+    } | null;
+    tracking_url: string | null;
+    estimated_delivery_at: string | null;
+  };
+  tracking_history: Array<{
+    id: number;
+    status: string;
+    title: string;
+    description: string | null;
+    location: string | null;
+    tracked_at: string;
+  }>;
+}
+
+/**
+ * ดึงรายการ Orders ของผู้ขาย
+ */
+export const getSellerOrders = async (params?: {
+  status?: string;
+  page?: number;
+  per_page?: number;
+}): Promise<{
+  success: boolean;
+  orders?: SellerOrder[];
+  pagination?: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
+  stats?: {
+    pending: number;
+    processing: number;
+    shipped: number;
+    completed: number;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.get('/seller/orders', { params });
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        orders: response.data.data?.orders || [],
+        pagination: response.data.data?.pagination,
+        stats: response.data.data?.stats,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.data?.message || 'ไม่สามารถดึงรายการ Orders ได้',
+    };
+  } catch (error: any) {
+    console.error('Get seller orders error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถดึงรายการ Orders ได้',
+    };
+  }
+};
+
+/**
+ * ดึงรายละเอียด Order ของผู้ขาย
+ */
+export const getSellerOrderDetail = async (orderId: number): Promise<SellerOrderDetail | null> => {
+  try {
+    const response = await apiClient.get(`/seller/orders/${orderId}`);
+    if (response.data?.success) {
+      return response.data.data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Get seller order detail error:', error);
+    return null;
+  }
+};
+
+/**
+ * อัพเดท Tracking Number
+ */
+export const updateOrderTracking = async (
+  orderId: number,
+  data: {
+    shipping_provider_id: number;
+    tracking_number: string;
+    estimated_delivery_at?: string;
+  }
+): Promise<{
+  success: boolean;
+  data?: {
+    tracking_number: string;
+    shipping_provider: string;
+    tracking_url: string | null;
+    status: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`/seller/orders/${orderId}/tracking`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Update order tracking error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+    };
+  }
+};
+
+/**
+ * เพิ่มประวัติ Tracking
+ */
+export const addTrackingHistory = async (
+  orderId: number,
+  data: {
+    status: 'processing' | 'shipped' | 'in_transit' | 'out_for_delivery' | 'delivered';
+    description: string;
+    location?: string;
+  }
+): Promise<{
+  success: boolean;
+  data?: {
+    id: number;
+    status: string;
+    title: string;
+    description: string;
+    location: string | null;
+    tracked_at: string;
+  };
+  message?: string;
+}> => {
+  try {
+    const response = await apiClient.post(`/seller/orders/${orderId}/tracking-history`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Add tracking history error:', error);
+    return {
+      success: false,
+      message: error?.response?.data?.message || 'ไม่สามารถบันทึกข้อมูลได้',
+    };
+  }
+};
+
+/**
+ * ดึงรายการบริษัทขนส่ง (สำหรับ Seller)
+ */
+export const getSellerShippingProviders = async (): Promise<ShippingProvider[]> => {
+  try {
+    const response = await apiClient.get('/seller/shipping-providers');
+    if (response.data?.success) {
+      return response.data.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Get seller shipping providers error:', error);
+    return [];
+  }
+};
+
 // Export axios instance สำหรับใช้งานตรงๆ ถ้าต้องการ
 export { apiClient };
