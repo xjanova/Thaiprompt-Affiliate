@@ -25,7 +25,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { formatCurrency, API_BASE_URL } from '@/constants';
-import { getProduct, getWallet } from '@/services/api';
+import { getProduct, getWallet, addToCart as addToCartApi, clearCartApi } from '@/services/api';
 import type { Product as ProductType } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -52,7 +52,7 @@ interface Product {
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, isAuthenticated, token } = useAuthStore();
-  const { addItem: addToCartStore } = useCartStore();
+  const { addItem: addToCartStore, clearCart: clearLocalCart } = useCartStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -161,6 +161,16 @@ export default function ProductDetailScreen() {
       // เพิ่มลง cartStore (local)
       addToCartStore(productForCart, quantity);
 
+      // ⭐ CRITICAL: Sync ไป server ด้วย (ถ้า authenticated)
+      if (isAuthenticated) {
+        try {
+          await addToCartApi(product.id, quantity);
+        } catch (apiErr) {
+          console.warn('Sync cart to server failed:', apiErr);
+          // ไม่ต้อง block UI - local cart ยังทำงานได้
+        }
+      }
+
       Alert.alert('สำเร็จ! ✓', `เพิ่ม ${product.name} ลงตะกร้าแล้ว`, [
         { text: 'ดูตะกร้า', onPress: () => router.push('/cart') },
         { text: 'ช้อปต่อ', style: 'cancel' },
@@ -200,8 +210,23 @@ export default function ProductDetailScreen() {
         review_count: 0,
       };
 
-      // เพิ่มลง cartStore แล้วไป checkout
+      // ⭐ CRITICAL: ล้าง cart ทั้ง local และ server ก่อน แล้วเพิ่มสินค้าใหม่
+      // (ซื้อเลย = ซื้อเฉพาะสินค้านี้)
+      try {
+        // 1. ล้าง local cart ก่อน
+        clearLocalCart();
+        // 2. ล้าง server cart
+        await clearCartApi();
+        // 3. เพิ่มสินค้าลง server cart
+        await addToCartApi(product.id, quantity);
+      } catch (apiErr) {
+        console.warn('Sync cart to server failed:', apiErr);
+        // ยังสามารถไป checkout ได้ ถ้า server มีปัญหา
+      }
+
+      // เพิ่มลง cartStore (local) - สำหรับแสดงผล
       addToCartStore(productForCart, quantity);
+
       router.push('/checkout');
     } catch (err: any) {
       Alert.alert('เกิดข้อผิดพลาด', err.message || 'ไม่สามารถดำเนินการได้');
