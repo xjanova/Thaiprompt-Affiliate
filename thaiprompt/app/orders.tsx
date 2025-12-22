@@ -89,12 +89,16 @@ const OrderCard = ({
   order,
   delay,
   onPress,
+  onTrack,
 }: {
   order: OrderSummary;
   delay: number;
   onPress: () => void;
+  onTrack: () => void;
 }) => {
   const statusColor = getStatusColor(order.status);
+  // แสดงปุ่มติดตามเมื่อสถานะเป็น processing, shipped
+  const showTrackingButton = ['processing', 'shipped'].includes(order.status);
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).springify()}>
@@ -176,6 +180,20 @@ const OrderCard = ({
             {formatCurrency(order.total_amount)}
           </Text>
         </View>
+
+        {/* 📦 ปุ่มติดตามสินค้า - แสดงเมื่อกำลังจัดส่ง */}
+        {showTrackingButton && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onTrack();
+            }}
+            className="flex-row items-center justify-center mt-3 py-3 bg-cyan-500 rounded-xl"
+          >
+            <Ionicons name="location" size={18} color="white" />
+            <Text className="text-white font-semibold ml-2">📦 ติดตามสินค้า</Text>
+          </Pressable>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -338,6 +356,7 @@ export default function OrdersScreen() {
               order={item}
               delay={index * 50}
               onPress={() => router.push(`/order/${item.id}`)}
+              onTrack={() => router.push(`/order/${item.id}?tab=tracking`)}
             />
           )}
           contentContainerStyle={{ padding: 16 }}
