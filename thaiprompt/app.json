@@ -2,7 +2,7 @@
   "expo": {
     "name": "TP UltraAPP",
     "slug": "thaiprompt",
-    "version": "3.383.33",
+    "version": "3.384.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "39",
+      "buildNumber": "40",
       "infoPlist": {
         "NSCameraUsageDescription": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC และรูปโปรไฟล์",
         "NSPhotoLibraryUsageDescription": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
@@ -34,7 +34,7 @@
         "backgroundColor": "#0F0F23"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 39,
+      "versionCode": 40,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",

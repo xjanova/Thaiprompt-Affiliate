@@ -591,12 +591,14 @@ const ChatTab = ({
 };
 
 export default function OrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const orderId = parseInt(id, 10);
   const { isDarkMode } = useAppStore();
   const { isAuthenticated } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('detail');
+  // เปิด tab ตาม query param (เช่น ?tab=tracking)
+  const initialTab: TabType = tab === 'tracking' ? 'tracking' : tab === 'chat' ? 'chat' : 'detail';
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [tracking, setTracking] = useState<OrderTracking | null>(null);
   const [messages, setMessages] = useState<OrderMessage[]>([]);
