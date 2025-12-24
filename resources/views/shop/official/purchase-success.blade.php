@@ -44,10 +44,11 @@
                     <div class="space-y-4 mb-6">
                         @foreach($order->items as $item)
                         <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            @if($item->product && $item->product->main_image_url)
-                            <img src="{{ $item->product->main_image_url }}"
+                            @if($item->product && $item->product->primary_image_url)
+                            <img src="{{ $item->product->primary_image_url ?? 'https://via.placeholder.com/150' }}"
                                  alt="{{ $item->product_name }}"
-                                 class="w-16 h-16 object-cover rounded-lg">
+                                 class="w-16 h-16 object-cover rounded-lg"
+                                 onerror="this.src='https://via.placeholder.com/150'">
                             @else
                             <div class="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
                                 <i class="fas fa-box text-gray-400 text-xl"></i>
