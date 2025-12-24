@@ -107,6 +107,19 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
     Route::get('/capacity', [AnalyticsController::class, 'capacity'])->name('capacity');
     Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     Route::post('/collect', [AnalyticsController::class, 'collect'])->name('collect');
+
+    // Page Views Analytics - สถิติการเข้าชมหน้าเว็บ
+    Route::prefix('page-views')->name('page-views.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'index'])->name('index');
+        Route::get('/realtime', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'realtime'])->name('realtime');
+        Route::get('/realtime-data', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'realtimeData'])->name('realtime-data');
+        Route::get('/pages', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'pages'])->name('pages');
+        Route::get('/sources', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'sources'])->name('sources');
+        Route::get('/devices', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'devices'])->name('devices');
+        Route::get('/geography', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'geography'])->name('geography');
+        Route::get('/export', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'export'])->name('export');
+        Route::get('/chart-data', [\App\Http\Controllers\Admin\PageViewAnalyticsController::class, 'chartData'])->name('chart-data');
+    });
 });
 
 // Unified Reports Center - ศูนย์รายงานรวม
