@@ -648,11 +648,20 @@ class Product extends Model
 
     /**
      * Get primary image URL (main_image_url or first image)
+     *
+     * รองรับทั้ง relative path และ full URL
      */
     public function getPrimaryImageAttribute(): ?string
     {
         // If main_image_url exists, use it
         if ($this->main_image_url) {
+            // ตรวจสอบว่าเป็น full URL หรือไม่
+            if (filter_var($this->main_image_url, FILTER_VALIDATE_URL)) {
+                // เป็น full URL อยู่แล้ว (https://...)
+                return $this->main_image_url;
+            }
+
+            // เป็น relative path (products/xxx.webp)
             return Storage::url($this->main_image_url);
         }
 
@@ -660,6 +669,10 @@ class Product extends Model
         // Use eager loaded relationship to avoid N+1 query
         $firstImage = $this->images->first();
         if ($firstImage && $firstImage->image_url) {
+            // ตรวจสอบว่าเป็น full URL หรือไม่
+            if (filter_var($firstImage->image_url, FILTER_VALIDATE_URL)) {
+                return $firstImage->image_url;
+            }
             return Storage::url($firstImage->image_url);
         }
 

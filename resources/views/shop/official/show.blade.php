@@ -183,9 +183,10 @@
                                 :class="selectedImageIndex === 0 ? 'ring-4 ring-amber-500 ring-offset-2' : 'ring-2 ring-transparent'"
                                 class="aspect-square bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden
                                       transition-all duration-300 hover:scale-105">
-                            <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/150' }}"
+                            <img src="{{ $product->primary_image_url ?? 'https://via.placeholder.com/150' }}"
                                  alt="Main"
-                                 class="w-full h-full object-cover">
+                                 class="w-full h-full object-cover"
+                                 onerror="this.src='https://via.placeholder.com/150'">
                         </button>
 
                         {{-- Additional Images --}}
@@ -795,11 +796,12 @@
                                     </div>
                                 </div>
 
-                                <img src="{{ $related->main_image_url ?? 'https://via.placeholder.com/300' }}"
+                                <img src="{{ $related->primary_image_url ?? 'https://via.placeholder.com/300' }}"
                                      alt="{{ $related->name }}"
                                      class="w-full h-full object-cover
                                            group-hover:scale-110 transition-transform duration-700"
-                                     loading="lazy">
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300'">
                             </div>
                         </a>
 

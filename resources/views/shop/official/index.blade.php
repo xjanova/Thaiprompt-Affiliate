@@ -400,12 +400,13 @@
                                 @endif
 
                                 {{-- Product Image --}}
-                                <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/400' }}"
+                                <img src="{{ $product->primary_image_url ?? 'https://via.placeholder.com/400' }}"
                                      alt="{{ $product->name }}"
                                      class="w-full h-full object-cover
                                            transform group-hover:scale-110
                                            transition-transform duration-700"
-                                     loading="lazy">
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/400'">
 
                                 {{-- Hover Overlay --}}
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent
@@ -631,11 +632,12 @@
                                 </div>
                                 @endif
 
-                                <img src="{{ $product->main_image_url ?? 'https://via.placeholder.com/300' }}"
+                                <img src="{{ $product->primary_image_url ?? 'https://via.placeholder.com/300' }}"
                                      alt="{{ $product->name }}"
                                      class="w-full h-full object-cover
                                            group-hover:scale-110 transition-transform duration-700"
-                                     loading="lazy">
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300'">
 
                                 {{-- Quick View Overlay --}}
                                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100
