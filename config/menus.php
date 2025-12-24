@@ -593,16 +593,12 @@ return [
         ],
 
         [
-            'id' => 'pages-seo',
-            'label' => 'เพจ & SEO',
+            'id' => 'pages',
+            'label' => 'จัดการเพจ',
             'icon' => '📄',
-            'route' => null,
+            'route' => 'admin.pages.index',
             'order' => 21,
             'permissions' => [],
-            'submenu' => [
-                ['label' => 'จัดการเพจ', 'route' => 'admin.pages.index'],
-                ['label' => 'SEO Settings', 'route' => 'admin.seo.index'],
-            ],
         ],
 
         [
@@ -623,13 +619,23 @@ return [
 
         [
             'id' => 'analytics',
-            'label' => 'Analytics',
+            'label' => 'Analytics & SEO',
             'icon' => '📊',
             'route' => null,
             'order' => 22,
             'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500',
             'submenu' => [
-                ['label' => 'ภาพรวม', 'route' => 'admin.analytics.index'],
+                ['label' => '📊 ภาพรวมระบบ', 'route' => 'admin.analytics.index', 'description' => 'System Analytics'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '👁️ สถิติการเข้าชม', 'route' => 'admin.analytics.page-views.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500', 'description' => 'Page Views Analytics'],
+                ['label' => '   ├─ ⚡ Real-time', 'route' => 'admin.analytics.page-views.realtime', 'description' => 'ดูการเข้าชมแบบเรียลไทม์'],
+                ['label' => '   ├─ 📄 หน้าทั้งหมด', 'route' => 'admin.analytics.page-views.pages', 'description' => 'รายละเอียดแต่ละหน้า'],
+                ['label' => '   ├─ 🔗 Traffic Sources', 'route' => 'admin.analytics.page-views.sources', 'description' => 'แหล่งที่มาของผู้เยี่ยมชม'],
+                ['label' => '   └─ 📱 อุปกรณ์', 'route' => 'admin.analytics.page-views.devices', 'description' => 'สถิติตามอุปกรณ์/Browser'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🔍 SEO Settings', 'route' => 'admin.seo.index', 'description' => 'ตั้งค่า Meta Tags และ SEO'],
             ],
         ],
 

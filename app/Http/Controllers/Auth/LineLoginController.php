@@ -61,6 +61,15 @@ class LineLoginController extends Controller
             Session::put('line_login_referral', $request->get('ref'));
         }
 
+        // เก็บ origin page เพื่อ redirect กลับเมื่อเกิด error
+        // ถ้ามาจากหน้า register จะกลับไปหน้า register แทนหน้า login
+        $referer = $request->headers->get('referer', '');
+        if (str_contains($referer, '/register')) {
+            Session::put('line_login_origin', 'register');
+        } else {
+            Session::put('line_login_origin', 'login');
+        }
+
         // เก็บ mobile auth token ถ้ามาจาก mobile app (สำหรับ LINE login)
         if ($request->has('mobile_token') && $request->has('state')) {
             Session::put('line_mobile_token', $request->get('mobile_token'));
@@ -82,6 +91,20 @@ class LineLoginController extends Controller
      */
     public function callback(Request $request): RedirectResponse
     {
+        // ดึง origin page เพื่อ redirect กลับเมื่อเกิด error
+        $origin = Session::get('line_login_origin', 'login');
+        $errorRoute = $origin === 'register' ? 'register' : 'login';
+        $referralCode = Session::get('line_login_referral');
+
+        // สร้าง redirect URL พร้อม referral code ถ้ามี
+        $getErrorRedirect = function ($errorMessage) use ($errorRoute, $referralCode) {
+            $redirect = redirect()->route($errorRoute);
+            if ($errorRoute === 'register' && $referralCode) {
+                $redirect = redirect()->route($errorRoute, ['ref' => $referralCode]);
+            }
+            return $redirect->with('error', $errorMessage);
+        };
+
         // Verify state to prevent CSRF
         $state = Session::get('line_login_state');
         if (!$state || $state !== $request->get('state')) {
@@ -89,27 +112,41 @@ class LineLoginController extends Controller
                 'expected' => $state,
                 'received' => $request->get('state'),
             ]);
-            return redirect()->route('login')
-                ->with('error', 'Invalid state parameter. Please try again.');
+            Session::forget('line_login_origin');
+            return $getErrorRedirect('การยืนยันตัวตนไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
         }
 
         Session::forget('line_login_state');
 
         // Check for errors
         if ($request->has('error')) {
+            $lineError = $request->get('error');
+            $errorDesc = $request->get('error_description', 'Unknown error');
+
             Log::warning('LINE Login error', [
-                'error' => $request->get('error'),
-                'error_description' => $request->get('error_description'),
+                'error' => $lineError,
+                'error_description' => $errorDesc,
             ]);
-            return redirect()->route('login')
-                ->with('error', 'LINE Login failed: ' . $request->get('error_description', 'Unknown error'));
+
+            Session::forget('line_login_origin');
+
+            // แปลง error message ให้เข้าใจง่าย
+            $userMessage = match ($lineError) {
+                'access_denied' => 'คุณยกเลิกการเข้าสู่ระบบด้วย LINE กรุณาลองใหม่อีกครั้ง',
+                'invalid_request' => 'คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+                'unauthorized_client' => 'ระบบ LINE ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
+                'server_error' => 'เกิดข้อผิดพลาดจาก LINE กรุณาลองใหม่ภายหลัง',
+                default => 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE: ' . $errorDesc,
+            };
+
+            return $getErrorRedirect($userMessage);
         }
 
         // Get authorization code
         $code = $request->get('code');
         if (!$code) {
-            return redirect()->route('login')
-                ->with('error', 'Authorization code not received.');
+            Session::forget('line_login_origin');
+            return $getErrorRedirect('ไม่ได้รับรหัสยืนยันจาก LINE กรุณาลองใหม่อีกครั้ง');
         }
 
         try {
@@ -200,8 +237,8 @@ class LineLoginController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->route('login')
-                ->with('error', 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE กรุณาลองอีกครั้ง');
+            Session::forget('line_login_origin');
+            return $getErrorRedirect('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE กรุณาลองใหม่อีกครั้ง');
         }
     }
 

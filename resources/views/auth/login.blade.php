@@ -257,12 +257,32 @@
                     <p class="text-slate-400 text-sm sm:text-base">เข้าสู่ระบบเพื่อจัดการธุรกิจของคุณ</p>
                 </div>
 
+                {{-- Success Message --}}
+                @if (session('success'))
+                    <div class="mb-4 bg-green-500/20 border border-green-500/30 text-green-200 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            <span>{{ session('success') }}</span>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Info Message --}}
                 @if (session('info'))
                     <div class="mb-4 bg-blue-500/20 border border-blue-500/30 text-blue-200 px-4 py-3 rounded-xl text-sm">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-info-circle"></i>
                             <span>{{ session('info') }}</span>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Error Message from Session --}}
+                @if (session('error'))
+                    <div class="mb-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>{{ session('error') }}</span>
                         </div>
                     </div>
                 @endif

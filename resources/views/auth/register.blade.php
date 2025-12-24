@@ -198,6 +198,34 @@
                             @endif
                         </div>
 
+                        {{-- Session Messages --}}
+                        @if (session('success'))
+                        <div class="mb-4 bg-green-500/20 border border-green-500/30 text-green-200 px-4 py-3 rounded-xl text-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>{{ session('success') }}</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if (session('info'))
+                        <div class="mb-4 bg-blue-500/20 border border-blue-500/30 text-blue-200 px-4 py-3 rounded-xl text-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-info-circle"></i>
+                                <span>{{ session('info') }}</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if (session('error'))
+                        <div class="mb-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>{{ session('error') }}</span>
+                            </div>
+                        </div>
+                        @endif
+
                         {{-- Error Messages --}}
                         @if ($errors->any())
                         <div class="mb-4 bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm">
@@ -280,12 +308,34 @@
                             </div>
 
                             <script>
+                            /**
+                             * ฟังก์ชันเพิ่มเพื่อน LINE
+                             *
+                             * - บนมือถือ: ใช้ LINE deep link (line://ti/p/@xxx) เพื่อเปิดแอพ LINE โดยตรง
+                             * - บน desktop: แจ้งให้สแกน QR code
+                             * - มี fallback กรณีไม่มีแอพ LINE
+                             */
                             function addLineFriend(event) {
                                 event.preventDefault();
                                 const lineId = '{{ $lineSettings->messaging_channel_id }}';
                                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
                                 if (isMobile) {
-                                    window.location.href = 'https://line.me/R/ti/p/@' + lineId;
+                                    // ใช้ LINE deep link เพื่อเปิดแอพ LINE โดยตรง
+                                    const lineDeepLink = 'line://ti/p/@' + lineId;
+                                    const webFallback = 'https://line.me/R/ti/p/@' + lineId;
+
+                                    // พยายามเปิด LINE app ก่อน
+                                    const startTime = Date.now();
+                                    window.location.href = lineDeepLink;
+
+                                    // ถ้าไม่มี LINE app จะ fallback ไปเว็บ
+                                    setTimeout(function() {
+                                        // ถ้ายังอยู่ในหน้านี้ (ไม่ได้เปิดแอพ LINE) ให้ไปเว็บแทน
+                                        if (Date.now() - startTime < 2000) {
+                                            window.location.href = webFallback;
+                                        }
+                                    }, 1500);
                                 } else {
                                     alert('กรุณาใช้โทรศัพท์สแกน QR Code หรือค้นหา @' + lineId + ' ในแอพ LINE');
                                 }
