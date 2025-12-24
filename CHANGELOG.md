@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.400.0] - 2025-12-24
+
+### ✨ Features
+- feat: ลงทะเบียน TrackPageView middleware (6dc7f306)
+- feat: เพิ่มระบบ Analytics & SEO พร้อมเก็บสถิติการเข้าชม (5bc0ddfd)
+- feat: ปรับปรุง LINE signup บนมือถือ (bbfd552a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2336 from xjanova/claude/mobile-line-signup-4nH1S (6ed8186f)
+
 ## [v3.399.0] - 2025-12-22
 
 ### ✨ Features
