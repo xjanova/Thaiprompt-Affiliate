@@ -394,10 +394,25 @@ class UnifiedReportService
     {
         $query = User::query();
 
+        // ตรวจสอบว่ามี column last_login_at หรือไม่
+        $activeUsers = 0;
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'last_login_at')) {
+            // ใช้ last_login_at ถ้ามี
+            $activeUsers = User::where('last_login_at', '>=', $dates['start'])->count();
+        } else {
+            // ใช้ PageView แทน - นับ unique users ที่มีการเข้าชมในช่วงเวลาที่กำหนด
+            if (class_exists(\App\Models\PageView::class)) {
+                $activeUsers = \App\Models\PageView::whereBetween('viewed_at', [$dates['start'], $dates['end']])
+                    ->whereNotNull('user_id')
+                    ->distinct('user_id')
+                    ->count('user_id');
+            }
+        }
+
         return [
             'total' => User::count(),
             'new' => User::whereBetween('created_at', [$dates['start'], $dates['end']])->count(),
-            'active' => User::where('last_login_at', '>=', $dates['start'])->count(),
+            'active' => $activeUsers,
             'verified' => User::whereNotNull('email_verified_at')->count(),
         ];
     }
