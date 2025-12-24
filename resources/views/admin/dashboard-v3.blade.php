@@ -153,6 +153,37 @@
             </h3>
             <p class="text-sm text-white/90 drop-shadow">คอมมิชชั่นที่ปฏิเสธ</p>
         </div>
+
+        {{-- Page View Analytics --}}
+        @if(!empty($pageViewStats) && !empty($pageViewStats['today']))
+        <a href="{{ route('admin.analytics.index') }}"
+           class="glass-fusion rounded-2xl p-6 border border-white/30 shadow-2xl
+                  hover:scale-105 hover:border-white/50 transition-all duration-300
+                  cursor-pointer group">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg
+                           group-hover:scale-110 transition-transform duration-300">
+                    <i class="fas fa-chart-line text-white text-xl drop-shadow"></i>
+                </div>
+                @if($pageViewStats['views_change'] != 0)
+                <span class="px-3 py-1 bg-gradient-to-r {{ $pageViewStats['views_change'] > 0 ? 'from-green-400 to-emerald-500' : 'from-red-400 to-pink-500' }} text-white text-xs font-bold rounded-full shadow-lg">
+                    <i class="fas fa-arrow-{{ $pageViewStats['views_change'] > 0 ? 'up' : 'down' }} mr-1"></i>
+                    {{ number_format(abs($pageViewStats['views_change']), 1) }}%
+                </span>
+                @endif
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-1 drop-shadow-lg">
+                {{ number_format($pageViewStats['today']['total_views']) }}
+            </h3>
+            <p class="text-sm text-white/90 drop-shadow mb-2">ผู้เข้าชมวันนี้</p>
+            <div class="flex items-center justify-between text-xs text-white/70 pt-2 border-t border-white/20">
+                <span><i class="fas fa-users mr-1"></i>{{ number_format($pageViewStats['today']['unique_visitors']) }} คนเยี่ยมชม</span>
+                <span class="text-white/50 group-hover:text-white/90 transition-colors">
+                    <i class="fas fa-arrow-right"></i> ดูเพิ่มเติม
+                </span>
+            </div>
+        </a>
+        @endif
     </div>
 
     {{-- Top Affiliates Table --}}

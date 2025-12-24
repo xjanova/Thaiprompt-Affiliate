@@ -149,6 +149,31 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Page View Analytics
+        $pageViewStats = [];
+        if (class_exists(\App\Models\PageView::class)) {
+            // สถิติผู้เข้าชมวันนี้
+            $todayStats = \App\Models\PageView::getSummary('today');
+            // สถิติผู้เข้าชม 7 วันล่าสุด
+            $weekStats = \App\Models\PageView::getSummary('7days');
+            // สถิติผู้เข้าชมเดือนนี้
+            $monthStats = \App\Models\PageView::getSummary('month');
+
+            // คำนวณการเปลี่ยนแปลงเทียบกับเมื่อวาน
+            $yesterdayStats = \App\Models\PageView::getSummary('yesterday');
+            $viewsChange = $yesterdayStats['total_views'] > 0
+                ? (($todayStats['total_views'] - $yesterdayStats['total_views']) / $yesterdayStats['total_views']) * 100
+                : 0;
+
+            $pageViewStats = [
+                'today' => $todayStats,
+                'week' => $weekStats,
+                'month' => $monthStats,
+                'yesterday' => $yesterdayStats,
+                'views_change' => $viewsChange,
+            ];
+        }
+
         // ใช้ dashboard-v3 view สำหรับ V3 theme
         return view('admin.dashboard-v3', compact(
             'stats',
@@ -166,7 +191,8 @@ class DashboardController extends Controller
             'kycStats',
             'tradingStats',
             'ticketStats',
-            'recentTickets'
+            'recentTickets',
+            'pageViewStats'
         ));
     }
 }
