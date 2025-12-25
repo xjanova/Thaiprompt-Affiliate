@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.411.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2355 from xjanova/claude/fix-hotel-bookings-column-WEZAy (c104bc97)
+- feat: add migration for official_shop_settings table (43e8288b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.410.3] - 2025-12-25
 
 ### ✨ Features
