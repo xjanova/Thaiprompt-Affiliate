@@ -134,7 +134,7 @@
 
             {{-- Active Users --}}
             @php
-                $activeCount = \App\Models\User::where('status', 'active')->count();
+                $activeCount = \App\Models\User::whereNull('blocked_at')->count();
             @endphp
             <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
                  :class="isClassicTheme
