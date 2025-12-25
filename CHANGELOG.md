@@ -2,6 +2,29 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.419.0] - 2025-12-25
+
+### ✨ Features
+- feat: redesign Crypto-wallet additional pages with Premium Hero Headers (4 pages) (2194c90f)
+- feat: redesign Crypto-wallet core pages with Premium Hero Headers (4 pages) (67970331)
+- feat: redesign Crypto-wallet index page with Premium Hero Header (c6ab075d)
+- feat: redesign Recruit pages with Premium Hero Headers (3 pages) (9691d4ab)
+- feat: redesign Coin-shop pages with Premium Hero Headers (5 pages) (8b331843)
+- feat: redesign Prospects pages with Premium Hero Headers (3 pages) (ddbbe53d)
+- feat: redesign AI-gen pages with Premium Hero Headers (4 pages) (a764b5e3)
+- feat: redesign Services category + show with Premium Hero Headers (2 pages) (3b01c328)
+- feat: redesign Services index with Premium Hero Header (1 page) (47d54009)
+- feat: redesign Bookings + Team-transfer pages with Premium Hero Headers (7 pages) (31e7116a)
+- feat: redesign Investment plan-details with Premium Hero Header (45933550)
+- feat: redesign Investments pages with Premium Hero Headers (6 pages) (2d4d4099)
+- feat: redesign MLM + Tickets + Investments index with Premium Hero Headers (6 pages total) (deeedd5b)
+- feat: redesign MLM simulators + Tickets pages with Premium Hero Headers (5 pages) (29651be6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2372 from xjanova/claude/redesign-user-hero-header-V6OPT (2bb5c780)
+- chore: resolve merge conflicts in recruit pages - keep Premium Hero Headers (b76c26fe)
+
 ## [v3.418.0] - 2025-12-25
 
 ### ✨ Features
