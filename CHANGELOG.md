@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.403.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2341 from xjanova/claude/add-home-navigation-buttons-bl9uT (630193d8)
+- fix: แก้ไข route hotel.index เป็น hotels.index ที่ถูกต้อง (324779a3)
+### 🔧 Other Changes
+
+
 ## [v3.403.0] - 2025-12-25
 
 ### ✨ Features
