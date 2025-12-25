@@ -8,14 +8,44 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8" x-data="{ quantity: 1, maxQty: {{ $product->max_per_user ?? 100 }} }">
-    {{-- Breadcrumb --}}
-    <nav class="mb-6">
-        <ol class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <li><a href="{{ route('user.coin-shop.index') }}" class="hover:text-yellow-600">ร้านค้า Coins</a></li>
-            <li class="mx-2">/</li>
-            <li class="text-gray-900 dark:text-white font-medium">{{ $product->display_name }}</li>
-        </ol>
-    </nav>
+    {{-- Premium Hero Header (Amber-Orange for Product) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 dark:from-amber-700 dark:via-orange-700 dark:to-yellow-700 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-tag"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('user.coin-shop.index') }}"
+                   class="glass-fusion p-3 hover:bg-white/30 rounded-lg transition">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </a>
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-box-open text-3xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                        {{ $product->display_name }}
+                    </h1>
+                    <p class="text-amber-100 mt-1">
+                        รายละเอียดสินค้า • {{ $product->type_icon }} {{ $product->type_name }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {{-- Left: Product Image --}}
@@ -296,3 +326,17 @@
     @endif
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

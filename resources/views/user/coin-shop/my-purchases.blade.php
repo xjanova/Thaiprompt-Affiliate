@@ -8,64 +8,57 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    {{-- Header --}}
-    <div class="mb-8">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <span class="text-3xl">📦</span>
-                    ประวัติการซื้อ
-                </h1>
-                <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    ดูรายการสินค้าที่คุณซื้อทั้งหมด
-                </p>
-            </div>
-            <a href="{{ route('user.coin-shop.index') }}"
-               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-xl hover:from-yellow-500 hover:to-orange-600 transition">
-                🛒 ไปร้านค้า
-            </a>
+    {{-- Premium Hero Header (Blue-Indigo for Purchases) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-    </div>
 
-    {{-- Stats --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                        <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">รายการทั้งหมด</p>
-                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_purchases']) }}</p>
-                </div>
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-box-open"></i>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                    <span class="text-yellow-600 dark:text-yellow-400 font-bold">C</span>
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-receipt text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            📦 ประวัติการซื้อ
+                        </h1>
+                        <p class="text-blue-100 mt-1">
+                            ดูรายการสินค้าที่คุณซื้อทั้งหมด
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Coins ที่ใช้ไป</p>
-                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_spent'], 0) }}</p>
-                </div>
+                <a href="{{ route('user.coin-shop.index') }}"
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
+                    <i class="fas fa-store"></i>
+                    ไปร้านค้า
+                </a>
             </div>
-        </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
+            {{-- Stats in Hero --}}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">รายการทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_purchases']) }}</p>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">ใช้งานได้</p>
-                    <p class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['active_items']) }}</p>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">Coins ที่ใช้ไป</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_spent'], 0) }}</p>
+                </div>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">ใช้งานได้</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['active_items']) }}</p>
                 </div>
             </div>
         </div>
@@ -195,3 +188,17 @@
     @endif
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

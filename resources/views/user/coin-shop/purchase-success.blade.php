@@ -9,15 +9,35 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
-        {{-- Success Animation --}}
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 dark:bg-green-900 rounded-full mb-4 animate-bounce">
-                <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                </svg>
+        {{-- Premium Hero Header (Green-Emerald for Success) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ซื้อสินค้าสำเร็จ!</h1>
-            <p class="mt-2 text-gray-600 dark:text-gray-400">ขอบคุณที่ใช้บริการร้านค้า Coins</p>
+
+            {{-- Floating Icon Background --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20 animate-bounce">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+
+            {{-- Content --}}
+            <div class="relative z-10 text-center">
+                <div class="inline-flex items-center justify-center w-20 h-20 glass-fusion rounded-full mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2">
+                    ✓ ซื้อสินค้าสำเร็จ!
+                </h1>
+                <p class="text-green-100 text-lg">
+                    ขอบคุณที่ใช้บริการร้านค้า Coins
+                </p>
+            </div>
         </div>
 
         {{-- Order Details --}}
@@ -150,3 +170,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
