@@ -3,26 +3,21 @@
 @section('title', 'ถอน Liquidity - TPIX DEX')
 
 @section('content')
-<div class="container py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">
-                <i class="fas fa-minus-circle text-danger me-2"></i>
-                ถอน Liquidity
-            </h2>
-            <p class="text-muted mb-0">ถอนสภาพคล่องและรับ Token กลับ</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 dark:from-red-800 dark:via-rose-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <a href="{{ route('user.dex.my-positions') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>กลับ
-        </a>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-minus-square"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-minus-square text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Remove Liquidity</h1>
+            <p class="text-white/80 text-lg mt-1">ถอนสภาพคล่อง</p></div>
+        </div></div>
     </div>
-
-    <div class="row justify-content-center">
-        <div class="col-lg-6">
-            <!-- Remove Liquidity Card -->
-            <div class="card shadow-lg border-0" style="border-radius: 24px;">
-                <div class="card-body p-4">
                     <!-- Position Info -->
                     <div class="alert alert-light border rounded-3 p-3 mb-4" id="positionInfo">
                         <div class="text-center mb-3">

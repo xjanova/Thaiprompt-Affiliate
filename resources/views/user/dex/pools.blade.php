@@ -3,26 +3,21 @@
 @section('title', 'Liquidity Pools - TPIX DEX')
 
 @section('content')
-<div class="min-h-screen">
-    {{-- Hero Section พร้อม Gradient สวยงาม --}}
-    <div class="relative overflow-hidden rounded-3xl mb-8 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 dark:from-blue-800 dark:via-purple-800 dark:to-pink-800">
-        {{-- Background Pattern --}}
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 dark:from-blue-800 dark:via-cyan-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;60&quot; height=&quot;60&quot; viewBox=&quot;0 0 60 60&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Cpath d=&quot;M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z&quot;/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-
-        {{-- Content --}}
-        <div class="relative px-6 py-12 md:py-16 text-center text-white">
-            <div class="max-w-4xl mx-auto">
-                {{-- Icon --}}
-                <div class="inline-flex items-center justify-center w-20 h-20 mb-6 rounded-full bg-white/20 backdrop-blur-sm">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                </div>
-
-                {{-- Title --}}
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-100">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-water"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-water text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Liquidity Pools</h1>
+            <p class="text-white/80 text-lg mt-1">สระสภาพคล่อง</p></div>
+        </div></div>
+    </div>
                     Liquidity Pools
                 </h1>
 
