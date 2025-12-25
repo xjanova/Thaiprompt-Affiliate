@@ -871,13 +871,94 @@
             </div>
         </div>
 
+        {{-- Analytics & Reports 📊 --}}
+        <div class="space-y-1"
+             x-data="{ analyticsOpen: {{ request()->routeIs('admin.analytics.*') || request()->routeIs('admin.page-views.*') ? 'true' : 'false' }} }">
+            {{-- Analytics Header Button --}}
+            <button @click="analyticsOpen = !analyticsOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.analytics.*') || request()->routeIs('admin.page-views.*') ? 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-chart-line w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Analytics & Reports</span>
+                <i x-show="$store.sidebar.shouldExpand && analyticsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !analyticsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Analytics Submenu --}}
+            <div x-show="analyticsOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- System Analytics Overview --}}
+                <a href="{{ route('admin.analytics.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ภาพรวมระบบ</span>
+                </a>
+
+                {{-- Page Views Analytics --}}
+                <a href="{{ route('admin.analytics.page-views.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.page-views.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-eye w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ผู้เข้าชมแต่ละหน้า</span>
+                </a>
+
+                {{-- Real-time Analytics --}}
+                <a href="{{ route('admin.analytics.realtime') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.realtime') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-stream w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Real-time</span>
+                </a>
+
+                {{-- Traffic Analytics --}}
+                <a href="{{ route('admin.analytics.traffic') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.traffic') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-users w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Traffic & Visitors</span>
+                </a>
+
+                {{-- Performance Analytics --}}
+                <a href="{{ route('admin.analytics.performance') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.performance') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-rocket w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Performance</span>
+                </a>
+
+                {{-- Business Analytics --}}
+                <a href="{{ route('admin.analytics.business') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.business') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Business Analytics</span>
+                </a>
+
+                {{-- Database Analytics --}}
+                <a href="{{ route('admin.analytics.database') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.database') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-database w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Database Stats</span>
+                </a>
+
+                {{-- ศูนย์รายงานรวม --}}
+                <a href="{{ route('admin.unified-reports.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.unified-reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-bar w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์รายงานรวม</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Security & Monitoring 🔒 --}}
         <div class="space-y-1"
-             x-data="{ securityOpen: {{ request()->routeIs('admin.security.*') || request()->routeIs('admin.analytics.*') || request()->routeIs('admin.advanced-analytics.*') ? 'true' : 'false' }} }">
+             x-data="{ securityOpen: {{ request()->routeIs('admin.security.*') ? 'true' : 'false' }} }">
             {{-- Security Header Button --}}
             <button @click="securityOpen = !securityOpen"
                     type="button"
-                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.security.*') || request()->routeIs('admin.analytics.*') || request()->routeIs('admin.advanced-analytics.*') ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.security.*') ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-shield-halved w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Security</span>
                 <i x-show="$store.sidebar.shouldExpand && securityOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
@@ -909,32 +990,6 @@
                     <i class="fas fa-brain w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Threat Intelligence</span>
                 </a>
-
-                {{-- System Analytics --}}
-                <a href="{{ route('admin.analytics.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">System Analytics</span>
-                </a>
-
-                {{-- Unified Reports Center - ศูนย์รายงานรวม 🆕 --}}
-                <a href="{{ route('admin.unified-reports.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.unified-reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-chart-bar w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์รายงานรวม</span>
-                </a>
-
-                {{-- Advanced Analytics (Phase 3 - Not Yet Implemented) --}}
-                {{--
-                <a href="{{ route('admin.advanced-analytics.dashboard') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.advanced-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Advanced Analytics</span>
-                </a>
-                --}}
             </div>
         </div>
 
