@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.414.2] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2363 from xjanova/claude/fix-users-status-column-bFKof (1d1f8b3c)
+- fix: correct User collection filter to use blocked_at instead of status (49d697a1)
+### 🔧 Other Changes
+
+
 ## [v3.414.1] - 2025-12-25
 
 ### ✨ Features
