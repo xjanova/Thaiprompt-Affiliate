@@ -14,6 +14,7 @@ class SoftwareProduct extends Model
 
     protected $fillable = [
         'category_id',
+        'developer_id',
         'name',
         'slug',
         'short_description',
@@ -40,6 +41,18 @@ class SoftwareProduct extends Model
         'quotation_count',
         'order_count',
         'sort_order',
+        // File Storage Fields
+        'storage_type',
+        'file_url',
+        's3_bucket',
+        's3_key',
+        's3_region',
+        'google_drive_file_id',
+        'local_file_path',
+        'file_size',
+        'file_hash',
+        'version',
+        'requires_license',
     ];
 
     protected $casts = [
@@ -58,6 +71,8 @@ class SoftwareProduct extends Model
         'quotation_count' => 'integer',
         'order_count' => 'integer',
         'sort_order' => 'integer',
+        'file_size' => 'integer',
+        'requires_license' => 'boolean',
     ];
 
     /**
@@ -110,6 +125,30 @@ class SoftwareProduct extends Model
     public function quotations(): HasMany
     {
         return $this->hasMany(SoftwareQuotation::class, 'software_product_id');
+    }
+
+    /**
+     * ความสัมพันธ์กับ Developer (User)
+     */
+    public function developer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'developer_id');
+    }
+
+    /**
+     * ความสัมพันธ์กับ Software Licenses
+     */
+    public function licenses(): HasMany
+    {
+        return $this->hasMany(SoftwareLicense::class, 'software_product_id');
+    }
+
+    /**
+     * ความสัมพันธ์กับ Software Downloads
+     */
+    public function downloads(): HasMany
+    {
+        return $this->hasMany(SoftwareDownload::class, 'software_product_id');
     }
 
     /**
@@ -186,5 +225,85 @@ class SoftwareProduct extends Model
             return "{$this->price_label} {$price} {$this->currency}";
         }
         return "{$price} {$this->currency}";
+    }
+
+    /**
+     * ตรวจสอบว่ามีไฟล์หรือไม่
+     */
+    public function hasFile(): bool
+    {
+        return !empty($this->storage_type) && (
+            !empty($this->file_url) ||
+            !empty($this->s3_key) ||
+            !empty($this->google_drive_file_id) ||
+            !empty($this->local_file_path)
+        );
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถดาวน์โหลดได้หรือไม่
+     */
+    public function isDownloadable(): bool
+    {
+        return $this->hasFile() && $this->is_active;
+    }
+
+    /**
+     * ดึง URL สำหรับดาวน์โหลด (ขึ้นอยู่กับประเภทการจัดเก็บ)
+     */
+    public function getDownloadUrl(): ?string
+    {
+        if (!$this->hasFile()) {
+            return null;
+        }
+
+        return match($this->storage_type) {
+            'url' => $this->file_url,
+            's3' => route('software.download', ['product' => $this->id]),
+            'google_drive' => route('software.download', ['product' => $this->id]),
+            'local' => route('software.download', ['product' => $this->id]),
+            default => null,
+        };
+    }
+
+    /**
+     * ดึงขนาดไฟล์ในรูปแบบที่อ่านง่าย
+     */
+    public function getFileSizeFormattedAttribute(): ?string
+    {
+        if (!$this->file_size) {
+            return null;
+        }
+
+        $bytes = $this->file_size;
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+
+        return round($bytes, 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * นับจำนวน licenses ที่ active
+     */
+    public function getActiveLicensesCountAttribute(): int
+    {
+        return $this->licenses()
+            ->where('status', 'active')
+            ->count();
+    }
+
+    /**
+     * นับจำนวน downloads ที่สำเร็จ
+     */
+    public function getCompletedDownloadsCountAttribute(): int
+    {
+        return $this->downloads()
+            ->where('status', 'completed')
+            ->count();
     }
 }

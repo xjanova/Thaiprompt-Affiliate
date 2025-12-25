@@ -1024,6 +1024,42 @@ Route::middleware(['auth'])->prefix('developer')->name('developer.')->group(func
     // หน้ารอการอนุมัติ
     Route::get('/pending', [DeveloperRegistrationController::class, 'pending'])->name('pending');
 
-    // Dashboard (ต้องอนุมัติแล้ว)
-    Route::get('/dashboard', [DeveloperRegistrationController::class, 'dashboard'])->name('dashboard');
+    // Dashboard (ต้องอนุมัติแล้ว) - ใช้ developer.approved middleware
+    Route::middleware(['developer.approved'])->group(function () {
+        Route::get('/dashboard', [DeveloperRegistrationController::class, 'dashboard'])->name('dashboard');
+    });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Software Download Routes
+|--------------------------------------------------------------------------
+|
+| Routes สำหรับจัดการการดาวน์โหลดซอฟต์แวร์
+| - รองรับ license-based downloads
+| - One-time download tokens
+| - Multi-cloud storage support
+|
+*/
+
+use App\Http\Controllers\SoftwareDownloadController;
+
+// Download routes (ต้อง authenticate)
+Route::middleware(['auth'])->prefix('software')->name('software.')->group(function () {
+    // สร้าง download token จาก license
+    Route::post('/license/{license}/download-token', [SoftwareDownloadController::class, 'createToken'])
+        ->name('license.download-token');
+
+    // ดาวน์โหลดผ่าน product (ต้องมี license)
+    Route::get('/download/{product}', [SoftwareDownloadController::class, 'download'])
+        ->name('download');
+
+    // ประวัติการดาวน์โหลด
+    Route::get('/downloads/history', [SoftwareDownloadController::class, 'history'])
+        ->name('downloads.history');
+});
+
+// Public download route (ใช้ token - ไม่ต้อง auth)
+Route::get('/download/{token}', [SoftwareDownloadController::class, 'downloadByToken'])
+    ->name('software.download.file')
+    ->where('token', '[a-f0-9]{64}');
