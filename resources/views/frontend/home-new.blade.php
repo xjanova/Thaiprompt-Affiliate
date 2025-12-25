@@ -1259,7 +1259,7 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('hotel.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
+                            <a href="{{ route('hotels.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏨 จองโรงแรม</span>
                             </a>
                             <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
