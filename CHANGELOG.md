@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.413.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2358 from xjanova/claude/redesign-admin-pages-vH0Dm (20435d15)
+- feat: add theme-conditional stats cards and quick links to admin users index (1d9aa2d6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.412.0] - 2025-12-25
 
 ### ✨ Features
