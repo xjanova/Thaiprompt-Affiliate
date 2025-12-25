@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.407.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2347 from xjanova/claude/add-home-navigation-buttons-bl9uT (c2bc5a24)
+- feat: add License Keys & Downloads System (Phase 3.3) (c2e68c66)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.406.1] - 2025-12-25
 
 ### ✨ Features
