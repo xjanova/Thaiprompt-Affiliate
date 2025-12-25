@@ -1700,8 +1700,8 @@
 
             {{-- Footer Links --}}
             <div class="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
-                <a href="{{ route('page.show', 'privacy-policy') }}" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
-                <a href="{{ route('page.show', 'terms-of-service') }}" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
+                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
+                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
                 <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายคุกกี้</a>
             </div>
         </div>
