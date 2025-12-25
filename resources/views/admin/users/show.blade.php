@@ -3,71 +3,100 @@
 @section('title', 'รายละเอียดผู้ใช้ - ' . $user->name)
 
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('admin.users.index') }}" class="hover:opacity-80 transition-opacity" style="color: var(--arrow-x-primary)">
-        ← กลับไปรายการผู้ใช้
-    </a>
-</div>
+<div class="space-y-6">
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-sm rounded-lg transition-all text-white">
+            <i class="fas fa-arrow-left"></i>
+            กลับไปรายการผู้ใช้
+        </a>
+    </div>
 
-<!-- User Header Card -->
-<div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6 mb-6">
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center">
-            {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
-            <img src="{{ $user->profile_picture_url }}"
-                 alt="{{ $user->name }}"
-                 class="h-16 w-16 rounded-full object-cover"
-                 onerror="this.onerror=null; this.outerHTML='<div class=\'h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold\' style=\'background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
+    {{-- Premium Hero Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-            <div class="ml-4">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $user->name }}</h2>
-                <p class="text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="absolute text-white/10 text-6xl bottom-10 left-20" style="animation: float 6s ease-in-out infinite; animation-delay: 0.3s">
+                <i class="fas fa-shield-alt"></i>
             </div>
         </div>
-        <div class="flex gap-3">
-            @php
-                $mlmMember = $user->mlmMembers()->first();
-            @endphp
-            @if($mlmMember)
-                <a href="{{ route('admin.mlm.members.show', $mlmMember) }}"
-                   class="px-5 py-2.5 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-                   style="background: var(--arrow-x-primary-gradient)">
-                    ดู MLM Member
-                </a>
-            @endif
-            <a href="{{ route('admin.users.edit', $user) }}"
-               class="px-5 py-2.5 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
-               style="background: var(--arrow-x-primary-gradient)">
-                แก้ไข
-            </a>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {{-- User Profile Section --}}
+                <div class="flex items-center gap-6">
+                    {{-- Avatar --}}
+                    <div class="relative">
+                        <img src="{{ $user->profile_picture_url }}"
+                             alt="{{ $user->name }}"
+                             class="h-24 w-24 rounded-2xl object-cover ring-4 ring-white/30 shadow-2xl"
+                             onerror="this.onerror=null; this.outerHTML='<div class=\'h-24 w-24 rounded-2xl flex items-center justify-center text-4xl font-bold ring-4 ring-white/30 shadow-2xl\' style=\'background: rgba(255,255,255,0.2); color: white;\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
+                        @if($user->email_verified_at)
+                            <div class="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-2 shadow-lg">
+                                <i class="fas fa-check text-xs"></i>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- User Info --}}
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg mb-2">{{ $user->name }}</h1>
+                        <p class="text-purple-100 text-lg mb-3">{{ $user->email }}</p>
+
+                        {{-- Role Badges --}}
+                        <div class="flex flex-wrap gap-2">
+                            @if($user->is_super_admin)
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-400/20 text-yellow-100 border border-yellow-300/30">
+                                    🔐 Super Admin
+                                </span>
+                            @endif
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-white/20 text-white border border-white/30">
+                                {{ ucfirst($user->role ?? 'user') }}
+                            </span>
+                            @if($user->email_verified_at)
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-400/20 text-green-100 border border-green-300/30">
+                                    ✓ Verified
+                                </span>
+                            @else
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-orange-400/20 text-orange-100 border border-orange-300/30">
+                                    ⚠ Not Verified
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex flex-wrap gap-3">
+                    @php
+                        $mlmMember = $user->mlmMembers()->first();
+                    @endphp
+                    @if($mlmMember)
+                        <a href="{{ route('admin.mlm.members.show', $mlmMember) }}"
+                           class="glass-fusion hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
+                            <i class="fas fa-network-wired group-hover:scale-110 transition-transform"></i>
+                            ดู MLM Member
+                        </a>
+                    @endif
+                    <a href="{{ route('admin.users.edit', $user) }}"
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
+                        <i class="fas fa-edit group-hover:rotate-12 transition-transform duration-300"></i>
+                        แก้ไขข้อมูล
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- Role Badge -->
-    <div class="flex gap-2 mb-4">
-        @if($user->is_super_admin)
-            <span class="px-3 py-1 text-sm font-semibold rounded-full"
-                  style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)">
-                🔐 Super Admin
-            </span>
-        @endif
-        <span class="px-3 py-1 text-sm font-semibold rounded-full"
-              style="@if($user->role === 'admin')background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)@elseif($user->role === 'super_admin')background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)@elsebackground-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@endif">
-            {{ ucfirst($user->role ?? 'user') }}
-        </span>
-        @if($user->email_verified_at)
-            <span class="px-3 py-1 text-sm font-semibold rounded-full"
-                  style="background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)">
-                ✓ Email Verified
-            </span>
-        @else
-            <span class="px-3 py-1 text-sm font-semibold rounded-full"
-                  style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)">
-                ⚠ Email Not Verified
-            </span>
-        @endif
-    </div>
-</div>
 
 <!-- Details Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -363,33 +392,119 @@
 </div>
 @endif
 
-<!-- Activity Summary -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">สถานะบัญชี</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">
-            {{ $user->email_verified_at ? 'Active' : 'Pending' }}
-        </p>
-    </div>
+{{-- Activity Summary - Beautiful Gradient Cards --}}
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-bar" style="color: var(--arrow-x-primary-start)"></i>
+            สถิติกิจกรรม
+        </h2>
 
-    @php
-        $mlmMemberSummary = $user->mlmMembers()->first();
-    @endphp
-    @if($mlmMemberSummary)
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total PV</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">{{ number_format($mlmMemberSummary->total_pv, 2) }}</p>
-    </div>
+        @php
+            $mlmMemberSummary = $user->mlmMembers()->first();
+        @endphp
 
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Team PV</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-success)">{{ number_format($mlmMemberSummary->total_team_pv, 2) }}</p>
-    </div>
-    @endif
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {{-- Account Status --}}
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-800">
+                {{-- Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-user-check text-9xl text-white"></i>
+                </div>
 
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">MLM Commissions</h3>
-        <p class="text-2xl font-bold" style="color: var(--arrow-x-warning)">{{ $user->mlmCommissions->count() ?? 0 }}</p>
+                {{-- Content --}}
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">{{ $user->email_verified_at ? '✅' : '⏳' }}</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
+                            Status
+                        </span>
+                    </div>
+                    <p class="text-blue-100 text-sm mb-1">สถานะบัญชี</p>
+                    <p class="text-3xl font-bold text-white">{{ $user->email_verified_at ? 'Active' : 'Pending' }}</p>
+                    <p class="text-xs text-blue-100 mt-2">Account Status</p>
+                </div>
+            </div>
+
+            @if($mlmMemberSummary)
+                {{-- Total PV --}}
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800">
+                    {{-- Background Icon --}}
+                    <div class="absolute -right-8 -top-8 opacity-10">
+                        <i class="fas fa-star text-9xl text-white"></i>
+                    </div>
+
+                    {{-- Content --}}
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-5xl">⭐</span>
+                            <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
+                                PV
+                            </span>
+                        </div>
+                        <p class="text-purple-100 text-sm mb-1">Total PV</p>
+                        <p class="text-3xl font-bold text-white">{{ number_format($mlmMemberSummary->total_pv, 2) }}</p>
+                        <p class="text-xs text-purple-100 mt-2">Personal Volume</p>
+                    </div>
+                </div>
+
+                {{-- Team PV --}}
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900">
+                    {{-- Background Icon --}}
+                    <div class="absolute -right-8 -top-8 opacity-10">
+                        <i class="fas fa-users text-9xl text-white"></i>
+                    </div>
+
+                    {{-- Content --}}
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-5xl">👥</span>
+                            <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
+                                Team
+                            </span>
+                        </div>
+                        <p class="text-green-100 text-sm mb-1">Team PV</p>
+                        <p class="text-3xl font-bold text-white">{{ number_format($mlmMemberSummary->total_team_pv, 2) }}</p>
+                        <p class="text-xs text-green-100 mt-2">Team Volume</p>
+                    </div>
+                </div>
+            @else
+                {{-- Placeholder for non-MLM users --}}
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 bg-gray-400 dark:bg-gray-600">
+                    <div class="text-center text-white/80">
+                        <i class="fas fa-ban text-4xl mb-2"></i>
+                        <p class="text-sm">ไม่ได้เป็น MLM Member</p>
+                    </div>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 bg-gray-400 dark:bg-gray-600">
+                    <div class="text-center text-white/80">
+                        <i class="fas fa-ban text-4xl mb-2"></i>
+                        <p class="text-sm">ไม่ได้เป็น MLM Member</p>
+                    </div>
+                </div>
+            @endif
+
+            {{-- MLM Commissions Count --}}
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-orange-500 to-red-600 dark:from-orange-600 dark:to-red-800">
+                {{-- Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-money-bill-wave text-9xl text-white"></i>
+                </div>
+
+                {{-- Content --}}
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">💰</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
+                            Total
+                        </span>
+                    </div>
+                    <p class="text-orange-100 text-sm mb-1">MLM Commissions</p>
+                    <p class="text-3xl font-bold text-white">{{ $user->mlmCommissions->count() ?? 0 }}</p>
+                    <p class="text-xs text-orange-100 mt-2">Commission Records</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
