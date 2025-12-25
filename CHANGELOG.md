@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.406.0] - 2025-12-25
+
+### ✨ Features
+- feat: add Multi-Cloud Upload System (Phase 3.2 - Backend) (7df3d495)
+- feat: add Developer Views (Phase 3.1 - Frontend) (ba7b2bca)
+- feat: add Developer Registration & KYC System (Phase 3.1 - Backend) (db1c37ca)
+- feat: add Unified Marketplace (Phase 2 - Part 1) (dd3c4c43)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2345 from xjanova/claude/add-home-navigation-buttons-bl9uT (2fe605d9)
+
 ## [v3.405.0] - 2025-12-25
 
 ### ✨ Features
