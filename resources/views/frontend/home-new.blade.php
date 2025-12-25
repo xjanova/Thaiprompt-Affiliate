@@ -1062,13 +1062,13 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('chatbot.marketplace.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700">🤖 AI Chatbot</span>
                             </a>
-                            <a href="{{ route('trading-bot.marketplace') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700">📈 Trading Bot</span>
                             </a>
-                            <a href="{{ route('software.products.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700">💻 ซอฟต์แวร์/โปรแกรม</span>
                             </a>
                         </div>
