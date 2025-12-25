@@ -3,61 +3,99 @@
 @section('title', 'คู่มือเสริมทางเศรษฐี Pro - ฉบับสมบูรณ์พร้อม 3D Visualization')
 
 @section('content')
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="container mx-auto px-4 py-8">
 
-    <!-- Hero Section with 3D Background -->
-    <div class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/50 z-10"></div>
-        <div class="container mx-auto px-4 py-16 relative z-20">
-            <div class="text-center mb-8">
-                <div class="inline-block mb-6">
-                    <div class="text-7xl mb-4 animate-bounce">💎</div>
-                    <h1 class="text-6xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 bg-clip-text text-transparent drop-shadow-2xl mb-4">
-                        คู่มือเสริมทางเศรษฐี Pro
-                    </h1>
-                    <p class="text-2xl text-yellow-100 font-semibold mb-4">ฉบับสมบูรณ์ พร้อม 3D Visualization</p>
-                    <p class="text-lg text-gray-300 max-w-3xl mx-auto">
-                        เรียนรู้ทุกวิธีการสร้างรายได้กับเรา พร้อมเครื่องมือ 3D ที่ช่วยให้คุณเข้าใจแผนธุรกิจได้ง่ายขึ้น
-                    </p>
+        {{-- Premium Hero Header (Amber-Orange-Purple for Wealth Guide Pro) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-amber-600 via-orange-600 to-purple-700 dark:from-amber-800 dark:via-orange-800 dark:to-purple-900 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icon Background --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-gem"></i>
+                </div>
+            </div>
+
+            {{-- Content --}}
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-crown text-3xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                                💎 คู่มือเสริมทางเศรษฐี Pro
+                            </h1>
+                            <p class="text-amber-100 mt-1">
+                                ฉบับสมบูรณ์ พร้อม 3D Visualization
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('user.dashboard') }}"
+                       class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="hidden md:inline">กลับหน้าหลัก</span>
+                    </a>
                 </div>
 
-                <!-- Quick Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
-                    <div class="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-sm rounded-xl p-4 border border-blue-400/30">
+                {{-- Quick Stats --}}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="glass-fusion rounded-xl p-4 text-center">
                         <div class="text-3xl mb-2">📊</div>
-                        <div class="text-2xl font-bold text-blue-400">6+</div>
-                        <div class="text-sm text-gray-300">ช่องทางรายได้</div>
+                        <div class="text-2xl font-bold text-white">6+</div>
+                        <div class="text-sm text-amber-100">ช่องทางรายได้</div>
                     </div>
-                    <div class="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-sm rounded-xl p-4 border border-green-400/30">
+                    <div class="glass-fusion rounded-xl p-4 text-center">
                         <div class="text-3xl mb-2">💰</div>
-                        <div class="text-2xl font-bold text-green-400">∞</div>
-                        <div class="text-sm text-gray-300">ไม่จำกัดรายได้</div>
+                        <div class="text-2xl font-bold text-white">∞</div>
+                        <div class="text-sm text-amber-100">ไม่จำกัดรายได้</div>
                     </div>
-                    <div class="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30">
+                    <div class="glass-fusion rounded-xl p-4 text-center">
                         <div class="text-3xl mb-2">🎯</div>
-                        <div class="text-2xl font-bold text-purple-400">8</div>
-                        <div class="text-sm text-gray-300">ระดับยศ</div>
+                        <div class="text-2xl font-bold text-white">8</div>
+                        <div class="text-sm text-amber-100">ระดับยศ</div>
                     </div>
-                    <div class="bg-gradient-to-br from-amber-500/20 to-amber-600/20 backdrop-blur-sm rounded-xl p-4 border border-amber-400/30">
+                    <div class="glass-fusion rounded-xl p-4 text-center">
                         <div class="text-3xl mb-2">🚀</div>
-                        <div class="text-2xl font-bold text-amber-400">3D</div>
-                        <div class="text-sm text-gray-300">Interactive Tools</div>
+                        <div class="text-2xl font-bold text-white">3D</div>
+                        <div class="text-sm text-amber-100">Interactive Tools</div>
                     </div>
                 </div>
 
-                <!-- CTA Buttons -->
-                <div class="flex flex-wrap justify-center gap-4">
+                {{-- CTA Buttons --}}
+                <div class="flex flex-wrap justify-center gap-3">
                     <button onclick="scrollToSection('income-overview')"
-                            class="px-8 py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-500 hover:to-orange-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
-                        🎯 เริ่มต้นสร้างรายได้
+                            class="glass-fusion hover:bg-white/30 rounded-lg px-6 py-3 text-white font-semibold transition-all flex items-center gap-2">
+                        <span>🎯</span> เริ่มต้นสร้างรายได้
                     </button>
                     <button onclick="scrollToSection('3d-mindmap')"
-                            class="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
-                        🧠 ดู 3D Mind Map
+                            class="glass-fusion hover:bg-white/30 rounded-lg px-6 py-3 text-white font-semibold transition-all flex items-center gap-2">
+                        <span>🧠</span> ดู 3D Mind Map
                     </button>
                     <button onclick="scrollToSection('income-calculator')"
-                            class="px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-transform hover:scale-[1.02] transition-all shadow-xl">
-                        💎 คำนวณรายได้
+                            class="glass-fusion hover:bg-white/30 rounded-lg px-6 py-3 text-white font-semibold transition-all flex items-center gap-2">
+                        <span>💎</span> คำนวณรายได้
                     </button>
                 </div>
             </div>

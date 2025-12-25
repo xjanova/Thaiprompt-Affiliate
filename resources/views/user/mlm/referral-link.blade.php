@@ -3,16 +3,58 @@
 @section('title', 'ลิงก์แนะนำสมาชิก')
 
 @section('content')
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 <div class="max-w-4xl mx-auto space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-pink-600 via-rose-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <span class="text-3xl">🎯</span>
+    {{-- Premium Hero Header (Pink-Rose-Red for Referral Link) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-pink-600 via-rose-600 to-red-600 dark:from-pink-800 dark:via-rose-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-share-nodes"></i>
             </div>
-            <div>
-                <h1 class="text-3xl font-bold">ลิงก์แนะนำสมาชิก</h1>
-                <p class="text-pink-100 mt-1">แชร์ลิงก์นี้เพื่อเชิญเพื่อนเข้าร่วม</p>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-link text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            ลิงก์แนะนำสมาชิก
+                        </h1>
+                        <p class="text-pink-100 mt-1">
+                            แชร์ลิงก์นี้เพื่อเชิญเพื่อนเข้าร่วม
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ route('user.mlm.dashboard') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden md:inline">กลับหน้า MLM</span>
+                </a>
             </div>
         </div>
     </div>
