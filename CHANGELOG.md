@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.403.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2340 from xjanova/claude/fix-shop-images-mobile-Kw8Jy (904cfedb)
+- feat: แยกเมนู Analytics & Reports ออกจาก Security section (28e03e5d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.402.0] - 2025-12-25
 
 ### ✨ Features
