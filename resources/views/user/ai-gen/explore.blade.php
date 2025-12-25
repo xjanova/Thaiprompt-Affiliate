@@ -4,36 +4,49 @@
 
 @section('content')
 <div class="explore-container" x-data="exploreData()">
-    <!-- Hero Banner -->
-    <div class="explore-hero">
-        <div class="hero-overlay"></div>
-        <div class="hero-content">
-            <div class="hero-badge">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
-                </svg>
-                <span>สำรวจความคิดสร้างสรรค์</span>
+    {{-- Premium Hero Header (Indigo-Purple for Explore) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-compass"></i>
             </div>
-            <h1 class="hero-title">
-                ค้นพบ<span class="gradient-text">ผลงานสุดล้ำ</span><br>จากทั่วโลก
-            </h1>
-            <p class="hero-subtitle">แรงบันดาลใจไร้ขีดจำกัดจากชุมชนผู้สร้างสรรค์ด้วย AI</p>
+        </div>
 
-            <!-- Search Bar -->
-            <div class="search-bar">
-                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input type="text"
-                       x-model="searchQuery"
-                       @keyup.enter="search()"
-                       placeholder="ค้นหาแรงบันดาลใจ..."
-                       class="search-input">
-                <button @click="search()" class="search-btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        <div class="relative z-10 py-6">
+            <div class="text-center mb-6">
+                <div class="glass-fusion inline-block px-4 py-2 rounded-full mb-4">
+                    <svg class="w-5 h-5 inline-block mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
                     </svg>
-                </button>
+                    <span class="text-white font-semibold">สำรวจความคิดสร้างสรรค์</span>
+                </div>
+                <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg mb-4">
+                    🔍 ค้นพบ<span class="text-pink-200">ผลงานสุดล้ำ</span><br class="md:block hidden">จากทั่วโลก
+                </h1>
+                <p class="text-lg text-indigo-100">แรงบันดาลใจไร้ขีดจำกัดจากชุมชนผู้สร้างสรรค์ด้วย AI</p>
+            </div>
+
+            {{-- Search Bar --}}
+            <div class="max-w-2xl mx-auto relative">
+                <div class="glass-fusion rounded-xl p-2 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-white/70 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text"
+                           x-model="searchQuery"
+                           @keyup.enter="search()"
+                           placeholder="ค้นหาแรงบันดาลใจ..."
+                           class="flex-1 bg-transparent border-0 text-white placeholder-white/60 focus:ring-0 text-lg">
+                    <button @click="search()" class="glass-fusion hover:bg-white/30 px-6 py-3 rounded-lg transition text-white font-semibold">
+                        <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1183,4 +1196,18 @@
         }
     }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush
