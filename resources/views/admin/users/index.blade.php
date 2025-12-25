@@ -104,27 +104,31 @@
             {{-- Total Users --}}
             <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
                  :class="isClassicTheme
-                     ? 'bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900 text-white'
-                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-users text-9xl"></i>
+                     ? 'bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900'
+                     : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-users text-9xl text-white"></i>
                 </div>
-                <div class="relative z-10">
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-user-friends text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">ผู้ใช้ทั้งหมด</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($users->total()) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
-                            ผู้ใช้ทั้งหมด
-                        </p>
-                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-blue-100 dark:bg-blue-900/50'">
-                            <i class="fas fa-user-friends text-2xl" :class="isClassicTheme ? 'text-white' : 'text-blue-600 dark:text-blue-400'"></i>
-                        </div>
+                        <span class="text-5xl">👥</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Total</span>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
-                        {{ number_format($users->total()) }}
-                    </h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-database" :class="isClassicTheme ? 'text-blue-200' : 'text-blue-600 dark:text-blue-400'"></i>
-                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Total Users</span>
-                    </div>
+                    <p class="text-blue-100 text-sm mb-1">ผู้ใช้ทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($users->total()) }}</p>
+                    <p class="text-xs text-blue-100 mt-2">Total Users</p>
                 </div>
             </div>
 
@@ -134,27 +138,31 @@
             @endphp
             <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
                  :class="isClassicTheme
-                     ? 'bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900 text-white'
-                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-user-check text-9xl"></i>
+                     ? 'bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900'
+                     : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-user-check text-9xl text-white"></i>
                 </div>
-                <div class="relative z-10">
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-check-circle text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">ผู้ใช้ Active</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($activeCount) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
-                            ผู้ใช้ Active
-                        </p>
-                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-green-100 dark:bg-green-900/50'">
-                            <i class="fas fa-check-circle text-2xl" :class="isClassicTheme ? 'text-white' : 'text-green-600 dark:text-green-400'"></i>
-                        </div>
+                        <span class="text-5xl">✅</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Active</span>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
-                        {{ number_format($activeCount) }}
-                    </h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-signal" :class="isClassicTheme ? 'text-green-200' : 'text-green-600 dark:text-green-400'"></i>
-                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Active Status</span>
-                    </div>
+                    <p class="text-green-100 text-sm mb-1">ผู้ใช้ Active</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($activeCount) }}</p>
+                    <p class="text-xs text-green-100 mt-2">Active Status</p>
                 </div>
             </div>
 
@@ -164,54 +172,62 @@
             @endphp
             <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
                  :class="isClassicTheme
-                     ? 'bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-800 text-white'
-                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-envelope-circle-check text-9xl"></i>
+                     ? 'bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-800'
+                     : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-envelope-circle-check text-9xl text-white"></i>
                 </div>
-                <div class="relative z-10">
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-shield-check text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">ยืนยันอีเมลแล้ว</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($verifiedCount) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
-                            ยืนยันอีเมลแล้ว
-                        </p>
-                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-cyan-100 dark:bg-cyan-900/50'">
-                            <i class="fas fa-shield-check text-2xl" :class="isClassicTheme ? 'text-white' : 'text-cyan-600 dark:text-cyan-400'"></i>
-                        </div>
+                        <span class="text-5xl">📧</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Verified</span>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
-                        {{ number_format($verifiedCount) }}
-                    </h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-envelope" :class="isClassicTheme ? 'text-cyan-200' : 'text-cyan-600 dark:text-cyan-400'"></i>
-                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Verified</span>
-                    </div>
+                    <p class="text-cyan-100 text-sm mb-1">ยืนยันอีเมลแล้ว</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($verifiedCount) }}</p>
+                    <p class="text-xs text-cyan-100 mt-2">Email Verified</p>
                 </div>
             </div>
 
             {{-- Total Roles --}}
             <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
                  :class="isClassicTheme
-                     ? 'bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800 text-white'
-                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-user-tag text-9xl"></i>
+                     ? 'bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800'
+                     : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-user-tag text-9xl text-white"></i>
                 </div>
-                <div class="relative z-10">
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-shield-alt text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">บทบาททั้งหมด</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($roles->count()) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
-                            บทบาททั้งหมด
-                        </p>
-                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-purple-100 dark:bg-purple-900/50'">
-                            <i class="fas fa-shield-alt text-2xl" :class="isClassicTheme ? 'text-white' : 'text-purple-600 dark:text-purple-400'"></i>
-                        </div>
+                        <span class="text-5xl">🛡️</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Roles</span>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
-                        {{ number_format($roles->count()) }}
-                    </h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-layer-group" :class="isClassicTheme ? 'text-purple-200' : 'text-purple-600 dark:text-purple-400'"></i>
-                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Total Roles</span>
-                    </div>
+                    <p class="text-purple-100 text-sm mb-1">บทบาททั้งหมด</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($roles->count()) }}</p>
+                    <p class="text-xs text-purple-100 mt-2">Total Roles</p>
                 </div>
             </div>
         </div>
