@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.410.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add ajax=1 parameter to all analytics fetch() calls to return JSON (469fc116)
+- fix: prevent charts from stretching indefinitely in analytics views (12a68dae)
+### 🔧 Other Changes
+- Merge pull request #2351 from xjanova/claude/add-analytics-views-8k6vp (4c9c801b)
+
 ## [v3.410.0] - 2025-12-25
 
 ### ✨ Features
