@@ -3,26 +3,21 @@
 @section('title', 'ประวัติการทำภารกิจ')
 
 @section('content')
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                📜 ประวัติการทำภารกิจ
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">ดูประวัติการทำภารกิจและรายได้ทั้งหมด</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <a href="{{ route('user.video-missions.index') }}"
-           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl font-medium transition-all">
-            กลับ
-        </a>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-history"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-history text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติ Video</h1>
+            <p class="text-white/80 text-lg mt-1">ประวัติการดูวิดีโอ</p></div>
+        </div></div>
     </div>
-
-    {{-- Earnings Summary --}}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="glass-fusion dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
-            <p class="text-xs text-gray-500 dark:text-gray-400">วันนี้</p>
-            <p class="text-xl font-bold text-gray-900 dark:text-white">฿{{ number_format($earnings['today'], 2) }}</p>
         </div>
         <div class="glass-fusion dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
             <p class="text-xs text-gray-500 dark:text-gray-400">สัปดาห์นี้</p>

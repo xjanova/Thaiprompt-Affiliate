@@ -3,20 +3,32 @@
 
     @author Video Reward System
 --}}
-
-@extends('layouts.user-arrow-x')
-
-@section('title', $pageTitle ?? 'ประวัติอัพเกรดดาว')
-
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Header --}}
-    <div class="mb-8">
-        <div class="flex items-center gap-4 mb-4">
-            <a href="{{ route('user.star-upgrade.index') }}"
-               class="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-history"></i>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('user.star-upgrade.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
+                </a>
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-clock text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติ Star Upgrade</h1>
+                    <p class="text-purple-100 text-lg mt-1">ประวัติการอัพเกรดทั้งหมด</p>
+                </div>
+            </div>
+        </div>
+    </div>
                 </svg>
             </a>
             <div>

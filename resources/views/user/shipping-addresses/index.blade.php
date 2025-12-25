@@ -3,26 +3,21 @@
 @section('content')
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900/50 py-8">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Breadcrumb -->
-        <nav class="mb-8" aria-label="Breadcrumb">
-            <ol class="flex items-center space-x-2 text-sm">
-                <li>
-                    <a href="{{ route('home') }}" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 transition">
-                        หน้าแรก
-                    </a>
-                </li>
-                <li class="text-gray-400">/</li>
-                <li class="text-gray-700 dark:text-gray-300 font-medium">ที่อยู่จัดส่ง</li>
-            </ol>
-        </nav>
-
-        <!-- Page Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-            <div class="mb-4 sm:mb-0">
-                <h1 class="text-3xl font-black text-gray-900 dark:text-white mb-2">📍 ที่อยู่จัดส่ง</h1>
-                <p class="text-gray-600 dark:text-gray-400">จัดการที่อยู่จัดส่งของคุณ</p>
-            </div>
-            <a href="{{ route('shipping-addresses.create') }}"
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-800 dark:via-amber-800 dark:to-yellow-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-map-marked-alt"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-map-marked-alt text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">ที่อยู่จัดส่ง</h1>
+            <p class="text-white/80 text-lg mt-1">จัดการที่อยู่สำหรับจัดส่ง</p></div>
+        </div></div>
+    </div>
                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
                 + เพิ่มที่อยู่ใหม่
             </a>

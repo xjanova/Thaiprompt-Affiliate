@@ -3,20 +3,20 @@
 @section('title', 'การ์ด NFC Tap-to-Pay')
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="nfcDashboard()">
-    {{-- Header --}}
-    <div class="mb-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
-                    <i class="fas fa-credit-card mr-3"></i>
-                    การ์ด NFC Tap-to-Pay
-                </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-2">
-                    จัดการการ์ด NFC, วงเงิน และการชำระเงินแบบแตะแล้วจ่าย
-                </p>
-            </div>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 dark:from-blue-800 dark:via-cyan-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-mobile-alt"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-wifi text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">NFC Management</h1>
+            <p class="text-blue-100 text-lg mt-1">จัดการบัตร NFC</p></div>
+        </div></div>
     </div>
 
     {{-- Statistics Cards --}}

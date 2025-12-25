@@ -3,26 +3,21 @@
 @section('title', 'หน้าแนะนำสมาชิก')
 
 @section('content')
-<div class="max-w-7xl mx-auto space-y-6 pb-20 lg:pb-6" x-data="recruitPageManager()">
-
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-3xl shadow-2xl p-8 text-white">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
-                <h1 class="text-3xl font-bold mb-2">
-                    <i class="fas fa-user-friends mr-3"></i>หน้าแนะนำสมาชิก
-                </h1>
-                <p class="text-purple-100">จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ $recruitUrl }}" target="_blank"
-                   class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-semibold transition">
-                    <i class="fas fa-external-link-alt mr-2"></i>ดูหน้า Recruit
-                </a>
-            </div>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-user-plus"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-user-plus text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Recruit</h1>
+            <p class="text-white/80 text-lg mt-1">สรรหาสมาชิกใหม่</p></div>
+        </div></div>
     </div>
-
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Views -->

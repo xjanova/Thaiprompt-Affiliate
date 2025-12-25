@@ -3,26 +3,21 @@
 @section('title', 'ภารกิจดูคลิปรับรางวัล')
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-data="videoMissions()">
-    {{-- Flash Messages --}}
-    @if(session('error'))
-    <div class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">⚠️</span>
-            <p class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-    </div>
-    @endif
-
-    @if(session('success'))
-    <div class="mb-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">✅</span>
-            <p class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</p>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-video"></i></div>
         </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-video text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Video Missions</h1>
+            <p class="text-white/80 text-lg mt-1">ดูวิดีโอรับรางวัล</p></div>
+        </div></div>
     </div>
-    @endif
-
     {{-- Header --}}
     <div class="glass-fusion dark:bg-gray-800/50 rounded-2xl shadow-lg p-6 mb-6 backdrop-blur-sm border border-white/20 dark:border-gray-700/50">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
