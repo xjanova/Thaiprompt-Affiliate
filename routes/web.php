@@ -748,11 +748,19 @@ Route::prefix('label-designer')->name('label-designer.')->group(function () {
 // ========================================
 require __DIR__.'/software_sales.php';
 
-// Cookie Policy Page
-// ⚠️ Legal Compliance: Cookie policy ต้องเข้าถึงได้ตลอดเวลา
+// Legal Pages
+// ⚠️ Legal Compliance: Legal pages ต้องเข้าถึงได้ตลอดเวลา
 Route::match(['GET', 'HEAD'], '/cookie-policy', function () {
     return view('cookie-policy');
 })->name('cookie-policy');
+
+Route::match(['GET', 'HEAD'], '/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy-policy');
+
+Route::match(['GET', 'HEAD'], '/terms-of-service', function () {
+    return view('terms-of-service');
+})->name('terms-of-service');
 
 // Cryptocurrency Price Charts
 // ⚠️ Public Tool: Crypto charts ต้องถูก index โดย search engines

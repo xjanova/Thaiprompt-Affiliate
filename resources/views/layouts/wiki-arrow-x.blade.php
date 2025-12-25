@@ -359,7 +359,7 @@
                     <a href="{{ route('wiki.index') }}" class="text-gray-900 dark:text-white font-medium transition-colors dark:drop-shadow border-b-2 border-gray-900 dark:border-white pb-1">
                         <i class="fas fa-book mr-2"></i>Wiki
                     </a>
-                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
+                    <a href="{{ route('marketplace.v3.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
                         <i class="fas fa-store mr-2"></i>Marketplace
                     </a>
                 </nav>
