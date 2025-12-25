@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Success/Error Messages (Dynamic Theme Colors) -->
+    {{-- Success/Error Messages --}}
     @if(session('success'))
         <div class="border-2 px-6 py-4 rounded-xl shadow-lg" role="alert"
              style="background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); border-color: var(--arrow-x-success); color: var(--arrow-x-success)">
@@ -29,45 +29,188 @@
         </div>
     @endif
 
-    <!-- Header with Actions -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการผู้ใช้</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">จัดการผู้ใช้งานและสิทธิ์การเข้าถึง</p>
+    {{-- Premium Hero Header with Gradient & Animations --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 dark:from-green-700 dark:via-emerald-700 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            <div class="absolute top-1/2 left-1/3 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
         </div>
-        <div class="flex gap-3">
-            <a href="{{ route('admin.roles.index') }}"
-               class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
-                จัดการบทบาท
-            </a>
-            <a href="{{ route('admin.users.create') }}"
-               class="inline-flex items-center px-5 py-2.5 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-               style="background: var(--arrow-x-primary-gradient)">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                เพิ่มผู้ใช้ใหม่
-            </a>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="absolute text-white/10 text-6xl bottom-10 right-40" style="animation: float 6s ease-in-out infinite; animation-delay: 0.3s">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="absolute text-white/10 text-7xl top-20 left-1/4" style="animation: float 6s ease-in-out infinite; animation-delay: 0.5s">
+                <i class="fas fa-user-shield"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {{-- Title Section --}}
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-users text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการผู้ใช้งาน</h1>
+                            <p class="text-green-100 text-lg mt-1">จัดการผู้ใช้งานและสิทธิ์การเข้าถึงระบบ</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('admin.roles.index') }}"
+                       class="glass-fusion hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
+                        <i class="fas fa-shield-alt group-hover:scale-110 transition-transform"></i>
+                        จัดการบทบาท
+                    </a>
+                    <a href="{{ route('admin.users.create') }}"
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
+                        <i class="fas fa-user-plus group-hover:rotate-90 transition-transform duration-300"></i>
+                        เพิ่มผู้ใช้ใหม่
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="glass-fusion rounded-2xl shadow-xl p-6">
-        <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ค้นหา</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อ, อีเมล หรือเลขสมาชิก"
-                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200"
-                       style="--tw-ring-color: var(--arrow-x-primary-start)"
-                       onfocus="this.style.borderColor='var(--arrow-x-primary-start)'" onblur="this.style.borderColor=''">
+    {{-- Statistics Cards --}}
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-bar text-green-600 dark:text-green-400"></i>
+            สถิติภาพรวม
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {{-- Total Users --}}
+            <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-users text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-medium opacity-90">ผู้ใช้ทั้งหมด</p>
+                        <div class="glass-fusion p-3 rounded-xl">
+                            <i class="fas fa-user-friends text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-4xl font-bold mb-2">{{ number_format($users->total()) }}</h3>
+                    <div class="flex items-center text-sm gap-1">
+                        <i class="fas fa-database text-blue-200"></i>
+                        <span class="opacity-90">Total Users</span>
+                    </div>
+                </div>
             </div>
 
+            {{-- Active Users --}}
+            @php
+                $activeCount = \App\Models\User::where('status', 'active')->count();
+            @endphp
+            <div class="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-user-check text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-medium opacity-90">ผู้ใช้ Active</p>
+                        <div class="glass-fusion p-3 rounded-xl">
+                            <i class="fas fa-check-circle text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-4xl font-bold mb-2">{{ number_format($activeCount) }}</h3>
+                    <div class="flex items-center text-sm gap-1">
+                        <i class="fas fa-signal text-green-200"></i>
+                        <span class="opacity-90">Active Status</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Email Verified --}}
+            @php
+                $verifiedCount = \App\Models\User::whereNotNull('email_verified_at')->count();
+            @endphp
+            <div class="group relative overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-envelope-circle-check text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-medium opacity-90">ยืนยันอีเมลแล้ว</p>
+                        <div class="glass-fusion p-3 rounded-xl">
+                            <i class="fas fa-shield-check text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-4xl font-bold mb-2">{{ number_format($verifiedCount) }}</h3>
+                    <div class="flex items-center text-sm gap-1">
+                        <i class="fas fa-envelope text-cyan-200"></i>
+                        <span class="opacity-90">Verified</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Total Roles --}}
+            <div class="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-user-tag text-9xl"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-medium opacity-90">บทบาททั้งหมด</p>
+                        <div class="glass-fusion p-3 rounded-xl">
+                            <i class="fas fa-shield-alt text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-4xl font-bold mb-2">{{ number_format($roles->count()) }}</h3>
+                    <div class="flex items-center text-sm gap-1">
+                        <i class="fas fa-layer-group text-purple-200"></i>
+                        <span class="opacity-90">Total Roles</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Filters Section --}}
+    <div class="glass-card dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-xl p-6 border border-white/20 dark:border-gray-700/50">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-filter text-green-600 dark:text-green-400"></i>
+            ตัวกรองข้อมูล
+        </h3>
+
+        <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {{-- Search --}}
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-search mr-1 text-blue-600 dark:text-blue-400"></i>
+                    ค้นหา
+                </label>
+                <div class="relative">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="ชื่อ, อีเมล หรือเลขสมาชิก..."
+                           class="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all placeholder:text-gray-400">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Role Filter --}}
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">บทบาท</label>
-                <select name="role" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-user-tag mr-1 text-purple-600 dark:text-purple-400"></i>
+                    บทบาท
+                </label>
+                <select name="role" class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all">
                     <option value="">ทั้งหมด</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->id }}" {{ request('role') == $role->id ? 'selected' : '' }}>
@@ -77,9 +220,13 @@
                 </select>
             </div>
 
+            {{-- Per Page --}}
             <div>
-                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนต่อหน้า</label>
-                <select name="per_page" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-list-ol mr-1 text-gray-600 dark:text-gray-400"></i>
+                    จำนวนต่อหน้า
+                </label>
+                <select name="per_page" class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition-all">
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                     <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
@@ -87,79 +234,94 @@
                 </select>
             </div>
 
-            <div class="flex items-end gap-3">
-                <button type="submit" class="flex-1 px-5 py-3 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                        style="background: var(--arrow-x-primary-gradient)">
-                    <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+            {{-- Filter Buttons --}}
+            <div class="md:col-span-4 flex justify-end gap-3">
+                <a href="{{ route('admin.users.index') }}" class="px-6 py-3 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded-xl transition-all flex items-center gap-2">
+                    <i class="fas fa-redo"></i>
+                    รีเซ็ต
+                </a>
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+                    <i class="fas fa-search"></i>
                     ค้นหา
                 </button>
-                <a href="{{ route('admin.users.index') }}" class="px-5 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-200 shadow-md hover:shadow-lg">
-                    ล้าง
-                </a>
             </div>
         </form>
     </div>
 
-    <!-- Bulk Actions Bar (Hidden by default, shown when items selected) -->
-    <div id="bulk-actions-bar" class="hidden glass-fusion rounded-2xl shadow-lg border-2 p-5"
-         style="border-color: var(--arrow-x-primary-start)">
+    {{-- Bulk Actions Bar --}}
+    <div id="bulk-actions-bar" class="hidden glass-fusion rounded-2xl shadow-lg border-2 border-green-500 p-5">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full"
-                     style="background-color: var(--arrow-x-primary-start)">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500">
+                    <i class="fas fa-check-circle text-white"></i>
                 </div>
                 <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    เลือกแล้ว <span id="selected-count" class="font-bold text-lg" style="color: var(--arrow-x-primary-start)">0</span> รายการ
+                    เลือกแล้ว <span id="selected-count" class="font-bold text-lg text-green-600">0</span> รายการ
                 </span>
             </div>
             <div class="flex gap-3">
-                <button onclick="bulkAction('delete')" class="px-5 py-2.5 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                        style="background-color: var(--arrow-x-error)">
-                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
+                <button onclick="bulkAction('delete')" class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fas fa-trash"></i>
                     ลบที่เลือก
                 </button>
-                <button onclick="clearSelection()" class="px-5 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-sm font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition-all duration-200 shadow-md">
+                <button onclick="clearSelection()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-500 transition-all duration-200 shadow-md">
                     ยกเลิก
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="glass-fusion rounded-2xl shadow-xl overflow-hidden">
+    {{-- Users Table --}}
+    <div class="glass-card dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/20 dark:border-gray-700/50">
+        {{-- Table Header --}}
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-list text-green-600 dark:text-green-400"></i>
+                    รายการผู้ใช้งาน
+                </h3>
+                <span class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl text-sm font-semibold">
+                    {{ number_format($users->total()) }} ผู้ใช้
+                </span>
+            </div>
+        </div>
+
+        {{-- Table --}}
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-white/5 dark:to-white/10">
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800">
                     <tr>
                         <th class="px-6 py-4 text-left">
                             <input type="checkbox" id="select-all"
-                                   class="rounded-lg border-gray-300 w-5 h-5 cursor-pointer focus:ring-2"
-                                   style="color: var(--arrow-x-primary-start); --tw-ring-color: var(--arrow-x-primary-start)"
+                                   class="rounded-lg border-gray-300 w-5 h-5 cursor-pointer focus:ring-2 focus:ring-green-500"
                                    onchange="toggleSelectAll(this)">
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เลขสมาชิก</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ผู้ใช้</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">อีเมล</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">บทบาท</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ธีมเมนู</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สร้างเมื่อ</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การกระทำ</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-hashtag mr-1 text-blue-500"></i> เลขสมาชิก
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-user mr-1 text-green-500"></i> ผู้ใช้
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-envelope mr-1 text-cyan-500"></i> อีเมล
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-shield-alt mr-1 text-purple-500"></i> บทบาท
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-calendar mr-1 text-orange-500"></i> สร้างเมื่อ
+                        </th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                            <i class="fas fa-cogs mr-1 text-indigo-500"></i> จัดการ
+                        </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white/50 dark:bg-transparent divide-y divide-gray-200 dark:divide-white/10">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($users as $user)
-                        <tr class="hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-200">
+                        <tr class="hover:bg-gradient-to-r hover:from-green-50/50 hover:to-transparent dark:hover:from-gray-700/50 transition-all duration-200">
                             <td class="px-6 py-4">
                                 <input type="checkbox"
-                                       class="user-checkbox rounded-lg border-gray-300 w-5 h-5 cursor-pointer focus:ring-2"
-                                       style="color: var(--arrow-x-primary-start); --tw-ring-color: var(--arrow-x-primary-start)"
+                                       class="user-checkbox rounded-lg border-gray-300 w-5 h-5 cursor-pointer focus:ring-2 focus:ring-green-500"
                                        value="{{ $user->id }}"
                                        data-user-id="{{ $user->id }}"
                                        data-super-admin="{{ $user->is_super_admin ? '1' : '0' }}"
@@ -168,44 +330,31 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->member_number)
-                                    <div class="flex items-center">
-                                        <span class="px-3 py-1.5 text-sm font-bold rounded-lg border"
-                                              style="background-color: color-mix(in srgb, var(--arrow-x-primary-start) 15%, transparent); color: var(--arrow-x-primary-start); border-color: var(--arrow-x-primary-start)">
-                                            {{ $user->member_number }}
-                                        </span>
-                                    </div>
+                                    <span class="px-3 py-1.5 text-sm font-bold rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700">
+                                        {{ $user->member_number }}
+                                    </span>
                                 @else
                                     <form action="{{ route('admin.users.generate-member-number', $user) }}" method="POST" class="inline">
                                         @csrf
                                         <button type="submit"
                                                 onclick="return confirm('สร้างเลขสมาชิกให้ผู้ใช้นี้หรือไม่?')"
-                                                class="inline-flex items-center px-3 py-1.5 text-white font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                                style="background-color: var(--arrow-x-success)">
-                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                            </svg>
+                                                class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1">
+                                            <i class="fas fa-plus"></i>
                                             สร้างเลขสมาชิก
                                         </button>
                                     </form>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-12 w-12">
-                                        {{-- ใช้ component เพื่อความสอดคล้องทั้งระบบ --}}
-                                        <x-user-avatar :user="$user" size="lg" ringColor="purple" />
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white font-bold shadow-lg transform group-hover:scale-110 transition-transform">
+                                        {{ strtoupper(substr($user->name, 0, 2)) }}
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                            {{ $user->name }}
-                                        </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $user->name }}</p>
                                         @if($user->is_super_admin)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold border"
-                                                  style="background-color: color-mix(in srgb, var(--arrow-x-accent) 15%, transparent); color: var(--arrow-x-accent); border-color: var(--arrow-x-accent)">
-                                                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-                                                </svg>
-                                                Super Admin
+                                            <span class="px-2 py-0.5 text-xs font-bold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-700">
+                                                <i class="fas fa-crown mr-1"></i>Super Admin
                                             </span>
                                         @endif
                                     </div>
@@ -214,62 +363,32 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</div>
                                 @if($user->email_verified_at)
-                                    <span class="inline-flex items-center text-xs font-medium"
-                                          style="color: var(--arrow-x-success)">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        ยืนยันแล้ว
+                                    <span class="inline-flex items-center text-xs font-medium text-green-600 dark:text-green-400">
+                                        <i class="fas fa-check-circle mr-1"></i>ยืนยันแล้ว
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center text-xs font-medium"
-                                          style="color: var(--arrow-x-warning)">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        รอยืนยัน
+                                    <span class="inline-flex items-center text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                                        <i class="fas fa-clock mr-1"></i>รอยืนยัน
                                     </span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->roleModel)
-                                    <span class="px-4 py-2 inline-flex text-xs leading-5 font-bold rounded-xl shadow-sm border"
-                                          @if($user->roleModel->name === 'super_admin')
-                                              style="background-color: color-mix(in srgb, var(--arrow-x-accent) 15%, transparent); color: var(--arrow-x-accent); border-color: var(--arrow-x-accent)"
-                                          @elseif($user->roleModel->name === 'admin')
-                                              style="background-color: color-mix(in srgb, var(--arrow-x-primary-start) 15%, transparent); color: var(--arrow-x-primary-start); border-color: var(--arrow-x-primary-start)"
-                                          @elseif($user->roleModel->name === 'seller')
-                                              style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning); border-color: var(--arrow-x-warning)"
-                                          @elseif($user->roleModel->name === 'user')
-                                              style="background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success); border-color: var(--arrow-x-success)"
-                                          @endif>
+                                    @php
+                                        $roleColors = [
+                                            'super_admin' => 'from-red-500 to-pink-600',
+                                            'admin' => 'from-blue-500 to-indigo-600',
+                                            'seller' => 'from-yellow-500 to-orange-600',
+                                            'user' => 'from-green-500 to-emerald-600',
+                                        ];
+                                        $gradient = $roleColors[$user->roleModel->name] ?? 'from-gray-500 to-gray-600';
+                                    @endphp
+                                    <span class="px-3 py-1.5 inline-flex text-xs font-semibold rounded-xl bg-gradient-to-r {{ $gradient }} text-white shadow-lg">
                                         {{ $user->roleModel->display_name }}
                                     </span>
                                 @else
-                                    <span class="px-4 py-2 inline-flex text-xs leading-5 font-bold rounded-xl shadow-sm bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-900/30 dark:to-gray-800/30 text-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                    <span class="px-3 py-1.5 inline-flex text-xs font-semibold rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                                         {{ $user->getRoleDisplayName() }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $userTheme = $user->menu_theme_preference ?? 'millennium';
-                                @endphp
-                                @if($userTheme === 'classic_x')
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-bold rounded-lg border shadow-sm"
-                                          style="background-color: color-mix(in srgb, #3b82f6 15%, transparent); color: #3b82f6; border-color: #3b82f6">
-                                        <svg class="w-3.5 h-3.5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm3 1v10h8V4H6z" clip-rule="evenodd"/>
-                                        </svg>
-                                        Classic X
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1.5 inline-flex items-center text-xs font-bold rounded-lg border shadow-sm"
-                                          style="background-color: color-mix(in srgb, var(--arrow-x-accent) 15%, transparent); color: var(--arrow-x-accent); border-color: var(--arrow-x-accent)">
-                                        <svg class="w-3.5 h-3.5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-                                        </svg>
-                                        Millennium
                                     </span>
                                 @endif
                             </td>
@@ -277,47 +396,37 @@
                                 <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $user->created_at->format('d/m/Y') }}</div>
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $user->created_at->format('H:i') }} น.</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td class="px-6 py-4">
                                 <div class="flex items-center justify-center gap-2">
+                                    {{-- View --}}
                                     <a href="{{ route('admin.users.show', $user) }}"
-                                       class="group relative inline-flex items-center justify-center p-2.5 text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                       style="background: var(--arrow-x-primary-gradient)"
+                                       class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-800 transition-all hover:scale-110 shadow-sm"
                                        title="ดูรายละเอียด">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        <span class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">ดูรายละเอียด</span>
+                                        <i class="fas fa-eye"></i>
                                     </a>
+
+                                    {{-- Edit --}}
                                     <a href="{{ route('admin.users.edit', $user) }}"
-                                       class="group relative inline-flex items-center justify-center p-2.5 text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                                       class="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 flex items-center justify-center hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-all hover:scale-110 shadow-sm"
                                        title="แก้ไข">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        <span class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">แก้ไข</span>
+                                        <i class="fas fa-edit"></i>
                                     </a>
+
+                                    {{-- Delete --}}
                                     @if(!$user->is_super_admin)
                                         <form action="{{ route('admin.users.destroy', $user) }}" method="POST" class="inline"
                                               onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบผู้ใช้นี้?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
-                                                    class="group relative inline-flex items-center justify-center p-2.5 text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                                                    style="background-color: var(--arrow-x-error)"
+                                                    class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-800 transition-all hover:scale-110 shadow-sm"
                                                     title="ลบ">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                                <span class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 text-xs bg-gray-900 text-white rounded whitespace-nowrap">ลบ</span>
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
                                     @else
-                                        <div class="inline-flex items-center justify-center p-2.5 bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-gray-500 rounded-xl cursor-not-allowed opacity-50">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                            </svg>
+                                        <div class="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-not-allowed opacity-50">
+                                            <i class="fas fa-lock"></i>
                                         </div>
                                     @endif
                                 </div>
@@ -325,16 +434,18 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center justify-center">
-                                    <div class="w-20 h-20 bg-white/60 dark:bg-white/10 backdrop-blur-xl border border-black/5 dark:border-white/20 rounded-full flex items-center justify-center mb-4">
-                                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                             style="color: var(--arrow-x-primary-start)">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                        </svg>
+                                    <div class="w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full flex items-center justify-center mb-6 shadow-xl">
+                                        <i class="fas fa-users text-5xl text-green-500 dark:text-green-400"></i>
                                     </div>
-                                    <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">ไม่พบข้อมูลผู้ใช้</span>
-                                    <span class="text-sm text-gray-400 dark:text-gray-500 mt-2">ลองปรับเปลี่ยนตัวกรองหรือเพิ่มผู้ใช้ใหม่</span>
+                                    <h4 class="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-3">ไม่พบผู้ใช้งาน</h4>
+                                    <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md">ลองปรับเปลี่ยนตัวกรองหรือเพิ่มผู้ใช้ใหม่เข้าสู่ระบบ</p>
+                                    <a href="{{ route('admin.users.create') }}"
+                                       class="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-2">
+                                        <i class="fas fa-user-plus"></i>
+                                        เพิ่มผู้ใช้แรก
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -343,14 +454,14 @@
             </table>
         </div>
 
-        <!-- Pagination -->
+        {{-- Pagination --}}
         @if($users->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
                 <div class="flex items-center justify-between">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        แสดง <span class="font-bold" style="color: var(--arrow-x-primary-start)">{{ $users->firstItem() ?? 0 }}</span>
-                        ถึง <span class="font-bold" style="color: var(--arrow-x-primary-start)">{{ $users->lastItem() ?? 0 }}</span>
-                        จากทั้งหมด <span class="font-bold" style="color: var(--arrow-x-primary-start)">{{ $users->total() }}</span> รายการ
+                        แสดง <span class="font-bold text-green-600">{{ $users->firstItem() ?? 0 }}</span>
+                        ถึง <span class="font-bold text-green-600">{{ $users->lastItem() ?? 0 }}</span>
+                        จากทั้งหมด <span class="font-bold text-green-600">{{ $users->total() }}</span> รายการ
                     </div>
                     <div>
                         {{ $users->appends(request()->query())->links() }}
@@ -360,6 +471,27 @@
         @endif
     </div>
 </div>
+
+@push('styles')
+<style>
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+    }
+    .dark .glass-card {
+        background: rgba(31, 41, 55, 0.8);
+    }
+    .glass-fusion {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
