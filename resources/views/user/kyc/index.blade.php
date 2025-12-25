@@ -4,10 +4,33 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ยืนยันตัวตน (KYC)</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</p>
+    {{-- Premium Hero Header (Blue-Indigo-Purple for KYC) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-shield-check"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-user-shield text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">ยืนยันตัวตน (KYC)</h1>
+                    <p class="text-blue-100 text-lg mt-1">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     @if(session('success'))
@@ -317,3 +340,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

@@ -3,19 +3,39 @@
 @section('title', 'ประวัติ Staking - TPIX')
 
 @section('content')
-<div class="container py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">
-                <i class="fas fa-history text-primary me-2"></i>
-                ประวัติ Staking
-            </h2>
-            <p class="text-muted mb-0">ดูประวัติการ Stake และ Unstake ทั้งหมด</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    {{-- Premium Hero Header (Purple-Violet-Indigo for Staking History) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 dark:from-purple-800 dark:via-violet-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <a href="{{ route('user.staking.index') }}" class="btn btn-primary">
-            <i class="fas fa-lock me-2"></i>Stake Token
-        </a>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-history"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-chart-bar text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติ Staking</h1>
+                        <p class="text-purple-100 text-lg mt-1">ดูประวัติการ Stake และ Unstake ทั้งหมด</p>
+                    </div>
+                </div>
+                <a href="{{ route('user.staking.index') }}" class="glass-fusion px-6 py-3 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-lock mr-2"></i>Stake Token
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- Summary Cards -->
@@ -177,6 +197,20 @@
     </div>
 </div>
 
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection
 
 @push('scripts')

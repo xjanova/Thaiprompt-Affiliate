@@ -9,25 +9,40 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6" x-data="qrCodeManager()">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+    {{-- Premium Hero Header (Indigo-Purple-Pink for QR Code) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-qrcode"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition">
-                    <i class="fas fa-arrow-left"></i>
+                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
                 </a>
-                <h1 class="text-3xl md:text-4xl font-bold">
-                    <i class="fas fa-qrcode mr-2"></i>
-                    QR Code รับเงิน
-                </h1>
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-qrcode text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">QR Code รับเงิน</h1>
+                    <p class="text-indigo-100 text-lg mt-1">แสดง QR Code ให้คนอื่นสแกนเพื่อโอนเงินให้คุณ</p>
+                </div>
             </div>
-            <p class="text-indigo-100">แสดง QR Code ให้คนอื่นสแกนเพื่อโอนเงินให้คุณ</p>
 
-            <!-- Balance Display -->
-            <div class="mt-6 bg-white/20 rounded-xl p-4 backdrop-blur-sm">
+            {{-- Balance Display --}}
+            <div class="mt-6 glass-fusion rounded-xl p-6">
                 <p class="text-indigo-100 text-sm mb-1">ยอดเงินคงเหลือ</p>
-                <p class="text-3xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
+                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
             </div>
         </div>
     </div>
@@ -295,5 +310,19 @@
         }
     }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush
 @endsection

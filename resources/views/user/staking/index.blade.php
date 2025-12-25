@@ -26,20 +26,29 @@
     </div>
 </div>
 
-{{-- Hero Section --}}
+{{-- Premium Hero Header (Indigo-Purple-Pink for Staking/Investment) --}}
 <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900 p-8 md:p-12 mb-8 shadow-2xl">
-    <div class="absolute inset-0 bg-black/10 dark:bg-white/5"></div>
-    <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-    <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+    {{-- Premium Animated Background Orbs --}}
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+    </div>
+
+    {{-- Floating Icons --}}
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+            <i class="fas fa-piggy-bank"></i>
+        </div>
+    </div>
 
     <div class="relative z-10">
         <div class="flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="text-center md:text-left">
-                <div class="inline-flex items-center gap-2 bg-white/20 dark:bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 mb-4">
+                <div class="inline-flex items-center gap-2 glass-fusion rounded-full px-4 py-2 mb-4">
                     <i class="fas fa-chart-line text-white"></i>
                     <span class="text-white font-semibold text-sm">Smart Investment</span>
                 </div>
-                <h1 class="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
+                <h1 class="text-3xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">
                     ลงทุนวันนี้ รับผลตอบแทนทุกวัน
                 </h1>
                 <p class="text-white/90 text-lg mb-2">เลือกแผนที่เหมาะกับคุณ • ลงทุนได้หลาย Pot</p>
@@ -48,17 +57,18 @@
 
             {{-- Quick Stats --}}
             <div class="flex gap-4">
-                <div class="bg-white/20 dark:bg-black/30 backdrop-blur-sm rounded-2xl p-4 text-center min-w-[120px]">
+                <div class="glass-fusion rounded-2xl p-4 text-center min-w-[120px]">
                     <div class="text-3xl font-bold text-white" id="userTotalStaked">-</div>
                     <div class="text-white/70 text-xs">ยอดลงทุนของฉัน</div>
                 </div>
-                <div class="bg-white/20 dark:bg-black/30 backdrop-blur-sm rounded-2xl p-4 text-center min-w-[120px]">
+                <div class="glass-fusion rounded-2xl p-4 text-center min-w-[120px]">
                     <div class="text-3xl font-bold text-green-300" id="userTotalEarned">-</div>
                     <div class="text-white/70 text-xs">กำไรที่ได้รับ</div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 {{-- User Balance Cards --}}
@@ -695,5 +705,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush
 @endsection

@@ -3,20 +3,43 @@
 @section('title', 'รายละเอียด Staking Pool - TPIX')
 
 @section('content')
-<div class="container py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1" id="poolName">Loading...</h2>
-            <p class="text-muted mb-0">ข้อมูลและสถิติ Staking Pool</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    {{-- Premium Hero Header (Cyan-Blue-Indigo for Staking Pool Details) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ route('user.staking.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>กลับ
-            </a>
-            <a href="{{ route('user.staking.stake-form', $poolId ?? 0) }}" class="btn btn-primary" id="stakeBtn">
-                <i class="fas fa-lock me-2"></i>Stake ตอนนี้
-            </a>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-layer-group"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-server text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg" id="poolName">Loading...</h1>
+                        <p class="text-cyan-100 text-lg mt-1">ข้อมูลและสถิติ Staking Pool</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ route('user.staking.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                        <i class="fas fa-arrow-left mr-2"></i>กลับ
+                    </a>
+                    <a href="{{ route('user.staking.stake-form', $poolId ?? 0) }}" class="glass-fusion bg-white/20 px-6 py-3 hover:bg-white/30 rounded-lg transition-all" id="stakeBtn">
+                        <i class="fas fa-lock mr-2"></i>Stake ตอนนี้
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -289,6 +312,20 @@
     </div>
 </div>
 
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection
 
 @push('scripts')

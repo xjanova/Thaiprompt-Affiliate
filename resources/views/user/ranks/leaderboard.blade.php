@@ -4,17 +4,35 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Leaderboard Header -->
-    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
-        <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white dark:bg-gray-800 opacity-5 rounded-full"></div>
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-2">
-                <i class="fas fa-trophy text-4xl"></i>
-                <h1 class="text-3xl md:text-4xl font-bold">กระดานผู้นำ</h1>
+    {{-- Premium Hero Header (Purple-Pink-Red for Leaderboard) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-crown"></i>
             </div>
-            <p class="text-purple-100 text-lg">Top Performers Leaderboard</p>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('user.ranks.dashboard') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
+                </a>
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-trophy text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">กระดานผู้นำ</h1>
+                    <p class="text-purple-100 text-lg mt-1">Top Performers Leaderboard</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -265,6 +283,17 @@
 
 @push('scripts')
 <style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
 @keyframes bounce {
     0%, 100% {
         transform: translateY(0);

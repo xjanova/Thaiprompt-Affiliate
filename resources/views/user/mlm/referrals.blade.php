@@ -4,15 +4,31 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <span class="text-3xl">🤝</span>
+    {{-- Premium Hero Header (Cyan-Blue-Indigo for Referrals) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-plus"></i>
             </div>
-            <div>
-                <h1 class="text-3xl font-bold">สมาชิกที่แนะนำทั้งหมด</h1>
-                <p class="text-cyan-100 mt-1">รายชื่อสมาชิกที่คุณแนะนำเข้ามา</p>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-handshake text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สมาชิกที่แนะนำทั้งหมด</h1>
+                    <p class="text-cyan-100 text-lg mt-1">รายชื่อสมาชิกที่คุณแนะนำเข้ามา</p>
+                </div>
             </div>
         </div>
     </div>
@@ -152,4 +168,25 @@
         @endif
     </div>
 </div>
+
+@push('styles')
+<style>
+/* Glass Fusion Effect for Hero Header */
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Float Animation */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+</style>
+@endpush
 @endsection

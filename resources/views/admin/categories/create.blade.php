@@ -2,202 +2,260 @@
 
 @section('title', 'สร้างหมวดหมู่ใหม่')
 
-@push('styles')
-<style>
-:root { --primary: #4f46e5; --primary-dark: #4338ca; }
-.cc-container { max-width: 1000px; margin: 0 auto; }
-.cc-header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: 16px; padding: 32px; color: white; margin-bottom: 32px; }
-.cc-form { background: white; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; }
-.cc-section { padding: 32px; border-bottom: 1px solid #e5e7eb; }
-.cc-section:last-child { border-bottom: none; }
-.cc-section-title { font-size: 18px; font-weight: 700; color: #111827; margin-bottom: 20px; }
-.cc-form-group { margin-bottom: 24px; }
-.cc-label { display: block; font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 8px; }
-.cc-required { color: #ef4444; }
-.cc-input, .cc-textarea { width: 100%; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: all 0.2s; }
-.cc-input:focus, .cc-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-.cc-help-text { font-size: 12px; color: #6b7280; margin-top: 4px; }
-.cc-checkbox-wrapper { display: flex; align-items: center; gap: 12px; padding: 16px; background: #f9fafb; border-radius: 8px; }
-.cc-checkbox { width: 20px; height: 20px; cursor: pointer; }
-.cc-btn { padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
-.cc-btn-primary { background: var(--primary); color: white; }
-.cc-btn-primary:hover { background: var(--primary-dark); }
-.cc-btn-outline { background: white; border: 1px solid #e5e7eb; color: #374151; }
-.cc-btn-outline:hover { background: #f9fafb; }
-.cc-icon-preview { width: 64px; height: 64px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 32px; border: 2px solid #e5e7eb; }
-.cc-color-input { height: 48px; padding: 4px; }
-.cc-alert { padding: 16px; border-radius: 8px; margin-bottom: 24px; }
-.cc-alert-error { background: #fee2e2; border: 1px solid #ef4444; color: #991b1b; }
-</style>
-@endpush
-
 @section('content')
-<div class="container-fluid py-4">
-    <div class="cc-container">
-        <!-- Header -->
-        <div class="cc-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 8px;">สร้างหมวดหมู่ใหม่</h1>
-                    <p style="opacity: 0.9; margin: 0;">เพิ่มหมวดหมู่ใหม่สำหรับจัดระเบียบเนื้อหา</p>
-                </div>
-                <a href="{{ route('admin.categories.index') }}" class="cc-btn" style="background: rgba(255,255,255,0.2); color: white;">
-                    <i class="fas fa-arrow-left"></i> กลับ
-                </a>
+<div class="space-y-6">
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('admin.categories.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-sm rounded-lg transition-all text-white">
+            <i class="fas fa-arrow-left"></i>
+            กลับไปรายการหมวดหมู่
+        </a>
+    </div>
+
+    {{-- Premium Hero Header (Green-Emerald-Teal for Create) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 dark:from-green-700 dark:via-emerald-700 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-folder-plus"></i>
             </div>
         </div>
 
-        <!-- Error Messages -->
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-folder-plus text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สร้างหมวดหมู่ใหม่</h1>
+                    <p class="text-green-100 text-lg mt-1">เพิ่มหมวดหมู่ใหม่สำหรับจัดระเบียบเนื้อหา</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        {{-- Error Messages --}}
         @if($errors->any())
-            <div class="cc-alert cc-alert-error">
-                <strong><i class="fas fa-exclamation-triangle"></i> มีข้อผิดพลาด:</strong>
-                <ul style="margin: 8px 0 0 0; padding-left: 20px;">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+            <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-red-900 dark:text-red-200 mb-2">มีข้อผิดพลาด:</h3>
+                        <ul class="list-disc list-inside text-sm text-red-800 dark:text-red-300 space-y-1">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
             </div>
         @endif
 
-        <!-- Form -->
-        <form method="POST" action="{{ route('admin.categories.store') }}">
-            @csrf
+        {{-- Form Card --}}
+        <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-8">
+            <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-8">
+                @csrf
 
-            <div class="cc-form">
-                <!-- Basic Information -->
-                <div class="cc-section">
-                    <h2 class="cc-section-title">ข้อมูลพื้นฐาน</h2>
+                {{-- Basic Information Section --}}
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-green-600 dark:text-green-400"></i>
+                        ข้อมูลพื้นฐาน
+                    </h2>
 
-                    <div class="cc-form-group">
-                        <label class="cc-label">
-                            ชื่อหมวดหมู่ <span class="cc-required">*</span>
-                        </label>
-                        <input type="text" name="name" class="cc-input"
-                               value="{{ old('name') }}" required
-                               placeholder="เช่น AI Tools, Digital Marketing">
-                        <div class="cc-help-text">ชื่อหมวดหมู่ที่จะแสดงให้ผู้ใช้เห็น</div>
-                        @error('name')
-                            <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                        @enderror
-                    </div>
+                    <div class="space-y-6">
+                        {{-- Category Name --}}
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                ชื่อหมวดหมู่ <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   id="name"
+                                   name="name"
+                                   value="{{ old('name') }}"
+                                   required
+                                   placeholder="เช่น AI Tools, Digital Marketing"
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none transition-all duration-200 @error('name') border-red-500 @enderror">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ชื่อหมวดหมู่ที่จะแสดงให้ผู้ใช้เห็น</p>
+                            @error('name')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-                    <div class="cc-form-group">
-                        <label class="cc-label">Slug (URL)</label>
-                        <input type="text" name="slug" class="cc-input"
-                               value="{{ old('slug') }}"
-                               placeholder="เช่น ai-tools (ถ้าไม่ระบุจะสร้างอัตโนมัติ)">
-                        <div class="cc-help-text">URL สำหรับหมวดหมู่นี้ ควรเป็นตัวอักษรภาษาอังกฤษและขีดกลาง</div>
-                        @error('slug')
-                            <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                        @enderror
-                    </div>
+                        {{-- Slug --}}
+                        <div>
+                            <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Slug (URL)
+                            </label>
+                            <input type="text"
+                                   id="slug"
+                                   name="slug"
+                                   value="{{ old('slug') }}"
+                                   placeholder="เช่น ai-tools (ถ้าไม่ระบุจะสร้างอัตโนมัติ)"
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none transition-all duration-200 @error('slug') border-red-500 @enderror">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">URL สำหรับหมวดหมู่นี้ ควรเป็นตัวอักษรภาษาอังกฤษและขีดกลาง</p>
+                            @error('slug')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
 
-                    <div class="cc-form-group">
-                        <label class="cc-label">คำอธิบาย</label>
-                        <textarea name="description" class="cc-textarea" rows="4"
-                                  placeholder="อธิบายเกี่ยวกับหมวดหมู่นี้">{{ old('description') }}</textarea>
-                        <div class="cc-help-text">คำอธิบายสั้นๆ เกี่ยวกับหมวดหมู่นี้</div>
-                        @error('description')
-                            <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                        @enderror
+                        {{-- Description --}}
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                คำอธิบาย
+                            </label>
+                            <textarea id="description"
+                                      name="description"
+                                      rows="4"
+                                      placeholder="อธิบายเกี่ยวกับหมวดหมู่นี้"
+                                      class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none transition-all duration-200 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">คำอธิบายสั้นๆ เกี่ยวกับหมวดหมู่นี้</p>
+                            @error('description')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 
-                <!-- Appearance -->
-                <div class="cc-section">
-                    <h2 class="cc-section-title">รูปแบบและการแสดงผล</h2>
+                {{-- Appearance Section --}}
+                <div class="pt-6 border-t border-gray-200 dark:border-white/10">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-palette text-purple-600 dark:text-purple-400"></i>
+                        รูปแบบและการแสดงผล
+                    </h2>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="cc-form-group">
-                                <label class="cc-label">ไอคอน (Emoji)</label>
-                                <div class="d-flex gap-3 align-items-center">
-                                    <div class="cc-icon-preview" style="background: {{ old('color', '#4f46e5') }}22;">
-                                        <span id="icon-preview">{{ old('icon', '📚') }}</span>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <input type="text" name="icon" class="cc-input" id="icon-input"
-                                               value="{{ old('icon') }}"
-                                               placeholder="เช่น 📚, 🤖, 💡"
-                                               maxlength="50"
-                                               oninput="document.getElementById('icon-preview').textContent = this.value || '📚'">
-                                        <div class="cc-help-text">ใส่ Emoji ที่ต้องการใช้เป็นไอคอน</div>
-                                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Icon --}}
+                        <div>
+                            <label for="icon-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                ไอคอน (Emoji)
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <div class="w-20 h-20 rounded-xl flex items-center justify-center text-4xl shadow-lg bg-white/60 dark:bg-white/10 backdrop-blur-sm border-2 border-gray-200 dark:border-white/20" id="icon-preview-box" style="background: {{ old('color', '#10b981') }}22;">
+                                    <span id="icon-preview">{{ old('icon', '📚') }}</span>
                                 </div>
-                                @error('icon')
-                                    <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                                @enderror
+                                <div class="flex-1">
+                                    <input type="text"
+                                           id="icon-input"
+                                           name="icon"
+                                           value="{{ old('icon', '📚') }}"
+                                           maxlength="50"
+                                           placeholder="เช่น 📚, 🤖, 💡"
+                                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none transition-all duration-200">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ใส่ Emoji ที่ต้องการใช้เป็นไอคอน</p>
+                                </div>
                             </div>
+                            @error('icon')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
-                        <div class="col-md-6">
-                            <div class="cc-form-group">
-                                <label class="cc-label">สีประจำหมวดหมู่</label>
-                                <input type="color" name="color" class="cc-input cc-color-input" id="color-input"
-                                       value="{{ old('color', '#4f46e5') }}"
-                                       onchange="updateIconPreview()">
-                                <div class="cc-help-text">เลือกสีที่จะใช้แสดงกับหมวดหมู่นี้</div>
-                                @error('color')
-                                    <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="cc-form-group">
-                        <label class="cc-label">ลำดับการแสดงผล</label>
-                        <input type="number" name="order" class="cc-input"
-                               value="{{ old('order', 0) }}"
-                               min="0" step="1"
-                               placeholder="0">
-                        <div class="cc-help-text">ตัวเลขที่น้อยกว่าจะแสดงก่อน (0 = แรกสุด)</div>
-                        @error('order')
-                            <div style="color: #ef4444; font-size: 12px; margin-top: 4px;">{{ $message }}</div>
-                        @enderror
+                        {{-- Color --}}
+                        <div>
+                            <label for="color-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                สีประจำหมวดหมู่
+                            </label>
+                            <input type="color"
+                                   id="color-input"
+                                   name="color"
+                                   value="{{ old('color', '#10b981') }}"
+                                   class="w-full h-14 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 rounded-xl cursor-pointer">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เลือกสีที่จะใช้แสดงกับหมวดหมู่นี้</p>
+                            @error('color')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Display Order --}}
+                        <div class="md:col-span-2">
+                            <label for="order" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                ลำดับการแสดงผล
+                            </label>
+                            <input type="number"
+                                   id="order"
+                                   name="order"
+                                   value="{{ old('order', 0) }}"
+                                   min="0"
+                                   step="1"
+                                   placeholder="0"
+                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none transition-all duration-200">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ตัวเลขที่น้อยกว่าจะแสดงก่อน (0 = แรกสุด)</p>
+                            @error('order')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 
-                <!-- Settings -->
-                <div class="cc-section">
-                    <h2 class="cc-section-title">การตั้งค่า</h2>
+                {{-- Settings Section --}}
+                <div class="pt-6 border-t border-gray-200 dark:border-white/10">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <i class="fas fa-cog text-blue-600 dark:text-blue-400"></i>
+                        การตั้งค่า
+                    </h2>
 
-                    <div class="cc-checkbox-wrapper">
-                        <input type="checkbox" name="is_active" value="1" id="is_active" class="cc-checkbox"
-                               {{ old('is_active', true) ? 'checked' : '' }}>
-                        <label for="is_active" style="margin: 0; cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-toggle-on" style="color: var(--primary);"></i> เปิดใช้งานหมวดหมู่นี้
+                    <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-6 border-2 border-gray-200 dark:border-white/20">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox"
+                                   name="is_active"
+                                   value="1"
+                                   id="is_active"
+                                   {{ old('is_active', true) ? 'checked' : '' }}
+                                   class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-green-600 focus:ring-green-500">
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <i class="fas fa-toggle-on text-green-600 dark:text-green-400"></i>
+                                    เปิดใช้งานหมวดหมู่นี้
+                                </span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">หมวดหมู่ที่ปิดใช้งานจะไม่แสดงในส่วนหน้าเว็บไซต์</p>
+                            </div>
                         </label>
                     </div>
-                    <div class="cc-help-text" style="margin-left: 32px;">หมวดหมู่ที่ปิดใช้งานจะไม่แสดงในส่วนหน้าเว็บไซต์</div>
                 </div>
 
-                <!-- Actions -->
-                <div class="cc-section" style="background: #f9fafb;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ route('admin.categories.index') }}" class="cc-btn cc-btn-outline">
-                            <i class="fas fa-arrow-left"></i> กลับ
-                        </a>
-                        <button type="submit" class="cc-btn cc-btn-primary">
-                            <i class="fas fa-plus"></i> สร้างหมวดหมู่
-                        </button>
-                    </div>
+                {{-- Action Buttons --}}
+                <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-white/10">
+                    <a href="{{ route('admin.categories.index') }}"
+                       class="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-gray-200 dark:border-white/20 rounded-xl hover:bg-gray-100 dark:hover:bg-white/20 transition-all duration-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ยกเลิก
+                    </a>
+
+                    <button type="submit"
+                            style="background: var(--arrow-x-primary-gradient)"
+                            class="px-6 py-2.5 text-white font-semibold rounded-xl focus:outline-none shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                        <i class="fas fa-plus mr-2"></i>
+                        สร้างหมวดหมู่
+                    </button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-function updateIconPreview() {
-    const color = document.getElementById('color-input').value;
-    const preview = document.querySelector('.cc-icon-preview');
-    preview.style.background = color + '22';
-}
-
-// Update preview on icon input
+// Update icon preview
 document.getElementById('icon-input').addEventListener('input', function() {
     document.getElementById('icon-preview').textContent = this.value || '📚';
+});
+
+// Update icon preview background color
+document.getElementById('color-input').addEventListener('change', function() {
+    const color = this.value;
+    const preview = document.getElementById('icon-preview-box');
+    preview.style.background = color + '22';
 });
 </script>
 @endpush

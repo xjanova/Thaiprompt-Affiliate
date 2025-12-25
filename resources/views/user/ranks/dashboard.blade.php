@@ -30,18 +30,33 @@
         $nextBadge = $nextLevel ? ($rankBadges[$nextLevel] ?? '🏅') : null;
     @endphp
 
-    {{-- Hero Header with Current Rank --}}
+    {{-- Premium Hero Header with Dynamic Rank-Based Gradients --}}
     <div class="relative overflow-hidden rounded-3xl shadow-2xl">
-        {{-- Dynamic Background based on Rank --}}
+        {{-- Dynamic Background based on Rank with Premium Gradients --}}
         <div class="absolute inset-0 bg-gradient-to-br
-            @if($currentLevel >= 7) from-purple-600 via-pink-600 to-rose-600
-            @elseif($currentLevel >= 5) from-cyan-500 via-blue-600 to-indigo-600
-            @elseif($currentLevel >= 3) from-yellow-400 via-amber-500 to-orange-500
-            @else from-gray-500 via-slate-600 to-gray-700
+            @if($currentLevel >= 7) from-purple-600 via-pink-600 to-rose-600 dark:from-purple-800 dark:via-pink-800 dark:to-rose-800
+            @elseif($currentLevel >= 5) from-cyan-500 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800
+            @elseif($currentLevel >= 3) from-yellow-400 via-amber-500 to-orange-500 dark:from-yellow-700 dark:via-amber-700 dark:to-orange-700
+            @else from-gray-500 via-slate-600 to-gray-700 dark:from-gray-700 dark:via-slate-800 dark:to-gray-900
             @endif"></div>
-        <div class="absolute inset-0 opacity-20">
-            <div class="absolute top-0 right-0 w-80 h-80 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
-            <div class="absolute bottom-0 left-0 w-60 h-60 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+        {{-- Premium Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                @if($currentLevel >= 6)
+                    <i class="fas fa-crown"></i>
+                @elseif($currentLevel >= 4)
+                    <i class="fas fa-gem"></i>
+                @else
+                    <i class="fas fa-trophy"></i>
+                @endif
+            </div>
         </div>
 
         {{-- Animated Particles for High Ranks --}}
@@ -55,6 +70,13 @@
         @endif
 
         <div class="relative z-10 p-8 md:p-12 text-white">
+            {{-- Back Button --}}
+            <div class="flex items-center gap-3 mb-6">
+                <a href="{{ route('user.dashboard') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
+                </a>
+            </div>
+
             <div class="flex flex-col lg:flex-row items-center gap-8">
                 {{-- Avatar with Rank Frame --}}
                 <div class="flex-shrink-0">
@@ -83,18 +105,18 @@
                     </p>
                     @endif
 
-                    {{-- Stats Row --}}
+                    {{-- Stats Row with Glass Fusion --}}
                     <div class="flex flex-wrap justify-center lg:justify-start gap-4 mt-6">
-                        <div class="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
+                        <div class="glass-fusion px-6 py-3 rounded-xl">
                             <div class="text-2xl font-bold">{{ number_format($user->rank_points ?? 0) }}</div>
                             <div class="text-sm text-white/80">คะแนนสะสม</div>
                         </div>
-                        <div class="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
+                        <div class="glass-fusion px-6 py-3 rounded-xl">
                             <div class="text-2xl font-bold">#{{ $leaderboardPosition }}</div>
                             <div class="text-sm text-white/80">อันดับในกระดาน</div>
                         </div>
                         @if($currentRank?->commission_rate)
-                        <div class="px-6 py-3 bg-white/20 backdrop-blur-lg rounded-xl">
+                        <div class="glass-fusion px-6 py-3 rounded-xl">
                             <div class="text-2xl font-bold">{{ $currentRank->commission_rate }}%</div>
                             <div class="text-sm text-white/80">ค่าคอมมิชชั่น</div>
                         </div>
@@ -559,13 +581,20 @@
 
 @push('styles')
 <style>
-    @keyframes float {
-        0%, 100% { transform: translateY(0); opacity: 0.6; }
-        50% { transform: translateY(-20px); opacity: 0.3; }
-    }
-    .animate-float {
-        animation: float 4s ease-in-out infinite;
-    }
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); opacity: 0.6; }
+    50% { transform: translateY(-20px); opacity: 0.3; }
+}
+
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
 </style>
 @endpush
 @endsection

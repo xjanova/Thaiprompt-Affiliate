@@ -23,19 +23,108 @@
 --}}
 
 <div class="space-y-6 pb-24" x-data="profileManager()" x-init="init()">
-    {{-- Page Header - ใช้ Arrow X Card --}}
-    <x-arrow-x.card-v3 class="p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-orange-400">
-                    <i class="fas fa-user-edit mr-2"></i>จัดการโปรไฟล์
-                </h1>
-                <p class="mt-1 text-gray-600 dark:text-gray-400">
-                    แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ
-                </p>
+    {{-- Premium Hero Header (Purple-Pink-Red for Profile Management) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-edit"></i>
             </div>
         </div>
-    </x-arrow-x.card-v3>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-user-circle text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการโปรไฟล์</h1>
+                    <p class="text-purple-100 text-lg mt-1">แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ</p>
+                </div>
+            </div>
+
+            {{-- Quick Stats --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                {{-- KYC Status --}}
+                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
+                    <div class="flex items-center gap-3">
+                        @if($user->isKycVerified())
+                            <div class="p-3 bg-green-500/30 rounded-lg">
+                                <i class="fas fa-shield-check text-2xl text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-100">สถานะ KYC</p>
+                                <p class="text-lg font-bold text-white">ยืนยันแล้ว ✓</p>
+                            </div>
+                        @elseif($user->isKycPending())
+                            <div class="p-3 bg-yellow-500/30 rounded-lg animate-pulse">
+                                <i class="fas fa-hourglass-half text-2xl text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-100">สถานะ KYC</p>
+                                <p class="text-lg font-bold text-white">รอตรวจสอบ</p>
+                            </div>
+                        @else
+                            <div class="p-3 bg-red-500/30 rounded-lg">
+                                <i class="fas fa-exclamation-triangle text-2xl text-white"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-100">สถานะ KYC</p>
+                                <p class="text-lg font-bold text-white">ยังไม่ยืนยัน</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- LINE Connection Status --}}
+                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
+                    <div class="flex items-center gap-3">
+                        @if($user->line_user_id)
+                            <div class="p-3 bg-green-500/30 rounded-lg">
+                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-100">LINE</p>
+                                <p class="text-lg font-bold text-white">เชื่อมต่อแล้ว ✓</p>
+                            </div>
+                        @else
+                            <div class="p-3 bg-gray-500/30 rounded-lg">
+                                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-purple-100">LINE</p>
+                                <p class="text-lg font-bold text-white">ยังไม่เชื่อมต่อ</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Member Info --}}
+                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-3 bg-blue-500/30 rounded-lg">
+                            <i class="fas fa-id-card text-2xl text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-purple-100">รหัสสมาชิก</p>
+                            <p class="text-lg font-bold text-white font-mono">{{ $user->member_number ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {{-- Success/Error Messages - ใช้ Arrow X Alert --}}
     @if(session('success'))
@@ -685,6 +774,13 @@
     border-color: rgba(75, 85, 99, 0.5);
 }
 
+/* Glass Fusion Effect for Hero Header */
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 /* Input 3D Effect */
 .input-3d {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
@@ -694,6 +790,16 @@
 .input-3d:focus {
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2), 0 0 0 3px rgba(139, 92, 246, 0.1);
     transform: translateY(-1px);
+}
+
+/* Float Animation */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
 }
 
 /* Spin Slow Animation */
