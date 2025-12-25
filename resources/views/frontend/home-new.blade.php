@@ -1059,14 +1059,17 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('chatbot.marketplace.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🤖 AI Chatbot</span>
                             </a>
-                            <a href="{{ route('trading-bot.marketplace') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">📈 Trading Bot</span>
                             </a>
-                            <a href="{{ route('software.products.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💻 ซอฟต์แวร์/โปรแกรม</span>
+                            </a>
+                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
+                                <span class="text-sm font-bold text-white">🏬 ดูทั้งหมด →</span>
                             </a>
                         </div>
 
@@ -1175,8 +1178,8 @@
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏪 ร้านค้าออนไลน์</span>
                             </a>
-                            <a href="{{ route('marketplace.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏬 Marketplace</span>
+                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏬 Unified Marketplace</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">

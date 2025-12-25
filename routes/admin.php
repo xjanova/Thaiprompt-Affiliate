@@ -3648,3 +3648,40 @@ Route::prefix('menu-management')->name('menu-management.')->group(function () {
     Route::post('/reset-role-settings', [\App\Http\Controllers\Admin\MenuManagementController::class, 'resetRoleSettings'])
         ->name('reset-role-settings');
 });
+
+// ============================================
+// Developer Management Routes (จัดการนักพัฒนา)
+// ============================================
+Route::prefix('developers')->name('developers.')->group(function () {
+    // รายการนักพัฒนาทั้งหมด
+    Route::get('/', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'index'])
+        ->name('index');
+
+    // รายละเอียดนักพัฒนา
+    Route::get('/{developer}', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'show'])
+        ->name('show');
+
+    // อนุมัตินักพัฒนา
+    Route::post('/{developer}/approve', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'approve'])
+        ->name('approve');
+
+    // ปฏิเสธนักพัฒนา
+    Route::post('/{developer}/reject', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'reject'])
+        ->name('reject');
+
+    // ระงับนักพัฒนา
+    Route::post('/{developer}/suspend', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'suspend'])
+        ->name('suspend');
+
+    // ยกเลิกการระงับ
+    Route::post('/{developer}/unsuspend', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'unsuspend'])
+        ->name('unsuspend');
+
+    // อัพเดทค่าคอมมิชชั่น
+    Route::post('/{developer}/commission', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'updateCommission'])
+        ->name('commission.update');
+
+    // ลบนักพัฒนา
+    Route::delete('/{developer}', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'destroy'])
+        ->name('destroy');
+});
