@@ -82,24 +82,32 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
-                <canvas id="revenueChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Growth</h3>
-                <canvas id="userGrowthChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="userGrowthChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Transactions Over Time</h3>
-                <canvas id="transactionsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="transactionsChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Revenue by Category</h3>
-                <canvas id="categoryChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="categoryChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -139,7 +147,7 @@ async function loadData() {
     errorState.classList.add('hidden');
 
     try {
-        const response = await fetch(`{{ route('admin.analytics.business') }}?days=${days}`);
+        const response = await fetch(`{{ route('admin.analytics.business') }}?days=${days}&ajax=1`);
         const result = await response.json();
 
         if (result.success) {

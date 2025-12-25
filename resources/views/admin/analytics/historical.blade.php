@@ -82,12 +82,16 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Volume Over Time</h3>
-                <canvas id="requestChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="requestChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Response Time Trend</h3>
-                <canvas id="responseTimeChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -95,12 +99,16 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">HTTP Status Distribution</h3>
-                <canvas id="statusChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="statusChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Activity Trend</h3>
-                <canvas id="userChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="userChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -134,7 +142,7 @@ async function loadData() {
     errorState.classList.add('hidden');
 
     try {
-        const response = await fetch(`{{ route('admin.analytics.historical') }}?period=${period}`);
+        const response = await fetch(`{{ route('admin.analytics.historical') }}?period=${period}&ajax=1`);
         const result = await response.json();
 
         if (result.success) {

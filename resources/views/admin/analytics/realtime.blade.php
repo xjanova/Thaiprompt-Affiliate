@@ -94,13 +94,17 @@
         {{-- CPU & Memory Chart --}}
         <div class="glass-fusion rounded-xl shadow-xl p-6 border border-white/20 dark:border-white/10">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">System Resources (Last 10min)</h3>
-            <canvas id="systemChart" height="200"></canvas>
+            <div class="h-64">
+                <canvas id="systemChart"></canvas>
+            </div>
         </div>
 
         {{-- Request Rate Chart --}}
         <div class="glass-fusion rounded-xl shadow-xl p-6 border border-white/20 dark:border-white/10">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Rate (Last 10min)</h3>
-            <canvas id="requestChart" height="200"></canvas>
+            <div class="h-64">
+                <canvas id="requestChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -109,13 +113,17 @@
         {{-- Response Time Chart --}}
         <div class="glass-fusion rounded-xl shadow-xl p-6 border border-white/20 dark:border-white/10">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Response Time (Last 10min)</h3>
-            <canvas id="responseTimeChart" height="200"></canvas>
+            <div class="h-64">
+                <canvas id="responseTimeChart"></canvas>
+            </div>
         </div>
 
         {{-- HTTP Status Codes --}}
         <div class="glass-fusion rounded-xl shadow-xl p-6 border border-white/20 dark:border-white/10">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">HTTP Status Codes (Last 10min)</h3>
-            <canvas id="httpStatusChart" height="200"></canvas>
+            <div class="h-64">
+                <canvas id="httpStatusChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -285,7 +293,7 @@ function initCharts() {
  */
 async function fetchRealtimeData() {
     try {
-        const response = await fetch('{{ route("admin.analytics.realtime") }}');
+        const response = await fetch('{{ route("admin.analytics.realtime") }}?ajax=1');
         const result = await response.json();
 
         if (result.success) {

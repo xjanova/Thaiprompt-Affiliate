@@ -90,24 +90,32 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Hit Rate Trend</h3>
-                <canvas id="hitRateChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="hitRateChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Memory Usage</h3>
-                <canvas id="memoryChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="memoryChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Cache Operations</h3>
-                <canvas id="operationsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="operationsChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-808 mb-4">Key Count Trend</h3>
-                <canvas id="keysChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="keysChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -147,7 +155,7 @@ async function loadData() {
     errorState.classList.add('hidden');
 
     try {
-        const response = await fetch(`{{ route('admin.analytics.cache') }}?hours=${hours}`);
+        const response = await fetch(`{{ route('admin.analytics.cache') }}?hours=${hours}&ajax=1`);
         const result = await response.json();
 
         if (result.success) {
