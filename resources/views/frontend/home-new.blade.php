@@ -993,17 +993,22 @@
 
                         {{-- Sub Items --}}
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group/item">
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🚴 ไรเดอร์ / Delivery</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🚴 ไรเดอร์ / Delivery</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💼 นักขาย / Sales</span>
-                            </a>
+                            </div>
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">💼 นักขาย / Sales</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </div>
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏪 ขายของออนไลน์</span>
                             </a>
@@ -1097,25 +1102,30 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💎 TPIX Token</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">💎 TPIX Token</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                            </div>
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🌾 Staking / Farming</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🌾 Staking / Farming</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">₿ Cryptocurrency</span>
-                            </a>
+                            </div>
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">₿ Cryptocurrency</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">
@@ -1162,9 +1172,14 @@
                             <a href="{{ route('marketplace.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏬 Marketplace</span>
                             </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🍔 Food Passport</span>
-                            </a>
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🍔 Food Passport</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition-colors">
@@ -1211,14 +1226,14 @@
                             <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎮 เกมส์ออนไลน์</span>
                             </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎰 Tournament</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🎰 Tournament</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
+                            </div>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
@@ -1262,17 +1277,22 @@
                             <a href="{{ route('hotels.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏨 จองโรงแรม</span>
                             </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🌳 Carbon Credit</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🌳 Carbon Credit</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💼 POS System</span>
-                            </a>
+                            </div>
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">💼 POS System</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
@@ -1319,14 +1339,14 @@
                             <a href="{{ route('documents.how-to-register') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">📖 วิธีใช้งาน</span>
                             </a>
-                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                            <div class="block px-4 py-3 bg-slate-100/50 dark:bg-slate-700/30 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎓 Academy LMS</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                    <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">🎓 Academy LMS</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-bold">
                                         เร็วๆ นี้
                                     </span>
                                 </div>
-                            </a>
+                            </div>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
