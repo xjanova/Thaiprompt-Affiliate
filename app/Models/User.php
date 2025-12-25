@@ -274,6 +274,14 @@ class User extends Authenticatable
     }
 
     /**
+     * โปรไฟล์นักพัฒนาซอฟต์แวร์ (ถ้าเป็นนักพัฒนา)
+     */
+    public function developerProfile()
+    {
+        return $this->hasOne(DeveloperProfile::class);
+    }
+
+    /**
      * คำสั่งซื้อทั้งหมดของผู้ใช้
      */
     public function orders()

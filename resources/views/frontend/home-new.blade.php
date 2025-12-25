@@ -1071,6 +1071,9 @@
                             <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700">💻 ซอฟต์แวร์/โปรแกรม</span>
                             </a>
+                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
+                                <span class="text-sm font-bold text-white">🏬 ดูทั้งหมด →</span>
+                            </a>
                         </div>
 
                         <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-purple-600 hover:text-purple-700 transition-colors">
@@ -1178,8 +1181,8 @@
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-700">🏪 ร้านค้าออนไลน์</span>
                             </a>
-                            <a href="{{ route('marketplace.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🏬 Marketplace</span>
+                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700">🏬 Unified Marketplace</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">

@@ -2,6 +2,68 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.408.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2348 from xjanova/claude/add-home-navigation-buttons-bl9uT (12f6c781)
+- feat: complete Software Sales System with License & Download Management (99c45f98)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.407.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2347 from xjanova/claude/add-home-navigation-buttons-bl9uT (c2bc5a24)
+- feat: add License Keys & Downloads System (Phase 3.3) (c2e68c66)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.406.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: make lava lamp background fixed and visible across all sections (6b1c1ae8)
+- fix: enhance lava lamp effect visibility by reducing blur and increasing opacity (007e4116)
+### 🔧 Other Changes
+- Merge pull request #2346 from xjanova/claude/lava-lamp-background-effect-bkBgi (fb70b3d5)
+
+## [v3.406.0] - 2025-12-25
+
+### ✨ Features
+- feat: add Multi-Cloud Upload System (Phase 3.2 - Backend) (7df3d495)
+- feat: add Developer Views (Phase 3.1 - Frontend) (ba7b2bca)
+- feat: add Developer Registration & KYC System (Phase 3.1 - Backend) (db1c37ca)
+- feat: add Unified Marketplace (Phase 2 - Part 1) (dd3c4c43)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2345 from xjanova/claude/add-home-navigation-buttons-bl9uT (2fe605d9)
+
+## [v3.405.0] - 2025-12-25
+
+### ✨ Features
+- feat: add lava lamp RGB background effect with glassmorphism to home page (388b2cd0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2344 from xjanova/claude/lava-lamp-background-effect-bkBgi (d43f690e)
+- chore: remove welcome.blade.php to avoid confusion (5a02aaa4)
+
+## [v3.404.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2343 from xjanova/claude/lava-lamp-background-effect-bkBgi (a60f9698)
+- feat: add lava lamp RGB background effect with glassmorphism to home page (a489224c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.403.2] - 2025-12-25
 
 ### ✨ Features
