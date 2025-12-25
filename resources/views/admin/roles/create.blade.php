@@ -3,23 +3,45 @@
 @section('title', 'สร้างบทบาทใหม่')
 
 @section('content')
-<div class="max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.roles.index') }}" class="text-gray-600 dark:text-gray-400 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
-                ← กลับ
-            </a>
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200">
-                    🔐 สร้างบทบาทใหม่
-                </h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
-                    กำหนดชื่อและสิทธิ์สำหรับบทบาทใหม่
-                </p>
+<div class="space-y-6">
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('admin.roles.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-sm rounded-lg transition-all text-white">
+            <i class="fas fa-arrow-left"></i>
+            กลับไปรายการบทบาท
+        </a>
+    </div>
+
+    {{-- Premium Hero Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-shield"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-plus-circle text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สร้างบทบาทใหม่</h1>
+                    <p class="text-indigo-100 text-lg mt-1">กำหนดชื่อและสิทธิ์สำหรับบทบาทใหม่</p>
+                </div>
             </div>
         </div>
     </div>
+
+<div class="max-w-4xl mx-auto">
 
     <!-- Form -->
     <form action="{{ route('admin.roles.store') }}" method="POST">
@@ -145,5 +167,6 @@
         {{ session('error') }}
     </div>
     @endif
+</div>
 </div>
 @endsection
