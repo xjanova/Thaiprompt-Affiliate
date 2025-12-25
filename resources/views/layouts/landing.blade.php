@@ -308,13 +308,6 @@
 
                 {{-- Right Actions --}}
                 <div class="flex items-center gap-3">
-                    {{-- Dark Mode Toggle --}}
-                    <button @click="toggleDarkMode()"
-                            class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                        <i class="fas fa-sun text-yellow-500 text-lg" x-show="darkMode" x-cloak></i>
-                        <i class="fas fa-moon text-slate-600 text-lg" x-show="!darkMode"></i>
-                    </button>
-
                     {{-- Auth Buttons (Desktop) --}}
                     <div class="hidden lg:flex items-center gap-3">
                         @auth
@@ -592,33 +585,15 @@
         function landingPageManager() {
             return {
                 // State
-                darkMode: localStorage.getItem('darkMode') === 'true',
                 mobileMenuOpen: false,
                 scrolled: false,
 
                 // Init
                 init() {
-                    // Apply dark mode
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                    }
-
                     // Check scroll position
                     this.scrolled = window.scrollY > 50;
 
                     console.log('🚀 Landing Page initialized');
-                },
-
-                // Toggle dark mode
-                toggleDarkMode() {
-                    this.darkMode = !this.darkMode;
-                    localStorage.setItem('darkMode', this.darkMode);
-
-                    if (this.darkMode) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
                 }
             };
         }
