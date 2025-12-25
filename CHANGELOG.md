@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.410.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2350 from xjanova/claude/add-analytics-views-8k6vp (fc87c459)
+- feat: add view rendering support to all AnalyticsController methods (abde316d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.409.0] - 2025-12-25
 
 ### ✨ Features
