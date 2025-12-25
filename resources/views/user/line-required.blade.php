@@ -11,24 +11,57 @@
 @section('page-title', 'เชื่อมต่อ LINE')
 
 @section('content')
-<div class="max-w-2xl mx-auto py-8 px-4">
-    {{-- Main Card --}}
-    <div class="bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-3xl shadow-2xl overflow-hidden">
-        {{-- Header --}}
-        <div class="p-6 bg-gradient-to-r from-green-600 to-emerald-600 text-center">
-            <div class="inline-flex items-center justify-center w-24 h-24 bg-white/20 rounded-full mb-4 ring-4 ring-white/30">
-                {{-- LINE Icon --}}
-                <svg class="w-14 h-14 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
-                </svg>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
+<div class="max-w-4xl mx-auto py-8 px-4">
+    {{-- Premium Hero Header (Green-Emerald for LINE Connection) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fab fa-line"></i>
             </div>
-            <h1 class="text-3xl font-bold text-white drop-shadow-lg mb-2">
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10 text-center">
+            <div class="inline-flex items-center justify-center gap-4 mb-6">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <svg class="w-12 h-12 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .195-.095.378-.246.498l-3.18 2.323 3.18 2.323c.151.12.246.303.246.498 0 .346-.281.631-.63.631-.178 0-.347-.076-.463-.199l-3.477-2.538-3.477 2.538c-.116.123-.285.199-.463.199-.349 0-.63-.285-.63-.631 0-.195.095-.378.246-.498l3.18-2.323-3.18-2.323c-.151-.12-.246-.303-.246-.498 0-.346.281-.631.63-.631.178 0 .347.076.463.199l3.477 2.538 3.477-2.538c.116-.123.285-.199.463-.199M12 2C6.477 2 2 6.145 2 11.259c0 4.017 2.892 7.445 7.017 8.497l-.244 3.176c-.036.464.464.799.928.599l3.889-1.944c.131-.066.247-.159.336-.271C18.163 20.585 22 16.324 22 11.259 22 6.145 17.523 2 12 2"/>
+                    </svg>
+                </div>
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2">
                 เชื่อมต่อ LINE เพื่อยืนยันตัวตน
             </h1>
-            <p class="text-white/80 text-lg">
+            <p class="text-green-100 text-lg">
                 กรุณาเชื่อมต่อบัญชี LINE เพื่อใช้งานระบบได้อย่างครบถ้วน
             </p>
         </div>
+    </div>
+
+    {{-- Main Card --}}
+    <div class="bg-white/10 dark:bg-gray-800/50 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 rounded-3xl shadow-2xl overflow-hidden">
 
         {{-- Content --}}
         <div class="p-6 md:p-8">

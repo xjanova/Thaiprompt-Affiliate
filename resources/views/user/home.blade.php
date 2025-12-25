@@ -18,6 +18,20 @@
  */
 --}}
 
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 <div x-data="hubNavigation()" class="min-h-screen pb-24 lg:pb-8">
 
     {{-- ======================================
@@ -35,52 +49,65 @@
     </div>
 
     {{-- ======================================
-        1. Header Section - Welcome & Avatar
+        Premium Hero Header (Compact for Home Hub)
     ====================================== --}}
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            {{-- Welcome Section --}}
-            <div class="flex-1">
-                {{-- Greeting Badge --}}
-                <div class="inline-flex items-center px-3 py-1 mb-2 bg-white/10 dark:bg-gray-800/50 backdrop-blur-lg rounded-full">
-                    <span class="text-sm text-gray-600 dark:text-gray-400" x-text="greeting"></span>
-                </div>
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800 rounded-2xl shadow-2xl p-6 mb-6">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-                {{-- User Name --}}
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                    {{ $user->name }}
-                </h1>
-
-                {{-- Subtitle --}}
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                    เลือกบริการที่คุณต้องการ ✨
-                </p>
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-6xl top-5 right-10" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-rocket"></i>
             </div>
+        </div>
 
-            {{-- Avatar with Glow --}}
-            <a href="{{ route('user.profile') }}"
-               class="relative flex-shrink-0 group">
-                {{-- Glow Ring --}}
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-full animate-spin-slow opacity-60 blur-sm group-hover:opacity-80 transition-opacity"></div>
-
-                {{-- Avatar Container --}}
-                <div class="relative w-16 h-16 p-0.5 bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 rounded-full">
-                    <div class="w-full h-full bg-gray-900 rounded-full flex items-center justify-center overflow-hidden">
-                        {{-- ใช้ profile_picture_url accessor ที่รองรับ fallback อัตโนมัติ --}}
-                        <img src="{{ $user->profile_picture_url }}"
-                             alt="{{ $user->name }}"
-                             class="w-full h-full object-cover"
-                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                {{-- Welcome Section --}}
+                <div class="flex-1">
+                    {{-- Greeting Badge --}}
+                    <div class="inline-flex items-center px-3 py-1 mb-2 glass-fusion rounded-full">
+                        <span class="text-sm text-white" x-text="greeting"></span>
                     </div>
+
+                    {{-- User Name --}}
+                    <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg mb-1">
+                        {{ $user->name }}
+                    </h1>
+
+                    {{-- Subtitle --}}
+                    <p class="text-purple-100 text-sm">
+                        เลือกบริการที่คุณต้องการ ✨
+                    </p>
                 </div>
 
-                {{-- Notification Badge --}}
-                @if($unreadNotifications > 0)
-                <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900">
-                    <span class="text-xs font-bold text-white">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
-                </div>
-                @endif
-            </a>
+                {{-- Avatar with Glow --}}
+                <a href="{{ route('user.profile') }}"
+                   class="relative flex-shrink-0 group">
+                    {{-- Avatar Container with glass-fusion --}}
+                    <div class="relative w-16 h-16 p-0.5 glass-fusion rounded-full">
+                        <div class="w-full h-full bg-white/20 dark:bg-gray-900/50 rounded-full flex items-center justify-center overflow-hidden">
+                            {{-- ใช้ profile_picture_url accessor ที่รองรับ fallback อัตโนมัติ --}}
+                            <img src="{{ $user->profile_picture_url }}"
+                                 alt="{{ $user->name }}"
+                                 class="w-full h-full object-cover"
+                                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode(substr($user->name, 0, 1)) }}&background=6366f1&color=fff&size=200';">
+                        </div>
+                    </div>
+
+                    {{-- Notification Badge --}}
+                    @if($unreadNotifications > 0)
+                    <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white">
+                        <span class="text-xs font-bold text-white">{{ $unreadNotifications > 9 ? '9+' : $unreadNotifications }}</span>
+                    </div>
+                    @endif
+                </a>
+            </div>
         </div>
     </div>
 

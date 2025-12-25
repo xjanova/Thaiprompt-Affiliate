@@ -3,25 +3,75 @@
 @section('title', 'เส้นทางเศรษฐี - คู่มือสู่ความร่ำรวย')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 py-8">
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
+<div class="min-h-screen bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
     <div class="container mx-auto px-4 max-w-6xl">
 
-        <!-- E-Book Cover -->
-        <div class="relative bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 rounded-3xl shadow-2xl overflow-hidden mb-8">
-            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
-            <div class="relative z-10 text-center py-16 px-8">
-                <div class="text-8xl mb-6 animate-bounce">💰</div>
-                <h1 class="text-6xl font-bold text-white mb-4 drop-shadow-2xl">เส้นทางเศรษฐี</h1>
-                <p class="text-2xl text-yellow-100 mb-6 font-semibold">คู่มือสู่ความร่ำรวย ด้วยระบบ Affiliate ของเรา</p>
-                <div class="flex justify-center gap-4 flex-wrap text-white">
-                    <div class="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border-2 border-white/50">
-                        <span class="font-bold">📚 10 บทเรียน</span>
+        {{-- Premium Hero Header (Yellow-Amber-Orange for Wealth Guide) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-600 dark:from-yellow-700 dark:via-amber-700 dark:to-orange-800 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icon Background --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+
+            {{-- Content --}}
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-book-reader text-3xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                                💰 เส้นทางเศรษฐี
+                            </h1>
+                            <p class="text-yellow-100 mt-1">
+                                คู่มือสู่ความร่ำรวย ด้วยระบบ Affiliate ของเรา
+                            </p>
+                        </div>
                     </div>
-                    <div class="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border-2 border-white/50">
-                        <span class="font-bold">🎯 จากมือใหม่สู่แม่ทีม</span>
+                    <a href="{{ route('user.dashboard') }}"
+                       class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="hidden md:inline">กลับหน้าหลัก</span>
+                    </a>
+                </div>
+
+                {{-- Quick Stats --}}
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="glass-fusion rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-white mb-1">📚 10</div>
+                        <div class="text-yellow-100 text-sm">บทเรียน</div>
                     </div>
-                    <div class="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border-2 border-white/50">
-                        <span class="font-bold">💎 8 ระดับยศ</span>
+                    <div class="glass-fusion rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-white mb-1">🎯 100%</div>
+                        <div class="text-yellow-100 text-sm">จากมือใหม่สู่แม่ทีม</div>
+                    </div>
+                    <div class="glass-fusion rounded-xl p-4 text-center">
+                        <div class="text-2xl font-bold text-white mb-1">💎 8</div>
+                        <div class="text-yellow-100 text-sm">ระดับยศ</div>
                     </div>
                 </div>
             </div>

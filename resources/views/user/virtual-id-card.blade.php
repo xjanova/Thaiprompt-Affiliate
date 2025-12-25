@@ -22,6 +22,20 @@
  */
 --}}
 
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 @php
     // กำหนด rank level (1-8)
     $rankLevel = $currentRank?->level ?? 1;
@@ -33,28 +47,50 @@
 @endphp
 
 <div class="space-y-6" x-data="virtualIdCard()">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <i class="fas fa-id-card text-purple-600 dark:text-purple-400"></i>
-                บัตรประจำตัวสมาชิก
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                บัตรประจำตัวเสมือนของคุณ สามารถพิมพ์หรือดาวน์โหลดเก็บไว้ได้
-            </p>
+    {{-- Premium Hero Header (Purple-Indigo-Blue for Virtual ID Card) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <div class="flex gap-3">
-            <button @click="downloadCard()"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                <i class="fas fa-download"></i>
-                ดาวน์โหลด
-            </button>
-            <button @click="printCard()"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                <i class="fas fa-print"></i>
-                พิมพ์
-            </button>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-address-card"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-id-card text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            บัตรประจำตัวสมาชิก
+                        </h1>
+                        <p class="text-purple-100 mt-1">
+                            บัตรประจำตัวเสมือนของคุณ สามารถพิมพ์หรือดาวน์โหลดเก็บไว้ได้
+                        </p>
+                    </div>
+                </div>
+                <div class="flex gap-3 flex-wrap justify-center md:justify-end">
+                    <button @click="downloadCard()"
+                            class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
+                        <i class="fas fa-download"></i>
+                        <span>ดาวน์โหลด</span>
+                    </button>
+                    <button @click="printCard()"
+                            class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
+                        <i class="fas fa-print"></i>
+                        <span>พิมพ์</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

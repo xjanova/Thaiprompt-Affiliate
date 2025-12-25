@@ -3,23 +3,65 @@
 @section('title', 'จำลองรายได้ MLM - เครื่องมือวางแผนรายได้')
 
 @section('content')
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 <div class="min-h-screen py-8" x-data="incomeSimulator()" x-init="init()">
     <div class="container-fluid px-4">
 
-        {{-- Hero Section with Gradient --}}
-        <div class="mb-8 text-center animate-fade-in">
-            <h1 class="text-5xl md:text-6xl font-black mb-4
-                       bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
-                       dark:from-purple-400 dark:via-pink-400 dark:to-orange-400
-                       bg-clip-text text-transparent">
-                💰 จำลองรายได้ MLM
-            </h1>
-            <p class="text-xl md:text-2xl text-gray-700 dark:text-gray-300 mb-2 font-semibold">
-                วางแผนและคาดการณ์รายได้ของคุณอย่างแม่นยำ
-            </p>
-            <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-                🎯 เครื่องมือวิเคราะห์รายได้แบบมืออาชีพ ใช้ค่าจริงจากระบบ MLM • ครอบคลุมทุกประเภทค่าคอมมิชชั่น • พร้อมคำแนะนำเชิงกลยุทธ์
-            </p>
+        {{-- Premium Hero Header (Purple-Pink-Orange for MLM Income Simulator) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 dark:from-purple-800 dark:via-pink-800 dark:to-orange-800 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icon Background --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+
+            {{-- Content --}}
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                    <div class="flex items-center gap-4">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-calculator text-3xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                                💰 จำลองรายได้ MLM
+                            </h1>
+                            <p class="text-purple-100 mt-1">
+                                วางแผนและคาดการณ์รายได้ของคุณอย่างแม่นยำ
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{{ route('user.dashboard') }}"
+                       class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="hidden md:inline">กลับหน้าหลัก</span>
+                    </a>
+                </div>
+                <p class="text-white/90 mt-4 text-center md:text-left">
+                    🎯 เครื่องมือวิเคราะห์รายได้แบบมืออาชีพ • ใช้ค่าจริงจากระบบ MLM • ครอบคลุมทุกประเภทค่าคอมมิชชั่น
+                </p>
+            </div>
         </div>
 
         {{-- Settings Info Panel - Always Visible --}}

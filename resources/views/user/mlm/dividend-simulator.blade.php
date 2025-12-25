@@ -28,38 +28,42 @@
      x-data="tpixStakingCalculator()"
      x-init="init()">
 
-    {{-- Hero Header --}}
-    <div class="mb-8 relative overflow-hidden rounded-3xl">
-        {{-- Gradient Background with Pattern --}}
-        <div class="relative bg-gradient-to-br from-purple-600 via-pink-600 to-orange-600 rounded-3xl p-8 shadow-2xl">
-            {{-- Dots Pattern Overlay --}}
-            <div class="absolute inset-0 opacity-20"
-                 style="background-image: radial-gradient(circle, white 1px, transparent 1px);
-                        background-size: 20px 20px;"></div>
+    {{-- Premium Hero Header (Purple-Pink-Orange for TPIX Staking Calculator) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 dark:from-purple-800 dark:via-pink-800 dark:to-orange-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-            {{-- Content --}}
-            <div class="relative z-10">
-                <div class="flex items-center gap-6 mb-4">
-                    {{-- Icon --}}
-                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
-                        <i class="fas fa-coins text-4xl text-white"></i>
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-coins text-3xl text-white drop-shadow-lg"></i>
                     </div>
-
-                    {{-- Title --}}
                     <div>
-                        <h1 class="text-5xl font-black text-white drop-shadow-lg mb-2">
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
                             🪙 เครื่องคำนวณ TPIX Staking
                         </h1>
-                        <p class="text-white/90 text-xl">
+                        <p class="text-purple-100 mt-1">
                             คำนวณผลตอบแทนจากการ Staking เหรียญ TPIX ของคุณ
                         </p>
                     </div>
                 </div>
-
-                {{-- Sub Description --}}
-                <p class="text-white/80 text-lg">
-                    💰 Stake เหรียญ TPIX และรับผลตอบแทนสูงสุด 120% ต่อปี!
-                </p>
+                <a href="{{ route('user.dashboard') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden md:inline">กลับหน้าหลัก</span>
+                </a>
             </div>
         </div>
     </div>

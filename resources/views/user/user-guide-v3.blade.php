@@ -13,49 +13,77 @@
 @section('page-title', 'คู่มือการใช้งาน')
 
 @section('content')
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
+
 <div x-data="userGuideManager()" class="space-y-6">
-    {{-- Hero Section --}}
-    <div class="glass-fusion rounded-2xl overflow-hidden border border-white/30 shadow-2xl p-8 relative">
-        {{-- Background Pattern --}}
+    {{-- Premium Hero Header (Blue-Purple-Pink for User Guide) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500"></div>
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
 
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
         <div class="relative z-10">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h1 class="text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                        <i class="fas fa-book-open mr-3"></i>
-                        ยินดีต้อนรับสู่คู่มือการใช้งาน
-                    </h1>
-                    <p class="text-white/80 text-lg">
-                        เรียนรู้การใช้งานระบบ TP-Affiliate และเริ่มสร้างรายได้
-                    </p>
-                </div>
-                <div class="hidden md:block">
-                    <div class="w-32 h-32 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-                        <i class="fas fa-user-graduate text-6xl text-white drop-shadow-lg"></i>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-book-open text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            ยินดีต้อนรับสู่คู่มือการใช้งาน
+                        </h1>
+                        <p class="text-blue-100 mt-1">
+                            เรียนรู้การใช้งานระบบ TP-Affiliate และเริ่มสร้างรายได้
+                        </p>
                     </div>
                 </div>
+                <a href="{{ route('user.dashboard') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center md:justify-start">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden md:inline">กลับหน้าหลัก</span>
+                </a>
             </div>
 
             {{-- Quick Stats --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div class="glass-fusion rounded-xl p-4">
                     <div class="text-3xl font-bold text-white mb-1">30+</div>
-                    <div class="text-white/70 text-sm">บทเรียน</div>
+                    <div class="text-blue-100 text-sm">บทเรียน</div>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div class="glass-fusion rounded-xl p-4">
                     <div class="text-3xl font-bold text-white mb-1">15+</div>
-                    <div class="text-white/70 text-sm">วิดีโอสอน</div>
+                    <div class="text-blue-100 text-sm">วิดีโอสอน</div>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div class="glass-fusion rounded-xl p-4">
                     <div class="text-3xl font-bold text-white mb-1">50+</div>
-                    <div class="text-white/70 text-sm">FAQ</div>
+                    <div class="text-blue-100 text-sm">FAQ</div>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                <div class="glass-fusion rounded-xl p-4">
                     <div class="text-3xl font-bold text-white mb-1">24/7</div>
-                    <div class="text-white/70 text-sm">Support</div>
+                    <div class="text-blue-100 text-sm">Support</div>
                 </div>
             </div>
         </div>
