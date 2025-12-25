@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.402.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2339 from xjanova/claude/add-home-navigation-buttons-bl9uT (b1343316)
+- feat: เพิ่ม Navigation Buttons Section หน้า Home (V3 Design) (7112cf5e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.401.0] - 2025-12-24
 
 ### ✨ Features
