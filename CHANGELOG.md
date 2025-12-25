@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2373 from xjanova/claude/redesign-user-hero-header-V6OPT (ded9b899)
+- feat: complete Premium Hero Header redesign for MLM and User sections (9 files) (0b4dee2e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.419.0] - 2025-12-25
 
 ### ✨ Features
