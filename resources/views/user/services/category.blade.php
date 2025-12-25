@@ -9,46 +9,45 @@
 
 @section('content')
 <div x-data="categoryPage()">
-    {{-- Breadcrumb --}}
-    <nav class="mb-6 flex items-center gap-2 text-sm text-white/60">
-        <a href="{{ route('user.services.index') }}" class="hover:text-purple-400 transition-colors">
-            <i class="fas fa-home mr-1"></i>บริการทั้งหมด
-        </a>
-        <i class="fas fa-chevron-right text-xs"></i>
-        <span class="text-purple-400 font-semibold">{{ $category->name }}</span>
-    </nav>
+    {{-- Premium Hero Header (Cyan-Blue for Service Category) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="{{ $category->icon ?? 'fas fa-concierge-bell' }}"></i>
+            </div>
+        </div>
 
-    {{-- Category Header --}}
-    <div class="mb-8 glass-fusion rounded-2xl overflow-hidden">
-        <div class="relative h-48 md:h-64 overflow-hidden"
-             style="background: linear-gradient(135deg, {{ $category->color ?? '#8B5CF6' }}40, {{ $category->color ?? '#8B5CF6' }}80);">
-            @if($category->image_path)
-                <img src="{{ asset('storage/' . $category->image_path) }}"
-                     alt="{{ $category->name }}"
-                     class="w-full h-full object-cover opacity-50">
-            @endif
+        <div class="relative z-10">
+            <nav class="mb-6 flex items-center gap-2 text-sm text-white/80">
+                <a href="{{ route('user.services.index') }}" class="hover:text-white transition-colors">
+                    <i class="fas fa-home mr-1"></i>บริการทั้งหมด
+                </a>
+                <i class="fas fa-chevron-right text-xs"></i>
+                <span class="text-white font-semibold">{{ $category->name }}</span>
+            </nav>
 
-            {{-- Overlay Content --}}
-            <div class="absolute inset-0 flex items-center justify-center">
-                <div class="text-center">
-                    <div class="text-6xl md:text-8xl mb-4 text-white drop-shadow-lg">
-                        <i class="{{ $category->icon ?? 'fas fa-concierge-bell' }}"></i>
-                    </div>
-                    <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg">
-                        {{ $category->name }}
-                    </h1>
-                    @if($category->description)
-                        <p class="mt-2 text-lg text-white/90 max-w-2xl mx-auto px-4 drop-shadow">
-                            {{ $category->description }}
-                        </p>
-                    @endif
-                    <p class="mt-4 text-white/80">
-                        <span class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur rounded-full">
-                            <i class="fas fa-concierge-bell"></i>
-                            {{ $services->total() }} บริการ
-                        </span>
-                    </p>
+            <div class="text-center">
+                <div class="glass-fusion w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="{{ $category->icon ?? 'fas fa-concierge-bell' }} text-6xl text-white drop-shadow-lg"></i>
                 </div>
+                <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg mb-2">
+                    {{ $category->name }}
+                </h1>
+                @if($category->description)
+                    <p class="text-cyan-100 mt-4 max-w-2xl mx-auto text-base md:text-lg px-4">
+                        {{ $category->description }}
+                    </p>
+                @endif
+                <p class="mt-4">
+                    <span class="glass-fusion inline-flex items-center gap-2 px-4 py-2 text-white rounded-full">
+                        <i class="fas fa-concierge-bell"></i>
+                        {{ $services->total() }} บริการ
+                    </span>
+                </p>
             </div>
         </div>
     </div>
@@ -306,5 +305,19 @@ function categoryPage() {
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
+</style>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
 </style>
 @endpush

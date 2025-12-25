@@ -4,30 +4,42 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    {{-- Back Button --}}
-    <a href="{{ route('user.team-transfer.index') }}"
-       class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        กลับไปรายการคำขอ
-    </a>
+    {{-- Premium Hero Header (Blue-Purple for Create Transfer Request) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 dark:from-blue-800 dark:via-purple-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <a href="{{ route('user.team-transfer.index') }}"
+               class="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors mb-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>กลับไปรายการคำขอ</span>
+            </a>
+            <div class="text-center">
+                <div class="glass-fusion w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-2">
+                    ✏️ สร้างคำขอย้ายทีม
+                </h1>
+                <p class="text-blue-100">
+                    กรอกข้อมูลเพื่อขอย้ายไปยังแม่ทีมใหม่
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="max-w-3xl mx-auto">
-        {{-- Header --}}
-        <div class="text-center mb-8">
-            <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                </svg>
-            </div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                สร้างคำขอย้ายทีม
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">
-                กรอกข้อมูลเพื่อขอย้ายไปยังแม่ทีมใหม่
-            </p>
-        </div>
 
         {{-- Error Messages --}}
         @if($errors->any())
@@ -247,5 +259,19 @@ function transferForm() {
     }
 }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush
 @endsection

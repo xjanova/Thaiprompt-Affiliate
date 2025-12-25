@@ -3,15 +3,35 @@
 @section('title', 'จำลองสถานการณ์ MLM')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950 py-8">
     <div class="container mx-auto px-4">
-        <!-- Hero Section -->
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                🎯 จำลองสถานการณ์ MLM
-            </h1>
-            <p class="text-xl text-gray-700 dark:text-gray-300 mb-2">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</p>
-            <p class="text-gray-600 dark:text-gray-400">เครื่องมือสำหรับนำเสนอแผน MLM แบบมืออาชีพ</p>
+        {{-- Premium Hero Header (Indigo-Purple-Pink for MLM Scenario Simulator) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icons --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+            </div>
+
+            {{-- Header Content --}}
+            <div class="relative z-10">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-dice text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div class="text-center">
+                        <h1 class="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">🎯 จำลองสถานการณ์ MLM</h1>
+                        <p class="text-purple-100 text-lg mt-2">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Control Panel -->
@@ -197,7 +217,17 @@
     </div>
 </div>
 
+@push('styles')
 <style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
 .member-node {
     cursor: pointer;
     transition: all 0.3s ease;
@@ -282,6 +312,7 @@
     }
 }
 </style>
+@endpush
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>

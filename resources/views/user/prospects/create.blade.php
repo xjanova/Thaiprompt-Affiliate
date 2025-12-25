@@ -37,17 +37,35 @@
 </div>
 @else
 <div class="max-w-4xl mx-auto space-y-6">
-    {{-- Header --}}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">สร้างลิงก์เชิญสมาชิก</h1>
-                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">สร้างลิงก์เพื่อเชิญเพื่อนของคุณสมัครผ่าน LINE</p>
+    {{-- Premium Hero Header (Indigo-Purple for Create Prospect Link) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-link"></i>
             </div>
-            <a href="{{ route('user.prospects.index') }}"
-               class="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition">
-                ← กลับ
-            </a>
+        </div>
+
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-user-plus text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">🔗 สร้างลิงก์เชิญสมาชิก</h1>
+                        <p class="text-indigo-100 mt-1">สร้างลิงก์เพื่อเชิญเพื่อนของคุณสมัครผ่าน LINE</p>
+                    </div>
+                </div>
+
+                <a href="{{ route('user.prospects.index') }}"
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold">
+                    ← กลับ
+                </a>
+            </div>
         </div>
     </div>
 
@@ -162,3 +180,17 @@
 </div>
 @endif
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

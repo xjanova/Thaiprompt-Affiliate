@@ -4,13 +4,76 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6 max-w-4xl">
-    <!-- Header -->
-    <div class="mb-6">
-        <a href="{{ route('user.crypto-wallet.index') }}" class="text-amber-600 hover:text-amber-700 font-medium mb-2 inline-block">
-            ← กลับไปหน้าหลัก
-        </a>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">แลกเปลี่ยนสกุลเงิน</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">ซื้อ/ขาย Crypto ด้วยบาทไทย</p>
+    {{-- Premium Hero Header (Purple-Pink for Exchange) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-fuchsia-600 dark:from-purple-800 dark:via-pink-800 dark:to-fuchsia-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-sync-alt"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-exchange-alt text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            💱 แลกเปลี่ยนสกุลเงิน
+                        </h1>
+                        <p class="text-purple-100 mt-1">
+                            ซื้อ/ขาย Crypto ด้วยบาทไทย
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ route('user.crypto-wallet.index') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2 justify-center lg:justify-start">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden md:inline">กลับหน้าหลัก</span>
+                </a>
+            </div>
+
+            {{-- Quick Balance Display --}}
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="glass-fusion rounded-xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xl">฿</span>
+                        </div>
+                        <div>
+                            <p class="text-purple-100 text-xs font-medium">กระเป๋าบาท (THB)</p>
+                            <p class="text-white text-xl font-bold drop-shadow-lg">฿{{ number_format($thbWallet->balance ?? 0, 2) }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('user.wallet.index') }}" class="text-purple-100 hover:text-white text-xs">
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="glass-fusion rounded-xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-amber-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xl">₿</span>
+                        </div>
+                        <div>
+                            <p class="text-purple-100 text-xs font-medium">กระเป๋าคริปโต</p>
+                            <p class="text-white text-xl font-bold drop-shadow-lg">{{ count($cryptoBalances) }} สกุล</p>
+                        </div>
+                    </div>
+                    <a href="{{ route('user.crypto-wallet.index') }}" class="text-purple-100 hover:text-white text-xs">
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     @if(session('success'))
@@ -24,24 +87,6 @@
             {{ session('error') }}
         </div>
     @endif
-
-    <div class="grid md:grid-cols-2 gap-6 mb-6">
-        <!-- THB Balance -->
-        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <h3 class="text-sm font-medium mb-2 opacity-90">กระเป๋าเงินบาท (THB)</h3>
-            <div class="text-3xl font-bold mb-1">฿{{ number_format($thbWallet->balance ?? 0, 2) }}</div>
-            <a href="{{ route('user.wallet.index') }}" class="text-xs text-indigo-100 hover:text-white">จัดการกระเป๋า →</a>
-        </div>
-
-        <!-- Crypto Balance -->
-        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-            <h3 class="text-sm font-medium mb-2 opacity-90">กระเป๋าคริปโต</h3>
-            <div class="text-3xl font-bold mb-1">
-                {{ count($cryptoBalances) }} สกุล
-            </div>
-            <a href="{{ route('user.crypto-wallet.index') }}" class="text-xs text-amber-100 hover:text-white">ดูรายละเอียด →</a>
-        </div>
-    </div>
 
     <!-- Exchange Tabs -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden" x-data="{ tab: 'buy' }">
@@ -246,3 +291,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

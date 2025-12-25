@@ -4,46 +4,66 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h2 class="text-3xl font-bold mb-2">Ticket Support</h2>
-                <p class="text-blue-100 text-sm">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</p>
-            </div>
-            <a href="{{ route('user.tickets.create') }}" class="px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-blue-600 font-semibold rounded-lg shadow-lg transition-all transition-transform hover:scale-[1.02]">
-                <i class="fa-solid fa-plus mr-2"></i>
-                สร้าง Ticket ใหม่
-            </a>
+    {{-- Premium Hero Header (Blue-Indigo-Purple for Tickets) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-blue-100 text-sm">ทั้งหมด</span>
-                    <i class="fa-solid fa-ticket text-2xl"></i>
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-headset text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">Ticket Support</h1>
+                        <p class="text-blue-100 mt-1">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</p>
+                    </div>
                 </div>
-                <p class="text-4xl font-bold">{{ number_format($stats['total']) }}</p>
-                <p class="text-sm text-blue-100 mt-1">Tickets</p>
+                <a href="{{ route('user.tickets.create') }}" class="glass-fusion px-6 py-3 hover:bg-white/30 text-white font-semibold rounded-lg shadow-lg transition-all">
+                    <i class="fa-solid fa-plus mr-2"></i>สร้าง Ticket ใหม่
+                </a>
             </div>
 
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-blue-100 text-sm">เปิดอยู่</span>
-                    <i class="fa-solid fa-folder-open text-2xl"></i>
+            {{-- Stats --}}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-fusion rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-blue-100 text-sm">ทั้งหมด</span>
+                        <i class="fa-solid fa-ticket text-2xl text-white"></i>
+                    </div>
+                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total']) }}</p>
+                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
                 </div>
-                <p class="text-4xl font-bold">{{ number_format($stats['open']) }}</p>
-                <p class="text-sm text-blue-100 mt-1">Tickets</p>
-            </div>
 
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-blue-100 text-sm">ปิดแล้ว</span>
-                    <i class="fa-solid fa-check-circle text-2xl"></i>
+                <div class="glass-fusion rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-blue-100 text-sm">เปิดอยู่</span>
+                        <i class="fa-solid fa-folder-open text-2xl text-white"></i>
+                    </div>
+                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['open']) }}</p>
+                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
                 </div>
-                <p class="text-4xl font-bold">{{ number_format($stats['closed']) }}</p>
-                <p class="text-sm text-blue-100 mt-1">Tickets</p>
+
+                <div class="glass-fusion rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-blue-100 text-sm">ปิดแล้ว</span>
+                        <i class="fa-solid fa-check-circle text-2xl text-white"></i>
+                    </div>
+                    <p class="text-4xl font-bold text-white drop-shadow-lg">{{ number_format($stats['closed']) }}</p>
+                    <p class="text-sm text-blue-100 mt-1">Tickets</p>
+                </div>
             </div>
         </div>
     </div>
@@ -154,4 +174,18 @@
         </div>
     @endif
 </div>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

@@ -4,46 +4,60 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto space-y-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-6 text-white">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex-1">
-                <h2 class="text-3xl font-bold mb-2">{{ $ticket->subject }}</h2>
-                <div class="flex items-center space-x-3 flex-wrap">
-                    <span class="text-sm font-mono bg-white/20 px-3 py-1 rounded-lg">{{ $ticket->ticket_number }}</span>
-                    @if($ticket->category)
-                        <span class="inline-flex items-center px-3 py-1 bg-white/20 rounded-lg text-sm">
-                            @if($ticket->category->icon)
-                                <i class="{{ $ticket->category->icon }} mr-2"></i>
-                            @endif
-                            {{ $ticket->category->name }}
-                        </span>
-                    @endif
-                    <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium
-                        @if($ticket->status == 'open') bg-blue-500/30
-                        @elseif($ticket->status == 'in_progress') bg-yellow-500/30
-                        @elseif($ticket->status == 'waiting_customer') bg-purple-500/30
-                        @elseif($ticket->status == 'resolved') bg-green-500/30
-                        @else bg-gray-500/30
-                        @endif">
-                        {{ $ticket->status_label }}
-                    </span>
-                </div>
+    {{-- Premium Hero Header (Blue-Indigo-Purple for Ticket Detail) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-6">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-comments"></i>
             </div>
-            <div class="flex items-center space-x-3">
-                @if(!$ticket->isClosed())
-                    <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิด Ticket นี้?')">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg transition-all">
-                            <i class="fa-solid fa-times-circle mr-2"></i>
-                            ปิด Ticket
-                        </button>
-                    </form>
-                @endif
-                <a href="{{ route('user.tickets.index') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg transition-all">
-                    <i class="fa-solid fa-arrow-left mr-2"></i>
-                    กลับ
-                </a>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex-1">
+                    <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg mb-2">{{ $ticket->subject }}</h1>
+                    <div class="flex items-center space-x-3 flex-wrap">
+                        <span class="text-sm font-mono glass-fusion px-3 py-1 rounded-lg text-white">{{ $ticket->ticket_number }}</span>
+                        @if($ticket->category)
+                            <span class="inline-flex items-center glass-fusion px-3 py-1 rounded-lg text-sm text-white">
+                                @if($ticket->category->icon)
+                                    <i class="{{ $ticket->category->icon }} mr-2"></i>
+                                @endif
+                                {{ $ticket->category->name }}
+                            </span>
+                        @endif
+                        <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium text-white
+                            @if($ticket->status == 'open') bg-blue-500/30
+                            @elseif($ticket->status == 'in_progress') bg-yellow-500/30
+                            @elseif($ticket->status == 'waiting_customer') bg-purple-500/30
+                            @elseif($ticket->status == 'resolved') bg-green-500/30
+                            @else bg-gray-500/30
+                            @endif">
+                            {{ $ticket->status_label }}
+                        </span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    @if(!$ticket->isClosed())
+                        <form method="POST" action="{{ route('user.tickets.close', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปิด Ticket นี้?')">
+                            @csrf
+                            <button type="submit" class="glass-fusion px-4 py-2 hover:bg-white/30 text-white rounded-lg transition-all">
+                                <i class="fa-solid fa-times-circle mr-2"></i>ปิด Ticket
+                            </button>
+                        </form>
+                    @endif
+                    <a href="{{ route('user.tickets.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/30 text-white rounded-lg transition-all">
+                        <i class="fa-solid fa-arrow-left mr-2"></i>กลับ
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -181,4 +195,18 @@
         </div>
     @endif
 </div>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

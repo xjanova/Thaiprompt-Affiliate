@@ -10,28 +10,50 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8" x-data="{ showFilters: false }">
-    {{-- Header --}}
-    <div class="mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <span class="text-4xl">🛒</span>
-                    ร้านค้า Coins
-                </h1>
-                <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    แลก Coins เป็นของรางวัลมากมาย
-                </p>
-            </div>
+    {{-- Premium Hero Header (Yellow-Amber for Coin Shop) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-yellow-500 via-amber-500 to-orange-500 dark:from-yellow-700 dark:via-amber-700 dark:to-orange-700 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-            {{-- Coin Balance Card --}}
-            <div class="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 rounded-2xl p-4 shadow-lg min-w-[200px]">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-yellow-300 rounded-full flex items-center justify-center shadow-lg">
-                        <span class="text-yellow-800 font-black text-lg">C</span>
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-store text-3xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                                🛒 ร้านค้า Coins
+                            </h1>
+                            <p class="text-yellow-100 mt-1">
+                                แลก Coins เป็นของรางวัลมากมาย
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-yellow-100 text-sm">Coins ของคุณ</p>
-                        <p class="text-white text-2xl font-bold">{{ number_format($coinBalance, 2) }}</p>
+                </div>
+
+                {{-- Coin Balance Card --}}
+                <div class="glass-fusion rounded-2xl p-6 min-w-[220px]">
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-yellow-300 rounded-full flex items-center justify-center shadow-lg">
+                            <span class="text-yellow-800 font-black text-xl">C</span>
+                        </div>
+                        <div>
+                            <p class="text-yellow-50 text-sm font-medium">Coins ของคุณ</p>
+                            <p class="text-white text-3xl font-bold drop-shadow-lg">{{ number_format($coinBalance, 2) }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,3 +256,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

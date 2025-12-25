@@ -4,25 +4,37 @@
 
 @section('content')
 <div class="my-creations-container" x-data="myCreationsData()">
-    <!-- Header Section -->
-    <div class="creations-header">
-        <div class="header-content">
+    {{-- Premium Hero Header (Pink-Purple for My Creations) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 dark:from-pink-800 dark:via-purple-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-images"></i>
+            </div>
+        </div>
+
+        <div class="relative z-10">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div>
-                    <h1 class="header-title">
-                        <svg class="inline-block w-10 h-10 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        ผลงานของฉัน
-                    </h1>
-                    <p class="header-subtitle">จัดการและดูผลงาน AI ที่คุณสร้างขึ้น</p>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">🎨 ผลงานของฉัน</h1>
+                        <p class="text-pink-100 mt-1">จัดการและดูผลงาน AI ที่คุณสร้างขึ้น</p>
+                    </div>
                 </div>
 
-                <button @click="showCreateModal()" class="btn-create">
+                <button @click="showCreateModal()" class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold inline-flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    สร้างใหม่
+                    <span>สร้างใหม่</span>
                 </button>
             </div>
         </div>
@@ -984,4 +996,18 @@
         }
     }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush

@@ -9,27 +9,41 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
-        {{-- Breadcrumb --}}
-        <nav class="mb-6">
-            <ol class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <li><a href="{{ route('user.coin-shop.index') }}" class="hover:text-yellow-600">ร้านค้า Coins</a></li>
-                <li class="mx-2">/</li>
-                <li><a href="{{ route('user.coin-shop.my-purchases') }}" class="hover:text-yellow-600">ประวัติการซื้อ</a></li>
-                <li class="mx-2">/</li>
-                <li class="text-gray-900 dark:text-white font-medium">{{ $purchase->order_number }}</li>
-            </ol>
-        </nav>
+        {{-- Premium Hero Header (Indigo-Blue for Order Detail) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 dark:from-indigo-800 dark:via-blue-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
 
-        {{-- Order Header --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
-            <div class="p-6 bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                        <p class="text-gray-400 text-sm">เลขที่ใบสั่งซื้อ</p>
-                        <p class="text-2xl font-bold">{{ $purchase->order_number }}</p>
+            {{-- Floating Icon Background --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+            </div>
+
+            {{-- Content --}}
+            <div class="relative z-10">
+                <div class="flex items-center gap-4 mb-4">
+                    <a href="{{ route('user.coin-shop.my-purchases') }}"
+                       class="glass-fusion p-3 hover:bg-white/30 rounded-lg transition">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-receipt text-3xl text-white drop-shadow-lg"></i>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="px-4 py-2 bg-{{ $purchase->status_color }}-500 rounded-lg text-sm font-bold">
+                    <div class="flex-1">
+                        <p class="text-indigo-100 text-sm">เลขที่ใบสั่งซื้อ</p>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">
+                            {{ $purchase->order_number }}
+                        </h1>
+                    </div>
+                    <div class="glass-fusion px-4 py-2 rounded-lg">
+                        <span class="text-white font-bold text-sm">
                             {{ $purchase->status_icon }} {{ $purchase->status_name }}
                         </span>
                     </div>
@@ -258,3 +272,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

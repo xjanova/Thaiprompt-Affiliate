@@ -4,35 +4,50 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Investment Header -->
-    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+    {{-- Premium Hero Header (Purple-Pink-Red for Investments) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
         <div class="relative z-10">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-chart-pie text-4xl text-white drop-shadow-lg"></i>
+                </div>
                 <div>
-                    <h1 class="text-3xl md:text-4xl font-bold mb-2">📈 การลงทุน ROI</h1>
-                    <p class="text-pink-100">รับผลตอบแทนจากการลงทุนของคุณ</p>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">📈 การลงทุน ROI</h1>
+                    <p class="text-pink-100 mt-1">รับผลตอบแทนจากการลงทุนของคุณ</p>
                 </div>
             </div>
 
-            <!-- Summary Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            {{-- Summary Stats --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-fusion rounded-xl p-4">
                     <p class="text-pink-100 text-xs mb-1">ลงทุนทั้งหมด</p>
-                    <p class="text-2xl font-bold">฿{{ number_format($summary['total_invested'], 2) }}</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">฿{{ number_format($summary['total_invested'], 2) }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="glass-fusion rounded-xl p-4">
                     <p class="text-pink-100 text-xs mb-1">ROI ที่ได้รับ</p>
-                    <p class="text-2xl font-bold">฿{{ number_format($summary['total_earned_roi'], 2) }}</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">฿{{ number_format($summary['total_earned_roi'], 2) }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="glass-fusion rounded-xl p-4">
                     <p class="text-pink-100 text-xs mb-1">ROI คาดหวัง</p>
-                    <p class="text-2xl font-bold">฿{{ number_format($summary['total_expected_roi'], 2) }}</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">฿{{ number_format($summary['total_expected_roi'], 2) }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="glass-fusion rounded-xl p-4">
                     <p class="text-pink-100 text-xs mb-1">ตำแหน่งทั้งหมด</p>
-                    <p class="text-2xl font-bold">{{ $summary['total_positions'] }}</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">{{ $summary['total_positions'] }}</p>
                 </div>
             </div>
         </div>
@@ -199,4 +214,18 @@ function confirmWithdraw(positionId) {
     }
 }
 </script>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

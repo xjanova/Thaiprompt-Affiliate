@@ -4,31 +4,41 @@
 
 @section('content')
 <div class="ai-packages-container" x-data="packagesData()">
-    <!-- Hero Section -->
-    <div class="packages-hero">
-        <div class="hero-content text-center">
-            <div class="hero-icon animate-float">
-                <svg class="w-20 h-20 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {{-- Premium Hero Header (Violet-Purple for Packages) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-800 dark:via-purple-800 dark:to-fuchsia-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-box-open"></i>
+            </div>
+        </div>
+
+        <div class="relative z-10 py-6 text-center">
+            <div class="glass-fusion w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
             </div>
-            <h1 class="hero-title">
-                เลือกแพ็คเกจที่ใช่ <span class="gradient-text">สำหรับคุณ</span>
+            <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg mb-4">
+                📦 เลือกแพ็คเกจที่ใช่ <span class="text-pink-200">สำหรับคุณ</span>
             </h1>
-            <p class="hero-subtitle">ปลดปล่อยความคิดสร้างสรรค์ไร้ขีดจำกัด ด้วย AI Generation</p>
+            <p class="text-lg text-violet-100 mb-8">ปลดปล่อยความคิดสร้างสรรค์ไร้ขีดจำกัด ด้วย AI Generation</p>
 
-            <!-- Billing Toggle -->
-            <div class="billing-toggle mt-8">
+            {{-- Billing Toggle --}}
+            <div class="glass-fusion inline-flex rounded-xl p-1 gap-1">
                 <button @click="billingPeriod = 'monthly'"
-                        :class="{'active': billingPeriod === 'monthly'}"
-                        class="toggle-btn">
+                        :class="billingPeriod === 'monthly' ? 'bg-white/30' : 'hover:bg-white/10'"
+                        class="px-6 py-3 rounded-lg transition text-white font-semibold">
                     รายเดือน
                 </button>
                 <button @click="billingPeriod = 'yearly'"
-                        :class="{'active': billingPeriod === 'yearly'}"
-                        class="toggle-btn">
+                        :class="billingPeriod === 'yearly' ? 'bg-white/30' : 'hover:bg-white/10'"
+                        class="px-6 py-3 rounded-lg transition text-white font-semibold relative">
                     รายปี
-                    <span class="save-badge">ประหยัด 20%</span>
+                    <span class="absolute -top-2 -right-2 bg-yellow-400 text-purple-900 text-xs px-2 py-0.5 rounded-full font-bold">ประหยัด 20%</span>
                 </button>
             </div>
         </div>
@@ -792,4 +802,18 @@
         }
     }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush

@@ -19,35 +19,30 @@
 @section('content')
 <div x-data="serviceDiscovery()">
 
-    {{-- Hero Section with Search --}}
-    <div class="relative glass-fusion rounded-2xl overflow-hidden mb-6">
-        {{-- Background Pattern --}}
+    {{-- Premium Hero Header (Cyan-Blue-Indigo for Services) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-6">
         <div class="absolute inset-0 opacity-10">
-            <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/>
-                    </pattern>
-                </defs>
-                <rect width="100" height="100" fill="url(#grid)"/>
-            </svg>
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-
-        {{-- Floating Icons Animation --}}
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute top-10 left-10 text-3xl text-white/20 animate-bounce" style="animation-delay: 0s;"><i class="fas fa-spa"></i></div>
-            <div class="absolute top-16 right-20 text-3xl text-white/20 animate-bounce" style="animation-delay: 0.5s;"><i class="fas fa-cut"></i></div>
-            <div class="absolute bottom-16 left-20 text-3xl text-white/20 animate-bounce" style="animation-delay: 1s;"><i class="fas fa-tools"></i></div>
-            <div class="absolute bottom-10 right-10 text-3xl text-white/20 animate-bounce" style="animation-delay: 1.5s;"><i class="fas fa-broom"></i></div>
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-concierge-bell"></i>
+            </div>
         </div>
 
-        <div class="relative px-6 py-10 md:py-16">
+        <div class="relative z-10 px-0 py-6 md:py-10">
             {{-- Hero Text --}}
             <div class="text-center mb-8">
+                <div class="flex justify-center items-center gap-4 mb-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-search text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                </div>
                 <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 drop-shadow-lg">
-                    บริการถึงที่ ง่าย ครบ จบในแอพเดียว
+                    🔍 บริการถึงที่ ง่าย ครบ จบในแอพเดียว
                 </h1>
-                <p class="text-base md:text-lg text-white/90 max-w-2xl mx-auto">
+                <p class="text-base md:text-lg text-cyan-100 max-w-2xl mx-auto">
                     นวด ตัดผม ซ่อมแอร์ ทำความสะอาด สอนพิเศษ และอีกมากมาย
                     <br class="hidden md:block">มีผู้ให้บริการมืออาชีพพร้อมบริการคุณ
                 </p>
@@ -705,5 +700,19 @@ function serviceDiscovery() {
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
+</style>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
 </style>
 @endpush

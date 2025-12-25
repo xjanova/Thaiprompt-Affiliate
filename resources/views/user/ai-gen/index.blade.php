@@ -4,35 +4,33 @@
 
 @section('content')
 <div class="ai-gen-container">
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-6 mb-4 mb-lg-0">
-                    <h1 class="hero-title">
-                        Create <span class="gradient-text">Stunning</span><br>
-                        Images & Videos with AI
-                    </h1>
-                    <p class="hero-subtitle">Transform your ideas into reality with powerful AI generation</p>
-                    <button class="btn btn-primary btn-lg btn-glow" onclick="showCreateModal()">
-                        <i class="fas fa-magic"></i> Start Creating Now
-                    </button>
-                </div>
-                <div class="col-lg-6">
-                    <div class="hero-image-grid">
-                        <div class="grid-item" data-aos="fade-up" data-aos-delay="100">
-                            <img src="/images/ai-gen-sample-1.jpg" alt="AI Generated">
-                        </div>
-                        <div class="grid-item" data-aos="fade-up" data-aos-delay="200">
-                            <img src="/images/ai-gen-sample-2.jpg" alt="AI Generated">
-                        </div>
-                        <div class="grid-item" data-aos="fade-up" data-aos-delay="300">
-                            <img src="/images/ai-gen-sample-3.jpg" alt="AI Generated">
-                        </div>
-                        <div class="grid-item" data-aos="fade-up" data-aos-delay="400">
-                            <img src="/images/ai-gen-sample-4.jpg" alt="AI Generated">
-                        </div>
+    {{-- Premium Hero Header (Purple-Pink-Indigo for AI Gen) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 dark:from-purple-800 dark:via-pink-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-magic"></i>
+            </div>
+        </div>
+
+        <div class="relative z-10 py-6 md:py-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="flex-1 text-center md:text-left">
+                    <div class="glass-fusion inline-block p-4 rounded-2xl mb-4">
+                        <i class="fas fa-wand-magic-sparkles text-4xl text-white drop-shadow-lg"></i>
                     </div>
+                    <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg mb-4">
+                        ✨ สร้างสรรค์ผลงาน<br>
+                        <span class="text-pink-200">สุดล้ำด้วย AI</span>
+                    </h1>
+                    <p class="text-lg text-purple-100 mb-6">Transform your ideas into reality with powerful AI generation</p>
+                    <button class="glass-fusion px-8 py-4 hover:bg-white/30 text-white rounded-xl transition font-bold inline-flex items-center gap-2 text-lg" onclick="showCreateModal()">
+                        <i class="fas fa-magic"></i>
+                        <span>Start Creating Now</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1374,4 +1372,18 @@
         });
     });
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush
