@@ -4,27 +4,45 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
-        <div class="relative z-10">
-            <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
-                    ← กลับ
-                </a>
-                <h1 class="text-3xl md:text-4xl font-bold">📝 ประวัติธุรกรรม</h1>
-            </div>
-            <p class="text-indigo-100">รายการธุรกรรมทั้งหมดของกระเป๋าเงิน</p>
+    {{-- Premium Hero Header (Indigo-Blue-Cyan for Transactions) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 dark:from-indigo-800 dark:via-blue-800 dark:to-cyan-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-            <!-- Current Balance -->
-            <div class="mt-6 bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
-                <p class="text-indigo-100 text-sm mb-1">ยอดเงินคงเหลือปัจจุบัน</p>
-                <p class="text-3xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-receipt"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-6">
+                <a href="{{ route('user.wallet.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
+                </a>
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-file-invoice-dollar text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">ประวัติธุรกรรม</h1>
+                        <p class="text-indigo-100 text-lg mt-1">รายการธุรกรรมทั้งหมดของกระเป๋าเงิน</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Current Balance --}}
+            <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-6">
+                <p class="text-indigo-100 text-sm mb-2">ยอดเงินคงเหลือปัจจุบัน</p>
+                <p class="text-5xl font-bold text-white drop-shadow-lg">฿{{ number_format($wallet->balance, 2) }}</p>
             </div>
         </div>
     </div>
-
-    <!-- Filters -->
     <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🔍 ตัวกรอง</h2>
 
@@ -251,3 +269,17 @@
 </style>
 @endpush
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
