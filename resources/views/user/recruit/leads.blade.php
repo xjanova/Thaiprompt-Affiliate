@@ -3,104 +3,70 @@
 @section('title', 'ผู้มุ่งหวัง (Leads)')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-gray-900 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {{-- Header --}}
-        <div class="mb-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        ผู้มุ่งหวัง (Leads)
-                    </h1>
-                    <p class="mt-2 text-gray-600 dark:text-gray-400">
-                        ติดตามและจัดการผู้มุ่งหวังที่เข้าชมหน้า Recruit ของคุณ
-                    </p>
+    {{-- Premium Hero Header (Blue-Indigo for Leads) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-clock"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-users text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            👥 ผู้มุ่งหวัง (Leads)
+                        </h1>
+                        <p class="text-blue-100 mt-1">
+                            ติดตามและจัดการผู้มุ่งหวังที่เข้าชมหน้า Recruit ของคุณ
+                        </p>
+                    </div>
                 </div>
                 <a href="{{ route('user.marketing.recruit.index') }}"
-                   class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
                     กลับไปหน้าจัดการ
                 </a>
             </div>
-        </div>
 
-        {{-- Stats Cards --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {{-- Total Leads --}}
-            <div class="relative group">
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">ผู้มุ่งหวังทั้งหมด</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ number_format($stats['total']) }}</p>
-                        </div>
-                        <div class="p-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
+            {{-- Stats in Hero --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">ผู้มุ่งหวังทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total']) }}</p>
                 </div>
-            </div>
-
-            {{-- Active Leads --}}
-            <div class="relative group">
-                <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">กำลังติดตาม</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ number_format($stats['active']) }}</p>
-                        </div>
-                        <div class="p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">กำลังติดตาม</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['active']) }}</p>
                 </div>
-            </div>
-
-            {{-- Converted Leads --}}
-            <div class="relative group">
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-purple-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">สมัครสมาชิกแล้ว</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ number_format($stats['converted']) }}</p>
-                        </div>
-                        <div class="p-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">สมัครแล้ว</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['converted']) }}</p>
                 </div>
-            </div>
-
-            {{-- Expired Leads --}}
-            <div class="relative group">
-                <div class="absolute inset-0 bg-gradient-to-r from-gray-400 to-gray-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">หมดอายุแล้ว</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ number_format($stats['expired']) }}</p>
-                        </div>
-                        <div class="p-3 bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-blue-100 text-xs mb-1">หมดอายุแล้ว</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['expired']) }}</p>
                 </div>
             </div>
         </div>
+    </div>
+
 
         {{-- Filter Tabs --}}
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 mb-8 overflow-hidden">
@@ -381,3 +347,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

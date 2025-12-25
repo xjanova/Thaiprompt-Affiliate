@@ -5,97 +5,68 @@
 @section('content')
 <div class="max-w-7xl mx-auto space-y-6 pb-20 lg:pb-6" x-data="recruitPageManager()">
 
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-3xl shadow-2xl p-8 text-white">
-        <div class="flex items-center justify-between flex-wrap gap-4">
-            <div>
-                <h1 class="text-3xl font-bold mb-2">
-                    <i class="fas fa-user-friends mr-3"></i>หน้าแนะนำสมาชิก
-                </h1>
-                <p class="text-purple-100">จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ $recruitUrl }}" target="_blank"
-                   class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-semibold transition">
-                    <i class="fas fa-external-link-alt mr-2"></i>ดูหน้า Recruit
-                </a>
+    {{-- Premium Hero Header (Purple-Pink-Red for Recruit) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-friends"></i>
             </div>
         </div>
-    </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Views -->
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-eye text-blue-600 dark:text-blue-400 text-xl"></i>
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-bullhorn text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            📢 หน้าแนะนำสมาชิก
+                        </h1>
+                        <p class="text-purple-100 mt-1">
+                            จัดการข้อมูลและดูสถิติหน้า Recruit ของคุณ
+                        </p>
+                    </div>
                 </div>
-                <span class="text-sm text-green-600 dark:text-green-400 font-semibold">
-                    +{{ $stats['views_last_7_days'] }} ใน 7 วัน
-                </span>
+                <a href="{{ $recruitUrl }}" target="_blank"
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 rounded-xl transition inline-flex items-center gap-2 text-white font-semibold">
+                    <i class="fas fa-external-link-alt"></i>
+                    ดูหน้า Recruit
+                </a>
             </div>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                {{ number_format($stats['total_views']) }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                การเข้าชมทั้งหมด
-            </div>
-        </x-arrow-x.card-v3>
 
-        <!-- Total Leads -->
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-clock text-purple-600 dark:text-purple-400 text-xl"></i>
+            {{-- Stats in Hero --}}
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">การเข้าชม</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_views']) }}</p>
+                    <p class="text-purple-200 text-xs mt-1">+{{ $stats['views_last_7_days'] }} ใน 7 วัน</p>
                 </div>
-                <span class="text-sm text-green-600 dark:text-green-400 font-semibold">
-                    +{{ $stats['leads_last_7_days'] }} ใน 7 วัน
-                </span>
-            </div>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                {{ number_format($stats['total_leads']) }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                ผู้มุ่งหวัง (Leads)
-            </div>
-        </x-arrow-x.card-v3>
-
-        <!-- Total Conversions -->
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-check text-green-600 dark:text-green-400 text-xl"></i>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">ผู้มุ่งหวัง</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_leads']) }}</p>
+                    <p class="text-purple-200 text-xs mt-1">+{{ $stats['leads_last_7_days'] }} ใน 7 วัน</p>
                 </div>
-                <span class="text-sm text-blue-600 dark:text-blue-400 font-semibold">
-                    สมาชิกใหม่
-                </span>
-            </div>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                {{ number_format($stats['total_conversions']) }}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                คนสมัครสำเร็จ
-            </div>
-        </x-arrow-x.card-v3>
-
-        <!-- Conversion Rate -->
-        <x-arrow-x.card-v3 class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-chart-line text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">สมาชิกใหม่</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['total_conversions']) }}</p>
+                    <p class="text-purple-200 text-xs mt-1">คนสมัครสำเร็จ</p>
                 </div>
-                <span class="text-sm text-gray-600 dark:text-gray-400 font-semibold">
-                    อัตราสำเร็จ
-                </span>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">อัตราสำเร็จ</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ number_format($stats['conversion_rate'], 1) }}%</p>
+                    <p class="text-purple-200 text-xs mt-1">Conversion Rate</p>
+                </div>
             </div>
-            <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                {{ number_format($stats['conversion_rate'], 1) }}%
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Conversion Rate
-            </div>
-        </x-arrow-x.card-v3>
+        </div>
     </div>
 
     <!-- Edit Form -->
@@ -354,3 +325,17 @@ function recruitPageManager() {
 @endpush
 
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
