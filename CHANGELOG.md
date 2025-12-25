@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.416.0] - 2025-12-25
+
+### ✨ Features
+- feat: redesign admin/roles/index with Premium Hero Header and gradient stats (818414eb)
+- feat: redesign admin/users/edit with Premium Hero Header (861ea776)
+- feat: redesign admin/users/create with Premium Hero Header (b7b5f503)
+- feat: redesign admin/users/show with Premium Hero Header and gradient stats cards (b890d4ed)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2369 from xjanova/claude/redesign-admin-pages-vH0Dm (cb41b8ba)
+
 ## [v3.415.3] - 2025-12-25
 
 ### ✨ Features
