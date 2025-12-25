@@ -584,7 +584,7 @@ class UnifiedReportService
 
         if (class_exists(\App\Models\AiBotProfile::class)) {
             $totalBots = AiBotProfile::count();
-            $activeBots = AiBotProfile::where('status', 'active')->count();
+            $activeBots = AiBotProfile::where('is_active', true)->count();
         }
 
         return [
