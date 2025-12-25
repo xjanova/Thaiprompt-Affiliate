@@ -4,13 +4,44 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6">
-        <a href="{{ route('user.crypto-wallet.index') }}" class="text-amber-600 hover:text-amber-700 font-medium mb-2 inline-block">
-            ← กลับไปหน้าหลัก
-        </a>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">ฝากเหรียญคริปโต</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">เลือกสกุลเงินที่ต้องการฝาก</p>
+    {{-- Premium Hero Header (Green-Emerald for Deposit) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-download"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-arrow-down text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            📥 ฝากเหรียญคริปโต
+                        </h1>
+                        <p class="text-green-100 mt-1">
+                            เลือกสกุลเงินที่ต้องการฝาก
+                        </p>
+                    </div>
+                </div>
+                <a href="{{ route('user.crypto-wallet.index') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg px-4 py-2 text-white font-medium transition-all flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden md:inline">กลับหน้าหลัก</span>
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- Instructions -->
@@ -105,3 +136,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
