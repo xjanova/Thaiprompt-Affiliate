@@ -4,21 +4,35 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto space-y-6" x-data="prospectShare()">
-    {{-- Header --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex items-center">
-                <a href="{{ route('user.prospects.index') }}"
-                   class="mr-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                    <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">รายละเอียดผู้มุ่งหวัง</h1>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">แชร์ลิงก์เชิญและติดตามสถานะการสมัคร</p>
-                </div>
+    {{-- Premium Hero Header (Purple-Indigo for Prospect Detail) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-check"></i>
             </div>
+        </div>
+
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <a href="{{ route('user.prospects.index') }}"
+                       class="glass-fusion p-3 hover:bg-white/30 rounded-lg transition">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-user text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">📋 รายละเอียดผู้มุ่งหวัง</h1>
+                        <p class="text-purple-100 mt-1">แชร์ลิงก์เชิญและติดตามสถานะการสมัคร</p>
+                    </div>
+                </div>
 
             {{-- Action Buttons --}}
             <div class="flex items-center space-x-2">
@@ -481,3 +495,17 @@ function prospectShare() {
 }
 </script>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush

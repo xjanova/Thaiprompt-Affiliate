@@ -32,39 +32,40 @@
 @endif
 
 <div class="space-y-6" x-data="prospectsManager()">
-    {{-- Header Section with Gradient --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-700 dark:via-indigo-700 dark:to-blue-700 rounded-2xl shadow-xl p-6 md:p-8">
-        {{-- Background Pattern --}}
+    {{-- Premium Hero Header (Purple-Indigo-Blue for Prospects) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 dark:from-purple-800 dark:via-indigo-800 dark:to-blue-800 rounded-2xl shadow-2xl p-8 mb-6">
         <div class="absolute inset-0 opacity-10">
-            <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                    <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                        <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/>
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-plus"></i>
+            </div>
         </div>
 
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-white flex items-center">
-                    <span class="bg-white/20 rounded-lg p-2 mr-3">
-                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <svg class="w-10 h-10 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                    </span>
-                    ผู้มุ่งหวังของฉัน
-                </h1>
-                <p class="mt-2 text-purple-100 text-sm md:text-base">ติดตามและจัดการผู้ที่คุณเชิญให้สมัครผ่าน LINE</p>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">👥 ผู้มุ่งหวังของฉัน</h1>
+                        <p class="text-purple-100 mt-1">ติดตามและจัดการผู้ที่คุณเชิญให้สมัครผ่าน LINE</p>
+                    </div>
+                </div>
+
+                <a href="{{ route('user.prospects.create') }}"
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>สร้างลิงก์เชิญใหม่</span>
+                </a>
             </div>
-            <a href="{{ route('user.prospects.create') }}"
-               class="inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-indigo-700 dark:text-indigo-300 font-bold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105 transform">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                สร้างลิงก์เชิญใหม่
-            </a>
         </div>
     </div>
 
@@ -553,3 +554,17 @@ function prospectsManager() {
 }
 </script>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
