@@ -3,21 +3,22 @@
 @section('title', 'ประวัติการใช้งาน - ' . ($card->card_name ?? 'การ์ด NFC'))
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Back Button --}}
-    <div class="mb-6">
-        <a href="{{ route('user.nfc.show', $card) }}" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
-            <i class="fas fa-arrow-left"></i>
-            <span>กลับไปรายละเอียดการ์ด</span>
-        </a>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-exchange-alt"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <a href="{{ route('user.nfc.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all"><i class="fas fa-arrow-left mr-2"></i>กลับ</a>
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-receipt text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">NFC Transactions</h1>
+            <p class="text-indigo-100 text-lg mt-1">ประวัติการใช้งาน NFC</p></div>
+        </div></div>
     </div>
-
-    {{-- Header --}}
-    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold mb-2">
-                    <i class="fas fa-history mr-2"></i>
                     ประวัติการทำธุรกรรม
                 </h1>
                 <p class="text-blue-100">{{ $card->card_name ?? 'การ์ด NFC' }} • {{ $card->masked_card_number }}</p>
