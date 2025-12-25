@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.413.2] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2360 from xjanova/claude/fix-hotel-bookings-column-WEZAy (34032b9e)
+- fix: correct User collection filter to use blocked_at instead of status (ce5969d8)
+### 🔧 Other Changes
+
+
 ## [v3.413.1] - 2025-12-25
 
 ### ✨ Features
