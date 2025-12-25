@@ -82,24 +82,32 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Traffic Volume</h3>
-                <canvas id="trafficChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="trafficChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">HTTP Status Codes</h3>
-                <canvas id="statusChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="statusChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Top Endpoints</h3>
-                <canvas id="endpointsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="endpointsChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Methods</h3>
-                <canvas id="methodsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="methodsChart"></canvas>
+                </div>
             </div>
         </div>
 

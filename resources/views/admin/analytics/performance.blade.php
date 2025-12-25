@@ -93,27 +93,35 @@
 
         <!-- Charts Row 1 -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10 hover:scale-105 transition-transform">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Response Time Trend</h3>
-                <canvas id="responseChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="responseChart"></canvas>
+                </div>
             </div>
 
-            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10 hover:scale-105 transition-transform">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">CPU & Memory Usage</h3>
-                <canvas id="resourceChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="resourceChart"></canvas>
+                </div>
             </div>
         </div>
 
         <!-- Charts Row 2 -->
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10 hover:scale-105 transition-transform">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Rate</h3>
-                <canvas id="throughputChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="throughputChart"></canvas>
+                </div>
             </div>
 
-            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+            <div class="glass-fusion rounded-xl shadow-lg p-6 border border-white/20 dark:border-white/10 hover:scale-105 transition-transform">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Error Rate</h3>
-                <canvas id="errorChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="errorChart"></canvas>
+                </div>
             </div>
         </div>
 

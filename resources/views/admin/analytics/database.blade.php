@@ -82,24 +82,32 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Query Volume</h3>
-                <canvas id="queryChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="queryChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Query Performance</h3>
-                <canvas id="performanceChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="performanceChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Connection Pool Usage</h3>
-                <canvas id="connectionChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="connectionChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Query Types Distribution</h3>
-                <canvas id="queryTypeChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="queryTypeChart"></canvas>
+                </div>
             </div>
         </div>
 

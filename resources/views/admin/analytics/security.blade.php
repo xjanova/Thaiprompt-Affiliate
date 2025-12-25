@@ -82,24 +82,32 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Failed Login Attempts</h3>
-                <canvas id="failedLoginsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="failedLoginsChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Security Events</h3>
-                <canvas id="eventsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="eventsChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Top Blocked IPs</h3>
-                <canvas id="blockedIPsChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="blockedIPsChart"></canvas>
+                </div>
             </div>
 
             <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Event Types Distribution</h3>
-                <canvas id="eventTypesChart" height="250"></canvas>
+                <div class="h-64">
+                    <canvas id="eventTypesChart"></canvas>
+                </div>
             </div>
         </div>
 
