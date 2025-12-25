@@ -1509,7 +1509,7 @@
 {{-- ================================================================
     CTA SECTION - Call to Action
 ================================================================ --}}
-<section class="py-16 lg:py-20 bg-white/5">
+<section class="py-12 lg:py-16 bg-white/5">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {{-- Icon --}}
         <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center mb-8 animate-pulse-glow">
@@ -1600,19 +1600,19 @@
             <div>
                 <h4 class="text-white font-bold text-lg mb-6">ผลิตภัณฑ์</h4>
                 <ul class="space-y-3">
-                    <li><a href="#features" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('documents.mlm-commission') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> ระบบ Affiliate
                     </a></li>
-                    <li><a href="#demo" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> AI Bot Marketplace
                     </a></li>
                     <li><a href="#app-download" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> Mobile App
                     </a></li>
-                    <li><a href="#demo" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('storefront.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> E-Commerce
                     </a></li>
-                    <li><a href="#demo" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('documents.blockchain-tpix') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> Blockchain / TPIX
                     </a></li>
                 </ul>
@@ -1622,20 +1622,20 @@
             <div>
                 <h4 class="text-white font-bold text-lg mb-6">ทรัพยากร</h4>
                 <ul class="space-y-3">
-                    <li><a href="{{ route('about') ?? '#' }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('about') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-purple-400"></i> เกี่ยวกับเรา
                     </a></li>
-                    <li><a href="{{ route('contact') ?? '#' }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('contact') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-purple-400"></i> ติดต่อเรา
                     </a></li>
-                    <li><a href="#demo" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('wiki.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-purple-400"></i> คู่มือการใช้งาน
                     </a></li>
-                    <li><a href="#demo" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> วิดีโอสอนใช้งาน
+                    <li><a href="{{ route('documents.how-to-register') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> วิธีการสมัครสมาชิก
                     </a></li>
-                    <li><a href="#" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> API Documentation
+                    <li><a href="{{ route('wiki.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> เอกสารประกอบ
                     </a></li>
                 </ul>
             </div>
@@ -1700,9 +1700,9 @@
 
             {{-- Footer Links --}}
             <div class="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
-                <a href="#" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
-                <a href="#" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
-                <a href="#" class="hover:text-white transition-colors">ข้อกำหนดการให้บริการ</a>
+                <a href="{{ route('page.show', 'privacy-policy') }}" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
+                <a href="{{ route('page.show', 'terms-of-service') }}" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
+                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายคุกกี้</a>
             </div>
         </div>
     </div>
