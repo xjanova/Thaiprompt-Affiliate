@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.406.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: make lava lamp background fixed and visible across all sections (6b1c1ae8)
+- fix: enhance lava lamp effect visibility by reducing blur and increasing opacity (007e4116)
+### 🔧 Other Changes
+- Merge pull request #2346 from xjanova/claude/lava-lamp-background-effect-bkBgi (fb70b3d5)
+
 ## [v3.406.0] - 2025-12-25
 
 ### ✨ Features
