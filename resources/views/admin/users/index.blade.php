@@ -85,7 +85,16 @@
     </div>
 
     {{-- Statistics Cards --}}
-    <div>
+    <div x-data="{ isClassicTheme: false }"
+         x-init="
+             // เช็คว่าเป็น Classic Theme หรือไม่ (ปิดเอฟเฟค)
+             const checkClassic = () => {
+                 isClassicTheme = document.body.classList.contains('theme-classic');
+             };
+             checkClassic();
+             // เช็คซ้ำเมื่อมีการเปลี่ยนธีม
+             setInterval(checkClassic, 500);
+         ">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <i class="fas fa-chart-bar text-green-600 dark:text-green-400"></i>
             สถิติภาพรวม
@@ -93,21 +102,28 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {{-- Total Users --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
+                 :class="isClassicTheme
+                     ? 'bg-gradient-to-br from-blue-500 to-blue-700 dark:from-blue-600 dark:to-blue-900 text-white'
+                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
                 <div class="absolute -right-8 -top-8 opacity-10">
                     <i class="fas fa-users text-9xl"></i>
                 </div>
                 <div class="relative z-10">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">ผู้ใช้ทั้งหมด</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-user-friends text-2xl"></i>
+                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
+                            ผู้ใช้ทั้งหมด
+                        </p>
+                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-blue-100 dark:bg-blue-900/50'">
+                            <i class="fas fa-user-friends text-2xl" :class="isClassicTheme ? 'text-white' : 'text-blue-600 dark:text-blue-400'"></i>
                         </div>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($users->total()) }}</h3>
+                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
+                        {{ number_format($users->total()) }}
+                    </h3>
                     <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-database text-blue-200"></i>
-                        <span class="opacity-90">Total Users</span>
+                        <i class="fas fa-database" :class="isClassicTheme ? 'text-blue-200' : 'text-blue-600 dark:text-blue-400'"></i>
+                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Total Users</span>
                     </div>
                 </div>
             </div>
@@ -116,21 +132,28 @@
             @php
                 $activeCount = \App\Models\User::where('status', 'active')->count();
             @endphp
-            <div class="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
+                 :class="isClassicTheme
+                     ? 'bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900 text-white'
+                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
                 <div class="absolute -right-8 -top-8 opacity-10">
                     <i class="fas fa-user-check text-9xl"></i>
                 </div>
                 <div class="relative z-10">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">ผู้ใช้ Active</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-check-circle text-2xl"></i>
+                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
+                            ผู้ใช้ Active
+                        </p>
+                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-green-100 dark:bg-green-900/50'">
+                            <i class="fas fa-check-circle text-2xl" :class="isClassicTheme ? 'text-white' : 'text-green-600 dark:text-green-400'"></i>
                         </div>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($activeCount) }}</h3>
+                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
+                        {{ number_format($activeCount) }}
+                    </h3>
                     <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-signal text-green-200"></i>
-                        <span class="opacity-90">Active Status</span>
+                        <i class="fas fa-signal" :class="isClassicTheme ? 'text-green-200' : 'text-green-600 dark:text-green-400'"></i>
+                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Active Status</span>
                     </div>
                 </div>
             </div>
@@ -139,44 +162,110 @@
             @php
                 $verifiedCount = \App\Models\User::whereNotNull('email_verified_at')->count();
             @endphp
-            <div class="group relative overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
+                 :class="isClassicTheme
+                     ? 'bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-600 dark:to-blue-800 text-white'
+                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
                 <div class="absolute -right-8 -top-8 opacity-10">
                     <i class="fas fa-envelope-circle-check text-9xl"></i>
                 </div>
                 <div class="relative z-10">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">ยืนยันอีเมลแล้ว</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-shield-check text-2xl"></i>
+                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
+                            ยืนยันอีเมลแล้ว
+                        </p>
+                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-cyan-100 dark:bg-cyan-900/50'">
+                            <i class="fas fa-shield-check text-2xl" :class="isClassicTheme ? 'text-white' : 'text-cyan-600 dark:text-cyan-400'"></i>
                         </div>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($verifiedCount) }}</h3>
+                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
+                        {{ number_format($verifiedCount) }}
+                    </h3>
                     <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-envelope text-cyan-200"></i>
-                        <span class="opacity-90">Verified</span>
+                        <i class="fas fa-envelope" :class="isClassicTheme ? 'text-cyan-200' : 'text-cyan-600 dark:text-cyan-400'"></i>
+                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Verified</span>
                     </div>
                 </div>
             </div>
 
             {{-- Total Roles --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer"
+                 :class="isClassicTheme
+                     ? 'bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800 text-white'
+                     : 'glass-card dark:bg-gray-800/50 border border-white/20 dark:border-gray-700/50'">
                 <div class="absolute -right-8 -top-8 opacity-10">
                     <i class="fas fa-user-tag text-9xl"></i>
                 </div>
                 <div class="relative z-10">
                     <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">บทบาททั้งหมด</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-shield-alt text-2xl"></i>
+                        <p class="text-sm font-medium" :class="isClassicTheme ? 'opacity-90' : 'text-gray-700 dark:text-gray-300'">
+                            บทบาททั้งหมด
+                        </p>
+                        <div class="p-3 rounded-xl" :class="isClassicTheme ? 'glass-fusion' : 'bg-purple-100 dark:bg-purple-900/50'">
+                            <i class="fas fa-shield-alt text-2xl" :class="isClassicTheme ? 'text-white' : 'text-purple-600 dark:text-purple-400'"></i>
                         </div>
                     </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($roles->count()) }}</h3>
+                    <h3 class="text-4xl font-bold mb-2" :class="isClassicTheme ? 'text-white' : 'text-gray-900 dark:text-white'">
+                        {{ number_format($roles->count()) }}
+                    </h3>
                     <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-layer-group text-purple-200"></i>
-                        <span class="opacity-90">Total Roles</span>
+                        <i class="fas fa-layer-group" :class="isClassicTheme ? 'text-purple-200' : 'text-purple-600 dark:text-purple-400'"></i>
+                        <span :class="isClassicTheme ? 'opacity-90' : 'text-gray-600 dark:text-gray-400'">Total Roles</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- Quick Links เมนูด่วน --}}
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-rocket text-green-600 dark:text-green-400"></i>
+            เมนูด่วน
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {{-- จัดการบทบาท --}}
+            <a href="{{ route('admin.roles.index') }}" class="glass-card dark:bg-gray-800/50 backdrop-blur-xl p-4 hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 rounded-xl border border-white/20 dark:border-gray-700/50 group">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/30 dark:bg-purple-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-shield-alt text-2xl text-purple-600 dark:text-purple-300"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-gray-900 dark:text-white font-semibold group-hover:text-purple-600 dark:group-hover:text-purple-300 transition">จัดการบทบาท</h4>
+                        <p class="text-gray-600 dark:text-gray-400 text-xs">Roles & Permissions</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500 ml-auto group-hover:text-purple-600 dark:group-hover:text-purple-300 transition"></i>
+                </div>
+            </a>
+
+            {{-- จัดการสิทธิ์ --}}
+            <a href="{{ route('admin.permissions.index') }}" class="glass-card dark:bg-gray-800/50 backdrop-blur-xl p-4 hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 rounded-xl border border-white/20 dark:border-gray-700/50 group">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-500/30 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-key text-2xl text-blue-600 dark:text-blue-300"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-300 transition">จัดการสิทธิ์</h4>
+                        <p class="text-gray-600 dark:text-gray-400 text-xs">Permissions Management</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500 ml-auto group-hover:text-blue-600 dark:group-hover:text-blue-300 transition"></i>
+                </div>
+            </a>
+
+            {{-- ตั้งค่าระบบ --}}
+            <a href="{{ route('admin.settings.index') }}" class="glass-card dark:bg-gray-800/50 backdrop-blur-xl p-4 hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 rounded-xl border border-white/20 dark:border-gray-700/50 group">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-orange-500/30 dark:bg-orange-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cogs text-2xl text-orange-600 dark:text-orange-300"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-gray-900 dark:text-white font-semibold group-hover:text-orange-600 dark:group-hover:text-orange-300 transition">ตั้งค่าระบบ</h4>
+                        <p class="text-gray-600 dark:text-gray-400 text-xs">System Settings</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500 ml-auto group-hover:text-orange-600 dark:group-hover:text-orange-300 transition"></i>
+                </div>
+            </a>
         </div>
     </div>
 
