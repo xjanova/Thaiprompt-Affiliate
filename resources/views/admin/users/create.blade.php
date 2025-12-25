@@ -3,15 +3,50 @@
 @section('title', 'สร้างผู้ใช้ใหม่')
 
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('admin.users.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
-        ← กลับไปรายการผู้ใช้
-    </a>
-</div>
+<div class="space-y-6">
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('admin.users.index') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-sm rounded-lg transition-all text-white">
+            <i class="fas fa-arrow-left"></i>
+            กลับไปรายการผู้ใช้
+        </a>
+    </div>
+
+    {{-- Premium Hero Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 dark:from-green-700 dark:via-emerald-700 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-plus"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-user-plus text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">สร้างผู้ใช้ใหม่</h1>
+                    <p class="text-green-100 text-lg mt-1">เพิ่มผู้ใช้งานเข้าสู่ระบบ</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <div class="max-w-2xl mx-auto">
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">สร้างผู้ใช้ใหม่</h2>
+    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fas fa-edit text-green-600 dark:text-green-400"></i>
+            ข้อมูลผู้ใช้
+        </h2>
 
         <!-- Create Form -->
         <form action="{{ route('admin.users.store') }}" method="POST" class="space-y-6">
@@ -148,15 +183,37 @@
         </form>
     </div>
 
-    <!-- Tips Card -->
-    <div class="mt-6 bg-white/60 dark:bg-white/10 backdrop-blur-sm border-l-4 border-yellow-400 dark:border-yellow-500 rounded-xl p-4 shadow-lg">
-        <h3 class="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">💡 เคล็ดลับ</h3>
-        <ul class="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
-            <li>• ใช้อีเมลที่ถูกต้องเพื่อให้ผู้ใช้สามารถรับอีเมลยืนยันได้</li>
-            <li>• รหัสผ่านที่แข็งแกร่งควรมีตัวพิมพ์เล็ก พิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ</li>
-            <li>• พิจารณาให้ Role ที่เหมาะสมกับหน้าที่ของผู้ใช้</li>
-            <li>• Super Admin ควรมีเพียงไม่กี่คนเพื่อความปลอดภัย</li>
-        </ul>
+    {{-- Tips Card --}}
+    <div class="mt-6 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 backdrop-blur-sm border-l-4 border-yellow-400 dark:border-yellow-500 rounded-xl p-6 shadow-lg">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-yellow-400/20 dark:bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-lightbulb text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-bold text-yellow-900 dark:text-yellow-300 mb-3 text-lg">💡 เคล็ดลับการสร้างผู้ใช้</h3>
+                <ul class="text-sm text-yellow-800 dark:text-yellow-200 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <span>ใช้อีเมลที่ถูกต้องเพื่อให้ผู้ใช้สามารถรับอีเมลยืนยันได้</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <span>รหัสผ่านที่แข็งแกร่งควรมีตัวพิมพ์เล็ก พิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <span>พิจารณาให้ Role ที่เหมาะสมกับหน้าที่ของผู้ใช้</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fas fa-check-circle text-yellow-600 dark:text-yellow-400 mt-0.5"></i>
+                        <span>Super Admin ควรมีเพียงไม่กี่คนเพื่อความปลอดภัย</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
+</div>
 </div>
 @endsection
