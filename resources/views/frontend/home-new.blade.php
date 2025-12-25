@@ -64,10 +64,8 @@
                     background-size: 60px 60px;">
         </div>
 
-        {{-- Fireflies - หิ่งห้อย RGB กระพริบวิบวับ --}}
-        @for($i = 1; $i <= 25; $i++)
-            <div class="firefly firefly-{{ $i }}"></div>
-        @endfor
+        {{-- ✨ Firefly Container --}}
+        <div id="fireflies" class="absolute inset-0 pointer-events-none" style="z-index: 1;"></div>
 
         {{-- Glass Overlay for Glassmorphism Effect (เบลอเบาๆ เพื่อให้เห็น blobs) --}}
         <div class="absolute inset-0 backdrop-blur-sm"></div>
@@ -275,7 +273,7 @@
 {{-- ================================================================
     SIGNUP TUTORIAL SECTION - วิธีสมัครสมาชิก
 ================================================================ --}}
-<section id="signup-tutorial" class="py-20 lg:py-28 bg-white/90 relative overflow-hidden z-10">
+<section id="signup-tutorial" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
     {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
     <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
@@ -397,7 +395,7 @@
     APP DOWNLOAD SECTION - ดาวน์โหลดแอป TP Ultra
 ================================================================ --}}
 @if($siteSettings->app_download_enabled ?? true)
-<section id="app-download" class="py-20 lg:py-28 bg-white/90 relative overflow-hidden z-10">
+<section id="app-download" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
     {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
     <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
@@ -587,7 +585,7 @@
 {{-- ================================================================
     PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
 ================================================================ --}}
-<section id="demo" class="py-20 lg:py-28 bg-white/90 relative overflow-hidden z-10">
+<section id="demo" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
     {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
     <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
@@ -791,17 +789,17 @@
 {{-- ================================================================
     FEATURES SECTION - จุดเด่นของระบบ
 ================================================================ --}}
-<section id="features" class="py-24 lg:py-32 bg-white">
+<section id="features" class="py-16 lg:py-20 bg-white/5">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
         <div class="text-center max-w-3xl mx-auto mb-16 lg:mb-20">
             <span class="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
                 คุณสมบัติเด่น
             </span>
-            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
                 ทำไมต้องเลือก <span class="gradient-text">{{ $appName }}</span>
             </h2>
-            <p class="text-lg text-slate-600 leading-relaxed">
+            <p class="text-lg text-slate-200 leading-relaxed">
                 แพลตฟอร์มที่ออกแบบมาเพื่อธุรกิจของคุณโดยเฉพาะ พร้อมเทคโนโลยีล่าสุดและระบบรักษาความปลอดภัยระดับ Enterprise
             </p>
         </div>
@@ -813,10 +811,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-layer-group text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     All-in-One Platform
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     รวมทุกระบบไว้ในที่เดียว Affiliate, MLM, E-Commerce, AI Bot และอีก 20+ ระบบ ไม่ต้องซื้อแยก ประหยัดกว่า
                 </p>
                 <div class="flex items-center text-blue-600 font-medium text-sm group-hover:underline">
@@ -830,10 +828,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-robot text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     AI-Powered Automation
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     ระบบ AI อัจฉริยะ ช่วยตอบแชท วิเคราะห์ข้อมูล และทำงานอัตโนมัติ 24 ชั่วโมง ลดต้นทุน เพิ่มประสิทธิภาพ
                 </p>
                 <div class="flex items-center text-purple-600 font-medium text-sm group-hover:underline">
@@ -847,10 +845,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-link text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     Blockchain & TPIX Token
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     รองรับ Cryptocurrency และ Token TPIX สำหรับระบบ Staking, Farming และการชำระเงินแบบ Web3
                 </p>
                 <div class="flex items-center text-amber-600 font-medium text-sm group-hover:underline">
@@ -864,10 +862,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-wallet text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     Multi-Currency Wallet
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     กระเป๋าเงินหลายสกุล THB, USD, Crypto พร้อมระบบถอนเงินหลายช่องทาง Bank, PromptPay, Crypto
                 </p>
                 <div class="flex items-center text-emerald-600 font-medium text-sm group-hover:underline">
@@ -881,10 +879,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-sitemap text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     MLM & Commission System
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     ระบบ Multi-Level Marketing ไม่จำกัดชั้น คำนวณคอมมิชชันอัตโนมัติ พร้อมรายงานละเอียด
                 </p>
                 <div class="flex items-center text-pink-600 font-medium text-sm group-hover:underline">
@@ -898,10 +896,10 @@
                 <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-shield-alt text-2xl text-white"></i>
                 </div>
-                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                <h3 class="text-xl font-bold text-white mb-3">
                     Enterprise Security
                 </h3>
-                <p class="text-slate-600 leading-relaxed mb-4">
+                <p class="text-slate-200 leading-relaxed mb-4">
                     ความปลอดภัยระดับ Enterprise พร้อม 2FA, SSL, IP Whitelist และ License System
                 </p>
                 <div class="flex items-center text-cyan-600 font-medium text-sm group-hover:underline">
@@ -919,7 +917,7 @@
 ================================================================ --}}
 <section id="navigation" class="relative py-24 lg:py-32 overflow-hidden z-10">
     {{-- Background --}}
-    <div class="absolute inset-0 bg-white/90"></div>
+    <div class="absolute inset-0 bg-white/5"></div>
 
     {{-- Background Pattern --}}
     <div class="absolute inset-0 opacity-[0.03]"
@@ -948,14 +946,14 @@
 
             {{-- Title --}}
             <h2 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
-                <span class="block text-slate-900 mb-2">คุณต้องการ</span>
+                <span class="block text-white mb-2">คุณต้องการ</span>
                 <span class="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                     อะไรวันนี้?
                 </span>
             </h2>
 
             {{-- Description --}}
-            <p class="text-xl text-slate-600 leading-relaxed">
+            <p class="text-xl text-slate-200 leading-relaxed">
                 เลือกบริการที่ตอบโจทย์คุณ ทุกอย่างอยู่ในแพลตฟอร์มเดียว
                 <br class="hidden md:block">
                 <span class="text-purple-600 font-semibold">ครบจบในที่เดียว ไม่ต้องไปหาที่อื่น!</span>
@@ -991,12 +989,12 @@
                         </div>
 
                         {{-- Title --}}
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             หางาน / ทำงาน
                         </h3>
 
                         {{-- Description --}}
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             โอกาสการงานหลากหลาย เริ่มต้นสร้างรายได้วันนี้
                         </p>
 
@@ -1019,7 +1017,7 @@
                                 </div>
                             </div>
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-blue-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🏪 ขายของออนไลน์</span>
+                                <span class="text-sm font-semibold text-slate-100">🏪 ขายของออนไลน์</span>
                             </a>
                         </div>
 
@@ -1053,23 +1051,23 @@
                             <i class="fas fa-robot text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             ตลาดบอท/โปรแกรม
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             AI, บอท และซอฟต์แวร์ช่วยธุรกิจ
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
                             <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🤖 AI Chatbot</span>
+                                <span class="text-sm font-semibold text-slate-100">🤖 AI Chatbot</span>
                             </a>
                             <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">📈 Trading Bot</span>
+                                <span class="text-sm font-semibold text-slate-100">📈 Trading Bot</span>
                             </a>
                             <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">💻 ซอฟต์แวร์/โปรแกรม</span>
+                                <span class="text-sm font-semibold text-slate-100">💻 ซอฟต์แวร์/โปรแกรม</span>
                             </a>
                             <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
                                 <span class="text-sm font-bold text-white">🏬 ดูทั้งหมด →</span>
@@ -1105,11 +1103,11 @@
                             <i class="fas fa-coins text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             ลงทุน
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             โอกาสลงทุนและสร้างรายได้แบบ passive
                         </p>
 
@@ -1169,20 +1167,20 @@
                             <i class="fas fa-shopping-cart text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             ช็อปปิ้ง
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             ซื้อสินค้าออนไลน์ คุณภาพดี ราคาดี
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🏪 ร้านค้าออนไลน์</span>
+                                <span class="text-sm font-semibold text-slate-100">🏪 ร้านค้าออนไลน์</span>
                             </a>
                             <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🏬 Unified Marketplace</span>
+                                <span class="text-sm font-semibold text-slate-100">🏬 Unified Marketplace</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
@@ -1223,20 +1221,20 @@
                             <i class="fas fa-gamepad text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             เกม / ดูดวง
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             สนุกสนาน ผ่อนคลาย ทำนายดวงชะตา
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
                             <a href="{{ route('tarot.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-violet-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🔮 ดูไพ่ทาโรต์</span>
+                                <span class="text-sm font-semibold text-slate-100">🔮 ดูไพ่ทาโรต์</span>
                             </a>
                             <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-violet-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🎮 เกมส์ออนไลน์</span>
+                                <span class="text-sm font-semibold text-slate-100">🎮 เกมส์ออนไลน์</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
@@ -1277,17 +1275,17 @@
                             <i class="fas fa-concierge-bell text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             บริการ
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             บริการครบวงจรสำหรับทุกความต้องการ
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
                             <a href="{{ route('hotels.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-cyan-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">🏨 จองโรงแรม</span>
+                                <span class="text-sm font-semibold text-slate-100">🏨 จองโรงแรม</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
@@ -1336,20 +1334,20 @@
                             <i class="fas fa-graduation-cap text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
                         </div>
 
-                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 mb-3 text-center">
+                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
                             เรียนรู้
                         </h3>
 
-                        <p class="text-sm text-slate-600 text-center mb-4">
+                        <p class="text-sm text-slate-200 text-center mb-4">
                             ความรู้และทรัพยากรเพื่อพัฒนาตัวเอง
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
                             <a href="{{ route('wiki.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-emerald-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">📚 Wiki / คู่มือ</span>
+                                <span class="text-sm font-semibold text-slate-100">📚 Wiki / คู่มือ</span>
                             </a>
                             <a href="{{ route('documents.how-to-register') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-emerald-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-700">📖 วิธีใช้งาน</span>
+                                <span class="text-sm font-semibold text-slate-100">📖 วิธีใช้งาน</span>
                             </a>
                             <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
@@ -1373,7 +1371,7 @@
 
         {{-- Bottom CTA --}}
         <div class="mt-16 text-center">
-            <p class="text-slate-600 mb-6">
+            <p class="text-slate-200 mb-6">
                 ไม่เจออะไรที่ต้องการ?
             </p>
             <a href="{{ route('contact') }}"
@@ -1391,7 +1389,7 @@
 {{-- ================================================================
     STATS SECTION - สถิติโครงการ
 ================================================================ --}}
-<section id="stats" class="py-24 lg:py-32 bg-white/90 relative overflow-hidden z-10">
+<section id="stats" class="py-24 lg:py-32 bg-white/5 relative overflow-hidden z-10">
     {{-- Background Pattern - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
     <div class="absolute inset-0 opacity-5"
          style="background-image: radial-gradient(circle, white 1px, transparent 1px);
@@ -1511,7 +1509,7 @@
 {{-- ================================================================
     CTA SECTION - Call to Action
 ================================================================ --}}
-<section class="py-16 lg:py-20 bg-white">
+<section class="py-16 lg:py-20 bg-white/5">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {{-- Icon --}}
         <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center mb-8 animate-pulse-glow">
@@ -1519,10 +1517,10 @@
         </div>
 
         {{-- Headline --}}
-        <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+        <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
             พร้อมที่จะเริ่มต้นหรือยัง?
         </h2>
-        <p class="text-lg lg:text-xl text-slate-600 mb-10 max-w-2xl mx-auto">
+        <p class="text-lg lg:text-xl text-slate-200 mb-10 max-w-2xl mx-auto">
             เริ่มต้นใช้งาน {{ $appName }} ได้ทันที ลงทะเบียนฟรี ไม่มีค่าใช้จ่ายเริ่มต้น
             พร้อมทีมซัพพอร์ตช่วยเหลือคุณตลอด 24 ชั่วโมง
         </p>
@@ -1715,71 +1713,153 @@
 @push('styles')
 <style>
 /**
- * Fireflies Background Effect - หิ่งห้อย RGB กระพริบวิบวับ
- *
- * สร้างหิ่งห้อย RGB หลายตัวที่กระพริบและเคลื่อนไหว
- * แบบธรรมชาติ พร้อม glow effects
+ * Fireflies Background Effect - หิ่งห้อยเรืองแสง
+ * (แบบเดียวกับหน้า Login)
  */
 
-/* Base firefly styles */
+/* ✨ Firefly Effect */
 .firefly {
-    position: absolute;
-    width: 12px;
-    height: 12px;
+    position: fixed;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     pointer-events: none;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
+    z-index: 1;
 }
 
-/* Individual fireflies with different colors, positions, and timings */
-.firefly-1 { background: #ff00ff; top: 10%; left: 15%; animation: twinkle 2.3s infinite, float 15s infinite; box-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff; }
-.firefly-2 { background: #00ffff; top: 20%; left: 80%; animation: twinkle 1.8s infinite, float 18s infinite; box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
-.firefly-3 { background: #ffff00; top: 35%; left: 25%; animation: twinkle 2.1s infinite, float 20s infinite; box-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00; }
-.firefly-4 { background: #ff0080; top: 50%; left: 70%; animation: twinkle 1.5s infinite, float 16s infinite; box-shadow: 0 0 20px #ff0080, 0 0 40px #ff0080; }
-.firefly-5 { background: #0080ff; top: 65%; left: 40%; animation: twinkle 2.5s infinite, float 22s infinite; box-shadow: 0 0 20px #0080ff, 0 0 40px #0080ff; }
-.firefly-6 { background: #80ff00; top: 75%; left: 10%; animation: twinkle 1.9s infinite, float 17s infinite; box-shadow: 0 0 20px #80ff00, 0 0 40px #80ff00; }
-.firefly-7 { background: #ff8000; top: 15%; left: 50%; animation: twinkle 2.2s infinite, float 19s infinite; box-shadow: 0 0 20px #ff8000, 0 0 40px #ff8000; }
-.firefly-8 { background: #8000ff; top: 40%; left: 90%; animation: twinkle 1.7s infinite, float 21s infinite; box-shadow: 0 0 20px #8000ff, 0 0 40px #8000ff; }
-.firefly-9 { background: #00ff80; top: 60%; left: 60%; animation: twinkle 2.4s infinite, float 14s infinite; box-shadow: 0 0 20px #00ff80, 0 0 40px #00ff80; }
-.firefly-10 { background: #ff0040; top: 25%; left: 35%; animation: twinkle 2.0s infinite, float 23s infinite; box-shadow: 0 0 20px #ff0040, 0 0 40px #ff0040; }
-.firefly-11 { background: #4000ff; top: 45%; left: 5%; animation: twinkle 1.6s infinite, float 18s infinite; box-shadow: 0 0 20px #4000ff, 0 0 40px #4000ff; }
-.firefly-12 { background: #ffff80; top: 70%; left: 85%; animation: twinkle 2.3s infinite, float 16s infinite; box-shadow: 0 0 20px #ffff80, 0 0 40px #ffff80; }
-.firefly-13 { background: #ff80ff; top: 12%; left: 65%; animation: twinkle 1.8s infinite, float 20s infinite; box-shadow: 0 0 20px #ff80ff, 0 0 40px #ff80ff; }
-.firefly-14 { background: #80ffff; top: 55%; left: 20%; animation: twinkle 2.1s infinite, float 15s infinite; box-shadow: 0 0 20px #80ffff, 0 0 40px #80ffff; }
-.firefly-15 { background: #ff4080; top: 80%; left: 45%; animation: twinkle 1.9s infinite, float 22s infinite; box-shadow: 0 0 20px #ff4080, 0 0 40px #ff4080; }
-.firefly-16 { background: #40ff80; top: 30%; left: 75%; animation: twinkle 2.2s infinite, float 17s infinite; box-shadow: 0 0 20px #40ff80, 0 0 40px #40ff80; }
-.firefly-17 { background: #8040ff; top: 18%; left: 30%; animation: twinkle 1.7s infinite, float 19s infinite; box-shadow: 0 0 20px #8040ff, 0 0 40px #8040ff; }
-.firefly-18 { background: #ffff40; top: 62%; left: 55%; animation: twinkle 2.5s infinite, float 21s infinite; box-shadow: 0 0 20px #ffff40, 0 0 40px #ffff40; }
-.firefly-19 { background: #ff8080; top: 38%; left: 12%; animation: twinkle 1.5s infinite, float 14s infinite; box-shadow: 0 0 20px #ff8080, 0 0 40px #ff8080; }
-.firefly-20 { background: #8080ff; top: 72%; left: 95%; animation: twinkle 2.4s infinite, float 23s infinite; box-shadow: 0 0 20px #8080ff, 0 0 40px #8080ff; }
-.firefly-21 { background: #80ff80; top: 22%; left: 42%; animation: twinkle 2.0s infinite, float 18s infinite; box-shadow: 0 0 20px #80ff80, 0 0 40px #80ff80; }
-.firefly-22 { background: #ff00c0; top: 48%; left: 82%; animation: twinkle 1.6s infinite, float 16s infinite; box-shadow: 0 0 20px #ff00c0, 0 0 40px #ff00c0; }
-.firefly-23 { background: #00c0ff; top: 58%; left: 28%; animation: twinkle 2.3s infinite, float 20s infinite; box-shadow: 0 0 20px #00c0ff, 0 0 40px #00c0ff; }
-.firefly-24 { background: #c0ff00; top: 85%; left: 68%; animation: twinkle 1.8s infinite, float 15s infinite; box-shadow: 0 0 20px #c0ff00, 0 0 40px #c0ff00; }
-.firefly-25 { background: #ffc000; top: 42%; left: 48%; animation: twinkle 2.1s infinite, float 22s infinite; box-shadow: 0 0 20px #ffc000, 0 0 40px #ffc000; }
-
-/* Twinkle animation - กระพริบ */
-@keyframes twinkle {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.5); }
+.firefly::before,
+.firefly::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    transform-origin: center center;
 }
 
-/* Float animation - เคลื่อนที่ช้าๆ */
-@keyframes float {
-    0%, 100% { transform: translate(0, 0); }
-    25% { transform: translate(30px, -40px); }
-    50% { transform: translate(-20px, 30px); }
-    75% { transform: translate(40px, 20px); }
+.firefly::before {
+    background: radial-gradient(circle, rgba(129, 140, 248, 0.9) 0%, rgba(99, 102, 241, 0.6) 40%, transparent 70%);
+    animation: fireflyGlow 2s ease-in-out infinite alternate;
 }
 
-/* Responsive - ลดขนาดบนมือถือ */
-@media (max-width: 768px) {
-    .firefly {
-        width: 8px;
-        height: 8px;
-        opacity: 0.7;
-    }
+.firefly::after {
+    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(199, 210, 254, 0.8) 30%, transparent 60%);
+    width: 4px;
+    height: 4px;
+    left: 1px;
+    top: 1px;
+    animation: fireflyCore 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes fireflyGlow {
+    0% { transform: scale(1); opacity: 0.3; }
+    100% { transform: scale(2.5); opacity: 0.8; }
+}
+
+@keyframes fireflyCore {
+    0% { opacity: 0.8; }
+    100% { opacity: 1; }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+/**
+ * สร้างเอฟเฟคหิ่งห้อยเรืองแสง (แบบหน้า Login)
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('fireflies');
+    if (!container) return;
+
+    // จำนวนหิ่งห้อย
+    const isMobile = window.innerWidth < 768;
+    const fireflyCount = isMobile ? 15 : 25;
+
+    // สร้างหิ่งห้อยแต่ละตัว
+    for (let i = 0; i < fireflyCount; i++) {
+        createFirefly(container, i);
+    }
+});
+
+/**
+ * สร้างหิ่งห้อยตัวเดียว
+ */
+function createFirefly(container, index) {
+    const firefly = document.createElement('div');
+    firefly.className = 'firefly';
+
+    // สุ่มตำแหน่งเริ่มต้น
+    const startX = Math.random() * 100;
+    const startY = 100 + Math.random() * 20;
+
+    firefly.style.left = startX + 'vw';
+    firefly.style.bottom = -startY + 'px';
+
+    // สุ่มค่า animation
+    const duration = 15 + Math.random() * 25;
+    const delay = Math.random() * 10;
+    const drift = -50 + Math.random() * 100;
+    const scale = 0.6 + Math.random() * 0.8;
+
+    firefly.style.transform = `scale(${scale})`;
+
+    // สุ่มสี
+    const colors = [
+        'rgba(129, 140, 248, 0.9)', // indigo
+        'rgba(167, 139, 250, 0.9)', // purple
+        'rgba(96, 165, 250, 0.9)',  // blue
+        'rgba(192, 132, 252, 0.9)', // violet
+        'rgba(129, 230, 217, 0.8)', // teal
+    ];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    firefly.style.setProperty('--duration', duration + 's');
+    firefly.style.setProperty('--delay', delay + 's');
+    firefly.style.setProperty('--drift', drift + 'px');
+    firefly.style.setProperty('--glow-color', color);
+
+    // สร้าง keyframe animation
+    const animationName = `fireflyFloat_${index}`;
+    const keyframes = `
+        @keyframes ${animationName} {
+            0% {
+                bottom: -20px;
+                left: ${startX}vw;
+                opacity: 0;
+            }
+            10% {
+                opacity: ${0.5 + Math.random() * 0.5};
+            }
+            30% {
+                left: calc(${startX}vw + ${drift * 0.3}px);
+            }
+            50% {
+                left: calc(${startX}vw + ${drift}px);
+            }
+            70% {
+                left: calc(${startX}vw + ${drift * 0.7}px);
+            }
+            90% {
+                opacity: ${0.3 + Math.random() * 0.4};
+            }
+            100% {
+                bottom: 110vh;
+                left: calc(${startX}vw + ${drift * 0.5}px);
+                opacity: 0;
+            }
+        }
+    `;
+
+    // เพิ่ม keyframes เข้า stylesheet
+    const style = document.createElement('style');
+    style.textContent = keyframes;
+    document.head.appendChild(style);
+
+    // ใช้ animation
+    firefly.style.animation = `${animationName} ${duration}s ${delay}s ease-in-out infinite`;
+
+    container.appendChild(firefly);
+}
+</script>
 @endpush
