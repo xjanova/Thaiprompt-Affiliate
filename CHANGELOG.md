@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.415.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2366 from xjanova/claude/fix-users-status-column-bFKof (c7e68b57)
+- fix: update marketplace.index routes to marketplace.v3.index across all views (1aa25dc5)
+### 🔧 Other Changes
+
+
 ## [v3.415.0] - 2025-12-25
 
 ### ✨ Features
