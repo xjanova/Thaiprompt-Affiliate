@@ -24,29 +24,67 @@
     .progress-ring-circle {
         transition: stroke-dashoffset 0.5s;
     }
+
+    /* Glass Fusion Effect for Hero Header */
+    .glass-fusion {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Float Animation */
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8">
     <div class="max-w-7xl mx-auto px-4">
-        <!-- Welcome Header -->
-        <x-arrow-x.card-v3 class="p-8 mb-8 bg-gradient-to-r from-purple-600 to-pink-600">
-            <div class="flex items-center justify-between text-white">
-                <div>
-                    <h1 class="text-4xl font-black mb-2">
-                        👋 สวัสดี, {{ auth()->user()->name }}!
-                    </h1>
-                    <p class="text-lg opacity-90">
-                        รหัสสมาชิก: <span class="font-bold">{{ $member->member_code }}</span>
-                    </p>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm opacity-75">แผน MLM ของคุณ</div>
-                    <div class="text-2xl font-bold">{{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</div>
+        {{-- Premium Hero Header (Purple-Pink for MLM Dashboard) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 dark:from-purple-800 dark:via-pink-800 dark:to-rose-800 rounded-2xl shadow-2xl p-8 mb-8">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icons --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-network-wired"></i>
                 </div>
             </div>
-        </x-arrow-x.card-v3>
+
+            {{-- Header Content --}}
+            <div class="relative z-10">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-chart-network text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">
+                                สวัสดี, {{ auth()->user()->name }}!
+                            </h1>
+                            <p class="text-purple-100 text-lg mt-1">
+                                รหัสสมาชิก: <span class="font-mono font-bold">{{ $member->member_code }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-xl p-4">
+                        <div class="text-purple-100 text-sm">แผน MLM ของคุณ</div>
+                        <div class="text-2xl font-bold text-white">{{ $member->plan?->display_name ?? 'ไม่มีแผน' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
