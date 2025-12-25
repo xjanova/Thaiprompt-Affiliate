@@ -2,6 +2,59 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.417.0] - 2025-12-25
+
+### ✨ Features
+- feat: redesign user/staking/show.blade.php with Premium Hero Header - Staking section complete! (6cc790b7)
+- feat: redesign user/staking/history.blade.php with Premium Hero Header (374ce5fe)
+- feat: redesign user/staking/stake.blade.php with Premium Hero Header (79e7b004)
+- feat: redesign user/staking/index.blade.php with Premium Hero Header (4ce3318f)
+- feat: upgrade user dashboard header to Premium Hero Header V4.0 with dynamic rank gradients (c0be05cf)
+- feat: redesign user/wallet/topup-payment.blade.php with Premium Hero Header - Wallet section complete! (a7cdce8b)
+- feat: redesign user/wallet/topup-status.blade.php with Premium Hero Header (ea9a8eaf)
+- feat: redesign user/wallet/qr-transfer.blade.php with Premium Hero Header (4da2d379)
+- feat: redesign user/wallet/qr-code.blade.php with Premium Hero Header (740c1629)
+- feat: redesign user/wallet/topup-promptpay.blade.php with Premium Hero Header (6a06bb41)
+- feat: redesign user/wallet/deposit-promptpay.blade.php with Premium Hero Header (55f97300)
+- feat: redesign user/wallet/topup.blade.php with Premium Hero Header (57dfe7f1)
+- feat: redesign user/wallet/withdrawals.blade.php with Premium Hero Header (f1754ecc)
+- feat: redesign user/wallet/payment-methods.blade.php with Premium Hero Header (42ee7455)
+- feat: redesign user/wallet/transfer.blade.php with Premium Hero Header (807f0046)
+- feat: redesign user/wallet/withdraw.blade.php with Premium Hero Header (b2103a60)
+- feat: redesign user/wallet/deposit.blade.php with Premium Hero Header (f6ced935)
+- feat: redesign user/ranks/dashboard.blade.php with Premium Hero Header (dynamic rank-based gradients) (c0320db4)
+- feat: redesign user/ranks/leaderboard.blade.php with Premium Hero Header (01385f10)
+- feat: redesign user/ranks/progress.blade.php with Premium Hero Header (d6b251e4)
+- feat: redesign user/kyc/show.blade.php with Premium Hero Header (a1ca692c)
+- feat: redesign user/kyc/create.blade.php with Premium Hero Header (f3af8b76)
+- feat: redesign user/kyc/index.blade.php with Premium Hero Header (9d42ffde)
+- feat: redesign user/wallet/transactions.blade.php with Premium Hero Header (1c240ba8)
+- feat: redesign user/mlm/plan-dashboard.blade.php with Premium Hero Header (7e926813)
+- feat: redesign user/mlm/binary-position.blade.php with Premium Hero Header (f36c2c98)
+- feat: redesign user/mlm/referrals.blade.php with Premium Hero Header (5890b435)
+- feat: redesign user/mlm/pv-history.blade.php with Premium Hero Header (75a98bcb)
+- feat: redesign user/mlm/commissions.blade.php with Premium Hero Header (d13b71fc)
+- feat: redesign user/mlm/genealogy.blade.php with Premium Hero Header and enhanced stats (ec0358a3)
+- feat: redesign user/mlm/referral.blade.php with Premium Hero Header (8d34c2ad)
+- feat: redesign user/mlm/team.blade.php with Premium Hero Header (7f3c30c5)
+- feat: redesign user/mlm/dashboard.blade.php with Premium Hero Header (e641d6da)
+- feat: redesign user/email-preferences.blade.php with Premium Hero Header (abb0b27d)
+- feat: redesign user/settings-arrow-x.blade.php with Premium Hero Header (2e3ca662)
+- feat: redesign user/profile.blade.php with Premium Hero Header and quick stats (ee1d2ea4)
+- feat: redesign user/wallet/index with Premium Hero Header (82c61d79)
+- feat: redesign user/commissions with Premium Hero Header (a60355fc)
+- feat: redesign admin/users/permissions and dashboard with Premium Hero Headers (53e46ea1)
+- feat: redesign admin/categories/edit with Premium Hero Header and gradient stats (f9ede5f5)
+- feat: redesign admin/categories/create with Premium Hero Header (030ab34e)
+- feat: redesign admin/categories/index with Premium Hero Header and gradient stats cards (3cf57825)
+- feat: redesign admin/roles/show with Premium Hero Header and gradient stats cards (feb02ba0)
+- feat: redesign admin/roles/edit with Premium Hero Header and enhanced form design (89088f6b)
+- feat: redesign admin/roles/create with Premium Hero Header (0a2357f7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2370 from xjanova/claude/redesign-admin-pages-vH0Dm (c03b0b7d)
+
 ## [v3.416.0] - 2025-12-25
 
 ### ✨ Features
