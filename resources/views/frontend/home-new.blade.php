@@ -905,60 +905,453 @@
 </section>
 
 {{-- ================================================================
-    SYSTEMS SECTION - ระบบทั้งหมด
+    NAVIGATION SECTION - ทางเลือกสำหรับคุณ (V3 Design)
+    🎨 3D + Glassmorphism + Premium Animations
 ================================================================ --}}
-<section id="systems" class="py-24 lg:py-32 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section id="navigation" class="relative py-24 lg:py-32 overflow-hidden">
+    {{-- Background Gradient --}}
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950"></div>
+
+    {{-- Background Pattern --}}
+    <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+         style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+                background-size: 40px 40px;">
+    </div>
+
+    {{-- Floating Gradient Orbs --}}
+    <div class="absolute top-20 -left-32 w-96 h-96 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-20 -right-32 w-96 h-96 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-amber-400/10 to-orange-400/10 rounded-full blur-3xl"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
-        <div class="text-center max-w-3xl mx-auto mb-16">
-            <span class="inline-block px-4 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-semibold mb-4">
-                20+ ระบบครบวงจร
-            </span>
-            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white mb-6">
-                ระบบทั้งหมดใน <span class="gradient-text-secondary">แพลตฟอร์มเดียว</span>
+        <div class="text-center max-w-4xl mx-auto mb-16 lg:mb-20">
+            {{-- Badge --}}
+            <div class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-blue-500/20 dark:border-purple-500/20 mb-8">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                </span>
+                <span class="text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                    เลือกเส้นทางของคุณ
+                </span>
+            </div>
+
+            {{-- Title --}}
+            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
+                <span class="block text-slate-900 dark:text-white mb-2">คุณต้องการ</span>
+                <span class="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 dark:from-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    อะไรวันนี้?
+                </span>
             </h2>
-            <p class="text-lg text-slate-600 dark:text-slate-400">
-                ไม่ต้องซื้อหลายระบบ ไม่ต้อง Integrate ซับซ้อน ทุกอย่างทำงานร่วมกันอย่างลงตัว
+
+            {{-- Description --}}
+            <p class="text-xl text-slate-600 dark:text-slate-400 leading-relaxed">
+                เลือกบริการที่ตอบโจทย์คุณ ทุกอย่างอยู่ในแพลตฟอร์มเดียว
+                <br class="hidden md:block">
+                <span class="text-purple-600 dark:text-purple-400 font-semibold">ครบจบในที่เดียว ไม่ต้องไปหาที่อื่น!</span>
             </p>
         </div>
 
-        {{-- Systems Grid --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-            @php
-                $systems = [
-                    ['icon' => 'fa-sitemap', 'name' => 'ระบบ Affiliate/MLM', 'color' => 'from-purple-500 to-purple-600'],
-                    ['icon' => 'fa-shopping-cart', 'name' => 'E-Commerce', 'color' => 'from-pink-500 to-rose-500'],
-                    ['icon' => 'fa-store', 'name' => 'Marketplace', 'color' => 'from-orange-500 to-amber-500'],
-                    ['icon' => 'fa-wallet', 'name' => 'Digital Wallet', 'color' => 'from-green-500 to-emerald-500'],
-                    ['icon' => 'fa-robot', 'name' => 'AI Chatbot', 'color' => 'from-blue-500 to-cyan-500'],
-                    ['icon' => 'fab fa-line', 'name' => 'LINE Bot', 'color' => 'from-green-400 to-green-500'],
-                    ['icon' => 'fa-coins', 'name' => 'TPIX Token', 'color' => 'from-yellow-500 to-amber-500'],
-                    ['icon' => 'fa-hotel', 'name' => 'Hotel Booking', 'color' => 'from-red-500 to-pink-500'],
-                    ['icon' => 'fa-cash-register', 'name' => 'POS System', 'color' => 'from-indigo-500 to-purple-500'],
-                    ['icon' => 'fa-graduation-cap', 'name' => 'Academy LMS', 'color' => 'from-teal-500 to-cyan-500'],
-                    ['icon' => 'fa-users-cog', 'name' => 'HRM System', 'color' => 'from-slate-500 to-gray-600'],
-                    ['icon' => 'fa-file-invoice-dollar', 'name' => 'Accounting', 'color' => 'from-emerald-500 to-green-600'],
-                    ['icon' => 'fa-seedling', 'name' => 'Food Passport', 'color' => 'from-lime-500 to-green-500'],
-                    ['icon' => 'fa-chart-line', 'name' => 'Trading Bot', 'color' => 'from-blue-600 to-indigo-600'],
-                    ['icon' => 'fa-gamepad', 'name' => 'Games', 'color' => 'from-fuchsia-500 to-pink-500'],
-                    ['icon' => 'fa-magic', 'name' => 'Tarot Reading', 'color' => 'from-violet-500 to-purple-600'],
-                    ['icon' => 'fa-qrcode', 'name' => 'QR/Barcode', 'color' => 'from-gray-600 to-slate-700'],
-                    ['icon' => 'fa-laptop-code', 'name' => 'Software Sales', 'color' => 'from-cyan-500 to-blue-500'],
-                    ['icon' => 'fa-chart-pie', 'name' => 'Analytics', 'color' => 'from-rose-500 to-red-500'],
-                    ['icon' => 'fa-cogs', 'name' => 'และอีกมากมาย...', 'color' => 'from-slate-400 to-slate-500'],
-                ];
-            @endphp
+        {{-- Navigation Grid - 7 Main Categories --}}
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
 
-            @foreach($systems as $system)
-                <div class="group card-hover bg-white dark:bg-slate-800 rounded-xl p-4 lg:p-5 text-center border border-slate-200 dark:border-slate-700">
-                    <div class="w-12 h-12 lg:w-14 lg:h-14 mx-auto bg-gradient-to-br {{ $system['color'] }} rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <i class="{{ str_starts_with($system['icon'], 'fab') ? '' : 'fas ' }}{{ $system['icon'] }} text-xl text-white"></i>
+            {{-- ============================================================
+                1. 💼 หางาน/ทำงาน
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                {{-- Main Card --}}
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-blue-500/50 dark:hover:border-blue-400/50
+                            hover:shadow-2xl hover:shadow-blue-500/20 dark:hover:shadow-blue-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    {{-- Glow Effect --}}
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    {{-- Content --}}
+                    <div class="relative">
+                        {{-- Icon --}}
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-blue-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-briefcase text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        {{-- Title --}}
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            หางาน / ทำงาน
+                        </h3>
+
+                        {{-- Description --}}
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            โอกาสการงานหลากหลาย เริ่มต้นสร้างรายได้วันนี้
+                        </p>
+
+                        {{-- Sub Items --}}
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group/item">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🚴 ไรเดอร์ / Delivery</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💼 นักขาย / Sales</span>
+                            </a>
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏪 ขายของออนไลน์</span>
+                            </a>
+                        </div>
+
+                        {{-- Expand Button --}}
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
                     </div>
-                    <h4 class="text-sm lg:text-base font-semibold text-slate-800 dark:text-white">
-                        {{ $system['name'] }}
-                    </h4>
                 </div>
-            @endforeach
+            </div>
+
+            {{-- ============================================================
+                2. 🤖 ตลาดบอท/โปรแกรม
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-purple-500/50 dark:hover:border-purple-400/50
+                            hover:shadow-2xl hover:shadow-purple-500/20 dark:hover:shadow-purple-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-purple-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-robot text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            ตลาดบอท/โปรแกรม
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            AI, บอท และซอฟต์แวร์ช่วยธุรกิจ
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="{{ route('chatbot.marketplace.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🤖 AI Chatbot</span>
+                            </a>
+                            <a href="{{ route('trading-bot.marketplace') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">📈 Trading Bot</span>
+                            </a>
+                            <a href="{{ route('software.products.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💻 ซอฟต์แวร์/โปรแกรม</span>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ============================================================
+                3. 💰 ลงทุน
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-amber-500/50 dark:hover:border-amber-400/50
+                            hover:shadow-2xl hover:shadow-amber-500/20 dark:hover:shadow-amber-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-amber-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-coins text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            ลงทุน
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            โอกาสลงทุนและสร้างรายได้แบบ passive
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💎 TPIX Token</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🌾 Staking / Farming</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">₿ Cryptocurrency</span>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ============================================================
+                4. 🛒 ช็อปปิ้ง
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-pink-500/50 dark:hover:border-pink-400/50
+                            hover:shadow-2xl hover:shadow-pink-500/20 dark:hover:shadow-pink-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-pink-500 to-rose-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-pink-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-shopping-cart text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            ช็อปปิ้ง
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            ซื้อสินค้าออนไลน์ คุณภาพดี ราคาดี
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏪 ร้านค้าออนไลน์</span>
+                            </a>
+                            <a href="{{ route('marketplace.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏬 Marketplace</span>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🍔 Food Passport</span>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ============================================================
+                5. 🎮 เกม/ดูดวง
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-violet-500/50 dark:hover:border-violet-400/50
+                            hover:shadow-2xl hover:shadow-violet-500/20 dark:hover:shadow-violet-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-violet-500 to-purple-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-violet-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-gamepad text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            เกม / ดูดวง
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            สนุกสนาน ผ่อนคลาย ทำนายดวงชะตา
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="{{ route('tarot.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🔮 ดูไพ่ทาโรต์</span>
+                            </a>
+                            <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎮 เกมส์ออนไลน์</span>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎰 Tournament</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ============================================================
+                6. 🏨 บริการ
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-cyan-500/50 dark:hover:border-cyan-400/50
+                            hover:shadow-2xl hover:shadow-cyan-500/20 dark:hover:shadow-cyan-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-cyan-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-concierge-bell text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            บริการ
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            บริการครบวงจรสำหรับทุกความต้องการ
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="{{ route('hotel.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🏨 จองโรงแรม</span>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🌳 Carbon Credit</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-cyan-100 dark:hover:bg-cyan-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">💼 POS System</span>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ============================================================
+                7. 🎓 เรียนรู้
+            ============================================================ --}}
+            <div class="group relative" x-data="{ expanded: false }">
+                <div class="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-6 lg:p-8
+                            hover:border-emerald-500/50 dark:hover:border-emerald-400/50
+                            hover:shadow-2xl hover:shadow-emerald-500/20 dark:hover:shadow-emerald-400/20
+                            transform hover:-translate-y-2 hover:scale-[1.02]
+                            transition-all duration-500 cursor-pointer"
+                     @click="expanded = !expanded">
+
+                    <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
+
+                    <div class="relative">
+                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center
+                                    shadow-lg shadow-emerald-500/30
+                                    transform group-hover:scale-110 group-hover:rotate-6
+                                    transition-all duration-500">
+                            <i class="fas fa-graduation-cap text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+
+                        <h3 class="text-xl lg:text-2xl font-black text-slate-900 dark:text-white mb-3 text-center">
+                            เรียนรู้
+                        </h3>
+
+                        <p class="text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                            ความรู้และทรัพยากรเพื่อพัฒนาตัวเอง
+                        </p>
+
+                        <div class="space-y-2" x-show="expanded" x-collapse>
+                            <a href="{{ route('wiki.index') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">📚 Wiki / คู่มือ</span>
+                            </a>
+                            <a href="{{ route('documents.how-to-register') }}" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">📖 วิธีใช้งาน</span>
+                            </a>
+                            <a href="#" class="block px-4 py-3 bg-slate-100 dark:bg-slate-700/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">🎓 Academy LMS</span>
+                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold">
+                                        เร็วๆ นี้
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
+                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{-- Bottom CTA --}}
+        <div class="mt-16 text-center">
+            <p class="text-slate-600 dark:text-slate-400 mb-6">
+                ไม่เจออะไรที่ต้องการ?
+            </p>
+            <a href="{{ route('contact') }}"
+               class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700
+                      text-white font-bold rounded-2xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50
+                      transform hover:scale-105 transition-all duration-300">
+                <i class="fas fa-headset"></i>
+                <span>ติดต่อเราเลย!</span>
+                <i class="fas fa-arrow-right"></i>
+            </a>
         </div>
     </div>
 </section>
