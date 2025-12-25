@@ -3,29 +3,67 @@
 @section('title', 'แก้ไขผู้ใช้ - ' . $user->name)
 
 @section('content')
-<div class="mb-6">
-    <a href="{{ route('admin.users.show', $user) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
-        ← กลับไปรายละเอียด
-    </a>
-</div>
+<div class="space-y-6">
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('admin.users.show', $user) }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 dark:bg-white/5 dark:hover:bg-white/10 backdrop-blur-sm rounded-lg transition-all text-white">
+            <i class="fas fa-arrow-left"></i>
+            กลับไปรายละเอียด
+        </a>
+    </div>
 
-<div class="max-w-2xl mx-auto">
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">แก้ไขผู้ใช้</h2>
+    {{-- Premium Hero Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 dark:from-orange-700 dark:via-amber-700 dark:to-yellow-700 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
 
-        <!-- User Info Display -->
-        <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-6 flex items-center border border-gray-200 dark:border-white/20">
-            {{-- Avatar - ใช้ profile_picture_url accessor พร้อม fallback --}}
-            <img src="{{ $user->profile_picture_url }}"
-                 alt="{{ $user->name }}"
-                 class="h-12 w-12 rounded-full object-cover"
-                 onerror="this.onerror=null; this.outerHTML='<div class=\'h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xl font-bold text-indigo-600 dark:text-indigo-300\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
-
-            <div class="ml-4">
-                <h3 class="font-semibold text-gray-900 dark:text-white">{{ $user->name }}</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-user-edit"></i>
             </div>
         </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-user-edit text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">แก้ไขผู้ใช้</h1>
+                    <p class="text-orange-100 text-lg mt-1">อัพเดทข้อมูลผู้ใช้งาน</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-8">
+        {{-- User Info Display --}}
+        <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 backdrop-blur-sm rounded-xl p-4 mb-6 flex items-center border-l-4 border-orange-400 dark:border-orange-500">
+            {{-- Avatar --}}
+            <img src="{{ $user->profile_picture_url }}"
+                 alt="{{ $user->name }}"
+                 class="h-16 w-16 rounded-full object-cover ring-2 ring-orange-400 dark:ring-orange-500"
+                 onerror="this.onerror=null; this.outerHTML='<div class=\'h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-2xl font-bold text-orange-600 dark:text-orange-300 ring-2 ring-orange-400 dark:ring-orange-500\'>{{ strtoupper(substr($user->name, 0, 1)) }}</div>';">
+
+            <div class="ml-4 flex-1">
+                <h3 class="font-bold text-gray-900 dark:text-white text-lg">{{ $user->name }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+                <span class="inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-orange-400/20 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300">
+                    {{ ucfirst($user->role ?? 'user') }}
+                </span>
+            </div>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <i class="fas fa-edit text-orange-600 dark:text-orange-400"></i>
+            ข้อมูลผู้ใช้
+        </h2>
 
         <!-- Edit Form -->
         <form action="{{ route('admin.users.update', $user) }}" method="POST" class="space-y-6">
@@ -223,5 +261,6 @@
         </div>
         @endif
     </div>
+</div>
 </div>
 @endsection
