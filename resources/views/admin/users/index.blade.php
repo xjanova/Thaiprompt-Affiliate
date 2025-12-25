@@ -87,23 +87,47 @@
     {{-- Statistics Cards --}}
     <div x-data="{ isClassicTheme: false }"
          x-init="
-             // เช็คว่าเป็น Classic Theme หรือไม่ (เช็คจาก settings)
+             // ฟังก์ชันตรวจจับ Classic Theme (เช็ค 2 แหล่ง)
              const checkClassic = () => {
+                 // วิธีที่ 1: เช็ค body class (ที่ theme-customizer เพิ่มไว้)
+                 if (document.body.classList.contains('theme-classic')) {
+                     isClassicTheme = true;
+                     console.log('✅ Classic Theme detected via body class');
+                     return;
+                 }
+
+                 // วิธีที่ 2: เช็ค localStorage (fallback)
                  const saved = localStorage.getItem('themeSettings');
                  if (saved) {
-                     const settings = JSON.parse(saved);
-                     // Classic = glassOpacity === 0 และ glassBlur === 0
-                     isClassicTheme = (settings.glassOpacity === 0 || settings.glassOpacity === '0') &&
-                                     (settings.glassBlur === 0 || settings.glassBlur === '0');
+                     try {
+                         const settings = JSON.parse(saved);
+                         // Classic = glassOpacity และ glassBlur เป็น 0 (ทั้ง number และ string)
+                         const glassOp = parseInt(settings.glassOpacity);
+                         const glassBlur = parseInt(settings.glassBlur);
+                         isClassicTheme = (glassOp === 0 && glassBlur === 0);
+                         console.log('🔍 Theme check - glassOpacity:', glassOp, 'glassBlur:', glassBlur, 'isClassic:', isClassicTheme);
+                     } catch (e) {
+                         console.error('Theme settings parse error:', e);
+                         isClassicTheme = false;
+                     }
                  } else {
-                     // ถ้าไม่มี settings = ใช้ค่าเริ่มต้น (glassmorphism)
                      isClassicTheme = false;
+                     console.log('ℹ️ No theme settings found, using default (not Classic)');
                  }
              };
+
+             // เรียกครั้งแรก
              checkClassic();
-             // เช็คซ้ำเมื่อมีการเปลี่ยนธีม
+
+             // เช็คซ้ำทุก 500ms
              setInterval(checkClassic, 500);
+
+             // เช็คเมื่อ localStorage เปลี่ยน
              window.addEventListener('storage', checkClassic);
+
+             // เช็คเมื่อมี mutation ที่ body class
+             const observer = new MutationObserver(checkClassic);
+             observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
          ">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <i class="fas fa-chart-bar text-green-600 dark:text-green-400"></i>
