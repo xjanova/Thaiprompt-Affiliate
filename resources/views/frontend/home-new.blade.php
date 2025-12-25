@@ -52,10 +52,10 @@
 @section('content')
 
 {{-- ================================================================
-    HERO SECTION - Professional & Trustworthy with Lava Lamp Effect
+    GLOBAL LAVA LAMP BACKGROUND - Fixed ไม่ scroll ตามเนื้อหา
 ================================================================ --}}
-<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-    {{-- Lava Lamp Background with RGB Animated Blobs --}}
+<div class="fixed inset-0 z-0 pointer-events-none">
+    {{-- Base Gradient Background --}}
     <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950">
         {{-- Grid Pattern --}}
         <div class="absolute inset-0 opacity-[0.03]"
@@ -73,8 +73,14 @@
         <div class="lava-blob lava-blob-6"></div>
 
         {{-- Glass Overlay for Glassmorphism Effect (เบลอเบาๆ เพื่อให้เห็น blobs) --}}
-        <div class="absolute inset-0 backdrop-blur-sm pointer-events-none"></div>
+        <div class="absolute inset-0 backdrop-blur-sm"></div>
     </div>
+</div>
+
+{{-- ================================================================
+    HERO SECTION - Professional & Trustworthy
+================================================================ --}}
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 z-10">
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
         <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -272,16 +278,16 @@
 {{-- ================================================================
     SIGNUP TUTORIAL SECTION - วิธีสมัครสมาชิก
 ================================================================ --}}
-<section id="signup-tutorial" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 relative overflow-hidden">
-    {{-- Background Effects --}}
-    <div class="absolute inset-0 opacity-10">
+<section id="signup-tutorial" class="py-20 lg:py-28 bg-black/5 backdrop-blur-[2px] relative overflow-hidden z-10">
+    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
+    <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
             linear-gradient(to right, rgba(16, 185, 129, 0.15) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
             background-size: 40px 40px;"></div>
     </div>
-    <div class="absolute top-20 right-10 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-    <div class="absolute bottom-20 left-10 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute top-20 right-10 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+    <div class="absolute bottom-20 left-10 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
@@ -394,16 +400,16 @@
     APP DOWNLOAD SECTION - ดาวน์โหลดแอป TP Ultra
 ================================================================ --}}
 @if($siteSettings->app_download_enabled ?? true)
-<section id="app-download" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-cyan-950 to-slate-900 relative overflow-hidden">
-    {{-- Background Effects --}}
-    <div class="absolute inset-0 opacity-10">
+<section id="app-download" class="py-20 lg:py-28 bg-black/5 backdrop-blur-[2px] relative overflow-hidden z-10">
+    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
+    <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
             linear-gradient(to right, rgba(6, 182, 212, 0.15) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(6, 182, 212, 0.15) 1px, transparent 1px);
             background-size: 40px 40px;"></div>
     </div>
-    <div class="absolute top-20 right-10 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-    <div class="absolute bottom-20 left-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute top-20 right-10 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+    <div class="absolute bottom-20 left-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
@@ -584,16 +590,16 @@
 {{-- ================================================================
     PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
 ================================================================ --}}
-<section id="demo" class="py-20 lg:py-28 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 relative overflow-hidden">
-    {{-- Background Effects --}}
-    <div class="absolute inset-0 opacity-10">
+<section id="demo" class="py-20 lg:py-28 bg-black/5 backdrop-blur-[2px] relative overflow-hidden z-10">
+    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
+    <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0" style="background-image:
             linear-gradient(to right, rgba(99, 102, 241, 0.15) 1px, transparent 1px),
             linear-gradient(to bottom, rgba(99, 102, 241, 0.15) 1px, transparent 1px);
             background-size: 40px 40px;"></div>
     </div>
-    <div class="absolute top-20 left-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-    <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div class="absolute top-20 left-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+    <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Section Header --}}
@@ -914,9 +920,9 @@
     NAVIGATION SECTION - ทางเลือกสำหรับคุณ (V3 Design)
     🎨 3D + Glassmorphism + Premium Animations
 ================================================================ --}}
-<section id="navigation" class="relative py-24 lg:py-32 overflow-hidden">
-    {{-- Background Gradient --}}
-    <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 dark:from-slate-950 dark:via-blue-950 dark:to-purple-950"></div>
+<section id="navigation" class="relative py-24 lg:py-32 overflow-hidden z-10">
+    {{-- Background - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
+    <div class="absolute inset-0 bg-white/[0.02] dark:bg-black/5"></div>
 
     {{-- Background Pattern --}}
     <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
@@ -1385,9 +1391,9 @@
 {{-- ================================================================
     STATS SECTION - สถิติโครงการ
 ================================================================ --}}
-<section id="stats" class="py-24 lg:py-32 bg-gradient-to-br from-blue-950 via-purple-950 to-slate-900 relative overflow-hidden">
-    {{-- Background Pattern --}}
-    <div class="absolute inset-0 opacity-10"
+<section id="stats" class="py-24 lg:py-32 bg-black/5 backdrop-blur-[2px] relative overflow-hidden z-10">
+    {{-- Background Pattern - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
+    <div class="absolute inset-0 opacity-5"
          style="background-image: radial-gradient(circle, white 1px, transparent 1px);
                 background-size: 30px 30px;">
     </div>
