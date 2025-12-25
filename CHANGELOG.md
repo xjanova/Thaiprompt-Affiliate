@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.415.2] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: apply localStorage-based theme detection to admin users index page (03223039)
+- fix: correct theme detection logic to use localStorage settings for Classic theme identification (6b315aa3)
+### 🔧 Other Changes
+- Merge pull request #2367 from xjanova/claude/redesign-admin-pages-vH0Dm (92275071)
+
 ## [v3.415.1] - 2025-12-25
 
 ### ✨ Features
