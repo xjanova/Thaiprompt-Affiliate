@@ -4,10 +4,69 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">กระเป๋าคริปโต</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">จัดการเหรียญคริปโตของคุณ</p>
+    {{-- Premium Hero Header (Amber-Orange for Crypto Wallet) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-600 dark:from-amber-700 dark:via-orange-700 dark:to-yellow-800 rounded-2xl shadow-2xl p-8 mb-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icon Background --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-wallet"></i>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-coins text-3xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">
+                            💰 กระเป๋าคริปโต
+                        </h1>
+                        <p class="text-amber-100 mt-1">
+                            จัดการเหรียญคริปโตของคุณ
+                        </p>
+                    </div>
+                </div>
+                {{-- Total Balance --}}
+                <div class="glass-fusion rounded-2xl p-6 min-w-[250px]">
+                    <p class="text-amber-50 text-sm font-medium mb-2">ยอดรวมทั้งหมด</p>
+                    <p class="text-4xl font-bold text-white drop-shadow-lg">฿{{ number_format($totalValueTHB, 2) }}</p>
+                    <p class="text-amber-100 text-sm mt-1">≈ ${{ number_format($totalValueTHB / 33, 2) }} USD</p>
+                </div>
+            </div>
+
+            {{-- Quick Actions --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <a href="{{ route('user.crypto-wallet.deposit') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg p-4 text-center transition-all text-white">
+                    <div class="text-2xl mb-1">📥</div>
+                    <div class="text-sm font-medium">ฝากเหรียญ</div>
+                </a>
+                <a href="{{ route('user.crypto-wallet.withdraw') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg p-4 text-center transition-all text-white">
+                    <div class="text-2xl mb-1">📤</div>
+                    <div class="text-sm font-medium">ถอนเหรียญ</div>
+                </a>
+                <a href="{{ route('user.crypto-wallet.exchange') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg p-4 text-center transition-all text-white">
+                    <div class="text-2xl mb-1">💱</div>
+                    <div class="text-sm font-medium">แลกเปลี่ยน</div>
+                </a>
+                <a href="{{ route('user.crypto-wallet.transactions') }}"
+                   class="glass-fusion hover:bg-white/30 rounded-lg p-4 text-center transition-all text-white">
+                    <div class="text-2xl mb-1">📝</div>
+                    <div class="text-sm font-medium">ธุรกรรม</div>
+                </a>
+            </div>
+        </div>
     </div>
 
     @if(session('success'))
@@ -21,44 +80,6 @@
             {{ session('error') }}
         </div>
     @endif
-
-    <!-- Total Balance Card -->
-    <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-8 mb-6 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-amber-100 text-sm font-medium mb-2">ยอดรวมทั้งหมด</p>
-                <h2 class="text-4xl font-bold">฿{{ number_format($totalValueTHB, 2) }} THB</h2>
-                <p class="text-amber-100 text-sm mt-2">≈ ${{ number_format($totalValueTHB / 33, 2) }} USD</p>
-            </div>
-            <div class="text-6xl">
-                ₿
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-            <a href="{{ route('user.crypto-wallet.deposit') }}"
-               class="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-4 text-center transition-all">
-                <div class="text-2xl mb-1">📥</div>
-                <div class="text-sm font-medium">ฝากเหรียญ</div>
-            </a>
-            <a href="{{ route('user.crypto-wallet.withdraw') }}"
-               class="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-4 text-center transition-all">
-                <div class="text-2xl mb-1">📤</div>
-                <div class="text-sm font-medium">ถอนเหรียญ</div>
-            </a>
-            <a href="{{ route('user.crypto-wallet.exchange') }}"
-               class="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-4 text-center transition-all">
-                <div class="text-2xl mb-1">💱</div>
-                <div class="text-sm font-medium">แลกเปลี่ยน</div>
-            </a>
-            <a href="{{ route('user.crypto-wallet.transactions') }}"
-               class="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg p-4 text-center transition-all">
-                <div class="text-2xl mb-1">📝</div>
-                <div class="text-sm font-medium">ธุรกรรม</div>
-            </a>
-        </div>
-    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Crypto Balances -->
@@ -258,3 +279,17 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
