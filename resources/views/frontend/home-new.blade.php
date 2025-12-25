@@ -72,8 +72,8 @@
         <div class="lava-blob lava-blob-5"></div>
         <div class="lava-blob lava-blob-6"></div>
 
-        {{-- Glass Overlay for Glassmorphism Effect --}}
-        <div class="absolute inset-0 backdrop-blur-[100px] pointer-events-none"></div>
+        {{-- Glass Overlay for Glassmorphism Effect (เบลอเบาๆ เพื่อให้เห็น blobs) --}}
+        <div class="absolute inset-0 backdrop-blur-sm pointer-events-none"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
@@ -1568,63 +1568,63 @@
 .lava-blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.7;
+    filter: blur(60px);
+    opacity: 1;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
 
-/* Blob ขนาดและสีต่างๆ */
+/* Blob ขนาดและสีต่างๆ - ใหญ่ขึ้นและสีสดขึ้น */
 .lava-blob-1 {
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(255, 0, 255, 0.8) 0%, rgba(147, 51, 234, 0.6) 100%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 0, 255, 1) 0%, rgba(147, 51, 234, 0.8) 100%);
     top: -10%;
     left: -10%;
     animation: float-1 20s ease-in-out infinite;
 }
 
 .lava-blob-2 {
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.6) 100%);
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 1) 0%, rgba(37, 99, 235, 0.8) 100%);
     top: 20%;
     right: -15%;
     animation: float-2 25s ease-in-out infinite;
 }
 
 .lava-blob-3 {
-    width: 450px;
-    height: 450px;
-    background: radial-gradient(circle, rgba(236, 72, 153, 0.8) 0%, rgba(219, 39, 119, 0.6) 100%);
+    width: 550px;
+    height: 550px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 1) 0%, rgba(219, 39, 119, 0.8) 100%);
     bottom: -10%;
     left: 20%;
     animation: float-3 30s ease-in-out infinite;
 }
 
 .lava-blob-4 {
-    width: 550px;
-    height: 550px;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.8) 0%, rgba(6, 182, 212, 0.6) 100%);
+    width: 650px;
+    height: 650px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 1) 0%, rgba(6, 182, 212, 0.8) 100%);
     bottom: 10%;
     right: 10%;
     animation: float-4 22s ease-in-out infinite;
 }
 
 .lava-blob-5 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(251, 146, 60, 0.8) 0%, rgba(249, 115, 22, 0.6) 100%);
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(251, 146, 60, 1) 0%, rgba(249, 115, 22, 0.8) 100%);
     top: 40%;
     left: 40%;
     animation: float-5 28s ease-in-out infinite;
 }
 
 .lava-blob-6 {
-    width: 480px;
-    height: 480px;
-    background: radial-gradient(circle, rgba(168, 85, 247, 0.8) 0%, rgba(139, 92, 246, 0.6) 100%);
+    width: 580px;
+    height: 580px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 1) 0%, rgba(139, 92, 246, 0.8) 100%);
     top: 60%;
     right: 30%;
     animation: float-6 24s ease-in-out infinite;
