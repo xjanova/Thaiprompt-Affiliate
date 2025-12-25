@@ -55,36 +55,37 @@
         </div>
     </div>
 
-    {{-- Header (Fixed) --}}
-    <div class="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-white/90 dark:bg-gray-800/90 border-b border-gray-200 dark:border-gray-700 shadow-lg"
+    {{-- Premium Hero Header (Fixed - Purple-Indigo for Live Tracking) --}}
+    <div class="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-800 dark:to-indigo-800 shadow-2xl border-b border-purple-400/20"
          :class="{ 'mt-16': !gpsPermissionGranted || gpsPermissionDenied }">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <a href="{{ route('user.bookings.show', $booking) }}"
-                       class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                        <i class="fas fa-arrow-left text-lg"></i>
+                       class="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
+                        <i class="fas fa-arrow-left text-lg text-white"></i>
                     </a>
-                    <div>
-                        <h1 class="text-lg font-bold text-gray-900 dark:text-white">
-                            <i class="fas fa-satellite-dish text-purple-500 mr-2 animate-pulse"></i>
-                            Live Tracking
-                        </h1>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">
-                            #{{ $booking->booking_number }}
-                        </p>
+                    <div class="flex items-center gap-3">
+                        <div class="glass-fusion p-2 rounded-lg">
+                            <i class="fas fa-satellite-dish text-2xl text-white animate-pulse"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold text-white drop-shadow-lg">
+                                🛰️ Live Tracking
+                            </h1>
+                            <p class="text-xs text-purple-100">
+                                #{{ $booking->booking_number }}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {{-- Status Badge --}}
-                <div class="px-4 py-2 rounded-full font-semibold text-sm"
+                <div class="px-4 py-2 rounded-full font-semibold text-sm glass-fusion text-white"
                     :class="{
-                        'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400': status === 'provider_on_way',
-                        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400': status === 'in_progress',
-                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400': status === 'completed',
-                        'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300': !['provider_on_way', 'in_progress', 'completed'].includes(status)
+                        'animate-pulse': ['provider_on_way', 'in_progress'].includes(status)
                     }">
-                    <i class="fas fa-circle text-xs mr-1 animate-pulse"></i>
+                    <i class="fas fa-circle text-xs mr-1"></i>
                     <span x-text="statusLabel">{{ $booking->getStatusLabel() ?? $booking->status }}</span>
                 </div>
             </div>
@@ -774,4 +775,18 @@ function liveTracker() {
     }
 }
 </script>
+@endpush
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
 @endpush

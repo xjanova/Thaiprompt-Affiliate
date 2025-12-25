@@ -4,14 +4,28 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
-    {{-- Header Section --}}
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            ✅ คำขอย้ายทีมที่ต้องอนุมัติ
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400">
-            ลูกทีมของคุณที่ขอย้ายไปหาแม่ทีมใหม่
-        </p>
+    {{-- Premium Hero Header (Green-Emerald for Approvals) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8 mb-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-tasks text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">✅ คำขอย้ายทีมที่ต้องอนุมัติ</h1>
+                    <p class="text-green-100 mt-1">ลูกทีมของคุณที่ขอย้ายไปหาแม่ทีมใหม่</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Success/Error Messages --}}
@@ -345,4 +359,17 @@
         </div>
     </div>
 </div>
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

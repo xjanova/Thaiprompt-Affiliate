@@ -4,76 +4,58 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="myBookings()">
-    {{-- Header --}}
-    <div class="mb-6 p-6 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-xl">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                    <i class="fas fa-calendar-check mr-3"></i>การจองของฉัน
-                </h1>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    ดูและจัดการการจองบริการทั้งหมดของคุณ
-                </p>
-            </div>
-
-            <a href="{{ route('user.services.index') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg transition-all duration-200">
-                <i class="fas fa-plus"></i>
-                <span>จองบริการใหม่</span>
-            </a>
+    {{-- Premium Hero Header (Purple-Pink-Red for Bookings) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8 mb-6">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-    </div>
-
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] ?? 0 }}</p>
-                </div>
-                <div class="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg">
-                    <i class="fas fa-list text-white"></i>
-                </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-calendar-check"></i>
             </div>
         </div>
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-calendar-check text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">📅 การจองของฉัน</h1>
+                        <p class="text-purple-100 mt-1">ดูและจัดการการจองบริการทั้งหมดของคุณ</p>
+                    </div>
+                </div>
 
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">กำลังดำเนินการ</p>
-                    <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ $stats['pending'] ?? 0 }}</p>
-                </div>
-                <div class="p-3 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg">
-                    <i class="fas fa-clock text-white"></i>
-                </div>
+                <a href="{{ route('user.services.index') }}"
+                   class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-xl transition font-semibold inline-flex items-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>จองบริการใหม่</span>
+                </a>
             </div>
-        </div>
 
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">กำลังทำ</p>
-                    <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $stats['in_progress'] ?? 0 }}</p>
+            {{-- Stats in Header --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">ทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white drop-shadow-lg">{{ $stats['total'] ?? 0 }}</p>
                 </div>
-                <div class="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                    <i class="fas fa-cog fa-spin text-white"></i>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">กำลังดำเนินการ</p>
+                    <p class="text-3xl font-bold text-yellow-300 drop-shadow-lg">{{ $stats['pending'] ?? 0 }}</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50 shadow-lg">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">เสร็จสิ้น</p>
-                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $stats['completed'] ?? 0 }}</p>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">กำลังทำ</p>
+                    <p class="text-3xl font-bold text-pink-300 drop-shadow-lg">{{ $stats['in_progress'] ?? 0 }}</p>
                 </div>
-                <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
-                    <i class="fas fa-check-double text-white"></i>
+                <div class="glass-fusion rounded-xl p-4 text-center">
+                    <p class="text-purple-100 text-xs mb-1">เสร็จสิ้น</p>
+                    <p class="text-3xl font-bold text-green-300 drop-shadow-lg">{{ $stats['completed'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
     </div>
+
 
     {{-- Filter Tabs --}}
     <div class="mb-6">
@@ -274,6 +256,19 @@
         </div>
     </div>
 </div>
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection
 
 @push('scripts')
