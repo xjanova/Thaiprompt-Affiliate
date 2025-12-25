@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.410.2] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct AiBotProfile query to use is_active instead of status column (56ac5575)
+- fix: correct column name from total_price to total_amount in HotelBooking and ServiceBooking queries (f6fcfc93)
+### 🔧 Other Changes
+- Merge pull request #2353 from xjanova/claude/fix-hotel-bookings-column-WEZAy (5f1d0d8a)
+- Merge pull request #2352 from xjanova/claude/lava-lamp-background-effect-bkBgi (a95ff803)
+- chore: bump version to 3.408.0 [skip ci] (b17b606b)
+
 ## [v3.410.1] - 2025-12-25
 
 ### ✨ Features
