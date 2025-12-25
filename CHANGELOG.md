@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.409.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2349 from xjanova/claude/lava-lamp-background-effect-bkBgi (575418fe)
+- feat: transform home page with fireflies, light mode, and professional footer (6b07ecc5)
+### 🐛 Bug Fixes
+- fix: resolve conflict - use v3 routes without dark mode (845dde59)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' - resolve conflicts with light mode preference (ec5c9413)
+
 ## [v3.408.0] - 2025-12-25
 
 ### ✨ Features
