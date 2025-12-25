@@ -223,7 +223,7 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600 dark:text-gray-400">ผู้ใช้ที่ใช้งานอยู่:</span>
                         <span class="font-bold text-green-600 dark:text-green-400">
-                            {{ $users->where('status', 'active')->count() }}
+                            {{ $users->whereNull('blocked_at')->count() }}
                         </span>
                     </div>
                 </div>
