@@ -64,126 +64,212 @@
 <div class="bg-circle bg-circle-3"></div>
 
 <div class="space-y-6">
-    {{-- Welcome Header - Glass Fusion Style (V3: Pure Tailwind) --}}
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-2xl p-8 relative overflow-hidden">
-        {{-- Glassmorphism overlay --}}
-        <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none rounded-2xl"></div>
+    {{-- Premium Hero Header - seller/dashboard Style --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            <div class="absolute top-1/2 left-1/3 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
+        </div>
 
-        <div class="relative flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white drop-shadow-lg">
-                    สวัสดี, {{ Auth::user()->name }} 👋
-                </h1>
-                <p class="text-gray-700 dark:text-white/90 text-sm flex items-center space-x-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span>ภาพรวมระบบ - {{ now()->format('d/m/Y H:i') }}</span>
-                </p>
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-chart-line"></i>
             </div>
-            <div class="text-right">
-                <div class="text-xs text-gray-700 dark:text-white/90 mb-1">🟢 ออนไลน์</div>
-                <div class="text-4xl font-bold text-gray-900 dark:text-white drop-shadow-lg">
-                    {{ $stats['active_affiliates'] }}
+            <div class="absolute text-white/10 text-6xl bottom-10 right-40" style="animation: float 6s ease-in-out infinite; animation-delay: 0.3s">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="absolute text-white/10 text-7xl top-20 left-1/4" style="animation: float 6s ease-in-out infinite; animation-delay: 0.5s">
+                <i class="fas fa-network-wired"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {{-- Title Section --}}
+                <div class="flex-1">
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="glass-fusion p-4 rounded-2xl">
+                            <i class="fas fa-tachometer-alt text-4xl text-white drop-shadow-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">สวัสดี, {{ Auth::user()->name }} 👋</h1>
+                            <p class="text-purple-100 text-lg mt-1 flex items-center gap-2">
+                                <i class="fas fa-clock"></i>
+                                ภาพรวมระบบ - {{ now()->format('d/m/Y H:i') }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-xs text-gray-700 dark:text-white/90 mt-1">Affiliates</div>
+
+                {{-- Stats Badge --}}
+                <div class="glass-fusion px-6 py-4 rounded-xl border border-white/30">
+                    <div class="text-center">
+                        <div class="text-xs text-purple-100 mb-1">🟢 Affiliates ออนไลน์</div>
+                        <div class="text-4xl font-bold text-white drop-shadow-lg">{{ $stats['active_affiliates'] }}</div>
+                        <div class="text-xs text-purple-100 mt-1">จากทั้งหมด {{ number_format($stats['total_affiliates']) }}</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    {{-- Main Stats Grid (4 columns) - Glass Fusion with Blur Glow --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {{-- Total Users --}}
-        <a href="{{ route('admin.users.index') }}" class="block group" style="perspective: 1000px;">
-            <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background: var(--arrow-x-secondary-gradient)"></div>
+    {{-- Main Stats Grid (4 columns) - seller/dashboard Style with Theme Conditional --}}
+    <div x-data="{ isClassicTheme: false }"
+         x-init="
+             // เช็คว่าเป็น Classic Theme หรือไม่ (ปิดเอฟเฟค)
+             const checkClassic = () => {
+                 isClassicTheme = document.body.classList.contains('theme-classic');
+             };
+             checkClassic();
+             // เช็คซ้ำเมื่อมีการเปลี่ยนธีม
+             setInterval(checkClassic, 500);
+         ">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-bar" style="color: var(--arrow-x-primary-start)"></i>
+            สถิติภาพรวม
+        </h2>
 
-                {{-- Glass Card (V3: Pure Tailwind + Dynamic Colors) --}}
-                <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background: var(--arrow-x-secondary-gradient)">
-                            <i class="fas fa-users text-white text-xl"></i>
-                        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {{-- Total Users --}}
+            <a href="{{ route('admin.users.index') }}" class="block group rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden"
+               :class="isClassicTheme
+                   ? 'bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-800'
+                   : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-users text-9xl text-white"></i>
+                </div>
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-users text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">ผู้ใช้ทั้งหมด</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_users']) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">👥</span>
                         @if($userGrowth != 0)
-                            <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
+                            <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
                                 {{ $userGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($userGrowth), 1) }}%
                             </span>
                         @endif
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 drop-shadow">{{ number_format($stats['total_users']) }}</h3>
-                    <p class="text-sm text-gray-700 dark:text-white/90">ผู้ใช้งานทั้งหมด</p>
+                    <p class="text-blue-100 text-sm mb-1">ผู้ใช้ทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($stats['total_users']) }}</p>
+                    <p class="text-xs text-blue-100 mt-2">Total Users</p>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        {{-- Total MLM Members --}}
-        <a href="{{ route('admin.mlm.members.index') }}" class="block group" style="perspective: 1000px;">
-            <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background: var(--arrow-x-primary-gradient)"></div>
-
-                {{-- Glass Card (V3: Dynamic Colors) --}}
-                <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background: var(--arrow-x-primary-gradient)">
-                            <i class="fas fa-network-wired text-white text-xl"></i>
-                        </div>
-                        <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
+            {{-- Total MLM Members --}}
+            <a href="{{ route('admin.mlm.members.index') }}" class="block group rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden"
+               :class="isClassicTheme
+                   ? 'bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-600 dark:to-pink-800'
+                   : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-network-wired text-9xl text-white"></i>
+                </div>
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-network-wired text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">MLM Members</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total_affiliates']) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">🌐</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
                             {{ $stats['active_affiliates'] }} ใช้งาน
                         </span>
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 drop-shadow">{{ number_format($stats['total_affiliates']) }}</h3>
-                    <p class="text-sm text-gray-700 dark:text-white/90">MLM Members</p>
+                    <p class="text-purple-100 text-sm mb-1">MLM Members</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($stats['total_affiliates']) }}</p>
+                    <p class="text-xs text-purple-100 mt-2">Affiliate Network</p>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        {{-- Total Revenue --}}
-        <a href="{{ route('admin.mlm.commissions.index', ['status' => 'paid']) }}" class="block group" style="perspective: 1000px;">
-            <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-success)"></div>
-
-                {{-- Glass Card (V3: Dynamic Colors) --}}
-                <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-success)">
-                            <i class="fas fa-dollar-sign text-white text-xl"></i>
-                        </div>
+            {{-- Total Revenue --}}
+            <a href="{{ route('admin.mlm.commissions.index', ['status' => 'paid']) }}" class="block group rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden"
+               :class="isClassicTheme
+                   ? 'bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900'
+                   : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-dollar-sign text-9xl text-white"></i>
+                </div>
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-dollar-sign text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">รายได้ทั้งหมด</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">฿{{ number_format($stats['paid_commissions'], 0) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">💰</span>
                         @if($revenueGrowth != 0)
-                            <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
+                            <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
                                 {{ $revenueGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($revenueGrowth), 1) }}%
                             </span>
                         @endif
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 drop-shadow">฿{{ number_format($stats['paid_commissions'], 0) }}</h3>
-                    <p class="text-sm text-gray-700 dark:text-white/90">รายได้ทั้งหมด</p>
+                    <p class="text-green-100 text-sm mb-1">รายได้ทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white">฿{{ number_format($stats['paid_commissions'], 0) }}</p>
+                    <p class="text-xs text-green-100 mt-2">Total Revenue</p>
                 </div>
-            </div>
-        </a>
+            </a>
 
-        {{-- Pending Commissions --}}
-        <a href="{{ route('admin.mlm.commissions.index', ['status' => 'pending']) }}" class="block group" style="perspective: 1000px;">
-            <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
-                {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-warning)"></div>
-
-                {{-- Glass Card (V3: Dynamic Colors) --}}
-                <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-warning)">
-                            <i class="fas fa-chart-line text-white text-xl"></i>
-                        </div>
-                        <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
+            {{-- Pending Commissions --}}
+            <a href="{{ route('admin.mlm.commissions.index', ['status' => 'pending']) }}" class="block group rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden"
+               :class="isClassicTheme
+                   ? 'bg-gradient-to-br from-orange-500 to-red-600 dark:from-orange-600 dark:to-red-800'
+                   : 'bg-white dark:bg-slate-800'">
+                {{-- Classic: Background Icon --}}
+                <div class="absolute -right-8 -top-8 opacity-10" x-show="isClassicTheme">
+                    <i class="fas fa-chart-line text-9xl text-white"></i>
+                </div>
+                {{-- Modern: Gradient Icon --}}
+                <div class="flex items-center gap-3" x-show="!isClassicTheme">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center text-2xl shadow-lg">
+                        <i class="fas fa-chart-line text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">รอดำเนินการ</p>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['pending_commissions']) }}</p>
+                    </div>
+                </div>
+                {{-- Classic: Content --}}
+                <div class="relative z-10" x-show="isClassicTheme">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">⏳</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">
                             {{ $stats['approved_commissions'] }} อนุมัติ
                         </span>
                     </div>
-                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1 drop-shadow">{{ number_format($stats['pending_commissions']) }}</h3>
-                    <p class="text-sm text-gray-700 dark:text-white/90">รอดำเนินการ</p>
+                    <p class="text-orange-100 text-sm mb-1">รอดำเนินการ</p>
+                    <p class="text-3xl font-bold text-white">{{ number_format($stats['pending_commissions']) }}</p>
+                    <p class="text-xs text-orange-100 mt-2">Pending</p>
                 </div>
-            </div>
-        </a>
+            </a>
+        </div>
     </div>
 
     {{-- Crypto Rates Section - Glass Fusion --}}
@@ -549,39 +635,47 @@
         </div>
     </div>
 
-    {{-- Quick Actions --}}
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
-        <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white drop-shadow">⚡ การกระทำด่วน</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            <a href="{{ route('admin.users.create') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105">
-                <div class="text-3xl mb-2">➕</div>
-                <p class="text-xs font-semibold">เพิ่มผู้ใช้</p>
+    {{-- Quick Actions - seller/dashboard Style --}}
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-bolt" style="color: var(--arrow-x-warning)"></i>
+            การดำเนินการด่วน
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <a href="{{ route('admin.users.create') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+                <span class="text-3xl mb-2">➕</span>
+                <span class="text-sm font-semibold text-center">เพิ่มผู้ใช้</span>
             </a>
-            <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105">
-                <div class="text-3xl mb-2">✅</div>
-                <p class="text-xs font-semibold">อนุมัติคอมมิชชั่น</p>
+
+            <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+                <span class="text-3xl mb-2">✅</span>
+                <span class="text-sm font-semibold text-center">อนุมัติคอมมิชชั่น</span>
             </a>
-            <a href="{{ route('admin.crypto.withdrawals') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105">
-                <div class="text-3xl mb-2">💸</div>
-                <p class="text-xs font-semibold">การถอนเงิน</p>
+
+            <a href="{{ route('admin.crypto.withdrawals') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+                <span class="text-3xl mb-2">💸</span>
+                <span class="text-sm font-semibold text-center">การถอนเงิน</span>
             </a>
-            <a href="{{ route('admin.tickets.index') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105 relative">
+
+            <a href="{{ route('admin.tickets.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:scale-105 transition shadow-lg relative">
                 @if($ticketStats['new_today'] > 0)
                     <span class="absolute -top-1 -right-1 flex h-5 w-5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--arrow-x-error)"></span>
-                        <span class="relative inline-flex rounded-full h-5 w-5 text-white text-xs items-center justify-center font-bold" style="background-color: var(--arrow-x-error)">{{ $ticketStats['new_today'] }}</span>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-xs items-center justify-center font-bold">{{ $ticketStats['new_today'] }}</span>
                     </span>
                 @endif
-                <div class="text-3xl mb-2">🎫</div>
-                <p class="text-xs font-semibold">Tickets</p>
+                <span class="text-3xl mb-2">🎫</span>
+                <span class="text-sm font-semibold text-center">Tickets</span>
             </a>
-            <a href="{{ route('admin.kyc.index') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105">
-                <div class="text-3xl mb-2">🆔</div>
-                <p class="text-xs font-semibold">ตรวจสอบ KYC</p>
+
+            <a href="{{ route('admin.kyc.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+                <span class="text-3xl mb-2">🆔</span>
+                <span class="text-sm font-semibold text-center">ตรวจสอบ KYC</span>
             </a>
-            <a href="{{ route('admin.affiliates.tree') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105">
-                <div class="text-3xl mb-2">🌳</div>
-                <p class="text-xs font-semibold">Affiliate Tree</p>
+
+            <a href="{{ route('admin.affiliates.tree') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+                <span class="text-3xl mb-2">🌳</span>
+                <span class="text-sm font-semibold text-center">Affiliate Tree</span>
             </a>
         </div>
     </div>
