@@ -4,10 +4,28 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white">
-        <h1 class="text-3xl md:text-4xl font-bold mb-2">💎 แผนการลงทุน ROI</h1>
-        <p class="text-indigo-100">เลือกแผนที่เหมาะกับคุณและรับผลตอบแทนที่คุ้มค่า</p>
+    {{-- Premium Hero Header (Indigo-Purple-Pink for Investment Plans) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-gem"></i>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-briefcase text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">💎 แผนการลงทุน ROI</h1>
+                    <p class="text-indigo-100 mt-1">เลือกแผนที่เหมาะกับคุณและรับผลตอบแทนที่คุ้มค่า</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Investment Plans -->
@@ -204,4 +222,18 @@ function roiCalculator() {
     }
 }
 </script>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

@@ -12,42 +12,58 @@
         กลับ
     </a>
 
-    <!-- Position Header -->
-    <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div>
-                <h1 class="text-3xl font-bold mb-2">{{ $position->investmentPlan->display_name }}</h1>
-                <p class="text-pink-100">{{ $position->position_number }}</p>
-            </div>
-            <div class="text-right">
-                @if($position->status == 'active')
-                    <span class="px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold">✓ กำลังลงทุน</span>
-                @elseif($position->status == 'pending')
-                    <span class="px-4 py-2 bg-yellow-500 text-white rounded-full text-sm font-semibold">⏳ รออนุมัติ</span>
-                @elseif($position->status == 'matured')
-                    <span class="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-semibold">✓ ครบกำหนด</span>
-                @elseif($position->status == 'withdrawn')
-                    <span class="px-4 py-2 bg-gray-500 text-white rounded-full text-sm font-semibold">ถอนแล้ว</span>
-                @endif
+    {{-- Premium Hero Header (Purple-Pink-Red for Investment Detail) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 dark:from-purple-800 dark:via-pink-800 dark:to-red-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-file-invoice-dollar"></i>
             </div>
         </div>
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-receipt text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white drop-shadow-lg mb-2">{{ $position->investmentPlan->display_name }}</h1>
+                        <p class="text-pink-100">{{ $position->position_number }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    @if($position->status == 'active')
+                        <span class="glass-fusion px-4 py-2 text-white rounded-full text-sm font-semibold">✓ กำลังลงทุน</span>
+                    @elseif($position->status == 'pending')
+                        <span class="glass-fusion px-4 py-2 text-white rounded-full text-sm font-semibold">⏳ รออนุมัติ</span>
+                    @elseif($position->status == 'matured')
+                        <span class="glass-fusion px-4 py-2 text-white rounded-full text-sm font-semibold">✓ ครบกำหนด</span>
+                    @elseif($position->status == 'withdrawn')
+                        <span class="glass-fusion px-4 py-2 text-white rounded-full text-sm font-semibold">ถอนแล้ว</span>
+                    @endif
+                </div>
+            </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
-                <p class="text-pink-100 text-xs mb-1">จำนวนลงทุน</p>
-                <p class="text-2xl font-bold">฿{{ number_format($position->amount, 2) }}</p>
-            </div>
-            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
-                <p class="text-pink-100 text-xs mb-1">ROI ที่ได้รับ</p>
-                <p class="text-2xl font-bold text-green-300">฿{{ number_format($position->earned_roi, 2) }}</p>
-            </div>
-            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
-                <p class="text-pink-100 text-xs mb-1">ROI คาดหวัง</p>
-                <p class="text-2xl font-bold">฿{{ number_format($position->expected_roi, 2) }}</p>
-            </div>
-            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
-                <p class="text-pink-100 text-xs mb-1">มูลค่ารวม</p>
-                <p class="text-2xl font-bold text-yellow-300">฿{{ number_format($position->total_value, 2) }}</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-fusion rounded-xl p-4">
+                    <p class="text-pink-100 text-xs mb-1">จำนวนลงทุน</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">฿{{ number_format($position->amount, 2) }}</p>
+                </div>
+                <div class="glass-fusion rounded-xl p-4">
+                    <p class="text-pink-100 text-xs mb-1">ROI ที่ได้รับ</p>
+                    <p class="text-2xl font-bold text-green-300 drop-shadow-lg">฿{{ number_format($position->earned_roi, 2) }}</p>
+                </div>
+                <div class="glass-fusion rounded-xl p-4">
+                    <p class="text-pink-100 text-xs mb-1">ROI คาดหวัง</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg">฿{{ number_format($position->expected_roi, 2) }}</p>
+                </div>
+                <div class="glass-fusion rounded-xl p-4">
+                    <p class="text-pink-100 text-xs mb-1">มูลค่ารวม</p>
+                    <p class="text-2xl font-bold text-yellow-300 drop-shadow-lg">฿{{ number_format($position->total_value, 2) }}</p>
+                </div>
             </div>
         </div>
     </div>
@@ -261,4 +277,18 @@
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection
