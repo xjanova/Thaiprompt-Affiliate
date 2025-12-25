@@ -3,21 +3,22 @@
 @section('title', 'รายละเอียดการ์ด NFC - ' . ($card->card_name ?? 'การ์ด NFC'))
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="nfcCardDetail()">
-    {{-- Back Button --}}
-    <div class="mb-6">
-        <a href="{{ route('user.nfc.index') }}" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
-            <i class="fas fa-arrow-left"></i>
-            <span>กลับไปรายการการ์ด</span>
-        </a>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-credit-card"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <a href="{{ route('user.nfc.index') }}" class="glass-fusion px-4 py-2 hover:bg-white/25 rounded-lg transition-all"><i class="fas fa-arrow-left mr-2"></i>กลับ</a>
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-id-card text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">NFC Card Details</h1>
+            <p class="text-green-100 text-lg mt-1">รายละเอียดบัตร NFC</p></div>
+        </div></div>
     </div>
-
-    {{-- Card Overview --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {{-- Card Visual --}}
-        <div class="lg:col-span-1">
-            <div class="sticky top-8">
-                {{-- 3D Card Design --}}
                 <div class="relative perspective-1000">
                     <div class="relative w-full aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-6 shadow-2xl transform transition-transform duration-500 hover:scale-105"
                          style="transform-style: preserve-3d;">

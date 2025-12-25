@@ -3,20 +3,29 @@
 
     @author Video Reward System
 --}}
-
-@extends('layouts.user-arrow-x')
-
-@section('title', $pageTitle ?? 'อัพเกรดดาว')
-
-@section('content')
-<div class="container mx-auto px-4 py-8" x-data="starUpgrade()">
-    {{-- Header --}}
-    <div class="mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                    <span class="text-4xl">⭐</span>
-                    อัพเกรดดาว
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-yellow-600 via-amber-600 to-orange-600 dark:from-yellow-800 dark:via-amber-800 dark:to-orange-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-star"></i>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="glass-fusion p-4 rounded-2xl">
+                    <i class="fas fa-level-up-alt text-4xl text-white drop-shadow-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-bold text-white drop-shadow-lg">Star Upgrade</h1>
+                    <p class="text-yellow-100 text-lg mt-1">อัพเกรดระดับดาวของคุณ</p>
+                </div>
+            </div>
+        </div>
+    </div>
                 </h1>
                 <p class="mt-2 text-gray-600 dark:text-gray-400">
                     ซื้อดาวเพิ่มเพื่อแสดงสถานะพิเศษและรับสิทธิประโยชน์

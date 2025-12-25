@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.418.0] - 2025-12-25
+
+### ✨ Features
+- feat: redesign recruit pages (3/3) with Premium Hero Headers (e61c116c)
+- feat: redesign DEX pages (6/6) with Premium Hero Headers (ba9a0d37)
+- feat: redesign shipping-addresses pages with Premium Hero Headers (f43f6a8a)
+- feat: redesign video-missions pages with Premium Hero Headers (178763a4)
+- feat: redesign NFC pages (3/3) with Premium Hero Headers (1d62e4b7)
+- feat: redesign star-upgrade pages (2/2) with Premium Hero Headers (33dd3a26)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2371 from xjanova/claude/redesign-admin-pages-vH0Dm (28f7c73c)
+
 ## [v3.417.0] - 2025-12-25
 
 ### ✨ Features

@@ -3,25 +3,20 @@
 @section('title', 'เพิ่ม Liquidity - TPIX DEX')
 
 @section('content')
-<div class="min-h-screen">
-    {{-- Header Section --}}
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
-                <svg class="w-8 h-8 mr-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-                เพิ่ม Liquidity
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400">เพิ่มสภาพคล่องและรับส่วนแบ่งค่าธรรมเนียม 0.3%</p>
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
         </div>
-        <a href="{{ route('user.dex.pools') }}"
-           class="inline-flex items-center px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-            กลับ
-        </a>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-plus-square"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-plus-square text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Add Liquidity</h1>
+            <p class="text-white/80 text-lg mt-1">เพิ่มสภาพคล่อง</p></div>
+        </div></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
