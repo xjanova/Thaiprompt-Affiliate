@@ -87,13 +87,23 @@
     {{-- Statistics Cards --}}
     <div x-data="{ isClassicTheme: false }"
          x-init="
-             // เช็คว่าเป็น Classic Theme หรือไม่ (ปิดเอฟเฟค)
+             // เช็คว่าเป็น Classic Theme หรือไม่ (เช็คจาก settings)
              const checkClassic = () => {
-                 isClassicTheme = document.body.classList.contains('theme-classic');
+                 const saved = localStorage.getItem('themeSettings');
+                 if (saved) {
+                     const settings = JSON.parse(saved);
+                     // Classic = glassOpacity === 0 และ glassBlur === 0
+                     isClassicTheme = (settings.glassOpacity === 0 || settings.glassOpacity === '0') &&
+                                     (settings.glassBlur === 0 || settings.glassBlur === '0');
+                 } else {
+                     // ถ้าไม่มี settings = ใช้ค่าเริ่มต้น (glassmorphism)
+                     isClassicTheme = false;
+                 }
              };
              checkClassic();
              // เช็คซ้ำเมื่อมีการเปลี่ยนธีม
              setInterval(checkClassic, 500);
+             window.addEventListener('storage', checkClassic);
          ">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <i class="fas fa-chart-bar text-green-600 dark:text-green-400"></i>
