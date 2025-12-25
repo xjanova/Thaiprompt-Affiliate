@@ -3,66 +3,103 @@
 @section('title', 'จัดการบทบาทและสิทธิ์')
 
 @section('content')
+<div class="space-y-6">
+    {{-- Premium Hero Header --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-user-shield text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการบทบาทและสิทธิ์</h1>
+                        <p class="text-indigo-100 text-lg mt-1">กำหนดและจัดการบทบาทและสิทธิ์ของผู้ใช้ในระบบ</p>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ route('admin.roles.create') }}"
+                       class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
+                        <i class="fas fa-plus group-hover:rotate-90 transition-transform duration-300"></i>
+                        สร้างบทบาทใหม่
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Stats Cards --}}
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-bar" style="color: var(--arrow-x-primary-start)"></i>
+            สถิติภาพรวม
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {{-- Total Roles --}}
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-800">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-user-tag text-9xl text-white"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">🔐</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Total</span>
+                    </div>
+                    <p class="text-indigo-100 text-sm mb-1">จำนวนบทบาท</p>
+                    <p class="text-3xl font-bold text-white">{{ $roles->count() }}</p>
+                    <p class="text-xs text-indigo-100 mt-2">Total Roles</p>
+                </div>
+            </div>
+
+            {{-- System Roles --}}
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-800">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-cog text-9xl text-white"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">⚙️</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">System</span>
+                    </div>
+                    <p class="text-amber-100 text-sm mb-1">บทบาทระบบ</p>
+                    <p class="text-3xl font-bold text-white">{{ $roles->where('is_system_role', true)->count() }}</p>
+                    <p class="text-xs text-amber-100 mt-2">System Roles</p>
+                </div>
+            </div>
+
+            {{-- Total Users --}}
+            <div class="group relative overflow-hidden rounded-2xl shadow-xl p-6 transform hover:scale-105 transition-all duration-300 cursor-pointer bg-gradient-to-br from-green-500 to-emerald-700 dark:from-green-600 dark:to-emerald-900">
+                <div class="absolute -right-8 -top-8 opacity-10">
+                    <i class="fas fa-users text-9xl text-white"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-5xl">👥</span>
+                        <span class="px-2 py-1 bg-white/20 rounded-lg text-xs font-semibold text-white">Users</span>
+                    </div>
+                    <p class="text-green-100 text-sm mb-1">ผู้ใช้ทั้งหมด</p>
+                    <p class="text-3xl font-bold text-white">{{ $roles->sum('users_count') }}</p>
+                    <p class="text-xs text-green-100 mt-2">Total Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <div class="max-w-7xl mx-auto">
-    <!-- Header Section -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200">
-                    🔐 จัดการบทบาทและสิทธิ์
-                </h2>
-                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">
-                    กำหนดและจัดการบทบาทและสิทธิ์ของผู้ใช้ในระบบ
-                </p>
-            </div>
-            <a href="{{ route('admin.roles.create') }}"
-               class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl transition-all duration-200 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                สร้างบทบาทใหม่
-            </a>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">จำนวนบทบาท</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200 mt-1">{{ $roles->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-xl flex items-center justify-center">
-                    <span class="text-2xl">🔐</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">บทบาทระบบ</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200 mt-1">{{ $roles->where('is_system_role', true)->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900 rounded-xl flex items-center justify-center">
-                    <span class="text-2xl">⚙️</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ผู้ใช้ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-200 mt-1">{{ $roles->sum('users_count') }}</p>
-                </div>
-                <div class="w-12 h-12 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900 dark:to-emerald-900 rounded-xl flex items-center justify-center">
-                    <span class="text-2xl">👥</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Roles List -->
     <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
@@ -200,5 +237,6 @@
         {{ session('error') }}
     </div>
     @endif
+</div>
 </div>
 @endsection
