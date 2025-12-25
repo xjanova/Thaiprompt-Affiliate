@@ -116,7 +116,7 @@
                 <a href="{{ route('my-rentals.show', $rental->id) }}" class="btn btn-primary">
                     <i class="fas fa-eye"></i> ดูรายละเอียดการเช่า
                 </a>
-                <a href="{{ route('marketplace.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('marketplace.v3.index') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-store"></i> กลับไปตลาด
                 </a>
             </div>

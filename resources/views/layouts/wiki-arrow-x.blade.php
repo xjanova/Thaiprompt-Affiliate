@@ -457,7 +457,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                     <a href="{{ route('wiki.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Wiki</a>
-                    <a href="{{ route('marketplace.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Marketplace</a>
+                    <a href="{{ route('marketplace.v3.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Marketplace</a>
                     @auth
                     <a href="{{ route('user.dashboard') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Dashboard</a>
                     @endauth

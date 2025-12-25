@@ -250,7 +250,7 @@
                 </div>
                 <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">คุณยังไม่มีการเช่าบอท</h3>
                 <p class="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นเช่าบอท AI คุณภาพสูงจากตลาดของเรา</p>
-                <a href="{{ route('marketplace.index') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <a href="{{ route('marketplace.v3.index') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                     <span class="text-2xl">🛒</span>
                     <span>ไปตลาดบอท</span>
                 </a>

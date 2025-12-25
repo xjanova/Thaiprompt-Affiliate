@@ -216,7 +216,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">หน้าแรก</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
-                    <a href="{{ route('marketplace.index') }}"
+                    <a href="{{ route('marketplace.v3.index') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30"
                        style="color: {{ $headerTextColor }};">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">🤖</span>
@@ -437,7 +437,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    style="color: {{ $headerTextColor }};">
                     หน้าแรก
                 </a>
-                <a href="{{ route('marketplace.index') }}"
+                <a href="{{ route('marketplace.v3.index') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     🤖 ตลาดบอท
