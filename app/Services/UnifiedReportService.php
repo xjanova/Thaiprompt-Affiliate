@@ -435,7 +435,7 @@ class UnifiedReportService
         if (class_exists(\App\Models\HotelBooking::class)) {
             $hotelRevenue = HotelBooking::whereBetween('created_at', [$dates['start'], $dates['end']])
                 ->where('status', 'completed')
-                ->sum('total_price') ?? 0;
+                ->sum('total_amount') ?? 0;
         }
 
         // รายได้จาก POS
@@ -451,7 +451,7 @@ class UnifiedReportService
         if (class_exists(\App\Models\ServiceBooking::class)) {
             $serviceRevenue = ServiceBooking::whereBetween('created_at', [$dates['start'], $dates['end']])
                 ->where('status', 'completed')
-                ->sum('total_price') ?? 0;
+                ->sum('total_amount') ?? 0;
         }
 
         $total = $ecommerceRevenue + $hotelRevenue + $posRevenue + $serviceRevenue;
@@ -584,7 +584,7 @@ class UnifiedReportService
 
         if (class_exists(\App\Models\AiBotProfile::class)) {
             $totalBots = AiBotProfile::count();
-            $activeBots = AiBotProfile::where('status', 'active')->count();
+            $activeBots = AiBotProfile::where('is_active', true)->count();
         }
 
         return [
@@ -610,7 +610,7 @@ class UnifiedReportService
                 ->count();
             $totalRevenue = HotelBooking::whereBetween('created_at', [$dates['start'], $dates['end']])
                 ->where('status', 'completed')
-                ->sum('total_price') ?? 0;
+                ->sum('total_amount') ?? 0;
         }
 
         return [
@@ -1109,7 +1109,7 @@ class UnifiedReportService
 
         return HotelBooking::whereBetween('created_at', [$dates['start'], $dates['end']])
             ->where('status', 'completed')
-            ->select('hotel_id', DB::raw('SUM(total_price) as total_revenue'))
+            ->select('hotel_id', DB::raw('SUM(total_amount) as total_revenue'))
             ->groupBy('hotel_id')
             ->with('hotel:id,name')
             ->orderByDesc('total_revenue')
