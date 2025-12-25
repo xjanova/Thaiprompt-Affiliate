@@ -4,17 +4,37 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto space-y-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold mb-2">สร้าง Ticket ใหม่</h2>
-                <p class="text-blue-100 text-sm">แจ้งปัญหาหรือขอความช่วยเหลือจากทีมงาน</p>
+    {{-- Premium Hero Header (Blue-Indigo-Purple for Create Ticket) --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+
+        {{-- Floating Icons --}}
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                <i class="fas fa-plus-circle"></i>
             </div>
-            <a href="{{ route('user.tickets.index') }}" class="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-lg transition-all">
-                <i class="fa-solid fa-arrow-left mr-2"></i>
-                กลับ
-            </a>
+        </div>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-edit text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">สร้าง Ticket ใหม่</h1>
+                        <p class="text-blue-100 mt-1">แจ้งปัญหาหรือขอความช่วยเหลือจากทีมงาน</p>
+                    </div>
+                </div>
+                <a href="{{ route('user.tickets.index') }}" class="glass-fusion px-6 py-3 hover:bg-white/30 text-white rounded-lg transition-all">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>กลับ
+                </a>
+            </div>
         </div>
     </div>
 
@@ -196,4 +216,18 @@
         </form>
     </div>
 </div>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 @endsection

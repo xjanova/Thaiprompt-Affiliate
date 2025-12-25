@@ -3,14 +3,35 @@
 @section('title', 'เปรียบเทียบแผนรายได้')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-950 dark:to-pink-950 py-8">
     <div class="container mx-auto px-4">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent mb-4">
-                🔥 เปรียบเทียบแผนรายได้
-            </h1>
-            <p class="text-xl text-gray-700 dark:text-gray-300">เลือกแผนที่เหมาะกับคุณ - มองเห็นผลตอบแทนชัดเจน</p>
+        {{-- Premium Hero Header (Indigo-Pink for Income Comparison) --}}
+        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800 rounded-2xl shadow-2xl p-8 mb-6">
+            {{-- Animated Background Orbs --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+            </div>
+
+            {{-- Floating Icons --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+
+            {{-- Header Content --}}
+            <div class="relative z-10">
+                <div class="flex items-center justify-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-fire text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div class="text-center">
+                        <h1 class="text-4xl md:text-5xl font-bold text-white drop-shadow-lg">🔥 เปรียบเทียบแผนรายได้</h1>
+                        <p class="text-purple-100 text-lg mt-2">เลือกแผนที่เหมาะกับคุณ - มองเห็นผลตอบแทนชัดเจน</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Scenario Cards -->
@@ -224,6 +245,20 @@
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+.glass-fusion {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+</style>
+@endpush
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
