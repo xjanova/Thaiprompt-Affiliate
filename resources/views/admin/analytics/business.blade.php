@@ -147,7 +147,7 @@ async function loadData() {
     errorState.classList.add('hidden');
 
     try {
-        const response = await fetch(`{{ route('admin.analytics.business') }}?days=${days}`);
+        const response = await fetch(`{{ route('admin.analytics.business') }}?days=${days}&ajax=1`);
         const result = await response.json();
 
         if (result.success) {

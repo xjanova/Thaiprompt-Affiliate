@@ -542,7 +542,7 @@ function analyticsManager() {
 
         async loadTrafficData() {
             try {
-                const response = await fetch(`/admin/analytics/traffic?hours=${this.trafficPeriod}`);
+                const response = await fetch(`/admin/analytics/traffic?hours=${this.trafficPeriod}&ajax=1`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -559,7 +559,7 @@ function analyticsManager() {
 
         async loadPerformanceData() {
             try {
-                const response = await fetch(`/admin/analytics/performance?hours=${this.perfPeriod}`);
+                const response = await fetch(`/admin/analytics/performance?hours=${this.perfPeriod}&ajax=1`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -577,7 +577,7 @@ function analyticsManager() {
 
         async loadDatabaseData() {
             try {
-                const response = await fetch('/admin/analytics/database?hours=24');
+                const response = await fetch('/admin/analytics/database?hours=24&ajax=1');
                 const data = await response.json();
 
                 if (data.success) {
@@ -593,7 +593,7 @@ function analyticsManager() {
 
         async loadCacheData() {
             try {
-                const response = await fetch('/admin/analytics/cache?hours=24');
+                const response = await fetch('/admin/analytics/cache?hours=24&ajax=1');
                 const data = await response.json();
 
                 if (data.success) {
@@ -610,7 +610,7 @@ function analyticsManager() {
         async refreshMetrics() {
             this.loading = true;
             try {
-                const response = await fetch('/admin/analytics/realtime');
+                const response = await fetch('/admin/analytics/realtime?ajax=1');
                 const data = await response.json();
 
                 if (data.success) {

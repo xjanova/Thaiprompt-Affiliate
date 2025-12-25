@@ -293,7 +293,7 @@ function initCharts() {
  */
 async function fetchRealtimeData() {
     try {
-        const response = await fetch('{{ route("admin.analytics.realtime") }}');
+        const response = await fetch('{{ route("admin.analytics.realtime") }}?ajax=1');
         const result = await response.json();
 
         if (result.success) {

@@ -155,7 +155,7 @@ async function loadData() {
     errorState.classList.add('hidden');
 
     try {
-        const response = await fetch(`{{ route('admin.analytics.cache') }}?hours=${hours}`);
+        const response = await fetch(`{{ route('admin.analytics.cache') }}?hours=${hours}&ajax=1`);
         const result = await response.json();
 
         if (result.success) {
