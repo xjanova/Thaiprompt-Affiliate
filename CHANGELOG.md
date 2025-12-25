@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.414.1] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2362 from xjanova/claude/lava-lamp-background-effect-bkBgi (d8839f11)
+- fix: improve CTA visibility and add legal pages with working routes (b0c385b4)
+### 🔧 Other Changes
+
+
 ## [v3.414.0] - 2025-12-25
 
 ### ✨ Features
