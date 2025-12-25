@@ -3,26 +3,21 @@
 @section('title', 'ดูคลิป: ' . $mission->display_title)
 
 @push('head')
-{{-- ป้องกัน browser cache สำหรับหน้านี้ --}}
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-@endpush
-
-@push('styles')
-<style>
-    /* Circular Progress Ring */
-    .progress-ring {
-        transform: rotate(-90deg);
-    }
-    .progress-ring__circle {
-        transition: stroke-dashoffset 0.5s ease-out;
-    }
-
-    /* Confetti Animation */
-    @keyframes confetti-fall {
-        0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+<div class="space-y-6 pb-20 lg:pb-6">
+    <div class="relative overflow-hidden bg-gradient-to-r from-red-600 via-pink-600 to-rose-600 dark:from-red-800 dark:via-pink-800 dark:to-rose-800 rounded-2xl shadow-2xl p-8">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite"><i class="fas fa-play-circle"></i></div>
+        </div>
+        <div class="relative z-10"><div class="flex items-center gap-4">
+            <div class="glass-fusion p-4 rounded-2xl"><i class="fas fa-play-circle text-4xl text-white drop-shadow-lg"></i></div>
+            <div><h1 class="text-4xl font-bold text-white drop-shadow-lg">Watch Video</h1>
+            <p class="text-white/80 text-lg mt-1">ดูวิดีโอและรับรางวัล</p></div>
+        </div></div>
+    </div>
     }
     .confetti {
         position: fixed;
