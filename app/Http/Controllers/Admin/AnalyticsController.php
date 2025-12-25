@@ -27,55 +27,76 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Get real-time metrics data (AJAX)
+     * แสดงหน้า Real-time Analytics หรือคืน JSON สำหรับ AJAX
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
-    public function realtime()
+    public function realtime(Request $request)
     {
         $latest = SystemAnalytic::getLatest();
         $health = SystemAnalytic::getHealthStatus();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'metrics' => $latest,
-                'health' => $health,
-                'timestamp' => now()->toIso8601String(),
-            ],
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'metrics' => $latest,
+                    'health' => $health,
+                    'timestamp' => now()->toIso8601String(),
+                ],
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.realtime');
     }
 
     /**
-     * Get historical data for charts
+     * แสดงหน้า Historical Analytics หรือคืนข้อมูล historical data สำหรับ charts
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function historical(Request $request)
     {
-        $period = $request->input('period', '24h'); // 24h, 7d, 30d
+        $period = $request->input('period', '7d'); // 24h, 7d, 30d
 
         $start = match ($period) {
             '1h' => now()->subHour(),
             '24h' => now()->subDay(),
             '7d' => now()->subDays(7),
             '30d' => now()->subDays(30),
-            default => now()->subDay(),
+            default => now()->subDays(7),
         };
 
         $metrics = SystemAnalytic::where('recorded_at', '>=', $start)
             ->orderBy('recorded_at', 'asc')
             ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'period' => $period,
-                'start' => $start->toIso8601String(),
-                'end' => now()->toIso8601String(),
-                'metrics' => $metrics,
-            ],
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'period' => $period,
+                    'start' => $start->toIso8601String(),
+                    'end' => now()->toIso8601String(),
+                    'metrics' => $metrics,
+                ],
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.historical');
     }
 
     /**
-     * Get system performance data
+     * แสดงหน้า Performance Analytics หรือคืนข้อมูล system performance
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function performance(Request $request)
     {
@@ -85,14 +106,23 @@ class AnalyticsController extends Controller
             ->orderBy('recorded_at', 'asc')
             ->get(['recorded_at', 'cpu_usage', 'memory_usage', 'disk_usage', 'avg_response_time']);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.performance');
     }
 
     /**
-     * Get database metrics
+     * แสดงหน้า Database Analytics หรือคืนข้อมูล database metrics
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function database(Request $request)
     {
@@ -108,14 +138,23 @@ class AnalyticsController extends Controller
                 'db_slow_queries',
             ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.database');
     }
 
     /**
-     * Get cache metrics
+     * แสดงหน้า Cache Analytics หรือคืนข้อมูล cache metrics
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function cache(Request $request)
     {
@@ -132,14 +171,23 @@ class AnalyticsController extends Controller
                 'cache_keys_count',
             ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.cache');
     }
 
     /**
-     * Get traffic metrics
+     * แสดงหน้า Traffic Analytics หรือคืนข้อมูล traffic metrics
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function traffic(Request $request)
     {
@@ -158,14 +206,23 @@ class AnalyticsController extends Controller
                 'http_5xx',
             ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.traffic');
     }
 
     /**
-     * Get business metrics
+     * แสดงหน้า Business Analytics หรือคืนข้อมูล business metrics
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function business(Request $request)
     {
@@ -182,14 +239,23 @@ class AnalyticsController extends Controller
                 'active_affiliates',
             ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.business');
     }
 
     /**
-     * Get security metrics
+     * แสดงหน้า Security Analytics หรือคืนข้อมูล security metrics
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function security(Request $request)
     {
@@ -205,10 +271,16 @@ class AnalyticsController extends Controller
                 'captcha_failures',
             ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => $metrics,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $metrics,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.security');
     }
 
     /**
@@ -233,9 +305,12 @@ class AnalyticsController extends Controller
     }
 
     /**
-     * Get system capacity report
+     * แสดงหน้า Capacity Analytics หรือคืน system capacity report
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
-    public function capacity()
+    public function capacity(Request $request)
     {
         $latest = SystemAnalytic::getLatest();
         $peak24h = SystemAnalytic::recent(1440)->get();
@@ -262,10 +337,16 @@ class AnalyticsController extends Controller
             'recommendations' => $this->getCapacityRecommendations($latest),
         ];
 
-        return response()->json([
-            'success' => true,
-            'data' => $report,
-        ]);
+        // ถ้าเป็น AJAX request หรือมี query param ให้คืน JSON
+        if ($request->wantsJson() || $request->has('ajax')) {
+            return response()->json([
+                'success' => true,
+                'data' => $report,
+            ]);
+        }
+
+        // ถ้าไม่ใช่ AJAX ให้แสดง view
+        return view('admin.analytics.capacity', compact('report'));
     }
 
     /**
