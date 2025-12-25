@@ -807,7 +807,7 @@
         {{-- Features Grid - แต่ละ Card มีลิงก์ไปหน้าเอกสารละเอียด --}}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {{-- Feature 1: All-in-One --}}
-            <a href="{{ route('documents.all-in-one') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-blue-500 transition-all">
+            <a href="{{ route('documents.all-in-one') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-blue-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-layer-group text-2xl text-white"></i>
                 </div>
@@ -817,14 +817,14 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     รวมทุกระบบไว้ในที่เดียว Affiliate, MLM, E-Commerce, AI Bot และอีก 20+ ระบบ ไม่ต้องซื้อแยก ประหยัดกว่า
                 </p>
-                <div class="flex items-center text-blue-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-blue-400 font-medium text-sm group-hover:underline">
                     <span>อ่านเอกสารเพิ่มเติม</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             {{-- Feature 2: AI Powered --}}
-            <a href="{{ route('documents.ai-automation') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-purple-500 transition-all">
+            <a href="{{ route('documents.ai-automation') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-purple-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-robot text-2xl text-white"></i>
                 </div>
@@ -834,14 +834,14 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     ระบบ AI อัจฉริยะ ช่วยตอบแชท วิเคราะห์ข้อมูล และทำงานอัตโนมัติ 24 ชั่วโมง ลดต้นทุน เพิ่มประสิทธิภาพ
                 </p>
-                <div class="flex items-center text-purple-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-purple-400 font-medium text-sm group-hover:underline">
                     <span>อ่านเอกสารเพิ่มเติม</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             {{-- Feature 3: Blockchain --}}
-            <a href="{{ route('documents.blockchain-tpix') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-amber-500 transition-all">
+            <a href="{{ route('documents.blockchain-tpix') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-amber-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-link text-2xl text-white"></i>
                 </div>
@@ -851,14 +851,14 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     รองรับ Cryptocurrency และ Token TPIX สำหรับระบบ Staking, Farming และการชำระเงินแบบ Web3
                 </p>
-                <div class="flex items-center text-amber-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-amber-400 font-medium text-sm group-hover:underline">
                     <span>อ่าน Whitepaper</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             {{-- Feature 4: Multi-Currency Wallet --}}
-            <a href="{{ route('documents.multi-currency-wallet') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-emerald-500 transition-all">
+            <a href="{{ route('documents.multi-currency-wallet') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-emerald-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-wallet text-2xl text-white"></i>
                 </div>
@@ -868,14 +868,14 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     กระเป๋าเงินหลายสกุล THB, USD, Crypto พร้อมระบบถอนเงินหลายช่องทาง Bank, PromptPay, Crypto
                 </p>
-                <div class="flex items-center text-emerald-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-emerald-400 font-medium text-sm group-hover:underline">
                     <span>อ่านเอกสารเพิ่มเติม</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             {{-- Feature 5: MLM System --}}
-            <a href="{{ route('documents.mlm-commission') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-pink-500 transition-all">
+            <a href="{{ route('documents.mlm-commission') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-pink-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-sitemap text-2xl text-white"></i>
                 </div>
@@ -885,14 +885,14 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     ระบบ Multi-Level Marketing ไม่จำกัดชั้น คำนวณคอมมิชชันอัตโนมัติ พร้อมรายงานละเอียด
                 </p>
-                <div class="flex items-center text-pink-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-pink-400 font-medium text-sm group-hover:underline">
                     <span>อ่านเอกสารเพิ่มเติม</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
             </a>
 
             {{-- Feature 6: Security --}}
-            <a href="{{ route('documents.enterprise-security') }}" class="group card-hover bg-slate-50 border border-slate-200 rounded-2xl p-8 block hover:border-cyan-500 transition-all">
+            <a href="{{ route('documents.enterprise-security') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-cyan-500 transition-all">
                 <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                     <i class="fas fa-shield-alt text-2xl text-white"></i>
                 </div>
@@ -902,7 +902,7 @@
                 <p class="text-slate-200 leading-relaxed mb-4">
                     ความปลอดภัยระดับ Enterprise พร้อม 2FA, SSL, IP Whitelist และ License System
                 </p>
-                <div class="flex items-center text-cyan-600 font-medium text-sm group-hover:underline">
+                <div class="flex items-center text-cyan-400 font-medium text-sm group-hover:underline">
                     <span>อ่านเอกสารเพิ่มเติม</span>
                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                 </div>
@@ -956,7 +956,7 @@
             <p class="text-xl text-slate-200 leading-relaxed">
                 เลือกบริการที่ตอบโจทย์คุณ ทุกอย่างอยู่ในแพลตฟอร์มเดียว
                 <br class="hidden md:block">
-                <span class="text-purple-600 font-semibold">ครบจบในที่เดียว ไม่ต้องไปหาที่อื่น!</span>
+                <span class="text-purple-400 font-semibold">ครบจบในที่เดียว ไม่ต้องไปหาที่อื่น!</span>
             </p>
         </div>
 
@@ -1000,7 +1000,7 @@
 
                         {{-- Sub Items --}}
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🚴 ไรเดอร์ / Delivery</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1008,7 +1008,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">💼 นักขาย / Sales</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1016,13 +1016,13 @@
                                     </span>
                                 </div>
                             </div>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-blue-100 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏪 ขายของออนไลน์</span>
                             </a>
                         </div>
 
                         {{-- Expand Button --}}
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
@@ -1060,13 +1060,13 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🤖 AI Chatbot</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">📈 Trading Bot</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-purple-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">💻 ซอฟต์แวร์/โปรแกรม</span>
                             </a>
                             <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
@@ -1074,7 +1074,7 @@
                             </a>
                         </div>
 
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-purple-600 hover:text-purple-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-purple-400 hover:text-purple-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
@@ -1112,7 +1112,7 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">💎 TPIX Token</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1120,7 +1120,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🌾 Staking / Farming</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1128,7 +1128,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">₿ Cryptocurrency</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1138,7 +1138,7 @@
                             </div>
                         </div>
 
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-amber-400 hover:text-amber-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
@@ -1176,13 +1176,13 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏪 ร้านค้าออนไลน์</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-pink-100 transition-colors">
+                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏬 Unified Marketplace</span>
                             </a>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🍔 Food Passport</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1192,7 +1192,7 @@
                             </div>
                         </div>
 
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-600 hover:text-pink-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-400 hover:text-pink-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
@@ -1230,13 +1230,13 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('tarot.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-violet-100 transition-colors">
+                            <a href="{{ route('tarot.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🔮 ดูไพ่ทาโรต์</span>
                             </a>
-                            <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-violet-100 transition-colors">
+                            <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🎮 เกมส์ออนไลน์</span>
                             </a>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🎰 Tournament</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1287,7 +1287,7 @@
                             <a href="{{ route('hotels.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-cyan-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏨 จองโรงแรม</span>
                             </a>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🌳 Carbon Credit</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1295,7 +1295,7 @@
                                     </span>
                                 </div>
                             </div>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">💼 POS System</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1305,7 +1305,7 @@
                             </div>
                         </div>
 
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-cyan-600 hover:text-cyan-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-cyan-400 hover:text-cyan-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
@@ -1349,7 +1349,7 @@
                             <a href="{{ route('documents.how-to-register') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-emerald-100 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">📖 วิธีใช้งาน</span>
                             </a>
-                            <div class="block px-4 py-3 bg-slate-100/50 rounded-xl cursor-not-allowed opacity-75">
+                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm font-semibold text-slate-500">🎓 Academy LMS</span>
                                     <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
@@ -1359,7 +1359,7 @@
                             </div>
                         </div>
 
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 hover:text-emerald-700 transition-colors">
                             <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
                             <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
                         </button>
