@@ -42,6 +42,23 @@
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
     }
+
+    /* Glass Fusion Effect for Hero Header */
+    .glass-fusion {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Float Animation */
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-20px);
+        }
+    }
 </style>
 @endpush
 
@@ -49,34 +66,35 @@
 <div class="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-6">
     <div class="max-w-7xl mx-auto px-4">
 
-        {{-- ========== HEADER WITH MEMBER INFO ========== --}}
-        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 p-8 mb-6 shadow-2xl">
-            {{-- Background Pattern --}}
+        {{-- ========== Premium Hero Header (Purple-Pink-Blue for MLM Genealogy) ========== --}}
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800 p-8 mb-6 shadow-2xl">
+            {{-- Animated Background Orbs --}}
             <div class="absolute inset-0 opacity-10">
-                <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <defs>
-                        <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                            <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" stroke-width="0.5"/>
-                        </pattern>
-                    </defs>
-                    <rect width="100" height="100" fill="url(#grid)"/>
-                </svg>
+                <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
             </div>
 
-            <div class="relative flex flex-col lg:flex-row items-center justify-between gap-6">
+            {{-- Floating Icons --}}
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
+                    <i class="fas fa-sitemap"></i>
+                </div>
+            </div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
                 {{-- Member Info --}}
                 <div class="flex items-center gap-6">
-                    <div class="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-5xl">
-                        👑
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-crown text-5xl text-white drop-shadow-lg"></i>
                     </div>
                     <div class="text-white">
-                        <h1 class="text-3xl lg:text-4xl font-black">ศูนย์กลาง MLM</h1>
-                        <p class="text-white/80 text-lg mt-1">{{ auth()->user()->name }}</p>
+                        <h1 class="text-3xl lg:text-4xl font-bold drop-shadow-lg">ศูนย์กลาง MLM</h1>
+                        <p class="text-white/90 text-lg mt-1">{{ auth()->user()->name }}</p>
                         <div class="flex items-center gap-3 mt-2">
-                            <span class="px-3 py-1 rounded-full bg-white/20 text-sm font-semibold">
+                            <span class="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm font-semibold border border-white/30">
                                 รหัส: {{ $member->member_code }}
                             </span>
-                            <span class="px-3 py-1 rounded-full bg-green-400/30 text-sm font-semibold">
+                            <span class="px-3 py-1 rounded-full bg-green-400/30 backdrop-blur-sm text-sm font-semibold border border-green-400/50">
                                 ✓ {{ $member->plan?->name ?? 'Active' }}
                             </span>
                         </div>
@@ -85,21 +103,21 @@
 
                 {{-- Quick Stats --}}
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-white">{{ number_format($member->total_team_members ?? 0) }}</div>
-                        <div class="text-white/70 text-xs mt-1">สมาชิกทั้งหมด</div>
+                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
+                        <div class="text-3xl font-black text-white drop-shadow-lg">{{ number_format($member->total_team_members ?? 0) }}</div>
+                        <div class="text-white/80 text-xs mt-1">สมาชิกทั้งหมด</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-white">{{ number_format($member->total_direct_referrals ?? 0) }}</div>
-                        <div class="text-white/70 text-xs mt-1">แนะนำตรง</div>
+                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
+                        <div class="text-3xl font-black text-white drop-shadow-lg">{{ number_format($member->total_direct_referrals ?? 0) }}</div>
+                        <div class="text-white/80 text-xs mt-1">แนะนำตรง</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-green-300">{{ $member->left_leg_members ?? 0 }}</div>
-                        <div class="text-white/70 text-xs mt-1">⬅️ ขาซ้าย</div>
+                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
+                        <div class="text-3xl font-black text-green-300 drop-shadow-lg">{{ $member->left_leg_members ?? 0 }}</div>
+                        <div class="text-white/80 text-xs mt-1">⬅️ ขาซ้าย</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur rounded-2xl p-4 text-center min-w-[100px]">
-                        <div class="text-3xl font-black text-red-300">{{ $member->right_leg_members ?? 0 }}</div>
-                        <div class="text-white/70 text-xs mt-1">➡️ ขาขวา</div>
+                    <div class="bg-white/20 dark:bg-white/10 backdrop-blur-xl border border-white/30 rounded-2xl p-4 text-center min-w-[100px]">
+                        <div class="text-3xl font-black text-red-300 drop-shadow-lg">{{ $member->right_leg_members ?? 0 }}</div>
+                        <div class="text-white/80 text-xs mt-1">➡️ ขาขวา</div>
                     </div>
                 </div>
             </div>
