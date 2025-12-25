@@ -93,6 +93,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'tpix.staking.eligible' => \App\Http\Middleware\CheckStakingEligibility::class,
             // Maintenance mode middleware
             'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
+            // Developer & Software License middleware
+            'developer.approved' => \App\Http\Middleware\CheckDeveloperApproved::class,
+            'license.owner' => \App\Http\Middleware\CheckLicenseOwnership::class,
         ]);
 
         // Global middleware for IP blocking

@@ -44,6 +44,12 @@ class EventServiceProvider extends ServiceProvider
         \App\Events\AiRental\DeploymentHealthCheckFailed::class => [
             \App\Listeners\AiRental\HandleHealthCheckFailure::class,
         ],
+
+        // Software Sales Events
+        \App\Events\SoftwarePurchased::class => [
+            \App\Listeners\GenerateSoftwareLicense::class,
+            \App\Listeners\SendSoftwarePurchaseEmail::class,
+        ],
     ];
 
     /**
