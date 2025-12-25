@@ -52,10 +52,10 @@
 @section('content')
 
 {{-- ================================================================
-    HERO SECTION - Professional & Trustworthy
+    HERO SECTION - Professional & Trustworthy with Lava Lamp Effect
 ================================================================ --}}
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-    {{-- Background Gradient --}}
+    {{-- Lava Lamp Background with RGB Animated Blobs --}}
     <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950">
         {{-- Grid Pattern --}}
         <div class="absolute inset-0 opacity-[0.03]"
@@ -64,10 +64,16 @@
                     background-size: 60px 60px;">
         </div>
 
-        {{-- Gradient Orbs --}}
-        <div class="absolute top-1/4 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-900/10 rounded-full blur-3xl"></div>
+        {{-- Lava Lamp Animated RGB Blobs --}}
+        <div class="lava-blob lava-blob-1"></div>
+        <div class="lava-blob lava-blob-2"></div>
+        <div class="lava-blob lava-blob-3"></div>
+        <div class="lava-blob lava-blob-4"></div>
+        <div class="lava-blob lava-blob-5"></div>
+        <div class="lava-blob lava-blob-6"></div>
+
+        {{-- Glass Overlay for Glassmorphism Effect --}}
+        <div class="absolute inset-0 backdrop-blur-[100px] pointer-events-none"></div>
     </div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
@@ -1548,3 +1554,153 @@
 </section>
 
 @endsection
+
+@push('styles')
+<style>
+/**
+ * Lava Lamp Background Effect - RGB Animated Blobs
+ *
+ * สร้าง animated RGB blobs ที่เคลื่อนไหวแบบ organic motion
+ * พร้อม blur effects สำหรับ lava lamp effect
+ */
+
+/* Blob แต่ละตัว - base styles */
+.lava-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.7;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+/* Blob ขนาดและสีต่างๆ */
+.lava-blob-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(255, 0, 255, 0.8) 0%, rgba(147, 51, 234, 0.6) 100%);
+    top: -10%;
+    left: -10%;
+    animation: float-1 20s ease-in-out infinite;
+}
+
+.lava-blob-2 {
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.6) 100%);
+    top: 20%;
+    right: -15%;
+    animation: float-2 25s ease-in-out infinite;
+}
+
+.lava-blob-3 {
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, rgba(236, 72, 153, 0.8) 0%, rgba(219, 39, 119, 0.6) 100%);
+    bottom: -10%;
+    left: 20%;
+    animation: float-3 30s ease-in-out infinite;
+}
+
+.lava-blob-4 {
+    width: 550px;
+    height: 550px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.8) 0%, rgba(6, 182, 212, 0.6) 100%);
+    bottom: 10%;
+    right: 10%;
+    animation: float-4 22s ease-in-out infinite;
+}
+
+.lava-blob-5 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(251, 146, 60, 0.8) 0%, rgba(249, 115, 22, 0.6) 100%);
+    top: 40%;
+    left: 40%;
+    animation: float-5 28s ease-in-out infinite;
+}
+
+.lava-blob-6 {
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.8) 0%, rgba(139, 92, 246, 0.6) 100%);
+    top: 60%;
+    right: 30%;
+    animation: float-6 24s ease-in-out infinite;
+}
+
+/* Animation keyframes สำหรับ blobs - organic motion */
+@keyframes float-1 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(100px, 150px) scale(1.2);
+    }
+}
+
+@keyframes float-2 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(-120px, 180px) scale(1.3);
+    }
+}
+
+@keyframes float-3 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(150px, -100px) scale(1.1);
+    }
+}
+
+@keyframes float-4 {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(-100px, -120px) scale(1.25);
+    }
+}
+
+@keyframes float-5 {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+    50% {
+        transform: translate(80px, 100px) rotate(180deg) scale(1.15);
+    }
+}
+
+@keyframes float-6 {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+    50% {
+        transform: translate(-90px, 110px) rotate(-180deg) scale(1.2);
+    }
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+    .lava-blob {
+        filter: blur(60px);
+        opacity: 0.5;
+    }
+
+    .lava-blob-1,
+    .lava-blob-2,
+    .lava-blob-3,
+    .lava-blob-4,
+    .lava-blob-5,
+    .lava-blob-6 {
+        width: 300px;
+        height: 300px;
+    }
+}
+</style>
+@endpush
