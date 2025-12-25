@@ -240,7 +240,7 @@
             เมนูด่วน
         </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {{-- จัดการบทบาท --}}
             <a href="{{ route('admin.roles.index') }}" class="glass-card dark:bg-gray-800/50 backdrop-blur-xl p-4 hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 rounded-xl border border-white/20 dark:border-gray-700/50 group">
                 <div class="flex items-center gap-3">
@@ -252,20 +252,6 @@
                         <p class="text-gray-600 dark:text-gray-400 text-xs">Roles & Permissions</p>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500 ml-auto group-hover:text-purple-600 dark:group-hover:text-purple-300 transition"></i>
-                </div>
-            </a>
-
-            {{-- จัดการสิทธิ์ --}}
-            <a href="{{ route('admin.permissions.index') }}" class="glass-card dark:bg-gray-800/50 backdrop-blur-xl p-4 hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all duration-300 rounded-xl border border-white/20 dark:border-gray-700/50 group">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-xl bg-blue-500/30 dark:bg-blue-900/50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <i class="fas fa-key text-2xl text-blue-600 dark:text-blue-300"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h4 class="text-gray-900 dark:text-white font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-300 transition">จัดการสิทธิ์</h4>
-                        <p class="text-gray-600 dark:text-gray-400 text-xs">Permissions Management</p>
-                    </div>
-                    <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500 ml-auto group-hover:text-blue-600 dark:group-hover:text-blue-300 transition"></i>
                 </div>
             </a>
 
