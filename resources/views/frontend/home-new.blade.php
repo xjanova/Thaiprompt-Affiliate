@@ -1540,18 +1540,18 @@
         </div>
 
         {{-- Trust Badges --}}
-        <div class="mt-12 flex flex-wrap items-center justify-center gap-8 text-slate-500">
+        <div class="mt-12 flex flex-wrap items-center justify-center gap-8 text-slate-200">
             <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-500"></i>
-                <span>ทดลองใช้ฟรี</span>
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span class="font-medium">ทดลองใช้ฟรี</span>
             </div>
             <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-500"></i>
-                <span>ไม่ต้องใส่บัตรเครดิต</span>
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span class="font-medium">ไม่ต้องใส่บัตรเครดิต</span>
             </div>
             <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-500"></i>
-                <span>ยกเลิกได้ทุกเมื่อ</span>
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span class="font-medium">ยกเลิกได้ทุกเมื่อ</span>
             </div>
         </div>
     </div>
@@ -1700,8 +1700,8 @@
 
             {{-- Footer Links --}}
             <div class="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
-                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
-                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
+                <a href="{{ route('privacy-policy') }}" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
+                <a href="{{ route('terms-of-service') }}" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
                 <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายคุกกี้</a>
             </div>
         </div>
