@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.410.3] - 2025-12-25
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(home): improve CTA spacing and update all footer links to working routes (3ea2a4b4)
+- fix: make feature cards transparent and visible (b461d6b9)
+### 🔧 Other Changes
+- Merge pull request #2354 from xjanova/claude/lava-lamp-background-effect-bkBgi (6125b96b)
+
 ## [v3.410.2] - 2025-12-25
 
 ### ✨ Features
