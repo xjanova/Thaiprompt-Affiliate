@@ -974,3 +974,31 @@ Route::prefix('nfc')->name('nfc.')->group(function () {
     Route::middleware('auth')->get('/statistics/{cardNumber}', [NFCVerificationController::class, 'statistics'])
         ->name('statistics');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Unified Marketplace Routes (V3 Design)
+|--------------------------------------------------------------------------
+|
+| Marketplace รวม: AI Chatbots, Trading Bots, Software Products
+| ใช้ V3 Design System (Tailwind + Alpine.js + Glassmorphism)
+|
+*/
+
+use App\Http\Controllers\UnifiedMarketplaceController;
+
+// ⚠️ E-commerce Critical: Unified marketplace ต้องถูก index โดย search engines
+Route::prefix('marketplace')->name('marketplace.v3.')->group(function () {
+    // หน้าหลัก marketplace
+    Route::match(['GET', 'HEAD'], '/', [UnifiedMarketplaceController::class, 'index'])->name('index');
+    
+    // หมวดหมู่
+    Route::match(['GET', 'HEAD'], '/category/{category}', [UnifiedMarketplaceController::class, 'category'])->name('category');
+    
+    // ค้นหา
+    Route::match(['GET', 'HEAD'], '/search', [UnifiedMarketplaceController::class, 'search'])->name('search');
+    
+    // รายละเอียดสินค้า
+    Route::match(['GET', 'HEAD'], '/{type}/{slug}', [UnifiedMarketplaceController::class, 'show'])->name('show')
+        ->where('type', 'chatbot|trading|software');
+});
