@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.404.0] - 2025-12-25
+
+### ✨ Features
+- Merge pull request #2343 from xjanova/claude/lava-lamp-background-effect-bkBgi (a60f9698)
+- feat: add lava lamp RGB background effect with glassmorphism to home page (a489224c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.403.2] - 2025-12-25
 
 ### ✨ Features
