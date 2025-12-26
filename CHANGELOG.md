@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.3] - 2025-12-26
+
+### ✨ Features
+- feat(pos): add barcode label printing menus and seller support (7c3c6e80)
+### 🐛 Bug Fixes
+- fix(pos): filter products correctly for admin (premium) and seller (own store) (948b9885)
+### 🔧 Other Changes
+- Merge pull request #2376 from xjanova/claude/add-barcode-label-printing-Dy1xJ (00607b47)
+
 ## [v3.420.2] - 2025-12-26
 
 ### ✨ Features
