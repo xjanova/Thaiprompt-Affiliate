@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.9] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2382 from xjanova/claude/add-barcode-label-printing-Dy1xJ (ba6731a7)
+- fix(pos): fix ParseError in label designer blade syntax (8dbb7b7d)
+### 🔧 Other Changes
+
+
 ## [v3.420.8] - 2025-12-26
 
 ### ✨ Features
