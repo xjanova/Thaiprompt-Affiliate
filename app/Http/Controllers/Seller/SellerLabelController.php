@@ -226,6 +226,17 @@ class SellerLabelController extends Controller
         DB::beginTransaction();
         try {
             $template = LabelTemplate::find($validated['template_id']);
+            $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
+
+            // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้านตัวเอง
+            $productIds = collect($validated['products'])->pluck('product_id');
+            $ownProductsCount = Product::whereIn('id', $productIds)
+                ->where('store_id', $storeId)
+                ->count();
+
+            if ($ownProductsCount !== count($productIds)) {
+                throw new \Exception('มีสินค้าที่ไม่ใช่ของร้านคุณในรายการ');
+            }
 
             // เตรียมข้อมูลสินค้า
             $productsData = [];
