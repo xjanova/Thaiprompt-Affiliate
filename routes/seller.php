@@ -341,6 +341,18 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
             // Preview Page (แสดงฉลากสำหรับพิมพ์)
             Route::get('/preview', [\App\Http\Controllers\Seller\SellerLabelController::class, 'showPreview'])->name('preview');
 
+            // Template Management (จัดการ Templates)
+            Route::prefix('templates')->name('templates.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Seller\SellerLabelController::class, 'listTemplates'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\Seller\SellerLabelController::class, 'createTemplate'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Seller\SellerLabelController::class, 'storeTemplate'])->name('store');
+                Route::get('/{template}/edit', [\App\Http\Controllers\Seller\SellerLabelController::class, 'editTemplate'])->name('edit');
+                Route::get('/{template}/designer', [\App\Http\Controllers\Seller\SellerLabelController::class, 'designerTemplate'])->name('designer');
+                Route::put('/{template}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'updateTemplate'])->name('update');
+                Route::delete('/{template}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'destroyTemplate'])->name('destroy');
+                Route::post('/{template}/duplicate', [\App\Http\Controllers\Seller\SellerLabelController::class, 'duplicateTemplate'])->name('duplicate');
+            });
+
             Route::get('/history', [\App\Http\Controllers\Seller\SellerLabelController::class, 'history'])->name('history');
             Route::get('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'show'])->name('show');
             Route::delete('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'destroy'])->name('destroy');
