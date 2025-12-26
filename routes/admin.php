@@ -1832,6 +1832,7 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/print-shipping/{transaction}', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping.transaction');
 
         // API endpoints
+        Route::get('/api/products', [PosLabelController::class, 'getProducts'])->name('api.products');
         Route::get('/api/search-products', [PosLabelController::class, 'searchProducts'])->name('api.search-products');
         Route::post('/api/preview', [PosLabelController::class, 'preview'])->name('api.preview');
         Route::post('/api/print', [PosLabelController::class, 'print'])->name('api.print');

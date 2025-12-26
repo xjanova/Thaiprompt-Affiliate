@@ -109,6 +109,63 @@ class PosLabelController extends Controller
     }
 
     /**
+     * ดึงรายการสินค้าทั้งหมดพร้อม pagination (Admin)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getProducts(Request $request): JsonResponse
+    {
+        $query = Product::where('is_active', true)
+            ->with('store');
+
+        // Filter by search
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by category
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Sort
+        $sortBy = $request->input('sort_by', 'name');
+        $sortOrder = $request->input('sort_order', 'asc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Paginate
+        $perPage = $request->input('per_page', 20);
+        $products = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'barcode' => $product->barcode_or_sku,
+                    'sku' => $product->sku,
+                    'price' => $product->price,
+                    'image' => $product->image_url ?? $product->main_image_url,
+                    'store_name' => $product->store->store_name ?? null,
+                ];
+            }),
+            'meta' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
+        ]);
+    }
+
+    /**
      * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (Admin เห็นทั้งหมด)
      *
      * @param Request $request
