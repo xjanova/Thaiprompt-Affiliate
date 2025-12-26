@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.5] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2378 from xjanova/claude/add-barcode-label-printing-Dy1xJ (0f9fc72f)
+- feat(pos): add product list with pagination and auto-load for barcode label printing (8c1aa353)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.420.4] - 2025-12-26
 
 ### ✨ Features
