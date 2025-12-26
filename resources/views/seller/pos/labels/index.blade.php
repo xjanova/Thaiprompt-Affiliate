@@ -128,6 +128,43 @@
         </a>
     </div>
 
+    {{-- Template Management Actions --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {{-- Manage Templates --}}
+        <a href="{{ route('seller.pos.labels.templates.index') }}"
+           class="group bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-xl shadow-lg p-8 hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition">
+                    <i class="fas fa-layer-group text-3xl text-white"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-white mb-1">จัดการ Templates</h3>
+                    <p class="text-purple-100">ดู แก้ไข และจัดการ Template ทั้งหมด</p>
+                </div>
+                <svg class="w-6 h-6 text-white group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+
+        {{-- Design New Template --}}
+        <a href="{{ route('seller.pos.labels.templates.create') }}"
+           class="group bg-gradient-to-br from-pink-500 to-pink-600 dark:from-pink-600 dark:to-pink-700 rounded-xl shadow-lg p-8 hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center group-hover:bg-white/30 transition">
+                    <i class="fas fa-paint-brush text-3xl text-white"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-white mb-1">ออกแบบ Template ใหม่</h3>
+                    <p class="text-pink-100">สร้างและออกแบบฉลากด้วย Designer</p>
+                </div>
+                <svg class="w-6 h-6 text-white group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </a>
+    </div>
+
     {{-- Recent Prints & Popular Templates --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Recent Prints --}}
