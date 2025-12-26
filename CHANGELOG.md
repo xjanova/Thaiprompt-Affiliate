@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.7] - 2025-12-26
+
+### ✨ Features
+- feat(pos): add EPIC drag & drop label designer! 🎨🚀 (2edd6c86)
+- feat(pos): add template creation page with live preview (31473645)
+- feat(pos): add templates list page with stats and actions (55cb8f87)
+- feat(pos): add template management routes and controller methods (fdd51207)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2380 from xjanova/claude/add-barcode-label-printing-Dy1xJ (7cc5d1ba)
+
 ## [v3.420.6] - 2025-12-26
 
 ### ✨ Features
