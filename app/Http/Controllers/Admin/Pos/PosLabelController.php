@@ -611,4 +611,179 @@ class PosLabelController extends Controller
             ],
         ]);
     }
+
+    // ========================================
+    // TEMPLATE MANAGEMENT METHODS
+    // ========================================
+
+    /**
+     * แสดงรายการ Templates ทั้งหมด
+     *
+     * @return View
+     */
+    public function listTemplates(): View
+    {
+        $templates = LabelTemplate::posTemplates()
+            ->with('user')
+            ->latest()
+            ->paginate(20);
+
+        $stats = [
+            'total' => LabelTemplate::posTemplates()->count(),
+            'product_labels' => LabelTemplate::posTemplates()->productLabels()->count(),
+            'shipping_labels' => LabelTemplate::posTemplates()->shippingLabels()->count(),
+            'my_templates' => LabelTemplate::posTemplates()->where('user_id', auth()->id())->count(),
+        ];
+
+        return view('admin.pos.labels.templates.index', compact('templates', 'stats'));
+    }
+
+    /**
+     * แสดงฟอร์มสร้าง Template ใหม่
+     *
+     * @return View
+     */
+    public function createTemplate(): View
+    {
+        $paperSizes = LabelPaperSize::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.pos.labels.templates.create', compact('paperSizes'));
+    }
+
+    /**
+     * แสดงหน้า Label Designer (Drag & Drop Editor)
+     *
+     * @param LabelTemplate $template
+     * @return View
+     */
+    public function designerTemplate(LabelTemplate $template): View
+    {
+        // โหลด paper sizes สำหรับเปลี่ยนขนาด
+        $paperSizes = LabelPaperSize::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.pos.labels.templates.designer', compact('template', 'paperSizes'));
+    }
+
+    /**
+     * แสดงฟอร์มแก้ไขข้อมูล Template
+     *
+     * @param LabelTemplate $template
+     * @return View
+     */
+    public function editTemplate(LabelTemplate $template): View
+    {
+        $paperSizes = LabelPaperSize::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.pos.labels.templates.edit', compact('template', 'paperSizes'));
+    }
+
+    /**
+     * บันทึก Template ใหม่
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function storeTemplate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'pos_category' => 'required|in:product_label,shipping_label,price_tag,barcode_only',
+            'paper_width' => 'required|numeric|min:10',
+            'paper_height' => 'required|numeric|min:10',
+            'paper_unit' => 'required|in:mm,cm,in',
+            'printer_type' => 'required|in:thermal_roll,thermal_label,inkjet,laser,any',
+            'is_continuous_roll' => 'nullable|boolean',
+            'columns' => 'required|integer|min:1|max:20',
+            'rows' => 'required|integer|min:1|max:20',
+            'gap_horizontal' => 'nullable|numeric|min:0',
+            'gap_vertical' => 'nullable|numeric|min:0',
+            'margin_top' => 'nullable|numeric|min:0',
+            'margin_left' => 'nullable|numeric|min:0',
+            'margin_right' => 'nullable|numeric|min:0',
+            'margin_bottom' => 'nullable|numeric|min:0',
+        ]);
+
+        $template = LabelTemplate::create(array_merge($validated, [
+            'user_id' => auth()->id(),
+            'is_pos_template' => true,
+            'is_active' => true,
+            'is_public' => false,
+            'is_system' => false,
+            'elements' => LabelTemplate::getDefaultElements(),
+            'settings' => LabelTemplate::getDefaultSettings(),
+            'print_settings' => LabelTemplate::getDefaultPrintSettings(),
+        ]));
+
+        return redirect()
+            ->route('admin.pos.labels.templates.designer', $template)
+            ->with('success', 'สร้าง Template สำเร็จ! ตอนนี้คุณสามารถออกแบบฉลากได้');
+    }
+
+    /**
+     * อัพเดท Template
+     *
+     * @param Request $request
+     * @param LabelTemplate $template
+     * @return RedirectResponse
+     */
+    public function updateTemplate(Request $request, LabelTemplate $template): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'elements' => 'nullable|array',
+            'settings' => 'nullable|array',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $template->update($validated);
+
+        return redirect()
+            ->back()
+            ->with('success', 'อัพเดท Template สำเร็จ');
+    }
+
+    /**
+     * ลบ Template
+     *
+     * @param LabelTemplate $template
+     * @return RedirectResponse
+     */
+    public function destroyTemplate(LabelTemplate $template): RedirectResponse
+    {
+        // ห้ามลบ system templates
+        if ($template->is_system) {
+            return redirect()
+                ->back()
+                ->with('error', 'ไม่สามารถลบ Template ของระบบได้');
+        }
+
+        $template->delete();
+
+        return redirect()
+            ->route('admin.pos.labels.templates.index')
+            ->with('success', 'ลบ Template สำเร็จ');
+    }
+
+    /**
+     * ทำสำเนา Template
+     *
+     * @param LabelTemplate $template
+     * @return RedirectResponse
+     */
+    public function duplicateTemplate(LabelTemplate $template): RedirectResponse
+    {
+        $newTemplate = $template->replicate();
+        $newTemplate->name = $template->name . ' (สำเนา)';
+        $newTemplate->user_id = auth()->id();
+        $newTemplate->is_system = false;
+        $newTemplate->is_public = false;
+        $newTemplate->usage_count = 0;
+        $newTemplate->save();
+
+        return redirect()
+            ->route('admin.pos.labels.templates.designer', $newTemplate)
+            ->with('success', 'ทำสำเนา Template สำเร็จ');
+    }
 }

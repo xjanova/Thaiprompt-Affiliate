@@ -1834,6 +1834,18 @@ Route::prefix('pos')->name('pos.')->group(function () {
         // Preview Page (แสดงฉลากสำหรับพิมพ์)
         Route::get('/preview', [PosLabelController::class, 'showPreview'])->name('preview');
 
+        // Template Management (จัดการ Templates)
+        Route::prefix('templates')->name('templates.')->group(function () {
+            Route::get('/', [PosLabelController::class, 'listTemplates'])->name('index');
+            Route::get('/create', [PosLabelController::class, 'createTemplate'])->name('create');
+            Route::post('/', [PosLabelController::class, 'storeTemplate'])->name('store');
+            Route::get('/{template}/edit', [PosLabelController::class, 'editTemplate'])->name('edit');
+            Route::get('/{template}/designer', [PosLabelController::class, 'designerTemplate'])->name('designer');
+            Route::put('/{template}', [PosLabelController::class, 'updateTemplate'])->name('update');
+            Route::delete('/{template}', [PosLabelController::class, 'destroyTemplate'])->name('destroy');
+            Route::post('/{template}/duplicate', [PosLabelController::class, 'duplicateTemplate'])->name('duplicate');
+        });
+
         // API endpoints
         Route::get('/api/products', [PosLabelController::class, 'getProducts'])->name('api.products');
         Route::get('/api/search-products', [PosLabelController::class, 'searchProducts'])->name('api.search-products');
