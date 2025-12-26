@@ -1831,6 +1831,9 @@ Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/print-shipping', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping');
         Route::get('/print-shipping/{transaction}', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping.transaction');
 
+        // Preview Page (แสดงฉลากสำหรับพิมพ์)
+        Route::get('/preview', [PosLabelController::class, 'showPreview'])->name('preview');
+
         // API endpoints
         Route::get('/api/products', [PosLabelController::class, 'getProducts'])->name('api.products');
         Route::get('/api/search-products', [PosLabelController::class, 'searchProducts'])->name('api.search-products');

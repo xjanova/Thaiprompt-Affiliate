@@ -337,6 +337,10 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
             Route::get('/', [\App\Http\Controllers\Seller\SellerLabelController::class, 'index'])->name('index');
             Route::get('/print-product', [\App\Http\Controllers\Seller\SellerLabelController::class, 'printProductLabels'])->name('print-product');
             Route::get('/print-shipping', [\App\Http\Controllers\Seller\SellerLabelController::class, 'printShippingLabel'])->name('print-shipping');
+
+            // Preview Page (แสดงฉลากสำหรับพิมพ์)
+            Route::get('/preview', [\App\Http\Controllers\Seller\SellerLabelController::class, 'showPreview'])->name('preview');
+
             Route::get('/history', [\App\Http\Controllers\Seller\SellerLabelController::class, 'history'])->name('history');
             Route::get('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'show'])->name('show');
             Route::delete('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'destroy'])->name('destroy');

@@ -516,6 +516,71 @@ class SellerLabelController extends Controller
     }
 
     /**
+     * แสดงหน้า Preview สำหรับพิมพ์ฉลาก (Seller)
+     *
+     * @param Request $request
+     * @return View
+     */
+    public function showPreview(Request $request): View
+    {
+        $validated = $request->validate([
+            'template_id' => 'required|exists:label_templates,id',
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        // ✅ หา store_id จาก VendorStore
+        $storeId = \App\Models\VendorStore::where('user_id', auth()->id())->value('id');
+
+        if (!$storeId) {
+            abort(403, 'ไม่พบร้านค้าของคุณ');
+        }
+
+        $template = LabelTemplate::find($validated['template_id']);
+
+        // เตรียมข้อมูลสินค้า (ต้องเป็นของร้านตัวเองเท่านั้น)
+        $labelsData = [];
+        $totalLabels = 0;
+
+        foreach ($validated['products'] as $item) {
+            $product = Product::where('id', $item['product_id'])
+                ->where('store_id', $storeId) // ✅ ตรวจสอบว่าเป็นสินค้าของร้านตัวเอง
+                ->firstOrFail();
+
+            $quantity = $item['quantity'];
+            $totalLabels += $quantity;
+
+            // สร้างฉลากตามจำนวนที่ต้องการ
+            for ($i = 0; $i < $quantity; $i++) {
+                $labelsData[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'barcode' => $product->barcode ?? $product->sku,
+                    'sku' => $product->sku,
+                    'price' => number_format($product->price, 2),
+                    'price_raw' => $product->price,
+                    'image' => $product->image_url ?? $product->main_image_url,
+                ];
+            }
+        }
+
+        // คำนวณจำนวนแผ่น
+        $sheetsCount = 1;
+        if (!$template->is_continuous_roll) {
+            $labelsPerSheet = $template->labels_per_sheet;
+            $sheetsCount = ceil($totalLabels / $labelsPerSheet);
+        }
+
+        return view('seller.pos.labels.preview', compact(
+            'template',
+            'labelsData',
+            'totalLabels',
+            'sheetsCount'
+        ));
+    }
+
+    /**
      * ดึงประวัติการพิมพ์ (เฉพาะของ Seller)
      *
      * @param Request $request

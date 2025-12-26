@@ -298,6 +298,7 @@ function productLabelPrinter() {
             }
 
             try {
+                // 1. บันทึกข้อมูลการพิมพ์ก่อน
                 const response = await fetch('{{ route('seller.pos.labels.api.print') }}', {
                     method: 'POST',
                     headers: {
@@ -314,8 +315,43 @@ function productLabelPrinter() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('บันทึกการพิมพ์สำเร็จ');
-                    window.print();
+                    // 2. เปิดหน้า Preview ในหน้าต่างใหม่
+                    const previewUrl = new URL('{{ route('seller.pos.labels.preview') }}', window.location.origin);
+                    previewUrl.searchParams.append('template_id', this.selectedTemplate);
+
+                    // ส่งข้อมูล products ผ่าน POST
+                    const form = document.createElement('form');
+                    form.method = 'GET';
+                    form.action = previewUrl.toString();
+                    form.target = '_blank';
+
+                    // เพิ่ม template_id
+                    const templateInput = document.createElement('input');
+                    templateInput.type = 'hidden';
+                    templateInput.name = 'template_id';
+                    templateInput.value = this.selectedTemplate;
+                    form.appendChild(templateInput);
+
+                    // เพิ่ม products
+                    this.selectedProducts.forEach((product, index) => {
+                        const productIdInput = document.createElement('input');
+                        productIdInput.type = 'hidden';
+                        productIdInput.name = `products[${index}][product_id]`;
+                        productIdInput.value = product.product_id;
+                        form.appendChild(productIdInput);
+
+                        const quantityInput = document.createElement('input');
+                        quantityInput.type = 'hidden';
+                        quantityInput.name = `products[${index}][quantity]`;
+                        quantityInput.value = product.quantity;
+                        form.appendChild(quantityInput);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+
+                    // 3. ล้างรายการ
                     this.clearSelection();
                 } else {
                     alert('เกิดข้อผิดพลาด: ' + data.message);
