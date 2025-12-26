@@ -112,6 +112,27 @@
         </div>
 
         <div class="flex items-center gap-3">
+            {{-- Zoom Controls --}}
+            <div class="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <button @click="zoomOut()"
+                        class="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
+                        title="ซูมออก (Ctrl + -)">
+                    <i class="fas fa-search-minus text-gray-700 dark:text-gray-300"></i>
+                </button>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 min-w-[60px] text-center"
+                      x-text="Math.round(canvasScale * 50) + '%'"></span>
+                <button @click="zoomIn()"
+                        class="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition"
+                        title="ซูมเข้า (Ctrl + +)">
+                    <i class="fas fa-search-plus text-gray-700 dark:text-gray-300"></i>
+                </button>
+                <button @click="resetZoom()"
+                        class="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition ml-1"
+                        title="รีเซ็ต (Ctrl + 0)">
+                    <i class="fas fa-undo text-gray-700 dark:text-gray-300"></i>
+                </button>
+            </div>
+
             <button @click="showPreview = !showPreview"
                     class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
                 <i class="fas fa-eye mr-2"></i>
@@ -587,6 +608,22 @@ function labelDesigner() {
                 this.isDragging = false;
                 this.isResizing = false;
             });
+
+            // Add keyboard shortcuts for zoom
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === '+' || e.key === '=') {
+                        e.preventDefault();
+                        this.zoomIn();
+                    } else if (e.key === '-' || e.key === '_') {
+                        e.preventDefault();
+                        this.zoomOut();
+                    } else if (e.key === '0') {
+                        e.preventDefault();
+                        this.resetZoom();
+                    }
+                }
+            });
         },
 
         addElement(type) {
@@ -815,6 +852,19 @@ function labelDesigner() {
             } finally {
                 this.saving = false;
             }
+        },
+
+        // Zoom controls
+        zoomIn() {
+            this.canvasScale = Math.min(this.canvasScale + 0.5, 5); // Max 250%
+        },
+
+        zoomOut() {
+            this.canvasScale = Math.max(this.canvasScale - 0.5, 1); // Min 50%
+        },
+
+        resetZoom() {
+            this.canvasScale = 2; // Default 100%
         }
     }
 }
