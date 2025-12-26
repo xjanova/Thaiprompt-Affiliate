@@ -21,6 +21,7 @@ class Product extends Model
         'name',
         'slug',
         'sku',
+        'barcode',
         'description',
         'short_description',
         'price',
@@ -708,5 +709,18 @@ class Product extends Model
         return $this->mlmProductPv()
             ->where('mlm_plan_id', $planId)
             ->first();
+    }
+
+    /**
+     * ดึง barcode (ใช้ SKU ถ้า barcode ไม่มี)
+     *
+     * Accessor สำหรับ backward compatibility กับระบบเก่า
+     * ที่อาจยังไม่มี barcode field
+     *
+     * @return string|null
+     */
+    public function getBarcodeOrSkuAttribute(): string|null
+    {
+        return $this->barcode ?? $this->sku;
     }
 }

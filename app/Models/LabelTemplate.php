@@ -86,6 +86,11 @@ class LabelTemplate extends Model
         'is_active',
         'usage_count',
         'thumbnail_path',
+        // POS specific fields
+        'is_pos_template',
+        'pos_category',
+        'printer_type',
+        'is_continuous_roll',
     ];
 
     /**
@@ -111,6 +116,9 @@ class LabelTemplate extends Model
         'is_system' => 'boolean',
         'is_active' => 'boolean',
         'usage_count' => 'integer',
+        // POS specific casts
+        'is_pos_template' => 'boolean',
+        'is_continuous_roll' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -304,5 +312,145 @@ class LabelTemplate extends Model
             'quality' => 'high',
             'mirror' => false,
         ];
+    }
+
+    /**
+     * ความสัมพันธ์กับ PosLabelPrints
+     *
+     * @return HasMany
+     */
+    public function posLabelPrints(): HasMany
+    {
+        return $this->hasMany(PosLabelPrint::class, 'template_id');
+    }
+
+    /**
+     * Scope: เฉพาะ template สำหรับ POS
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePosTemplates($query)
+    {
+        return $query->where('is_pos_template', true);
+    }
+
+    /**
+     * Scope: กรองตาม POS category
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $category
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForPosCategory($query, string $category)
+    {
+        return $query->where('pos_category', $category);
+    }
+
+    /**
+     * Scope: เฉพาะ template สำหรับ Product Label
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeProductLabels($query)
+    {
+        return $query->where('pos_category', 'product_label');
+    }
+
+    /**
+     * Scope: เฉพาะ template สำหรับ Shipping Label
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeShippingLabels($query)
+    {
+        return $query->where('pos_category', 'shipping_label');
+    }
+
+    /**
+     * Scope: รองรับเครื่องพิมพ์แบบม้วน
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeContinuousRoll($query)
+    {
+        return $query->where('is_continuous_roll', true);
+    }
+
+    /**
+     * Scope: กรองตามประเภทเครื่องพิมพ์
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForPrinterType($query, string $type)
+    {
+        return $query->where(function ($q) use ($type) {
+            $q->where('printer_type', $type)
+              ->orWhere('printer_type', 'any');
+        });
+    }
+
+    /**
+     * ตรวจสอบว่าเป็น template สำหรับ POS หรือไม่
+     *
+     * @return bool
+     */
+    public function isPosTemplate(): bool
+    {
+        return $this->is_pos_template === true;
+    }
+
+    /**
+     * ตรวจสอบว่ารองรับการพิมพ์แบบม้วนหรือไม่
+     *
+     * @return bool
+     */
+    public function supportsContinuousRoll(): bool
+    {
+        return $this->is_continuous_roll === true;
+    }
+
+    /**
+     * ดึงชื่อประเภท POS category
+     *
+     * @return string|null
+     */
+    public function getPosCategoryNameAttribute(): ?string
+    {
+        if (!$this->pos_category) {
+            return null;
+        }
+
+        return match($this->pos_category) {
+            'product_label' => 'ฉลากสินค้า',
+            'shipping_label' => 'ใบปะสินค้า',
+            'price_tag' => 'ฉลากราคา',
+            'barcode_only' => 'Barcode',
+            'receipt' => 'ใบเสร็จ',
+            'other' => 'อื่นๆ',
+            default => $this->pos_category,
+        };
+    }
+
+    /**
+     * ดึงชื่อประเภทเครื่องพิมพ์
+     *
+     * @return string
+     */
+    public function getPrinterTypeNameAttribute(): string
+    {
+        return match($this->printer_type) {
+            'thermal_roll' => 'Thermal Roll (ม้วน)',
+            'thermal_label' => 'Thermal Label (ฉลาก)',
+            'inkjet' => 'Inkjet',
+            'laser' => 'Laser',
+            'any' => 'ทุกประเภท',
+            default => $this->printer_type ?? 'ทุกประเภท',
+        };
     }
 }

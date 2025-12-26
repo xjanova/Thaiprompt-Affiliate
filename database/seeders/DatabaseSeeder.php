@@ -161,6 +161,7 @@ class DatabaseSeeder extends Seeder
             // 17. Label & Barcode System
             LabelPaperSizeSeeder::class,        // 🆕 ขนาดกระดาษมาตรฐานสำหรับฉลาก (A4, สติ๊กเกอร์, ใบเสร็จ, Zebra, DYMO, Brother)
             LabelTemplateSeeder::class,         // 🆕 เทมเพลตฉลากเริ่มต้น (ป้ายราคา, ฉลากจัดส่ง, Food Passport, ฉลากเปล่า)
+            PosLabelTemplateSeeder::class,      // 🆕 POS Label Templates (Product Label, Shipping Label for POS)
 
             // 18. Community Forum System
             ForumCategorySeeder::class,         // 🆕 หมวดหมู่ฟอรั่ม (MLM, E-commerce, AI, Crypto, Help, etc.)

@@ -62,6 +62,7 @@ use App\Http\Controllers\Admin\PosDashboardController;
 use App\Http\Controllers\Admin\PosDeviceController;
 use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
+use App\Http\Controllers\Admin\Pos\PosLabelController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\AppSettingController;
 use App\Http\Controllers\Admin\AppThemeSettingController;
@@ -1817,6 +1818,33 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::get('advertisements/{advertisement}/preview', [PosAdvertisementController::class, 'preview'])->name('advertisements.preview');
     Route::post('advertisements/{advertisement}/duplicate', [PosAdvertisementController::class, 'duplicate'])->name('advertisements.duplicate');
     Route::get('advertisements-analytics', [PosAdvertisementController::class, 'analytics'])->name('advertisements.analytics');
+
+    // Label Printing Management
+    Route::prefix('labels')->name('labels.')->group(function () {
+        // Dashboard
+        Route::get('/', [PosLabelController::class, 'index'])->name('index');
+
+        // Product Label Printing
+        Route::get('/print-product', [PosLabelController::class, 'printProductLabels'])->name('print-product');
+
+        // Shipping Label Printing
+        Route::get('/print-shipping', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping');
+        Route::get('/print-shipping/{transaction}', [PosLabelController::class, 'printShippingLabel'])->name('print-shipping.transaction');
+
+        // API endpoints
+        Route::get('/api/search-products', [PosLabelController::class, 'searchProducts'])->name('api.search-products');
+        Route::post('/api/preview', [PosLabelController::class, 'preview'])->name('api.preview');
+        Route::post('/api/print', [PosLabelController::class, 'print'])->name('api.print');
+        Route::post('/api/print-shipping/{transaction}', [PosLabelController::class, 'printShippingFromTransaction'])->name('api.print-shipping');
+        Route::get('/api/templates', [PosLabelController::class, 'getTemplates'])->name('api.templates');
+        Route::get('/api/paper-sizes', [PosLabelController::class, 'getPaperSizes'])->name('api.paper-sizes');
+        Route::post('/api/batch-session', [PosLabelController::class, 'createBatchSession'])->name('api.batch-session');
+
+        // Print History
+        Route::get('/history', [PosLabelController::class, 'history'])->name('history');
+        Route::get('/history/{print}', [PosLabelController::class, 'show'])->name('show');
+        Route::delete('/history/{print}', [PosLabelController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // Theme Management
