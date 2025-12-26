@@ -130,10 +130,10 @@ class PosLabelController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'barcode' => $product->barcode,
+                    'barcode' => $product->barcode_or_sku, // Fallback to SKU if barcode is null
                     'sku' => $product->sku,
                     'price' => $product->price,
-                    'image' => $product->image_url,
+                    'image' => $product->image_url ?? $product->main_image_url,
                 ];
             });
 
@@ -226,7 +226,7 @@ class PosLabelController extends Controller
                 $productsData[] = [
                     'product_id' => $product->id,
                     'product_name' => $product->name,
-                    'barcode' => $product->barcode,
+                    'barcode' => $product->barcode_or_sku, // Fallback to SKU
                     'sku' => $product->sku,
                     'price' => $product->price,
                     'quantity' => $quantity,
@@ -310,7 +310,7 @@ class PosLabelController extends Controller
                     return [
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
-                        'barcode' => $item->product_barcode,
+                        'barcode' => $item->product_barcode ?? ($item->product->barcode_or_sku ?? ''),
                         'sku' => $item->product->sku ?? '',
                         'price' => $item->unit_price,
                         'quantity' => $item->quantity,
