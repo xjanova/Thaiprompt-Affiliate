@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.12] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2385 from xjanova/claude/add-barcode-label-printing-Dy1xJ (e66faeb3)
+- feat(pos): add zoom in/out controls to label designer (2b1282a9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.420.11] - 2025-12-26
 
 ### ✨ Features
