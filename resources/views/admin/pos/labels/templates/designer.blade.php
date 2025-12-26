@@ -609,11 +609,11 @@ function labelDesigner() {
                 element.color = '#000000';
                 element.textAlign = 'left';
             } else if (type === 'barcode') {
-                element.content = '{{barcode}}';
+                element.content = '@{{ barcode }}';
                 element.format = 'CODE128';
                 element.showText = true;
             } else if (type === 'qrcode') {
-                element.content = '{{product_url}}';
+                element.content = '@{{ product_url }}';
             } else if (type === 'image') {
                 element.src = '';
             } else if (type === 'shape') {
