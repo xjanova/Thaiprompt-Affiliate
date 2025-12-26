@@ -849,6 +849,7 @@ return [
                 ['label' => 'Session', 'route' => 'seller.pos.sessions'],
                 ['label' => 'หมวดหมู่', 'route' => 'seller.pos.categories'],
                 ['label' => 'โฆษณา', 'route' => 'seller.pos.advertisements'],
+                ['label' => 'ฉลาก Barcode', 'route' => 'seller.pos.labels.index'],
                 ['label' => 'ตั้งค่า POS', 'route' => 'seller.pos.settings'],
             ],
         ],

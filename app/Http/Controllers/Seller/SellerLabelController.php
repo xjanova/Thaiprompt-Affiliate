@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Pos;
+namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
 use App\Models\LabelTemplate;
@@ -16,14 +16,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * PosLabelController
+ * SellerLabelController
  *
- * จัดการระบบพิมพ์ฉลากสำหรับ POS
+ * จัดการระบบพิมพ์ฉลากสำหรับ Seller POS
  * รองรับทั้ง Product Labels และ Shipping Labels
+ * Filter เฉพาะสินค้าของ Seller
  *
  * @author Claude AI
  */
-class PosLabelController extends Controller
+class SellerLabelController extends Controller
 {
     /**
      * แสดงหน้า Dashboard ของ Label Printing
@@ -32,16 +33,23 @@ class PosLabelController extends Controller
      */
     public function index(): View
     {
-        // สรุปสถิติการพิมพ์
+        $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
+
+        // สรุปสถิติการพิมพ์ (เฉพาะของ Seller)
         $stats = [
-            'total_prints' => PosLabelPrint::count(),
-            'today_prints' => PosLabelPrint::whereDate('created_at', today())->count(),
-            'this_month_prints' => PosLabelPrint::whereMonth('created_at', now()->month)->count(),
-            'total_labels' => PosLabelPrint::sum('total_labels'),
+            'total_prints' => PosLabelPrint::where('user_id', auth()->id())->count(),
+            'today_prints' => PosLabelPrint::where('user_id', auth()->id())
+                ->whereDate('created_at', today())
+                ->count(),
+            'this_month_prints' => PosLabelPrint::where('user_id', auth()->id())
+                ->whereMonth('created_at', now()->month)
+                ->count(),
+            'total_labels' => PosLabelPrint::where('user_id', auth()->id())->sum('total_labels'),
         ];
 
-        // ประวัติการพิมพ์ล่าสุด
+        // ประวัติการพิมพ์ล่าสุด (เฉพาะของ Seller)
         $recentPrints = PosLabelPrint::with(['user', 'template', 'transaction'])
+            ->where('user_id', auth()->id())
             ->latest()
             ->limit(10)
             ->get();
@@ -52,7 +60,7 @@ class PosLabelController extends Controller
             ->popular(5)
             ->get();
 
-        return view('admin.pos.labels.index', compact(
+        return view('seller.pos.labels.index', compact(
             'stats',
             'recentPrints',
             'popularTemplates'
@@ -78,7 +86,7 @@ class PosLabelController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('admin.pos.labels.print-product', compact('templates', 'paperSizes'));
+        return view('seller.pos.labels.print-product', compact('templates', 'paperSizes'));
     }
 
     /**
@@ -101,7 +109,7 @@ class PosLabelController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('admin.pos.labels.print-shipping', compact(
+        return view('seller.pos.labels.print-shipping', compact(
             'templates',
             'paperSizes',
             'transaction'
@@ -109,7 +117,7 @@ class PosLabelController extends Controller
     }
 
     /**
-     * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (เฉพาะร้าน Premium)
+     * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (เฉพาะสินค้าของ Seller)
      *
      * @param Request $request
      * @return JsonResponse
@@ -117,6 +125,7 @@ class PosLabelController extends Controller
     public function searchProducts(Request $request): JsonResponse
     {
         $query = $request->input('q', '');
+        $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
 
         $products = Product::where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -124,9 +133,9 @@ class PosLabelController extends Controller
                   ->orWhere('sku', 'like', "%{$query}%");
             })
             ->where('is_active', true)
-            // Filter เฉพาะสินค้าจากร้าน Premium
-            ->whereHas('store.premiumStore', function ($q) {
-                $q->where('status', 'active');
+            ->when($storeId, function ($q) use ($storeId) {
+                // Filter เฉพาะสินค้าของ Seller
+                $q->where('store_id', $storeId);
             })
             ->limit(20)
             ->get()
@@ -138,7 +147,6 @@ class PosLabelController extends Controller
                     'sku' => $product->sku,
                     'price' => $product->price,
                     'image' => $product->image_url ?? $product->main_image_url,
-                    'store_name' => $product->store->store_name ?? null,
                 ];
             });
 
@@ -218,17 +226,16 @@ class PosLabelController extends Controller
         DB::beginTransaction();
         try {
             $template = LabelTemplate::find($validated['template_id']);
+            $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
 
-            // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้าน Premium
+            // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้านตัวเอง
             $productIds = collect($validated['products'])->pluck('product_id');
-            $premiumProductsCount = Product::whereIn('id', $productIds)
-                ->whereHas('store.premiumStore', function ($q) {
-                    $q->where('status', 'active');
-                })
+            $ownProductsCount = Product::whereIn('id', $productIds)
+                ->where('store_id', $storeId)
                 ->count();
 
-            if ($premiumProductsCount !== count($productIds)) {
-                throw new \Exception('มีสินค้าที่ไม่ใช่ของร้าน Premium ในรายการ');
+            if ($ownProductsCount !== count($productIds)) {
+                throw new \Exception('มีสินค้าที่ไม่ใช่ของร้านคุณในรายการ');
             }
 
             // เตรียมข้อมูลสินค้า
@@ -429,7 +436,7 @@ class PosLabelController extends Controller
     }
 
     /**
-     * ดึงประวัติการพิมพ์
+     * ดึงประวัติการพิมพ์ (เฉพาะของ Seller)
      *
      * @param Request $request
      * @return View
@@ -437,6 +444,7 @@ class PosLabelController extends Controller
     public function history(Request $request): View
     {
         $query = PosLabelPrint::with(['user', 'template', 'transaction'])
+            ->where('user_id', auth()->id()) // Filter เฉพาะของ Seller
             ->latest();
 
         // Filter by type
@@ -459,7 +467,7 @@ class PosLabelController extends Controller
 
         $prints = $query->paginate(20);
 
-        return view('admin.pos.labels.history', compact('prints'));
+        return view('seller.pos.labels.history', compact('prints'));
     }
 
     /**
@@ -470,9 +478,14 @@ class PosLabelController extends Controller
      */
     public function show(PosLabelPrint $print): View
     {
+        // ตรวจสอบสิทธิ์ (ต้องเป็นของ Seller เอง)
+        if ($print->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
         $print->load(['user', 'template', 'transaction', 'device']);
 
-        return view('admin.pos.labels.show', compact('print'));
+        return view('seller.pos.labels.show', compact('print'));
     }
 
     /**
@@ -483,10 +496,15 @@ class PosLabelController extends Controller
      */
     public function destroy(PosLabelPrint $print): RedirectResponse
     {
+        // ตรวจสอบสิทธิ์ (ต้องเป็นของ Seller เอง)
+        if ($print->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
         $print->delete();
 
         return redirect()
-            ->route('admin.pos.labels.history')
+            ->route('seller.pos.labels.history')
             ->with('success', 'ลบรายการสำเร็จ');
     }
 

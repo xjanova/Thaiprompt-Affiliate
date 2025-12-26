@@ -331,6 +331,23 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         Route::get('/terminals/{terminal}', [SellerPosController::class, 'showTerminal'])->name('terminals.show');
         Route::post('/terminals/{terminal}/toggle-status', [SellerPosController::class, 'toggleTerminalStatus'])->name('terminals.toggle-status');
         Route::delete('/terminals/{terminal}', [SellerPosController::class, 'deleteTerminal'])->name('terminals.destroy');
+
+        // Label Printing (Barcode Labels)
+        Route::prefix('labels')->name('labels.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Seller\SellerLabelController::class, 'index'])->name('index');
+            Route::get('/print-product', [\App\Http\Controllers\Seller\SellerLabelController::class, 'printProductLabels'])->name('print-product');
+            Route::get('/print-shipping', [\App\Http\Controllers\Seller\SellerLabelController::class, 'printShippingLabel'])->name('print-shipping');
+            Route::get('/history', [\App\Http\Controllers\Seller\SellerLabelController::class, 'history'])->name('history');
+            Route::get('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'show'])->name('show');
+            Route::delete('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'destroy'])->name('destroy');
+
+            // API endpoints
+            Route::get('/api/search-products', [\App\Http\Controllers\Seller\SellerLabelController::class, 'searchProducts'])->name('api.search-products');
+            Route::post('/api/preview', [\App\Http\Controllers\Seller\SellerLabelController::class, 'preview'])->name('api.preview');
+            Route::post('/api/print', [\App\Http\Controllers\Seller\SellerLabelController::class, 'print'])->name('api.print');
+            Route::get('/api/templates', [\App\Http\Controllers\Seller\SellerLabelController::class, 'getTemplates'])->name('api.templates');
+            Route::get('/api/paper-sizes', [\App\Http\Controllers\Seller\SellerLabelController::class, 'getPaperSizes'])->name('api.paper-sizes');
+        });
     });
 
     // ========================================
