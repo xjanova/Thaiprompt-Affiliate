@@ -2,7 +2,7 @@
 
 @section('title', $mission->display_title)
 
-@push('head')
+@section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <div class="relative overflow-hidden bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 dark:from-cyan-800 dark:via-blue-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8">
         <div class="absolute inset-0 opacity-10">
