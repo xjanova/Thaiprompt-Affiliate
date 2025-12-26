@@ -109,7 +109,7 @@ class PosLabelController extends Controller
     }
 
     /**
-     * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (เฉพาะร้าน Premium)
+     * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (Admin เห็นทั้งหมด)
      *
      * @param Request $request
      * @return JsonResponse
@@ -124,10 +124,7 @@ class PosLabelController extends Controller
                   ->orWhere('sku', 'like', "%{$query}%");
             })
             ->where('is_active', true)
-            // Filter เฉพาะสินค้าจากร้าน Premium
-            ->whereHas('store.premiumStore', function ($q) {
-                $q->where('status', 'active');
-            })
+            ->with('store') // โหลด relationship store
             ->limit(20)
             ->get()
             ->map(function ($product) {
@@ -218,18 +215,6 @@ class PosLabelController extends Controller
         DB::beginTransaction();
         try {
             $template = LabelTemplate::find($validated['template_id']);
-
-            // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้าน Premium
-            $productIds = collect($validated['products'])->pluck('product_id');
-            $premiumProductsCount = Product::whereIn('id', $productIds)
-                ->whereHas('store.premiumStore', function ($q) {
-                    $q->where('status', 'active');
-                })
-                ->count();
-
-            if ($premiumProductsCount !== count($productIds)) {
-                throw new \Exception('มีสินค้าที่ไม่ใช่ของร้าน Premium ในรายการ');
-            }
 
             // เตรียมข้อมูลสินค้า
             $productsData = [];

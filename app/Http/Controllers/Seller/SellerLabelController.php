@@ -125,7 +125,17 @@ class SellerLabelController extends Controller
     public function searchProducts(Request $request): JsonResponse
     {
         $query = $request->input('q', '');
-        $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
+
+        // ✅ หา store_id จาก VendorStore ที่ user_id = auth user
+        $storeId = \App\Models\VendorStore::where('user_id', auth()->id())->value('id');
+
+        if (!$storeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบร้านค้าของคุณ',
+                'data' => [],
+            ]);
+        }
 
         $products = Product::where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
@@ -133,10 +143,7 @@ class SellerLabelController extends Controller
                   ->orWhere('sku', 'like', "%{$query}%");
             })
             ->where('is_active', true)
-            ->when($storeId, function ($q) use ($storeId) {
-                // Filter เฉพาะสินค้าของ Seller
-                $q->where('store_id', $storeId);
-            })
+            ->where('store_id', $storeId) // Filter เฉพาะสินค้าของ Seller
             ->limit(20)
             ->get()
             ->map(function ($product) {
@@ -226,7 +233,13 @@ class SellerLabelController extends Controller
         DB::beginTransaction();
         try {
             $template = LabelTemplate::find($validated['template_id']);
-            $storeId = auth()->user()->seller_store_id ?? auth()->user()->store_id;
+
+            // ✅ หา store_id จาก VendorStore ที่ user_id = auth user
+            $storeId = \App\Models\VendorStore::where('user_id', auth()->id())->value('id');
+
+            if (!$storeId) {
+                throw new \Exception('ไม่พบร้านค้าของคุณ');
+            }
 
             // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้านตัวเอง
             $productIds = collect($validated['products'])->pluck('product_id');
