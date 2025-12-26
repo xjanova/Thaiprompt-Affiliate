@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.420.1] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2374 from xjanova/claude/fix-section-error-2eJ1F (1eb52413)
+- fix: correct Blade section structure in video missions show page (a2c4dab7)
+### 🔧 Other Changes
+
+
 ## [v3.420.0] - 2025-12-25
 
 ### ✨ Features
