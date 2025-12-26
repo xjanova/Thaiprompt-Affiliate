@@ -342,6 +342,7 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
             Route::delete('/{print}', [\App\Http\Controllers\Seller\SellerLabelController::class, 'destroy'])->name('destroy');
 
             // API endpoints
+            Route::get('/api/products', [\App\Http\Controllers\Seller\SellerLabelController::class, 'getProducts'])->name('api.products');
             Route::get('/api/search-products', [\App\Http\Controllers\Seller\SellerLabelController::class, 'searchProducts'])->name('api.search-products');
             Route::post('/api/preview', [\App\Http\Controllers\Seller\SellerLabelController::class, 'preview'])->name('api.preview');
             Route::post('/api/print', [\App\Http\Controllers\Seller\SellerLabelController::class, 'print'])->name('api.print');
