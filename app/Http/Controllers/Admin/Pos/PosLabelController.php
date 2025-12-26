@@ -471,6 +471,61 @@ class PosLabelController extends Controller
     }
 
     /**
+     * แสดงหน้า Preview สำหรับพิมพ์ฉลาก
+     *
+     * @param Request $request
+     * @return View
+     */
+    public function showPreview(Request $request): View
+    {
+        $validated = $request->validate([
+            'template_id' => 'required|exists:label_templates,id',
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $template = LabelTemplate::find($validated['template_id']);
+
+        // เตรียมข้อมูลสินค้า
+        $labelsData = [];
+        $totalLabels = 0;
+
+        foreach ($validated['products'] as $item) {
+            $product = Product::find($item['product_id']);
+            $quantity = $item['quantity'];
+            $totalLabels += $quantity;
+
+            // สร้างฉลากตามจำนวนที่ต้องการ
+            for ($i = 0; $i < $quantity; $i++) {
+                $labelsData[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'barcode' => $product->barcode ?? $product->sku,
+                    'sku' => $product->sku,
+                    'price' => number_format($product->price, 2),
+                    'price_raw' => $product->price,
+                    'image' => $product->image_url ?? $product->main_image_url,
+                ];
+            }
+        }
+
+        // คำนวณจำนวนแผ่น
+        $sheetsCount = 1;
+        if (!$template->is_continuous_roll) {
+            $labelsPerSheet = $template->labels_per_sheet;
+            $sheetsCount = ceil($totalLabels / $labelsPerSheet);
+        }
+
+        return view('admin.pos.labels.preview', compact(
+            'template',
+            'labelsData',
+            'totalLabels',
+            'sheetsCount'
+        ));
+    }
+
+    /**
      * ดึงประวัติการพิมพ์
      *
      * @param Request $request
