@@ -2,17 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\StakingPosition;
 use App\Models\RoiDistribution;
-use App\Models\User;
+use App\Models\StakingPosition;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class StakingService
 {
     protected WalletService $walletService;
+
     protected InvestmentService $investmentService;
 
     public function __construct(WalletService $walletService, InvestmentService $investmentService)
@@ -86,6 +85,7 @@ class StakingService
 
             if ($roiData['amount'] <= 0) {
                 DB::rollBack();
+
                 return [
                     'success' => false,
                     'error' => 'ROI amount is zero or negative',
@@ -113,8 +113,9 @@ class StakingService
             // Process distribution
             $processResult = $this->processDistribution($distribution);
 
-            if (!$processResult['success']) {
+            if (! $processResult['success']) {
                 DB::rollBack();
+
                 return $processResult;
             }
 
@@ -193,7 +194,7 @@ class StakingService
             $transaction = $this->walletService->deposit(
                 $wallet,
                 $distribution->roi_amount,
-                'ROI จากการลงทุน #' . $position->position_number,
+                'ROI จากการลงทุน #'.$position->position_number,
                 RoiDistribution::class,
                 $distribution->id,
                 [
@@ -233,7 +234,7 @@ class StakingService
             $plan = $position->investmentPlan;
 
             // Check if plan allows compound
-            if (!$plan->allow_compound) {
+            if (! $plan->allow_compound) {
                 return $this->processDistribution($distribution);
             }
 

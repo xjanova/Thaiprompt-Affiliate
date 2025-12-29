@@ -42,7 +42,7 @@ class ProcessMembershipRenewal extends Command
         try {
             $results = $this->retentionService->processMonthlyRenewal();
 
-            $this->info("✅ Renewal processing completed!");
+            $this->info('✅ Renewal processing completed!');
             $this->table(
                 ['Metric', 'Count'],
                 [
@@ -53,7 +53,7 @@ class ProcessMembershipRenewal extends Command
                 ]
             );
 
-            if (!empty($results['errors'])) {
+            if (! empty($results['errors'])) {
                 $this->error('⚠️  Errors occurred during processing:');
                 foreach ($results['errors'] as $error) {
                     $this->error("User ID {$error['user_id']}: {$error['error']}");
@@ -62,7 +62,8 @@ class ProcessMembershipRenewal extends Command
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('❌ Error processing renewal: ' . $e->getMessage());
+            $this->error('❌ Error processing renewal: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

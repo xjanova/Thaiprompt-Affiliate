@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductJourney;
-use App\Services\FoodTraceabilityService;
 use App\Http\Requests\FoodPassport\AddJourneyStageRequest;
 use App\Http\Resources\ProductJourneyResource;
-use Illuminate\Http\Request;
+use App\Models\ProductJourney;
+use App\Services\FoodTraceabilityService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class TraceabilityController extends Controller
 {
@@ -210,7 +210,7 @@ class TraceabilityController extends Controller
         }
 
         // Update temperature range
-        if (!empty($tempReadings)) {
+        if (! empty($tempReadings)) {
             $tempRange = $journey->temperature_range ?? ['min' => null, 'max' => null, 'avg' => null, 'readings' => []];
             $allReadings = array_merge($tempRange['readings'] ?? [], $tempReadings);
             $allReadings = array_slice($allReadings, -1000); // Keep last 1000 readings
@@ -226,7 +226,7 @@ class TraceabilityController extends Controller
         }
 
         // Update humidity range
-        if (!empty($humidityReadings)) {
+        if (! empty($humidityReadings)) {
             $humidityRange = $journey->humidity_range ?? ['min' => null, 'max' => null, 'avg' => null, 'readings' => []];
             $allReadings = array_merge($humidityRange['readings'] ?? [], $humidityReadings);
             $allReadings = array_slice($allReadings, -1000);

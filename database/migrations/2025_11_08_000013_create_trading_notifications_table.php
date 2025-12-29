@@ -27,7 +27,7 @@ return new class extends Migration
                 'bot_error',
                 'balance_low',
                 'daily_summary',
-                'system_alert'
+                'system_alert',
             ]);
 
             $table->string('title');

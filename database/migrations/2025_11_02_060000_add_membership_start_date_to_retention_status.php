@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง membership_retention_status มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('membership_retention_status')) {
+        if (! Schema::hasTable('membership_retention_status')) {
             return;
         }
 

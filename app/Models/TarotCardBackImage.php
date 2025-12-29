@@ -66,7 +66,7 @@ class TarotCardBackImage extends Model
     public function getImageUrlAttribute($value)
     {
         // ถ้าไม่มีค่า ใช้ default
-        if (!$value) {
+        if (! $value) {
             return asset('images/tarot/card-back-default.svg');
         }
 
@@ -84,7 +84,7 @@ class TarotCardBackImage extends Model
         // ถ้าเป็น path แบบไม่มี / นำหน้า (เช่น tarot/card-backs/xxx.webp)
         // แปลงเป็น storage URL
         if (str_starts_with($value, 'tarot/')) {
-            return asset('storage/' . $value);
+            return asset('storage/'.$value);
         }
 
         // ถ้าเป็น path แบบเดิม (เช่น /images/tarot/xxx.png)

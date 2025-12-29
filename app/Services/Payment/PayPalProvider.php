@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,12 +18,17 @@ use Illuminate\Support\Facades\Log;
 class PayPalProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $clientId;
+
     protected $clientSecret;
+
     protected $mode;
+
     protected $accessToken;
 
     protected const SANDBOX_URL = 'https://api-m.sandbox.paypal.com';
+
     protected const LIVE_URL = 'https://api-m.paypal.com';
 
     public function __construct()
@@ -38,15 +43,13 @@ class PayPalProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('PayPalProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('PayPalProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
 
     /**
      * Get API base URL
-     *
-     * @return string
      */
     protected function getApiUrl(): string
     {
@@ -56,20 +59,17 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Validate PayPal payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบว่า gateway พร้อมใช้งาน
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('PayPal gateway is not configured');
         }
 
         // ตรวจสอบว่า gateway เปิดใช้งาน
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('PayPal gateway is not active');
         }
 
@@ -90,9 +90,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Process PayPal payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     public function process(PaymentTransaction $transaction, array $data): array
@@ -101,7 +98,7 @@ class PayPalProvider implements PaymentProviderInterface
             // สร้าง PayPal Order
             $order = $this->createOrder($transaction, $data);
 
-            if (!$order || !isset($order['id'])) {
+            if (! $order || ! isset($order['id'])) {
                 throw new Exception('Failed to create PayPal order');
             }
 
@@ -145,10 +142,6 @@ class PayPalProvider implements PaymentProviderInterface
 
     /**
      * Verify PayPal payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -166,12 +159,13 @@ class PayPalProvider implements PaymentProviderInterface
             if ($status === 'COMPLETED') {
                 // ตรวจสอบจำนวนเงิน
                 $amount = $data['resource']['purchase_units'][0]['amount']['value'] ?? 0;
-                if (abs((float)$amount - $transaction->amount) > 0.01) {
+                if (abs((float) $amount - $transaction->amount) > 0.01) {
                     Log::warning('PayPal payment amount mismatch', [
                         'transaction_id' => $transaction->transaction_id,
                         'expected' => $transaction->amount,
                         'received' => $amount,
                     ]);
+
                     return false;
                 }
 
@@ -184,6 +178,7 @@ class PayPalProvider implements PaymentProviderInterface
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -191,9 +186,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Refund PayPal payment
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
@@ -202,7 +194,7 @@ class PayPalProvider implements PaymentProviderInterface
             // ต้องมี capture_id สำหรับการ refund
             $captureId = $transaction->metadata['capture_id'] ?? null;
 
-            if (!$captureId) {
+            if (! $captureId) {
                 throw new Exception('Capture ID not found for refund');
             }
 
@@ -233,7 +225,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Get access token from PayPal
      *
-     * @return string
      * @throws Exception
      */
     protected function getAccessToken(): string
@@ -244,7 +235,7 @@ class PayPalProvider implements PaymentProviderInterface
 
         $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
             ->asForm()
-            ->post($this->getApiUrl() . '/v1/oauth2/token', [
+            ->post($this->getApiUrl().'/v1/oauth2/token', [
                 'grant_type' => 'client_credentials',
             ]);
 
@@ -260,9 +251,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Create PayPal Order
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     protected function createOrder(PaymentTransaction $transaction, array $data): array
@@ -294,8 +282,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Capture PayPal Order
      *
-     * @param string $orderId
-     * @return array
      * @throws Exception
      */
     public function captureOrder(string $orderId): array
@@ -306,10 +292,6 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Create PayPal Refund
      *
-     * @param string $captureId
-     * @param float $amount
-     * @param string $currency
-     * @return array
      * @throws Exception
      */
     protected function createRefund(string $captureId, float $amount, string $currency): array
@@ -327,17 +309,13 @@ class PayPalProvider implements PaymentProviderInterface
     /**
      * Call PayPal API
      *
-     * @param string $endpoint
-     * @param array $payload
-     * @param string $method
-     * @return array
      * @throws Exception
      */
     protected function callPayPalApi(string $endpoint, array $payload = [], string $method = 'POST'): array
     {
         try {
             $accessToken = $this->getAccessToken();
-            $url = $this->getApiUrl() . '/' . $endpoint;
+            $url = $this->getApiUrl().'/'.$endpoint;
 
             $response = Http::withToken($accessToken)
                 ->timeout(30);
@@ -360,20 +338,17 @@ class PayPalProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
     /**
      * Get payment description
-     *
-     * @param PaymentTransaction $transaction
-     * @return string
      */
     protected function getDescription(PaymentTransaction $transaction): string
     {
         if ($transaction->type === 'order_payment' && $transaction->order) {
-            return 'Payment for Order #' . $transaction->order->order_number;
+            return 'Payment for Order #'.$transaction->order->order_number;
         }
 
         if ($transaction->type === 'wallet_topup') {
@@ -385,9 +360,6 @@ class PayPalProvider implements PaymentProviderInterface
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {

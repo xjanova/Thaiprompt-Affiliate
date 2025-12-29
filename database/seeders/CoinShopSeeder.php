@@ -14,8 +14,6 @@ class CoinShopSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลสินค้าตัวอย่าง
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class CoinShopSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (CoinShopProduct::count() > 0) {
             $this->command->info('มีข้อมูลสินค้าอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -234,6 +233,6 @@ class CoinShopSeeder extends Seeder
             CoinShopProduct::create($productData);
         }
 
-        $this->command->info('✅ Seed ข้อมูล Coin Shop Products สำเร็จ! (' . count($products) . ' รายการ)');
+        $this->command->info('✅ Seed ข้อมูล Coin Shop Products สำเร็จ! ('.count($products).' รายการ)');
     }
 }

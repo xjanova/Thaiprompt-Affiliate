@@ -2,13 +2,13 @@
 
 namespace App\Models\BotAutomation;
 
-use App\Models\User;
 use App\Models\AiBotProfile;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class BotAutomation extends Model
 {
@@ -137,7 +137,7 @@ class BotAutomation extends Model
     public function scopeDueForExecution($query)
     {
         return $query->where('is_active', true)
-                     ->where('next_execution_at', '<=', now());
+            ->where('next_execution_at', '<=', now());
     }
 
     /**
@@ -151,7 +151,7 @@ class BotAutomation extends Model
 
         $now = now();
 
-        return match($this->schedule_type) {
+        return match ($this->schedule_type) {
             'hourly' => $now->addHour(),
             'daily' => $now->addDay()->setTime(
                 $this->schedule_config['hour'] ?? 9,
@@ -169,12 +169,13 @@ class BotAutomation extends Model
      */
     protected function getNextCronExecution(): ?Carbon
     {
-        if (!$this->cron_expression) {
+        if (! $this->cron_expression) {
             return null;
         }
 
         try {
             $cron = new \Cron\CronExpression($this->cron_expression);
+
             return Carbon::instance($cron->getNextRunDate());
         } catch (\Exception $e) {
             return null;

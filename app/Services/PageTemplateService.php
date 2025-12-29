@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\PageBuilderTemplate;
-use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class PageTemplateService
 {

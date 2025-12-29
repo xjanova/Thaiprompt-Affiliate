@@ -6,7 +6,6 @@ use App\Models\TwoFactorSetting;
 use App\Models\TwoFactorUserSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
 
 /**
  * TwoFactorService - บริการจัดการ Two-Factor Authentication
@@ -31,14 +30,14 @@ class TwoFactorService
     public function isRequired(string $action, User $user, ?float $amount = null): bool
     {
         // Check global 2FA settings
-        if (!TwoFactorSetting::isRequiredFor($action, $user, $amount)) {
+        if (! TwoFactorSetting::isRequiredFor($action, $user, $amount)) {
             return false;
         }
 
         // Check user's 2FA settings
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings || !$userSettings->enabled) {
+        if (! $userSettings || ! $userSettings->enabled) {
             // If 2FA is required but user hasn't set it up, they must set it up
             return false;
         }
@@ -64,7 +63,7 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings || !$userSettings->enabled) {
+        if (! $userSettings || ! $userSettings->enabled) {
             return [
                 'success' => false,
                 'message' => '2FA ยังไม่ได้เปิดใช้งาน',
@@ -80,11 +79,11 @@ class TwoFactorService
             $isValid = $userSettings->verifyGoogle2FACode($code);
         } else {
             // ใช้ OTP (SMS/LINE/Email)
-            $result = $this->otpService->verifyOTPForUser($user, $code, '2fa_' . $action);
+            $result = $this->otpService->verifyOTPForUser($user, $code, '2fa_'.$action);
             $isValid = $result['success'] ?? false;
         }
 
-        if (!$isValid) {
+        if (! $isValid) {
             // Record failed attempt
             $userSettings->recordFailedVerification();
 
@@ -125,7 +124,7 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::getOrCreateForUser($user);
 
-        if (!$userSettings->enabled) {
+        if (! $userSettings->enabled) {
             return [
                 'success' => false,
                 'message' => '2FA ยังไม่ได้เปิดใช้งาน',
@@ -155,12 +154,12 @@ class TwoFactorService
         $channel = $userSettings->preferred_method;
 
         // Fallback to first available method if preferred is not available
-        if (!in_array($channel, $availableMethods)) {
+        if (! in_array($channel, $availableMethods)) {
             $channel = $availableMethods[0];
         }
 
         // Send OTP
-        $result = $this->otpService->sendOTPToUser($user, '2fa_' . $action, $channel);
+        $result = $this->otpService->sendOTPToUser($user, '2fa_'.$action, $channel);
 
         if ($result['success']) {
             // Store verification session
@@ -182,14 +181,14 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings) {
+        if (! $userSettings) {
             return [
                 'success' => false,
                 'message' => '2FA ยังไม่ได้ตั้งค่า',
             ];
         }
 
-        if (!$userSettings->verifyRecoveryCode($code)) {
+        if (! $userSettings->verifyRecoveryCode($code)) {
             return [
                 'success' => false,
                 'message' => 'รหัสกู้คืนไม่ถูกต้อง',
@@ -223,7 +222,7 @@ class TwoFactorService
         // ถ้าเลือก Google Authenticator
         if ($preferredMethod === 'authenticator') {
             // สร้าง secret key ถ้ายังไม่มี
-            if (!$userSettings->hasGoogle2FASecret()) {
+            if (! $userSettings->hasGoogle2FASecret()) {
                 $secret = $userSettings->generateGoogle2FASecret();
             }
 
@@ -245,10 +244,10 @@ class TwoFactorService
         }
 
         // วิธีอื่น (SMS, LINE, Email)
-        if (!$userSettings->isMethodAvailable($preferredMethod)) {
+        if (! $userSettings->isMethodAvailable($preferredMethod)) {
             return [
                 'success' => false,
-                'message' => 'กรุณายืนยัน ' . $preferredMethod . ' ก่อนเปิดใช้งาน 2FA',
+                'message' => 'กรุณายืนยัน '.$preferredMethod.' ก่อนเปิดใช้งาน 2FA',
             ];
         }
 
@@ -292,14 +291,14 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::getOrCreateForUser($user);
 
-        if (!$userSettings->hasGoogle2FASecret()) {
+        if (! $userSettings->hasGoogle2FASecret()) {
             return [
                 'success' => false,
                 'message' => 'กรุณาสร้าง QR Code ก่อน',
             ];
         }
 
-        if (!$userSettings->verifyGoogle2FACode($code)) {
+        if (! $userSettings->verifyGoogle2FACode($code)) {
             return [
                 'success' => false,
                 'message' => 'รหัสไม่ถูกต้อง กรุณาตรวจสอบรหัสจากแอป Google Authenticator',
@@ -319,7 +318,7 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings) {
+        if (! $userSettings) {
             return [
                 'success' => false,
                 'message' => '2FA ยังไม่ได้เปิดใช้งาน',
@@ -346,11 +345,11 @@ class TwoFactorService
         $userAgent = request()->userAgent();
         $ip = request()->ip();
 
-        if (!$userAgent) {
+        if (! $userAgent) {
             return null;
         }
 
-        return hash('sha256', $userAgent . '|' . $ip);
+        return hash('sha256', $userAgent.'|'.$ip);
     }
 
     /**
@@ -360,7 +359,7 @@ class TwoFactorService
     {
         $userAgent = request()->userAgent();
 
-        if (!$userAgent) {
+        if (! $userAgent) {
             return 'อุปกรณ์ที่ไม่รู้จัก';
         }
 
@@ -385,11 +384,11 @@ class TwoFactorService
     /**
      * Check if current session has passed 2FA
      */
-    public function isVerified(string $action = null): bool
+    public function isVerified(?string $action = null): bool
     {
         $verifiedAt = Session::get('2fa_verified_at');
 
-        if (!$verifiedAt) {
+        if (! $verifiedAt) {
             return false;
         }
 
@@ -400,12 +399,14 @@ class TwoFactorService
         if ($verifiedTime->addMinutes($gracePeriod)->isPast()) {
             Session::forget('2fa_verified_at');
             Session::forget('2fa_verified_for');
+
             return false;
         }
 
         // Check if verified for specific action
         if ($action) {
             $verifiedFor = Session::get('2fa_verified_for');
+
             return $verifiedFor === $action;
         }
 
@@ -429,7 +430,7 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings) {
+        if (! $userSettings) {
             return [
                 'enabled' => false,
                 'preferred_method' => 'authenticator',
@@ -460,7 +461,7 @@ class TwoFactorService
     {
         $userSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings || !$userSettings->enabled) {
+        if (! $userSettings || ! $userSettings->enabled) {
             return [
                 'success' => false,
                 'message' => 'กรุณาเปิดใช้งาน 2FA ก่อน',

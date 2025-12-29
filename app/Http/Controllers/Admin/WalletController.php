@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Models\User;
 use App\Services\WalletService;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class WalletController extends Controller
 {
@@ -47,7 +47,7 @@ class WalletController extends Controller
      */
     public function allWallets(Request $request)
     {
-        if (!auth()->user()->hasPermission('view_all_wallets')) {
+        if (! auth()->user()->hasPermission('view_all_wallets')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -123,9 +123,10 @@ class WalletController extends Controller
             );
 
             $action = $request->amount > 0 ? 'เพิ่ม' : 'หัก';
-            return redirect()->back()->with('success', "{$action}ยอดเงินสำเร็จ: " . number_format(abs($request->amount), 2) . ' บาท');
+
+            return redirect()->back()->with('success', "{$action}ยอดเงินสำเร็จ: ".number_format(abs($request->amount), 2).' บาท');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -143,11 +144,11 @@ class WalletController extends Controller
 
         try {
             $wallet->lockPermanent();
-            $this->walletService->logAction($wallet, 'wallet_locked', 'Wallet locked by admin: ' . auth()->user()->name, 'critical');
+            $this->walletService->logAction($wallet, 'wallet_locked', 'Wallet locked by admin: '.auth()->user()->name, 'critical');
 
             return redirect()->back()->with('success', 'ล็อกกระเป๋าเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -165,11 +166,11 @@ class WalletController extends Controller
 
         try {
             $wallet->unlock();
-            $this->walletService->logAction($wallet, 'wallet_unlocked', 'Wallet unlocked by admin: ' . auth()->user()->name, 'info');
+            $this->walletService->logAction($wallet, 'wallet_unlocked', 'Wallet unlocked by admin: '.auth()->user()->name, 'info');
 
             return redirect()->back()->with('success', 'ปลดล็อกกระเป๋าเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -261,7 +262,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'PIN ถูกตั้งค่าเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -270,7 +271,7 @@ class WalletController extends Controller
      */
     public function deposit(Request $request)
     {
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -292,9 +293,9 @@ class WalletController extends Controller
                 auth()->id()
             );
 
-            return redirect()->back()->with('success', 'ฝากเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท');
+            return redirect()->back()->with('success', 'ฝากเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -320,9 +321,9 @@ class WalletController extends Controller
                 $request->description ?? 'Withdrawal'
             );
 
-            return redirect()->back()->with('success', 'ถอนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท');
+            return redirect()->back()->with('success', 'ถอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -355,9 +356,9 @@ class WalletController extends Controller
                 $request->description ?? 'Transfer'
             );
 
-            return redirect()->back()->with('success', 'โอนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท ไปยัง ' . $toWallet->wallet_address);
+            return redirect()->back()->with('success', 'โอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท ไปยัง '.$toWallet->wallet_address);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -375,7 +376,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'กระเป๋าเงินถูกล็อกเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -393,7 +394,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'กระเป๋าเงินถูกปลดล็อกเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -402,7 +403,7 @@ class WalletController extends Controller
      */
     public function refund(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -426,9 +427,9 @@ class WalletController extends Controller
                 $request->reference_id
             );
 
-            return redirect()->back()->with('success', 'คืนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท');
+            return redirect()->back()->with('success', 'คืนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -437,7 +438,7 @@ class WalletController extends Controller
      */
     public function rollbackTransaction(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -458,19 +459,18 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'Rollback ธุรกรรมสำเร็จ');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * โอนเงินระหว่างกระเป๋าโดย Admin
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function adminTransfer(Request $request)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -495,24 +495,23 @@ class WalletController extends Controller
             );
 
             return redirect()->back()->with('success',
-                'โอนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท จาก ' .
-                $fromWallet->user->name . ' ไปยัง ' . $toWallet->user->name
+                'โอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท จาก '.
+                $fromWallet->user->name.' ไปยัง '.$toWallet->user->name
             );
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ระงับการใช้งานกระเป๋า (Suspend)
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function suspendUserWallet(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -528,20 +527,19 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ระงับกระเป๋าเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ยกเลิกการระงับกระเป๋า (Unsuspend)
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unsuspendUserWallet(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->isSuperAdmin() && ! auth()->user()->hasRole('admin')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -557,19 +555,18 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ยกเลิกการระงับกระเป๋าเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงธุรกรรมทั้งหมดในระบบ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function allTransactions(Request $request)
     {
-        if (!auth()->user()->hasPermission('view_all_wallets')) {
+        if (! auth()->user()->hasPermission('view_all_wallets')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -613,12 +610,11 @@ class WalletController extends Controller
     /**
      * แสดง logs ทั้งหมดในระบบ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function allLogs(Request $request)
     {
-        if (!auth()->user()->hasPermission('view_all_wallets')) {
+        if (! auth()->user()->hasPermission('view_all_wallets')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -663,7 +659,6 @@ class WalletController extends Controller
     /**
      * ดึงรายการกระเป๋าสำหรับ dropdown (AJAX)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getWalletsDropdown(Request $request)
@@ -673,14 +668,14 @@ class WalletController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $wallets->map(function($wallet) {
+            'data' => $wallets->map(function ($wallet) {
                 return [
                     'id' => $wallet->id,
                     'wallet_address' => $wallet->wallet_address,
                     'user_name' => $wallet->user->name ?? 'N/A',
                     'user_email' => $wallet->user->email ?? 'N/A',
                     'balance' => number_format($wallet->balance, 2),
-                    'label' => $wallet->user->name . ' (' . $wallet->wallet_address . ') - ' . number_format($wallet->balance, 2) . ' THB',
+                    'label' => $wallet->user->name.' ('.$wallet->wallet_address.') - '.number_format($wallet->balance, 2).' THB',
                 ];
             }),
         ]);
@@ -689,13 +684,12 @@ class WalletController extends Controller
     /**
      * รีเซ็ต PIN ของกระเป๋า (Admin only)
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function resetUserPin(Request $request, $id)
     {
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             return redirect()->back()->with('error', 'เฉพาะ Super Admin เท่านั้นที่สามารถรีเซ็ต PIN ได้');
         }
 
@@ -712,25 +706,24 @@ class WalletController extends Controller
             $this->walletService->logAction(
                 $wallet,
                 'pin_changed',
-                'PIN ถูกรีเซ็ตโดยแอดมิน: ' . auth()->user()->name,
+                'PIN ถูกรีเซ็ตโดยแอดมิน: '.auth()->user()->name,
                 'warning'
             );
 
             return redirect()->back()->with('success', 'รีเซ็ต PIN สำเร็จ ผู้ใช้สามารถตั้ง PIN ใหม่ได้');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * Export ธุรกรรมเป็น CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function exportTransactions(Request $request)
     {
-        if (!auth()->user()->hasPermission('view_all_wallets')) {
+        if (! auth()->user()->hasPermission('view_all_wallets')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงฟีเจอร์นี้');
         }
 
@@ -742,7 +735,7 @@ class WalletController extends Controller
             'date_to' => $request->input('date_to'),
         ];
 
-        $filename = 'wallet_transactions_' . date('Y-m-d_His') . '.csv';
+        $filename = 'wallet_transactions_'.date('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -773,19 +766,19 @@ class WalletController extends Controller
             // Query transactions
             $query = WalletTransaction::with(['wallet.user']);
 
-            if (!empty($filters['wallet_id'])) {
+            if (! empty($filters['wallet_id'])) {
                 $query->where('wallet_id', $filters['wallet_id']);
             }
-            if (!empty($filters['type'])) {
+            if (! empty($filters['type'])) {
                 $query->where('type', $filters['type']);
             }
-            if (!empty($filters['status'])) {
+            if (! empty($filters['status'])) {
                 $query->where('status', $filters['status']);
             }
-            if (!empty($filters['date_from'])) {
+            if (! empty($filters['date_from'])) {
                 $query->whereDate('created_at', '>=', $filters['date_from']);
             }
-            if (!empty($filters['date_to'])) {
+            if (! empty($filters['date_to'])) {
                 $query->whereDate('created_at', '<=', $filters['date_to']);
             }
 

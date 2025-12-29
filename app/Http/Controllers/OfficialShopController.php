@@ -24,7 +24,6 @@ class OfficialShopController extends Controller
     /**
      * แสดงหน้าร้านของระบบ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -40,8 +39,8 @@ class OfficialShopController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -134,7 +133,7 @@ class OfficialShopController extends Controller
     /**
      * แสดงรายละเอียดสินค้าของระบบ
      *
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\View\View
      */
     public function show($slug)
@@ -143,7 +142,7 @@ class OfficialShopController extends Controller
             'category',
             'images',
             'variants',
-            'approvedReviews.user'
+            'approvedReviews.user',
         ])
             ->officialShop() // ต้องเป็นสินค้าของระบบ
             ->where('slug', $slug)
@@ -168,13 +167,13 @@ class OfficialShopController extends Controller
             $hasPurchased = $product->orderItems()
                 ->whereHas('order', function ($q) {
                     $q->where('user_id', auth()->id())
-                      ->where('status', 'completed');
+                        ->where('status', 'completed');
                 })
                 ->exists();
         }
 
         // Calculate potential cashback
-        $cashbackService = new CashbackService(new WalletService());
+        $cashbackService = new CashbackService(new WalletService);
         $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
 
         // Get user's coin balance
@@ -196,8 +195,7 @@ class OfficialShopController extends Controller
     /**
      * แสดงสินค้าตามหมวดหมู่ (ของระบบ)
      *
-     * @param string $slug
-     * @param Request $request
+     * @param  string  $slug
      * @return \Illuminate\View\View
      */
     public function category($slug, Request $request)
@@ -217,7 +215,7 @@ class OfficialShopController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -255,7 +253,6 @@ class OfficialShopController extends Controller
     /**
      * Quick search API (เฉพาะสินค้าของระบบ)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function quickSearch(Request $request)
@@ -271,7 +268,7 @@ class OfficialShopController extends Controller
             ->officialShop() // เฉพาะของระบบ
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             })
             ->select('id', 'name', 'slug', 'price', 'main_image_url')
             ->take(10)
@@ -306,20 +303,20 @@ class OfficialShopController extends Controller
     /**
      * ซื้อสินค้าด้วย Coins
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function purchaseWithCoin(Request $request, $slug)
     {
         // ต้อง login ก่อน
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'กรุณาเข้าสู่ระบบก่อนซื้อสินค้า',
                 ], 401);
             }
+
             return redirect()->route('login')->with('error', 'กรุณาเข้าสู่ระบบก่อนซื้อสินค้า');
         }
 
@@ -332,11 +329,12 @@ class OfficialShopController extends Controller
             ->firstOrFail();
 
         // ตรวจสอบว่าสินค้ารองรับการซื้อด้วย Coins หรือไม่
-        if (!$product->allow_coin_purchase || $product->price_coins <= 0) {
+        if (! $product->allow_coin_purchase || $product->price_coins <= 0) {
             $message = 'สินค้านี้ไม่รองรับการซื้อด้วย Coins';
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 400);
             }
+
             return back()->with('error', $message);
         }
 
@@ -349,6 +347,7 @@ class OfficialShopController extends Controller
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 400);
             }
+
             return back()->with('error', $message);
         }
 
@@ -359,7 +358,7 @@ class OfficialShopController extends Controller
         $videoCoin = $user->videoCoin;
 
         // ตรวจสอบ Coins เพียงพอหรือไม่
-        if (!$videoCoin || $videoCoin->balance < $totalCoins) {
+        if (! $videoCoin || $videoCoin->balance < $totalCoins) {
             $currentBalance = $videoCoin ? $videoCoin->balance : 0;
             $message = "Coins ไม่เพียงพอ (ต้องการ {$totalCoins} Coins, มี {$currentBalance} Coins)";
             if ($request->wantsJson()) {
@@ -370,6 +369,7 @@ class OfficialShopController extends Controller
                     'balance' => $currentBalance,
                 ], 400);
             }
+
             return back()->with('error', $message);
         }
 
@@ -388,7 +388,7 @@ class OfficialShopController extends Controller
             // สร้าง Order
             $order = Order::create([
                 'user_id' => $user->id,
-                'order_number' => 'OFF-' . strtoupper(Str::random(8)) . '-' . time(),
+                'order_number' => 'OFF-'.strtoupper(Str::random(8)).'-'.time(),
                 'status' => 'completed', // สินค้า Official Shop ถือว่าสำเร็จทันที
                 'payment_status' => 'paid',
                 'payment_method' => 'coins',
@@ -445,10 +445,11 @@ class OfficialShopController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            $message = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            $message = 'เกิดข้อผิดพลาด: '.$e->getMessage();
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 500);
             }
+
             return back()->with('error', $message);
         }
     }
@@ -456,7 +457,7 @@ class OfficialShopController extends Controller
     /**
      * หน้าซื้อสำเร็จ
      *
-     * @param string $orderNumber
+     * @param  string  $orderNumber
      * @return \Illuminate\View\View
      */
     public function purchaseSuccess($orderNumber)

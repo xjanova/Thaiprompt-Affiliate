@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
-use Closure;
-use Illuminate\Http\Request;
 use App\Models\VendorStore;
 use App\Models\VendorStoreVisit;
+use Closure;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class TrackVendorStoreVisit
@@ -40,7 +40,7 @@ class TrackVendorStoreVisit
             }
         } catch (\Exception $e) {
             // Silently fail - don't break the user experience
-            logger()->error('Failed to track vendor visit: ' . $e->getMessage());
+            logger()->error('Failed to track vendor visit: '.$e->getMessage());
         }
     }
 
@@ -80,6 +80,7 @@ class TrackVendorStoreVisit
         $path = $request->path();
         if (preg_match('#(?:stores|shop)/([^/]+)#', $path, $matches)) {
             $slug = $matches[1];
+
             return VendorStore::where('store_slug', $slug)->first();
         }
 

@@ -17,18 +17,18 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง two_factor_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('two_factor_settings')) {
+        if (! Schema::hasTable('two_factor_settings')) {
             return;
         }
 
         // ตรวจสอบว่าตาราง two_factor_user_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('two_factor_user_settings')) {
+        if (! Schema::hasTable('two_factor_user_settings')) {
             return;
         }
 
         Schema::table('two_factor_user_settings', function (Blueprint $table) {
             // Google Authenticator Secret Key (encrypted)
-            if (!Schema::hasColumn('two_factor_user_settings', 'google2fa_secret')) {
+            if (! Schema::hasColumn('two_factor_user_settings', 'google2fa_secret')) {
                 $table->text('google2fa_secret')->nullable()->after('preferred_method');
             }
 
@@ -41,7 +41,7 @@ return new class extends Migration
         // อัพเดท global settings ให้ใช้ authenticator เป็น default
         Schema::table('two_factor_settings', function (Blueprint $table) {
             // เพิ่ม allow_authenticator
-            if (!Schema::hasColumn('two_factor_settings', 'allow_authenticator')) {
+            if (! Schema::hasColumn('two_factor_settings', 'allow_authenticator')) {
                 $table->boolean('allow_authenticator')->default(true)->after('enabled');
             }
 

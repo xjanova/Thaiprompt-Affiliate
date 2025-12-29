@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AICoreFeature;
 use App\Models\AICoreQuota;
 use App\Models\AICoreTenant;
-use App\Models\AICoreFeature;
 use App\Services\AI\QuotaManager;
 use Illuminate\Http\Request;
 
@@ -43,8 +43,6 @@ class AICoreQuotaController extends Controller
     /**
      * จัดการ Quota ของ Tenant และ Feature
      *
-     * @param AICoreTenant $tenant
-     * @param AICoreFeature $feature
      * @return \Illuminate\View\View
      */
     public function manage(AICoreTenant $tenant, AICoreFeature $feature)
@@ -68,9 +66,6 @@ class AICoreQuotaController extends Controller
     /**
      * เพิ่ม Bonus Quota
      *
-     * @param Request $request
-     * @param AICoreTenant $tenant
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function addBonus(Request $request, AICoreTenant $tenant, AICoreFeature $feature)
@@ -88,7 +83,7 @@ class AICoreQuotaController extends Controller
         );
 
         if ($success) {
-            return back()->with('success', 'เพิ่ม Bonus Quota สำเร็จ: ' . number_format($validated['amount']) . ' units');
+            return back()->with('success', 'เพิ่ม Bonus Quota สำเร็จ: '.number_format($validated['amount']).' units');
         }
 
         return back()->with('error', 'ไม่สามารถเพิ่ม Bonus Quota ได้');
@@ -97,15 +92,13 @@ class AICoreQuotaController extends Controller
     /**
      * รีเซ็ต Quota
      *
-     * @param AICoreTenant $tenant
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reset(AICoreTenant $tenant, AICoreFeature $feature)
     {
         $quota = $this->quotaManager->getCurrentQuota($tenant->id, $feature->id);
 
-        if (!$quota) {
+        if (! $quota) {
             return back()->with('error', 'ไม่พบ Quota');
         }
 
@@ -127,6 +120,6 @@ class AICoreQuotaController extends Controller
     {
         $count = $this->quotaManager->resetExpiredQuotas();
 
-        return back()->with('success', 'รีเซ็ต Quota ทั้งหมด: ' . $count . ' รายการ');
+        return back()->with('success', 'รีเซ็ต Quota ทั้งหมด: '.$count.' รายการ');
     }
 }

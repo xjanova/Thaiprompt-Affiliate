@@ -18,7 +18,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
         // Get user's wallet
         $wallet = Wallet::where('user_id', $transaction->user_id)->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             throw new Exception('Wallet not found');
         }
 
@@ -38,7 +38,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
         return DB::transaction(function () use ($transaction) {
             $wallet = Wallet::where('user_id', $transaction->user_id)->lockForUpdate()->first();
 
-            if (!$wallet || $wallet->balance < $transaction->amount) {
+            if (! $wallet || $wallet->balance < $transaction->amount) {
                 throw new Exception('Insufficient wallet balance');
             }
 
@@ -89,7 +89,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
         return DB::transaction(function () use ($transaction, $amount) {
             $wallet = Wallet::where('user_id', $transaction->user_id)->lockForUpdate()->first();
 
-            if (!$wallet) {
+            if (! $wallet) {
                 throw new Exception('Wallet not found');
             }
 
@@ -102,7 +102,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 'type' => 'refund',
                 'amount' => $amount,
                 'balance_after' => $wallet->balance,
-                'description' => 'Refund for ' . $this->getTransactionDescription($transaction),
+                'description' => 'Refund for '.$this->getTransactionDescription($transaction),
                 'status' => 'approved',
                 'metadata' => [
                     'payment_transaction_id' => $transaction->id,
@@ -124,7 +124,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
     protected function getTransactionDescription(PaymentTransaction $transaction): string
     {
         if ($transaction->type === 'order_payment' && $transaction->order) {
-            return 'Payment for Order #' . $transaction->order->order_number;
+            return 'Payment for Order #'.$transaction->order->order_number;
         }
 
         return 'Payment via Wallet';

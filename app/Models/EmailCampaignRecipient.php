@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * EmailCampaignRecipient Model
@@ -79,8 +79,6 @@ class EmailCampaignRecipient extends Model
 
     /**
      * ความสัมพันธ์กับ EmailCampaign
-     *
-     * @return BelongsTo
      */
     public function campaign(): BelongsTo
     {
@@ -89,8 +87,6 @@ class EmailCampaignRecipient extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -99,58 +95,46 @@ class EmailCampaignRecipient extends Model
 
     /**
      * เช็คว่าอีเมลถูกส่งแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isSent(): bool
     {
-        return !is_null($this->sent_at);
+        return ! is_null($this->sent_at);
     }
 
     /**
      * เช็คว่าอีเมลส่งถึงแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isDelivered(): bool
     {
-        return !is_null($this->delivered_at);
+        return ! is_null($this->delivered_at);
     }
 
     /**
      * เช็คว่าอีเมลถูกเปิดอ่านแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isOpened(): bool
     {
-        return !is_null($this->opened_at);
+        return ! is_null($this->opened_at);
     }
 
     /**
      * เช็คว่าอีเมลถูกคลิกแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isClicked(): bool
     {
-        return !is_null($this->clicked_at);
+        return ! is_null($this->clicked_at);
     }
 
     /**
      * เช็คว่าอีเมลตีกลับหรือไม่
-     *
-     * @return bool
      */
     public function isBounced(): bool
     {
-        return !is_null($this->bounced_at);
+        return ! is_null($this->bounced_at);
     }
 
     /**
      * เช็คว่าอีเมลล้มเหลวหรือไม่
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {
@@ -160,7 +144,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่ยังไม่ได้ส่ง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -171,7 +155,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่ส่งแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSent($query)
@@ -182,7 +166,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่เปิดอ่านแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOpened($query)
@@ -194,7 +178,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่คลิกแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeClicked($query)
@@ -206,7 +190,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่ตีกลับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBounced($query)
@@ -217,7 +201,7 @@ class EmailCampaignRecipient extends Model
     /**
      * Scope: ผู้รับที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)

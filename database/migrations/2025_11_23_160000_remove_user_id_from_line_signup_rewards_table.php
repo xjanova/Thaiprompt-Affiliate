@@ -14,13 +14,11 @@ return new class extends Migration
      *
      * ตาราง line_signup_rewards เป็นตาราง template รางวัล
      * ไม่ใช่รางวัลของผู้ใช้เฉพาะคน ดังนั้นไม่ควรมี user_id
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
@@ -64,13 +62,11 @@ return new class extends Migration
 
     /**
      * เพิ่ม column user_id กลับ (สำหรับ rollback)
-     *
-     * @return void
      */
     public function down(): void
     {
         Schema::table('line_signup_rewards', function (Blueprint $table) {
-            if (!Schema::hasColumn('line_signup_rewards', 'user_id')) {
+            if (! Schema::hasColumn('line_signup_rewards', 'user_id')) {
                 $table->foreignId('user_id')
                     ->nullable()
                     ->after('id')

@@ -54,7 +54,7 @@ class GameSkin extends Model
 
     public function isAvailable()
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -73,7 +73,7 @@ class GameSkin extends Model
 
     public function canUserPurchase(User $user)
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             return false;
         }
 

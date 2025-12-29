@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PaymentTransaction;
 use App\Models\TarotCard;
+use App\Models\TarotCardBackImage;
 use App\Models\TarotReading;
 use App\Models\TarotReadingCard;
 use App\Models\TarotReadingCategory;
 use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
-use App\Models\TarotCardBackImage;
-use App\Models\PaymentTransaction;
 use App\Services\TarotCommissionService;
 use App\Services\TarotInterpretationService;
 use Illuminate\Http\Request;
@@ -21,23 +21,16 @@ class TarotReadingController extends Controller
 {
     /**
      * บริการสร้างคำทำนายไพ่ทาโร่ต์
-     *
-     * @var TarotInterpretationService
      */
     protected TarotInterpretationService $interpretationService;
 
     /**
      * บริการจัดการคอมมิชชั่นไพ่ทาโร่ต์
-     *
-     * @var TarotCommissionService
      */
     protected TarotCommissionService $commissionService;
 
     /**
      * Constructor
-     *
-     * @param TarotInterpretationService $interpretationService
-     * @param TarotCommissionService $commissionService
      */
     public function __construct(
         TarotInterpretationService $interpretationService,
@@ -103,7 +96,7 @@ class TarotReadingController extends Controller
         }
 
         // If not free and category has price, check payment
-        if (!$isFree && $category->price > 0) {
+        if (! $isFree && $category->price > 0) {
             // Return payment required response
             return response()->json([
                 'requires_payment' => true,
@@ -113,7 +106,7 @@ class TarotReadingController extends Controller
                     'category' => $category->id,
                     'spread_type' => $spreadType->id,
                     'question' => $request->question,
-                ])
+                ]),
             ]);
         }
 
@@ -121,12 +114,12 @@ class TarotReadingController extends Controller
         $reading = $this->createReading($category, $spreadType, $request->question, $isFree);
 
         // Store whether this is a free reading in session for card selection page
-        session(['tarot_reading_' . $reading->id . '_is_free' => $isFree]);
+        session(['tarot_reading_'.$reading->id.'_is_free' => $isFree]);
 
         return response()->json([
             'success' => true,
             'reading_id' => $reading->id,
-            'redirect_url' => route('tarot.select-cards', $reading->id)
+            'redirect_url' => route('tarot.select-cards', $reading->id),
         ]);
     }
 
@@ -141,7 +134,7 @@ class TarotReadingController extends Controller
         $userId = Auth::id();
         $sessionId = session()->getId();
 
-        if (!$reading->belongsToUser($userId, $sessionId) && !Auth::check()) {
+        if (! $reading->belongsToUser($userId, $sessionId) && ! Auth::check()) {
             abort(403, 'Unauthorized access to this reading');
         }
 
@@ -155,7 +148,7 @@ class TarotReadingController extends Controller
      */
     public function saveReading($id)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['error' => 'You must be logged in to save readings'], 401);
         }
 
@@ -177,7 +170,7 @@ class TarotReadingController extends Controller
      */
     public function history()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please login to view your reading history');
         }
 
@@ -194,7 +187,7 @@ class TarotReadingController extends Controller
      */
     public function savedReadings()
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please login to view saved readings');
         }
 
@@ -252,7 +245,7 @@ class TarotReadingController extends Controller
             $user = Auth::user();
             $wallet = $user->wallet;
 
-            if (!$wallet || $wallet->balance < $category->price) {
+            if (! $wallet || $wallet->balance < $category->price) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ยอดเงินใน Wallet ไม่เพียงพอ',
@@ -264,7 +257,7 @@ class TarotReadingController extends Controller
 
         // Create payment transaction
         $transaction = PaymentTransaction::create([
-            'transaction_id' => 'TAROT-' . strtoupper(Str::random(12)),
+            'transaction_id' => 'TAROT-'.strtoupper(Str::random(12)),
             'user_id' => $userId,
             'type' => 'order_payment',
             'payment_method' => $paymentMethod,
@@ -289,7 +282,7 @@ class TarotReadingController extends Controller
             $transaction->id
         );
 
-        if (!$commissionResult['success']) {
+        if (! $commissionResult['success']) {
             // ถ้าชำระเงินไม่สำเร็จ ให้ลบ reading และอัพเดท transaction
             $reading->delete();
             $transaction->update([
@@ -373,7 +366,7 @@ class TarotReadingController extends Controller
         $userId = Auth::id();
         $sessionId = session()->getId();
 
-        if (!$reading->belongsToUser($userId, $sessionId) && !Auth::check()) {
+        if (! $reading->belongsToUser($userId, $sessionId) && ! Auth::check()) {
             abort(403, 'Unauthorized access to this reading');
         }
 
@@ -404,7 +397,7 @@ class TarotReadingController extends Controller
         $userId = Auth::id();
         $sessionId = session()->getId();
 
-        if (!$reading->belongsToUser($userId, $sessionId) && !Auth::check()) {
+        if (! $reading->belongsToUser($userId, $sessionId) && ! Auth::check()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
@@ -439,7 +432,7 @@ class TarotReadingController extends Controller
         }
 
         // Update user limits if free
-        $isFree = session('tarot_reading_' . $reading->id . '_is_free', false);
+        $isFree = session('tarot_reading_'.$reading->id.'_is_free', false);
         if ($isFree) {
             TarotUserLimit::incrementFreeReading(
                 $reading->category_id,
@@ -449,7 +442,7 @@ class TarotReadingController extends Controller
             );
 
             // Clear session
-            session()->forget('tarot_reading_' . $reading->id . '_is_free');
+            session()->forget('tarot_reading_'.$reading->id.'_is_free');
         }
 
         // สร้างคำทำนายละเอียดสำหรับไพ่ทั้งหมด
@@ -458,7 +451,7 @@ class TarotReadingController extends Controller
         return response()->json([
             'success' => true,
             'reading_id' => $reading->id,
-            'redirect_url' => route('tarot.reading.show', $reading->id)
+            'redirect_url' => route('tarot.reading.show', $reading->id),
         ]);
     }
 

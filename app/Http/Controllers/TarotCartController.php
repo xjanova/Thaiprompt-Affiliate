@@ -2,19 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TarotCartItem;
-use App\Models\TarotReadingCategory;
-use App\Models\TarotSpreadType;
+use App\Models\PaymentTransaction;
 use App\Models\TarotCard;
+use App\Models\TarotCartItem;
 use App\Models\TarotReading;
 use App\Models\TarotReadingCard;
+use App\Models\TarotReadingCategory;
+use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
-use App\Models\TarotSetting;
-use App\Models\PaymentTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TarotCartController extends Controller
 {
@@ -212,7 +210,7 @@ class TarotCartController extends Controller
                     'amount' => $cartTotal,
                     'payment_method' => $request->payment_method,
                     'status' => 'pending',
-                    'description' => 'ค่าทำนายไพ่ทาโร่ต์ ' . count($readingIds) . ' รายการ',
+                    'description' => 'ค่าทำนายไพ่ทาโร่ต์ '.count($readingIds).' รายการ',
                     'metadata' => [
                         'reading_ids' => $readingIds,
                         'type' => 'tarot_reading',
@@ -250,7 +248,7 @@ class TarotCartController extends Controller
             DB::rollBack();
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -270,7 +268,7 @@ class TarotCartController extends Controller
                 $card->upright_meaning_th;
 
             $interpretation .= "ตำแหน่ง: {$position}\n";
-            $interpretation .= "ไพ่: {$card->name_th}" . ($readingCard->is_reversed ? ' (กลับหัว)' : '') . "\n";
+            $interpretation .= "ไพ่: {$card->name_th}".($readingCard->is_reversed ? ' (กลับหัว)' : '')."\n";
             $interpretation .= "ความหมาย: {$meaning}\n\n";
         }
 

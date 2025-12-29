@@ -18,15 +18,10 @@ use Illuminate\Support\Str;
  */
 class ForumThreadController extends Controller
 {
-    /**
-     * @var ForumTrophyService
-     */
     protected ForumTrophyService $trophyService;
 
     /**
      * สร้าง instance
-     *
-     * @param ForumTrophyService $trophyService
      */
     public function __construct(ForumTrophyService $trophyService)
     {
@@ -36,7 +31,6 @@ class ForumThreadController extends Controller
     /**
      * แสดงกระทู้
      *
-     * @param string $slug
      * @return \Illuminate\View\View
      */
     public function show(string $slug)
@@ -97,7 +91,6 @@ class ForumThreadController extends Controller
     /**
      * แสดงฟอร์มสร้างกระทู้ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function create(Request $request)
@@ -125,7 +118,6 @@ class ForumThreadController extends Controller
     /**
      * บันทึกกระทู้ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -150,7 +142,7 @@ class ForumThreadController extends Controller
 
         // ตรวจสอบว่าผู้ใช้ไม่ถูกแบน
         if (Auth::user()->forum_banned_until && Auth::user()->forum_banned_until > now()) {
-            return back()->withErrors(['content' => 'คุณถูกแบนจากการโพสต์จนถึง ' . Auth::user()->forum_banned_until->format('d/m/Y H:i')]);
+            return back()->withErrors(['content' => 'คุณถูกแบนจากการโพสต์จนถึง '.Auth::user()->forum_banned_until->format('d/m/Y H:i')]);
         }
 
         // สร้างกระทู้
@@ -173,7 +165,6 @@ class ForumThreadController extends Controller
     /**
      * แสดงฟอร์มแก้ไขกระทู้
      *
-     * @param string $slug
      * @return \Illuminate\View\View
      */
     public function edit(string $slug)
@@ -194,8 +185,6 @@ class ForumThreadController extends Controller
     /**
      * อัปเดตกระทู้
      *
-     * @param Request $request
-     * @param string $slug
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, string $slug)
@@ -226,7 +215,6 @@ class ForumThreadController extends Controller
     /**
      * ลบกระทู้
      *
-     * @param string $slug
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(string $slug)
@@ -246,8 +234,6 @@ class ForumThreadController extends Controller
     /**
      * กดไลค์/ยกเลิกไลค์กระทู้
      *
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleLike(Request $request, int $id)
@@ -260,9 +246,6 @@ class ForumThreadController extends Controller
 
     /**
      * สร้าง breadcrumbs สำหรับกระทู้
-     *
-     * @param ForumThread $thread
-     * @return array
      */
     protected function buildBreadcrumbs(ForumThread $thread): array
     {

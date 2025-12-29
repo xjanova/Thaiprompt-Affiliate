@@ -3,23 +3,22 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
 use App\Models\Cart;
 use App\Models\CartItem;
-use App\Models\UserAddress;
-use App\Models\ShippingProvider;
-use App\Models\OrderTrackingHistory;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderMessage;
-use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\ShippingProvider;
+use App\Models\UserAddress;
+use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Exception;
 
 /**
  * OrderApiController
@@ -35,9 +34,6 @@ class OrderApiController extends Controller
 
     /**
      * สร้าง Order ใหม่จากตะกร้าสินค้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
     {
@@ -156,7 +152,7 @@ class OrderApiController extends Controller
             }
 
             // ลบสินค้าออกจากตะกร้า (ถ้าใช้ตะกร้า)
-            if (!$request->items) {
+            if (! $request->items) {
                 $this->clearCart($user);
             }
 
@@ -187,9 +183,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงรายการคำสั่งซื้อ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -213,7 +206,7 @@ class OrderApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'orders' => $orders->map(fn($order) => $this->formatOrderSummary($order)),
+                    'orders' => $orders->map(fn ($order) => $this->formatOrderSummary($order)),
                     'pagination' => [
                         'current_page' => $orders->currentPage(),
                         'last_page' => $orders->lastPage(),
@@ -232,9 +225,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงรายละเอียดคำสั่งซื้อ
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function show(int $id): JsonResponse
     {
@@ -245,7 +235,7 @@ class OrderApiController extends Controller
                 ->with(['items.product', 'paymentTransactions'])
                 ->find($id);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบคำสั่งซื้อ',
@@ -266,9 +256,6 @@ class OrderApiController extends Controller
 
     /**
      * ยกเลิกคำสั่งซื้อ
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function cancel(int $id): JsonResponse
     {
@@ -277,7 +264,7 @@ class OrderApiController extends Controller
 
             $order = Order::where('user_id', $user->id)->find($id);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบคำสั่งซื้อ',
@@ -285,7 +272,7 @@ class OrderApiController extends Controller
             }
 
             // ตรวจสอบสถานะที่ยกเลิกได้
-            if (!in_array($order->status, ['pending', 'confirmed'])) {
+            if (! in_array($order->status, ['pending', 'confirmed'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้',
@@ -453,7 +440,7 @@ class OrderApiController extends Controller
                 'subdistrict' => $order->shipping_subdistrict,
                 'postal_code' => $order->shipping_postal_code,
             ],
-            'items' => $order->items->map(fn($item) => [
+            'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'product_name' => $item->product_name,
@@ -531,8 +518,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงรายการบริษัทขนส่ง
-     *
-     * @return JsonResponse
      */
     public function getShippingProviders(): JsonResponse
     {
@@ -540,7 +525,7 @@ class OrderApiController extends Controller
             $providers = ShippingProvider::active()
                 ->ordered()
                 ->get()
-                ->map(fn($provider) => [
+                ->map(fn ($provider) => [
                     'id' => $provider->id,
                     'code' => $provider->code,
                     'name' => $provider->name,
@@ -563,9 +548,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงข้อมูล Tracking ของคำสั่งซื้อ
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function getTracking(int $id): JsonResponse
     {
@@ -576,7 +558,7 @@ class OrderApiController extends Controller
                 ->with(['shippingProvider', 'trackingHistory.user'])
                 ->find($id);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบคำสั่งซื้อ',
@@ -607,7 +589,7 @@ class OrderApiController extends Controller
                     'estimated_delivery_at' => $order->estimated_delivery_at?->toISOString(),
                     'shipped_at' => $order->shipped_at?->toISOString(),
                     'delivered_at' => $order->delivered_at?->toISOString(),
-                    'history' => $order->trackingHistory->map(fn($history) => [
+                    'history' => $order->trackingHistory->map(fn ($history) => [
                         'id' => $history->id,
                         'status' => $history->status,
                         'status_label' => $this->getStatusLabel($history->status),
@@ -633,10 +615,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงข้อความแชทของคำสั่งซื้อ
-     *
-     * @param int $id
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getMessages(int $id, Request $request): JsonResponse
     {
@@ -645,7 +623,7 @@ class OrderApiController extends Controller
 
             $order = Order::where('user_id', $user->id)->find($id);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบคำสั่งซื้อ',
@@ -679,7 +657,7 @@ class OrderApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'messages' => $messages->map(fn($msg) => [
+                    'messages' => $messages->map(fn ($msg) => [
                         'id' => $msg->id,
                         'sender_type' => $msg->sender_type,
                         'sender_name' => $msg->sender_name,
@@ -711,10 +689,6 @@ class OrderApiController extends Controller
 
     /**
      * ส่งข้อความแชทใหม่
-     *
-     * @param int $id
-     * @param Request $request
-     * @return JsonResponse
      */
     public function sendMessage(int $id, Request $request): JsonResponse
     {
@@ -740,7 +714,7 @@ class OrderApiController extends Controller
 
             $order = Order::where('user_id', $user->id)->find($id);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบคำสั่งซื้อ',
@@ -761,7 +735,7 @@ class OrderApiController extends Controller
             // อัพโหลดไฟล์แนบ (ถ้ามี)
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
-                $attachmentPath = $file->store('order-messages/' . $order->id, 'public');
+                $attachmentPath = $file->store('order-messages/'.$order->id, 'public');
                 $attachmentType = $this->getAttachmentType($file->getMimeType());
             }
 
@@ -803,8 +777,6 @@ class OrderApiController extends Controller
 
     /**
      * ดึงจำนวนข้อความที่ยังไม่ได้อ่าน
-     *
-     * @return JsonResponse
      */
     public function getUnreadMessageCount(): JsonResponse
     {
@@ -832,9 +804,6 @@ class OrderApiController extends Controller
 
     /**
      * ระบุประเภทไฟล์แนบจาก MIME type
-     *
-     * @param string $mimeType
-     * @return string
      */
     protected function getAttachmentType(string $mimeType): string
     {

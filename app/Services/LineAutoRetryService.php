@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\LineFailedMessage;
-use App\Models\LineErrorLog;
 use App\Jobs\RetryFailedMessagesJob;
-use Illuminate\Support\Facades\Log;
+use App\Models\LineErrorLog;
+use App\Models\LineFailedMessage;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * LINE Auto-Retry Service
@@ -17,8 +17,6 @@ use Exception;
  * - Circuit breaker pattern
  * - Error classification
  * - Self-healing recovery
- *
- * @package App\Services
  */
 class LineAutoRetryService
 {
@@ -31,8 +29,6 @@ class LineAutoRetryService
 
     /**
      * Constructor
-     *
-     * @param LineService $lineService
      */
     public function __construct(LineService $lineService)
     {
@@ -42,12 +38,11 @@ class LineAutoRetryService
     /**
      * บันทึกข้อความที่ส่งล้มเหลว
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $messageType ประเภทข้อความ
-     * @param array $messagePayload ข้อมูลข้อความ
-     * @param Exception $exception Exception ที่เกิดขึ้น
-     * @param int $maxRetries จำนวนครั้งสูงสุดที่จะ retry (default: 5)
-     * @return LineFailedMessage
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $messageType  ประเภทข้อความ
+     * @param  array  $messagePayload  ข้อมูลข้อความ
+     * @param  Exception  $exception  Exception ที่เกิดขึ้น
+     * @param  int  $maxRetries  จำนวนครั้งสูงสุดที่จะ retry (default: 5)
      */
     public function recordFailure(
         string $lineUserId,
@@ -88,13 +83,12 @@ class LineAutoRetryService
     /**
      * ทำการ retry ข้อความที่ล้มเหลว
      *
-     * @param LineFailedMessage $failedMessage
      * @return bool สำเร็จหรือไม่
      */
     public function retry(LineFailedMessage $failedMessage): bool
     {
         // ตรวจสอบว่าควร retry หรือไม่
-        if (!$failedMessage->shouldRetry()) {
+        if (! $failedMessage->shouldRetry()) {
             Log::warning('LINE Failed Message should not retry', [
                 'id' => $failedMessage->id,
                 'status' => $failedMessage->status,
@@ -161,7 +155,6 @@ class LineAutoRetryService
 
             // ส่งไม่สำเร็จ แต่ไม่มี exception (เช่น API คืน false)
             throw new Exception('Failed to send message (returned false)');
-
         } catch (Exception $e) {
             // ส่งล้มเหลว เพิ่มจำนวนครั้งและ schedule retry ครั้งถัดไป
             $failedMessage->incrementRetryCount();
@@ -205,9 +198,6 @@ class LineAutoRetryService
 
     /**
      * Schedule retry job สำหรับข้อความที่ล้มเหลว
-     *
-     * @param LineFailedMessage $failedMessage
-     * @return void
      */
     protected function scheduleRetry(LineFailedMessage $failedMessage): void
     {
@@ -228,10 +218,6 @@ class LineAutoRetryService
     /**
      * ส่งข้อความผ่าน LineService
      *
-     * @param string $lineUserId
-     * @param string $messageType
-     * @param array $messagePayload
-     * @return bool
      * @throws Exception
      */
     protected function sendMessage(string $lineUserId, string $messageType, array $messagePayload): bool
@@ -269,11 +255,6 @@ class LineAutoRetryService
 
     /**
      * บันทึก error log
-     *
-     * @param Exception $exception
-     * @param int|null $failedMessageId
-     * @param string|null $lineUserId
-     * @return LineErrorLog
      */
     protected function logError(
         Exception $exception,
@@ -296,9 +277,6 @@ class LineAutoRetryService
 
     /**
      * จำแนกความรุนแรงของ exception
-     *
-     * @param Exception $exception
-     * @return string
      */
     protected function classifySeverity(Exception $exception): string
     {
@@ -330,7 +308,7 @@ class LineAutoRetryService
     /**
      * Retry ข้อความทั้งหมดที่รอการ retry
      *
-     * @param int $limit จำนวนข้อความสูงสุดที่จะ retry
+     * @param  int  $limit  จำนวนข้อความสูงสุดที่จะ retry
      * @return int จำนวนข้อความที่ retry สำเร็จ
      */
     public function retryPendingMessages(int $limit = 100): int
@@ -369,8 +347,7 @@ class LineAutoRetryService
     /**
      * ดึงสถิติ retry
      *
-     * @param int $days จำนวนวันย้อนหลัง
-     * @return array
+     * @param  int  $days  จำนวนวันย้อนหลัง
      */
     public function getRetryStatistics(int $days = 7): array
     {
@@ -414,7 +391,7 @@ class LineAutoRetryService
     /**
      * ล้างข้อความเก่าที่ resolve แล้ว
      *
-     * @param int $days จำนวนวันที่จะเก็บ (default: 30)
+     * @param  int  $days  จำนวนวันที่จะเก็บ (default: 30)
      * @return int จำนวนที่ลบ
      */
     public function cleanupOldMessages(int $days = 30): int

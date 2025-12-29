@@ -91,8 +91,6 @@ class ThemeColor extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeSetting
-     *
-     * @return BelongsTo
      */
     public function themeSetting(): BelongsTo
     {
@@ -102,8 +100,7 @@ class ThemeColor extends Model
     /**
      * สร้าง CSS Gradient string
      *
-     * @param string $type 'primary' | 'secondary'
-     * @return string
+     * @param  string  $type  'primary' | 'secondary'
      */
     public function getGradientCss(string $type = 'primary'): string
     {

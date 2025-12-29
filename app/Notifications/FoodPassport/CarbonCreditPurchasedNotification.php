@@ -23,7 +23,7 @@ class CarbonCreditPurchasedNotification extends Notification implements ShouldQu
         return (new MailMessage)
             ->subject('✅ ซื้อ Carbon Credit สำเร็จ!')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("คุณซื้อ Carbon Credit สำเร็จแล้ว")
+            ->line('คุณซื้อ Carbon Credit สำเร็จแล้ว')
             ->line("ผู้ขาย: {$this->data['seller_name']}")
             ->line("จำนวน: {$this->data['amount']} TPCC")
             ->line("ราคา: ฿{$this->data['price']}")

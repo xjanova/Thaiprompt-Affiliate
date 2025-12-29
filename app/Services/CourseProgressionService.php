@@ -19,8 +19,6 @@ use Illuminate\Support\Facades\Log;
  *
  * บริการจัดการระบบเลื่อนคลาสเรียน
  * รวมถึงการตรวจสอบเงื่อนไขการปลดล็อค และการให้รางวัล
- *
- * @package App\Services
  */
 class CourseProgressionService
 {
@@ -28,16 +26,20 @@ class CourseProgressionService
      * เงื่อนไขการปลดล็อค
      */
     public const UNLOCK_NONE = 'none';
+
     public const UNLOCK_PREREQUISITE = 'prerequisite';
+
     public const UNLOCK_QUIZ_PASS = 'quiz_pass';
+
     public const UNLOCK_TIME_BASED = 'time_based';
+
     public const UNLOCK_MANUAL = 'manual';
 
     /**
      * ตรวจสอบว่าผู้ใช้สามารถเข้าถึงคอร์สได้หรือไม่
      *
-     * @param User $user ผู้ใช้
-     * @param LearningArticle $article บทความ/คอร์ส
+     * @param  User  $user  ผู้ใช้
+     * @param  LearningArticle  $article  บทความ/คอร์ส
      * @return array ['can_access' => bool, 'reason' => string, 'requirements' => array]
      */
     public function canAccessArticle(User $user, LearningArticle $article): array
@@ -52,7 +54,7 @@ class CourseProgressionService
         }
 
         // ตรวจสอบ permission พื้นฐาน
-        if (!$article->userHasAccess($user)) {
+        if (! $article->userHasAccess($user)) {
             return [
                 'can_access' => false,
                 'reason' => 'no_permission',
@@ -92,10 +94,6 @@ class CourseProgressionService
 
     /**
      * ตรวจสอบเงื่อนไข Prerequisite
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @return array
      */
     protected function checkPrerequisiteCondition(User $user, LearningArticle $article): array
     {
@@ -116,7 +114,7 @@ class CourseProgressionService
         foreach ($requiredPrerequisites as $prerequisite) {
             $progress = $prerequisite->progressForUser($user->id);
 
-            if (!$progress || $progress->status !== 'completed') {
+            if (! $progress || $progress->status !== 'completed') {
                 $incompletePrerequisites[] = [
                     'id' => $prerequisite->id,
                     'title' => $prerequisite->title,
@@ -127,10 +125,10 @@ class CourseProgressionService
             // ถ้า prerequisite ต้องการให้ผ่าน quiz ด้วย
             if ($prerequisite->require_quiz_pass) {
                 $quizResult = $this->checkQuizPassForArticle($user, $prerequisite);
-                if (!$quizResult['passed']) {
+                if (! $quizResult['passed']) {
                     $incompletePrerequisites[] = [
                         'id' => $prerequisite->id,
-                        'title' => $prerequisite->title . ' (ต้องผ่านแบบทดสอบ)',
+                        'title' => $prerequisite->title.' (ต้องผ่านแบบทดสอบ)',
                         'slug' => $prerequisite->slug,
                         'quiz_required' => true,
                     ];
@@ -138,7 +136,7 @@ class CourseProgressionService
             }
         }
 
-        if (!empty($incompletePrerequisites)) {
+        if (! empty($incompletePrerequisites)) {
             return [
                 'can_access' => false,
                 'reason' => 'prerequisites_incomplete',
@@ -155,10 +153,6 @@ class CourseProgressionService
 
     /**
      * ตรวจสอบเงื่อนไขผ่าน Quiz
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @return array
      */
     protected function checkQuizPassCondition(User $user, LearningArticle $article): array
     {
@@ -169,7 +163,7 @@ class CourseProgressionService
             ->orderBy('order', 'desc')
             ->first();
 
-        if (!$previousArticle) {
+        if (! $previousArticle) {
             // ถ้าเป็นคอร์สแรก ให้เข้าได้
             return [
                 'can_access' => true,
@@ -180,7 +174,7 @@ class CourseProgressionService
 
         $quizResult = $this->checkQuizPassForArticle($user, $previousArticle);
 
-        if (!$quizResult['passed']) {
+        if (! $quizResult['passed']) {
             return [
                 'can_access' => false,
                 'reason' => 'quiz_not_passed',
@@ -207,8 +201,6 @@ class CourseProgressionService
     /**
      * ตรวจสอบการผ่าน Quiz สำหรับบทความ
      *
-     * @param User $user
-     * @param LearningArticle $article
      * @return array ['passed' => bool, 'best_score' => int, 'attempts' => int]
      */
     public function checkQuizPassForArticle(User $user, LearningArticle $article): array
@@ -241,7 +233,7 @@ class CourseProgressionService
 
             $totalAttempts += $attemptCount;
 
-            if (!$bestAttempt || $bestAttempt->percentage < $minScore) {
+            if (! $bestAttempt || $bestAttempt->percentage < $minScore) {
                 $allPassed = false;
             }
 
@@ -261,10 +253,6 @@ class CourseProgressionService
 
     /**
      * ตรวจสอบเงื่อนไขเวลา
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @return array
      */
     protected function checkTimeBasedCondition(User $user, LearningArticle $article): array
     {
@@ -318,10 +306,6 @@ class CourseProgressionService
 
     /**
      * ตรวจสอบการปลดล็อคแบบ Manual
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @return array
      */
     protected function checkManualUnlock(User $user, LearningArticle $article): array
     {
@@ -354,9 +338,7 @@ class CourseProgressionService
     /**
      * ดึงคอร์สถัดไปที่ปลดล็อคได้
      *
-     * @param User $user
-     * @param LearningCategory|null $category หมวดหมู่ (ถ้าไม่ระบุจะดึงทั้งหมด)
-     * @return Collection
+     * @param  LearningCategory|null  $category  หมวดหมู่ (ถ้าไม่ระบุจะดึงทั้งหมด)
      */
     public function getUnlockedArticles(User $user, ?LearningCategory $category = null): Collection
     {
@@ -370,16 +352,13 @@ class CourseProgressionService
 
         return $articles->filter(function ($article) use ($user) {
             $access = $this->canAccessArticle($user, $article);
+
             return $access['can_access'];
         });
     }
 
     /**
      * ดึงคอร์สที่ยังล็อคอยู่พร้อมเหตุผล
-     *
-     * @param User $user
-     * @param LearningCategory|null $category
-     * @return Collection
      */
     public function getLockedArticles(User $user, ?LearningCategory $category = null): Collection
     {
@@ -394,18 +373,15 @@ class CourseProgressionService
         return $articles->map(function ($article) use ($user) {
             $access = $this->canAccessArticle($user, $article);
             $article->access_info = $access;
+
             return $article;
         })->filter(function ($article) {
-            return !$article->access_info['can_access'];
+            return ! $article->access_info['can_access'];
         });
     }
 
     /**
      * ดึง progress ของผู้ใช้ในหมวดหมู่
-     *
-     * @param User $user
-     * @param LearningCategory $category
-     * @return array
      */
     public function getCategoryProgress(User $user, LearningCategory $category): array
     {
@@ -439,7 +415,7 @@ class CourseProgressionService
                 $currentLevel = max($currentLevel, $article->course_level ?? 1);
             } elseif ($progress && $progress->status === 'in_progress') {
                 $inProgressCount++;
-            } elseif (!$access['can_access']) {
+            } elseif (! $access['can_access']) {
                 $lockedCount++;
             }
         }
@@ -458,8 +434,6 @@ class CourseProgressionService
     /**
      * จบคอร์สและให้รางวัล
      *
-     * @param User $user
-     * @param LearningArticle $article
      * @return array ['success' => bool, 'rewards' => array, 'next_article' => LearningArticle|null]
      */
     public function completeArticle(User $user, LearningArticle $article): array
@@ -480,9 +454,9 @@ class CourseProgressionService
             $totalRewardValue = 0;
 
             // ให้รางวัลเฉพาะเมื่อจบครั้งแรก
-            if (!$wasCompleted) {
+            if (! $wasCompleted) {
                 // ตรวจสอบงบประมาณ
-                $canGiveCoinMoney = !$article->isBudgetExhausted();
+                $canGiveCoinMoney = ! $article->isBudgetExhausted();
 
                 // 1. ให้คะแนน Points
                 if ($article->points_reward > 0) {
@@ -499,7 +473,7 @@ class CourseProgressionService
                     $rewards[] = [
                         'type' => 'coins',
                         'value' => $article->coin_reward,
-                        'label' => number_format($article->coin_reward, 2) . ' Coins',
+                        'label' => number_format($article->coin_reward, 2).' Coins',
                     ];
                     $totalRewardValue += $article->coin_reward;
                 }
@@ -510,7 +484,7 @@ class CourseProgressionService
                     $rewards[] = [
                         'type' => 'money',
                         'value' => $article->money_reward,
-                        'label' => '฿' . number_format($article->money_reward, 2),
+                        'label' => '฿'.number_format($article->money_reward, 2),
                     ];
                     $totalRewardValue += $article->money_reward;
                 }
@@ -531,7 +505,7 @@ class CourseProgressionService
                     $rewards[] = [
                         'type' => 'pv',
                         'value' => $article->pv_value,
-                        'label' => number_format($article->pv_value, 2) . ' PV',
+                        'label' => number_format($article->pv_value, 2).' PV',
                     ];
                 }
 
@@ -582,18 +556,13 @@ class CourseProgressionService
                 'success' => false,
                 'rewards' => [],
                 'next_article' => null,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * ให้รางวัล Video Coins
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @param float $amount
-     * @return void
      */
     protected function giveCoinReward(User $user, LearningArticle $article, float $amount): void
     {
@@ -613,11 +582,6 @@ class CourseProgressionService
 
     /**
      * ให้รางวัลเงินสด (THB) เข้า Wallet
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @param float $amount
-     * @return void
      */
     protected function giveMoneyReward(User $user, LearningArticle $article, float $amount): void
     {
@@ -647,10 +611,6 @@ class CourseProgressionService
 
     /**
      * ให้รางวัล EXP
-     *
-     * @param User $user
-     * @param int $exp
-     * @return void
      */
     protected function giveExpReward(User $user, int $exp): void
     {
@@ -665,17 +625,12 @@ class CourseProgressionService
 
     /**
      * ให้รางวัล PV (Point Value)
-     *
-     * @param User $user
-     * @param LearningArticle $article
-     * @param float $pv
-     * @return void
      */
     protected function givePvReward(User $user, LearningArticle $article, float $pv): void
     {
         // เชื่อมกับระบบ MLM PV Transaction
         if (class_exists('App\Models\MlmPvTransaction')) {
-            $mlmPvTransaction = new \App\Models\MlmPvTransaction();
+            $mlmPvTransaction = new \App\Models\MlmPvTransaction;
             $mlmPvTransaction->user_id = $user->id;
             $mlmPvTransaction->pv_amount = $pv;
             $mlmPvTransaction->transaction_type = 'course_reward';
@@ -693,9 +648,6 @@ class CourseProgressionService
 
     /**
      * หาคอร์สถัดไปในหมวดหมู่
-     *
-     * @param LearningArticle $currentArticle
-     * @return LearningArticle|null
      */
     public function getNextArticle(LearningArticle $currentArticle): ?LearningArticle
     {
@@ -722,9 +674,6 @@ class CourseProgressionService
 
     /**
      * ดึงสถิติการเรียนของผู้ใช้
-     *
-     * @param User $user
-     * @return array
      */
     public function getUserLearningStats(User $user): array
     {
@@ -761,25 +710,22 @@ class CourseProgressionService
 
     /**
      * Format time spent
-     *
-     * @param int $seconds
-     * @return string
      */
     protected function formatTimeSpent(int $seconds): string
     {
         if ($seconds < 60) {
-            return $seconds . ' วินาที';
+            return $seconds.' วินาที';
         }
 
         $minutes = floor($seconds / 60);
 
         if ($minutes < 60) {
-            return $minutes . ' นาที';
+            return $minutes.' นาที';
         }
 
         $hours = floor($minutes / 60);
         $remainingMinutes = $minutes % 60;
 
-        return $hours . ' ชั่วโมง ' . $remainingMinutes . ' นาที';
+        return $hours.' ชั่วโมง '.$remainingMinutes.' นาที';
     }
 }

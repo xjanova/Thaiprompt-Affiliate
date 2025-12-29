@@ -77,16 +77,19 @@ class LineRegistrationSession extends Model
      * สถานะที่เป็นไปได้
      */
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_FOLLOWED = 'followed';
+
     public const STATUS_IN_PROGRESS = 'in_progress';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     /**
      * ความสัมพันธ์กับ User (ผู้ที่สมัครเสร็จแล้ว)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -95,8 +98,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ความสัมพันธ์กับ User (Sponsor)
-     *
-     * @return BelongsTo
      */
     public function sponsorUser(): BelongsTo
     {
@@ -105,8 +106,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (Sponsor)
-     *
-     * @return BelongsTo
      */
     public function sponsorMember(): BelongsTo
     {
@@ -120,10 +119,9 @@ class LineRegistrationSession extends Model
      * - ถ้ามี referral_code → ใช้ sponsor จาก code นั้น
      * - ถ้าไม่มี → ใช้ Super Admin (user_id = 1) เป็น default
      *
-     * @param string|null $referralCode รหัสผู้แนะนำ (ถ้ามี)
-     * @param string|null $ipAddress IP Address
-     * @param string|null $userAgent User Agent
-     * @return self
+     * @param  string|null  $referralCode  รหัสผู้แนะนำ (ถ้ามี)
+     * @param  string|null  $ipAddress  IP Address
+     * @param  string|null  $userAgent  User Agent
      */
     public static function createSession(
         ?string $referralCode = null,
@@ -159,7 +157,7 @@ class LineRegistrationSession extends Model
 
         // ✅ FALLBACK: ถ้าไม่มี sponsor → ใช้ Super Admin เป็น default
         // สำคัญ: ต้องมี sponsor เสมอเพื่อต่อสายงาน MLM
-        if (!$sponsorUserId) {
+        if (! $sponsorUserId) {
             // ลองหา Super Admin (หลายวิธีเพื่อความปลอดภัย)
             $superAdmin = User::where('email', 'superadmin@thaiprompt.com')->first()
                 ?? User::where('is_super_admin', true)->first()
@@ -175,7 +173,7 @@ class LineRegistrationSession extends Model
                     ->first();
 
                 // ถ้าไม่พบ ลองหาจาก user_id
-                if (!$adminMlmMember) {
+                if (! $adminMlmMember) {
                     $adminMlmMember = MlmMember::where('user_id', $sponsorUserId)
                         ->where('status', 'active')
                         ->first();
@@ -212,8 +210,6 @@ class LineRegistrationSession extends Model
 
     /**
      * สร้าง unique token
-     *
-     * @return string
      */
     public static function generateToken(): string
     {
@@ -226,9 +222,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ค้นหา session จาก token
-     *
-     * @param string $token
-     * @return self|null
      */
     public static function findByToken(string $token): ?self
     {
@@ -237,9 +230,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ค้นหา session จาก LINE User ID
-     *
-     * @param string $lineUserId
-     * @return self|null
      */
     public static function findByLineUserId(string $lineUserId): ?self
     {
@@ -259,9 +249,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ค้นหา session ที่ pending อยู่สำหรับ LINE User ID
-     *
-     * @param string $lineUserId
-     * @return self|null
      */
     public static function findPendingByLineUserId(string $lineUserId): ?self
     {
@@ -277,8 +264,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ตรวจสอบว่า session หมดอายุหรือไม่
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -288,6 +273,7 @@ class LineRegistrationSession extends Model
 
         if ($this->expires_at && $this->expires_at->isPast()) {
             $this->markAsExpired();
+
             return true;
         }
 
@@ -296,12 +282,10 @@ class LineRegistrationSession extends Model
 
     /**
      * ตรวจสอบว่า session พร้อมสำหรับ polling หรือไม่
-     *
-     * @return bool
      */
     public function isValidForPolling(): bool
     {
-        return !$this->isExpired() && in_array($this->status, [
+        return ! $this->isExpired() && in_array($this->status, [
             self::STATUS_PENDING,
             self::STATUS_FOLLOWED,
             self::STATUS_IN_PROGRESS,
@@ -311,9 +295,6 @@ class LineRegistrationSession extends Model
 
     /**
      * Mark session เป็น followed (เพิ่มเพื่อน LINE OA แล้ว)
-     *
-     * @param string $lineUserId
-     * @return void
      */
     public function markAsFollowed(string $lineUserId): void
     {
@@ -326,9 +307,6 @@ class LineRegistrationSession extends Model
 
     /**
      * Mark session เป็น in_progress (กำลังสมัคร)
-     *
-     * @param string|null $lineUserId
-     * @return void
      */
     public function markAsInProgress(?string $lineUserId = null): void
     {
@@ -344,8 +322,7 @@ class LineRegistrationSession extends Model
     /**
      * Mark session เป็น completed (สมัครเสร็จ)
      *
-     * @param int $userId User ID ที่สมัครเสร็จ
-     * @return void
+     * @param  int  $userId  User ID ที่สมัครเสร็จ
      */
     public function markAsCompleted(int $userId): void
     {
@@ -358,8 +335,6 @@ class LineRegistrationSession extends Model
 
     /**
      * Mark session เป็น expired
-     *
-     * @return void
      */
     public function markAsExpired(): void
     {
@@ -368,8 +343,6 @@ class LineRegistrationSession extends Model
 
     /**
      * Mark session เป็น cancelled
-     *
-     * @return void
      */
     public function markAsCancelled(): void
     {
@@ -378,9 +351,6 @@ class LineRegistrationSession extends Model
 
     /**
      * อัพเดท metadata
-     *
-     * @param array $data
-     * @return void
      */
     public function updateMetadata(array $data): void
     {
@@ -391,8 +361,6 @@ class LineRegistrationSession extends Model
 
     /**
      * ดึงข้อมูลสำหรับ API response
-     *
-     * @return array
      */
     public function toApiResponse(): array
     {
@@ -428,7 +396,7 @@ class LineRegistrationSession extends Model
     /**
      * Scope สำหรับ session ที่ยังไม่หมดอายุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeNotExpired($query)
@@ -442,7 +410,7 @@ class LineRegistrationSession extends Model
     /**
      * Scope สำหรับ session ที่ active อยู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)

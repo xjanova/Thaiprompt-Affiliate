@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\SmartSlide;
 use App\Models\SmartSlideLayer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class SmartSlideLayerController extends Controller
 {
@@ -35,7 +34,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Layer ถูกสร้างแล้ว',
-            'layer' => $layer->fresh()
+            'layer' => $layer->fresh(),
         ]);
     }
 
@@ -61,7 +60,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Layer ถูกอัปเดตแล้ว',
-            'layer' => $layer->fresh()
+            'layer' => $layer->fresh(),
         ]);
     }
 
@@ -74,7 +73,7 @@ class SmartSlideLayerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Layer ถูกลบแล้ว'
+            'message' => 'Layer ถูกลบแล้ว',
         ]);
     }
 
@@ -88,7 +87,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Layer ถูกทำสำเนาแล้ว',
-            'layer' => $newLayer
+            'layer' => $newLayer,
         ]);
     }
 
@@ -110,7 +109,7 @@ class SmartSlideLayerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ลำดับ Layer ถูกอัปเดตแล้ว'
+            'message' => 'ลำดับ Layer ถูกอัปเดตแล้ว',
         ]);
     }
 
@@ -128,7 +127,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'path' => $path,
-            'url' => asset('storage/' . $path)
+            'url' => asset('storage/'.$path),
         ]);
     }
 
@@ -161,7 +160,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'ตำแหน่ง Layer ถูกอัปเดตแล้ว',
-            'layer' => $layer->fresh()
+            'layer' => $layer->fresh(),
         ]);
     }
 
@@ -181,7 +180,7 @@ class SmartSlideLayerController extends Controller
             if ($layer && $layer->slide_id === $slide->id) {
                 $updateData = array_intersect_key($layerData, array_flip([
                     'content', 'position', 'style', 'responsive', 'animation',
-                    'link_url', 'link_target', 'order', 'is_visible'
+                    'link_url', 'link_target', 'order', 'is_visible',
                 ]));
 
                 $layer->update($updateData);
@@ -191,7 +190,7 @@ class SmartSlideLayerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Layers ถูกอัปเดตแล้ว',
-            'slide' => $slide->fresh()->load('layers')
+            'slide' => $slide->fresh()->load('layers'),
         ]);
     }
 }

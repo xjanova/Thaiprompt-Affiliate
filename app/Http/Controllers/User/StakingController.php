@@ -4,7 +4,6 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\TPIXStakingPool;
-use App\Models\TPIXStake;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 

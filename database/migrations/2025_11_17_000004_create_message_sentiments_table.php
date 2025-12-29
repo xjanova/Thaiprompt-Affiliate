@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง message_sentiments สำหรับเก็บผลการวิเคราะห์ความรู้สึก
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง message_sentiments
-     *
-     * @return void
      */
     public function down(): void
     {

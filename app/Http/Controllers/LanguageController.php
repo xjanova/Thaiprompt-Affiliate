@@ -16,7 +16,7 @@ class LanguageController extends Controller
         // Get supported locales from database
         $supportedLocales = LanguageSetting::getEnabledCodes();
 
-        if (!in_array($locale, $supportedLocales)) {
+        if (! in_array($locale, $supportedLocales)) {
             return redirect()->back()->with('error', 'Unsupported language');
         }
 

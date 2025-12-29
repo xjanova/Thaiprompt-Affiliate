@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\NFCCard;
 use App\Services\NFC\NFCCardService;
 use App\Services\WalletService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Exception;
 
 /**
  * NFC Card Controller สำหรับ User
@@ -23,6 +23,7 @@ use Exception;
 class NFCCardController extends Controller
 {
     protected NFCCardService $nfcCardService;
+
     protected WalletService $walletService;
 
     public function __construct(
@@ -73,7 +74,6 @@ class NFCCardController extends Controller
     /**
      * แสดงรายละเอียดการ์ด
      *
-     * @param NFCCard $card
      * @return \Illuminate\View\View
      */
     public function show(NFCCard $card)
@@ -95,8 +95,6 @@ class NFCCardController extends Controller
     /**
      * เปิดการใช้งานการ์ด
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function enable(Request $request, NFCCard $card)
@@ -106,17 +104,15 @@ class NFCCardController extends Controller
         try {
             $card->enable();
 
-            return redirect()->back()->with('success', 'เปิดใช้งานการ์ด ' . $card->card_name . ' เรียบร้อยแล้ว');
+            return redirect()->back()->with('success', 'เปิดใช้งานการ์ด '.$card->card_name.' เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถเปิดใช้งานการ์ดได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถเปิดใช้งานการ์ดได้: '.$e->getMessage());
         }
     }
 
     /**
      * ปิดการใช้งานการ์ด
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function disable(Request $request, NFCCard $card)
@@ -130,17 +126,15 @@ class NFCCardController extends Controller
         try {
             $card->disable($validated['reason'] ?? 'ปิดโดยผู้ใช้');
 
-            return redirect()->back()->with('success', 'ปิดการใช้งานการ์ด ' . $card->card_name . ' เรียบร้อยแล้ว');
+            return redirect()->back()->with('success', 'ปิดการใช้งานการ์ด '.$card->card_name.' เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถปิดการใช้งานการ์ดได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถปิดการใช้งานการ์ดได้: '.$e->getMessage());
         }
     }
 
     /**
      * ตั้งค่าวงเงิน
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateLimits(Request $request, NFCCard $card)
@@ -162,15 +156,13 @@ class NFCCardController extends Controller
 
             return redirect()->back()->with('success', 'อัพเดทวงเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถอัพเดทวงเงินได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถอัพเดทวงเงินได้: '.$e->getMessage());
         }
     }
 
     /**
      * ผูกการ์ดกับ Wallet
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function linkWallet(Request $request, NFCCard $card)
@@ -185,15 +177,13 @@ class NFCCardController extends Controller
 
             return redirect()->back()->with('success', 'ผูกการ์ดกับ Wallet เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถผูกการ์ดกับ Wallet ได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถผูกการ์ดกับ Wallet ได้: '.$e->getMessage());
         }
     }
 
     /**
      * ยกเลิกการผูกการ์ดกับ Wallet
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unlinkWallet(Request $request, NFCCard $card)
@@ -205,15 +195,13 @@ class NFCCardController extends Controller
 
             return redirect()->back()->with('success', 'ยกเลิกการผูกการ์ดกับ Wallet เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถยกเลิกการผูกการ์ดได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถยกเลิกการผูกการ์ดได้: '.$e->getMessage());
         }
     }
 
     /**
      * เติมเงินจาก Wallet
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function topUpFromWallet(Request $request, NFCCard $card)
@@ -232,17 +220,15 @@ class NFCCardController extends Controller
                 $validated['pin']
             );
 
-            return redirect()->back()->with('success', 'เติมเงินเรียบร้อยแล้ว ฿' . number_format($validated['amount'], 2));
+            return redirect()->back()->with('success', 'เติมเงินเรียบร้อยแล้ว ฿'.number_format($validated['amount'], 2));
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถเติมเงินได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถเติมเงินได้: '.$e->getMessage());
         }
     }
 
     /**
      * ตั้งค่า Auto Top-up
      *
-     * @param Request $request
-     * @param NFCCard $card
      * @return \Illuminate\Http\RedirectResponse
      */
     public function configureAutoTopUp(Request $request, NFCCard $card)
@@ -270,14 +256,13 @@ class NFCCardController extends Controller
 
             return redirect()->back()->with('success', $message);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'ไม่สามารถตั้งค่า Auto Top-up ได้: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถตั้งค่า Auto Top-up ได้: '.$e->getMessage());
         }
     }
 
     /**
      * ดูประวัติการทำธุรกรรม
      *
-     * @param NFCCard $card
      * @return \Illuminate\View\View
      */
     public function transactions(NFCCard $card)
@@ -295,8 +280,8 @@ class NFCCardController extends Controller
     /**
      * ตรวจสอบสิทธิ์การเข้าถึงการ์ด
      *
-     * @param NFCCard $card
      * @return void
+     *
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
     protected function authorizeCardOwnership(NFCCard $card)

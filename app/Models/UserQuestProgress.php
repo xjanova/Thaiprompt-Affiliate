@@ -70,7 +70,7 @@ class UserQuestProgress extends Model
         $this->progress_percentage = ($this->current_progress / $this->target_value) * 100;
 
         // Check if completed
-        if ($this->current_progress >= $this->target_value && !$this->completed) {
+        if ($this->current_progress >= $this->target_value && ! $this->completed) {
             $this->markCompleted();
         }
 
@@ -106,7 +106,7 @@ class UserQuestProgress extends Model
      */
     public function claimRewards()
     {
-        if (!$this->completed || $this->reward_claimed) {
+        if (! $this->completed || $this->reward_claimed) {
             return null;
         }
 

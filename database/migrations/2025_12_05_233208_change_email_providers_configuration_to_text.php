@@ -19,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตารางมีอยู่ก่อน
-        if (!Schema::hasTable('email_providers')) {
+        if (! Schema::hasTable('email_providers')) {
             return;
         }
 
@@ -34,7 +34,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (!Schema::hasTable('email_providers')) {
+        if (! Schema::hasTable('email_providers')) {
             return;
         }
 

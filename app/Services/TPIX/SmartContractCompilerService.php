@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Process;
 class SmartContractCompilerService
 {
     protected string $contractsPath;
+
     protected string $buildPath;
+
     protected string $solcPath;
 
     public function __construct()
@@ -30,12 +32,12 @@ class SmartContractCompilerService
     {
         $contractFile = "{$this->contractsPath}/{$contractName}.sol";
 
-        if (!File::exists($contractFile)) {
+        if (! File::exists($contractFile)) {
             throw new \Exception("Contract file not found: {$contractFile}");
         }
 
         // Ensure build directory exists
-        if (!File::isDirectory($this->buildPath)) {
+        if (! File::isDirectory($this->buildPath)) {
             File::makeDirectory($this->buildPath, 0755, true);
         }
 
@@ -48,7 +50,7 @@ class SmartContractCompilerService
 
         $result = Process::run($command);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             Log::error('Contract compilation failed', [
                 'contract' => $contractName,
                 'error' => $result->errorOutput(),
@@ -60,7 +62,7 @@ class SmartContractCompilerService
         // Parse output
         $output = json_decode($result->output(), true);
 
-        if (!$output || !isset($output['contracts'])) {
+        if (! $output || ! isset($output['contracts'])) {
             throw new \Exception('Invalid compiler output');
         }
 
@@ -68,11 +70,11 @@ class SmartContractCompilerService
         $contractKey = "{$contractFile}:{$contractName}";
         $contract = $output['contracts'][$contractKey] ?? null;
 
-        if (!$contract) {
+        if (! $contract) {
             throw new \Exception("Contract {$contractName} not found in compilation output");
         }
 
-        $bytecode = '0x' . $contract['bin'];
+        $bytecode = '0x'.$contract['bin'];
         $abi = json_decode($contract['abi'], true);
 
         // Save to build directory
@@ -130,7 +132,7 @@ class SmartContractCompilerService
         $filename = "{$tokenData['symbol']}_Token.sol";
         $filepath = "{$this->contractsPath}/generated/{$filename}";
 
-        if (!File::isDirectory(dirname($filepath))) {
+        if (! File::isDirectory(dirname($filepath))) {
             File::makeDirectory(dirname($filepath), 0755, true);
         }
 
@@ -175,8 +177,9 @@ class SmartContractCompilerService
         // Submit to Blockscout API for verification
         $explorerUrl = config('crypto.networks.tpix.explorer');
 
-        if (!$explorerUrl) {
+        if (! $explorerUrl) {
             Log::warning('Explorer URL not configured, skipping verification');
+
             return false;
         }
 
@@ -184,7 +187,7 @@ class SmartContractCompilerService
         $apiUrl = "{$explorerUrl}/api";
 
         // This is a placeholder - implement actual Blockscout verification
-        Log::info("Contract verification submitted", [
+        Log::info('Contract verification submitted', [
             'address' => $contractAddress,
             'explorer' => $explorerUrl,
         ]);
@@ -199,7 +202,7 @@ class SmartContractCompilerService
     {
         $buildFile = "{$this->buildPath}/{$contractName}.json";
 
-        if (!File::exists($buildFile)) {
+        if (! File::exists($buildFile)) {
             return null;
         }
 
@@ -212,6 +215,7 @@ class SmartContractCompilerService
     public function isSolcInstalled(): bool
     {
         $result = Process::run("{$this->solcPath} --version");
+
         return $result->successful();
     }
 
@@ -220,7 +224,7 @@ class SmartContractCompilerService
      */
     public function getSolcVersion(): ?string
     {
-        if (!$this->isSolcInstalled()) {
+        if (! $this->isSolcInstalled()) {
             return null;
         }
 
@@ -229,6 +233,7 @@ class SmartContractCompilerService
         if ($result->successful()) {
             // Extract version from output
             preg_match('/Version: ([\d\.]+)/', $result->output(), $matches);
+
             return $matches[1] ?? null;
         }
 
@@ -247,10 +252,12 @@ class SmartContractCompilerService
 
         if ($result->successful()) {
             Log::info('solc installed successfully');
+
             return true;
         }
 
-        Log::error('Failed to install solc: ' . $result->errorOutput());
+        Log::error('Failed to install solc: '.$result->errorOutput());
+
         return false;
     }
 }

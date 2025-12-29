@@ -107,8 +107,6 @@ class PageView extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -167,8 +165,7 @@ class PageView extends Model
     /**
      * ดึงสถิติภาพรวม
      *
-     * @param string $period ช่วงเวลา (today, week, month, etc.)
-     * @return array
+     * @param  string  $period  ช่วงเวลา (today, week, month, etc.)
      */
     public static function getSummary(string $period = '7days'): array
     {
@@ -194,8 +191,8 @@ class PageView extends Model
     /**
      * ดึงหน้าที่มีคนเข้าชมมากที่สุด
      *
-     * @param int $limit จำนวนที่จะแสดง
-     * @param string $period ช่วงเวลา
+     * @param  int  $limit  จำนวนที่จะแสดง
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getTopPages(int $limit = 10, string $period = '7days')
@@ -212,8 +209,8 @@ class PageView extends Model
     /**
      * ดึงแหล่งที่มาของ traffic
      *
-     * @param int $limit จำนวนที่จะแสดง
-     * @param string $period ช่วงเวลา
+     * @param  int  $limit  จำนวนที่จะแสดง
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getTopReferrers(int $limit = 10, string $period = '7days')
@@ -231,7 +228,7 @@ class PageView extends Model
     /**
      * ดึงสถิติตาม device type
      *
-     * @param string $period ช่วงเวลา
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getDeviceStats(string $period = '7days')
@@ -247,8 +244,8 @@ class PageView extends Model
     /**
      * ดึงสถิติตามประเทศ
      *
-     * @param int $limit จำนวนที่จะแสดง
-     * @param string $period ช่วงเวลา
+     * @param  int  $limit  จำนวนที่จะแสดง
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getCountryStats(int $limit = 10, string $period = '7days')
@@ -266,8 +263,8 @@ class PageView extends Model
     /**
      * ดึงสถิติตาม browser
      *
-     * @param int $limit จำนวนที่จะแสดง
-     * @param string $period ช่วงเวลา
+     * @param  int  $limit  จำนวนที่จะแสดง
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getBrowserStats(int $limit = 10, string $period = '7days')
@@ -285,7 +282,7 @@ class PageView extends Model
     /**
      * ดึงสถิติรายวัน
      *
-     * @param int $days จำนวนวัน
+     * @param  int  $days  จำนวนวัน
      * @return \Illuminate\Support\Collection
      */
     public static function getDailyStats(int $days = 30)
@@ -323,7 +320,7 @@ class PageView extends Model
     /**
      * ดึง UTM Campaign Stats
      *
-     * @param string $period ช่วงเวลา
+     * @param  string  $period  ช่วงเวลา
      * @return \Illuminate\Support\Collection
      */
     public static function getUtmStats(string $period = '30days')
@@ -346,8 +343,6 @@ class PageView extends Model
     /**
      * ดึงข้อมูลผู้ใช้รายเดียว
      *
-     * @param int $userId
-     * @param int $days
      * @return \Illuminate\Support\Collection
      */
     public static function getUserActivity(int $userId, int $days = 30)

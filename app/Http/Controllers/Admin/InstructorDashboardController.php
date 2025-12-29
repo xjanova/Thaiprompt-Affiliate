@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LearningArticle;
 use App\Models\UserArticleProgress;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +18,7 @@ class InstructorDashboardController extends Controller
         $user = Auth::user();
 
         // Check if user is an instructor or admin
-        if (!$user->hasRole(['admin', 'instructor'])) {
+        if (! $user->hasRole(['admin', 'instructor'])) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -40,7 +39,7 @@ class InstructorDashboardController extends Controller
             ->where('status', 'completed')
             ->count();
 
-        $totalViews = $courses->sum(fn($course) => $course->views ?? 0);
+        $totalViews = $courses->sum(fn ($course) => $course->views ?? 0);
 
         // Get recent student activities
         $recentActivities = UserArticleProgress::whereIn('article_id', $courses->pluck('id'))

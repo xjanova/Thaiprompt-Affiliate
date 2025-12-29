@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 class ThemeCompilerService
 {
     protected ThemeService $themeService;
+
     protected RgbEffectService $rgbService;
 
     /**
@@ -30,29 +31,28 @@ class ThemeCompilerService
 
     public function __construct()
     {
-        $this->themeService = new ThemeService();
-        $this->rgbService = new RgbEffectService();
+        $this->themeService = new ThemeService;
+        $this->rgbService = new RgbEffectService;
     }
 
     /**
      * Compile theme พร้อม caching
      *
-     * @param ThemeSetting|null $themeSetting
-     * @param bool $forceRefresh บังคับ refresh cache
+     * @param  bool  $forceRefresh  บังคับ refresh cache
      * @return array ['css' => string, 'js' => string]
      */
     public function compile(?ThemeSetting $themeSetting = null, bool $forceRefresh = false): array
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             return ['css' => '', 'js' => ''];
         }
 
         // Cache key ตาม theme ID และ updated_at
         $cacheKey = $this->getCacheKey($themeSetting);
 
-        if (!$forceRefresh && Cache::has($cacheKey)) {
+        if (! $forceRefresh && Cache::has($cacheKey)) {
             return Cache::get($cacheKey);
         }
 
@@ -66,7 +66,7 @@ class ThemeCompilerService
         Cache::put($cacheKey, $compiled, self::CACHE_TTL);
 
         // Log
-        Log::info("Arrow X Theme compiled and cached", [
+        Log::info('Arrow X Theme compiled and cached', [
             'theme_id' => $themeSetting->id,
             'cache_key' => $cacheKey,
         ]);
@@ -76,27 +76,24 @@ class ThemeCompilerService
 
     /**
      * Compile CSS
-     *
-     * @param ThemeSetting $themeSetting
-     * @return string
      */
     protected function compileCss(ThemeSetting $themeSetting): string
     {
         $css = "/**\n";
         $css .= " * Arrow X Theme System - Compiled CSS\n";
         $css .= " * Theme: {$themeSetting->theme_name}\n";
-        $css .= " * Generated: " . now()->toDateTimeString() . "\n";
-        $css .= " * Cache Key: " . $this->getCacheKey($themeSetting) . "\n";
+        $css .= ' * Generated: '.now()->toDateTimeString()."\n";
+        $css .= ' * Cache Key: '.$this->getCacheKey($themeSetting)."\n";
         $css .= " */\n\n";
 
         // CSS Variables
-        $css .= $this->themeService->generateCssVariables($themeSetting) . "\n\n";
+        $css .= $this->themeService->generateCssVariables($themeSetting)."\n\n";
 
         // Dark Mode Variables
-        $css .= $this->themeService->generateDarkModeCssVariables($themeSetting) . "\n\n";
+        $css .= $this->themeService->generateDarkModeCssVariables($themeSetting)."\n\n";
 
         // RGB Effects
-        $css .= $this->rgbService->generateAllEffectsCss($themeSetting) . "\n";
+        $css .= $this->rgbService->generateAllEffectsCss($themeSetting)."\n";
 
         // Minify CSS (optional)
         if (config('app.env') === 'production') {
@@ -108,20 +105,17 @@ class ThemeCompilerService
 
     /**
      * Compile JavaScript
-     *
-     * @param ThemeSetting $themeSetting
-     * @return string
      */
     protected function compileJs(ThemeSetting $themeSetting): string
     {
         $js = "/**\n";
         $js .= " * Arrow X Theme System - Compiled JavaScript\n";
         $js .= " * Theme: {$themeSetting->theme_name}\n";
-        $js .= " * Generated: " . now()->toDateTimeString() . "\n";
+        $js .= ' * Generated: '.now()->toDateTimeString()."\n";
         $js .= " */\n\n";
 
         // RGB Effects JavaScript
-        $js .= $this->rgbService->generateAllEffectsJs($themeSetting) . "\n";
+        $js .= $this->rgbService->generateAllEffectsJs($themeSetting)."\n";
 
         // Theme utilities
         $js .= $this->generateThemeUtilities($themeSetting);
@@ -136,9 +130,6 @@ class ThemeCompilerService
 
     /**
      * สร้าง JavaScript utilities สำหรับ theme
-     *
-     * @param ThemeSetting $themeSetting
-     * @return string
      */
     protected function generateThemeUtilities(ThemeSetting $themeSetting): string
     {
@@ -183,9 +174,6 @@ JS;
 
     /**
      * Minify CSS (basic)
-     *
-     * @param string $css
-     * @return string
      */
     protected function minifyCss(string $css): string
     {
@@ -202,9 +190,6 @@ JS;
 
     /**
      * Minify JavaScript (basic)
-     *
-     * @param string $js
-     * @return string
      */
     protected function minifyJs(string $js): string
     {
@@ -222,33 +207,29 @@ JS;
 
     /**
      * สร้าง cache key
-     *
-     * @param ThemeSetting $themeSetting
-     * @return string
      */
     protected function getCacheKey(ThemeSetting $themeSetting): string
     {
         $timestamp = $themeSetting->updated_at?->timestamp ?? time();
-        return self::CACHE_PREFIX . "_{$themeSetting->id}_{$timestamp}";
+
+        return self::CACHE_PREFIX."_{$themeSetting->id}_{$timestamp}";
     }
 
     /**
      * Clear theme cache
-     *
-     * @param ThemeSetting|null $themeSetting
-     * @return bool
      */
     public function clearCache(?ThemeSetting $themeSetting = null): bool
     {
         if ($themeSetting) {
             $cacheKey = $this->getCacheKey($themeSetting);
+
             return Cache::forget($cacheKey);
         }
 
         // Clear ทุก theme cache
         $cleared = Cache::flush();
 
-        Log::info("Arrow X Theme cache cleared");
+        Log::info('Arrow X Theme cache cleared');
 
         return $cleared;
     }
@@ -256,14 +237,13 @@ JS;
     /**
      * บันทึก compiled theme ลง file
      *
-     * @param ThemeSetting|null $themeSetting
      * @return array ['css_path' => string, 'js_path' => string]
      */
     public function compileToFile(?ThemeSetting $themeSetting = null): array
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             throw new \Exception('No active theme found');
         }
 
@@ -272,7 +252,7 @@ JS;
 
         // สร้าง directory ถ้ายังไม่มี
         $publicPath = public_path('themes/arrow-x');
-        if (!File::exists($publicPath)) {
+        if (! File::exists($publicPath)) {
             File::makeDirectory($publicPath, 0755, true);
         }
 
@@ -284,7 +264,7 @@ JS;
         File::put($cssPath, $compiled['css']);
         File::put($jsPath, $compiled['js']);
 
-        Log::info("Arrow X Theme compiled to files", [
+        Log::info('Arrow X Theme compiled to files', [
             'theme_id' => $themeSetting->id,
             'css_path' => $cssPath,
             'js_path' => $jsPath,
@@ -298,9 +278,6 @@ JS;
 
     /**
      * ดึง compiled theme จาก cache หรือ compile ใหม่
-     *
-     * @param ThemeSetting|null $themeSetting
-     * @return array
      */
     public function getCompiled(?ThemeSetting $themeSetting = null): array
     {
@@ -322,7 +299,7 @@ JS;
             $count++;
         }
 
-        Log::info("Arrow X Theme cache warmed up", ['count' => $count]);
+        Log::info('Arrow X Theme cache warmed up', ['count' => $count]);
 
         return $count;
     }

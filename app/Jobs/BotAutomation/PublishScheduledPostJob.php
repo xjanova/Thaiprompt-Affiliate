@@ -16,6 +16,7 @@ class PublishScheduledPostJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 120; // 2 minutes
 
     /**
@@ -31,7 +32,8 @@ class PublishScheduledPostJob implements ShouldQueue
     public function handle(BotPlatformService $service): void
     {
         if ($this->post->status !== 'pending') {
-            Log::info("Skipping non-pending post", ['post_id' => $this->post->id]);
+            Log::info('Skipping non-pending post', ['post_id' => $this->post->id]);
+
             return;
         }
 
@@ -40,11 +42,11 @@ class PublishScheduledPostJob implements ShouldQueue
 
             $result = $service->publishPost($this->post);
 
-            if (!$result['success'] && $this->post->retry_count < 3) {
+            if (! $result['success'] && $this->post->retry_count < 3) {
                 $this->post->scheduleRetry(30);
             }
         } catch (\Exception $e) {
-            Log::error("Post publication job failed", [
+            Log::error('Post publication job failed', [
                 'post_id' => $this->post->id,
                 'error' => $e->getMessage(),
             ]);
@@ -60,7 +62,7 @@ class PublishScheduledPostJob implements ShouldQueue
     {
         $this->post->markAsFailed($exception->getMessage());
 
-        Log::error("Post publication job failed permanently", [
+        Log::error('Post publication job failed permanently', [
             'post_id' => $this->post->id,
             'error' => $exception->getMessage(),
         ]);

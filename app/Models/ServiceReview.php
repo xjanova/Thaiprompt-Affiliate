@@ -69,9 +69,9 @@ class ServiceReview extends Model
         'report_count' => 'integer',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * การจอง
@@ -105,9 +105,9 @@ class ServiceReview extends Model
         return $this->belongsTo(Service::class, 'service_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: รีวิวที่แสดงผล
@@ -158,9 +158,9 @@ class ServiceReview extends Model
             ->whereRaw('JSON_LENGTH(images) > 0');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Review Management
-    //===========================================
+    // ===========================================
 
     /**
      * Provider ตอบกลับรีวิว
@@ -213,9 +213,9 @@ class ServiceReview extends Model
         $this->update(['is_verified' => true]);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Ratings
-    //===========================================
+    // ===========================================
 
     /**
      * คำนวณคะแนนเฉลี่ยจากคะแนนย่อย
@@ -245,9 +245,9 @@ class ServiceReview extends Model
             || $this->friendliness_rating !== null;
     }
 
-    //===========================================
+    // ===========================================
     // Accessors
-    //===========================================
+    // ===========================================
 
     /**
      * คะแนนเป็นดาว (★★★★★)
@@ -256,7 +256,8 @@ class ServiceReview extends Model
     {
         $stars = str_repeat('★', $this->rating);
         $emptyStars = str_repeat('☆', 5 - $this->rating);
-        return $stars . $emptyStars;
+
+        return $stars.$emptyStars;
     }
 
     /**
@@ -284,7 +285,7 @@ class ServiceReview extends Model
      */
     public function hasImages(): bool
     {
-        return !empty($this->images) && count($this->images) > 0;
+        return ! empty($this->images) && count($this->images) > 0;
     }
 
     /**
@@ -292,7 +293,7 @@ class ServiceReview extends Model
      */
     public function hasProviderResponse(): bool
     {
-        return !empty($this->provider_response);
+        return ! empty($this->provider_response);
     }
 
     /**

@@ -48,6 +48,7 @@ class WarmUpThemeCacheCommand extends Command
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("❌ Warm-up failed: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }

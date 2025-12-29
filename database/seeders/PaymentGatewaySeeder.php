@@ -16,7 +16,7 @@ class PaymentGatewaySeeder extends Seeder
         $existingGatewaysCount = PaymentGateway::whereIn('code', [
             'promptpay',
             'bank_transfer',
-            'omise'
+            'omise',
         ])->count();
 
         if ($existingGatewaysCount > 0) {
@@ -39,7 +39,7 @@ class PaymentGatewaySeeder extends Seeder
             PaymentGateway::create($gateway);
         }
 
-        $this->command->info('✅ Payment gateways seeded successfully: ' . count($gateways) . ' gateways');
+        $this->command->info('✅ Payment gateways seeded successfully: '.count($gateways).' gateways');
     }
 
     /**
@@ -55,7 +55,7 @@ class PaymentGatewaySeeder extends Seeder
         $skipped = 0;
 
         foreach ($gateways as $gateway) {
-            if (!PaymentGateway::where('code', $gateway['code'])->exists()) {
+            if (! PaymentGateway::where('code', $gateway['code'])->exists()) {
                 PaymentGateway::create($gateway);
                 $this->command->info("   ➕ Added: {$gateway['name']}");
                 $added++;

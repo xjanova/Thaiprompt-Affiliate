@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บ log การใช้งาน AI features
      * ใช้สำหรับติดตาม quota, analytics, และ billing
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -80,8 +78,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_usage_logs
-     *
-     * @return void
      */
     public function down(): void
     {

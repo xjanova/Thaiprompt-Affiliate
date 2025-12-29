@@ -159,8 +159,6 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * คำนวณคะแนน trending จากสถิติต่างๆ
-     *
-     * @return int
      */
     public function calculateTrendingScore(): int
     {
@@ -195,8 +193,6 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * อัพเดทคะแนน trending
-     *
-     * @return void
      */
     public function updateTrendingScore(): void
     {
@@ -206,8 +202,6 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * ตรวจสอบว่าเป็น model ที่ hot หรือไม่
-     *
-     * @return bool
      */
     public function isHot(): bool
     {
@@ -216,12 +210,10 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * ตรวจสอบว่า model ใหม่หรือไม่ (อายุไม่เกิน 30 วัน)
-     *
-     * @return bool
      */
     public function isNew(): bool
     {
-        if (!$this->first_seen_at) {
+        if (! $this->first_seen_at) {
             return false;
         }
 
@@ -230,8 +222,6 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * ตรวจสอบว่าเหมาะกับผู้เริ่มต้นหรือไม่
-     *
-     * @return bool
      */
     public function isBeginnerFriendly(): bool
     {
@@ -240,12 +230,10 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * ได้รับขนาดไฟล์ที่อ่านง่าย
-     *
-     * @return string|null
      */
     public function getReadableSizeAttribute(): ?string
     {
-        if (!$this->model_size_bytes) {
+        if (! $this->model_size_bytes) {
             return $this->model_size;
         }
 
@@ -256,13 +244,13 @@ class HuggingFaceTrendingModel extends Model
             $bytes /= 1024;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
      * Scope: เฉพาะ models ที่แนะนำ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -273,7 +261,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: เฉพาะ models ที่แนะนำสำหรับผู้เริ่มต้น
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecommended($query)
@@ -284,7 +272,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: เฉพาะ models ที่พร้อม production
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeProductionReady($query)
@@ -295,7 +283,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: เรียงตามคะแนน trending
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeTrending($query)
@@ -306,7 +294,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: เรียงตามความนิยม (downloads)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query)
@@ -317,8 +305,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: ตามหมวดหมู่/task
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $task
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForTask($query, string $task)
@@ -329,8 +316,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: ตามระดับความยาก
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $level
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDifficulty($query, string $level)
@@ -341,7 +327,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: รองรับ Inference API
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSupportsInferenceApi($query)
@@ -352,7 +338,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: รันในเครื่องได้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCanRunLocally($query)
@@ -363,8 +349,7 @@ class HuggingFaceTrendingModel extends Model
     /**
      * Scope: ค้นหาข้อความ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearch($query, string $search)
@@ -379,8 +364,6 @@ class HuggingFaceTrendingModel extends Model
 
     /**
      * ได้รับ URL ของ model บน Hugging Face
-     *
-     * @return string
      */
     public function getHuggingFaceUrlAttribute(): string
     {

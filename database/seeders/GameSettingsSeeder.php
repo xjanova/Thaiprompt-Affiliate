@@ -9,8 +9,6 @@ class GameSettingsSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้นสำหรับการตั้งค่าเกม
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -486,6 +484,7 @@ class GameSettingsSeeder extends Seeder
 
             if ($exists) {
                 $this->command->info("   ⏭️  ข้าม: {$setting['key']} (มีอยู่แล้ว)");
+
                 continue;
             }
 

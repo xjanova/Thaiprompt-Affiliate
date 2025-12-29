@@ -31,7 +31,7 @@ return new class extends Migration
                 'messenger',
                 'slack',
                 'web_widget',
-                'custom_api'
+                'custom_api',
             ]);
             $table->string('platform_name')->nullable();     // ชื่อที่ตั้งเอง
 

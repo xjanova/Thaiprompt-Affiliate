@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\VideoChannel;
-use App\Models\VideoContent;
-use App\Models\UserVideoLevel;
-use App\Models\VideoCoin;
-use App\Models\VideoLevel;
 use App\Models\UserDailyStreak;
+use App\Models\UserVideoLevel;
+use App\Models\VideoChannel;
+use App\Models\VideoCoin;
+use App\Models\VideoContent;
+use App\Models\VideoLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -154,7 +154,7 @@ class VideoRewardController extends Controller
                 'video' => $video,
                 'user_progress' => $userProgress,
                 'required_watch_time' => $video->required_watch_time,
-                'can_claim_reward' => $userProgress && $userProgress->completed && !$userProgress->reward_claimed,
+                'can_claim_reward' => $userProgress && $userProgress->completed && ! $userProgress->reward_claimed,
             ],
         ]);
     }

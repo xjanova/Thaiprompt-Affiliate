@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\EarningsLedger;
 use App\Models\PayoutRequest;
 use App\Models\PayoutSetting;
-use App\Models\EarningsLedger;
 use App\Services\PayoutService;
 use Illuminate\Http\Request;
 
@@ -20,13 +20,12 @@ class PayoutController extends Controller
 
     public function __construct()
     {
-        $this->payoutService = new PayoutService();
+        $this->payoutService = new PayoutService;
     }
 
     /**
      * รายการ Payout Requests ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -52,7 +51,6 @@ class PayoutController extends Controller
     /**
      * รายละเอียด Payout Request
      *
-     * @param PayoutRequest $payout
      * @return \Illuminate\View\View
      */
     public function show(PayoutRequest $payout)
@@ -68,8 +66,6 @@ class PayoutController extends Controller
     /**
      * อนุมัติ Payout
      *
-     * @param Request $request
-     * @param PayoutRequest $payout
      * @return \Illuminate\Http\RedirectResponse
      */
     public function approve(Request $request, PayoutRequest $payout)
@@ -97,8 +93,6 @@ class PayoutController extends Controller
     /**
      * ปฏิเสธ Payout
      *
-     * @param Request $request
-     * @param PayoutRequest $payout
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, PayoutRequest $payout)
@@ -126,7 +120,6 @@ class PayoutController extends Controller
     /**
      * ประมวลผล Payout ที่อนุมัติแล้ว
      *
-     * @param PayoutRequest $payout
      * @return \Illuminate\Http\RedirectResponse
      */
     public function process(PayoutRequest $payout)
@@ -146,7 +139,6 @@ class PayoutController extends Controller
     /**
      * Bulk approve payouts
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bulkApprove(Request $request)
@@ -173,7 +165,7 @@ class PayoutController extends Controller
 
         return redirect()
             ->route('admin.platform-revenue.payouts.index')
-            ->with('success', "อนุมัติสำเร็จ {$approved} รายการ" . ($failed > 0 ? " (ล้มเหลว {$failed} รายการ)" : ''));
+            ->with('success', "อนุมัติสำเร็จ {$approved} รายการ".($failed > 0 ? " (ล้มเหลว {$failed} รายการ)" : ''));
     }
 
     /**
@@ -194,8 +186,6 @@ class PayoutController extends Controller
     /**
      * อัพเดทการตั้งค่า Payout
      *
-     * @param Request $request
-     * @param PayoutSetting $setting
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSetting(Request $request, PayoutSetting $setting)
@@ -222,7 +212,6 @@ class PayoutController extends Controller
     /**
      * Earnings Ledger
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function earnings(Request $request)
@@ -272,7 +261,6 @@ class PayoutController extends Controller
     /**
      * รายละเอียด Earning
      *
-     * @param EarningsLedger $earning
      * @return \Illuminate\View\View
      */
     public function showEarning(EarningsLedger $earning)

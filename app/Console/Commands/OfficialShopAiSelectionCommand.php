@@ -56,11 +56,12 @@ class OfficialShopAiSelectionCommand extends Command
         $this->newLine();
 
         try {
-            $service = new OfficialShopSelectionService();
+            $service = new OfficialShopSelectionService;
             $result = $service->runAiSelection($maxProducts);
 
-            if (!$result['success']) {
-                $this->error('❌ ' . ($result['message'] ?? 'เกิดข้อผิดพลาด'));
+            if (! $result['success']) {
+                $this->error('❌ '.($result['message'] ?? 'เกิดข้อผิดพลาด'));
+
                 return Command::FAILURE;
             }
 
@@ -77,7 +78,7 @@ class OfficialShopAiSelectionCommand extends Command
             );
 
             // แสดงรายการที่ถูกเลือกใหม่
-            if (!empty($result['selected'])) {
+            if (! empty($result['selected'])) {
                 $this->newLine();
                 $this->info('✅ สินค้าที่ถูกเลือกใหม่:');
                 foreach ($result['selected'] as $item) {
@@ -86,7 +87,7 @@ class OfficialShopAiSelectionCommand extends Command
             }
 
             // แสดง Warnings
-            if (!empty($result['warnings'])) {
+            if (! empty($result['warnings'])) {
                 $this->newLine();
                 $this->warn('⚠️  สินค้าที่ได้รับ Warning:');
                 foreach ($result['warnings'] as $item) {
@@ -95,7 +96,7 @@ class OfficialShopAiSelectionCommand extends Command
             }
 
             // แสดงสินค้าที่ถูกถอด
-            if (!empty($result['removed'])) {
+            if (! empty($result['removed'])) {
                 $this->newLine();
                 $this->error('❌ สินค้าที่ถูกถอดออก:');
                 foreach ($result['removed'] as $item) {
@@ -110,8 +111,8 @@ class OfficialShopAiSelectionCommand extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
-            $this->error('Stack trace: ' . $e->getTraceAsString());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
+            $this->error('Stack trace: '.$e->getTraceAsString());
 
             return Command::FAILURE;
         }

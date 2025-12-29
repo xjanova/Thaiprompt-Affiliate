@@ -4,10 +4,9 @@ namespace App\Services;
 
 use App\Models\MlmProspect;
 use App\Models\User;
-use App\Models\LineLoginLog;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * LINE Signup Analytics Service
@@ -30,8 +29,7 @@ class LineSignupAnalyticsService
     /**
      * Get overall signup statistics
      *
-     * @param string $period 'today', 'week', 'month', 'all'
-     * @return array
+     * @param  string  $period  'today', 'week', 'month', 'all'
      */
     public function getOverallStats(string $period = 'all'): array
     {
@@ -41,15 +39,15 @@ class LineSignupAnalyticsService
             $dateFilter = $this->getDateFilter($period);
 
             $stats = [
-                'total_invitations' => MlmProspect::when($dateFilter, fn($q) => $q->where('created_at', '>=', $dateFilter))->count(),
+                'total_invitations' => MlmProspect::when($dateFilter, fn ($q) => $q->where('created_at', '>=', $dateFilter))->count(),
                 'total_clicked' => MlmProspect::whereNotNull('clicked_at')
-                    ->when($dateFilter, fn($q) => $q->where('clicked_at', '>=', $dateFilter))->count(),
+                    ->when($dateFilter, fn ($q) => $q->where('clicked_at', '>=', $dateFilter))->count(),
                 'total_in_progress' => MlmProspect::where('status', 'in_progress')
-                    ->when($dateFilter, fn($q) => $q->where('conversation_started_at', '>=', $dateFilter))->count(),
+                    ->when($dateFilter, fn ($q) => $q->where('conversation_started_at', '>=', $dateFilter))->count(),
                 'total_completed' => MlmProspect::where('status', 'completed')
-                    ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter))->count(),
+                    ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter))->count(),
                 'total_expired' => MlmProspect::where('conversation_expired', true)
-                    ->when($dateFilter, fn($q) => $q->where('conversation_updated_at', '>=', $dateFilter))->count(),
+                    ->when($dateFilter, fn ($q) => $q->where('conversation_updated_at', '>=', $dateFilter))->count(),
             ];
 
             // Calculate conversion rates
@@ -75,9 +73,6 @@ class LineSignupAnalyticsService
 
     /**
      * Get conversion funnel data
-     *
-     * @param string $period
-     * @return array
      */
     public function getConversionFunnel(string $period = 'all'): array
     {
@@ -93,13 +88,13 @@ class LineSignupAnalyticsService
                 ['stage' => 'Completed', 'count' => 0, 'percentage' => 0],
             ];
 
-            $total = MlmProspect::when($dateFilter, fn($q) => $q->where('created_at', '>=', $dateFilter))->count();
+            $total = MlmProspect::when($dateFilter, fn ($q) => $q->where('created_at', '>=', $dateFilter))->count();
             $clicked = MlmProspect::whereNotNull('clicked_at')
-                ->when($dateFilter, fn($q) => $q->where('clicked_at', '>=', $dateFilter))->count();
+                ->when($dateFilter, fn ($q) => $q->where('clicked_at', '>=', $dateFilter))->count();
             $started = MlmProspect::whereNotNull('conversation_started_at')
-                ->when($dateFilter, fn($q) => $q->where('conversation_started_at', '>=', $dateFilter))->count();
+                ->when($dateFilter, fn ($q) => $q->where('conversation_started_at', '>=', $dateFilter))->count();
             $completed = MlmProspect::where('status', 'completed')
-                ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter))->count();
+                ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter))->count();
 
             $funnel[0]['count'] = $total;
             $funnel[1]['count'] = $clicked;
@@ -115,12 +110,10 @@ class LineSignupAnalyticsService
 
     /**
      * Get dropout analysis by step
-     *
-     * @return array
      */
     public function getDropoutAnalysis(): array
     {
-        $cacheKey = "line_analytics:dropout";
+        $cacheKey = 'line_analytics:dropout';
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () {
             $dropouts = MlmProspect::where('conversation_expired', true)
@@ -152,9 +145,6 @@ class LineSignupAnalyticsService
 
     /**
      * Get average time to complete
-     *
-     * @param string $period
-     * @return array
      */
     public function getTimeToComplete(string $period = 'all'): array
     {
@@ -166,7 +156,7 @@ class LineSignupAnalyticsService
             $query = MlmProspect::where('status', 'completed')
                 ->whereNotNull('conversation_started_at')
                 ->whereNotNull('registered_at')
-                ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter));
+                ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter));
 
             $avgSeconds = $query->selectRaw('AVG(TIMESTAMPDIFF(SECOND, conversation_started_at, registered_at)) as avg')
                 ->value('avg');
@@ -190,9 +180,8 @@ class LineSignupAnalyticsService
     /**
      * Get signup trends (daily/hourly)
      *
-     * @param string $period 'today', 'week', 'month'
-     * @param string $groupBy 'hour' or 'day'
-     * @return array
+     * @param  string  $period  'today', 'week', 'month'
+     * @param  string  $groupBy  'hour' or 'day'
      */
     public function getSignupTrends(string $period = 'week', string $groupBy = 'day'): array
     {
@@ -224,10 +213,6 @@ class LineSignupAnalyticsService
 
     /**
      * Get sponsor leaderboard
-     *
-     * @param string $period
-     * @param int $limit
-     * @return array
      */
     public function getSponsorLeaderboard(string $period = 'month', int $limit = 10): array
     {
@@ -237,7 +222,7 @@ class LineSignupAnalyticsService
             $dateFilter = $this->getDateFilter($period);
 
             $leaderboard = MlmProspect::where('status', 'completed')
-                ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter))
+                ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter))
                 ->select('sponsor_user_id', DB::raw('count(*) as signups'))
                 ->groupBy('sponsor_user_id')
                 ->orderBy('signups', 'desc')
@@ -245,6 +230,7 @@ class LineSignupAnalyticsService
                 ->get()
                 ->map(function ($item) {
                     $user = User::find($item->sponsor_user_id);
+
                     return [
                         'sponsor_id' => $item->sponsor_user_id,
                         'sponsor_name' => $user->name ?? 'Unknown',
@@ -259,12 +245,10 @@ class LineSignupAnalyticsService
 
     /**
      * Get conversation statistics
-     *
-     * @return array
      */
     public function getConversationStats(): array
     {
-        $cacheKey = "line_analytics:conversation_stats";
+        $cacheKey = 'line_analytics:conversation_stats';
 
         return Cache::remember($cacheKey, self::CACHE_TTL, function () {
             return [
@@ -280,8 +264,6 @@ class LineSignupAnalyticsService
 
     /**
      * Get real-time active conversations
-     *
-     * @return array
      */
     public function getActiveConversations(): array
     {
@@ -302,9 +284,6 @@ class LineSignupAnalyticsService
 
     /**
      * Get comprehensive dashboard data
-     *
-     * @param string $period
-     * @return array
      */
     public function getDashboardData(string $period = 'month'): array
     {
@@ -323,17 +302,13 @@ class LineSignupAnalyticsService
 
     /**
      * Get sponsor-specific analytics
-     *
-     * @param int $sponsorId
-     * @param string $period
-     * @return array
      */
     public function getSponsorAnalytics(int $sponsorId, string $period = 'month'): array
     {
         $dateFilter = $this->getDateFilter($period);
 
         $prospects = MlmProspect::where('sponsor_user_id', $sponsorId)
-            ->when($dateFilter, fn($q) => $q->where('created_at', '>=', $dateFilter));
+            ->when($dateFilter, fn ($q) => $q->where('created_at', '>=', $dateFilter));
 
         $total = $prospects->count();
         $completed = $prospects->where('status', 'completed')->count();
@@ -348,12 +323,12 @@ class LineSignupAnalyticsService
             'conversion_rate' => $total > 0 ? round(($completed / $total) * 100, 2) : 0,
             'recent_signups' => MlmProspect::where('sponsor_user_id', $sponsorId)
                 ->where('status', 'completed')
-                ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter))
+                ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter))
                 ->with('registeredUser:id,name,email,created_at')
                 ->orderBy('registered_at', 'desc')
                 ->limit(10)
                 ->get()
-                ->map(fn($p) => [
+                ->map(fn ($p) => [
                     'name' => $p->registeredUser->name ?? 'N/A',
                     'email' => $p->registeredUser->email ?? 'N/A',
                     'registered_at' => $p->registered_at->diffForHumans(),
@@ -363,9 +338,6 @@ class LineSignupAnalyticsService
 
     /**
      * Calculate median completion time
-     *
-     * @param string $period
-     * @return float
      */
     private function calculateMedianTime(string $period): float
     {
@@ -374,7 +346,7 @@ class LineSignupAnalyticsService
         $times = MlmProspect::where('status', 'completed')
             ->whereNotNull('conversation_started_at')
             ->whereNotNull('registered_at')
-            ->when($dateFilter, fn($q) => $q->where('registered_at', '>=', $dateFilter))
+            ->when($dateFilter, fn ($q) => $q->where('registered_at', '>=', $dateFilter))
             ->selectRaw('TIMESTAMPDIFF(SECOND, conversation_started_at, registered_at) as duration')
             ->pluck('duration')
             ->sort()
@@ -396,13 +368,10 @@ class LineSignupAnalyticsService
 
     /**
      * Get date filter based on period
-     *
-     * @param string $period
-     * @return Carbon|null
      */
     private function getDateFilter(string $period): ?Carbon
     {
-        return match($period) {
+        return match ($period) {
             'today' => now()->startOfDay(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),
@@ -414,8 +383,6 @@ class LineSignupAnalyticsService
 
     /**
      * Clear analytics cache
-     *
-     * @return void
      */
     public function clearCache(): void
     {

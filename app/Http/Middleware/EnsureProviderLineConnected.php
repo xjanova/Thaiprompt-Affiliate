@@ -24,7 +24,7 @@ class EnsureProviderLineConnected
         $user = $request->user();
 
         // ตรวจสอบว่า user มี line_user_id หรือไม่
-        if (!$user || !$user->line_user_id) {
+        if (! $user || ! $user->line_user_id) {
             // ถ้า request เป็น AJAX ให้ return JSON
             if ($request->expectsJson()) {
                 return response()->json([

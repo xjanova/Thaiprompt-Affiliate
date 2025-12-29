@@ -45,7 +45,7 @@ class PaymentTransaction extends Model
 
         static::creating(function ($model) {
             if (empty($model->transaction_id)) {
-                $model->transaction_id = 'TXN-' . strtoupper(Str::random(12));
+                $model->transaction_id = 'TXN-'.strtoupper(Str::random(12));
             }
         });
     }

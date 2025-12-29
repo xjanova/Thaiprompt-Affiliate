@@ -46,7 +46,7 @@ class FoodPassportRateLimiter
      */
     protected function getLimits(string $tier): array
     {
-        return match($tier) {
+        return match ($tier) {
             // Public endpoints (QR scan, view)
             'public' => [
                 'maxAttempts' => 100,
@@ -158,6 +158,7 @@ class FoodPassportRateLimiter
         }
 
         $minutes = ceil($seconds / 60);
-        return "{$minutes} minute" . ($minutes > 1 ? 's' : '');
+
+        return "{$minutes} minute".($minutes > 1 ? 's' : '');
     }
 }

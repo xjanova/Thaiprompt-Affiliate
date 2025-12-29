@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NFCReader;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class NFCReaderController extends Controller
 {
@@ -102,7 +102,7 @@ class NFCReaderController extends Controller
         } catch (Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'ไม่สามารถเพิ่มเครื่องอ่านบัตรได้: ' . $e->getMessage());
+                ->with('error', 'ไม่สามารถเพิ่มเครื่องอ่านบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -182,7 +182,7 @@ class NFCReaderController extends Controller
         } catch (Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'ไม่สามารถอัพเดทข้อมูลได้: ' . $e->getMessage());
+                ->with('error', 'ไม่สามารถอัพเดทข้อมูลได้: '.$e->getMessage());
         }
     }
 
@@ -203,7 +203,7 @@ class NFCReaderController extends Controller
                 ->route('admin.nfc-readers.index')
                 ->with('success', 'ลบเครื่องอ่านบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถลบเครื่องอ่านบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถลบเครื่องอ่านบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -222,7 +222,7 @@ class NFCReaderController extends Controller
 
             return back()->with('success', 'เปิดใช้งานเครื่องอ่านบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถเปิดใช้งานได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถเปิดใช้งานได้: '.$e->getMessage());
         }
     }
 
@@ -241,7 +241,7 @@ class NFCReaderController extends Controller
 
             return back()->with('success', 'ปิดการใช้งานเครื่องอ่านบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถปิดการใช้งานได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถปิดการใช้งานได้: '.$e->getMessage());
         }
     }
 
@@ -260,7 +260,7 @@ class NFCReaderController extends Controller
 
             return back()->with('success', 'ตั้งค่าเครื่องอ่านบัตรเป็นโหมดปรับปรุงสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถตั้งค่าได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถตั้งค่าได้: '.$e->getMessage());
         }
     }
 

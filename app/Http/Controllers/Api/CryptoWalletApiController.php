@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CryptoWallet;
-use App\Services\Crypto\Web3Service;
 use App\Services\Crypto\CryptoWalletService;
+use App\Services\Crypto\Web3Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class CryptoWalletApiController extends Controller
 {
     protected Web3Service $web3Service;
+
     protected CryptoWalletService $walletService;
 
     public function __construct(
@@ -36,7 +37,7 @@ class CryptoWalletApiController extends Controller
         $address = strtolower($request->address);
 
         // Validate address format
-        if (!$this->web3Service->isValidAddress($address)) {
+        if (! $this->web3Service->isValidAddress($address)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid Ethereum address format',
@@ -77,7 +78,7 @@ class CryptoWalletApiController extends Controller
 
         // Verify nonce
         $cachedNonce = Cache::get("wallet_nonce:{$address}");
-        if (!$cachedNonce || $cachedNonce !== $request->nonce) {
+        if (! $cachedNonce || $cachedNonce !== $request->nonce) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired nonce',
@@ -96,7 +97,7 @@ class CryptoWalletApiController extends Controller
             $existingWallet = CryptoWallet::where('wallet_type', 'external')
                 ->whereHas('cryptoAddresses', function ($query) use ($address, $request) {
                     $query->where('address', $address)
-                          ->where('network', $request->network);
+                        ->where('network', $request->network);
                 })
                 ->first();
 
@@ -147,7 +148,7 @@ class CryptoWalletApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to verify signature: ' . $e->getMessage(),
+                'message' => 'Failed to verify signature: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -160,7 +161,7 @@ class CryptoWalletApiController extends Controller
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return response()->json([
                 'success' => false,
                 'message' => 'No crypto wallet found',
@@ -183,7 +184,7 @@ class CryptoWalletApiController extends Controller
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return response()->json([
                 'success' => false,
                 'message' => 'No crypto wallet found',
@@ -196,7 +197,7 @@ class CryptoWalletApiController extends Controller
             })
             ->first();
 
-        if (!$address) {
+        if (! $address) {
             return response()->json([
                 'success' => false,
                 'message' => 'Address not found for this currency',
@@ -242,7 +243,7 @@ class CryptoWalletApiController extends Controller
                 $txHash
             );
 
-            if (!$receipt) {
+            if (! $receipt) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Transaction not found or still pending',
@@ -261,7 +262,7 @@ class CryptoWalletApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to check transaction: ' . $e->getMessage(),
+                'message' => 'Failed to check transaction: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -278,7 +279,7 @@ class CryptoWalletApiController extends Controller
         try {
             $gasPrice = $this->web3Service->getGasPrice($request->network);
 
-            if (!$gasPrice) {
+            if (! $gasPrice) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to get gas price',
@@ -298,7 +299,7 @@ class CryptoWalletApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get gas price: ' . $e->getMessage(),
+                'message' => 'Failed to get gas price: '.$e->getMessage(),
             ], 500);
         }
     }

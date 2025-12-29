@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class MembershipRetentionStatus extends Model
 {
@@ -99,12 +99,13 @@ class MembershipRetentionStatus extends Model
      */
     public function daysRemaining(): int
     {
-        if (!$this->next_renewal_date) {
+        if (! $this->next_renewal_date) {
             return 0;
         }
 
         $days = Carbon::today()->diffInDays($this->next_renewal_date, false);
-        return max(0, (int)$days);
+
+        return max(0, (int) $days);
     }
 
     /**
@@ -150,7 +151,7 @@ class MembershipRetentionStatus extends Model
      */
     public function getHealthPercentage(): float
     {
-        if (!$this->period_start || !$this->period_end) {
+        if (! $this->period_start || ! $this->period_end) {
             return 0;
         }
 
@@ -186,6 +187,7 @@ class MembershipRetentionStatus extends Model
     public function scopeExpiringSoon($query, int $days = 7)
     {
         $targetDate = Carbon::today()->addDays($days);
+
         return $query->where('status', 'active')
             ->whereNotNull('next_renewal_date')
             ->where('next_renewal_date', '<=', $targetDate);
@@ -208,7 +210,7 @@ class MembershipRetentionStatus extends Model
      */
     public function isAutoRenewalPaused(): bool
     {
-        if (!$this->auto_renewal_paused_until) {
+        if (! $this->auto_renewal_paused_until) {
             return false;
         }
 
@@ -221,7 +223,7 @@ class MembershipRetentionStatus extends Model
     public function canAutoRenew(): bool
     {
         // ต้องเปิด auto-renewal
-        if (!$this->isAutoRenewalEnabled()) {
+        if (! $this->isAutoRenewalEnabled()) {
             return false;
         }
 
@@ -268,12 +270,12 @@ class MembershipRetentionStatus extends Model
      */
     public function getAutoRenewalStatusText(): string
     {
-        if (!$this->isAutoRenewalEnabled()) {
+        if (! $this->isAutoRenewalEnabled()) {
             return 'ปิดอยู่';
         }
 
         if ($this->isAutoRenewalPaused()) {
-            return 'หยุดชั่วคราวถึง ' . $this->auto_renewal_paused_until->format('d/m/Y');
+            return 'หยุดชั่วคราวถึง '.$this->auto_renewal_paused_until->format('d/m/Y');
         }
 
         if ($this->auto_renewal_failed_count >= 3) {
@@ -288,7 +290,7 @@ class MembershipRetentionStatus extends Model
      */
     public function getAutoRenewalStatusColor(): string
     {
-        if (!$this->isAutoRenewalEnabled()) {
+        if (! $this->isAutoRenewalEnabled()) {
             return 'gray';
         }
 

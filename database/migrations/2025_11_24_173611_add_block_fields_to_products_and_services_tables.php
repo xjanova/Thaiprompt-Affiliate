@@ -16,45 +16,43 @@ return new class extends Migration
      * - block_reason: เหตุผลในการบล็อก (text)
      * - unblocked_at: วันที่ปลดบล็อก (datetime)
      * - unblocked_by: ผู้ที่ปลดบล็อก (user_id)
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง services มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('services')) {
+        if (! Schema::hasTable('services')) {
             return;
         }
 
         // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('products')) {
+        if (! Schema::hasTable('products')) {
             return;
         }
 
         // เพิ่มฟิลด์ใน products table
         Schema::table('products', function (Blueprint $table) {
             // เช็คว่าคอลัมน์ยังไม่มีก่อนเพิ่ม
-            if (!Schema::hasColumn('products', 'is_blocked')) {
+            if (! Schema::hasColumn('products', 'is_blocked')) {
                 $table->boolean('is_blocked')->default(false)->after('is_active');
             }
 
-            if (!Schema::hasColumn('products', 'blocked_at')) {
+            if (! Schema::hasColumn('products', 'blocked_at')) {
                 $table->timestamp('blocked_at')->nullable()->after('is_blocked');
             }
 
-            if (!Schema::hasColumn('products', 'blocked_by')) {
+            if (! Schema::hasColumn('products', 'blocked_by')) {
                 $table->foreignId('blocked_by')->nullable()->constrained('users')->nullOnDelete()->after('blocked_at');
             }
 
-            if (!Schema::hasColumn('products', 'block_reason')) {
+            if (! Schema::hasColumn('products', 'block_reason')) {
                 $table->text('block_reason')->nullable()->after('blocked_by');
             }
 
-            if (!Schema::hasColumn('products', 'unblocked_at')) {
+            if (! Schema::hasColumn('products', 'unblocked_at')) {
                 $table->timestamp('unblocked_at')->nullable()->after('block_reason');
             }
 
-            if (!Schema::hasColumn('products', 'unblocked_by')) {
+            if (! Schema::hasColumn('products', 'unblocked_by')) {
                 $table->foreignId('unblocked_by')->nullable()->constrained('users')->nullOnDelete()->after('unblocked_at');
             }
         });
@@ -62,27 +60,27 @@ return new class extends Migration
         // เพิ่มฟิลด์ใน services table
         Schema::table('services', function (Blueprint $table) {
             // เช็คว่าคอลัมน์ยังไม่มีก่อนเพิ่ม
-            if (!Schema::hasColumn('services', 'is_blocked')) {
+            if (! Schema::hasColumn('services', 'is_blocked')) {
                 $table->boolean('is_blocked')->default(false)->after('is_active');
             }
 
-            if (!Schema::hasColumn('services', 'blocked_at')) {
+            if (! Schema::hasColumn('services', 'blocked_at')) {
                 $table->timestamp('blocked_at')->nullable()->after('is_blocked');
             }
 
-            if (!Schema::hasColumn('services', 'blocked_by')) {
+            if (! Schema::hasColumn('services', 'blocked_by')) {
                 $table->foreignId('blocked_by')->nullable()->constrained('users')->nullOnDelete()->after('blocked_at');
             }
 
-            if (!Schema::hasColumn('services', 'block_reason')) {
+            if (! Schema::hasColumn('services', 'block_reason')) {
                 $table->text('block_reason')->nullable()->after('blocked_by');
             }
 
-            if (!Schema::hasColumn('services', 'unblocked_at')) {
+            if (! Schema::hasColumn('services', 'unblocked_at')) {
                 $table->timestamp('unblocked_at')->nullable()->after('block_reason');
             }
 
-            if (!Schema::hasColumn('services', 'unblocked_by')) {
+            if (! Schema::hasColumn('services', 'unblocked_by')) {
                 $table->foreignId('unblocked_by')->nullable()->constrained('users')->nullOnDelete()->after('unblocked_at');
             }
         });
@@ -90,8 +88,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

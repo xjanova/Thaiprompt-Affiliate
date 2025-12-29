@@ -82,8 +82,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * ผู้ใช้
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -92,8 +90,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * ราคาดาวที่อัพเกรดไป
-     *
-     * @return BelongsTo
      */
     public function targetStarPrice(): BelongsTo
     {
@@ -106,8 +102,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * ข้อมูลสถานะ
-     *
-     * @return array
      */
     public function getStatusInfoAttribute(): array
     {
@@ -116,8 +110,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * ชื่อสถานะ
-     *
-     * @return string
      */
     public function getStatusNameAttribute(): string
     {
@@ -126,8 +118,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * สีสถานะ
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
@@ -136,8 +126,6 @@ class StarUpgradeHistory extends Model
 
     /**
      * จำนวนดาวที่อัพ
-     *
-     * @return int
      */
     public function getStarsGainedAttribute(): int
     {

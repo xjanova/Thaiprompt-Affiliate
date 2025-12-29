@@ -19,7 +19,7 @@ class DemoUsersSeeder extends Seeder
     public function run(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!$this->requireTable('users', 'DemoUsersSeeder')) {
+        if (! $this->requireTable('users', 'DemoUsersSeeder')) {
             return;
         }
 

@@ -2,20 +2,22 @@
 
 namespace App\Services;
 
-use App\Models\FoodProduct;
 use App\Models\CarbonCredit;
-use App\Models\ProductJourney;
 use App\Models\FoodCertification;
-use Illuminate\Support\Facades\Http;
+use App\Models\FoodProduct;
+use App\Models\ProductJourney;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class TpixBlockchainService
 {
     protected string $rpcUrl;
+
     protected string $platformWallet;
+
     protected string $platformPrivateKey;
+
     protected bool $gasSubsidyEnabled;
 
     public function __construct()
@@ -277,7 +279,7 @@ class TpixBlockchainService
         ]);
 
         if ($response->failed() || isset($response['error'])) {
-            throw new \Exception('Transaction failed: ' . ($response['error']['message'] ?? 'Unknown error'));
+            throw new \Exception('Transaction failed: '.($response['error']['message'] ?? 'Unknown error'));
         }
 
         return $response['result'];
@@ -332,7 +334,7 @@ class TpixBlockchainService
             'name' => "Food Passport #{$product->food_passport_id}",
             'description' => "Blockchain-verified food traceability record for {$product->product_type}",
             'image' => $product->qr_code_url,
-            'external_url' => config('app.url') . "/food-passport/{$product->food_passport_id}",
+            'external_url' => config('app.url')."/food-passport/{$product->food_passport_id}",
             'attributes' => [
                 ['trait_type' => 'Passport ID', 'value' => $product->food_passport_id],
                 ['trait_type' => 'Product Type', 'value' => $product->product_type],
@@ -429,6 +431,6 @@ class TpixBlockchainService
     {
         // This would use Web3 PHP library or similar
         // For now, return placeholder
-        return '0x' . bin2hex($method . json_encode($params));
+        return '0x'.bin2hex($method.json_encode($params));
     }
 }

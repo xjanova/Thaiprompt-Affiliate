@@ -2,15 +2,15 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
-use App\Models\PaymentGateway;
 use App\Models\Order;
+use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Payment Service
@@ -61,7 +61,7 @@ class PaymentService
                 if ($code === 'nfc_card') {
                     $this->providers[$code] = app($class);
                 } else {
-                    $this->providers[$code] = new $class();
+                    $this->providers[$code] = new $class;
                 }
             } catch (\Exception $e) {
                 // ถ้าสร้าง provider ไม่สำเร็จ ให้ข้ามไป
@@ -74,9 +74,6 @@ class PaymentService
 
     /**
      * Check if a provider is available
-     *
-     * @param string $method
-     * @return bool
      */
     public function hasProvider(string $method): bool
     {
@@ -85,8 +82,6 @@ class PaymentService
 
     /**
      * Get all registered providers
-     *
-     * @return array
      */
     public function getRegisteredProviders(): array
     {
@@ -96,13 +91,11 @@ class PaymentService
     /**
      * Get payment provider by method
      *
-     * @param string $method
-     * @return PaymentProviderInterface
      * @throws Exception
      */
     public function getProvider(string $method): PaymentProviderInterface
     {
-        if (!isset($this->providers[$method])) {
+        if (! isset($this->providers[$method])) {
             throw new Exception("Payment provider '{$method}' not found");
         }
 
@@ -169,14 +162,14 @@ class PaymentService
             }
 
             // SECURITY: Check transaction is in valid state
-            if (!in_array($transaction->status, ['pending', 'processing'])) {
-                throw new Exception('Invalid transaction status for processing: ' . $transaction->status);
+            if (! in_array($transaction->status, ['pending', 'processing'])) {
+                throw new Exception('Invalid transaction status for processing: '.$transaction->status);
             }
 
             $provider = $this->getProvider($transaction->payment_method);
 
             // Validate payment
-            if (!$provider->validate($transaction, $paymentData)) {
+            if (! $provider->validate($transaction, $paymentData)) {
                 throw new Exception('Payment validation failed');
             }
 
@@ -290,7 +283,7 @@ class PaymentService
             'type' => 'deposit',
             'amount' => $transaction->amount,
             'balance_after' => $wallet->balance + $transaction->amount,
-            'description' => 'Wallet top-up via ' . $transaction->payment_method,
+            'description' => 'Wallet top-up via '.$transaction->payment_method,
             'status' => 'approved',
             'metadata' => [
                 'payment_transaction_id' => $transaction->id,
@@ -316,7 +309,7 @@ class PaymentService
     /**
      * Refund payment
      */
-    public function refundPayment(PaymentTransaction $transaction, float $amount = null)
+    public function refundPayment(PaymentTransaction $transaction, ?float $amount = null)
     {
         return DB::transaction(function () use ($transaction, $amount) {
             $refundAmount = $amount ?? $transaction->amount;
@@ -349,7 +342,7 @@ class PaymentService
                     'type' => 'refund',
                     'amount' => $refundAmount,
                     'balance_after' => $wallet->balance,
-                    'description' => 'Refund for order #' . $transaction->order->order_number,
+                    'description' => 'Refund for order #'.$transaction->order->order_number,
                     'status' => 'approved',
                 ]);
             }
@@ -380,6 +373,7 @@ class PaymentService
 
         if ($provider->verify($transaction, $data)) {
             $this->completePayment($transaction);
+
             return true;
         }
 
@@ -391,8 +385,6 @@ class PaymentService
      *
      * ดึงรายการ payment methods ที่พร้อมใช้งาน
      * โดยรวมทั้ง built-in methods และ gateways ที่ active
-     *
-     * @return array
      */
     public function getAvailablePaymentMethods(): array
     {
@@ -427,7 +419,7 @@ class PaymentService
 
                 foreach ($gateways as $gateway) {
                     // ตรวจสอบว่ามี provider สำหรับ gateway นี้หรือไม่
-                    if (!$this->hasProvider($gateway->code)) {
+                    if (! $this->hasProvider($gateway->code)) {
                         continue;
                     }
 
@@ -449,7 +441,7 @@ class PaymentService
             }
         } catch (\Exception $e) {
             // PaymentGateway model not available or database not ready
-            Log::warning('Could not load payment gateways: ' . $e->getMessage());
+            Log::warning('Could not load payment gateways: '.$e->getMessage());
 
             // Fallback to basic methods
             $methods = array_merge($methods, [
@@ -485,8 +477,6 @@ class PaymentService
 
     /**
      * Get payment methods for deposit
-     *
-     * @return array
      */
     public function getDepositMethods(): array
     {
@@ -497,8 +487,6 @@ class PaymentService
 
     /**
      * Get payment methods for withdrawal
-     *
-     * @return array
      */
     public function getWithdrawalMethods(): array
     {

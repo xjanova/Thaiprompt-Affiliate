@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentGateway;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
-use Exception;
 
 class PaymentGatewayController extends Controller
 {
@@ -16,7 +15,7 @@ class PaymentGatewayController extends Controller
      */
     public function index()
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -30,7 +29,7 @@ class PaymentGatewayController extends Controller
             // Count configured gateways with error handling
             $configuredCount = 0;
             try {
-                $configuredCount = PaymentGateway::get()->filter(function($g) {
+                $configuredCount = PaymentGateway::get()->filter(function ($g) {
                     try {
                         return $g->isConfigured();
                     } catch (\Throwable $e) {
@@ -39,6 +38,7 @@ class PaymentGatewayController extends Controller
                             'gateway_code' => $g->code ?? 'unknown',
                             'error' => $e->getMessage(),
                         ]);
+
                         return false;
                     }
                 })->count();
@@ -62,7 +62,7 @@ class PaymentGatewayController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล Payment Gateway: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล Payment Gateway: '.$e->getMessage());
         }
     }
 
@@ -71,7 +71,7 @@ class PaymentGatewayController extends Controller
      */
     public function edit(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -83,7 +83,7 @@ class PaymentGatewayController extends Controller
      */
     public function update(Request $request, PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -114,14 +114,14 @@ class PaymentGatewayController extends Controller
 
             // Update credentials based on gateway type
             $credentials = $this->buildCredentials($request, $paymentGateway->code);
-            if (!empty($credentials)) {
+            if (! empty($credentials)) {
                 $data['credentials'] = $credentials;
             }
 
             // Update test credentials if in test mode
             if ($request->boolean('test_mode')) {
                 $testCredentials = $this->buildTestCredentials($request, $paymentGateway->code);
-                if (!empty($testCredentials)) {
+                if (! empty($testCredentials)) {
                     $data['test_credentials'] = $testCredentials;
                 }
             }
@@ -160,7 +160,7 @@ class PaymentGatewayController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -169,12 +169,12 @@ class PaymentGatewayController extends Controller
      */
     public function toggle(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         try {
-            $paymentGateway->is_active = !$paymentGateway->is_active;
+            $paymentGateway->is_active = ! $paymentGateway->is_active;
             $paymentGateway->save();
 
             Cache::forget('payment_gateways');
@@ -195,7 +195,7 @@ class PaymentGatewayController extends Controller
      */
     public function testConnection(PaymentGateway $paymentGateway)
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -217,7 +217,7 @@ class PaymentGatewayController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -227,7 +227,7 @@ class PaymentGatewayController extends Controller
      */
     public function updateOrder(Request $request)
     {
-        if (!auth()->user()->hasPermission('manage_payment_gateways')) {
+        if (! auth()->user()->hasPermission('manage_payment_gateways')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -251,7 +251,7 @@ class PaymentGatewayController extends Controller
      */
     protected function buildCredentials(Request $request, string $code): array
     {
-        return match($code) {
+        return match ($code) {
             'promptpay' => [
                 'promptpay_id' => $request->input('credentials.promptpay_id'),
                 'promptpay_name' => $request->input('credentials.promptpay_name'),
@@ -306,7 +306,7 @@ class PaymentGatewayController extends Controller
      */
     protected function buildTestCredentials(Request $request, string $code): array
     {
-        return match($code) {
+        return match ($code) {
             'stripe' => [
                 'api_key' => $request->input('test_credentials.api_key'),
                 'secret_key' => $request->input('test_credentials.secret_key'),

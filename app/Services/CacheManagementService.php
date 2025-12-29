@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Illuminate\Support\Facades\Redis;
 
 /**
  * Cache Management Service
@@ -88,7 +88,7 @@ class CacheManagementService
     /**
      * ทดสอบการเชื่อมต่อ cache driver
      *
-     * @param string $driver ชื่อ driver (file, database, redis, memcached)
+     * @param  string  $driver  ชื่อ driver (file, database, redis, memcached)
      * @return array ผลการทดสอบ ['status' => true/false, 'message' => '...', 'details' => [...]]
      */
     public function testConnection(string $driver): array
@@ -122,7 +122,7 @@ class CacheManagementService
 
             return [
                 'status' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'details' => [
                     'error' => $e->getMessage(),
                 ],
@@ -138,7 +138,7 @@ class CacheManagementService
         $path = storage_path('framework/cache/data');
 
         // เช็คว่า directory มีอยู่และ writable
-        if (!File::isDirectory($path)) {
+        if (! File::isDirectory($path)) {
             return [
                 'status' => false,
                 'message' => "ไม่พบ directory: {$path}",
@@ -146,7 +146,7 @@ class CacheManagementService
             ];
         }
 
-        if (!File::isWritable($path)) {
+        if (! File::isWritable($path)) {
             return [
                 'status' => false,
                 'message' => "ไม่สามารถเขียนไฟล์ได้: {$path}",
@@ -159,8 +159,8 @@ class CacheManagementService
 
         // ทดสอบเขียน/อ่าน cache
         try {
-            $testKey = 'cache_test_' . time();
-            $testValue = 'test_value_' . rand(1000, 9999);
+            $testKey = 'cache_test_'.time();
+            $testValue = 'test_value_'.rand(1000, 9999);
 
             Cache::store('file')->put($testKey, $testValue, 60);
             $retrieved = Cache::store('file')->get($testKey);
@@ -187,7 +187,7 @@ class CacheManagementService
         } catch (Exception $e) {
             return [
                 'status' => false,
-                'message' => 'เกิดข้อผิดพลาดในการทดสอบ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการทดสอบ: '.$e->getMessage(),
                 'details' => [],
             ];
         }
@@ -200,7 +200,7 @@ class CacheManagementService
     {
         try {
             // เช็คว่ามีตาราง cache
-            if (!DB::getSchemaBuilder()->hasTable('cache')) {
+            if (! DB::getSchemaBuilder()->hasTable('cache')) {
                 return [
                     'status' => false,
                     'message' => 'ไม่พบตาราง cache - กรุณารัน: php artisan migrate',
@@ -211,8 +211,8 @@ class CacheManagementService
             }
 
             // ทดสอบเขียน/อ่าน cache
-            $testKey = 'cache_test_' . time();
-            $testValue = 'test_value_' . rand(1000, 9999);
+            $testKey = 'cache_test_'.time();
+            $testValue = 'test_value_'.rand(1000, 9999);
 
             Cache::store('database')->put($testKey, $testValue, 60);
             $retrieved = Cache::store('database')->get($testKey);
@@ -241,7 +241,7 @@ class CacheManagementService
         } catch (Exception $e) {
             return [
                 'status' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'details' => [],
             ];
         }
@@ -254,7 +254,7 @@ class CacheManagementService
     {
         try {
             // เช็คว่า Redis extension ติดตั้งแล้ว
-            if (!extension_loaded('redis') && !extension_loaded('phpredis')) {
+            if (! extension_loaded('redis') && ! extension_loaded('phpredis')) {
                 return [
                     'status' => false,
                     'message' => '❌ Redis PHP extension ยังไม่ได้ติดตั้ง',
@@ -269,8 +269,8 @@ class CacheManagementService
             Redis::connection('cache')->ping();
 
             // ทดสอบเขียน/อ่าน cache
-            $testKey = 'cache_test_' . time();
-            $testValue = 'test_value_' . rand(1000, 9999);
+            $testKey = 'cache_test_'.time();
+            $testValue = 'test_value_'.rand(1000, 9999);
 
             Cache::store('redis')->put($testKey, $testValue, 60);
             $retrieved = Cache::store('redis')->get($testKey);
@@ -293,7 +293,7 @@ class CacheManagementService
                 'message' => '✅ Redis Cache ใช้งานได้ปกติ',
                 'details' => [
                     'version' => $info['redis_version'] ?? 'N/A',
-                    'uptime_days' => isset($info['uptime_in_days']) ? $info['uptime_in_days'] . ' วัน' : 'N/A',
+                    'uptime_days' => isset($info['uptime_in_days']) ? $info['uptime_in_days'].' วัน' : 'N/A',
                     'used_memory' => isset($info['used_memory_human']) ? $info['used_memory_human'] : 'N/A',
                     'connected_clients' => $info['connected_clients'] ?? 'N/A',
                 ],
@@ -301,7 +301,7 @@ class CacheManagementService
         } catch (Exception $e) {
             return [
                 'status' => false,
-                'message' => '❌ ไม่สามารถเชื่อมต่อ Redis: ' . $e->getMessage(),
+                'message' => '❌ ไม่สามารถเชื่อมต่อ Redis: '.$e->getMessage(),
                 'details' => [
                     'error' => $e->getMessage(),
                     'host' => config('database.redis.cache.host', '127.0.0.1'),
@@ -318,7 +318,7 @@ class CacheManagementService
     {
         try {
             // เช็คว่า Memcached extension ติดตั้งแล้ว
-            if (!extension_loaded('memcached')) {
+            if (! extension_loaded('memcached')) {
                 return [
                     'status' => false,
                     'message' => '❌ Memcached PHP extension ยังไม่ได้ติดตั้ง',
@@ -330,8 +330,8 @@ class CacheManagementService
             }
 
             // ทดสอบเขียน/อ่าน cache
-            $testKey = 'cache_test_' . time();
-            $testValue = 'test_value_' . rand(1000, 9999);
+            $testKey = 'cache_test_'.time();
+            $testValue = 'test_value_'.rand(1000, 9999);
 
             Cache::store('memcached')->put($testKey, $testValue, 60);
             $retrieved = Cache::store('memcached')->get($testKey);
@@ -347,15 +347,15 @@ class CacheManagementService
             Cache::store('memcached')->forget($testKey);
 
             // ดึงข้อมูล Memcached stats
-            $memcached = new \Memcached();
+            $memcached = new \Memcached;
             $servers = config('cache.stores.memcached.servers', []);
 
-            if (!empty($servers)) {
+            if (! empty($servers)) {
                 $server = $servers[0];
                 $memcached->addServer($server['host'], $server['port']);
                 $stats = $memcached->getStats();
 
-                $serverKey = $server['host'] . ':' . $server['port'];
+                $serverKey = $server['host'].':'.$server['port'];
                 $serverStats = $stats[$serverKey] ?? [];
 
                 return [
@@ -363,7 +363,7 @@ class CacheManagementService
                     'message' => '✅ Memcached ใช้งานได้ปกติ',
                     'details' => [
                         'version' => $serverStats['version'] ?? 'N/A',
-                        'uptime' => isset($serverStats['uptime']) ? round($serverStats['uptime'] / 86400, 1) . ' วัน' : 'N/A',
+                        'uptime' => isset($serverStats['uptime']) ? round($serverStats['uptime'] / 86400, 1).' วัน' : 'N/A',
                         'curr_items' => $serverStats['curr_items'] ?? 'N/A',
                         'bytes_used' => isset($serverStats['bytes']) ? $this->formatBytes($serverStats['bytes']) : 'N/A',
                     ],
@@ -378,7 +378,7 @@ class CacheManagementService
         } catch (Exception $e) {
             return [
                 'status' => false,
-                'message' => '❌ ไม่สามารถเชื่อมต่อ Memcached: ' . $e->getMessage(),
+                'message' => '❌ ไม่สามารถเชื่อมต่อ Memcached: '.$e->getMessage(),
                 'details' => [
                     'error' => $e->getMessage(),
                     'host' => config('cache.stores.memcached.servers.0.host', '127.0.0.1'),
@@ -390,8 +390,6 @@ class CacheManagementService
 
     /**
      * ดึงสถานะของทุก cache drivers
-     *
-     * @return array
      */
     public function getAllDriversStatus(): array
     {
@@ -419,8 +417,6 @@ class CacheManagementService
 
     /**
      * ดึงข้อมูลสถิติ cache ปัจจุบัน
-     *
-     * @return array
      */
     public function getCurrentCacheStats(): array
     {
@@ -474,13 +470,13 @@ class CacheManagementService
                     // เช็คว่า Memcached extension ติดตั้งแล้วหรือไม่
                     if (extension_loaded('memcached')) {
                         try {
-                            $memcached = new \Memcached();
+                            $memcached = new \Memcached;
                             $servers = config('cache.stores.memcached.servers', []);
-                            if (!empty($servers)) {
+                            if (! empty($servers)) {
                                 $server = $servers[0];
                                 $memcached->addServer($server['host'], $server['port']);
                                 $serverStats = $memcached->getStats();
-                                $serverKey = $server['host'] . ':' . $server['port'];
+                                $serverKey = $server['host'].':'.$server['port'];
                                 $s = $serverStats[$serverKey] ?? [];
                                 $stats['version'] = $s['version'] ?? 'N/A';
                                 $stats['curr_items'] = $s['curr_items'] ?? 'N/A';
@@ -502,8 +498,6 @@ class CacheManagementService
 
     /**
      * ล้างแคชทั้งหมด
-     *
-     * @return bool
      */
     public function clearAllCache(): bool
     {
@@ -527,9 +521,6 @@ class CacheManagementService
 
     /**
      * คำแนะนำการติดตั้งสำหรับแต่ละ driver
-     *
-     * @param string $driver
-     * @return array
      */
     public function getInstallationGuide(string $driver): array
     {
@@ -635,9 +626,6 @@ class CacheManagementService
 
     /**
      * คำนวณขนาด directory (recursive)
-     *
-     * @param string $path
-     * @return string
      */
     protected function getDirectorySize(string $path): string
     {
@@ -657,10 +645,6 @@ class CacheManagementService
 
     /**
      * แปลง bytes เป็น human-readable format
-     *
-     * @param int $bytes
-     * @param int $precision
-     * @return string
      */
     protected function formatBytes(int $bytes, int $precision = 2): string
     {
@@ -670,6 +654,6 @@ class CacheManagementService
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }

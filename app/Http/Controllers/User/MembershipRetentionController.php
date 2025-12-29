@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\MembershipRetentionService;
+use App\Models\MembershipRetentionAdvanceRenewal;
 use App\Models\MembershipRetentionHistory;
 use App\Models\MembershipRetentionRepair;
-use App\Models\MembershipRetentionAdvanceRenewal;
+use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -116,6 +116,7 @@ class MembershipRetentionController extends Controller
             ->get()
             ->map(function ($history) use ($user) {
                 $cost = $this->retentionService->calculateRepairCost($user, $history->period_month);
+
                 return [
                     'period_month' => $history->period_month,
                     'required_points' => $history->required_points,
@@ -155,7 +156,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -208,7 +209,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -253,7 +254,6 @@ class MembershipRetentionController extends Controller
     /**
      * บันทึกการตั้งค่า Auto-Renewal
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveAutoSettings(Request $request)
@@ -290,7 +290,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -298,7 +298,6 @@ class MembershipRetentionController extends Controller
     /**
      * หยุด Auto-Renewal ชั่วคราว
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function pauseAutoRenewal(Request $request)
@@ -322,7 +321,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -350,7 +349,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\QrBarcode;
-use App\Models\QrBarcodeTemplate;
 use App\Models\QrBarcodeScan;
+use App\Models\QrBarcodeTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class QrBarcodeController extends Controller
@@ -58,12 +57,12 @@ class QrBarcodeController extends Controller
             $imageData = str_replace(' ', '+', $imageData);
             $image = base64_decode($imageData);
 
-            $filename = 'qr-barcodes/' . Str::random(40) . '.png';
+            $filename = 'qr-barcodes/'.Str::random(40).'.png';
             Storage::disk('public')->put($filename, $image);
             $qrBarcode->file_path = $filename;
 
             // Generate thumbnail
-            $thumbnailFilename = 'qr-barcodes/thumbnails/' . Str::random(40) . '.png';
+            $thumbnailFilename = 'qr-barcodes/thumbnails/'.Str::random(40).'.png';
             // Simple thumbnail (in production, use image manipulation library)
             Storage::disk('public')->put($thumbnailFilename, $image);
             $qrBarcode->thumbnail_path = $thumbnailFilename;
@@ -74,7 +73,7 @@ class QrBarcodeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'บันทึกสำเร็จ!',
-            'data' => $qrBarcode
+            'data' => $qrBarcode,
         ]);
     }
 
@@ -83,7 +82,7 @@ class QrBarcodeController extends Controller
      */
     public function history()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('qr-barcode.index')
                 ->with('error', 'กรุณาเข้าสู่ระบบเพื่อดูประวัติ');
         }
@@ -111,7 +110,7 @@ class QrBarcodeController extends Controller
         $code = QrBarcode::findOrFail($id);
 
         // Check permission
-        if (!$code->is_public && (!auth()->check() || $code->user_id !== auth()->id())) {
+        if (! $code->is_public && (! auth()->check() || $code->user_id !== auth()->id())) {
             abort(403, 'Unauthorized access');
         }
 
@@ -128,7 +127,7 @@ class QrBarcodeController extends Controller
         $code = QrBarcode::findOrFail($id);
 
         // Check permission
-        if (!auth()->check() || $code->user_id !== auth()->id()) {
+        if (! auth()->check() || $code->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -146,7 +145,7 @@ class QrBarcodeController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'อัพเดทสำเร็จ!',
-            'data' => $code
+            'data' => $code,
         ]);
     }
 
@@ -158,7 +157,7 @@ class QrBarcodeController extends Controller
         $code = QrBarcode::findOrFail($id);
 
         // Check permission
-        if (!auth()->check() || $code->user_id !== auth()->id()) {
+        if (! auth()->check() || $code->user_id !== auth()->id()) {
             abort(403);
         }
 
@@ -174,7 +173,7 @@ class QrBarcodeController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ลบสำเร็จ!'
+            'message' => 'ลบสำเร็จ!',
         ]);
     }
 
@@ -185,16 +184,16 @@ class QrBarcodeController extends Controller
     {
         $code = QrBarcode::findOrFail($id);
 
-        if (!auth()->check() || $code->user_id !== auth()->id()) {
+        if (! auth()->check() || $code->user_id !== auth()->id()) {
             abort(403);
         }
 
-        $code->is_favorite = !$code->is_favorite;
+        $code->is_favorite = ! $code->is_favorite;
         $code->save();
 
         return response()->json([
             'success' => true,
-            'is_favorite' => $code->is_favorite
+            'is_favorite' => $code->is_favorite,
         ]);
     }
 
@@ -211,7 +210,7 @@ class QrBarcodeController extends Controller
             'items.*.title' => 'nullable|string|max:255',
         ]);
 
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return response()->json(['error' => 'กรุณาเข้าสู่ระบบ'], 401);
         }
 
@@ -230,8 +229,8 @@ class QrBarcodeController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'สร้างสำเร็จ ' . count($results) . ' รายการ',
-            'data' => $results
+            'message' => 'สร้างสำเร็จ '.count($results).' รายการ',
+            'data' => $results,
         ]);
     }
 
@@ -249,13 +248,13 @@ class QrBarcodeController extends Controller
     public function decode(Request $request)
     {
         $request->validate([
-            'content' => 'required|string'
+            'content' => 'required|string',
         ]);
 
         return response()->json([
             'success' => true,
             'content' => $request->content,
-            'decoded' => $this->parseContent($request->content)
+            'decoded' => $this->parseContent($request->content),
         ]);
     }
 
@@ -265,6 +264,7 @@ class QrBarcodeController extends Controller
     public function templates()
     {
         $templates = QrBarcodeTemplate::public()->paginate(24);
+
         return view('frontend.qr-barcode.templates', compact('templates'));
     }
 
@@ -286,7 +286,7 @@ class QrBarcodeController extends Controller
      */
     public function analytics()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('qr-barcode.index');
         }
 
@@ -348,7 +348,7 @@ class QrBarcodeController extends Controller
      */
     protected function trackScan(QrBarcode $code, Request $request)
     {
-        $agent = new \Jenssegers\Agent\Agent();
+        $agent = new \Jenssegers\Agent\Agent;
 
         QrBarcodeScan::create([
             'qr_barcode_id' => $code->id,

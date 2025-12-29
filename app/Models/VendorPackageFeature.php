@@ -84,16 +84,16 @@ class VendorPackageFeature extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        $price = '฿' . number_format($this->price, 0);
+        $price = '฿'.number_format($this->price, 0);
 
-        $cycle = match($this->billing_cycle) {
+        $cycle = match ($this->billing_cycle) {
             'monthly' => '/เดือน',
             'yearly' => '/ปี',
             'lifetime' => ' (ตลอดชีพ)',
             default => '',
         };
 
-        return $price . $cycle;
+        return $price.$cycle;
     }
 
     /**
@@ -101,7 +101,7 @@ class VendorPackageFeature extends Model
      */
     public function getCategoryDisplayAttribute(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'marketing' => 'การตลาด',
             'analytics' => 'วิเคราะห์ข้อมูล',
             'ai' => 'AI & Automation',

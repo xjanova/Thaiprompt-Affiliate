@@ -15,8 +15,6 @@ class AICoreFeatureSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล AI Core Features
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -33,13 +31,11 @@ class AICoreFeatureSeeder extends Seeder
             $this->command->info("  ✓ {$feature['feature_name']}");
         }
 
-        $this->command->info('✅ Seed ข้อมูล AI Core Features สำเร็จ! (จำนวน ' . count($features) . ' features)');
+        $this->command->info('✅ Seed ข้อมูล AI Core Features สำเร็จ! (จำนวน '.count($features).' features)');
     }
 
     /**
      * ดึงข้อมูล AI Features ทั้ง 8 กลุ่ม
-     *
-     * @return array
      */
     private function getFeatures(): array
     {

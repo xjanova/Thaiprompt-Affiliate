@@ -45,11 +45,12 @@ class ProcessOrderCashback implements ShouldQueue
     public function handle(): void
     {
         try {
-            $cashbackService = new CashbackService(new WalletService());
+            $cashbackService = new CashbackService(new WalletService);
 
             // Skip if cashback already processed
             if ($this->order->cashback_processed) {
                 Log::info('Cashback already processed for order', ['order_id' => $this->order->id]);
+
                 return;
             }
 

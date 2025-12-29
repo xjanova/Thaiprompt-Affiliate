@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FoodCertificationResource;
 use App\Models\FoodCertification;
 use App\Services\CertificationService;
-use App\Http\Resources\FoodCertificationResource;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CertificationController extends Controller
 {
@@ -74,7 +74,7 @@ class CertificationController extends Controller
     {
         $certification = $this->certificationService->verifyCertificate($certificateNumber);
 
-        if (!$certification) {
+        if (! $certification) {
             return response()->json([
                 'success' => false,
                 'message' => 'Certificate not found',

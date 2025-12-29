@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands\ArrowX;
 
-use App\Services\ThemeCompilerService;
 use App\Models\ThemeSetting;
+use App\Services\ThemeCompilerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -48,8 +48,9 @@ class BenchmarkThemeCommand extends Command
         $compiler = app(ThemeCompilerService::class);
         $themeSetting = ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             $this->error('❌ No active theme found');
+
             return self::FAILURE;
         }
 
@@ -124,9 +125,6 @@ class BenchmarkThemeCommand extends Command
     /**
      * Benchmark compile
      *
-     * @param ThemeCompilerService $compiler
-     * @param ThemeSetting $theme
-     * @param bool $forceRefresh
      * @return float milliseconds
      */
     protected function benchmarkCompile(ThemeCompilerService $compiler, ThemeSetting $theme, bool $forceRefresh): float
@@ -141,8 +139,6 @@ class BenchmarkThemeCommand extends Command
     /**
      * Benchmark compile to file
      *
-     * @param ThemeCompilerService $compiler
-     * @param ThemeSetting $theme
      * @return float milliseconds
      */
     protected function benchmarkCompileToFile(ThemeCompilerService $compiler, ThemeSetting $theme): float
@@ -160,10 +156,6 @@ class BenchmarkThemeCommand extends Command
 
     /**
      * Get performance status
-     *
-     * @param float $time
-     * @param float $threshold
-     * @return string
      */
     protected function getStatus(float $time, float $threshold): string
     {

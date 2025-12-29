@@ -25,7 +25,7 @@ class CarbonCreditSoldNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('💰 Carbon Credit ของคุณถูกขายแล้ว!')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("Carbon Credit ของคุณถูกขายเรียบร้อยแล้ว")
+            ->line('Carbon Credit ของคุณถูกขายเรียบร้อยแล้ว')
             ->line("ผู้ซื้อ: {$this->data['buyer_name']}")
             ->line("ราคาขาย: ฿{$this->data['price']}")
             ->line("ค่าธรรมเนียม (5%): ฿{$this->data['commission']}")

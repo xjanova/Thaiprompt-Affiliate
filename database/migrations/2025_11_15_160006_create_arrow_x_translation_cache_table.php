@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง translation_cache สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -53,8 +51,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง translation_cache
-     *
-     * @return void
      */
     public function down(): void
     {

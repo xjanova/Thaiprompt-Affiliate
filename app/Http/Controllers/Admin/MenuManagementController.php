@@ -21,15 +21,13 @@ use Illuminate\View\View;
  * - แก้ไขข้อมูลเมนู
  *
  * @version 1.0.0
+ *
  * @since 2025-12-04
  */
 class MenuManagementController extends Controller
 {
     /**
      * แสดงหน้าจัดการเมนูหลัก
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -76,9 +74,6 @@ class MenuManagementController extends Controller
 
     /**
      * ดึงเมนูสำหรับ Dashboard Type และ Role (AJAX)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getMenus(Request $request): JsonResponse
     {
@@ -116,9 +111,6 @@ class MenuManagementController extends Controller
 
     /**
      * อัพเดทการตั้งค่าเมนูสำหรับ Role
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateRoleSetting(Request $request): JsonResponse
     {
@@ -147,16 +139,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * อัพเดทลำดับเมนู (Drag & Drop)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateOrder(Request $request): JsonResponse
     {
@@ -184,16 +173,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * อัพเดทลำดับเมนูสำหรับ Role เฉพาะ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateRoleOrder(Request $request): JsonResponse
     {
@@ -222,23 +208,19 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Toggle เปิด/ปิดเมนูทั้งระบบ
-     *
-     * @param Request $request
-     * @param MenuItem $menuItem
-     * @return JsonResponse
      */
     public function toggleActive(Request $request, MenuItem $menuItem): JsonResponse
     {
         try {
             $menuItem->update([
-                'is_active' => !$menuItem->is_active,
+                'is_active' => ! $menuItem->is_active,
             ]);
 
             return response()->json([
@@ -249,23 +231,19 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Toggle แสดง/ซ่อนเมนูทั้งระบบ
-     *
-     * @param Request $request
-     * @param MenuItem $menuItem
-     * @return JsonResponse
      */
     public function toggleVisible(Request $request, MenuItem $menuItem): JsonResponse
     {
         try {
             $menuItem->update([
-                'is_visible' => !$menuItem->is_visible,
+                'is_visible' => ! $menuItem->is_visible,
             ]);
 
             return response()->json([
@@ -276,16 +254,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Bulk toggle เปิด/ปิดเมนูสำหรับ Role
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function bulkToggleRole(Request $request): JsonResponse
     {
@@ -331,17 +306,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * แก้ไขข้อมูลเมนู
-     *
-     * @param Request $request
-     * @param MenuItem $menuItem
-     * @return JsonResponse
      */
     public function update(Request $request, MenuItem $menuItem): JsonResponse
     {
@@ -374,16 +345,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ซิงค์เมนูจาก config/menus.php ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncFromConfig(Request $request): JsonResponse
     {
@@ -393,7 +361,7 @@ class MenuManagementController extends Controller
             MenuItem::truncate();
 
             // เรียก Seeder เพื่อนำเข้าใหม่
-            $seeder = new \Database\Seeders\MenuItemSeeder();
+            $seeder = new \Database\Seeders\MenuItemSeeder;
             $seeder->run();
 
             // Clear menu cache
@@ -407,16 +375,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * รีเซ็ตการตั้งค่า Role สำหรับเมนู
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function resetRoleSettings(Request $request): JsonResponse
     {
@@ -443,17 +408,13 @@ class MenuManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Format เมนูพร้อม role settings
-     *
-     * @param MenuItem $menu
-     * @param int|null $roleId
-     * @return array
      */
     protected function formatMenuWithRoleSettings(MenuItem $menu, ?int $roleId): array
     {

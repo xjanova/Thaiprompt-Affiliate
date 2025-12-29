@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง forum_posts สำหรับเก็บคอมเมนต์/การตอบกลับ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง forum_posts
-     *
-     * @return void
      */
     public function down(): void
     {

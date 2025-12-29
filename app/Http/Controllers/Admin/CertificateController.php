@@ -40,7 +40,7 @@ class CertificateController extends Controller
 
         try {
             // Check if user can get certificate
-            if (!$this->certificateService->canIssueCertificate($user, $article)) {
+            if (! $this->certificateService->canIssueCertificate($user, $article)) {
                 return redirect()->back()
                     ->with('error', 'คุณยังไม่สามารถรับใบประกาศนียบัตรสำหรับคอร์สนี้ได้ กรุณาเรียนจบและผ่าน Quiz ที่กำหนดก่อน');
             }
@@ -51,7 +51,7 @@ class CertificateController extends Controller
                 ->with('success', 'สร้างใบประกาศนียบัตรสำเร็จ!');
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -79,11 +79,11 @@ class CertificateController extends Controller
             ->where('user_id', $user->id)
             ->firstOrFail();
 
-        if (!$certificate->isValid()) {
+        if (! $certificate->isValid()) {
             abort(403, 'This certificate has been revoked');
         }
 
-        if (!$certificate->pdf_path || !Storage::disk('public')->exists($certificate->pdf_path)) {
+        if (! $certificate->pdf_path || ! Storage::disk('public')->exists($certificate->pdf_path)) {
             // Regenerate if missing
             $this->certificateService->generatePDF($certificate);
         }
@@ -100,14 +100,14 @@ class CertificateController extends Controller
     {
         $certificate = $this->certificateService->verifyCertificate($verificationCode);
 
-        if (!$certificate) {
+        if (! $certificate) {
             return view('certificates.verify', [
                 'found' => false,
                 'message' => 'ไม่พบใบประกาศนียบัตรนี้ในระบบ',
             ]);
         }
 
-        if (!$certificate->isValid()) {
+        if (! $certificate->isValid()) {
             return view('certificates.verify', [
                 'found' => true,
                 'valid' => false,
@@ -133,7 +133,7 @@ class CertificateController extends Controller
             ->with(['user', 'article'])
             ->firstOrFail();
 
-        if (!$certificate->isValid()) {
+        if (! $certificate->isValid()) {
             abort(403, 'This certificate has been revoked');
         }
 

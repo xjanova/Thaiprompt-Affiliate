@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\MlmProspect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -21,6 +20,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class LineRichMediaService
 {
     private const QR_CODE_SIZE = 300;
+
     private const QR_CODE_PATH = 'qrcodes/line';
 
     /**
@@ -173,7 +173,7 @@ class LineRichMediaService
                             'action' => [
                                 'type' => 'uri',
                                 'label' => 'แชร์ลิงก์',
-                                'uri' => 'https://line.me/R/msg/text/?' . urlencode("มาร่วมเป็นทีมกับผมเลย! {$referralUrl}"),
+                                'uri' => 'https://line.me/R/msg/text/?'.urlencode("มาร่วมเป็นทีมกับผมเลย! {$referralUrl}"),
                             ],
                             'color' => '#51CF66',
                         ],
@@ -405,7 +405,7 @@ class LineRichMediaService
                     'contents' => [
                         [
                             'type' => 'text',
-                            'text' => $step['icon'] . ' ขั้นตอนที่ ' . $step['step'],
+                            'text' => $step['icon'].' ขั้นตอนที่ '.$step['step'],
                             'weight' => 'bold',
                             'size' => 'sm',
                             'color' => '#FF6B6B',
@@ -447,12 +447,12 @@ class LineRichMediaService
      */
     private function generateQrCode(string $content, string $filename): string
     {
-        $path = self::QR_CODE_PATH . '/' . $filename . '.png';
-        $fullPath = storage_path('app/public/' . $path);
+        $path = self::QR_CODE_PATH.'/'.$filename.'.png';
+        $fullPath = storage_path('app/public/'.$path);
 
         // Create directory if it doesn't exist
         $directory = dirname($fullPath);
-        if (!file_exists($directory)) {
+        if (! file_exists($directory)) {
             mkdir($directory, 0755, true);
         }
 

@@ -88,7 +88,7 @@ class CryptoWallet extends Model
      */
     public function isChildWallet(): bool
     {
-        return !$this->is_master_wallet && $this->master_wallet_id !== null;
+        return ! $this->is_master_wallet && $this->master_wallet_id !== null;
     }
 
     /**
@@ -110,8 +110,10 @@ class CryptoWallet extends Model
             }
             // Auto-unlock if time has passed
             $this->unlock();
+
             return false;
         }
+
         return $this->status === 'locked';
     }
 
@@ -120,7 +122,7 @@ class CryptoWallet extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === 'active' && !$this->isLocked();
+        return $this->status === 'active' && ! $this->isLocked();
     }
 
     /**
@@ -172,16 +174,18 @@ class CryptoWallet extends Model
      */
     public function verifyPin(string $pin): bool
     {
-        if (!$this->pin_hash) {
+        if (! $this->pin_hash) {
             return false;
         }
 
         if (Hash::check($pin, $this->pin_hash)) {
             $this->resetFailedAttempts();
+
             return true;
         }
 
         $this->incrementFailedAttempts();
+
         return false;
     }
 
@@ -200,7 +204,7 @@ class CryptoWallet extends Model
      */
     public function getDecryptedSeed(): ?string
     {
-        if (!$this->encrypted_seed) {
+        if (! $this->encrypted_seed) {
             return null;
         }
 
@@ -211,6 +215,7 @@ class CryptoWallet extends Model
                 'wallet_id' => $this->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -272,6 +277,7 @@ class CryptoWallet extends Model
                 }
             }
         }
+
         return $total;
     }
 

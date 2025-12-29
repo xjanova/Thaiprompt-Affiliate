@@ -2,14 +2,14 @@
 
 namespace App\Services\TPIX;
 
-use App\Models\TPIXToken;
-use App\Models\CMCTokenListing;
 use App\Models\CMCSyncLog;
+use App\Models\CMCTokenListing;
+use App\Models\TPIXToken;
 use App\Models\User;
+use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Exception;
 
 /**
  * CoinMarketCap Integration Service
@@ -19,6 +19,7 @@ use Exception;
 class CMCIntegrationService
 {
     protected string $apiKey;
+
     protected string $baseUrl = 'https://pro-api.coinmarketcap.com/v1';
 
     public function __construct()
@@ -42,6 +43,7 @@ class CMCIntegrationService
                 // Update existing
                 $this->syncTokenData($existing);
                 DB::commit();
+
                 return $existing->fresh();
             }
 
@@ -95,7 +97,7 @@ class CMCIntegrationService
             Log::info('CMC token imported', [
                 'cmc_id' => $data['id'],
                 'symbol' => $data['symbol'],
-                'imported_by' => $importedBy?->id
+                'imported_by' => $importedBy?->id,
             ]);
 
             return $listing;
@@ -104,7 +106,7 @@ class CMCIntegrationService
             DB::rollBack();
             Log::error('CMC import failed', [
                 'cmc_id' => $cmcIdOrSlug,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -116,7 +118,7 @@ class CMCIntegrationService
      */
     public function syncTPIXToken(TPIXToken $token, ?User $syncedBy = null): CMCSyncLog
     {
-        if (!$token->cmc_id) {
+        if (! $token->cmc_id) {
             throw new Exception('Token does not have CMC ID');
         }
 
@@ -125,7 +127,7 @@ class CMCIntegrationService
             // Get CMC listing
             $cmcListing = CMCTokenListing::where('cmc_id', $token->cmc_id)->first();
 
-            if (!$cmcListing) {
+            if (! $cmcListing) {
                 $cmcListing = $this->importToken($token->cmc_id, $syncedBy);
             } else {
                 $this->syncTokenData($cmcListing);
@@ -183,7 +185,7 @@ class CMCIntegrationService
             Log::info('TPIX token synced with CMC', [
                 'token_id' => $token->id,
                 'cmc_id' => $token->cmc_id,
-                'new_price_tpix' => $newPriceTpix
+                'new_price_tpix' => $newPriceTpix,
             ]);
 
             return $syncLog;
@@ -203,7 +205,7 @@ class CMCIntegrationService
 
             Log::error('CMC sync failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -215,7 +217,7 @@ class CMCIntegrationService
      */
     protected function fetchTokenData(string $cmcIdOrSlug): array
     {
-        if (!$this->apiKey) {
+        if (! $this->apiKey) {
             throw new Exception('CoinMarketCap API key not configured');
         }
 
@@ -234,17 +236,17 @@ class CMCIntegrationService
             $response = Http::timeout(30)
                 ->withHeaders([
                     'X-CMC_PRO_API_KEY' => $this->apiKey,
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
                 ])
-                ->get($this->baseUrl . $endpoint, $params);
+                ->get($this->baseUrl.$endpoint, $params);
 
-            if (!$response->successful()) {
-                throw new Exception('CMC API request failed: ' . $response->status());
+            if (! $response->successful()) {
+                throw new Exception('CMC API request failed: '.$response->status());
             }
 
             $data = $response->json();
 
-            if (!isset($data['data']) || empty($data['data'])) {
+            if (! isset($data['data']) || empty($data['data'])) {
                 throw new Exception('No data returned from CMC API');
             }
 
@@ -256,7 +258,7 @@ class CMCIntegrationService
         } catch (Exception $e) {
             Log::error('CMC API fetch failed', [
                 'cmc_id' => $cmcIdOrSlug,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -293,7 +295,7 @@ class CMCIntegrationService
         } catch (Exception $e) {
             Log::warning('Failed to sync CMC listing', [
                 'cmc_id' => $listing->cmc_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -346,10 +348,10 @@ class CMCIntegrationService
             $response = Http::timeout(30)
                 ->withHeaders([
                     'X-CMC_PRO_API_KEY' => $this->apiKey,
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
                 ])
-                ->get($this->baseUrl . '/cryptocurrency/trending/latest', [
-                    'limit' => $limit
+                ->get($this->baseUrl.'/cryptocurrency/trending/latest', [
+                    'limit' => $limit,
                 ]);
 
             if ($response->successful()) {
@@ -360,6 +362,7 @@ class CMCIntegrationService
 
         } catch (Exception $e) {
             Log::error('Failed to get trending tokens', ['error' => $e->getMessage()]);
+
             return [];
         }
     }

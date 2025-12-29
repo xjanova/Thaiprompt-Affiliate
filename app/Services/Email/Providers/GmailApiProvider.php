@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Log;
 class GmailApiProvider implements EmailProviderInterface
 {
     protected GoogleClient $client;
+
     protected Gmail $service;
+
     protected array $config;
 
     public function __construct(array $config)
@@ -25,7 +27,7 @@ class GmailApiProvider implements EmailProviderInterface
      */
     protected function initializeClient(): void
     {
-        $this->client = new GoogleClient();
+        $this->client = new GoogleClient;
 
         // Set up OAuth2 credentials
         if (isset($this->config['credentials_json'])) {
@@ -63,7 +65,7 @@ class GmailApiProvider implements EmailProviderInterface
             $rawMessage = $this->buildRawMessage($data);
 
             // Create Gmail message
-            $message = new GmailMessage();
+            $message = new GmailMessage;
             $message->setRaw($rawMessage);
 
             // Send email
@@ -106,29 +108,29 @@ class GmailApiProvider implements EmailProviderInterface
         $headers[] = "From: {$fromName} <{$from}>";
         $headers[] = "To: {$to}";
         $headers[] = "Subject: {$subject}";
-        $headers[] = "MIME-Version: 1.0";
+        $headers[] = 'MIME-Version: 1.0';
 
         // Support HTML and plain text
         if (isset($data['body_html']) && isset($data['body_text'])) {
             $boundary = uniqid('boundary_');
             $headers[] = "Content-Type: multipart/alternative; boundary=\"{$boundary}\"";
 
-            $message = implode("\r\n", $headers) . "\r\n\r\n";
+            $message = implode("\r\n", $headers)."\r\n\r\n";
             $message .= "--{$boundary}\r\n";
             $message .= "Content-Type: text/plain; charset=UTF-8\r\n";
             $message .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
-            $message .= $data['body_text'] . "\r\n\r\n";
+            $message .= $data['body_text']."\r\n\r\n";
             $message .= "--{$boundary}\r\n";
             $message .= "Content-Type: text/html; charset=UTF-8\r\n";
             $message .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
-            $message .= $data['body_html'] . "\r\n\r\n";
+            $message .= $data['body_html']."\r\n\r\n";
             $message .= "--{$boundary}--";
         } else {
             $isHtml = isset($data['body_html']);
             $contentType = $isHtml ? 'text/html' : 'text/plain';
             $headers[] = "Content-Type: {$contentType}; charset=UTF-8";
 
-            $message = implode("\r\n", $headers) . "\r\n\r\n";
+            $message = implode("\r\n", $headers)."\r\n\r\n";
             $message .= $isHtml ? $data['body_html'] : $body;
         }
 
@@ -143,7 +145,7 @@ class GmailApiProvider implements EmailProviderInterface
     {
         try {
             // Check if credentials are set
-            if (!isset($this->config['credentials_json']) && !isset($this->config['credentials_path'])) {
+            if (! isset($this->config['credentials_json']) && ! isset($this->config['credentials_path'])) {
                 return false;
             }
 
@@ -153,6 +155,7 @@ class GmailApiProvider implements EmailProviderInterface
             return true;
         } catch (\Exception $e) {
             Log::error('Gmail API validation failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -211,9 +214,10 @@ class GmailApiProvider implements EmailProviderInterface
     {
         // Get redirect URI from config or build from APP_URL
         $redirectUri = $this->config['redirect_uri']
-            ?? rtrim(config('app.url'), '/') . '/admin/email/gmail/callback';
+            ?? rtrim(config('app.url'), '/').'/admin/email/gmail/callback';
 
         $this->client->setRedirectUri($redirectUri);
+
         return $this->client->createAuthUrl();
     }
 

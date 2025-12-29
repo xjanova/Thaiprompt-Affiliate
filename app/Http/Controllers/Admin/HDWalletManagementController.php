@@ -5,14 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CryptoWallet;
 use App\Models\User;
-use App\Services\Crypto\HDWalletService;
 use App\Services\Crypto\CryptoWalletService;
+use App\Services\Crypto\HDWalletService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class HDWalletManagementController extends Controller
 {
     protected HDWalletService $hdWalletService;
+
     protected CryptoWalletService $cryptoWalletService;
 
     public function __construct(
@@ -55,10 +55,10 @@ class HDWalletManagementController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhereHas('user', function ($uq) use ($request) {
-                      $uq->where('name', 'like', "%{$request->search}%")
-                         ->orWhere('email', 'like', "%{$request->search}%");
-                  });
+                    ->orWhereHas('user', function ($uq) use ($request) {
+                        $uq->where('name', 'like', "%{$request->search}%")
+                            ->orWhere('email', 'like', "%{$request->search}%");
+                    });
             });
         }
 
@@ -106,10 +106,10 @@ class HDWalletManagementController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhereHas('user', function ($uq) use ($request) {
-                      $uq->where('name', 'like', "%{$request->search}%")
-                         ->orWhere('email', 'like', "%{$request->search}%");
-                  });
+                    ->orWhereHas('user', function ($uq) use ($request) {
+                        $uq->where('name', 'like', "%{$request->search}%")
+                            ->orWhere('email', 'like', "%{$request->search}%");
+                    });
             });
         }
 
@@ -304,7 +304,7 @@ class HDWalletManagementController extends Controller
             ];
         });
 
-        $filename = 'hd-wallets-export-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = 'hd-wallets-export-'.now()->format('Y-m-d-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

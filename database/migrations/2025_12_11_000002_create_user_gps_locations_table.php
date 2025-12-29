@@ -13,8 +13,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง user_gps_locations
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -55,8 +53,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง
-     *
-     * @return void
      */
     public function down(): void
     {

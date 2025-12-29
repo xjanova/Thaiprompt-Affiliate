@@ -91,12 +91,12 @@ class WalletTopupController extends Controller
                 }
             } else {
                 return redirect()->route('wallet.topup')
-                    ->with('error', 'การเติมเงินล้มเหลว: ' . $result['message']);
+                    ->with('error', 'การเติมเงินล้มเหลว: '.$result['message']);
             }
 
         } catch (\Exception $e) {
             return redirect()->route('wallet.topup')
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -121,7 +121,7 @@ class WalletTopupController extends Controller
     {
         $this->authorize('view', $transaction);
 
-        if (!$transaction->isCompleted()) {
+        if (! $transaction->isCompleted()) {
             return redirect()->route('wallet.topup.payment', ['transaction' => $transaction->id]);
         }
 

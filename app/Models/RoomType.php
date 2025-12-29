@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class RoomType extends Model
 {
@@ -113,8 +113,9 @@ class RoomType extends Model
     public function getMainImageUrlAttribute()
     {
         if ($this->main_image) {
-            return asset('storage/' . $this->main_image);
+            return asset('storage/'.$this->main_image);
         }
+
         return asset('images/default-room.jpg');
     }
 
@@ -122,9 +123,10 @@ class RoomType extends Model
     {
         if ($this->gallery_images) {
             return collect($this->gallery_images)->map(function ($image) {
-                return asset('storage/' . $image);
+                return asset('storage/'.$image);
             })->toArray();
         }
+
         return [];
     }
 

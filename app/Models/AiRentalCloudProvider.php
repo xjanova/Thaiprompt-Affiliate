@@ -128,8 +128,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * ความสัมพันธ์กับ Cloud Configs
-     *
-     * @return HasMany
      */
     public function cloudConfigs(): HasMany
     {
@@ -141,8 +139,6 @@ class AiRentalCloudProvider extends Model
      *
      * ใช้ HasManyThrough เพื่อเข้าถึง deployments ผ่าน cloud configs
      * Provider -> CloudConfig -> Deployment
-     *
-     * @return HasManyThrough
      */
     public function deployments(): HasManyThrough
     {
@@ -158,8 +154,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * ตรวจสอบว่าเป็น free tier หรือไม่
-     *
-     * @return bool
      */
     public function isFree(): bool
     {
@@ -168,8 +162,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * ตรวจสอบว่าเป็น paid tier หรือไม่
-     *
-     * @return bool
      */
     public function isPaid(): bool
     {
@@ -178,8 +170,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * ได้รับราคาเฉลี่ย
-     *
-     * @return float|null
      */
     public function getAveragePriceAttribute(): ?float
     {
@@ -193,7 +183,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เฉพาะ providers ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -204,7 +194,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เฉพาะ free tier
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFreeTier($query)
@@ -218,7 +208,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เฉพาะ paid tier
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePaidTier($query)
@@ -229,7 +219,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เฉพาะ providers ที่แนะนำ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecommended($query)
@@ -240,7 +230,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เรียงตามความนิยม
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query)
@@ -251,7 +241,7 @@ class AiRentalCloudProvider extends Model
     /**
      * Scope: เรียงตามลำดับที่กำหนด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -262,8 +252,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * ตรวจสอบว่ารองรับ Hugging Face หรือไม่
-     *
-     * @return bool
      */
     public function supportsHuggingFace(): bool
     {
@@ -273,8 +261,7 @@ class AiRentalCloudProvider extends Model
     /**
      * เพิ่มรีวิว
      *
-     * @param float $rating คะแนน (0-5)
-     * @return void
+     * @param  float  $rating  คะแนน (0-5)
      */
     public function addReview(float $rating): void
     {
@@ -286,9 +273,6 @@ class AiRentalCloudProvider extends Model
 
     /**
      * เพิ่มคะแนนความนิยม
-     *
-     * @param int $points
-     * @return void
      */
     public function incrementPopularity(int $points = 1): void
     {

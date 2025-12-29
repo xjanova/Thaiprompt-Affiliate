@@ -27,7 +27,9 @@ class SmartSliderAnalytics extends Model
     ];
 
     const EVENT_VIEW = 'view';
+
     const EVENT_CLICK = 'click';
+
     const EVENT_SLIDE_CHANGE = 'slide_change';
 
     /**

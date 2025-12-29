@@ -3,11 +3,10 @@
 namespace App\Services\NFC;
 
 use App\Models\NFCCard;
-use App\Models\NFCTransaction;
 use App\Models\NFCReader;
+use App\Models\NFCTransaction;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\WalletTransaction;
 use App\Services\WalletService;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 class NFCCardService
 {
     protected NFCCardEncryptionService $encryptionService;
+
     protected WalletService $walletService;
 
     public function __construct(
@@ -103,7 +103,7 @@ class NFCCardService
                 'data' => $data,
             ]);
 
-            throw new Exception('Failed to issue card: ' . $e->getMessage());
+            throw new Exception('Failed to issue card: '.$e->getMessage());
         }
     }
 
@@ -177,7 +177,7 @@ class NFCCardService
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Failed to pair card: ' . $e->getMessage());
+            throw new Exception('Failed to pair card: '.$e->getMessage());
         }
     }
 
@@ -189,7 +189,7 @@ class NFCCardService
         DB::beginTransaction();
 
         try {
-            if (!$card->isPaired()) {
+            if (! $card->isPaired()) {
                 throw new Exception('Card is not paired');
             }
 
@@ -208,7 +208,7 @@ class NFCCardService
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Failed to unpair card: ' . $e->getMessage());
+            throw new Exception('Failed to unpair card: '.$e->getMessage());
         }
     }
 
@@ -223,7 +223,7 @@ class NFCCardService
             // ค้นหาบัตรในระบบ
             $card = NFCCard::where('card_number', $cardNumber)->first();
 
-            if (!$card) {
+            if (! $card) {
                 return [
                     'success' => false,
                     'verified' => false,
@@ -234,7 +234,7 @@ class NFCCardService
             // ดึง encryption key
             $encryptionKey = decrypt($card->metadata['_encryption_key'] ?? '');
 
-            if (!$encryptionKey) {
+            if (! $encryptionKey) {
                 return [
                     'success' => false,
                     'verified' => false,
@@ -250,7 +250,7 @@ class NFCCardService
                 $card->card_signature
             );
 
-            if (!$verification['valid']) {
+            if (! $verification['valid']) {
                 // บันทึกความพยายามที่ล้มเหลว
                 $card->incrementFailedAttempts();
 
@@ -301,24 +301,24 @@ class NFCCardService
     public function processPayment(
         NFCCard $card,
         float $amount,
-        NFCReader $reader = null,
+        ?NFCReader $reader = null,
         array $metadata = []
     ): NFCTransaction {
         DB::beginTransaction();
 
         try {
             // 🆕 ตรวจสอบว่าการ์ดเปิดใช้งานหรือไม่
-            if (!$card->isEnabled()) {
+            if (! $card->isEnabled()) {
                 throw new Exception('Card is disabled by user');
             }
 
             // ตรวจสอบสถานะบัตร
-            if (!$card->isActive()) {
+            if (! $card->isActive()) {
                 throw new Exception('Card is not active');
             }
 
             // 🆕 ตรวจสอบ spending limits
-            if (!$card->canSpend($amount)) {
+            if (! $card->canSpend($amount)) {
                 // ตรวจสอบว่าเกินวงเงินรายการเดียว
                 if ($amount > $card->transaction_limit) {
                     throw new Exception("Amount exceeds transaction limit ({$card->transaction_limit})");
@@ -326,16 +326,16 @@ class NFCCardService
 
                 // ตรวจสอบวงเงินรายวัน
                 if (($card->daily_spent + $amount) > $card->daily_spending_limit) {
-                    throw new Exception("Exceeds daily spending limit");
+                    throw new Exception('Exceeds daily spending limit');
                 }
 
                 // ตรวจสอบวงเงินรายเดือน
                 if (($card->monthly_spent + $amount) > $card->monthly_spending_limit) {
-                    throw new Exception("Exceeds monthly spending limit");
+                    throw new Exception('Exceeds monthly spending limit');
                 }
 
                 // ตรวจสอบยอดเงินคงเหลือ
-                if (!$card->hasSufficientBalance($amount)) {
+                if (! $card->hasSufficientBalance($amount)) {
                     throw new Exception('Insufficient balance');
                 }
             }
@@ -412,7 +412,7 @@ class NFCCardService
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment failed: ' . $e->getMessage());
+            throw new Exception('Payment failed: '.$e->getMessage());
         }
     }
 
@@ -424,13 +424,13 @@ class NFCCardService
     public function topUpCard(
         NFCCard $card,
         float $amount,
-        NFCReader $reader = null,
+        ?NFCReader $reader = null,
         array $metadata = []
     ): NFCTransaction {
         DB::beginTransaction();
 
         try {
-            if (!$card->isActive() && $card->status !== NFCCard::STATUS_PENDING) {
+            if (! $card->isActive() && $card->status !== NFCCard::STATUS_PENDING) {
                 throw new Exception('Card is not active');
             }
 
@@ -477,14 +477,14 @@ class NFCCardService
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Top up failed: ' . $e->getMessage());
+            throw new Exception('Top up failed: '.$e->getMessage());
         }
     }
 
     /**
      * Block card
      */
-    public function blockCard(NFCCard $card, string $reason, int $minutes = null): bool
+    public function blockCard(NFCCard $card, string $reason, ?int $minutes = null): bool
     {
         try {
             $card->block($reason, $minutes);
@@ -572,9 +572,6 @@ class NFCCardService
     /**
      * ผูกการ์ดกับ Wallet
      *
-     * @param NFCCard $card
-     * @param int $walletId
-     * @return bool
      * @throws Exception
      */
     public function linkCardToWallet(NFCCard $card, int $walletId): bool
@@ -582,7 +579,7 @@ class NFCCardService
         try {
             $wallet = Wallet::find($walletId);
 
-            if (!$wallet) {
+            if (! $wallet) {
                 throw new Exception('Wallet not found');
             }
 
@@ -611,9 +608,6 @@ class NFCCardService
 
     /**
      * ยกเลิกการผูกการ์ดกับ Wallet
-     *
-     * @param NFCCard $card
-     * @return bool
      */
     public function unlinkCardFromWallet(NFCCard $card): bool
     {
@@ -636,10 +630,6 @@ class NFCCardService
     /**
      * เติมเงินจาก Wallet
      *
-     * @param NFCCard $card
-     * @param float $amount
-     * @param string $pin
-     * @return NFCTransaction
      * @throws Exception
      */
     public function topUpFromWallet(NFCCard $card, float $amount, string $pin): NFCTransaction
@@ -647,13 +637,13 @@ class NFCCardService
         DB::beginTransaction();
 
         try {
-            if (!$card->hasLinkedWallet()) {
+            if (! $card->hasLinkedWallet()) {
                 throw new Exception('Card is not linked to any wallet');
             }
 
             $wallet = $card->wallet;
 
-            if (!$wallet) {
+            if (! $wallet) {
                 throw new Exception('Wallet not found');
             }
 
@@ -662,7 +652,7 @@ class NFCCardService
                 $wallet,
                 $amount,
                 $pin,
-                'Top-up NFC Card: ' . $card->card_name,
+                'Top-up NFC Card: '.$card->card_name,
                 'App\Models\NFCCard',
                 $card->id
             );
@@ -701,13 +691,11 @@ class NFCCardService
     /**
      * Auto top-up จาก Wallet
      *
-     * @param NFCCard $card
-     * @return NFCTransaction
      * @throws Exception
      */
     protected function autoTopUpFromWallet(NFCCard $card): NFCTransaction
     {
-        if (!$card->auto_topup_enabled || !$card->hasLinkedWallet()) {
+        if (! $card->auto_topup_enabled || ! $card->hasLinkedWallet()) {
             throw new Exception('Auto top-up is not configured');
         }
 
@@ -727,10 +715,6 @@ class NFCCardService
 
     /**
      * ตั้งค่าวงเงินการใช้จ่าย
-     *
-     * @param NFCCard $card
-     * @param array $limits
-     * @return bool
      */
     public function setSpendingLimits(NFCCard $card, array $limits): bool
     {
@@ -769,16 +753,11 @@ class NFCCardService
 
     /**
      * ตั้งค่า Auto Top-up
-     *
-     * @param NFCCard $card
-     * @param float $threshold
-     * @param float $amount
-     * @return bool
      */
     public function configureAutoTopUp(NFCCard $card, float $threshold, float $amount): bool
     {
         try {
-            if (!$card->hasLinkedWallet()) {
+            if (! $card->hasLinkedWallet()) {
                 throw new Exception('Card must be linked to wallet for auto top-up');
             }
 
@@ -807,10 +786,6 @@ class NFCCardService
 
     /**
      * เปิดใช้งาน TPIX สำหรับการ์ด
-     *
-     * @param NFCCard $card
-     * @param string $tpixWalletAddress
-     * @return bool
      */
     public function enableTPIXPayment(NFCCard $card, string $tpixWalletAddress): bool
     {
@@ -835,9 +810,6 @@ class NFCCardService
 
     /**
      * ปิดใช้งาน TPIX
-     *
-     * @param NFCCard $card
-     * @return bool
      */
     public function disableTPIXPayment(NFCCard $card): bool
     {

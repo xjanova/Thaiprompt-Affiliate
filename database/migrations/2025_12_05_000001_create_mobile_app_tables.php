@@ -22,7 +22,7 @@ return new class extends Migration
         // =====================================================
         // 1. mobile_devices - ข้อมูลเครื่องที่ลงทะเบียน
         // =====================================================
-        if (!Schema::hasTable('mobile_devices')) {
+        if (! Schema::hasTable('mobile_devices')) {
             Schema::create('mobile_devices', function (Blueprint $table) {
                 $table->id();
                 $table->string('device_id', 100)->unique()->comment('Unique device identifier');
@@ -48,7 +48,7 @@ return new class extends Migration
         // =====================================================
         // 2. mobile_banners - Banner โฆษณาในแอพ
         // =====================================================
-        if (!Schema::hasTable('mobile_banners')) {
+        if (! Schema::hasTable('mobile_banners')) {
             Schema::create('mobile_banners', function (Blueprint $table) {
                 $table->id();
                 $table->string('title', 100)->comment('หัวข้อ banner');
@@ -74,7 +74,7 @@ return new class extends Migration
         // =====================================================
         // 3. mobile_push_notifications - Push Notifications
         // =====================================================
-        if (!Schema::hasTable('mobile_push_notifications')) {
+        if (! Schema::hasTable('mobile_push_notifications')) {
             Schema::create('mobile_push_notifications', function (Blueprint $table) {
                 $table->id();
                 $table->string('title', 100)->comment('หัวข้อ notification');

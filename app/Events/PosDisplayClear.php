@@ -13,8 +13,6 @@ use Illuminate\Queue\SerializesModels;
  *
  * Event ที่ถูก broadcast เมื่อต้องการล้างหน้าจอ Customer Display
  * กลับไปแสดงหน้าจอต้อนรับหรือโฆษณา
- *
- * @package App\Events
  */
 class PosDisplayClear implements ShouldBroadcast
 {
@@ -22,31 +20,21 @@ class PosDisplayClear implements ShouldBroadcast
 
     /**
      * Device code ของ POS device
-     *
-     * @var string
      */
     public string $deviceCode;
 
     /**
      * แสดงข้อความขอบคุณก่อนล้างหรือไม่
-     *
-     * @var bool
      */
     public bool $showThankYou;
 
     /**
      * ระยะเวลาแสดงข้อความขอบคุณ (วินาที)
-     *
-     * @var int
      */
     public int $thankYouDuration;
 
     /**
      * สร้าง event instance ใหม่
-     *
-     * @param string $deviceCode
-     * @param bool $showThankYou
-     * @param int $thankYouDuration
      */
     public function __construct(
         string $deviceCode,
@@ -60,18 +48,14 @@ class PosDisplayClear implements ShouldBroadcast
 
     /**
      * กำหนด channel ที่จะ broadcast
-     *
-     * @return Channel
      */
     public function broadcastOn(): Channel
     {
-        return new Channel('pos-display.' . $this->deviceCode);
+        return new Channel('pos-display.'.$this->deviceCode);
     }
 
     /**
      * กำหนดชื่อ event สำหรับ broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -80,8 +64,6 @@ class PosDisplayClear implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะส่งไปกับ broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {

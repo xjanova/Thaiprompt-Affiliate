@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
 use App\Models\BlockedIp;
 use App\Models\SecurityLog;
-use App\Services\AutoBanService;
-use App\Services\IpIntelligenceService;
-use App\Services\ThreatIntelligenceService;
+use App\Models\Setting;
 use App\Models\ThreatIp;
+use App\Services\AutoBanService;
+use App\Services\ThreatIntelligenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
@@ -147,7 +146,7 @@ class SecurityController extends Controller
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 
@@ -186,7 +185,7 @@ class SecurityController extends Controller
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 
@@ -233,16 +232,16 @@ class SecurityController extends Controller
 
         // Validate IP format based on type
         if ($validated['ip_type'] === 'single') {
-            if (!filter_var($validated['ip_address'], FILTER_VALIDATE_IP)) {
+            if (! filter_var($validated['ip_address'], FILTER_VALIDATE_IP)) {
                 return back()->withErrors(['ip_address' => 'Invalid IP address format.']);
             }
         } elseif ($validated['ip_type'] === 'range') {
-            if (!filter_var($validated['ip_range_start'], FILTER_VALIDATE_IP) ||
-                !filter_var($validated['ip_range_end'], FILTER_VALIDATE_IP)) {
+            if (! filter_var($validated['ip_range_start'], FILTER_VALIDATE_IP) ||
+                ! filter_var($validated['ip_range_end'], FILTER_VALIDATE_IP)) {
                 return back()->withErrors(['ip_range_start' => 'Invalid IP range format.']);
             }
         } elseif ($validated['ip_type'] === 'cidr') {
-            if (!$this->validateCidr($validated['ip_cidr'])) {
+            if (! $this->validateCidr($validated['ip_cidr'])) {
                 return back()->withErrors(['ip_cidr' => 'Invalid CIDR notation.']);
             }
         }
@@ -270,7 +269,7 @@ class SecurityController extends Controller
                 $ipDisplay = "{$validated['ip_range_start']} - {$validated['ip_range_end']}";
                 break;
             case 'cidr':
-                list($network, $mask) = explode('/', $validated['ip_cidr']);
+                [$network, $mask] = explode('/', $validated['ip_cidr']);
                 $data['ip_address'] = $network; // Store network IP for reference
                 $data['ip_cidr'] = $validated['ip_cidr'];
                 $ipDisplay = $validated['ip_cidr'];
@@ -281,11 +280,11 @@ class SecurityController extends Controller
 
         // Log the action
         SecurityLog::create([
-            'event_type' => 'ip_' . $validated['type'],
+            'event_type' => 'ip_'.$validated['type'],
             'ip_address' => $data['ip_address'],
             'user_id' => auth()->id(),
             'severity' => 'medium',
-            'description' => "{$validated['ip_type']} IP {$ipDisplay} added to {$validated['type']} by " . auth()->user()->name,
+            'description' => "{$validated['ip_type']} IP {$ipDisplay} added to {$validated['type']} by ".auth()->user()->name,
             'user_agent' => request()->userAgent(),
         ]);
 
@@ -297,19 +296,19 @@ class SecurityController extends Controller
      */
     protected function validateCidr(string $cidr): bool
     {
-        if (!str_contains($cidr, '/')) {
+        if (! str_contains($cidr, '/')) {
             return false;
         }
 
-        list($ip, $mask) = explode('/', $cidr);
+        [$ip, $mask] = explode('/', $cidr);
 
         // Validate IP
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+        if (! filter_var($ip, FILTER_VALIDATE_IP)) {
             return false;
         }
 
         // Validate mask
-        $mask = (int)$mask;
+        $mask = (int) $mask;
 
         // Check if IPv4 or IPv6
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
@@ -340,7 +339,7 @@ class SecurityController extends Controller
             'ip_address' => $ipAddress,
             'user_id' => auth()->id(),
             'severity' => 'low',
-            'description' => "IP address {$ipAddress} removed from {$blockedIp->type} by " . auth()->user()->name,
+            'description' => "IP address {$ipAddress} removed from {$blockedIp->type} by ".auth()->user()->name,
             'user_agent' => request()->userAgent(),
         ]);
 
@@ -443,7 +442,7 @@ class SecurityController extends Controller
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 
@@ -518,14 +517,14 @@ class SecurityController extends Controller
 
         $logs = $query->limit(10000)->get(); // Limit to prevent memory issues
 
-        $filename = 'security-logs-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = 'security-logs-'.now()->format('Y-m-d-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($logs) {
+        $callback = function () use ($logs) {
             $file = fopen('php://output', 'w');
 
             // CSV Header
@@ -588,11 +587,11 @@ class SecurityController extends Controller
         $data = [
             'analytics' => $analytics,
             'auto_ban_stats' => $autoBanStats,
-            'period' => $days . ' days',
+            'period' => $days.' days',
             'generated_at' => now()->format('Y-m-d H:i:s'),
         ];
 
-        $filename = 'security-analytics-' . now()->format('Y-m-d-His') . '.json';
+        $filename = 'security-analytics-'.now()->format('Y-m-d-His').'.json';
 
         return response()->json($data)
             ->header('Content-Type', 'application/json')
@@ -616,7 +615,7 @@ class SecurityController extends Controller
 
         // Apply filters
         if ($request->filled('ip_address')) {
-            $query->where('ip_address', 'like', '%' . $request->ip_address . '%');
+            $query->where('ip_address', 'like', '%'.$request->ip_address.'%');
         }
 
         if ($request->filled('threat_type')) {
@@ -708,6 +707,7 @@ class SecurityController extends Controller
         if ($request->ajax()) {
             try {
                 $results = $service->updateAllSources();
+
                 return response()->json([
                     'success' => true,
                     'message' => "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ",
@@ -716,7 +716,7 @@ class SecurityController extends Controller
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
         }
@@ -724,9 +724,10 @@ class SecurityController extends Controller
         // For regular requests, redirect with message
         try {
             $results = $service->updateAllSources();
+
             return back()->with('success', "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ");
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: '.$e->getMessage()]);
         }
     }
 
@@ -742,7 +743,7 @@ class SecurityController extends Controller
 
         $progress = $service->getProgress();
 
-        if (!$progress) {
+        if (! $progress) {
             return response()->json([
                 'percentage' => 0,
                 'message' => 'ไม่มีการอัปเดตอยู่',
@@ -820,7 +821,7 @@ class SecurityController extends Controller
 
         // Validate custom cron if selected
         if ($request->input('threat_update_frequency') === 'custom' && $request->filled('threat_update_cron')) {
-            if (!$this->validateCronExpression($request->input('threat_update_cron'))) {
+            if (! $this->validateCronExpression($request->input('threat_update_cron'))) {
                 return back()->withErrors(['threat_update_cron' => 'รูปแบบ Cron Expression ไม่ถูกต้อง']);
             }
         }
@@ -861,7 +862,7 @@ class SecurityController extends Controller
         // Validate each part
         foreach ($parts as $index => $part) {
             // Allow *, numbers, ranges (1-5), steps (*/5), and lists (1,2,3)
-            if (!preg_match('/^(\*|[0-9,\-\/]+)$/', $part)) {
+            if (! preg_match('/^(\*|[0-9,\-\/]+)$/', $part)) {
                 return false;
             }
         }
@@ -876,7 +877,7 @@ class SecurityController extends Controller
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 

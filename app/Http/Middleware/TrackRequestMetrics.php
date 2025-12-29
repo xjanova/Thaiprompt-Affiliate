@@ -62,7 +62,7 @@ class TrackRequestMetrics
 
         } catch (\Exception $e) {
             // Silently fail - don't break the application
-            logger()->error('Failed to track request metrics: ' . $e->getMessage());
+            logger()->error('Failed to track request metrics: '.$e->getMessage());
         }
     }
 

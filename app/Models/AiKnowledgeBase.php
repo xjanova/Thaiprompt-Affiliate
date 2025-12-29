@@ -86,7 +86,7 @@ class AiKnowledgeBase extends Model
      */
     public function needsProcessing(): bool
     {
-        if (!$this->has_embeddings) {
+        if (! $this->has_embeddings) {
             return true;
         }
 
@@ -103,7 +103,7 @@ class AiKnowledgeBase extends Model
      */
     public function getProcessingStatus(): string
     {
-        if (!$this->has_embeddings) {
+        if (! $this->has_embeddings) {
             return 'pending';
         }
 

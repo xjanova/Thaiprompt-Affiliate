@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,8 +18,11 @@ use Illuminate\Support\Facades\Log;
 class RazorpayProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $keyId;
+
     protected $keySecret;
+
     protected $testMode;
 
     protected const API_URL = 'https://api.razorpay.com/v1';
@@ -36,7 +39,7 @@ class RazorpayProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('RazorpayProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('RazorpayProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
@@ -44,20 +47,17 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Validate Razorpay payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบว่า gateway พร้อมใช้งาน
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('Razorpay gateway is not configured');
         }
 
         // ตรวจสอบว่า gateway เปิดใช้งาน
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('Razorpay gateway is not active');
         }
 
@@ -79,9 +79,6 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Process Razorpay payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     public function process(PaymentTransaction $transaction, array $data): array
@@ -90,7 +87,7 @@ class RazorpayProvider implements PaymentProviderInterface
             // สร้าง Razorpay Order
             $order = $this->createOrder($transaction, $data);
 
-            if (!$order || !isset($order['id'])) {
+            if (! $order || ! isset($order['id'])) {
                 throw new Exception('Failed to create Razorpay order');
             }
 
@@ -125,10 +122,6 @@ class RazorpayProvider implements PaymentProviderInterface
 
     /**
      * Verify Razorpay payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -146,21 +139,22 @@ class RazorpayProvider implements PaymentProviderInterface
             // Verify signature
             $generatedSignature = hash_hmac(
                 'sha256',
-                $razorpayOrderId . '|' . $razorpayPaymentId,
+                $razorpayOrderId.'|'.$razorpayPaymentId,
                 $this->keySecret
             );
 
-            if (!hash_equals($generatedSignature, $razorpaySignature)) {
+            if (! hash_equals($generatedSignature, $razorpaySignature)) {
                 Log::warning('Razorpay signature verification failed', [
                     'transaction_id' => $transaction->transaction_id,
                 ]);
+
                 return false;
             }
 
             // ดึงข้อมูล payment เพื่อยืนยันจำนวนเงิน
             $payment = $this->getPayment($razorpayPaymentId);
 
-            if (!$payment) {
+            if (! $payment) {
                 return false;
             }
 
@@ -172,6 +166,7 @@ class RazorpayProvider implements PaymentProviderInterface
                     'expected' => $transaction->amount,
                     'received' => $paidAmount,
                 ]);
+
                 return false;
             }
 
@@ -182,6 +177,7 @@ class RazorpayProvider implements PaymentProviderInterface
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -189,9 +185,6 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Refund Razorpay payment
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
@@ -200,7 +193,7 @@ class RazorpayProvider implements PaymentProviderInterface
             // ต้องมี payment_id สำหรับการ refund
             $paymentId = $transaction->metadata['razorpay_payment_id'] ?? null;
 
-            if (!$paymentId) {
+            if (! $paymentId) {
                 throw new Exception('Payment ID not found for refund');
             }
 
@@ -231,9 +224,6 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Create Razorpay Order
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     protected function createOrder(PaymentTransaction $transaction, array $data): array
@@ -257,9 +247,6 @@ class RazorpayProvider implements PaymentProviderInterface
 
     /**
      * Get payment details
-     *
-     * @param string $paymentId
-     * @return array|null
      */
     protected function getPayment(string $paymentId): ?array
     {
@@ -270,6 +257,7 @@ class RazorpayProvider implements PaymentProviderInterface
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -277,9 +265,6 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Create Razorpay Refund
      *
-     * @param string $paymentId
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     protected function createRefund(string $paymentId, float $amount): array
@@ -294,10 +279,6 @@ class RazorpayProvider implements PaymentProviderInterface
     /**
      * Call Razorpay API
      *
-     * @param string $endpoint
-     * @param array $payload
-     * @param string $method
-     * @return array
      * @throws Exception
      */
     protected function callRazorpayApi(string $endpoint, array $payload = [], string $method = 'POST'): array
@@ -306,7 +287,7 @@ class RazorpayProvider implements PaymentProviderInterface
             $response = Http::withBasicAuth($this->keyId, $this->keySecret)
                 ->timeout(30);
 
-            $url = self::API_URL . '/' . $endpoint;
+            $url = self::API_URL.'/'.$endpoint;
 
             if ($method === 'GET') {
                 $response = $response->get($url, $payload);
@@ -326,22 +307,19 @@ class RazorpayProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {
         try {
             $response = Http::withBasicAuth($this->keyId, $this->keySecret)
                 ->timeout(30)
-                ->get(self::API_URL . "/orders/{$transaction->gateway_transaction_id}");
+                ->get(self::API_URL."/orders/{$transaction->gateway_transaction_id}");
 
             if ($response->failed()) {
                 return [

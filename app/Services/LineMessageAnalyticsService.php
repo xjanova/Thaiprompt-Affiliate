@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\LineFailedMessage;
 use App\Models\LineErrorLog;
+use App\Models\LineFailedMessage;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * LINE Message Analytics Service
@@ -22,8 +22,6 @@ use Carbon\Carbon;
  * - User engagement tracking
  * - Performance trending
  * - Cache optimization (5-min TTL)
- *
- * @package App\Services
  */
 class LineMessageAnalyticsService
 {
@@ -35,8 +33,7 @@ class LineMessageAnalyticsService
     /**
      * ดึงสถิติภาพรวมของระบบ
      *
-     * @param string $period 'today', 'week', 'month', 'all'
-     * @return array
+     * @param  string  $period  'today', 'week', 'month', 'all'
      */
     public function getOverviewStatistics(string $period = 'week'): array
     {
@@ -56,14 +53,14 @@ class LineMessageAnalyticsService
             $failed = LineFailedMessage::whereBetween('created_at', $dateRange)
                 ->whereIn('status', [
                     LineFailedMessage::STATUS_FAILED,
-                    LineFailedMessage::STATUS_ABANDONED
+                    LineFailedMessage::STATUS_ABANDONED,
                 ])
                 ->count();
 
             $pending = LineFailedMessage::whereBetween('created_at', $dateRange)
                 ->whereIn('status', [
                     LineFailedMessage::STATUS_PENDING,
-                    LineFailedMessage::STATUS_RETRYING
+                    LineFailedMessage::STATUS_RETRYING,
                 ])
                 ->count();
 
@@ -104,9 +101,6 @@ class LineMessageAnalyticsService
 
     /**
      * ดึงสถิติข้อความตามประเภท (text, flex, template, image)
-     *
-     * @param string $period
-     * @return array
      */
     public function getMessageTypeStatistics(string $period = 'week'): array
     {
@@ -135,7 +129,7 @@ class LineMessageAnalyticsService
             }
 
             // เรียงตาม count มากไปน้อย
-            usort($result, fn($a, $b) => $b['count'] <=> $a['count']);
+            usort($result, fn ($a, $b) => $b['count'] <=> $a['count']);
 
             return $result;
         });
@@ -143,9 +137,6 @@ class LineMessageAnalyticsService
 
     /**
      * วิเคราะห์ error patterns
-     *
-     * @param string $period
-     * @return array
      */
     public function getErrorPatternAnalysis(string $period = 'week'): array
     {
@@ -180,9 +171,6 @@ class LineMessageAnalyticsService
 
     /**
      * วิเคราะห์ recovery metrics
-     *
-     * @param string $period
-     * @return array
      */
     public function getRecoveryMetrics(string $period = 'week'): array
     {
@@ -229,9 +217,8 @@ class LineMessageAnalyticsService
     /**
      * ดึงข้อมูล trending (สถิติรายวัน/รายชั่วโมง)
      *
-     * @param string $period 'today', 'week', 'month'
-     * @param string $interval 'hour', 'day'
-     * @return array
+     * @param  string  $period  'today', 'week', 'month'
+     * @param  string  $interval  'hour', 'day'
      */
     public function getTrendingData(string $period = 'week', string $interval = 'day'): array
     {
@@ -244,7 +231,7 @@ class LineMessageAnalyticsService
             $dateFormat = $interval === 'hour' ? '%Y-%m-%d %H:00:00' : '%Y-%m-%d';
             $groupBy = $interval === 'hour'
                 ? DB::raw("DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as period")
-                : DB::raw("DATE(created_at) as period");
+                : DB::raw('DATE(created_at) as period');
 
             // ดึงข้อมูล trending
             $data = LineFailedMessage::whereBetween('created_at', $dateRange)
@@ -281,9 +268,6 @@ class LineMessageAnalyticsService
 
     /**
      * ดึงสถิติ user engagement
-     *
-     * @param string $period
-     * @return array
      */
     public function getUserEngagementMetrics(string $period = 'week'): array
     {
@@ -327,9 +311,6 @@ class LineMessageAnalyticsService
 
     /**
      * ดึง error severity breakdown
-     *
-     * @param string $period
-     * @return array
      */
     public function getErrorSeverityBreakdown(string $period = 'week'): array
     {
@@ -366,9 +347,6 @@ class LineMessageAnalyticsService
 
     /**
      * ดึงสถิติแบบรวม (สำหรับ dashboard หลัก)
-     *
-     * @param string $period
-     * @return array
      */
     public function getDashboardSummary(string $period = 'week'): array
     {
@@ -386,7 +364,6 @@ class LineMessageAnalyticsService
     /**
      * คำนวณ date range จาก period string
      *
-     * @param string $period
      * @return array [Carbon, Carbon]
      */
     private function getDateRange(string $period): array
@@ -415,8 +392,6 @@ class LineMessageAnalyticsService
 
     /**
      * ล้าง cache analytics ทั้งหมด
-     *
-     * @return void
      */
     public function clearCache(): void
     {

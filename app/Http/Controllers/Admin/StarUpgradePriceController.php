@@ -57,7 +57,6 @@ class StarUpgradePriceController extends Controller
     /**
      * หน้าแก้ไขราคาดาว
      *
-     * @param StarUpgradePrice $starPrice
      * @return \Illuminate\View\View
      */
     public function edit(StarUpgradePrice $starPrice)
@@ -65,15 +64,13 @@ class StarUpgradePriceController extends Controller
         return view('admin.star-upgrade.edit', [
             'starPrice' => $starPrice,
             'starColors' => StarUpgradePrice::STAR_COLORS,
-            'pageTitle' => 'แก้ไขราคาดาว: ' . $starPrice->display_name,
+            'pageTitle' => 'แก้ไขราคาดาว: '.$starPrice->display_name,
         ]);
     }
 
     /**
      * อัพเดทราคาดาว
      *
-     * @param Request $request
-     * @param StarUpgradePrice $starPrice
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, StarUpgradePrice $starPrice)
@@ -120,13 +117,12 @@ class StarUpgradePriceController extends Controller
     /**
      * สลับสถานะเปิด/ปิด
      *
-     * @param StarUpgradePrice $starPrice
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(StarUpgradePrice $starPrice)
     {
         $starPrice->update([
-            'is_active' => !$starPrice->is_active,
+            'is_active' => ! $starPrice->is_active,
         ]);
 
         $status = $starPrice->is_active ? 'เปิด' : 'ปิด';
@@ -137,7 +133,6 @@ class StarUpgradePriceController extends Controller
     /**
      * หน้าประวัติการอัพเกรดทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function history(Request $request)
@@ -198,7 +193,6 @@ class StarUpgradePriceController extends Controller
     /**
      * Refund การอัพเกรด
      *
-     * @param StarUpgradeHistory $upgrade
      * @return \Illuminate\Http\RedirectResponse
      */
     public function refund(StarUpgradeHistory $upgrade)
@@ -216,14 +210,14 @@ class StarUpgradePriceController extends Controller
                 'refund_star_upgrade',
                 'StarUpgradeHistory',
                 $upgrade->id,
-                'คืนเงินอัพเกรดดาว: ' . $upgrade->from_stars . ' -> ' . $upgrade->to_stars
+                'คืนเงินอัพเกรดดาว: '.$upgrade->from_stars.' -> '.$upgrade->to_stars
             );
         }
 
         // อัพเดทสถานะ
         $upgrade->update([
             'status' => 'refunded',
-            'note' => 'คืนเงินโดย Admin: ' . auth()->user()->name . ' เมื่อ ' . now()->format('d/m/Y H:i'),
+            'note' => 'คืนเงินโดย Admin: '.auth()->user()->name.' เมื่อ '.now()->format('d/m/Y H:i'),
         ]);
 
         // Reset purchased_stars ของผู้ใช้
@@ -237,6 +231,6 @@ class StarUpgradePriceController extends Controller
             ]);
         }
 
-        return back()->with('success', 'คืนเงินสำเร็จ: ' . number_format($upgrade->coins_paid, 2) . ' Coins');
+        return back()->with('success', 'คืนเงินสำเร็จ: '.number_format($upgrade->coins_paid, 2).' Coins');
     }
 }

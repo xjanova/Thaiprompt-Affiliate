@@ -11,6 +11,7 @@
  * ✅ Permission-aware (กรองตาม permissions)
  *
  * @version 3.0.0
+ *
  * @since 2025-11-15
  */
 

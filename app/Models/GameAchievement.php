@@ -35,13 +35,15 @@ class GameAchievement extends Model
     public function checkAndUnlock(User $user, $value)
     {
         if ($value >= $this->requirement) {
-            if (!$user->achievements()->where('achievement_id', $this->id)->exists()) {
+            if (! $user->achievements()->where('achievement_id', $this->id)->exists()) {
                 $user->achievements()->attach($this->id, [
-                    'unlocked_at' => now()
+                    'unlocked_at' => now(),
                 ]);
+
                 return true;
             }
         }
+
         return false;
     }
 }

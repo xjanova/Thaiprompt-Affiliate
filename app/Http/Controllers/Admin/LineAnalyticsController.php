@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\LineSignupAnalyticsService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * LINE Analytics Dashboard Controller
@@ -21,7 +21,6 @@ class LineAnalyticsController extends Controller
     /**
      * Show analytics dashboard
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -35,9 +34,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get dashboard data (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDashboardData(Request $request): JsonResponse
     {
@@ -53,9 +49,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get overall statistics (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getOverallStats(Request $request): JsonResponse
     {
@@ -71,9 +64,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get conversion funnel (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getConversionFunnel(Request $request): JsonResponse
     {
@@ -89,8 +79,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get dropout analysis (API)
-     *
-     * @return JsonResponse
      */
     public function getDropoutAnalysis(): JsonResponse
     {
@@ -104,9 +92,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get signup trends (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSignupTrends(Request $request): JsonResponse
     {
@@ -123,9 +108,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get sponsor leaderboard (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getLeaderboard(Request $request): JsonResponse
     {
@@ -142,8 +124,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get active conversations (API)
-     *
-     * @return JsonResponse
      */
     public function getActiveConversations(): JsonResponse
     {
@@ -157,17 +137,13 @@ class LineAnalyticsController extends Controller
 
     /**
      * Get sponsor-specific analytics
-     *
-     * @param Request $request
-     * @param int $sponsorId
-     * @return JsonResponse
      */
     public function getSponsorAnalytics(Request $request, int $sponsorId): JsonResponse
     {
         // Check authorization - sponsor can only view their own analytics
         $user = $request->user();
 
-        if (!$user->isSuperAdmin() && $user->id !== $sponsorId) {
+        if (! $user->isSuperAdmin() && $user->id !== $sponsorId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized',
@@ -186,8 +162,6 @@ class LineAnalyticsController extends Controller
 
     /**
      * Clear analytics cache
-     *
-     * @return JsonResponse
      */
     public function clearCache(): JsonResponse
     {
@@ -202,7 +176,6 @@ class LineAnalyticsController extends Controller
     /**
      * Export analytics data
      *
-     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function export(Request $request)
@@ -219,13 +192,12 @@ class LineAnalyticsController extends Controller
         // Default: JSON
         return response()->json($data)
             ->header('Content-Type', 'application/json')
-            ->header('Content-Disposition', 'attachment; filename="line-analytics-' . now()->format('Y-m-d') . '.json"');
+            ->header('Content-Disposition', 'attachment; filename="line-analytics-'.now()->format('Y-m-d').'.json"');
     }
 
     /**
      * Export data as CSV
      *
-     * @param array $data
      * @return \Illuminate\Http\Response
      */
     private function exportCsv(array $data)
@@ -246,6 +218,6 @@ class LineAnalyticsController extends Controller
 
         return response($output)
             ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="line-analytics-' . now()->format('Y-m-d') . '.csv"');
+            ->header('Content-Disposition', 'attachment; filename="line-analytics-'.now()->format('Y-m-d').'.csv"');
     }
 }

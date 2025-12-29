@@ -74,7 +74,7 @@ class PaymentMethod extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'promptpay' => 'พร้อมเพย์',
             'bank_transfer' => 'โอนผ่านธนาคาร',
             'stripe' => 'Stripe',
@@ -89,7 +89,7 @@ class PaymentMethod extends Model
      */
     public function getTypeIconAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'promptpay' => '💳',
             'bank_transfer' => '🏦',
             'stripe' => '💰',
@@ -108,10 +108,10 @@ class PaymentMethod extends Model
 
         if ($this->type === 'promptpay' || $this->type === 'bank_transfer') {
             if ($this->account_number) {
-                $parts[] = '(' . $this->getMaskedAccountNumberAttribute() . ')';
+                $parts[] = '('.$this->getMaskedAccountNumberAttribute().')';
             }
         } elseif ($this->type === 'paypal' && $this->paypal_email) {
-            $parts[] = '(' . $this->paypal_email . ')';
+            $parts[] = '('.$this->paypal_email.')';
         }
 
         return implode(' ', $parts);
@@ -122,7 +122,7 @@ class PaymentMethod extends Model
      */
     public function getMaskedAccountNumberAttribute(): string
     {
-        if (!$this->account_number) {
+        if (! $this->account_number) {
             return '';
         }
 
@@ -134,7 +134,7 @@ class PaymentMethod extends Model
         $visible = substr($this->account_number, -4);
         $masked = str_repeat('*', $length - 4);
 
-        return $masked . $visible;
+        return $masked.$visible;
     }
 
     /**

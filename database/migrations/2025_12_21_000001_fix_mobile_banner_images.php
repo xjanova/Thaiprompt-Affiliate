@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -15,13 +15,11 @@ return new class extends Migration
      *    - shop = แบนเนอร์หน้า shop
      *
      * 2. แก้ไข image URLs ที่ใช้ path ที่ไม่มีไฟล์จริง
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mobile_banners มีอยู่หรือไม่
-        if (!Schema::hasTable('mobile_banners')) {
+        if (! Schema::hasTable('mobile_banners')) {
             return;
         }
 
@@ -86,12 +84,10 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('mobile_banners')) {
+        if (! Schema::hasTable('mobile_banners')) {
             return;
         }
 

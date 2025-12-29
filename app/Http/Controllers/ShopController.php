@@ -37,8 +37,8 @@ class ShopController extends Controller
             if ($shopType === 'premium') {
                 // ร้านผู้เช่า 5 ดาว (คะแนนเฉลี่ย >= 4.5 และมี seller)
                 $query->whereNotNull('seller_id')
-                      ->where('rating_average', '>=', 4.5)
-                      ->where('rating_count', '>', 0); // ต้องมีรีวิวอย่างน้อย 1 รีวิว
+                    ->where('rating_average', '>=', 4.5)
+                    ->where('rating_count', '>', 0); // ต้องมีรีวิวอย่างน้อย 1 รีวิว
             }
         }
 
@@ -47,8 +47,8 @@ class ShopController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -146,7 +146,7 @@ class ShopController extends Controller
             'seller',
             'images',
             'variants',
-            'approvedReviews.user'
+            'approvedReviews.user',
         ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -169,13 +169,13 @@ class ShopController extends Controller
             $hasPurchased = $product->orderItems()
                 ->whereHas('order', function ($q) {
                     $q->where('user_id', auth()->id())
-                      ->where('status', 'completed');
+                        ->where('status', 'completed');
                 })
                 ->exists();
         }
 
         // Calculate potential cashback
-        $cashbackService = new CashbackService(new WalletService());
+        $cashbackService = new CashbackService(new WalletService);
         $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
 
         return view('shop.show', compact(
@@ -223,7 +223,7 @@ class ShopController extends Controller
             ->inStock()
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             })
             ->select('id', 'name', 'slug', 'price', 'main_image_url')
             ->take(10)

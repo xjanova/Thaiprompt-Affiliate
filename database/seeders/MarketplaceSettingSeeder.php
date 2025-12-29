@@ -15,8 +15,6 @@ class MarketplaceSettingSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้น Marketplace Settings
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -30,6 +28,7 @@ class MarketplaceSettingSeeder extends Seeder
             // ตรวจสอบว่ามีอยู่แล้วหรือไม่
             if (MarketplaceSetting::where('setting_key', $setting['setting_key'])->exists()) {
                 $skipped++;
+
                 continue;
             }
 
@@ -49,8 +48,6 @@ class MarketplaceSettingSeeder extends Seeder
 
     /**
      * ดึงการตั้งค่าเริ่มต้น
-     *
-     * @return array
      */
     protected function getDefaultSettings(): array
     {

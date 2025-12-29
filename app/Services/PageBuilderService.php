@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\PageBuilder;
 use App\Models\PageBuilderSection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PageBuilderService
 {
@@ -18,7 +18,7 @@ class PageBuilderService
         return Cache::remember(
             "page_builder.type.{$type}",
             now()->addHours(24),
-            fn() => PageBuilder::active()->byType($type)->with('activeSections')->first()
+            fn () => PageBuilder::active()->byType($type)->with('activeSections')->first()
         );
     }
 
@@ -30,7 +30,7 @@ class PageBuilderService
         return Cache::remember(
             "page_builder.slug.{$slug}",
             now()->addHours(24),
-            fn() => PageBuilder::active()->bySlug($slug)->with('activeSections')->first()
+            fn () => PageBuilder::active()->bySlug($slug)->with('activeSections')->first()
         );
     }
 
@@ -83,7 +83,7 @@ class PageBuilderService
     {
         return DB::transaction(function () use ($page, $newName) {
             $newPage = $page->replicate();
-            $newPage->name = $newName ?? ($page->name . ' (Copy)');
+            $newPage->name = $newName ?? ($page->name.' (Copy)');
             $newPage->slug = Str::slug($newPage->name);
             $newPage->is_active = false;
             $newPage->save();
@@ -107,7 +107,7 @@ class PageBuilderService
         return Cache::remember(
             "page_builder.render.{$page->id}",
             now()->addHours(24),
-            fn() => $page->getRenderData()
+            fn () => $page->getRenderData()
         );
     }
 
@@ -142,7 +142,7 @@ class PageBuilderService
      */
     public function toggleActive(PageBuilder $page): PageBuilder
     {
-        $page->update(['is_active' => !$page->is_active]);
+        $page->update(['is_active' => ! $page->is_active]);
         $this->clearCache($page);
 
         return $page;

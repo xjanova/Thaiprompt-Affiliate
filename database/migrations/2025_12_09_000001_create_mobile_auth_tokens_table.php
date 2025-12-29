@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บ tokens สำหรับ Web-Based Mobile Authentication
      * ใช้ PKCE (Proof Key for Code Exchange) เพื่อความปลอดภัย
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -63,8 +61,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง mobile_auth_tokens
-     *
-     * @return void
      */
     public function down(): void
     {

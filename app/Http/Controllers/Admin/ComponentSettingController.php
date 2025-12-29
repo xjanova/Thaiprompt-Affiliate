@@ -98,7 +98,7 @@ class ComponentSettingController extends Controller
     public function toggleEnabled(ComponentSetting $componentSetting)
     {
         $componentSetting->update([
-            'is_enabled' => !$componentSetting->is_enabled
+            'is_enabled' => ! $componentSetting->is_enabled,
         ]);
 
         return response()->json([
@@ -113,8 +113,8 @@ class ComponentSettingController extends Controller
     public function duplicate(ComponentSetting $componentSetting)
     {
         $newComponent = $componentSetting->replicate();
-        $newComponent->component_id = $componentSetting->component_id . '_copy_' . time();
-        $newComponent->component_name = $componentSetting->component_name . ' (Copy)';
+        $newComponent->component_id = $componentSetting->component_id.'_copy_'.time();
+        $newComponent->component_name = $componentSetting->component_name.' (Copy)';
         $newComponent->save();
 
         return redirect()

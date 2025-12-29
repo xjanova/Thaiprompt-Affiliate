@@ -201,7 +201,7 @@ class ThemeController extends Controller
         $config = $this->themeService->exportTheme($id);
         $theme = Theme::findOrFail($id);
 
-        $filename = "theme-{$theme->name}-" . date('Y-m-d') . ".json";
+        $filename = "theme-{$theme->name}-".date('Y-m-d').'.json';
 
         return response()->json($config)
             ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
@@ -264,7 +264,7 @@ class ThemeController extends Controller
     public function toggleActive($id)
     {
         $theme = Theme::findOrFail($id);
-        $theme->is_active = !$theme->is_active;
+        $theme->is_active = ! $theme->is_active;
         $theme->save();
 
         $status = $theme->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';

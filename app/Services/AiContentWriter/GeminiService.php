@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Log;
  *
  * จัดการการเชื่อมต่อกับ Google Gemini API
  * รองรับ Gemini Pro, Gemini Pro Vision
- *
- * @package App\Services\AiContentWriter
  */
 class GeminiService
 {
@@ -54,22 +52,18 @@ class GeminiService
 
     /**
      * ตรวจสอบว่าพร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @return array
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -77,7 +71,7 @@ class GeminiService
         }
 
         try {
-            $url = $this->baseUrl . '/models?key=' . $this->apiKey;
+            $url = $this->baseUrl.'/models?key='.$this->apiKey;
 
             $response = Http::timeout(10)->get($url);
 
@@ -92,30 +86,25 @@ class GeminiService
 
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อล้มเหลว: ' . $error,
+                'message' => 'เชื่อมต่อล้มเหลว: '.$error,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * สร้าง Content
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param array $options
-     * @return array
      */
     public function generateContent(
         string $systemPrompt,
         string $userPrompt,
         array $options = []
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -128,12 +117,12 @@ class GeminiService
 
         // รวม system prompt กับ user prompt
         $fullPrompt = '';
-        if (!empty($systemPrompt)) {
+        if (! empty($systemPrompt)) {
             $fullPrompt = "Instructions: {$systemPrompt}\n\n";
         }
         $fullPrompt .= $userPrompt;
 
-        $url = $this->baseUrl . '/models/' . $model . ':generateContent?key=' . $this->apiKey;
+        $url = $this->baseUrl.'/models/'.$model.':generateContent?key='.$this->apiKey;
 
         $payload = [
             'contents' => [
@@ -163,7 +152,7 @@ class GeminiService
                 // ดึง content จาก response
                 $content = '';
                 $candidates = $data['candidates'] ?? [];
-                if (!empty($candidates[0]['content']['parts'])) {
+                if (! empty($candidates[0]['content']['parts'])) {
                     foreach ($candidates[0]['content']['parts'] as $part) {
                         $content .= $part['text'] ?? '';
                     }
@@ -214,7 +203,7 @@ class GeminiService
 
             return [
                 'success' => false,
-                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'error_code' => 'EXCEPTION',
             ];
         }
@@ -222,10 +211,6 @@ class GeminiService
 
     /**
      * คำนวณค่าใช้จ่าย
-     *
-     * @param string $model
-     * @param array $usage
-     * @return float
      */
     protected function calculateCost(string $model, array $usage): float
     {

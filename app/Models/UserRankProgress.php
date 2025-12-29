@@ -66,12 +66,12 @@ class UserRankProgress extends Model
         $user = $this->user;
         $rank = $this->targetRank;
 
-        if (!$user || !$rank) {
+        if (! $user || ! $rank) {
             return;
         }
 
         $mlmMember = $user->mlmMembers()->first();
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return;
         }
 
@@ -152,11 +152,11 @@ class UserRankProgress extends Model
      */
     public function getRemainingRequirementsAttribute(): array
     {
-        if (!$this->requirements_status) {
+        if (! $this->requirements_status) {
             return [];
         }
 
-        return array_filter($this->requirements_status, fn($req) => !$req['met']);
+        return array_filter($this->requirements_status, fn ($req) => ! $req['met']);
     }
 
     /**
@@ -164,10 +164,10 @@ class UserRankProgress extends Model
      */
     public function getCompletedRequirementsAttribute(): array
     {
-        if (!$this->requirements_status) {
+        if (! $this->requirements_status) {
             return [];
         }
 
-        return array_filter($this->requirements_status, fn($req) => $req['met']);
+        return array_filter($this->requirements_status, fn ($req) => $req['met']);
     }
 }

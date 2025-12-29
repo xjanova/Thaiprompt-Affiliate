@@ -58,8 +58,6 @@ class KeywordClusterItem extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordCluster
-     *
-     * @return BelongsTo
      */
     public function cluster(): BelongsTo
     {
@@ -68,8 +66,6 @@ class KeywordClusterItem extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotKeyword
-     *
-     * @return BelongsTo
      */
     public function keyword(): BelongsTo
     {
@@ -79,8 +75,8 @@ class KeywordClusterItem extends Model
     /**
      * Scope: ดึง items ตามประเภท relationship
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type ประเภท relationship
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $type  ประเภท relationship
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -91,7 +87,7 @@ class KeywordClusterItem extends Model
     /**
      * Scope: ดึง primary items
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePrimary($query)
@@ -102,7 +98,7 @@ class KeywordClusterItem extends Model
     /**
      * Scope: ดึง synonyms
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSynonyms($query)
@@ -113,8 +109,8 @@ class KeywordClusterItem extends Model
     /**
      * Scope: ดึง items ที่มี relevance score สูง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minScore ค่า score ต่ำสุด (default: 0.7)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minScore  ค่า score ต่ำสุด (default: 0.7)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighRelevance($query, float $minScore = 0.7)
@@ -125,7 +121,7 @@ class KeywordClusterItem extends Model
     /**
      * Scope: เรียงตามความเกี่ยวข้อง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrderByRelevance($query)
@@ -136,8 +132,6 @@ class KeywordClusterItem extends Model
 
     /**
      * ความเกี่ยวข้องในรูปแบบเปอร์เซ็นต์
-     *
-     * @return int
      */
     public function getRelevancePercentageAttribute(): int
     {
@@ -146,8 +140,6 @@ class KeywordClusterItem extends Model
 
     /**
      * ตรวจสอบว่า item เป็น primary
-     *
-     * @return bool
      */
     public function isPrimary(): bool
     {
@@ -156,8 +148,6 @@ class KeywordClusterItem extends Model
 
     /**
      * ตรวจสอบว่า item เป็น synonym
-     *
-     * @return bool
      */
     public function isSynonym(): bool
     {
@@ -167,8 +157,7 @@ class KeywordClusterItem extends Model
     /**
      * ตรวจสอบว่า item มี co-occurrence แรง
      *
-     * @param int $threshold เกณฑ์ต่ำสุด (default: 5)
-     * @return bool
+     * @param  int  $threshold  เกณฑ์ต่ำสุด (default: 5)
      */
     public function hasStrongCoOccurrence(int $threshold = 5): bool
     {
@@ -177,12 +166,10 @@ class KeywordClusterItem extends Model
 
     /**
      * ดึง relationship type label
-     *
-     * @return string
      */
     public function getRelationshipTypeLabel(): string
     {
-        return match($this->relationship_type) {
+        return match ($this->relationship_type) {
             'PRIMARY' => 'หลัก',
             'SYNONYM' => 'คำพ้องความหมาย',
             'RELATED' => 'เกี่ยวข้อง',
@@ -195,8 +182,7 @@ class KeywordClusterItem extends Model
     /**
      * เพิ่มจำนวน co-occurrence
      *
-     * @param int $count จำนวนครั้งที่เพิ่ม (default: 1)
-     * @return void
+     * @param  int  $count  จำนวนครั้งที่เพิ่ม (default: 1)
      */
     public function incrementCoOccurrence(int $count = 1): void
     {
@@ -208,8 +194,7 @@ class KeywordClusterItem extends Model
     /**
      * อัพเดท relevance score
      *
-     * @param float $newScore ค่า score ใหม่
-     * @return void
+     * @param  float  $newScore  ค่า score ใหม่
      */
     public function updateRelevanceScore(float $newScore): void
     {

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\LineBotKeyword;
 use App\Models\AiBotProfile;
+use App\Models\LineBotKeyword;
 use Illuminate\Support\Facades\Log;
 
 class LineHybridBotService
@@ -21,26 +21,26 @@ class LineHybridBotService
      * - "kyc" / "ยืนยันตัวตน" → Start KYC process
      * - "reset" / "รีเซ็ต" → Reset signup flow
      */
-
     private LineService $lineService;
+
     private LineBotKeyword $keywordModel;
+
     private KeywordActivityLogService $activityLogService;
 
     public function __construct(LineService $lineService, KeywordActivityLogService $activityLogService)
     {
         $this->lineService = $lineService;
-        $this->keywordModel = new LineBotKeyword();
+        $this->keywordModel = new LineBotKeyword;
         $this->activityLogService = $activityLogService;
     }
 
     /**
      * ประมวลผลข้อความตาม Hybrid Mode
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $messageText ข้อความที่ผู้ใช้ส่งมา
-     * @param User|null $user User model (if registered)
-     * @param AiBotProfile|null $aiBot AI Bot to use as fallback
-     * @return array
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $messageText  ข้อความที่ผู้ใช้ส่งมา
+     * @param  User|null  $user  User model (if registered)
+     * @param  AiBotProfile|null  $aiBot  AI Bot to use as fallback
      */
     public function processMessage(
         string $lineUserId,
@@ -76,10 +76,6 @@ class LineHybridBotService
 
     /**
      * ตรวจสอบ keyword ที่ตรงกับข้อความ
-     *
-     * @param string $messageText
-     * @param object|null $user
-     * @return array|null
      */
     private function matchKeyword(string $messageText, ?object $user): ?array
     {
@@ -119,6 +115,7 @@ class LineHybridBotService
                         return true;
                     }
                 }
+
                 return false;
             })
             ->first();
@@ -139,11 +136,7 @@ class LineHybridBotService
     /**
      * ตอบสนองต่อ keyword ที่ตรงกัน (Built-in Bot)
      *
-     * @param string $lineUserId
-     * @param array $keyword
-     * @param object|null $user
-     * @param string|null $messageText ข้อความต้นฉบับสำหรับ logging
-     * @return array
+     * @param  string|null  $messageText  ข้อความต้นฉบับสำหรับ logging
      */
     private function handleKeywordResponse(string $lineUserId, array $keyword, ?object $user, ?string $messageText = null): array
     {
@@ -181,10 +174,10 @@ class LineHybridBotService
      */
     private function handleInfoCommand(string $lineUserId, ?object $user): array
     {
-        if (!$user) {
+        if (! $user) {
             $this->lineService->sendPushMessage(
                 $lineUserId,
-                '❌ คุณยังไม่ได้ลงทะเบียน\n\n' .
+                '❌ คุณยังไม่ได้ลงทะเบียน\n\n'.
                 'กรุณาสมัครสมาชิกที่เว็บไซต์ของเราก่อน'
             );
 
@@ -202,10 +195,10 @@ class LineHybridBotService
      */
     private function handleKycCommand(string $lineUserId, ?object $user): array
     {
-        if (!$user) {
+        if (! $user) {
             $this->lineService->sendPushMessage(
                 $lineUserId,
-                '❌ คุณยังไม่ได้ลงทะเบียน\n\n' .
+                '❌ คุณยังไม่ได้ลงทะเบียน\n\n'.
                 'กรุณาสมัครสมาชิกก่อน แล้วจึงสามารถทำ KYC ได้'
             );
 
@@ -226,7 +219,7 @@ class LineHybridBotService
         $prospectService = app(\App\Services\MlmProspectService::class);
         $prospect = $prospectService->getProspectByLineUserId($lineUserId);
 
-        if (!$prospect) {
+        if (! $prospect) {
             $this->lineService->sendPushMessage(
                 $lineUserId,
                 '⚠️ ไม่พบข้อมูลการสมัครสมาชิก'
@@ -278,10 +271,7 @@ HELP;
     /**
      * Handle custom keyword
      *
-     * @param string $lineUserId
-     * @param array $keyword
-     * @param string|null $messageText ข้อความต้นฉบับจากผู้ใช้
-     * @return array
+     * @param  string|null  $messageText  ข้อความต้นฉบับจากผู้ใช้
      */
     private function handleCustomKeyword(string $lineUserId, array $keyword, ?string $messageText = null): array
     {
@@ -308,12 +298,6 @@ HELP;
 
     /**
      * ส่งไปให้ AI เมื่อไม่พบ keyword
-     *
-     * @param string $lineUserId
-     * @param string $messageText
-     * @param object|null $user
-     * @param AiBotProfile|null $aiBot
-     * @return array
      */
     private function handleAiResponse(
         string $lineUserId,
@@ -322,10 +306,10 @@ HELP;
         ?AiBotProfile $aiBot
     ): array {
         // ถ้าไม่มี AI bot ที่ configured ให้ส่งข้อความค่าเริ่มต้น
-        if (!$aiBot || !$aiBot->is_active) {
+        if (! $aiBot || ! $aiBot->is_active) {
             $this->lineService->sendPushMessage(
                 $lineUserId,
-                "ขอโทษค่ะ ขณะนี้ AI Bot ยังไม่พร้อมใช้งาน\n\n" .
+                "ขอโทษค่ะ ขณะนี้ AI Bot ยังไม่พร้อมใช้งาน\n\n".
                 "พิมพ์ 'help' เพื่อดูรายการคำสั่งที่พร้อมใช้ 📋"
             );
 
@@ -371,8 +355,8 @@ HELP;
             // Fallback message
             $this->lineService->sendPushMessage(
                 $lineUserId,
-                "ขออภัยค่ะ ขณะนี้ AI ประสบปัญหาชั่วคราว\n\n" .
-                "กรุณาลองใหม่อีกครั้งในภายหลัง 🙏"
+                "ขออภัยค่ะ ขณะนี้ AI ประสบปัญหาชั่วคราว\n\n".
+                'กรุณาลองใหม่อีกครั้งในภายหลัง 🙏'
             );
 
             return [

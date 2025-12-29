@@ -281,8 +281,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ผู้สร้างเทมเพลต
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -291,8 +289,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * โปรเจกต์ที่ใช้เทมเพลตนี้
-     *
-     * @return HasMany
      */
     public function projects(): HasMany
     {
@@ -301,8 +297,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ตารางเวลาที่ใช้เทมเพลตนี้
-     *
-     * @return HasMany
      */
     public function schedules(): HasMany
     {
@@ -316,7 +310,7 @@ class VideoAutoTemplate extends Model
     /**
      * Scope: กรองเฉพาะที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -327,7 +321,7 @@ class VideoAutoTemplate extends Model
     /**
      * Scope: เรียงตาม sort_order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -338,8 +332,7 @@ class VideoAutoTemplate extends Model
     /**
      * Scope: กรองตามแนวเพลง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $genre
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByGenre($query, string $genre)
@@ -353,9 +346,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * สร้าง slug อัตโนมัติจากชื่อ
-     *
-     * @param string $value
-     * @return void
      */
     public function setNameAttribute(string $value): void
     {
@@ -369,8 +359,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ดึง label แนวเพลง
-     *
-     * @return string|null
      */
     public function getMusicGenreLabelAttribute(): ?string
     {
@@ -379,8 +367,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ดึง label อารมณ์เพลง
-     *
-     * @return string|null
      */
     public function getMusicMoodLabelAttribute(): ?string
     {
@@ -389,8 +375,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ดึง label สไตล์ภาพ
-     *
-     * @return string|null
      */
     public function getImageStyleLabelAttribute(): ?string
     {
@@ -399,8 +383,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * คำนวณความยาววีดีโอโดยประมาณ (วินาที)
-     *
-     * @return int
      */
     public function getEstimatedVideoDurationAttribute(): int
     {
@@ -416,8 +398,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * เพิ่ม usage count
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -426,8 +406,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * ตั้งเป็น default template
-     *
-     * @return void
      */
     public function setAsDefault(): void
     {
@@ -441,15 +419,12 @@ class VideoAutoTemplate extends Model
 
     /**
      * ทำสำเนาเทมเพลต
-     *
-     * @param string|null $newName
-     * @return static
      */
     public function duplicate(?string $newName = null): static
     {
         $clone = $this->replicate();
-        $clone->name = $newName ?? $this->name . ' (สำเนา)';
-        $clone->slug = Str::slug($clone->name) . '-' . Str::random(5);
+        $clone->name = $newName ?? $this->name.' (สำเนา)';
+        $clone->slug = Str::slug($clone->name).'-'.Str::random(5);
         $clone->is_default = false;
         $clone->usage_count = 0;
         $clone->save();
@@ -459,8 +434,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * สร้าง prompt สำหรับ Suno AI
-     *
-     * @return string
      */
     public function buildMusicPrompt(): string
     {
@@ -471,15 +444,15 @@ class VideoAutoTemplate extends Model
         $parts = [];
 
         if ($this->music_genre) {
-            $parts[] = $this->music_genre . ' music';
+            $parts[] = $this->music_genre.' music';
         }
 
         if ($this->music_mood) {
-            $parts[] = $this->music_mood . ' mood';
+            $parts[] = $this->music_mood.' mood';
         }
 
         if ($this->music_style) {
-            $parts[] = $this->music_style . ' style';
+            $parts[] = $this->music_style.' style';
         }
 
         if ($this->music_tags) {
@@ -491,9 +464,6 @@ class VideoAutoTemplate extends Model
 
     /**
      * สร้าง prompt สำหรับ Freepik AI
-     *
-     * @param int $imageIndex
-     * @return string
      */
     public function buildImagePrompt(int $imageIndex = 0): string
     {

@@ -20,7 +20,6 @@ class ForumTrophyService
     /**
      * ตรวจสอบและมอบโทรฟี่ให้ผู้ใช้ (โทรฟี่ดี)
      *
-     * @param User $user
      * @return array รายการโทรฟี่ที่ได้รับใหม่
      */
     public function checkAndAwardTrophies(User $user): array
@@ -49,7 +48,6 @@ class ForumTrophyService
     /**
      * ตรวจสอบและมอบโทรฟี่ไม่ดีให้ผู้ใช้
      *
-     * @param User $user
      * @return array รายการโทรฟี่ที่ได้รับใหม่
      */
     public function checkAndAwardNegativeTrophies(User $user): array
@@ -78,11 +76,10 @@ class ForumTrophyService
     /**
      * มอบโทรฟี่ด้วยตนเอง
      *
-     * @param User $user ผู้ได้รับ
-     * @param ForumTrophy $trophy โทรฟี่
-     * @param User $awardedBy ผู้มอบ
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  User  $user  ผู้ได้รับ
+     * @param  ForumTrophy  $trophy  โทรฟี่
+     * @param  User  $awardedBy  ผู้มอบ
+     * @param  string|null  $reason  เหตุผล
      */
     public function awardManually(User $user, ForumTrophy $trophy, User $awardedBy, ?string $reason = null): bool
     {
@@ -91,10 +88,6 @@ class ForumTrophyService
 
     /**
      * ถอนโทรฟี่ (ไม่ได้สำหรับ permanent)
-     *
-     * @param User $user
-     * @param ForumTrophy $trophy
-     * @return bool
      */
     public function revoke(User $user, ForumTrophy $trophy): bool
     {
@@ -104,7 +97,6 @@ class ForumTrophyService
     /**
      * ดึงโทรฟี่ทั้งหมดของผู้ใช้
      *
-     * @param User $user
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getUserTrophies(User $user)
@@ -118,8 +110,7 @@ class ForumTrophyService
     /**
      * ดึงโทรฟี่ที่แสดงหลังชื่อ (โทรฟี่หลัก)
      *
-     * @param User $user
-     * @param int $limit จำนวนที่แสดง
+     * @param  int  $limit  จำนวนที่แสดง
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getDisplayTrophies(User $user, int $limit = 3)
@@ -133,9 +124,6 @@ class ForumTrophyService
 
     /**
      * ดึงสีชื่อที่จะแสดง (จากโทรฟี่ที่มีสีชื่อ)
-     *
-     * @param User $user
-     * @return string|null
      */
     public function getNameColor(User $user): ?string
     {
@@ -151,9 +139,6 @@ class ForumTrophyService
 
     /**
      * ตรวจสอบความก้าวหน้าสู่โทรฟี่ถัดไป
-     *
-     * @param User $user
-     * @return array
      */
     public function getProgress(User $user): array
     {

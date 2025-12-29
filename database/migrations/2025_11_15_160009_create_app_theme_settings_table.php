@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * หมายเหตุ: ตารางนี้ถูกปิดการใช้งานแล้ว เนื่องจากบังคับใช้ Arrow X Theme เท่านั้น
      * แต่ยังคงสร้างไว้เพื่อความเข้ากันได้ย้อนหลัง (backward compatibility)
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -21,7 +19,7 @@ return new class extends Migration
             return;
         }
 
-// ⚠️ ตารางนี้มี columns เยอะมาก - ใช้ JSON เก็บ theme data แทน
+        // ⚠️ ตารางนี้มี columns เยอะมาก - ใช้ JSON เก็บ theme data แทน
         // เพื่อหลีกเลี่ยง "Row size too large" error
         Schema::create('app_theme_settings', function (Blueprint $table) {
             $table->id();
@@ -52,8 +50,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง app_theme_settings
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\InvestmentPlan;
-use App\Models\StakingPosition;
-use App\Models\RoiDistribution;
 use App\Models\Rank;
+use App\Models\RoiDistribution;
+use App\Models\StakingPosition;
 use App\Services\InvestmentService;
 use App\Services\StakingService;
 use Illuminate\Http\Request;
@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 class InvestmentController extends Controller
 {
     protected InvestmentService $investmentService;
+
     protected StakingService $stakingService;
 
     public function __construct(InvestmentService $investmentService, StakingService $stakingService)
@@ -64,6 +65,7 @@ class InvestmentController extends Controller
     public function createPlan()
     {
         $ranks = Rank::orderBy('level')->get();
+
         return view('admin.investments.plans.create', compact('ranks'));
     }
 
@@ -110,6 +112,7 @@ class InvestmentController extends Controller
     public function editPlan(InvestmentPlan $plan)
     {
         $ranks = Rank::orderBy('level')->get();
+
         return view('admin.investments.plans.edit', compact('plan', 'ranks'));
     }
 
@@ -187,8 +190,8 @@ class InvestmentController extends Controller
         // Search by user
         if ($request->has('search') && $request->search) {
             $query->whereHas('user', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('email', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('email', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -211,7 +214,7 @@ class InvestmentController extends Controller
             'approvedBy',
             'roiDistributions' => function ($query) {
                 $query->latest();
-            }
+            },
         ]);
 
         return view('admin.investments.positions.show', compact('position'));

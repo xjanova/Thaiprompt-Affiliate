@@ -24,7 +24,7 @@ class SloganController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('content', 'like', "%{$search}%")
-                  ->orWhere('author', 'like', "%{$search}%");
+                ->orWhere('author', 'like', "%{$search}%");
         }
 
         // กรองตามหมวดหมู่

@@ -28,8 +28,11 @@ class QuizQuestion extends Model
     ];
 
     const TYPE_MULTIPLE_CHOICE = 'multiple_choice';
+
     const TYPE_TRUE_FALSE = 'true_false';
+
     const TYPE_MULTIPLE_ANSWER = 'multiple_answer';
+
     const TYPE_SHORT_ANSWER = 'short_answer';
 
     /**

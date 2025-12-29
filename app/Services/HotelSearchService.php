@@ -4,9 +4,7 @@ namespace App\Services;
 
 use App\Models\Hotel;
 use App\Models\Province;
-use App\Models\RoomType;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * HotelSearchService - บริการค้นหาโรงแรม
@@ -22,7 +20,7 @@ class HotelSearchService
     /**
      * ค้นหาโรงแรมพร้อมตัวกรองต่างๆ
      *
-     * @param array $params พารามิเตอร์การค้นหา
+     * @param  array  $params  พารามิเตอร์การค้นหา
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function search(array $params)
@@ -35,7 +33,7 @@ class HotelSearchService
         // ========================================
         // GPS Location Search (ค้นหาจากพิกัด)
         // ========================================
-        if (!empty($params['latitude']) && !empty($params['longitude'])) {
+        if (! empty($params['latitude']) && ! empty($params['longitude'])) {
             $latitude = (float) $params['latitude'];
             $longitude = (float) $params['longitude'];
             $radius = (float) ($params['radius'] ?? 50); // รัศมีเริ่มต้น 50 กม.
@@ -56,12 +54,12 @@ class HotelSearchService
         // ========================================
         // Province Filter (กรองตามจังหวัด)
         // ========================================
-        if (!empty($params['province_id'])) {
+        if (! empty($params['province_id'])) {
             $query->where('province_id', $params['province_id']);
         }
 
         // กรองตามภูมิภาค
-        if (!empty($params['region'])) {
+        if (! empty($params['region'])) {
             $query->whereHas('province', function ($q) use ($params) {
                 $q->where('region', $params['region']);
             });
@@ -70,44 +68,44 @@ class HotelSearchService
         // ========================================
         // City/Country Filter (กรองตามเมือง/ประเทศ)
         // ========================================
-        if (!empty($params['city'])) {
-            $query->where('city', 'LIKE', '%' . $params['city'] . '%');
+        if (! empty($params['city'])) {
+            $query->where('city', 'LIKE', '%'.$params['city'].'%');
         }
 
-        if (!empty($params['country'])) {
+        if (! empty($params['country'])) {
             $query->where('country', $params['country']);
         }
 
         // Hotel type
-        if (!empty($params['type'])) {
+        if (! empty($params['type'])) {
             $query->where('type', $params['type']);
         }
 
         // Star rating
-        if (!empty($params['star_rating'])) {
+        if (! empty($params['star_rating'])) {
             $query->where('star_rating', '>=', $params['star_rating']);
         }
 
         // Guest rating
-        if (!empty($params['min_rating'])) {
+        if (! empty($params['min_rating'])) {
             $query->where('rating', '>=', $params['min_rating']);
         }
 
         // Price range
-        if (!empty($params['min_price']) || !empty($params['max_price'])) {
+        if (! empty($params['min_price']) || ! empty($params['max_price'])) {
             $query->whereHas('roomTypes', function ($q) use ($params) {
                 $q->active();
-                if (!empty($params['min_price'])) {
+                if (! empty($params['min_price'])) {
                     $q->where('base_price', '>=', $params['min_price']);
                 }
-                if (!empty($params['max_price'])) {
+                if (! empty($params['max_price'])) {
                     $q->where('base_price', '<=', $params['max_price']);
                 }
             });
         }
 
         // Facilities/Amenities
-        if (!empty($params['facilities']) && is_array($params['facilities'])) {
+        if (! empty($params['facilities']) && is_array($params['facilities'])) {
             foreach ($params['facilities'] as $facilityId) {
                 $query->whereHas('facilities', function ($q) use ($facilityId) {
                     $q->where('hotel_facilities.id', $facilityId);
@@ -116,7 +114,7 @@ class HotelSearchService
         }
 
         // Availability check
-        if (!empty($params['check_in']) && !empty($params['check_out'])) {
+        if (! empty($params['check_in']) && ! empty($params['check_out'])) {
             $rooms = $params['rooms'] ?? 1;
             $query->whereHas('roomTypes', function ($q) use ($params, $rooms) {
                 $q->active()
@@ -129,7 +127,7 @@ class HotelSearchService
         }
 
         // Occupancy
-        if (!empty($params['adults']) || !empty($params['children'])) {
+        if (! empty($params['adults']) || ! empty($params['children'])) {
             $adults = $params['adults'] ?? 2;
             $children = $params['children'] ?? 0;
 
@@ -141,7 +139,7 @@ class HotelSearchService
         }
 
         // Featured hotels
-        if (!empty($params['featured'])) {
+        if (! empty($params['featured'])) {
             $query->where('is_featured', true);
         }
 
@@ -172,6 +170,7 @@ class HotelSearchService
 
         // Pagination
         $perPage = $params['per_page'] ?? 12;
+
         return $query->paginate($perPage);
     }
 
@@ -250,8 +249,8 @@ class HotelSearchService
      * - โรงแรม (ชื่อ, เมือง, ที่อยู่)
      * - จังหวัด (ชื่อไทย, ชื่ออังกฤษ)
      *
-     * @param string $keyword คำค้นหา
-     * @param int $limit จำนวนผลลัพธ์สูงสุด
+     * @param  string  $keyword  คำค้นหา
+     * @param  int  $limit  จำนวนผลลัพธ์สูงสุด
      * @return array
      */
     public function autocomplete($keyword, $limit = 10)
@@ -280,9 +279,9 @@ class HotelSearchService
         // ค้นหาโรงแรม
         $hotels = Hotel::active()
             ->where(function ($query) use ($keyword) {
-                $query->where('name', 'LIKE', '%' . $keyword . '%')
-                    ->orWhere('city', 'LIKE', '%' . $keyword . '%')
-                    ->orWhere('address', 'LIKE', '%' . $keyword . '%');
+                $query->where('name', 'LIKE', '%'.$keyword.'%')
+                    ->orWhere('city', 'LIKE', '%'.$keyword.'%')
+                    ->orWhere('address', 'LIKE', '%'.$keyword.'%');
             })
             ->with('province:id,name_th,name_en')
             ->select('id', 'name', 'city', 'type', 'main_image', 'province_id', 'rating')
@@ -326,8 +325,8 @@ class HotelSearchService
     /**
      * ดึงโรงแรมในจังหวัด
      *
-     * @param int $provinceId รหัสจังหวัด
-     * @param int $limit จำนวนสูงสุด
+     * @param  int  $provinceId  รหัสจังหวัด
+     * @param  int  $limit  จำนวนสูงสุด
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getHotelsByProvince(int $provinceId, int $limit = 12)
@@ -345,8 +344,8 @@ class HotelSearchService
     /**
      * ดึงโรงแรมในภูมิภาค
      *
-     * @param string $region รหัสภูมิภาค (central, north, northeast, east, west, south)
-     * @param int $limit จำนวนสูงสุด
+     * @param  string  $region  รหัสภูมิภาค (central, north, northeast, east, west, south)
+     * @param  int  $limit  จำนวนสูงสุด
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getHotelsByRegion(string $region, int $limit = 12)
@@ -366,9 +365,9 @@ class HotelSearchService
     /**
      * ดึงจังหวัดใกล้เคียงจากพิกัด GPS
      *
-     * @param float $latitude ละติจูด
-     * @param float $longitude ลองจิจูด
-     * @param int $limit จำนวนจังหวัด
+     * @param  float  $latitude  ละติจูด
+     * @param  float  $longitude  ลองจิจูด
+     * @param  int  $limit  จำนวนจังหวัด
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getNearbyProvinces(float $latitude, float $longitude, int $limit = 5)
@@ -379,7 +378,7 @@ class HotelSearchService
     /**
      * ดึงจังหวัดตามภูมิภาค
      *
-     * @param string|null $region รหัสภูมิภาค (null = ทั้งหมด)
+     * @param  string|null  $region  รหัสภูมิภาค (null = ทั้งหมด)
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getProvincesByRegion(?string $region = null)
@@ -395,8 +394,6 @@ class HotelSearchService
 
     /**
      * ดึงภูมิภาคทั้งหมดพร้อมจำนวนโรงแรม
-     *
-     * @return array
      */
     public function getRegionsWithHotelCount(): array
     {

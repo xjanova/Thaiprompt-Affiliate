@@ -50,8 +50,8 @@ class AppFeature extends Model
     {
         return $query->where(function ($q) use ($platform) {
             $q->where('platform', $platform)
-              ->orWhere('platform', 'all')
-              ->orWhereNull('platform');
+                ->orWhere('platform', 'all')
+                ->orWhereNull('platform');
         });
     }
 
@@ -60,7 +60,7 @@ class AppFeature extends Model
      */
     public function isAvailableForVersion($version)
     {
-        if (!$this->min_app_version) {
+        if (! $this->min_app_version) {
             return true;
         }
 

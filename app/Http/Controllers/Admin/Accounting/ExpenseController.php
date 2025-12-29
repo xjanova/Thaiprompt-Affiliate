@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountingChartOfAccount;
+use App\Models\AccountingCompany;
+use App\Models\AccountingContact;
 use App\Models\AccountingExpense;
 use App\Models\AccountingExpenseItem;
-use App\Models\AccountingContact;
 use App\Models\AccountingProduct;
-use App\Models\AccountingCompany;
-use App\Models\AccountingChartOfAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -45,11 +45,11 @@ class ExpenseController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('document_number', 'like', "%{$search}%")
-                  ->orWhereHas('contact', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('contact', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -173,7 +173,8 @@ class ExpenseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -299,7 +300,8 @@ class ExpenseController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -321,7 +323,7 @@ class ExpenseController extends Controller
             return redirect()->route('admin.accounting.expenses.index')
                 ->with('success', 'ลบรายจ่ายเรียบร้อยแล้ว');
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -334,7 +336,7 @@ class ExpenseController extends Controller
         $this->authorize('update', $expense);
 
         $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01|max:' . $expense->balance,
+            'amount' => 'required|numeric|min:0.01|max:'.$expense->balance,
             'payment_date' => 'required|date',
             'payment_method' => 'required|in:cash,bank_transfer,credit_card,cheque,other',
             'bank_account_id' => 'nullable|exists:accounting_bank_accounts,id',
@@ -353,7 +355,7 @@ class ExpenseController extends Controller
 
             return back()->with('success', 'บันทึกการจ่ายเงินเรียบร้อยแล้ว');
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

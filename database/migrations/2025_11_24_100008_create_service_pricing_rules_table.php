@@ -13,8 +13,6 @@ return new class extends Migration
      * - 0-5 km: ค่าคงที่ 50฿
      * - 5-10 km: 50฿ + 10฿/km
      * - 10+ km: 100฿ + 15฿/km
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -71,8 +69,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_pricing_rules
-     *
-     * @return void
      */
     public function down(): void
     {

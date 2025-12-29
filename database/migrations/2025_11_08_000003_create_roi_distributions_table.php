@@ -39,7 +39,7 @@ return new class extends Migration
                 'monthly',      // จ่ายรายเดือน
                 'maturity',     // จ่ายเมื่อครบกำหนด
                 'compound',     // รีลงทุน
-                'bonus'         // โบนัสพิเศษ
+                'bonus',         // โบนัสพิเศษ
             ])->default('daily');
 
             // สถานะ
@@ -48,7 +48,7 @@ return new class extends Migration
                 'processing',   // กำลังจ่าย
                 'completed',    // จ่ายแล้ว
                 'failed',       // ล้มเหลว
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('pending');
 
             // วันที่

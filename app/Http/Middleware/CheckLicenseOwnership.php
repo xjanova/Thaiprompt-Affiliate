@@ -16,17 +16,13 @@ class CheckLicenseOwnership
 {
     /**
      * จัดการ incoming request
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
         // ตรวจสอบว่า user login แล้ว
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')
                 ->with('error', 'กรุณาเข้าสู่ระบบเพื่อเข้าถึงหน้านี้');
         }
@@ -40,7 +36,7 @@ class CheckLicenseOwnership
         }
 
         // ตรวจสอบว่า license มีอยู่จริง
-        if (!$license) {
+        if (! $license) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ License ที่ต้องการ',

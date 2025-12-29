@@ -55,7 +55,8 @@ class IntegrityCheckCommand extends Command
             $this->info('✓ File integrity check passed!');
             $this->newLine();
             $this->line('All critical files are intact.');
-            $this->line('Last checked: ' . $result['checked_at']);
+            $this->line('Last checked: '.$result['checked_at']);
+
             return self::SUCCESS;
         }
 
@@ -66,9 +67,9 @@ class IntegrityCheckCommand extends Command
         $this->newLine();
 
         foreach ($result['violations'] as $violation) {
-            $this->line('File: ' . $violation['file']);
-            $this->error('  Issue: ' . $violation['issue']);
-            $this->line('  Message: ' . $violation['message']);
+            $this->line('File: '.$violation['file']);
+            $this->error('  Issue: '.$violation['issue']);
+            $this->line('  Message: '.$violation['message']);
             $this->newLine();
         }
 

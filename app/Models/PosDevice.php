@@ -143,15 +143,15 @@ class PosDevice extends Model
 
     public function generateDeviceCode(): string
     {
-        return 'POS-' . strtoupper(substr(md5(uniqid()), 0, 8));
+        return 'POS-'.strtoupper(substr(md5(uniqid()), 0, 8));
     }
 
     public function generateLicenseKey(): string
     {
         return strtoupper(
-            substr(md5(uniqid()), 0, 4) . '-' .
-            substr(md5(uniqid()), 0, 4) . '-' .
-            substr(md5(uniqid()), 0, 4) . '-' .
+            substr(md5(uniqid()), 0, 4).'-'.
+            substr(md5(uniqid()), 0, 4).'-'.
+            substr(md5(uniqid()), 0, 4).'-'.
             substr(md5(uniqid()), 0, 4)
         );
     }

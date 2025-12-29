@@ -42,7 +42,7 @@ class ExpireInactiveMemberships extends Command
         try {
             $results = $this->retentionService->expireInactiveUsers();
 
-            $this->info("✅ Expiration check completed!");
+            $this->info('✅ Expiration check completed!');
             $this->table(
                 ['Metric', 'Count'],
                 [
@@ -54,12 +54,13 @@ class ExpireInactiveMemberships extends Command
             if ($results['expired'] > 0) {
                 $this->warn("⚠️  {$results['expired']} membership(s) have been expired.");
             } else {
-                $this->info("✨ No memberships expired.");
+                $this->info('✨ No memberships expired.');
             }
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('❌ Error checking expiration: ' . $e->getMessage());
+            $this->error('❌ Error checking expiration: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

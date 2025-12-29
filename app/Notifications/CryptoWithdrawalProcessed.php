@@ -36,14 +36,14 @@ class CryptoWithdrawalProcessed extends Notification implements ShouldQueue
         $currency = $this->withdrawal->currency->code;
 
         return (new MailMessage)
-            ->subject('✅ การถอนเงิน ' . $currency . ' กำลังดำเนินการ')
-            ->greeting('สวัสดี ' . $notifiable->name . '!')
-            ->line("คำขอถอนเงินของคุณกำลังถูกประมวลผลบน Blockchain")
+            ->subject('✅ การถอนเงิน '.$currency.' กำลังดำเนินการ')
+            ->greeting('สวัสดี '.$notifiable->name.'!')
+            ->line('คำขอถอนเงินของคุณกำลังถูกประมวลผลบน Blockchain')
             ->line('รายละเอียด:')
             ->line("จำนวน: {$amount} {$currency}")
-            ->line("ปลายทาง: " . substr($this->withdrawal->to_address, 0, 20) . '...')
-            ->line("TX Hash: " . substr($this->withdrawal->tx_hash, 0, 20) . '...')
-            ->line("Network: " . ucfirst($this->withdrawal->network))
+            ->line('ปลายทาง: '.substr($this->withdrawal->to_address, 0, 20).'...')
+            ->line('TX Hash: '.substr($this->withdrawal->tx_hash, 0, 20).'...')
+            ->line('Network: '.ucfirst($this->withdrawal->network))
             ->action('ติดตามสถานะ', route('user.crypto-wallet.withdrawals'))
             ->line('โปรดรอการยืนยันจาก Blockchain (อาจใช้เวลา 5-30 นาที)');
     }

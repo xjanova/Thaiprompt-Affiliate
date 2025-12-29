@@ -36,13 +36,13 @@ class CryptoDepositReceived extends Notification implements ShouldQueue
         $currency = $this->transaction->currency->code;
 
         return (new MailMessage)
-            ->subject('🎉 ได้รับเงินฝาก ' . $currency)
-            ->greeting('สวัสดี ' . $notifiable->name . '!')
+            ->subject('🎉 ได้รับเงินฝาก '.$currency)
+            ->greeting('สวัสดี '.$notifiable->name.'!')
             ->line("คุณได้รับเงินฝาก {$amount} {$currency} เข้ากระเป๋าเรียบร้อยแล้ว")
             ->line('รายละเอียด:')
             ->line("จำนวน: {$amount} {$currency}")
-            ->line("ยอดเป็นเงินบาท: ฿" . number_format($this->transaction->amount_thb ?? 0, 2))
-            ->line("TX Hash: " . substr($this->transaction->tx_hash, 0, 20) . '...')
+            ->line('ยอดเป็นเงินบาท: ฿'.number_format($this->transaction->amount_thb ?? 0, 2))
+            ->line('TX Hash: '.substr($this->transaction->tx_hash, 0, 20).'...')
             ->action('ดูรายละเอียด', route('user.crypto-wallet.transaction.detail', $this->transaction->id))
             ->line('ขอบคุณที่ใช้บริการ!');
     }

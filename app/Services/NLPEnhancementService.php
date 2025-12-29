@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\MessageSentiment;
-use App\Models\MessageEntity;
-use App\Models\MessageIntent;
 use App\Models\KeywordCluster;
 use App\Models\LineBotKeyword;
+use App\Models\MessageEntity;
+use App\Models\MessageIntent;
+use App\Models\MessageSentiment;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -128,9 +128,9 @@ class NLPEnhancementService
     /**
      * Analyze message for entities, intents, and clusters
      *
-     * @param MessageSentiment $sentiment ข้อมูล sentiment
-     * @param string $message ข้อความต้นฉบับ
-     * @param LineBotKeyword|null $keyword คำสำคัญที่ตรงกัน
+     * @param  MessageSentiment  $sentiment  ข้อมูล sentiment
+     * @param  string  $message  ข้อความต้นฉบับ
+     * @param  LineBotKeyword|null  $keyword  คำสำคัญที่ตรงกัน
      * @return array ผลการวิเคราะห์ entities, intents, clusters
      */
     public function analyzeMessage(MessageSentiment $sentiment, string $message, ?LineBotKeyword $keyword = null): array
@@ -164,9 +164,8 @@ class NLPEnhancementService
     /**
      * Extract entities from message
      *
-     * @param MessageSentiment $sentiment
-     * @param string $message ข้อความ
-     * @param string $language ภาษา (th|en)
+     * @param  string  $message  ข้อความ
+     * @param  string  $language  ภาษา (th|en)
      * @return array entities ที่พบ
      */
     private function extractEntities(MessageSentiment $sentiment, string $message, string $language): array
@@ -213,10 +212,6 @@ class NLPEnhancementService
 
     /**
      * Extract pattern-based entities (e.g., emails, phone numbers, prices)
-     *
-     * @param string $message
-     * @param string $language
-     * @return array
      */
     private function extractPatternBasedEntities(string $message, string $language): array
     {
@@ -271,13 +266,6 @@ class NLPEnhancementService
 
     /**
      * Recognize intent from message
-     *
-     * @param MessageSentiment $sentiment
-     * @param string $message
-     * @param string $language
-     * @param array $entities
-     * @param LineBotKeyword|null $keyword
-     * @return array
      */
     private function recognizeIntent(MessageSentiment $sentiment, string $message, string $language, array $entities, ?LineBotKeyword $keyword = null): array
     {
@@ -307,7 +295,7 @@ class NLPEnhancementService
         $primaryIntent = 'OTHER';
         $primaryConfidence = 0;
 
-        if (!empty($intentScores)) {
+        if (! empty($intentScores)) {
             arsort($intentScores);
             $primaryIntent = key($intentScores);
             $primaryConfidence = current($intentScores);
@@ -316,7 +304,7 @@ class NLPEnhancementService
         // หา secondary intents
         $secondaryIntents = [];
         $sortedIntents = array_slice(array_keys($intentScores), 1, 2);
-        if (!empty($sortedIntents)) {
+        if (! empty($sortedIntents)) {
             $secondaryIntents = $sortedIntents;
         }
 
@@ -343,9 +331,6 @@ class NLPEnhancementService
     /**
      * Determine priority level based on sentiment and intent
      *
-     * @param MessageSentiment $sentiment
-     * @param string $intent
-     * @param float $confidence
      * @return string LOW|NORMAL|HIGH|URGENT
      */
     private function determinePriorityLevel(MessageSentiment $sentiment, string $intent, float $confidence): string
@@ -356,6 +341,7 @@ class NLPEnhancementService
             if ($sentiment->is_urgent || $sentiment->sentiment_score < -0.5) {
                 return 'URGENT';
             }
+
             return 'HIGH';
         }
 
@@ -370,13 +356,10 @@ class NLPEnhancementService
 
     /**
      * Suggest department based on intent
-     *
-     * @param string $intent
-     * @return string|null
      */
     private function suggestDepartment(string $intent): ?string
     {
-        return match($intent) {
+        return match ($intent) {
             'COMPLAINT', 'SUPPORT' => 'SUPPORT',
             'PURCHASE', 'INQUIRY' => 'SALES',
             'PAYMENT' => 'BILLING',
@@ -388,13 +371,10 @@ class NLPEnhancementService
 
     /**
      * Get intent explanation
-     *
-     * @param string $intent
-     * @return string
      */
     private function getIntentExplanation(string $intent): string
     {
-        return match($intent) {
+        return match ($intent) {
             'COMPLAINT' => 'ผู้ใช้มีความไม่พอใจหรือร้องเรียน',
             'INQUIRY' => 'ผู้ใช้กำลังสอบถามข้อมูล',
             'PURCHASE' => 'ผู้ใช้ต้องการซื้อสินค้า',
@@ -409,10 +389,6 @@ class NLPEnhancementService
 
     /**
      * Get suggested actions for intent
-     *
-     * @param string $intent
-     * @param array $entities
-     * @return array
      */
     private function getSuggestedActions(string $intent, array $entities): array
     {
@@ -441,17 +417,12 @@ class NLPEnhancementService
 
     /**
      * Find related keyword clusters
-     *
-     * @param LineBotKeyword|null $keyword
-     * @param array $entities
-     * @param array $intent
-     * @return Collection
      */
     private function findRelatedClusters(?LineBotKeyword $keyword, array $entities, array $intent): Collection
     {
         $clusters = collect();
 
-        if (!$keyword) {
+        if (! $keyword) {
             return $clusters;
         }
 
@@ -466,10 +437,6 @@ class NLPEnhancementService
 
     /**
      * Record entities to database
-     *
-     * @param MessageSentiment $sentiment
-     * @param array $entities
-     * @return void
      */
     private function recordEntities(MessageSentiment $sentiment, array $entities): void
     {
@@ -483,11 +450,6 @@ class NLPEnhancementService
 
     /**
      * Record intent to database
-     *
-     * @param MessageSentiment $sentiment
-     * @param array $intentData
-     * @param LineBotKeyword|null $keyword
-     * @return void
      */
     private function recordIntent(MessageSentiment $sentiment, array $intentData, ?LineBotKeyword $keyword = null): void
     {
@@ -509,10 +471,6 @@ class NLPEnhancementService
 
     /**
      * Record cluster matches
-     *
-     * @param MessageSentiment $sentiment
-     * @param Collection $clusters
-     * @return void
      */
     private function recordClusterMatches(MessageSentiment $sentiment, Collection $clusters): void
     {
@@ -524,8 +482,7 @@ class NLPEnhancementService
     /**
      * Create or merge keyword clusters
      *
-     * @param array $data ข้อมูล cluster
-     * @return KeywordCluster
+     * @param  array  $data  ข้อมูล cluster
      */
     public function createCluster(array $data): KeywordCluster
     {
@@ -543,7 +500,7 @@ class NLPEnhancementService
             ]);
 
             // เพิ่ม keywords ไปยัง cluster
-            if (!empty($data['keywords'])) {
+            if (! empty($data['keywords'])) {
                 foreach ($data['keywords'] as $keywordData) {
                     if (is_array($keywordData)) {
                         $cluster->keywords()->attach($keywordData['id'], [
@@ -563,8 +520,7 @@ class NLPEnhancementService
     /**
      * Get cluster recommendations
      *
-     * @param int $days ดูข้อมูลของ N วันที่ผ่านมา
-     * @return array
+     * @param  int  $days  ดูข้อมูลของ N วันที่ผ่านมา
      */
     public function getClusterRecommendations(int $days = 30): array
     {
@@ -598,8 +554,6 @@ class NLPEnhancementService
 
     /**
      * Analyze cluster usage patterns
-     *
-     * @return Collection
      */
     public function analyzeClusterUsage(): Collection
     {

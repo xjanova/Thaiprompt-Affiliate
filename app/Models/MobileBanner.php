@@ -78,6 +78,7 @@ class MobileBanner extends Model
      * ตำแหน่งที่ใช้ได้
      */
     public const POSITION_HOME = 'home';
+
     public const POSITION_SHOP = 'shop';
 
     public const POSITIONS = [
@@ -152,7 +153,10 @@ class MobileBanner extends Model
      */
     public function getCtrAttribute(): float
     {
-        if ($this->view_count === 0) return 0;
+        if ($this->view_count === 0) {
+            return 0;
+        }
+
         return round(($this->click_count / $this->view_count) * 100, 2);
     }
 
@@ -161,12 +165,18 @@ class MobileBanner extends Model
      */
     public function getIsShowingAttribute(): bool
     {
-        if (!$this->is_active) return false;
+        if (! $this->is_active) {
+            return false;
+        }
 
         $now = now();
 
-        if ($this->start_date && $this->start_date > $now) return false;
-        if ($this->end_date && $this->end_date < $now) return false;
+        if ($this->start_date && $this->start_date > $now) {
+            return false;
+        }
+        if ($this->end_date && $this->end_date < $now) {
+            return false;
+        }
 
         return true;
     }

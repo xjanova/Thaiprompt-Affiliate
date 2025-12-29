@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\LineSignupConversation;
-use App\Models\LineSignupInvitation;
-use App\Models\LineSignupReward;
 use App\Models\LineSignupSession;
 use App\Models\LineSignupStepLog;
+use App\Models\MlmMember;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,7 +15,9 @@ use Illuminate\Support\Str;
 class LineMembershipSignupService
 {
     protected $lineService;
+
     protected $lineFlexMessageService;
+
     protected $lineBotAiService;
 
     public function __construct(
@@ -44,6 +44,7 @@ class LineMembershipSignupService
             // Resume existing session
             $existingSession->last_activity_at = now();
             $existingSession->save();
+
             return $existingSession;
         }
 
@@ -173,7 +174,7 @@ class LineMembershipSignupService
         // Use AI to validate and enhance
         $aiValidation = $this->validateNameWithAi($name);
 
-        if (!$aiValidation['valid']) {
+        if (! $aiValidation['valid']) {
             return [
                 'type' => 'text',
                 'message' => $aiValidation['message'],
@@ -202,7 +203,7 @@ class LineMembershipSignupService
         $email = trim(strtolower($message['text'] ?? ''));
 
         // Validate email format
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return [
                 'type' => 'text',
                 'message' => '❌ รูปแบบอีเมลไม่ถูกต้อง กรุณากรอกใหม่อีกครั้ง',
@@ -239,7 +240,7 @@ class LineMembershipSignupService
         $phone = $this->normalizePhoneNumber($message['text'] ?? '');
 
         // Validate phone
-        if (!$this->isValidThaiPhone($phone)) {
+        if (! $this->isValidThaiPhone($phone)) {
             return [
                 'type' => 'text',
                 'message' => '❌ หมายเลขโทรศัพท์ไม่ถูกต้อง กรุณากรอกเบอร์ 10 หลัก เช่น 0812345678',
@@ -294,7 +295,7 @@ class LineMembershipSignupService
         }
 
         // Validate OTP
-        if (!$session->isOtpValid($otp)) {
+        if (! $session->isOtpValid($otp)) {
             $session->incrementOtpAttempts();
             $remaining = $session->getRemainingOtpAttempts();
 
@@ -363,7 +364,7 @@ class LineMembershipSignupService
             // Validate referral code
             $result = $this->processReferralCode($session, $referralCode);
 
-            if (!$result['valid']) {
+            if (! $result['valid']) {
                 return [
                     'type' => 'text',
                     'message' => $result['message'],
@@ -393,7 +394,7 @@ class LineMembershipSignupService
         $response = strtolower(trim($message['text'] ?? ''));
 
         // Check confirmation
-        if (!in_array($response, ['confirm', 'ยืนยัน', 'yes', 'ใช่'])) {
+        if (! in_array($response, ['confirm', 'ยืนยัน', 'yes', 'ใช่'])) {
             return [
                 'type' => 'text',
                 'message' => 'กรุณากดยืนยัน หรือพิมพ์ "ยืนยัน" เพื่อดำเนินการต่อ',
@@ -457,18 +458,18 @@ class LineMembershipSignupService
 
             // Create MLM member account
             $parentMember = null;
-            if (!empty($data['referral_code'])) {
+            if (! empty($data['referral_code'])) {
                 $parentMember = MlmMember::where('member_code', $data['referral_code'])->first();
             }
 
-            if (!$parentMember) {
+            if (! $parentMember) {
                 // Use default sponsor (admin)
                 $parentMember = MlmMember::where('user_id', 1)->first();
             }
 
             // Get default MLM plan
             $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
-            if (!$defaultPlan) {
+            if (! $defaultPlan) {
                 $defaultPlan = \App\Models\MlmPlan::first();
             }
 
@@ -477,7 +478,7 @@ class LineMembershipSignupService
                 'mlm_plan_id' => $defaultPlan?->id,
                 'unilevel_sponsor_id' => $parentMember?->id,
                 'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
-                'unilevel_path' => $parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id,
+                'unilevel_path' => $parentMember ? $parentMember->unilevel_path.'/'.$parentMember->id : '/'.$user->id,
                 'member_code' => $this->generateUniqueReferralCode(),
                 'status' => 'active',
                 'is_qualified' => true,
@@ -497,10 +498,6 @@ class LineMembershipSignupService
      *
      * ใช้ LineSignupRewardService เพื่อให้รางวัลอัตโนมัติ
      * ตามที่กำหนดไว้ในระบบ
-     *
-     * @param LineSignupSession $session
-     * @param User $user
-     * @return void
      */
     protected function grantSignupRewards(LineSignupSession $session, User $user): void
     {
@@ -603,7 +600,7 @@ class LineMembershipSignupService
 
         // 5. เช็คว่ามีชื่อและนามสกุลหรือไม่ (ควรมีช่องว่าง)
         $words = explode(' ', $name);
-        $validWords = array_filter($words, fn($w) => mb_strlen(trim($w)) > 0);
+        $validWords = array_filter($words, fn ($w) => mb_strlen(trim($w)) > 0);
 
         if (count($validWords) < 2) {
             return [
@@ -638,7 +635,7 @@ class LineMembershipSignupService
         // 8. ✨ Success with encouragement
         return [
             'valid' => true,
-            'message' => '✅ ยินดีที่ได้รู้จัก คุณ' . $validWords[0] . '!',
+            'message' => '✅ ยินดีที่ได้รู้จัก คุณ'.$validWords[0].'!',
         ];
     }
 
@@ -651,7 +648,7 @@ class LineMembershipSignupService
             ->where('is_qualified', true)
             ->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return [
                 'valid' => false,
                 'message' => '❌ ไม่พบรหัสผู้แนะนำนี้ กรุณาตรวจสอบอีกครั้ง หรือพิมพ์ "ข้าม" เพื่อข้ามขั้นตอนนี้',
@@ -677,7 +674,7 @@ class LineMembershipSignupService
 
         // If starts with +66, replace with 0
         if (str_starts_with($phone, '66')) {
-            $phone = '0' . substr($phone, 2);
+            $phone = '0'.substr($phone, 2);
         }
 
         return $phone;
@@ -733,7 +730,7 @@ class LineMembershipSignupService
             ->where('status', LineSignupSession::STATUS_ACTIVE)
             ->first();
 
-        if (!$session) {
+        if (! $session) {
             $session = $this->startSignupSession($lineUserId);
         }
 
@@ -775,7 +772,7 @@ class LineMembershipSignupService
     protected function getAiResponse(LineSignupSession $session, array $message): array
     {
         // Use existing AI bot service
-        $prompt = "You are a helpful signup assistant. The user is in the middle of signing up. Current step: {$session->current_step}. Help them with their question: " . ($message['text'] ?? '');
+        $prompt = "You are a helpful signup assistant. The user is in the middle of signing up. Current step: {$session->current_step}. Help them with their question: ".($message['text'] ?? '');
 
         $aiResponse = $this->lineBotAiService->generateResponse($prompt);
 

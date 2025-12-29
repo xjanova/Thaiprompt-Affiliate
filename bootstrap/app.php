@@ -1,6 +1,5 @@
 <?php
 
-use App\Providers\AuthServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,8 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // ⚠️ CRITICAL: Trust Proxies สำหรับ Cloudflare และ Reverse Proxy
         // แก้ปัญหา redirect loop และ HTTPS detection
-        $middleware->trustProxies(at: '*', headers:
-            \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
+        $middleware->trustProxies(at: '*', headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR |
             \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST |
             \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
             \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO |

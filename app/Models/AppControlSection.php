@@ -81,7 +81,7 @@ class AppControlSection extends Model
     {
         return $query->where(function ($q) use ($platform) {
             $q->where('platform', $platform)
-              ->orWhere('platform', 'all');
+                ->orWhere('platform', 'all');
         });
     }
 

@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\PaymentTransaction;
 use App\Models\Service;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingItem;
 use App\Models\ServiceBookingLocation;
 use App\Models\ServiceBookingTracking;
 use App\Models\ServiceProvider;
-use App\Models\User;
-use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -26,14 +25,13 @@ class ServiceBookingService
         protected ServiceBookingNotificationService $notificationService,
         protected GoogleMapsService $mapsService,
         protected WalletService $walletService
-    ) {
-    }
+    ) {}
 
     /**
      * สร้างการจองบริการ
      *
-     * @param array $data ข้อมูลการจอง
-     * @return ServiceBooking
+     * @param  array  $data  ข้อมูลการจอง
+     *
      * @throws \Exception
      */
     public function createBooking(array $data): ServiceBooking
@@ -43,7 +41,7 @@ class ServiceBookingService
             $service = Service::findOrFail($data['service_id']);
 
             // ตรวจสอบว่าบริการต้องการ location หรือไม่
-            if ($service->requires_location && (!isset($data['customer_latitude']) || !isset($data['customer_longitude']))) {
+            if ($service->requires_location && (! isset($data['customer_latitude']) || ! isset($data['customer_longitude']))) {
                 throw new \Exception('บริการนี้ต้องระบุตำแหน่ง GPS');
             }
 
@@ -145,11 +143,11 @@ class ServiceBookingService
      * ใช้ Google Maps Directions API เพื่อคำนวณระยะทางจริงตามถนน
      * ถ้า Google Maps API ไม่พร้อมใช้งาน จะ fallback เป็น Haversine formula
      *
-     * @param float $lat1 ละติจูดจุดเริ่มต้น
-     * @param float $lng1 ลองจิจูดจุดเริ่มต้น
-     * @param float $lat2 ละติจูดจุดปลายทาง
-     * @param float $lng2 ลองจิจูดจุดปลายทาง
-     * @param string $mode โหมดการเดินทาง (driving, walking, bicycling, transit)
+     * @param  float  $lat1  ละติจูดจุดเริ่มต้น
+     * @param  float  $lng1  ลองจิจูดจุดเริ่มต้น
+     * @param  float  $lat2  ละติจูดจุดปลายทาง
+     * @param  float  $lng2  ลองจิจูดจุดปลายทาง
+     * @param  string  $mode  โหมดการเดินทาง (driving, walking, bicycling, transit)
      * @return float ระยะทาง (กิโลเมตร)
      */
     public function calculateDistance(
@@ -187,12 +185,6 @@ class ServiceBookingService
      *
      * ⚠️ หมายเหตุ: ใช้เป็น fallback เท่านั้น ไม่ใช่ระยะทางจริงตามถนน
      * ระยะทางจริงตามถนนอาจมากกว่า 20-50% ขึ้นอยู่กับภูมิประเทศ
-     *
-     * @param float $lat1
-     * @param float $lng1
-     * @param float $lat2
-     * @param float $lng2
-     * @return float
      */
     protected function calculateDistanceHaversine(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
@@ -215,9 +207,6 @@ class ServiceBookingService
     /**
      * ชำระเงิน
      *
-     * @param ServiceBooking $booking
-     * @param string $paymentMethod
-     * @return PaymentTransaction
      * @throws \Exception
      */
     public function processPayment(ServiceBooking $booking, string $paymentMethod = 'wallet'): PaymentTransaction
@@ -256,10 +245,6 @@ class ServiceBookingService
     /**
      * มอบหมายผู้ให้บริการ
      *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider|null $provider
-     * @param int $responseMinutes
-     * @return bool
      * @throws \Exception
      */
     public function assignProvider(
@@ -269,16 +254,16 @@ class ServiceBookingService
     ): bool {
         return DB::transaction(function () use ($booking, $provider, $responseMinutes) {
             // ถ้าไม่ระบุ provider ให้หาอัตโนมัติ
-            if (!$provider) {
+            if (! $provider) {
                 $provider = $this->findAvailableProvider($booking);
 
-                if (!$provider) {
+                if (! $provider) {
                     throw new \Exception('ไม่พบผู้ให้บริการที่พร้อมรับงาน');
                 }
             }
 
             // ตรวจสอบว่า provider พร้อมรับงานหรือไม่
-            if (!$provider->isAvailable()) {
+            if (! $provider->isAvailable()) {
                 throw new \Exception('ผู้ให้บริการไม่พร้อมรับงานในขณะนี้');
             }
 
@@ -315,9 +300,7 @@ class ServiceBookingService
      *    - Auto-accept enabled (bonus) - weight 10%
      * 5. เรียงตามคะแนนสูงสุด
      *
-     * @param ServiceBooking $booking
-     * @param int $maxProviders จำนวน providers สูงสุดที่จะค้นหา
-     * @return ServiceProvider|null
+     * @param  int  $maxProviders  จำนวน providers สูงสุดที่จะค้นหา
      */
     protected function findAvailableProvider(ServiceBooking $booking, int $maxProviders = 10): ?ServiceProvider
     {
@@ -353,7 +336,7 @@ class ServiceBookingService
                     );
                 })
                 // หรือ provider ที่ให้บริการทุกพื้นที่
-                ->orWhere('service_all_areas', true);
+                    ->orWhere('service_all_areas', true);
             });
         }
 
@@ -365,6 +348,7 @@ class ServiceBookingService
                 'booking_id' => $booking->id,
                 'service_id' => $booking->service_id,
             ]);
+
             return null;
         }
 
@@ -425,10 +409,6 @@ class ServiceBookingService
 
     /**
      * หาผู้ให้บริการหลายคนที่พร้อมรับงาน (สำหรับ broadcast notification)
-     *
-     * @param ServiceBooking $booking
-     * @param int $limit
-     * @return \Illuminate\Support\Collection
      */
     public function findAvailableProviders(ServiceBooking $booking, int $limit = 5): \Illuminate\Support\Collection
     {
@@ -497,17 +477,13 @@ class ServiceBookingService
                 'distance' => $distance,
             ];
         })
-        ->sortByDesc('score')
-        ->take($limit)
-        ->pluck('provider');
+            ->sortByDesc('score')
+            ->take($limit)
+            ->pluck('provider');
     }
 
     /**
      * Provider รับงาน
-     *
-     * @param ServiceBooking $booking
-     * @param string|null $notes
-     * @return bool
      */
     public function acceptBooking(ServiceBooking $booking, ?string $notes = null): bool
     {
@@ -528,10 +504,6 @@ class ServiceBookingService
 
     /**
      * Provider ปฏิเสธงาน
-     *
-     * @param ServiceBooking $booking
-     * @param string $reason
-     * @return bool
      */
     public function rejectBooking(ServiceBooking $booking, string $reason): bool
     {
@@ -560,9 +532,6 @@ class ServiceBookingService
 
     /**
      * เริ่มเดินทาง
-     *
-     * @param ServiceBooking $booking
-     * @return bool
      */
     public function startJourney(ServiceBooking $booking): bool
     {
@@ -582,9 +551,6 @@ class ServiceBookingService
 
     /**
      * เริ่มให้บริการ
-     *
-     * @param ServiceBooking $booking
-     * @return bool
      */
     public function startService(ServiceBooking $booking): bool
     {
@@ -598,7 +564,6 @@ class ServiceBookingService
     /**
      * เสร็จสิ้นบริการ
      *
-     * @param ServiceBooking $booking
      * @return array ผลลัพธ์การประมวลผล พร้อมข้อมูลคอมมิชชั่น
      */
     public function completeService(ServiceBooking $booking): array
@@ -645,10 +610,6 @@ class ServiceBookingService
     /**
      * ยกเลิกการจอง
      *
-     * @param ServiceBooking $booking
-     * @param string $reason
-     * @param string $cancelledBy
-     * @return bool
      * @throws \Exception
      */
     public function cancelBooking(ServiceBooking $booking, string $reason, string $cancelledBy = 'customer'): bool
@@ -673,9 +634,6 @@ class ServiceBookingService
 
     /**
      * คืนเงิน
-     *
-     * @param ServiceBooking $booking
-     * @return void
      */
     protected function refundPayment(ServiceBooking $booking): void
     {
@@ -700,7 +658,6 @@ class ServiceBookingService
      *
      * ใช้ ServiceCommissionService สำหรับประมวลผลทั้งหมด
      *
-     * @param ServiceBooking $booking
      * @return array ผลลัพธ์การประมวลผล
      */
     protected function processCommissions(ServiceBooking $booking): array
@@ -714,8 +671,6 @@ class ServiceBookingService
     /**
      * จ่ายเงินให้ provider (Legacy method - ใช้ processCommissions แทน)
      *
-     * @param ServiceBooking $booking
-     * @return void
      * @deprecated ใช้ processCommissions() แทน
      */
     protected function payProvider(ServiceBooking $booking): void
@@ -727,8 +682,6 @@ class ServiceBookingService
     /**
      * จ่ายคอมมิชชั่น MLM (Legacy method - ใช้ processCommissions แทน)
      *
-     * @param ServiceBooking $booking
-     * @return void
      * @deprecated ใช้ processCommissions() แทน
      */
     protected function payCommission(ServiceBooking $booking): void
@@ -739,15 +692,10 @@ class ServiceBookingService
 
     /**
      * อัพเดทตำแหน่ง GPS ของ provider
-     *
-     * @param ServiceBooking $booking
-     * @param float $latitude
-     * @param float $longitude
-     * @return void
      */
     public function updateProviderLocation(ServiceBooking $booking, float $latitude, float $longitude): void
     {
-        if (!$booking->provider) {
+        if (! $booking->provider) {
             return;
         }
 
@@ -778,24 +726,17 @@ class ServiceBookingService
 
     /**
      * ประเมินเวลาถึง (นาที)
-     *
-     * @param float $distanceKm
-     * @return int
      */
     protected function estimateArrivalTime(float $distanceKm): int
     {
         $averageSpeedKmh = config('services.average_speed_kmh', 30); // 30 km/h
         $hours = $distanceKm / $averageSpeedKmh;
+
         return (int) ceil($hours * 60); // แปลงเป็นนาที
     }
 
     /**
      * สร้างรายการย่อย (ServiceBookingItem)
-     *
-     * @param ServiceBooking $booking
-     * @param Service $service
-     * @param array $optionsPricing
-     * @return void
      */
     protected function createBookingItems(ServiceBooking $booking, Service $service, array $optionsPricing): void
     {
@@ -838,10 +779,6 @@ class ServiceBookingService
 
     /**
      * บันทึกตำแหน่งลูกค้า
-     *
-     * @param ServiceBooking $booking
-     * @param array $data
-     * @return void
      */
     protected function saveCustomerLocation(ServiceBooking $booking, array $data): void
     {

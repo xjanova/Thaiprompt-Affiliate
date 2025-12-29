@@ -24,7 +24,6 @@ class KeywordSuggestionController extends Controller
     /**
      * แสดง suggestions dashboard
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -49,7 +48,6 @@ class KeywordSuggestionController extends Controller
     /**
      * ดึง suggestions เป็น JSON
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getSuggestionsJson(Request $request)
@@ -70,7 +68,6 @@ class KeywordSuggestionController extends Controller
     /**
      * ดึง statistics
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getStatistics(Request $request)
@@ -104,7 +101,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Preview suggestion (ดูตัวอย่าง keyword ที่สร้างจะออกมาเป็นไง)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function preview(Request $request)
@@ -115,7 +111,7 @@ class KeywordSuggestionController extends Controller
             'response_text' => 'nullable|string',
         ]);
 
-        $keyword = new LineBotKeyword();
+        $keyword = new LineBotKeyword;
         $keyword->keyword = $validated['keyword'];
         $keyword->trigger_words = json_encode($validated['trigger_words']);
         $keyword->response_type = 'text';
@@ -133,7 +129,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Approve and create keyword from suggestion
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function approve(Request $request)
@@ -148,7 +143,7 @@ class KeywordSuggestionController extends Controller
         ]);
 
         // Create keyword
-        $keyword = new LineBotKeyword();
+        $keyword = new LineBotKeyword;
         $keyword->keyword = $validated['keyword'];
         $keyword->trigger_words = $validated['trigger_words'];
         $keyword->response_type = 'text';
@@ -166,7 +161,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Approve multiple suggestions at once
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function approveBatch(Request $request)
@@ -185,7 +179,7 @@ class KeywordSuggestionController extends Controller
 
         foreach ($validated['suggestions'] as $data) {
             try {
-                $keyword = new LineBotKeyword();
+                $keyword = new LineBotKeyword;
                 $keyword->keyword = $data['keyword'];
                 $keyword->trigger_words = $data['trigger_words'];
                 $keyword->response_type = 'text';
@@ -209,15 +203,14 @@ class KeywordSuggestionController extends Controller
             'created' => $created,
             'created_count' => count($created),
             'errors' => $errors,
-            'message' => count($created) . ' keywords สร้างสำเร็จ' .
-                        (count($errors) > 0 ? ', ' . count($errors) . ' ข้อผิดพลาด' : ''),
+            'message' => count($created).' keywords สร้างสำเร็จ'.
+                        (count($errors) > 0 ? ', '.count($errors).' ข้อผิดพลาด' : ''),
         ]);
     }
 
     /**
      * Reject/Dismiss suggestion
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function reject(Request $request)
@@ -234,7 +227,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Get suggestion detail with full context
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getDetail(Request $request)
@@ -247,7 +239,7 @@ class KeywordSuggestionController extends Controller
 
         $suggestion = collect($suggestions)->firstWhere('keyword', $validated['keyword']);
 
-        if (!$suggestion) {
+        if (! $suggestion) {
             return response()->json([
                 'success' => false,
                 'message' => 'Suggestion not found',
@@ -264,7 +256,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Refresh suggestions (re-analyze)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function refresh(Request $request)
@@ -286,7 +277,6 @@ class KeywordSuggestionController extends Controller
     /**
      * Export suggestions as JSON
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -296,7 +286,7 @@ class KeywordSuggestionController extends Controller
 
         $data = json_encode($suggestions, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-        $filename = 'keyword-suggestions-' . now()->format('Y-m-d_H-i-s') . '.json';
+        $filename = 'keyword-suggestions-'.now()->format('Y-m-d_H-i-s').'.json';
 
         return response()->streamDownload(
             function () use ($data) {
@@ -305,7 +295,7 @@ class KeywordSuggestionController extends Controller
             $filename,
             [
                 'Content-Type' => 'application/json',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ]
         );
     }

@@ -19,7 +19,7 @@ class ModelRecommendationService
                 'ตอบคำถามพื้นฐาน',
                 'สนทนาและช่วยเหลือทั่วไป',
                 'ความเร็วสูงมาก',
-                'ใช้ RAM เพียง 1-2 GB'
+                'ใช้ RAM เพียง 1-2 GB',
             ],
             'quantizations' => [
                 'Q4_K_M' => [
@@ -41,7 +41,7 @@ class ModelRecommendationService
                 'ตอบคำถามและให้คำแนะนำ',
                 'วิเคราะห์และสรุปข้อมูล',
                 'เร็วและใช้ทรัพยากรน้อย',
-                'ใช้ RAM 2-3 GB'
+                'ใช้ RAM 2-3 GB',
             ],
             'quantizations' => [
                 'Q4_K_M' => [
@@ -63,7 +63,7 @@ class ModelRecommendationService
                 'รองรับภาษาไทย',
                 'วิเคราะห์และตอบคำถาม',
                 'สนทนาได้เป็นธรรมชาติ',
-                'ใช้ RAM 3-4 GB'
+                'ใช้ RAM 3-4 GB',
             ],
             'quantizations' => [
                 'Q4_K_M' => [
@@ -85,7 +85,7 @@ class ModelRecommendationService
                 'เขียนโค้ดได้',
                 'วิเคราะห์และแก้ปัญหา',
                 'รองรับหลายภาษา',
-                'ใช้ RAM 4-5 GB'
+                'ใช้ RAM 4-5 GB',
             ],
             'quantizations' => [
                 'Q4_K_M' => [
@@ -107,7 +107,7 @@ class ModelRecommendationService
                 'เขียนและวิเคราะห์โค้ด',
                 'แก้ปัญหาซับซ้อน',
                 'วิเคราะห์เชิงลึก',
-                'ใช้ RAM 4-6 GB'
+                'ใช้ RAM 4-6 GB',
             ],
             'quantizations' => [
                 'Q4_K_M' => [
@@ -124,7 +124,7 @@ class ModelRecommendationService
 
     public function __construct()
     {
-        $this->requirementsChecker = new SystemRequirementsChecker();
+        $this->requirementsChecker = new SystemRequirementsChecker;
     }
 
     /**
@@ -162,8 +162,8 @@ class ModelRecommendationService
         }
 
         // เรียงตาม performance score
-        usort($recommendations['recommended'], fn($a, $b) => $b['score'] <=> $a['score']);
-        usort($recommendations['possible'], fn($a, $b) => $b['score'] <=> $a['score']);
+        usort($recommendations['recommended'], fn ($a, $b) => $b['score'] <=> $a['score']);
+        usort($recommendations['possible'], fn ($a, $b) => $b['score'] <=> $a['score']);
 
         return $recommendations;
     }
@@ -173,14 +173,14 @@ class ModelRecommendationService
      */
     public function analyzeModel(string $modelId, ?array $systemInfo = null): array
     {
-        if (!isset($this->availableModels[$modelId])) {
+        if (! isset($this->availableModels[$modelId])) {
             return [
                 'status' => 'not_found',
                 'message' => 'ไม่พบข้อมูลโมเดล',
             ];
         }
 
-        if (!$systemInfo) {
+        if (! $systemInfo) {
             $systemInfo = $this->requirementsChecker->checkAll();
         }
 
@@ -188,7 +188,7 @@ class ModelRecommendationService
         $ram = $systemInfo['ram'];
         $gpu = $systemInfo['gpu'];
 
-        $hasGpu = $gpu['available'] && !empty($gpu['gpus']);
+        $hasGpu = $gpu['available'] && ! empty($gpu['gpus']);
         $totalVram = $hasGpu ? array_sum(array_column($gpu['gpus'], 'memory_total_gb')) : 0;
         $availableRam = $ram['available_gb'];
 
@@ -225,7 +225,7 @@ class ModelRecommendationService
             $allQuantizations[] = $quantAnalysis;
 
             // เลือก quantization ที่ดีที่สุด
-            if ($canRun && (!$bestQuantization || $quantInfo['quality'] > $bestQuantization['quality'])) {
+            if ($canRun && (! $bestQuantization || $quantInfo['quality'] > $bestQuantization['quality'])) {
                 $bestQuantization = $quantAnalysis;
             }
         }
@@ -251,18 +251,18 @@ class ModelRecommendationService
                 if ($vramUsage < 70) {
                     $status = 'recommended';
                     $reasons[] = 'ใช้ VRAM น้อยกว่า 70%';
-                } else if ($vramUsage < 90) {
+                } elseif ($vramUsage < 90) {
                     $status = 'possible';
-                    $reasons[] = 'ใช้ VRAM ค่อนข้างสูง (' . round($vramUsage) . '%)';
+                    $reasons[] = 'ใช้ VRAM ค่อนข้างสูง ('.round($vramUsage).'%)';
                 }
             } else {
                 $ramUsage = ($bestQuantization['ram_required'] / $availableRam) * 100;
                 if ($ramUsage < 60) {
                     $status = 'recommended';
                     $reasons[] = 'ใช้ RAM น้อยกว่า 60%';
-                } else if ($ramUsage < 80) {
+                } elseif ($ramUsage < 80) {
                     $status = 'possible';
-                    $reasons[] = 'ใช้ RAM ค่อนข้างสูง (' . round($ramUsage) . '%)';
+                    $reasons[] = 'ใช้ RAM ค่อนข้างสูง ('.round($ramUsage).'%)';
                 }
             }
         } else {
@@ -298,7 +298,7 @@ class ModelRecommendationService
         $speedMultiplier = $quantInfo['performance'] / 100;
 
         // Adjust by GPU type (if available)
-        if ($useGpu && !empty($systemInfo['gpu']['gpus'])) {
+        if ($useGpu && ! empty($systemInfo['gpu']['gpus'])) {
             $gpuName = strtolower($systemInfo['gpu']['gpus'][0]['name']);
 
             if (str_contains($gpuName, '4090') || str_contains($gpuName, 'a100')) {
@@ -316,8 +316,8 @@ class ModelRecommendationService
 
         return [
             'tokens_per_second' => $tokensPerSecond,
-            'time_for_100_tokens' => round(100 / $tokensPerSecond, 1) . ' วินาที',
-            'time_for_500_tokens' => round(500 / $tokensPerSecond, 1) . ' วินาที',
+            'time_for_100_tokens' => round(100 / $tokensPerSecond, 1).' วินาที',
+            'time_for_500_tokens' => round(500 / $tokensPerSecond, 1).' วินาที',
             'rating' => $tokensPerSecond >= 40 ? 'เร็วมาก' :
                         ($tokensPerSecond >= 20 ? 'เร็ว' :
                         ($tokensPerSecond >= 10 ? 'ปานกลาง' : 'ช้า')),
@@ -347,7 +347,7 @@ class ModelRecommendationService
     {
         $model = $this->getModel($modelId);
 
-        if (!$model || !isset($model['quantizations'][$quantization])) {
+        if (! $model || ! isset($model['quantizations'][$quantization])) {
             return [
                 'required_gb' => 0,
                 'message' => 'ไม่พบข้อมูลโมเดล',
@@ -361,7 +361,7 @@ class ModelRecommendationService
         return [
             'required_gb' => round($diskSpaceRequired, 2),
             'recommended_gb' => round($diskSpaceRequired * 1.5, 2),
-            'message' => 'ต้องการพื้นที่อย่างน้อย ' . round($diskSpaceRequired, 2) . ' GB',
+            'message' => 'ต้องการพื้นที่อย่างน้อย '.round($diskSpaceRequired, 2).' GB',
         ];
     }
 
@@ -372,7 +372,7 @@ class ModelRecommendationService
     {
         $analysis = $this->analyzeModel($modelId, $systemInfo);
 
-        if (!$analysis['best_quantization']) {
+        if (! $analysis['best_quantization']) {
             return [
                 'error' => 'ไม่สามารถรันโมเดลนี้ได้ด้วยทรัพยากรปัจจุบัน',
             ];

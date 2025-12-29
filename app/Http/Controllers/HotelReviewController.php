@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\HotelReview;
 use App\Models\HotelBooking;
+use App\Models\HotelReview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -127,7 +127,7 @@ class HotelReviewController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to submit review: ' . $e->getMessage());
+                ->with('error', 'Failed to submit review: '.$e->getMessage());
         }
     }
 

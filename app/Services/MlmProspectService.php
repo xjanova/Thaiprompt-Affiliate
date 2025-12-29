@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmProspect;
-use App\Models\MlmGlobalSetting;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -49,19 +49,21 @@ class MlmProspectService
     ): ?MlmProspect {
         $prospect = MlmProspect::where('referral_token', $token)->first();
 
-        if (!$prospect) {
+        if (! $prospect) {
             Log::warning('Invalid referral token', ['token' => $token]);
+
             return null;
         }
 
         // Check if already completed
         if ($prospect->status === 'completed') {
             Log::info('Prospect already completed', ['prospect_id' => $prospect->id]);
+
             return $prospect;
         }
 
         // Update prospect with LINE info (if first click)
-        if (!$prospect->clicked_at) {
+        if (! $prospect->clicked_at) {
             $globalSettings = MlmGlobalSetting::first();
             $lockDuration = $globalSettings->prospect_lock_duration_hours ?? 24;
 
@@ -270,17 +272,18 @@ class MlmProspectService
     {
         $globalSettings = MlmGlobalSetting::first();
 
-        if (!$globalSettings->enable_auto_add_sponsor_friend) {
+        if (! $globalSettings->enable_auto_add_sponsor_friend) {
             return false;
         }
 
         $sponsor = $prospect->sponsorUser;
 
-        if (!$sponsor || !$sponsor->line_id) {
+        if (! $sponsor || ! $sponsor->line_id) {
             Log::warning('Sponsor LINE ID not set', [
                 'prospect_id' => $prospect->id,
                 'sponsor_user_id' => $sponsor->id ?? null,
             ]);
+
             return false;
         }
 

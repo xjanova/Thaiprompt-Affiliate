@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -32,7 +32,7 @@ class RedirectIfSetupNotCompleted
         }
 
         // Check if setup is completed
-        if (!$this->isSetupCompleted()) {
+        if (! $this->isSetupCompleted()) {
             return redirect()->route('setup.index');
         }
 
@@ -53,6 +53,7 @@ class RedirectIfSetupNotCompleted
         if (User::where('role', 'super_admin')->exists()) {
             // Auto-create flag if admin exists but flag doesn't
             File::put(storage_path('app/.setup_completed'), now()->toString());
+
             return true;
         }
 

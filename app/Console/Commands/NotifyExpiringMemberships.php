@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\MembershipRetentionService;
 use App\Models\MembershipRetentionSetting;
+use App\Services\MembershipRetentionService;
 use Illuminate\Console\Command;
 
 class NotifyExpiringMemberships extends Command
@@ -46,7 +46,8 @@ class NotifyExpiringMemberships extends Command
             $expiringUsers = $this->retentionService->getExpiringUsers($days);
 
             if ($expiringUsers->isEmpty()) {
-                $this->info("✨ No expiring memberships found.");
+                $this->info('✨ No expiring memberships found.');
+
                 return Command::SUCCESS;
             }
 
@@ -57,7 +58,7 @@ class NotifyExpiringMemberships extends Command
                 $table[] = [
                     $status->user->name,
                     $status->user->email,
-                    $status->daysRemaining() . ' days',
+                    $status->daysRemaining().' days',
                     $status->next_renewal_date?->format('Y-m-d'),
                 ];
             }
@@ -69,11 +70,12 @@ class NotifyExpiringMemberships extends Command
 
             // Here you would send actual notifications
             // For now, just showing info
-            $this->info("✅ Notification check completed!");
+            $this->info('✅ Notification check completed!');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('❌ Error checking expiring memberships: ' . $e->getMessage());
+            $this->error('❌ Error checking expiring memberships: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

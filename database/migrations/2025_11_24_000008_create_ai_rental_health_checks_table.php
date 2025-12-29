@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บผลการตรวจสอบสุขภาพของ deployments
      * รองรับการ monitor อัตโนมัติและ auto-recovery
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -182,8 +180,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_health_checks
-     *
-     * @return void
      */
     public function down(): void
     {

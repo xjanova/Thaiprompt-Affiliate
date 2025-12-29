@@ -136,8 +136,6 @@ class AiRentalModel extends Model
 
     /**
      * ความสัมพันธ์กับ Deployments
-     *
-     * @return HasMany
      */
     public function deployments(): HasMany
     {
@@ -147,7 +145,7 @@ class AiRentalModel extends Model
     /**
      * Scope: เฉพาะ AI models ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -158,7 +156,7 @@ class AiRentalModel extends Model
     /**
      * Scope: เรียงตามลำดับการแสดงผล
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -170,7 +168,7 @@ class AiRentalModel extends Model
     /**
      * Scope: เฉพาะ AI models ที่แนะนำ (featured)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -181,7 +179,7 @@ class AiRentalModel extends Model
     /**
      * Scope: เฉพาะ AI models ใหม่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeNew($query)
@@ -192,8 +190,7 @@ class AiRentalModel extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCategory($query, string $category)
@@ -204,8 +201,8 @@ class AiRentalModel extends Model
     /**
      * Scope: กรองตาม VRAM ขั้นต่ำ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $maxVram VRAM สูงสุดที่มี
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $maxVram  VRAM สูงสุดที่มี
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithinVram($query, int $maxVram)
@@ -215,8 +212,6 @@ class AiRentalModel extends Model
 
     /**
      * เพิ่มจำนวน deployments
-     *
-     * @return void
      */
     public function incrementDeployments(): void
     {
@@ -225,8 +220,6 @@ class AiRentalModel extends Model
 
     /**
      * เพิ่มจำนวน views
-     *
-     * @return void
      */
     public function incrementViews(): void
     {
@@ -235,9 +228,6 @@ class AiRentalModel extends Model
 
     /**
      * ตรวจสอบว่า model นี้รองรับ GPU type หรือไม่
-     *
-     * @param string $gpuType
-     * @return bool
      */
     public function supportsGpuType(string $gpuType): bool
     {
@@ -250,9 +240,6 @@ class AiRentalModel extends Model
 
     /**
      * ดึง pricing สำหรับ GPU type
-     *
-     * @param string $gpuType
-     * @return float|null
      */
     public function getPricingForGpu(string $gpuType): ?float
     {
@@ -265,8 +252,6 @@ class AiRentalModel extends Model
 
     /**
      * ดึงข้อมูล badge
-     *
-     * @return array|null
      */
     public function getBadge(): ?array
     {
@@ -304,8 +289,6 @@ class AiRentalModel extends Model
 
     /**
      * ตรวจสอบว่า model พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isAvailable(): bool
     {
@@ -314,8 +297,6 @@ class AiRentalModel extends Model
 
     /**
      * ดึงชื่อหมวดหมู่แบบอ่านง่าย
-     *
-     * @return string
      */
     public function getCategoryName(): string
     {
@@ -333,12 +314,10 @@ class AiRentalModel extends Model
 
     /**
      * ดึง Docker command พร้อม default values
-     *
-     * @return string
      */
     public function getDockerCommand(): string
     {
-        if (!empty($this->docker_command)) {
+        if (! empty($this->docker_command)) {
             return $this->docker_command;
         }
 
@@ -348,12 +327,10 @@ class AiRentalModel extends Model
 
     /**
      * ดึง Docker ports พร้อม default values
-     *
-     * @return array
      */
     public function getDockerPorts(): array
     {
-        if (!empty($this->docker_ports)) {
+        if (! empty($this->docker_ports)) {
             return $this->docker_ports;
         }
 

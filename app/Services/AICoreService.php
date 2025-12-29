@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\AICoreFeature;
-use App\Models\AICoreTenant;
 use App\Models\AICoreFeatureAccess;
+use App\Models\AICoreTenant;
 use App\Models\AICoreUsageLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,9 +20,8 @@ class AICoreService
     /**
      * ตรวจสอบว่า feature เปิดใช้งานหรือไม่
      *
-     * @param string $featureKey รหัส feature
-     * @param int|null $tenantId Tenant ID
-     * @return bool
+     * @param  string  $featureKey  รหัส feature
+     * @param  int|null  $tenantId  Tenant ID
      */
     public function isFeatureEnabled(string $featureKey, ?int $tenantId = null): bool
     {
@@ -31,7 +30,7 @@ class AICoreService
             ->where('is_enabled', true)
             ->first();
 
-        if (!$feature) {
+        if (! $feature) {
             return false;
         }
 
@@ -47,7 +46,7 @@ class AICoreService
             ->where('status', 'approved')
             ->first();
 
-        if (!$access) {
+        if (! $access) {
             return false;
         }
 
@@ -58,16 +57,15 @@ class AICoreService
     /**
      * ตรวจสอบ quota ว่าเหลืออยู่หรือไม่
      *
-     * @param string $featureKey รหัส feature
-     * @param int $tenantId Tenant ID
-     * @param int $amount จำนวนที่ต้องการใช้
-     * @return bool
+     * @param  string  $featureKey  รหัส feature
+     * @param  int  $tenantId  Tenant ID
+     * @param  int  $amount  จำนวนที่ต้องการใช้
      */
     public function checkQuota(string $featureKey, int $tenantId, int $amount = 1): bool
     {
         $feature = AICoreFeature::where('feature_key', $featureKey)->first();
 
-        if (!$feature) {
+        if (! $feature) {
             return false;
         }
 
@@ -82,7 +80,7 @@ class AICoreService
             ->where('status', 'approved')
             ->first();
 
-        if (!$access) {
+        if (! $access) {
             return false;
         }
 
@@ -92,11 +90,11 @@ class AICoreService
     /**
      * ใช้งาน AI feature และบันทึก usage log
      *
-     * @param string $featureKey รหัส feature
-     * @param int $tenantId Tenant ID
-     * @param int|null $userId User ID
-     * @param string $action การกระทำ
-     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @param  string  $featureKey  รหัส feature
+     * @param  int  $tenantId  Tenant ID
+     * @param  int|null  $userId  User ID
+     * @param  string  $action  การกระทำ
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      * @return array ['success' => bool, 'message' => string, 'data' => mixed]
      */
     public function useFeature(
@@ -110,7 +108,7 @@ class AICoreService
             DB::beginTransaction();
 
             // 1. ตรวจสอบว่า feature เปิดใช้งาน
-            if (!$this->isFeatureEnabled($featureKey, $tenantId)) {
+            if (! $this->isFeatureEnabled($featureKey, $tenantId)) {
                 return [
                     'success' => false,
                     'message' => 'Feature ไม่เปิดใช้งานหรือไม่มีสิทธิ์เข้าถึง',
@@ -121,7 +119,7 @@ class AICoreService
             // 2. ตรวจสอบ quota
             $usageAmount = $metadata['usage_amount'] ?? 1;
 
-            if (!$this->checkQuota($featureKey, $tenantId, $usageAmount)) {
+            if (! $this->checkQuota($featureKey, $tenantId, $usageAmount)) {
                 return [
                     'success' => false,
                     'message' => 'Quota ไม่เพียงพอ',
@@ -166,7 +164,7 @@ class AICoreService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'data' => null,
             ];
         }
@@ -175,17 +173,16 @@ class AICoreService
     /**
      * บันทึก usage log
      *
-     * @param string $featureKey รหัส feature
-     * @param int $tenantId Tenant ID
-     * @param array $data ข้อมูล log
-     * @return void
+     * @param  string  $featureKey  รหัส feature
+     * @param  int  $tenantId  Tenant ID
+     * @param  array  $data  ข้อมูล log
      */
     public function trackUsage(string $featureKey, int $tenantId, array $data = []): void
     {
         try {
             $feature = AICoreFeature::where('feature_key', $featureKey)->first();
 
-            if (!$feature) {
+            if (! $feature) {
                 return;
             }
 
@@ -219,17 +216,16 @@ class AICoreService
     /**
      * เปิดใช้งาน feature สำหรับ tenant
      *
-     * @param string $featureKey รหัส feature
-     * @param int $tenantId Tenant ID
-     * @param array $config การตั้งค่า
-     * @return array
+     * @param  string  $featureKey  รหัส feature
+     * @param  int  $tenantId  Tenant ID
+     * @param  array  $config  การตั้งค่า
      */
     public function enableFeatureForTenant(string $featureKey, int $tenantId, array $config = []): array
     {
         try {
             $feature = AICoreFeature::where('feature_key', $featureKey)->first();
 
-            if (!$feature) {
+            if (! $feature) {
                 return [
                     'success' => false,
                     'message' => 'ไม่พบ feature ที่ระบุ',
@@ -238,7 +234,7 @@ class AICoreService
 
             $tenant = AICoreTenant::find($tenantId);
 
-            if (!$tenant) {
+            if (! $tenant) {
                 return [
                     'success' => false,
                     'message' => 'ไม่พบ tenant ที่ระบุ',
@@ -280,7 +276,7 @@ class AICoreService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -288,16 +284,15 @@ class AICoreService
     /**
      * ปิดใช้งาน feature สำหรับ tenant
      *
-     * @param string $featureKey รหัส feature
-     * @param int $tenantId Tenant ID
-     * @return array
+     * @param  string  $featureKey  รหัส feature
+     * @param  int  $tenantId  Tenant ID
      */
     public function disableFeatureForTenant(string $featureKey, int $tenantId): array
     {
         try {
             $feature = AICoreFeature::where('feature_key', $featureKey)->first();
 
-            if (!$feature) {
+            if (! $feature) {
                 return [
                     'success' => false,
                     'message' => 'ไม่พบ feature ที่ระบุ',
@@ -308,7 +303,7 @@ class AICoreService
                 ->where('feature_id', $feature->id)
                 ->first();
 
-            if (!$access) {
+            if (! $access) {
                 return [
                     'success' => false,
                     'message' => 'ไม่พบการเข้าถึง feature นี้',
@@ -330,7 +325,7 @@ class AICoreService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -338,8 +333,8 @@ class AICoreService
     /**
      * ดึงรายการ features ที่ tenant มีสิทธิ์ใช้
      *
-     * @param int $tenantId Tenant ID
-     * @param bool $onlyEnabled เฉพาะที่เปิดใช้งาน
+     * @param  int  $tenantId  Tenant ID
+     * @param  bool  $onlyEnabled  เฉพาะที่เปิดใช้งาน
      * @return \Illuminate\Support\Collection
      */
     public function getTenantFeatures(int $tenantId, bool $onlyEnabled = true)
@@ -368,9 +363,8 @@ class AICoreService
     /**
      * สร้าง tenant ใหม่
      *
-     * @param int|null $userId User ID
-     * @param array $data ข้อมูล tenant
-     * @return array
+     * @param  int|null  $userId  User ID
+     * @param  array  $data  ข้อมูล tenant
      */
     public function createTenant(?int $userId = null, array $data = []): array
     {
@@ -379,7 +373,7 @@ class AICoreService
 
             $tenant = AICoreTenant::create([
                 'user_id' => $userId,
-                'tenant_key' => $data['tenant_key'] ?? 'tenant_' . uniqid(),
+                'tenant_key' => $data['tenant_key'] ?? 'tenant_'.uniqid(),
                 'tenant_name' => $data['tenant_name'] ?? 'Tenant',
                 'tenant_type' => $data['tenant_type'] ?? 'user',
                 'status' => $data['status'] ?? 'active',
@@ -407,7 +401,7 @@ class AICoreService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }

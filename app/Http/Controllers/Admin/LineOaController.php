@@ -15,7 +15,7 @@ class LineOaController extends Controller
      */
     public function index()
     {
-        $settings = LineOaSetting::first() ?? new LineOaSetting();
+        $settings = LineOaSetting::first() ?? new LineOaSetting;
 
         return view('admin.line-oa.index', compact('settings'));
     }
@@ -70,9 +70,9 @@ class LineOaController extends Controller
             'message' => ['required', 'string'],
         ]);
 
-        $lineService = new LineService();
+        $lineService = new LineService;
 
-        if (!$lineService->isConfigured()) {
+        if (! $lineService->isConfigured()) {
             return back()->with('error', 'LINE OA ยังไม่ได้ตั้งค่า');
         }
 
@@ -102,11 +102,11 @@ class LineOaController extends Controller
 
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('line_user_id', 'like', '%' . $request->search . '%')
-                  ->orWhereHas('user', function ($q) use ($request) {
-                      $q->where('name', 'like', '%' . $request->search . '%')
-                        ->orWhere('email', 'like', '%' . $request->search . '%');
-                  });
+                $q->where('line_user_id', 'like', '%'.$request->search.'%')
+                    ->orWhereHas('user', function ($q) use ($request) {
+                        $q->where('name', 'like', '%'.$request->search.'%')
+                            ->orWhere('email', 'like', '%'.$request->search.'%');
+                    });
             });
         }
 
@@ -120,7 +120,7 @@ class LineOaController extends Controller
      */
     public function testConnection()
     {
-        $lineService = new LineService();
+        $lineService = new LineService;
         $results = $lineService->testConnection();
 
         return response()->json($results);
@@ -132,7 +132,6 @@ class LineOaController extends Controller
      * รับ PATCH request จาก Quick Settings Panel เพื่ออัพเดทการตั้งค่าแบบรวดเร็ว
      * รองรับการอัพเดทเฉพาะ field ที่ส่งมา
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function quickUpdate(Request $request)
@@ -148,7 +147,7 @@ class LineOaController extends Controller
             // ดึงการตั้งค่าปัจจุบัน หรือสร้างใหม่ถ้ายังไม่มี
             $settings = LineOaSetting::first();
 
-            if (!$settings) {
+            if (! $settings) {
                 $settings = LineOaSetting::create(array_merge([
                     'is_active' => false,
                     'enable_line_messaging' => false,
@@ -175,23 +174,20 @@ class LineOaController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
-            \Log::error('LINE Quick Update Error: ' . $e->getMessage(), [
+            \Log::error('LINE Quick Update Error: '.$e->getMessage(), [
                 'request' => $request->all(),
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถอัพเดทการตั้งค่าได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถอัพเดทการตั้งค่าได้: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * สร้างข้อความแจ้งเตือนตามการเปลี่ยนแปลง
-     *
-     * @param array $changes
-     * @return string
      */
     private function generateQuickUpdateMessage(array $changes): string
     {
@@ -229,13 +225,13 @@ class LineOaController extends Controller
             ->orderBy('name', 'asc');
 
         // Search filter
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->has('search') && ! empty($request->search)) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('line_display_name', 'like', "%{$search}%")
-                  ->orWhere('line_user_id', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('line_display_name', 'like', "%{$search}%")
+                    ->orWhere('line_user_id', 'like', "%{$search}%");
             });
         }
 

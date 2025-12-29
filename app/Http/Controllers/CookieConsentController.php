@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CookieAnalyticsKeyword;
 use App\Models\CookieConsent;
 use App\Models\CookieTracking;
-use App\Models\CookieAnalyticsKeyword;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 
 class CookieConsentController extends Controller
@@ -52,7 +51,7 @@ class CookieConsentController extends Controller
      */
     protected function startTracking(Request $request, string $sessionId)
     {
-        $agent = new Agent();
+        $agent = new Agent;
         $agent->setUserAgent($request->userAgent());
 
         $referrer = $request->header('referer');
@@ -104,7 +103,7 @@ class CookieConsentController extends Controller
 
         $tracking = CookieTracking::where('session_id', $sessionId)->first();
 
-        if (!$tracking) {
+        if (! $tracking) {
             return response()->json(['success' => false, 'message' => 'No tracking session found']);
         }
 

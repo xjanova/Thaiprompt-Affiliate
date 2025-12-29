@@ -70,8 +70,11 @@ class NewProductPromotion extends Model
      * สถานะ
      */
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     /**
@@ -88,8 +91,6 @@ class NewProductPromotion extends Model
 
     /**
      * สินค้า
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -98,8 +99,6 @@ class NewProductPromotion extends Model
 
     /**
      * ร้านค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -108,8 +107,6 @@ class NewProductPromotion extends Model
 
     /**
      * ผู้ขอโปรโมท
-     *
-     * @return BelongsTo
      */
     public function requestedBy(): BelongsTo
     {
@@ -154,7 +151,6 @@ class NewProductPromotion extends Model
     /**
      * ตรวจสอบว่าร้านสามารถขอโปรโมทได้หรือไม่
      *
-     * @param int $storeId
      * @return array ['can_promote' => bool, 'reason' => string|null, 'available_at' => Carbon|null]
      */
     public static function canStorePromote(int $storeId): array
@@ -195,17 +191,12 @@ class NewProductPromotion extends Model
 
     /**
      * ขอโปรโมทสินค้าใหม่
-     *
-     * @param Product $product
-     * @param int $storeId
-     * @param int|null $requestedBy
-     * @return self|null
      */
     public static function requestPromotion(Product $product, int $storeId, ?int $requestedBy = null): ?self
     {
         // ตรวจสอบสิทธิ์
         $check = self::canStorePromote($storeId);
-        if (!$check['can_promote']) {
+        if (! $check['can_promote']) {
             return null;
         }
 
@@ -263,8 +254,6 @@ class NewProductPromotion extends Model
 
     /**
      * สิ้นสุดโปรโมท
-     *
-     * @return bool
      */
     public function endPromotion(): bool
     {
@@ -295,9 +284,6 @@ class NewProductPromotion extends Model
 
     /**
      * ยกเลิกโปรโมท
-     *
-     * @param string|null $reason
-     * @return bool
      */
     public function cancelPromotion(?string $reason = null): bool
     {
@@ -329,8 +315,6 @@ class NewProductPromotion extends Model
 
     /**
      * เพิ่มจำนวนการดู
-     *
-     * @return void
      */
     public function incrementViews(): void
     {
@@ -339,9 +323,6 @@ class NewProductPromotion extends Model
 
     /**
      * เพิ่มจำนวนการขาย
-     *
-     * @param int $count
-     * @return void
      */
     public function incrementSales(int $count = 1): void
     {
@@ -352,8 +333,6 @@ class NewProductPromotion extends Model
 
     /**
      * สถานะแสดงผล
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -368,8 +347,6 @@ class NewProductPromotion extends Model
 
     /**
      * เวลาคงเหลือ
-     *
-     * @return string|null
      */
     public function getTimeRemainingAttribute(): ?string
     {
@@ -377,7 +354,7 @@ class NewProductPromotion extends Model
             return null;
         }
 
-        if (!$this->ends_at || $this->ends_at->isPast()) {
+        if (! $this->ends_at || $this->ends_at->isPast()) {
             return 'หมดอายุแล้ว';
         }
 
@@ -386,8 +363,6 @@ class NewProductPromotion extends Model
 
     /**
      * กำลังโปรโมทอยู่หรือไม่
-     *
-     * @return bool
      */
     public function getIsActiveAttribute(): bool
     {

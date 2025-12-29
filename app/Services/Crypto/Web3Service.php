@@ -2,17 +2,17 @@
 
 namespace App\Services\Crypto;
 
-use Web3\Web3;
-use Web3\Contract;
-use Web3\Utils;
-use Web3\Providers\HttpProvider;
-use Web3\RequestManagers\HttpRequestManager;
 use Illuminate\Support\Facades\Log;
 use kornrunner\Keccak;
+use Web3\Contract;
+use Web3\Providers\HttpProvider;
+use Web3\RequestManagers\HttpRequestManager;
+use Web3\Web3;
 
 class Web3Service
 {
     protected array $rpcs;
+
     protected array $explorers;
 
     public function __construct()
@@ -36,16 +36,16 @@ class Web3Service
     public function getWeb3(string $network): Web3
     {
         $rpcUrl = $this->rpcs[$network] ?? $this->rpcs['ethereum'];
+
         return new Web3(new HttpProvider(new HttpRequestManager($rpcUrl)));
     }
 
     /**
      * Verify Ethereum signature
      *
-     * @param string $message Original message that was signed
-     * @param string $signature The signature to verify
-     * @param string $expectedAddress The expected signer address
-     * @return bool
+     * @param  string  $message  Original message that was signed
+     * @param  string  $signature  The signature to verify
+     * @param  string  $expectedAddress  The expected signer address
      */
     public function verifySignature(string $message, string $signature, string $expectedAddress): bool
     {
@@ -63,6 +63,7 @@ class Web3Service
                 'message' => $message,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -72,10 +73,10 @@ class Web3Service
      */
     protected function hashMessage(string $message): string
     {
-        $prefix = "\x19Ethereum Signed Message:\n" . strlen($message);
-        $prefixedMessage = $prefix . $message;
+        $prefix = "\x19Ethereum Signed Message:\n".strlen($message);
+        $prefixedMessage = $prefix.$message;
 
-        return '0x' . Keccak::hash($prefixedMessage, 256);
+        return '0x'.Keccak::hash($prefixedMessage, 256);
     }
 
     /**
@@ -163,6 +164,7 @@ class Web3Service
                 'address' => $address,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -203,6 +205,7 @@ class Web3Service
                 'wallet' => $walletAddress,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -230,6 +233,7 @@ class Web3Service
                 'txHash' => $txHash,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -256,6 +260,7 @@ class Web3Service
                 'network' => $network,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -266,6 +271,7 @@ class Web3Service
     public function getExplorerTxUrl(string $network, string $txHash): string
     {
         $explorer = $this->explorers[$network] ?? $this->explorers['ethereum'];
+
         return "{$explorer}/tx/{$txHash}";
     }
 
@@ -275,6 +281,7 @@ class Web3Service
     public function getExplorerAddressUrl(string $network, string $address): string
     {
         $explorer = $this->explorers[$network] ?? $this->explorers['ethereum'];
+
         return "{$explorer}/address/{$address}";
     }
 
@@ -283,7 +290,7 @@ class Web3Service
      */
     public function fromWei(string $wei, int $decimals = 18): string
     {
-        return bcdiv($wei, bcpow('10', (string)$decimals, 0), $decimals);
+        return bcdiv($wei, bcpow('10', (string) $decimals, 0), $decimals);
     }
 
     /**
@@ -291,7 +298,7 @@ class Web3Service
      */
     public function toWei(string $ether, int $decimals = 18): string
     {
-        return bcmul($ether, bcpow('10', (string)$decimals, 0), 0);
+        return bcmul($ether, bcpow('10', (string) $decimals, 0), 0);
     }
 
     /**
@@ -299,10 +306,10 @@ class Web3Service
      */
     public function generateVerificationMessage(string $address, string $nonce): string
     {
-        return "Sign this message to verify your wallet ownership.\n\n" .
-               "Address: {$address}\n" .
-               "Nonce: {$nonce}\n" .
-               "Timestamp: " . now()->toIso8601String();
+        return "Sign this message to verify your wallet ownership.\n\n".
+               "Address: {$address}\n".
+               "Nonce: {$nonce}\n".
+               'Timestamp: '.now()->toIso8601String();
     }
 
     /**
@@ -327,6 +334,7 @@ class Web3Service
                 'network' => $network,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -353,6 +361,7 @@ class Web3Service
                 'network' => $network,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -380,6 +389,7 @@ class Web3Service
                 'address' => $address,
                 'error' => $e->getMessage(),
             ]);
+
             return 0;
         }
     }

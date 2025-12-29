@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\GameTournament;
-use App\Models\TournamentParticipant;
 use App\Models\TournamentMatch;
-use App\Models\Game;
+use App\Models\TournamentParticipant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class TournamentController extends Controller
 {
@@ -75,7 +73,7 @@ class TournamentController extends Controller
         $tournament = GameTournament::where('slug', $slug)->firstOrFail();
         $user = Auth::user();
 
-        if (!$tournament->isRegistrationOpen()) {
+        if (! $tournament->isRegistrationOpen()) {
             return response()->json(['error' => 'Registration is closed'], 400);
         }
 
@@ -114,6 +112,7 @@ class TournamentController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -125,7 +124,7 @@ class TournamentController extends Controller
     {
         $tournament = GameTournament::where('slug', $slug)->firstOrFail();
 
-        if (!$tournament->isActive()) {
+        if (! $tournament->isActive()) {
             return response()->json(['error' => 'Tournament is not active'], 400);
         }
 

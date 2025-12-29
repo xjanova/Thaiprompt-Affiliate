@@ -31,8 +31,11 @@ class AiMessage extends Model
      * Valid message roles
      */
     const ROLE_SYSTEM = 'system';
+
     const ROLE_USER = 'user';
+
     const ROLE_ASSISTANT = 'assistant';
+
     const ROLE_FUNCTION = 'function';
 
     /**
@@ -73,7 +76,7 @@ class AiMessage extends Model
     public function scopeFunctionCalls($query)
     {
         return $query->where('role', self::ROLE_FUNCTION)
-                     ->orWhereNotNull('function_name');
+            ->orWhereNotNull('function_name');
     }
 
     /**
@@ -89,7 +92,7 @@ class AiMessage extends Model
      */
     public function isFunctionCall(): bool
     {
-        return !empty($this->function_name);
+        return ! empty($this->function_name);
     }
 
     /**
@@ -97,7 +100,7 @@ class AiMessage extends Model
      */
     public function usedContext(): bool
     {
-        return !empty($this->context_used);
+        return ! empty($this->context_used);
     }
 
     /**
@@ -129,7 +132,7 @@ class AiMessage extends Model
             return $this->content;
         }
 
-        return mb_substr($this->content, 0, $length) . '...';
+        return mb_substr($this->content, 0, $length).'...';
     }
 
     /**
@@ -137,7 +140,7 @@ class AiMessage extends Model
      */
     public function calculateCost(array $pricing): float
     {
-        if (!$this->tokens_used || empty($pricing)) {
+        if (! $this->tokens_used || empty($pricing)) {
             return 0.0;
         }
 

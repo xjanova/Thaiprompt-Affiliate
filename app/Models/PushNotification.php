@@ -85,8 +85,6 @@ class PushNotification extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้รับ)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -95,8 +93,6 @@ class PushNotification extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้ส่ง/แอดมิน)
-     *
-     * @return BelongsTo
      */
     public function sentBy(): BelongsTo
     {
@@ -105,8 +101,6 @@ class PushNotification extends Model
 
     /**
      * การแจ้งเตือนที่ส่งไปยังผู้ใช้
-     *
-     * @return HasMany
      */
     public function userNotifications(): HasMany
     {
@@ -159,12 +153,10 @@ class PushNotification extends Model
 
     /**
      * ชื่อประเภทภาษาไทย
-     *
-     * @return string
      */
     public function getTypeTextAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'general' => 'ทั่วไป',
             'order' => 'ออเดอร์',
             'rider' => 'ไรเดอร์',
@@ -178,12 +170,10 @@ class PushNotification extends Model
 
     /**
      * ชื่อเป้าหมายภาษาไทย
-     *
-     * @return string
      */
     public function getTargetTypeTextAttribute(): string
     {
-        return match($this->target_type) {
+        return match ($this->target_type) {
             'individual' => 'รายบุคคล',
             'all_users' => 'ผู้ใช้ทั้งหมด',
             'riders' => 'ไรเดอร์ทั้งหมด',
@@ -195,12 +185,10 @@ class PushNotification extends Model
 
     /**
      * ชื่อสถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusTextAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอส่ง',
             'sent' => 'ส่งแล้ว',
             'failed' => 'ส่งไม่สำเร็จ',
@@ -215,8 +203,6 @@ class PushNotification extends Model
 
     /**
      * ส่ง notification
-     *
-     * @return bool
      */
     public function send(): bool
     {
@@ -246,8 +232,6 @@ class PushNotification extends Model
 
     /**
      * สร้าง user notification
-     *
-     * @return void
      */
     protected function createUserNotification(): void
     {
@@ -268,8 +252,6 @@ class PushNotification extends Model
 
     /**
      * ยกเลิก notification
-     *
-     * @return void
      */
     public function cancel(): void
     {

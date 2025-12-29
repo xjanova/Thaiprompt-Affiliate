@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\FoodProduct;
 use App\Models\QualityCheckpoint;
-use App\Models\FoodCertification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -55,7 +54,7 @@ class QualityControlService
             } catch (\Exception $e) {
                 \Log::error('Blockchain quality check recording failed', [
                     'checkpoint_id' => $checkpoint->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -82,7 +81,7 @@ class QualityControlService
 
         $totalTests = count($testParams);
         $passedTests = collect($testParams)
-            ->filter(fn($param) => $param['status'] === 'pass')
+            ->filter(fn ($param) => $param['status'] === 'pass')
             ->count();
 
         $score = ($passedTests / $totalTests) * 100;
@@ -137,7 +136,7 @@ class QualityControlService
         $retestData = $originalCheckpoint->toArray();
         unset($retestData['id'], $retestData['created_at'], $retestData['updated_at']);
 
-        $retestData['checkpoint_name'] = 'Retest: ' . $retestData['checkpoint_name'];
+        $retestData['checkpoint_name'] = 'Retest: '.$retestData['checkpoint_name'];
         $retestData['retest_checkpoint_id'] = $originalCheckpoint->id;
         $retestData['checked_at'] = null; // Will be set when actual retest happens
 
@@ -162,8 +161,8 @@ class QualityControlService
             'failed_checkpoints' => $checkpoints->where('overall_result', 'fail')->count(),
             'average_score' => $checkpoints->avg('pass_score'),
             'latest_checkpoint' => $product->latestQualityCheck(),
-            'checkpoints_by_type' => $checkpoints->groupBy('checkpoint_type')->map(fn($c) => $c->count()),
-            'checkpoints_by_stage' => $checkpoints->groupBy('journey_stage_id')->map(fn($c) => $c->count()),
+            'checkpoints_by_type' => $checkpoints->groupBy('checkpoint_type')->map(fn ($c) => $c->count()),
+            'checkpoints_by_stage' => $checkpoints->groupBy('journey_stage_id')->map(fn ($c) => $c->count()),
         ];
     }
 
@@ -196,7 +195,7 @@ class QualityControlService
      */
     protected function issueCertification(QualityCheckpoint $checkpoint, array $data): void
     {
-        if (!$checkpoint->passed()) {
+        if (! $checkpoint->passed()) {
             return;
         }
 
@@ -235,7 +234,7 @@ class QualityControlService
             } catch (\Exception $e) {
                 \Log::error('LINE notification failed', [
                     'checkpoint_id' => $checkpoint->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -248,14 +247,14 @@ class QualityControlService
     {
         $product = $checkpoint->foodProduct;
 
-        $emoji = match($checkpoint->overall_result) {
+        $emoji = match ($checkpoint->overall_result) {
             'pass' => '✅',
             'conditional_pass' => '⚠️',
             'fail' => '❌',
             default => '📋',
         };
 
-        $color = match($checkpoint->overall_result) {
+        $color = match ($checkpoint->overall_result) {
             'pass' => '#00AA00',
             'conditional_pass' => '#FFA500',
             'fail' => '#FF0000',
@@ -295,20 +294,20 @@ class QualityControlService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => 'คะแนน: ' . round($checkpoint->pass_score) . '/100',
+                                    'text' => 'คะแนน: '.round($checkpoint->pass_score).'/100',
                                     'size' => 'xxl',
                                     'weight' => 'bold',
                                     'color' => $color,
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'ประเภท: ' . $checkpoint->checkpoint_name,
+                                    'text' => 'ประเภท: '.$checkpoint->checkpoint_name,
                                     'size' => 'sm',
                                     'margin' => 'md',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'ผู้ตรวจ: ' . $checkpoint->inspector_name,
+                                    'text' => 'ผู้ตรวจ: '.$checkpoint->inspector_name,
                                     'size' => 'sm',
                                 ],
                             ],
@@ -324,7 +323,7 @@ class QualityControlService
      */
     public function getQualityTrends(int $productId, string $period = '30days'): Collection
     {
-        $days = match($period) {
+        $days = match ($period) {
             '7days' => 7,
             '30days' => 30,
             '90days' => 90,
@@ -335,8 +334,8 @@ class QualityControlService
             ->where('checked_at', '>=', now()->subDays($days))
             ->orderBy('checked_at')
             ->get()
-            ->groupBy(fn($c) => $c->checked_at->format('Y-m-d'))
-            ->map(fn($group) => [
+            ->groupBy(fn ($c) => $c->checked_at->format('Y-m-d'))
+            ->map(fn ($group) => [
                 'date' => $group->first()->checked_at->format('Y-m-d'),
                 'avg_score' => $group->avg('pass_score'),
                 'checkpoints' => $group->count(),

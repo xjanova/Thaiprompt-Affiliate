@@ -92,7 +92,7 @@ class TicketAssignmentRule extends Model
         // Check keywords
         if ($this->keywords && count($this->keywords) > 0) {
             $hasKeyword = false;
-            $searchText = strtolower($ticket->subject . ' ' . $ticket->description);
+            $searchText = strtolower($ticket->subject.' '.$ticket->description);
 
             foreach ($this->keywords as $keyword) {
                 if (str_contains($searchText, strtolower($keyword))) {
@@ -101,7 +101,7 @@ class TicketAssignmentRule extends Model
                 }
             }
 
-            if (!$hasKeyword) {
+            if (! $hasKeyword) {
                 return false;
             }
         }
@@ -137,7 +137,7 @@ class TicketAssignmentRule extends Model
      */
     private function getRoundRobinAssignee()
     {
-        if (!$this->assignable_users || count($this->assignable_users) === 0) {
+        if (! $this->assignable_users || count($this->assignable_users) === 0) {
             return null;
         }
 
@@ -156,7 +156,7 @@ class TicketAssignmentRule extends Model
      */
     private function getLeastActiveAssignee()
     {
-        if (!$this->assignable_users || count($this->assignable_users) === 0) {
+        if (! $this->assignable_users || count($this->assignable_users) === 0) {
             return null;
         }
 
@@ -187,7 +187,7 @@ class TicketAssignmentRule extends Model
      */
     private function getRandomAssignee()
     {
-        if (!$this->assignable_users || count($this->assignable_users) === 0) {
+        if (! $this->assignable_users || count($this->assignable_users) === 0) {
             return null;
         }
 
@@ -206,6 +206,7 @@ class TicketAssignmentRule extends Model
                 $assigneeId = $rule->getNextAssignee();
                 if ($assigneeId) {
                     $ticket->update(['assigned_to' => $assigneeId]);
+
                     return $assigneeId;
                 }
             }

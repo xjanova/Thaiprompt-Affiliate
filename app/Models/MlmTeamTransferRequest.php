@@ -38,7 +38,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read MlmMember $member
  * @property-read User $user
  * @property-read MlmMember $oldSponsor
@@ -111,17 +110,21 @@ class MlmTeamTransferRequest extends Model
      * Status constants
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_PROCESSING = 'processing';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**
      * ความสัมพันธ์กับ MlmMember (ผู้ขอย้าย)
-     *
-     * @return BelongsTo
      */
     public function member(): BelongsTo
     {
@@ -130,8 +133,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้ขอย้าย)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -140,8 +141,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (แม่ทีมเก่า)
-     *
-     * @return BelongsTo
      */
     public function oldSponsor(): BelongsTo
     {
@@ -150,8 +149,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (แม่ทีมใหม่)
-     *
-     * @return BelongsTo
      */
     public function newSponsor(): BelongsTo
     {
@@ -160,8 +157,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (Binary parent เก่า)
-     *
-     * @return BelongsTo
      */
     public function oldBinaryParent(): BelongsTo
     {
@@ -170,8 +165,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (Binary parent ใหม่)
-     *
-     * @return BelongsTo
      */
     public function newBinaryParent(): BelongsTo
     {
@@ -180,8 +173,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้อนุมัติ)
-     *
-     * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
@@ -190,8 +181,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้ปฏิเสธ)
-     *
-     * @return BelongsTo
      */
     public function rejecter(): BelongsTo
     {
@@ -200,8 +189,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ User (Admin ที่ดำเนินการ)
-     *
-     * @return BelongsTo
      */
     public function processor(): BelongsTo
     {
@@ -210,8 +197,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ความสัมพันธ์กับ WalletTransaction (การชำระเงิน)
-     *
-     * @return BelongsTo
      */
     public function payment(): BelongsTo
     {
@@ -221,7 +206,7 @@ class MlmTeamTransferRequest extends Model
     /**
      * Scope: คำขอที่รอดำเนินการ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -232,7 +217,7 @@ class MlmTeamTransferRequest extends Model
     /**
      * Scope: คำขอที่อนุมัติแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeApproved($query)
@@ -243,7 +228,7 @@ class MlmTeamTransferRequest extends Model
     /**
      * Scope: คำขอที่ชำระเงินแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePaid($query)
@@ -254,7 +239,7 @@ class MlmTeamTransferRequest extends Model
     /**
      * Scope: คำขอที่เสร็จสมบูรณ์
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)
@@ -264,8 +249,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้รอการอนุมัติหรือไม่
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -274,8 +257,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้ได้รับการอนุมัติแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isApproved(): bool
     {
@@ -284,8 +265,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้ถูกปฏิเสธหรือไม่
-     *
-     * @return bool
      */
     public function isRejected(): bool
     {
@@ -294,8 +273,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้ชำระเงินแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isPaid(): bool
     {
@@ -304,8 +281,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้เสร็จสมบูรณ์หรือไม่
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -314,8 +289,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าคำขอนี้ถูกยกเลิกหรือไม่
-     *
-     * @return bool
      */
     public function isCancelled(): bool
     {
@@ -324,9 +297,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่า user นี้เป็นแม่ทีมเก่าหรือไม่
-     *
-     * @param int $userId
-     * @return bool
      */
     public function isOldSponsor(int $userId): bool
     {
@@ -335,8 +305,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าสามารถอนุมัติได้หรือไม่
-     *
-     * @return bool
      */
     public function canBeApproved(): bool
     {
@@ -345,8 +313,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าสามารถปฏิเสธได้หรือไม่
-     *
-     * @return bool
      */
     public function canBeRejected(): bool
     {
@@ -355,18 +321,14 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าสามารถชำระเงินได้หรือไม่
-     *
-     * @return bool
      */
     public function canBePaid(): bool
     {
-        return $this->isApproved() && !$this->paid_at;
+        return $this->isApproved() && ! $this->paid_at;
     }
 
     /**
      * ตรวจสอบว่าสามารถดำเนินการย้ายได้หรือไม่
-     *
-     * @return bool
      */
     public function canBeProcessed(): bool
     {
@@ -375,8 +337,6 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
-     *
-     * @return bool
      */
     public function canBeCancelled(): bool
     {
@@ -388,12 +348,10 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * Get status label in Thai
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_PENDING => 'รออนุมัติ',
             self::STATUS_APPROVED => 'อนุมัติแล้ว',
             self::STATUS_REJECTED => 'ปฏิเสธ',
@@ -407,12 +365,10 @@ class MlmTeamTransferRequest extends Model
 
     /**
      * Get status color for UI
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_PENDING => 'yellow',
             self::STATUS_APPROVED => 'green',
             self::STATUS_REJECTED => 'red',

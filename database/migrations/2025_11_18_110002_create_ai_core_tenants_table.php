@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บข้อมูล tenants สำหรับ multi-tenancy
      * รองรับการให้เช่า AI features แบบ SaaS
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -74,8 +72,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_tenants
-     *
-     * @return void
      */
     public function down(): void
     {

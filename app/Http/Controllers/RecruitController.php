@@ -23,8 +23,7 @@ class RecruitController extends Controller
     /**
      * แสดงหน้า Recruit ของแม่ทีม
      *
-     * @param string $memberCode รหัสสมาชิกของแม่ทีม
-     * @param Request $request
+     * @param  string  $memberCode  รหัสสมาชิกของแม่ทีม
      * @return \Illuminate\View\View
      */
     public function show(string $memberCode, Request $request)
@@ -48,17 +47,17 @@ class RecruitController extends Controller
         $customization->load('template');
 
         // ถ้าปิดการใช้งาน (is_active = false) ให้แสดง 404
-        if (!$customization->is_active) {
+        if (! $customization->is_active) {
             abort(404, 'หน้านี้ไม่พร้อมใช้งาน');
         }
 
         // ดึงเทมเพลต
         $template = $customization->template;
-        if (!$template || !$template->is_active) {
+        if (! $template || ! $template->is_active) {
             $template = \App\Models\RecruitTemplate::getDefault();
 
             // ถ้ายังไม่มีเทมเพลต default เลย
-            if (!$template) {
+            if (! $template) {
                 abort(500, 'ระบบยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ');
             }
         }
@@ -89,9 +88,6 @@ class RecruitController extends Controller
 
     /**
      * สร้าง Visitor Identifier จาก IP และ User Agent
-     *
-     * @param Request $request
-     * @return string
      */
     protected function generateVisitorIdentifier(Request $request): string
     {
@@ -99,22 +95,17 @@ class RecruitController extends Controller
         $userAgent = $request->userAgent() ?? '';
 
         // สร้าง fingerprint
-        return hash('sha256', $ip . '|' . $userAgent);
+        return hash('sha256', $ip.'|'.$userAgent);
     }
 
     /**
      * บันทึกการเข้าชม
-     *
-     * @param int $teamLeaderId
-     * @param string $visitorIdentifier
-     * @param Request $request
-     * @return void
      */
     protected function trackVisit(int $teamLeaderId, string $visitorIdentifier, Request $request): void
     {
         try {
             // Parse User Agent
-            $agent = new Agent();
+            $agent = new Agent;
             $agent->setUserAgent($request->userAgent());
 
             // ดึง UTM parameters
@@ -138,7 +129,7 @@ class RecruitController extends Controller
                 'os' => $agent->platform(),
                 'source_url' => $request->fullUrl(),
                 'referrer_url' => $request->headers->get('referer'),
-                'utm_params' => !empty($utmParams) ? $utmParams : null,
+                'utm_params' => ! empty($utmParams) ? $utmParams : null,
                 'session_id' => session()->getId(),
             ]);
 
@@ -152,11 +143,6 @@ class RecruitController extends Controller
 
     /**
      * จัดการ Lead Lock (ระบบล็อคผู้มุ่งหวัง 48 ชั่วโมง)
-     *
-     * @param int $teamLeaderId
-     * @param string $visitorIdentifier
-     * @param Request $request
-     * @return LeadLock|null
      */
     protected function handleLeadLock(int $teamLeaderId, string $visitorIdentifier, Request $request): ?LeadLock
     {
@@ -171,7 +157,7 @@ class RecruitController extends Controller
             }
 
             // ไม่มี lock → สร้าง lock ใหม่
-            $agent = new Agent();
+            $agent = new Agent;
             $agent->setUserAgent($request->userAgent());
 
             // ดึง UTM parameters
@@ -187,7 +173,7 @@ class RecruitController extends Controller
                 'user_agent' => $request->userAgent(),
                 'source_url' => $request->fullUrl(),
                 'referrer_url' => $request->headers->get('referer'),
-                'utm_params' => !empty($utmParams) ? $utmParams : null,
+                'utm_params' => ! empty($utmParams) ? $utmParams : null,
             ]);
 
             // อัพเดทจำนวน leads ของ customization
@@ -212,7 +198,6 @@ class RecruitController extends Controller
     /**
      * API Endpoint: บันทึกพฤติกรรมผู้เข้าชม (สำหรับ JavaScript tracking)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function trackBehavior(Request $request)

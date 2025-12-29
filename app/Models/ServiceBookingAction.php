@@ -51,9 +51,9 @@ class ServiceBookingAction extends Model
         'created_at' => 'datetime',
     ];
 
-    //===========================================
+    // ===========================================
     // Lifecycle Hooks
-    //===========================================
+    // ===========================================
 
     protected static function boot()
     {
@@ -65,9 +65,9 @@ class ServiceBookingAction extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * การจอง
@@ -93,9 +93,9 @@ class ServiceBookingAction extends Model
         return $this->belongsTo(ServiceProvider::class, 'provider_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เรียงตามเวลาล่าสุด
@@ -139,16 +139,13 @@ class ServiceBookingAction extends Model
             ->whereNotNull('to_status');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Static Creation
-    //===========================================
+    // ===========================================
 
     /**
      * บันทึก action ใหม่
      *
-     * @param ServiceBooking $booking
-     * @param string $action
-     * @param array $data
      * @return static
      */
     public static function log(ServiceBooking $booking, string $action, array $data = []): self
@@ -167,9 +164,9 @@ class ServiceBookingAction extends Model
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // Accessors
-    //===========================================
+    // ===========================================
 
     /**
      * การกระทำเป็นภาษาไทย
@@ -201,7 +198,7 @@ class ServiceBookingAction extends Model
      */
     public function getStatusChangeTextAttribute(): ?string
     {
-        if (!$this->from_status || !$this->to_status) {
+        if (! $this->from_status || ! $this->to_status) {
             return null;
         }
 

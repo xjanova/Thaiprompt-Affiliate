@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * LINE Token Service
@@ -25,10 +25,8 @@ class LineTokenService
     /**
      * Store encrypted access token for user
      *
-     * @param User $user
-     * @param string $accessToken Plain text access token
-     * @param int|null $expiresIn Token expiration time in seconds (optional)
-     * @return bool
+     * @param  string  $accessToken  Plain text access token
+     * @param  int|null  $expiresIn  Token expiration time in seconds (optional)
      */
     public function storeAccessToken(User $user, string $accessToken, ?int $expiresIn = null): bool
     {
@@ -59,15 +57,13 @@ class LineTokenService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * Get decrypted access token for user
-     *
-     * @param User $user
-     * @return string|null
      */
     public function getAccessToken(User $user): ?string
     {
@@ -76,11 +72,12 @@ class LineTokenService
             $cachedToken = Cache::get($this->getCacheKey($user->id));
             if ($cachedToken) {
                 Log::debug('LINE token retrieved from cache', ['user_id' => $user->id]);
+
                 return $cachedToken;
             }
 
             // If not in cache, decrypt from database
-            if (!$user->line_access_token) {
+            if (! $user->line_access_token) {
                 return null;
             }
 
@@ -101,42 +98,38 @@ class LineTokenService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * Verify if token is valid (not expired)
-     *
-     * @param User $user
-     * @return bool
      */
     public function verifyToken(User $user): bool
     {
         $token = $this->getAccessToken($user);
-        if (!$token) {
+        if (! $token) {
             return false;
         }
 
         // Use LineService to verify with LINE API
         try {
-            $lineService = new LineService();
+            $lineService = new LineService;
+
             return $lineService->verifyToken($token);
         } catch (Exception $e) {
             Log::warning('LINE token verification failed', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * Refresh access token if expired
-     *
-     * @param User $user
-     * @param string $refreshToken
-     * @return bool
      */
     public function refreshAccessToken(User $user, string $refreshToken): bool
     {
@@ -150,8 +143,8 @@ class LineTokenService
                     'client_secret' => config('services.line.client_secret'),
                 ]);
 
-            if (!$response->successful()) {
-                throw new Exception('Token refresh failed: ' . $response->body());
+            if (! $response->successful()) {
+                throw new Exception('Token refresh failed: '.$response->body());
             }
 
             $data = $response->json();
@@ -165,15 +158,13 @@ class LineTokenService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * Revoke and delete user's access token
-     *
-     * @param User $user
-     * @return bool
      */
     public function revokeAccessToken(User $user): bool
     {
@@ -204,15 +195,13 @@ class LineTokenService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * Check if user has valid token in cache or database
-     *
-     * @param User $user
-     * @return bool
      */
     public function hasValidToken(User $user): bool
     {
@@ -226,7 +215,8 @@ class LineTokenService
             // Try to decrypt to verify it's valid
             try {
                 $token = $this->getAccessToken($user);
-                return !empty($token);
+
+                return ! empty($token);
             } catch (Exception $e) {
                 return false;
             }
@@ -237,13 +227,10 @@ class LineTokenService
 
     /**
      * Get cache key for user's token
-     *
-     * @param int $userId
-     * @return string
      */
     private function getCacheKey(int $userId): string
     {
-        return self::CACHE_PREFIX . $userId;
+        return self::CACHE_PREFIX.$userId;
     }
 
     /**
@@ -262,7 +249,7 @@ class LineTokenService
 
             foreach ($users as $user) {
                 // Check if token is still valid
-                if (!$this->verifyToken($user)) {
+                if (! $this->verifyToken($user)) {
                     // Token is expired or invalid, remove it
                     $this->revokeAccessToken($user);
                     $count++;
@@ -299,6 +286,7 @@ class LineTokenService
                     try {
                         // If this succeeds, it's already encrypted
                         Crypt::decryptString($currentToken);
+
                         continue; // Skip, already encrypted
                     } catch (Exception $e) {
                         // Not encrypted yet, encrypt it

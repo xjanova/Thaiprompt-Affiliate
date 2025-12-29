@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -24,7 +23,7 @@ class MlmBinaryService
     {
         $plan = $member->plan;
 
-        if (!$plan || $plan->type === 'unilevel') {
+        if (! $plan || $plan->type === 'unilevel') {
             return;
         }
 
@@ -87,8 +86,9 @@ class MlmBinaryService
             $parent->expireCarriedPv();
 
             // Check if parent is qualified
-            if (!$parent->is_qualified || $parent->status !== 'active') {
+            if (! $parent->is_qualified || $parent->status !== 'active') {
                 $currentMember = $parent;
+
                 continue;
             }
 
@@ -108,6 +108,7 @@ class MlmBinaryService
 
                 if ($maxPairsPerDay && $todayPairs >= $maxPairsPerDay) {
                     $currentMember = $parent;
+
                     continue;
                 }
 
@@ -182,6 +183,7 @@ class MlmBinaryService
         // 1:1 means 1 PV left + 1 PV right = 1 pair
         // 2:1 means 2 PV left + 1 PV right = 1 pair (or vice versa)
         $pairingType = MlmGlobalSetting::get('binary_pairing_type', '1:1');
+
         return $pairingType === '2:1' ? 2 : 1;
     }
 
@@ -219,7 +221,7 @@ class MlmBinaryService
     {
         $autoPlacementEnabled = MlmGlobalSetting::get('auto_placement_enabled', true);
 
-        if (!$autoPlacementEnabled) {
+        if (! $autoPlacementEnabled) {
             return ['parent_id' => $sponsor->id, 'position' => $preferredLeg ?? 'left'];
         }
 
@@ -243,9 +245,6 @@ class MlmBinaryService
 
     /**
      * นับ depth ของ member จาก root
-     *
-     * @param MlmMember $member
-     * @return int
      */
     protected function getMemberDepth(MlmMember $member): int
     {
@@ -261,32 +260,32 @@ class MlmBinaryService
         while ($current->binaryParent) {
             $depth++;
             $current = $current->binaryParent;
-            if ($depth > 100) break; // Safety limit
+            if ($depth > 100) {
+                break;
+            } // Safety limit
         }
+
         return $depth;
     }
 
     /**
      * นับจำนวน children ของ node
-     *
-     * @param MlmMember $member
-     * @return int
      */
     protected function getChildrenCount(MlmMember $member): int
     {
         $count = 0;
-        if ($member->binaryLeftChild) $count++;
-        if ($member->binaryRightChild) $count++;
+        if ($member->binaryLeftChild) {
+            $count++;
+        }
+        if ($member->binaryRightChild) {
+            $count++;
+        }
+
         return $count;
     }
 
     /**
      * ตรวจสอบว่าสามารถวาง child ที่ node นี้ได้หรือไม่
-     *
-     * @param MlmMember $parent
-     * @param int|null $maxDepth
-     * @param int $maxWidth
-     * @return bool
      */
     protected function canPlaceChild(MlmMember $parent, ?int $maxDepth, int $maxWidth): bool
     {
@@ -313,17 +312,17 @@ class MlmBinaryService
     protected function findRightToLeftPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
     {
         // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (!$this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
             return null;
         }
 
         // Check if right is available (ถ้า maxWidth > 1)
-        if ($maxWidth >= 2 && !$member->binaryRightChild) {
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
             return ['parent_id' => $member->id, 'position' => 'right'];
         }
 
         // Check if left is available
-        if (!$member->binaryLeftChild) {
+        if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
@@ -350,15 +349,15 @@ class MlmBinaryService
     protected function findStrongLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
     {
         // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (!$this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
             return null;
         }
 
-        if (!$member->binaryLeftChild) {
+        if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
-        if ($maxWidth >= 2 && !$member->binaryRightChild) {
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
             return ['parent_id' => $member->id, 'position' => 'right'];
         }
 
@@ -377,17 +376,17 @@ class MlmBinaryService
     protected function findLeftToRightPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
     {
         // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (!$this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
             return null;
         }
 
         // Check if left is available
-        if (!$member->binaryLeftChild) {
+        if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
         // Check if right is available (ถ้า maxWidth > 1)
-        if ($maxWidth >= 2 && !$member->binaryRightChild) {
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
             return ['parent_id' => $member->id, 'position' => 'right'];
         }
 
@@ -414,15 +413,15 @@ class MlmBinaryService
     protected function findBalancedPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
     {
         // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (!$this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
             return null;
         }
 
-        if (!$member->binaryLeftChild) {
+        if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
-        if ($maxWidth >= 2 && !$member->binaryRightChild) {
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
             return ['parent_id' => $member->id, 'position' => 'right'];
         }
 
@@ -441,15 +440,15 @@ class MlmBinaryService
     protected function findWeakLegPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
     {
         // ตรวจสอบว่าสามารถวางที่ node นี้ได้หรือไม่
-        if (!$this->canPlaceChild($member, $maxDepth, $maxWidth)) {
+        if (! $this->canPlaceChild($member, $maxDepth, $maxWidth)) {
             return null;
         }
 
-        if (!$member->binaryLeftChild) {
+        if (! $member->binaryLeftChild) {
             return ['parent_id' => $member->id, 'position' => 'left'];
         }
 
-        if ($maxWidth >= 2 && !$member->binaryRightChild) {
+        if ($maxWidth >= 2 && ! $member->binaryRightChild) {
             return ['parent_id' => $member->id, 'position' => 'right'];
         }
 
@@ -471,9 +470,9 @@ class MlmBinaryService
      * - binary_max_depth: ความลึกสูงสุดของ Binary Tree
      * - binary_max_width: จำนวนลูกสูงสุดต่อ node (2 = Binary, 3 = Ternary)
      *
-     * @param MlmMember $member จุดเริ่มต้นของ tree
-     * @param int|null $maxDepth ความลึกสูงสุด (null = ไม่จำกัด)
-     * @param int $maxWidth จำนวนลูกสูงสุดต่อ node
+     * @param  MlmMember  $member  จุดเริ่มต้นของ tree
+     * @param  int|null  $maxDepth  ความลึกสูงสุด (null = ไม่จำกัด)
+     * @param  int  $maxWidth  จำนวนลูกสูงสุดต่อ node
      * @return array|null
      */
     protected function findFillByLevelPlacement(MlmMember $member, ?int $maxDepth = null, int $maxWidth = 2)
@@ -499,12 +498,12 @@ class MlmBinaryService
             }
 
             // ตรวจสอบว่า left ว่างไหม
-            if (!$current->binaryLeftChild) {
+            if (! $current->binaryLeftChild) {
                 return ['parent_id' => $current->id, 'position' => 'left'];
             }
 
             // ตรวจสอบว่า right ว่างไหม (ถ้า maxWidth >= 2)
-            if ($maxWidth >= 2 && !$current->binaryRightChild) {
+            if ($maxWidth >= 2 && ! $current->binaryRightChild) {
                 return ['parent_id' => $current->id, 'position' => 'right'];
             }
 
@@ -521,7 +520,7 @@ class MlmBinaryService
                         $hasChild = MlmMember::where('binary_parent_id', $current->id)
                             ->where('binary_position', $pos)
                             ->exists();
-                        if (!$hasChild) {
+                        if (! $hasChild) {
                             return ['parent_id' => $current->id, 'position' => $pos];
                         }
                     }

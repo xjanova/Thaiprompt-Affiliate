@@ -9,15 +9,11 @@ use Illuminate\Database\Seeder;
  * IdCardSettingSeeder - สร้างการตั้งค่าเริ่มต้นสำหรับ Virtual ID Card
  *
  * สร้างการตั้งค่าสำหรับ 8 ระดับ Rank พร้อม gradient และ effects ที่แตกต่างกัน
- *
- * @package Database\Seeders
  */
 class IdCardSettingSeeder extends Seeder
 {
     /**
      * รัน seeder
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -26,6 +22,7 @@ class IdCardSettingSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (IdCardSetting::count() > 0) {
             $this->command->warn('⚠️  พบการตั้งค่า ID Card ที่มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

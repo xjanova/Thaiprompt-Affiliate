@@ -81,7 +81,8 @@ class ScanCryptoDeposits extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ Deposit scan failed: ' . $e->getMessage());
+            $this->error('❌ Deposit scan failed: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

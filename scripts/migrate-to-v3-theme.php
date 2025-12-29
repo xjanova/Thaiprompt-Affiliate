@@ -1,5 +1,6 @@
 #!/usr/bin/env php
 <?php
+
 /**
  * V3 Theme Migration Script
  *
@@ -9,7 +10,6 @@
  * php scripts/migrate-to-v3-theme.php <file-path>
  * php scripts/migrate-to-v3-theme.php resources/views/admin/analytics/performance.blade.php
  */
-
 if ($argc < 2) {
     echo "Usage: php migrate-to-v3-theme.php <file-path>\n";
     echo "Example: php migrate-to-v3-theme.php resources/views/admin/analytics/performance.blade.php\n";
@@ -18,7 +18,7 @@ if ($argc < 2) {
 
 $filePath = $argv[1];
 
-if (!file_exists($filePath)) {
+if (! file_exists($filePath)) {
     echo "❌ Error: File not found: {$filePath}\n";
     exit(1);
 }
@@ -94,8 +94,8 @@ if ($content === $original) {
 }
 
 // สำรองไฟล์เดิม
-$backupPath = $filePath . '.backup';
-if (!file_exists($backupPath)) {
+$backupPath = $filePath.'.backup';
+if (! file_exists($backupPath)) {
     copy($filePath, $backupPath);
     echo "💾 Backup สร้างที่: {$backupPath}\n";
 }

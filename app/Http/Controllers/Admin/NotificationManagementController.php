@@ -51,6 +51,7 @@ class NotificationManagementController extends Controller
     public function create()
     {
         $users = User::select('id', 'name', 'email')->get();
+
         return view('admin.notifications.create', compact('users'));
     }
 
@@ -105,7 +106,7 @@ class NotificationManagementController extends Controller
                 );
 
                 $message = $isScheduled
-                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ " . $scheduledAt->format('d/m/Y H:i')
+                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ ".$scheduledAt->format('d/m/Y H:i')
                     : "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว";
 
                 return redirect()
@@ -131,7 +132,7 @@ class NotificationManagementController extends Controller
                 );
 
                 $message = $isScheduled
-                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ " . $scheduledAt->format('d/m/Y H:i')
+                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ ".$scheduledAt->format('d/m/Y H:i')
                     : "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว";
 
                 return redirect()
@@ -142,7 +143,7 @@ class NotificationManagementController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาดในการส่งการแจ้งเตือน: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาดในการส่งการแจ้งเตือน: '.$e->getMessage());
         }
     }
 
@@ -152,6 +153,7 @@ class NotificationManagementController extends Controller
     public function show($id)
     {
         $notification = Notification::with('user')->findOrFail($id);
+
         return view('admin.notifications.show', compact('notification'));
     }
 

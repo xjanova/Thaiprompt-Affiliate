@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Auth;
 class HotelBookingController extends Controller
 {
     protected $bookingService;
+
     protected $pricingService;
+
     protected $paymentService;
 
     public function __construct(
@@ -114,6 +116,7 @@ class HotelBookingController extends Controller
                         ->with('success', 'Booking confirmed successfully!');
                 } else {
                     $booking->cancel('Payment failed');
+
                     return back()->with('error', $payment['message']);
                 }
             } else {
@@ -139,7 +142,7 @@ class HotelBookingController extends Controller
             ->firstOrFail();
 
         // Check authorization
-        if ($booking->user_id !== Auth::id() && !Auth::user()->hasRole('admin')) {
+        if ($booking->user_id !== Auth::id() && ! Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized access');
         }
 
@@ -262,7 +265,7 @@ class HotelBookingController extends Controller
             ->with(['hotel', 'roomType'])
             ->firstOrFail();
 
-        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+        if (! in_array($booking->status, ['pending', 'confirmed'])) {
             return redirect()
                 ->route('hotels.bookings.show', $booking->booking_number)
                 ->with('error', 'This booking cannot be modified.');

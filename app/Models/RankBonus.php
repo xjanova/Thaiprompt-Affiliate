@@ -50,6 +50,7 @@ class RankBonus extends Model
     public function getDisplayNameAttribute(): string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->name_th ? $this->name_th : $this->name;
     }
 
@@ -59,6 +60,7 @@ class RankBonus extends Model
     public function getDisplayDescriptionAttribute(): ?string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->description_th ? $this->description_th : $this->description;
     }
 
@@ -91,12 +93,12 @@ class RankBonus extends Model
      */
     public function applyToUser(User $user): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
         // Check conditions if any
-        if ($this->conditions && !$this->checkConditions($user)) {
+        if ($this->conditions && ! $this->checkConditions($user)) {
             return false;
         }
 
@@ -119,7 +121,7 @@ class RankBonus extends Model
      */
     private function checkConditions(User $user): bool
     {
-        if (!$this->conditions) {
+        if (! $this->conditions) {
             return true;
         }
 
@@ -133,7 +135,7 @@ class RankBonus extends Model
      */
     private function applyOneTimeBonus(User $user): bool
     {
-        if (!$user->wallet) {
+        if (! $user->wallet) {
             return false;
         }
 

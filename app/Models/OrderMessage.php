@@ -132,9 +132,6 @@ class OrderMessage extends Model
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @param int|null $userId
-     * @return void
      */
     public function markAsRead(?int $userId = null): void
     {
@@ -165,13 +162,6 @@ class OrderMessage extends Model
 
     /**
      * ส่งข้อความใหม่
-     *
-     * @param Order $order
-     * @param int $senderId
-     * @param string $senderType
-     * @param string $message
-     * @param array $options
-     * @return static
      */
     public static function send(
         Order $order,
@@ -206,10 +196,6 @@ class OrderMessage extends Model
 
     /**
      * ส่ง Push Notification ไปยังลูกค้า
-     *
-     * @param Order $order
-     * @param OrderMessage $message
-     * @return void
      */
     protected static function sendPushNotification(Order $order, OrderMessage $message): void
     {
@@ -217,7 +203,7 @@ class OrderMessage extends Model
             $pushService = app(\App\Services\ExpoPushService::class);
 
             $senderName = match ($message->sender_type) {
-                'admin' => 'ทีมงาน ' . config('app.name'),
+                'admin' => 'ทีมงาน '.config('app.name'),
                 'seller' => 'ร้านค้า',
                 default => 'ระบบ',
             };
@@ -245,10 +231,6 @@ class OrderMessage extends Model
 
     /**
      * ส่งข้อความจากระบบ
-     *
-     * @param Order $order
-     * @param string $message
-     * @return static
      */
     public static function sendSystemMessage(Order $order, string $message): static
     {
@@ -274,7 +256,7 @@ class OrderMessage extends Model
         return match ($this->sender_type) {
             'customer' => $this->sender->name ?? 'ลูกค้า',
             'seller' => $this->sender->name ?? 'ร้านค้า',
-            'admin' => 'ทีมงาน ' . config('app.name'),
+            'admin' => 'ทีมงาน '.config('app.name'),
             default => 'ไม่ระบุ',
         };
     }
@@ -296,10 +278,10 @@ class OrderMessage extends Model
      */
     public function getAttachmentUrlAttribute(): ?string
     {
-        if (!$this->attachment) {
+        if (! $this->attachment) {
             return null;
         }
 
-        return asset('storage/' . $this->attachment);
+        return asset('storage/'.$this->attachment);
     }
 }

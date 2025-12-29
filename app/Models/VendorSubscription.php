@@ -113,7 +113,7 @@ class VendorSubscription extends Model
     /**
      * Cancel subscription
      */
-    public function cancel(string $reason = null): bool
+    public function cancel(?string $reason = null): bool
     {
         $this->status = 'cancelled';
         $this->cancelled_at = now();
@@ -148,6 +148,6 @@ class VendorSubscription extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return '฿' . number_format($this->amount, 0);
+        return '฿'.number_format($this->amount, 0);
     }
 }

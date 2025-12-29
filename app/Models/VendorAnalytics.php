@@ -75,6 +75,7 @@ class VendorAnalytics extends Model
     public function scopeLastMonth($query)
     {
         $lastMonth = now()->subMonth();
+
         return $query->whereYear('date', $lastMonth->year)
             ->whereMonth('date', $lastMonth->month);
     }
@@ -129,6 +130,7 @@ class VendorAnalytics extends Model
     {
         // Use the VendorAnalyticsService to record analytics
         $service = app(\App\Services\VendorAnalyticsService::class);
+
         return $service->recordDailyAnalytics($store, $date);
     }
 }

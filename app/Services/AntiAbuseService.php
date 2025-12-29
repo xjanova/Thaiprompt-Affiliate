@@ -6,7 +6,6 @@ use App\Models\ServiceBooking;
 use App\Models\ServiceBookingDispute;
 use App\Models\ServiceBookingLocationLog;
 use App\Models\ServiceBookingPenalty;
-use App\Models\ServiceProvider;
 use App\Models\User;
 use App\Models\UserBlock;
 use App\Models\UserTrustScore;
@@ -62,10 +61,8 @@ class AntiAbuseService
     /**
      * บันทึกตำแหน่ง GPS
      *
-     * @param ServiceBooking $booking
-     * @param string $actorType 'user' หรือ 'provider'
-     * @param array $locationData ข้อมูลตำแหน่ง
-     * @return ServiceBookingLocationLog
+     * @param  string  $actorType  'user' หรือ 'provider'
+     * @param  array  $locationData  ข้อมูลตำแหน่ง
      */
     public function logLocation(
         ServiceBooking $booking,
@@ -92,7 +89,7 @@ class AntiAbuseService
 
         // ตรวจจับ GPS Spoofing
         $spoofingFlags = $log->detectSpoofing();
-        if (!empty($spoofingFlags)) {
+        if (! empty($spoofingFlags)) {
             $this->flagSuspiciousActivity($booking, 'gps_spoofing', $spoofingFlags);
         }
 
@@ -102,7 +99,6 @@ class AntiAbuseService
     /**
      * คำนวณค่าปรับการยกเลิก
      *
-     * @param ServiceBooking $booking
      * @return array ['fee' => float, 'percentage' => int, 'reason' => string]
      */
     public function calculateCancellationFee(ServiceBooking $booking): array
@@ -119,7 +115,7 @@ class AntiAbuseService
 
         // คำนวณเวลาก่อนนัดหมาย
         $scheduledAt = $booking->scheduled_at;
-        if (!$scheduledAt) {
+        if (! $scheduledAt) {
             return [
                 'fee' => 0,
                 'percentage' => 0,
@@ -165,9 +161,8 @@ class AntiAbuseService
     /**
      * ดำเนินการยกเลิก booking พร้อมคำนวณค่าปรับ
      *
-     * @param ServiceBooking $booking
-     * @param string $cancelledByType 'user', 'provider', 'system', 'admin'
-     * @param string $reason เหตุผล
+     * @param  string  $cancelledByType  'user', 'provider', 'system', 'admin'
+     * @param  string  $reason  เหตุผล
      * @return array ['success' => bool, 'fee' => float, 'message' => string]
      */
     public function cancelBooking(
@@ -177,7 +172,7 @@ class AntiAbuseService
     ): array {
         // ตรวจสอบว่ายกเลิกได้หรือไม่
         $cancellableStatuses = array_merge(self::CANCELLABLE_STATUSES, self::IN_SERVICE_STATUSES);
-        if (!in_array($booking->status, $cancellableStatuses)) {
+        if (! in_array($booking->status, $cancellableStatuses)) {
             return [
                 'success' => false,
                 'fee' => 0,
@@ -210,7 +205,7 @@ class AntiAbuseService
                 'success' => true,
                 'fee' => $feeInfo['fee'],
                 'message' => $feeInfo['fee'] > 0
-                    ? "ยกเลิกสำเร็จ ค่าปรับ ฿" . number_format($feeInfo['fee'], 2)
+                    ? 'ยกเลิกสำเร็จ ค่าปรับ ฿'.number_format($feeInfo['fee'], 2)
                     : 'ยกเลิกสำเร็จ ไม่มีค่าปรับ',
             ];
         });
@@ -354,7 +349,7 @@ class AntiAbuseService
         ]);
 
         // Log สำหรับ monitoring
-        Log::warning("Suspicious activity detected", [
+        Log::warning('Suspicious activity detected', [
             'booking_id' => $booking->id,
             'flag_type' => $flagType,
             'details' => $details,
@@ -369,12 +364,12 @@ class AntiAbuseService
         $trustScore = UserTrustScore::getOrCreateForUser($user);
 
         // ตรวจสอบ ban/suspend
-        if (!$trustScore->canBook()) {
+        if (! $trustScore->canBook()) {
             return [
                 'allowed' => false,
                 'reason' => $trustScore->trust_level === 'banned'
-                    ? 'บัญชีถูกระงับถาวร: ' . $trustScore->ban_reason
-                    : 'บัญชีถูกระงับชั่วคราวถึง ' . $trustScore->suspended_until->format('d/m/Y H:i'),
+                    ? 'บัญชีถูกระงับถาวร: '.$trustScore->ban_reason
+                    : 'บัญชีถูกระงับชั่วคราวถึง '.$trustScore->suspended_until->format('d/m/Y H:i'),
                 'requires_prepayment' => false,
             ];
         }
@@ -383,7 +378,7 @@ class AntiAbuseService
         if ($trustScore->max_booking_value && $amount > $trustScore->max_booking_value) {
             return [
                 'allowed' => false,
-                'reason' => 'ยอดจองเกินวงเงินที่อนุญาต (สูงสุด ฿' . number_format($trustScore->max_booking_value, 2) . ')',
+                'reason' => 'ยอดจองเกินวงเงินที่อนุญาต (สูงสุด ฿'.number_format($trustScore->max_booking_value, 2).')',
                 'requires_prepayment' => true,
             ];
         }

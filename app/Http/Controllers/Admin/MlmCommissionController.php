@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MlmCommission;
 use App\Models\MlmPlan;
-use App\Models\MlmMember;
 use App\Services\MlmCalculationService;
 use Illuminate\Http\Request;
 
@@ -15,7 +14,7 @@ class MlmCommissionController extends Controller
 
     public function __construct()
     {
-        $this->calculationService = new MlmCalculationService();
+        $this->calculationService = new MlmCalculationService;
     }
 
     public function index(Request $request)
@@ -134,7 +133,7 @@ class MlmCommissionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error paying commissions: ' . $e->getMessage(),
+                'message' => 'Error paying commissions: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -150,7 +149,7 @@ class MlmCommissionController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.mlm.commissions.index')
-                ->with('error', 'Error paying commissions: ' . $e->getMessage());
+                ->with('error', 'Error paying commissions: '.$e->getMessage());
         }
     }
 

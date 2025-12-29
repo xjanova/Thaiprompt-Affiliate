@@ -89,7 +89,7 @@ class GeneratedPage extends Model
      */
     public function getFormattedCostAttribute(): string
     {
-        return number_format($this->cost, 4) . ' USD';
+        return number_format($this->cost, 4).' USD';
     }
 
     /**
@@ -97,7 +97,7 @@ class GeneratedPage extends Model
      */
     public function getFormattedTokensAttribute(): string
     {
-        return number_format($this->tokens_used) . ' tokens';
+        return number_format($this->tokens_used).' tokens';
     }
 
     /**
@@ -105,12 +105,12 @@ class GeneratedPage extends Model
      */
     public function getShortDescriptionAttribute(): string
     {
-        if (!$this->description) {
+        if (! $this->description) {
             return '';
         }
 
         return strlen($this->description) > 100
-            ? substr($this->description, 0, 100) . '...'
+            ? substr($this->description, 0, 100).'...'
             : $this->description;
     }
 }

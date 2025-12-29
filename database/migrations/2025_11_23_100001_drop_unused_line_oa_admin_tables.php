@@ -3,7 +3,6 @@
 use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -17,8 +16,6 @@ return new class extends Migration
      *
      * ระบบ Chat Widget ที่ใช้ avatar ก็ไม่ใช้แล้ว
      * เพราะจะทำในส่วน AI แยกต่างหาก
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -44,8 +41,6 @@ return new class extends Migration
      * หมายเหตุ: migration นี้เป็นการลบตาราง
      * ถ้า rollback จะไม่สร้างตารางกลับคืนเพราะโครงสร้างตารางเดิม
      * อยู่ใน migrations เก่าแล้ว
-     *
-     * @return void
      */
     public function down(): void
     {

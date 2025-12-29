@@ -14,8 +14,6 @@ class AiRentalModelSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล AI Models
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class AiRentalModelSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (AiRentalModel::count() > 0) {
             $this->command->info('ข้อมูล AI Models มีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -33,13 +32,11 @@ class AiRentalModelSeeder extends Seeder
             AiRentalModel::create($modelData);
         }
 
-        $this->command->info('✅ Seed ข้อมูล AI Models สำเร็จ! (' . count($models) . ' models)');
+        $this->command->info('✅ Seed ข้อมูล AI Models สำเร็จ! ('.count($models).' models)');
     }
 
     /**
      * ดึงข้อมูล AI Models ทั้งหมด
-     *
-     * @return array
      */
     protected function getModelsData(): array
     {

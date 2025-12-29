@@ -88,8 +88,6 @@ class LineFlexMessageTemplate extends Model
 
     /**
      * เพิ่มจำนวนครั้งที่ใช้งาน
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -99,7 +97,7 @@ class LineFlexMessageTemplate extends Model
     /**
      * Scope: เทมเพลตที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -110,7 +108,7 @@ class LineFlexMessageTemplate extends Model
     /**
      * Scope: เทมเพลตตัวอย่างจากระบบ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSeeded($query)
@@ -121,7 +119,7 @@ class LineFlexMessageTemplate extends Model
     /**
      * Scope: เทมเพลตที่ผู้ใช้สร้าง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCustom($query)
@@ -132,8 +130,7 @@ class LineFlexMessageTemplate extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByCategory($query, string $category)
@@ -143,12 +140,10 @@ class LineFlexMessageTemplate extends Model
 
     /**
      * ดึง label ของหมวดหมู่
-     *
-     * @return string
      */
     public function getCategoryLabelAttribute(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'promotion' => '🏷️ โปรโมชั่น',
             'info' => 'ℹ️ ข้อมูล',
             'product' => '🛍️ สินค้า',

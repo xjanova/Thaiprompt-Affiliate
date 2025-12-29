@@ -2,9 +2,9 @@
 
 namespace App\Services\Crypto;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * TPIX Blockchain Service
@@ -18,29 +18,21 @@ use Exception;
  * - Fixed supply: 7,000,000,000 TPIX
  * - IBFT consensus mechanism
  * - 2-second block time
- *
- * @package App\Services\Crypto
  */
 class TPIXBlockchainService
 {
     /**
      * TPIX blockchain RPC endpoint
-     *
-     * @var string
      */
     protected string $rpcUrl;
 
     /**
      * Chain ID for TPIX network
-     *
-     * @var int
      */
     protected int $chainId = 7000;
 
     /**
      * Total supply of TPIX (in smallest unit)
-     *
-     * @var string
      */
     protected string $totalSupply = '7000000000000000000000000000'; // 7 billion TPIX
 
@@ -55,8 +47,9 @@ class TPIXBlockchainService
     /**
      * Get TPIX balance for an address
      *
-     * @param string $address The wallet address
+     * @param  string  $address  The wallet address
      * @return string Balance in TPIX (with decimals)
+     *
      * @throws Exception
      */
     public function getBalance(string $address): string
@@ -67,7 +60,8 @@ class TPIXBlockchainService
             if (isset($response['result'])) {
                 // Convert from hex wei to TPIX
                 $weiBalance = hexdec($response['result']);
-                $tpixBalance = bcdiv((string)$weiBalance, '1000000000000000000', 18);
+                $tpixBalance = bcdiv((string) $weiBalance, '1000000000000000000', 18);
+
                 return $tpixBalance;
             }
 
@@ -75,7 +69,7 @@ class TPIXBlockchainService
         } catch (Exception $e) {
             Log::error('TPIX getBalance error', [
                 'address' => $address,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -85,6 +79,7 @@ class TPIXBlockchainService
      * Get current block number
      *
      * @return int Current block number
+     *
      * @throws Exception
      */
     public function getBlockNumber(): int
@@ -99,7 +94,7 @@ class TPIXBlockchainService
             throw new Exception('Invalid response from TPIX node');
         } catch (Exception $e) {
             Log::error('TPIX getBlockNumber error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -108,8 +103,9 @@ class TPIXBlockchainService
     /**
      * Get transaction by hash
      *
-     * @param string $txHash Transaction hash
+     * @param  string  $txHash  Transaction hash
      * @return array Transaction details
+     *
      * @throws Exception
      */
     public function getTransaction(string $txHash): array
@@ -125,7 +121,7 @@ class TPIXBlockchainService
         } catch (Exception $e) {
             Log::error('TPIX getTransaction error', [
                 'txHash' => $txHash,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -134,8 +130,9 @@ class TPIXBlockchainService
     /**
      * Get transaction receipt
      *
-     * @param string $txHash Transaction hash
+     * @param  string  $txHash  Transaction hash
      * @return array Transaction receipt
+     *
      * @throws Exception
      */
     public function getTransactionReceipt(string $txHash): array
@@ -151,7 +148,7 @@ class TPIXBlockchainService
         } catch (Exception $e) {
             Log::error('TPIX getTransactionReceipt error', [
                 'txHash' => $txHash,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -160,8 +157,9 @@ class TPIXBlockchainService
     /**
      * Send raw transaction to TPIX blockchain
      *
-     * @param string $signedTx Signed transaction hex
+     * @param  string  $signedTx  Signed transaction hex
      * @return string Transaction hash
+     *
      * @throws Exception
      */
     public function sendRawTransaction(string $signedTx): string
@@ -173,10 +171,10 @@ class TPIXBlockchainService
                 return $response['result'];
             }
 
-            throw new Exception('Failed to send transaction: ' . ($response['error']['message'] ?? 'Unknown error'));
+            throw new Exception('Failed to send transaction: '.($response['error']['message'] ?? 'Unknown error'));
         } catch (Exception $e) {
             Log::error('TPIX sendRawTransaction error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -185,8 +183,9 @@ class TPIXBlockchainService
     /**
      * Estimate gas for a transaction
      *
-     * @param array $transaction Transaction parameters
+     * @param  array  $transaction  Transaction parameters
      * @return string Estimated gas in hex
+     *
      * @throws Exception
      */
     public function estimateGas(array $transaction): string
@@ -202,7 +201,7 @@ class TPIXBlockchainService
         } catch (Exception $e) {
             Log::error('TPIX estimateGas error', [
                 'transaction' => $transaction,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -212,6 +211,7 @@ class TPIXBlockchainService
      * Get gas price
      *
      * @return string Gas price in hex
+     *
      * @throws Exception
      */
     public function getGasPrice(): string
@@ -226,7 +226,7 @@ class TPIXBlockchainService
             throw new Exception('Failed to get gas price');
         } catch (Exception $e) {
             Log::error('TPIX getGasPrice error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -235,9 +235,10 @@ class TPIXBlockchainService
     /**
      * Get transaction count (nonce) for an address
      *
-     * @param string $address Wallet address
-     * @param string $block Block parameter (default: 'latest')
+     * @param  string  $address  Wallet address
+     * @param  string  $block  Block parameter (default: 'latest')
      * @return int Transaction count
+     *
      * @throws Exception
      */
     public function getTransactionCount(string $address, string $block = 'latest'): int
@@ -253,7 +254,7 @@ class TPIXBlockchainService
         } catch (Exception $e) {
             Log::error('TPIX getTransactionCount error', [
                 'address' => $address,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -283,6 +284,7 @@ class TPIXBlockchainService
      * Get network info
      *
      * @return array Network information
+     *
      * @throws Exception
      */
     public function getNetworkInfo(): array
@@ -307,12 +309,12 @@ class TPIXBlockchainService
                     'evmCompatible' => true,
                     'erc20Support' => true,
                     'smartContracts' => true,
-                    'fixedSupply' => true
-                ]
+                    'fixedSupply' => true,
+                ],
             ];
         } catch (Exception $e) {
             Log::error('TPIX getNetworkInfo error', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -321,9 +323,10 @@ class TPIXBlockchainService
     /**
      * Call TPIX RPC endpoint
      *
-     * @param string $method RPC method name
-     * @param array $params Method parameters
+     * @param  string  $method  RPC method name
+     * @param  array  $params  Method parameters
      * @return array Response data
+     *
      * @throws Exception
      */
     protected function rpcCall(string $method, array $params = []): array
@@ -335,17 +338,17 @@ class TPIXBlockchainService
                     'jsonrpc' => '2.0',
                     'method' => $method,
                     'params' => $params,
-                    'id' => 1
+                    'id' => 1,
                 ]);
 
-            if (!$response->successful()) {
-                throw new Exception('RPC call failed: ' . $response->status());
+            if (! $response->successful()) {
+                throw new Exception('RPC call failed: '.$response->status());
             }
 
             $data = $response->json();
 
             if (isset($data['error'])) {
-                throw new Exception('RPC error: ' . ($data['error']['message'] ?? 'Unknown error'));
+                throw new Exception('RPC error: '.($data['error']['message'] ?? 'Unknown error'));
             }
 
             return $data;
@@ -353,7 +356,7 @@ class TPIXBlockchainService
             Log::error('TPIX RPC call error', [
                 'method' => $method,
                 'params' => $params,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -362,7 +365,7 @@ class TPIXBlockchainService
     /**
      * Format transaction data
      *
-     * @param array $tx Raw transaction data
+     * @param  array  $tx  Raw transaction data
      * @return array Formatted transaction
      */
     protected function formatTransaction(array $tx): array
@@ -379,14 +382,14 @@ class TPIXBlockchainService
             'blockHash' => $tx['blockHash'] ?? null,
             'transactionIndex' => isset($tx['transactionIndex']) ? hexdec($tx['transactionIndex']) : null,
             'input' => $tx['input'] ?? '0x',
-            'chainId' => $this->chainId
+            'chainId' => $this->chainId,
         ];
     }
 
     /**
      * Validate TPIX address
      *
-     * @param string $address Address to validate
+     * @param  string  $address  Address to validate
      * @return bool True if valid
      */
     public function isValidAddress(string $address): bool
@@ -397,7 +400,7 @@ class TPIXBlockchainService
     /**
      * Convert TPIX to wei
      *
-     * @param string $tpix Amount in TPIX
+     * @param  string  $tpix  Amount in TPIX
      * @return string Amount in wei
      */
     public function toWei(string $tpix): string
@@ -408,7 +411,7 @@ class TPIXBlockchainService
     /**
      * Convert wei to TPIX
      *
-     * @param string $wei Amount in wei
+     * @param  string  $wei  Amount in wei
      * @return string Amount in TPIX
      */
     public function fromWei(string $wei): string

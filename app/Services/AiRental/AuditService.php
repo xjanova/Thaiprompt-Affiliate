@@ -3,12 +3,11 @@
 namespace App\Services\AiRental;
 
 use App\Models\AiRentalAuditLog;
-use App\Models\AiRentalDeployment;
 use App\Models\AiRentalCloudConfig;
+use App\Models\AiRentalDeployment;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Request;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Audit Service สำหรับ AI Rental System
@@ -19,16 +18,13 @@ class AuditService
 {
     /**
      * บันทึก audit log แบบ generic
-     *
-     * @param array $data
-     * @return AiRentalAuditLog
      */
     public function log(array $data): AiRentalAuditLog
     {
         try {
             return AiRentalAuditLog::log($data);
         } catch (Exception $e) {
-            Log::error('Failed to create audit log: ' . $e->getMessage(), [
+            Log::error('Failed to create audit log: '.$e->getMessage(), [
                 'data' => $data,
                 'exception' => $e,
             ]);
@@ -38,11 +34,6 @@ class AuditService
 
     /**
      * บันทึก deployment action
-     *
-     * @param string $action
-     * @param AiRentalDeployment $deployment
-     * @param array $data
-     * @return AiRentalAuditLog
      */
     public function logDeploymentAction(string $action, AiRentalDeployment $deployment, array $data = []): AiRentalAuditLog
     {
@@ -54,10 +45,6 @@ class AuditService
 
     /**
      * บันทึก deployment creation
-     *
-     * @param AiRentalDeployment $deployment
-     * @param array $requestData
-     * @return AiRentalAuditLog
      */
     public function logDeploymentCreated(AiRentalDeployment $deployment, array $requestData = []): AiRentalAuditLog
     {
@@ -72,9 +59,6 @@ class AuditService
 
     /**
      * บันทึก deployment started
-     *
-     * @param AiRentalDeployment $deployment
-     * @return AiRentalAuditLog
      */
     public function logDeploymentStarted(AiRentalDeployment $deployment): AiRentalAuditLog
     {
@@ -87,10 +71,6 @@ class AuditService
 
     /**
      * บันทึก deployment stopped
-     *
-     * @param AiRentalDeployment $deployment
-     * @param string $reason
-     * @return AiRentalAuditLog
      */
     public function logDeploymentStopped(AiRentalDeployment $deployment, string $reason = 'manual'): AiRentalAuditLog
     {
@@ -108,9 +88,6 @@ class AuditService
 
     /**
      * บันทึก deployment deleted
-     *
-     * @param AiRentalDeployment $deployment
-     * @return AiRentalAuditLog
      */
     public function logDeploymentDeleted(AiRentalDeployment $deployment): AiRentalAuditLog
     {
@@ -124,10 +101,6 @@ class AuditService
 
     /**
      * บันทึก deployment failed
-     *
-     * @param AiRentalDeployment $deployment
-     * @param string $errorMessage
-     * @return AiRentalAuditLog
      */
     public function logDeploymentFailed(AiRentalDeployment $deployment, string $errorMessage): AiRentalAuditLog
     {
@@ -142,11 +115,6 @@ class AuditService
 
     /**
      * บันทึก config action
-     *
-     * @param string $action
-     * @param AiRentalCloudConfig $config
-     * @param array $data
-     * @return AiRentalAuditLog
      */
     public function logConfigAction(string $action, AiRentalCloudConfig $config, array $data = []): AiRentalAuditLog
     {
@@ -158,10 +126,6 @@ class AuditService
 
     /**
      * บันทึก config created
-     *
-     * @param AiRentalCloudConfig $config
-     * @param array $requestData
-     * @return AiRentalAuditLog
      */
     public function logConfigCreated(AiRentalCloudConfig $config, array $requestData = []): AiRentalAuditLog
     {
@@ -180,11 +144,6 @@ class AuditService
 
     /**
      * บันทึก config updated
-     *
-     * @param AiRentalCloudConfig $config
-     * @param array $changesBefore
-     * @param array $changesAfter
-     * @return AiRentalAuditLog
      */
     public function logConfigUpdated(AiRentalCloudConfig $config, array $changesBefore, array $changesAfter): AiRentalAuditLog
     {
@@ -199,9 +158,6 @@ class AuditService
 
     /**
      * บันทึก config deleted
-     *
-     * @param AiRentalCloudConfig $config
-     * @return AiRentalAuditLog
      */
     public function logConfigDeleted(AiRentalCloudConfig $config): AiRentalAuditLog
     {
@@ -216,11 +172,6 @@ class AuditService
 
     /**
      * บันทึก budget action
-     *
-     * @param string $action
-     * @param int $userId
-     * @param array $data
-     * @return AiRentalAuditLog
      */
     public function logBudgetAction(string $action, int $userId, array $data = []): AiRentalAuditLog
     {
@@ -236,13 +187,6 @@ class AuditService
 
     /**
      * บันทึก budget exceeded
-     *
-     * @param int $userId
-     * @param int $budgetId
-     * @param string $budgetName
-     * @param float $limitAmount
-     * @param float $currentSpending
-     * @return AiRentalAuditLog
      */
     public function logBudgetExceeded(int $userId, int $budgetId, string $budgetName, float $limitAmount, float $currentSpending): AiRentalAuditLog
     {
@@ -268,14 +212,6 @@ class AuditService
 
     /**
      * บันทึก API call
-     *
-     * @param string $endpoint
-     * @param string $method
-     * @param array $requestData
-     * @param array $responseData
-     * @param int $statusCode
-     * @param int $durationMs
-     * @return AiRentalAuditLog
      */
     public function logApiCall(
         string $endpoint,
@@ -306,11 +242,6 @@ class AuditService
 
     /**
      * บันทึก security event
-     *
-     * @param string $eventType
-     * @param int|null $userId
-     * @param array $data
-     * @return AiRentalAuditLog
      */
     public function logSecurityEvent(string $eventType, ?int $userId, array $data = []): AiRentalAuditLog
     {
@@ -328,9 +259,6 @@ class AuditService
     /**
      * ดึง audit logs สำหรับ user พร้อมกรอง
      *
-     * @param int $userId
-     * @param array $filters
-     * @param int $perPage
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getUserLogs(int $userId, array $filters = [], int $perPage = 20)
@@ -383,9 +311,6 @@ class AuditService
 
     /**
      * ดึง audit summary สำหรับ user
-     *
-     * @param int $userId
-     * @return array
      */
     public function getAuditSummary(int $userId): array
     {
@@ -415,8 +340,6 @@ class AuditService
     /**
      * ดึง recent activities สำหรับ deployment
      *
-     * @param int $deploymentId
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     public function getDeploymentActivities(int $deploymentId, int $limit = 20)
@@ -430,8 +353,6 @@ class AuditService
     /**
      * Export audit logs สำหรับ compliance
      *
-     * @param int $userId
-     * @param array $filters
      * @return \Illuminate\Support\Collection
      */
     public function exportAuditLogs(int $userId, array $filters = [])
@@ -456,9 +377,6 @@ class AuditService
 
     /**
      * ทำความสะอาด sensitive data จาก config
-     *
-     * @param array $data
-     * @return array
      */
     protected function sanitizeConfigData(array $data): array
     {
@@ -478,9 +396,6 @@ class AuditService
 
     /**
      * กำหนด action type จาก action string
-     *
-     * @param string $action
-     * @return string
      */
     protected function getActionType(string $action): string
     {
@@ -499,9 +414,6 @@ class AuditService
 
     /**
      * กำหนด severity จาก action
-     *
-     * @param string $action
-     * @return string
      */
     protected function getSeverity(string $action): string
     {
@@ -517,7 +429,6 @@ class AuditService
     /**
      * Clean up old audit logs (ใช้ใน cron job)
      *
-     * @param int $daysToKeep
      * @return int จำนวน logs ที่ลบ
      */
     public function cleanupOldLogs(int $daysToKeep = 90): int

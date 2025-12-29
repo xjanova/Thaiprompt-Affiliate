@@ -14,12 +14,11 @@ use Illuminate\Support\Facades\Log;
 class LocalAiManager
 {
     private string $serviceName = 'ollama';
+
     private string $endpoint = 'http://localhost:11434';
 
     /**
      * เริ่มต้น Ollama service
-     *
-     * @return array
      */
     public function start(): array
     {
@@ -62,20 +61,18 @@ class LocalAiManager
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * หยุด Ollama service
-     *
-     * @return array
      */
     public function stop(): array
     {
         try {
-            if (!$this->isRunning()) {
+            if (! $this->isRunning()) {
                 return [
                     'success' => true,
                     'message' => 'Ollama ไม่ได้ทำงานอยู่',
@@ -101,21 +98,19 @@ class LocalAiManager
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Restart Ollama service
-     *
-     * @return array
      */
     public function restart(): array
     {
         $stopResult = $this->stop();
 
-        if (!$stopResult['success'] && !($stopResult['already_stopped'] ?? false)) {
+        if (! $stopResult['success'] && ! ($stopResult['already_stopped'] ?? false)) {
             return $stopResult;
         }
 
@@ -126,8 +121,6 @@ class LocalAiManager
 
     /**
      * ตรวจสอบสถานะ
-     *
-     * @return array
      */
     public function getStatus(): array
     {
@@ -148,8 +141,6 @@ class LocalAiManager
      * ตรวจสอบว่า Ollama ทำงานอยู่หรือไม่
      *
      * ใช้ HTTP request แทน Process
-     *
-     * @return bool
      */
     public function isRunning(): bool
     {
@@ -164,6 +155,7 @@ class LocalAiManager
 
             if ($response->successful()) {
                 Cache::put('ollama_status', 'running', 60);
+
                 return true;
             }
         } catch (\Exception $e) {
@@ -175,20 +167,20 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูล process
-     *
-     * @return array|null
      */
     public function getProcessInfo(): ?array
     {
         try {
             $output = $this->runCommand('pgrep -a ollama');
 
-            if (!empty($output)) {
+            if (! empty($output)) {
                 $lines = explode("\n", trim($output));
                 $processes = [];
 
                 foreach ($lines as $line) {
-                    if (empty(trim($line))) continue;
+                    if (empty(trim($line))) {
+                        continue;
+                    }
 
                     $parts = explode(' ', trim($line), 2);
                     $processes[] = [
@@ -216,14 +208,12 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูลการใช้ทรัพยากร
-     *
-     * @return array
      */
     public function getResourceUsage(): array
     {
         $processInfo = $this->getProcessInfo();
 
-        if (!$processInfo['found']) {
+        if (! $processInfo['found']) {
             return [
                 'cpu_percent' => 0,
                 'memory_mb' => 0,
@@ -256,16 +246,13 @@ class LocalAiManager
 
     /**
      * ดึงสถิติของ process
-     *
-     * @param string $pid
-     * @return array
      */
     private function getProcessStats(string $pid): array
     {
         try {
             $output = $this->runCommand("ps -p {$pid} -o %cpu,%mem,rss --no-headers");
 
-            if (!empty($output)) {
+            if (! empty($output)) {
                 $parts = preg_split('/\s+/', trim($output));
 
                 if (count($parts) >= 3) {
@@ -291,20 +278,18 @@ class LocalAiManager
 
     /**
      * คำนวณ memory percent จากระบบทั้งหมด
-     *
-     * @param float $memoryMb
-     * @return float
      */
     private function calculateMemoryPercent(float $memoryMb): float
     {
         try {
             $output = $this->runCommand('free -m | grep Mem:');
 
-            if (!empty($output)) {
+            if (! empty($output)) {
                 $parts = preg_split('/\s+/', trim($output));
 
                 if (count($parts) >= 2) {
                     $totalMemMb = (int) $parts[1];
+
                     return round(($memoryMb / $totalMemMb) * 100, 2);
                 }
             }
@@ -317,8 +302,6 @@ class LocalAiManager
 
     /**
      * ดึงข้อมูล GPU usage
-     *
-     * @return array|null
      */
     public function getGpuUsage(): ?array
     {
@@ -333,12 +316,14 @@ class LocalAiManager
             // ดึงข้อมูล GPU
             $output = $this->runCommand('nvidia-smi --query-gpu=index,name,utilization.gpu,utilization.memory,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits 2>/dev/null');
 
-            if (!empty($output)) {
+            if (! empty($output)) {
                 $lines = explode("\n", trim($output));
                 $gpus = [];
 
                 foreach ($lines as $line) {
-                    if (empty(trim($line))) continue;
+                    if (empty(trim($line))) {
+                        continue;
+                    }
 
                     $parts = array_map('trim', explode(',', $line));
 
@@ -372,14 +357,12 @@ class LocalAiManager
 
     /**
      * ดึง uptime
-     *
-     * @return string|null
      */
     private function getUptime(): ?string
     {
         $processInfo = $this->getProcessInfo();
 
-        if (!$processInfo['found']) {
+        if (! $processInfo['found']) {
             return null;
         }
 
@@ -387,7 +370,7 @@ class LocalAiManager
             $pid = $processInfo['processes'][0]['pid'];
             $output = $this->runCommand("ps -p {$pid} -o etime --no-headers");
 
-            if (!empty($output)) {
+            if (! empty($output)) {
                 return trim($output);
             }
         } catch (\Exception $e) {
@@ -399,13 +382,11 @@ class LocalAiManager
 
     /**
      * พยายามเริ่ม service
-     *
-     * @return array
      */
     private function tryStartService(): array
     {
         // ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
-        if (!$this->canExecuteCommands()) {
+        if (! $this->canExecuteCommands()) {
             return [
                 'success' => false,
                 'message' => 'ไม่สามารถรันคำสั่งได้ (exec ถูก disable) กรุณาเริ่ม Ollama ด้วยตนเอง',
@@ -442,13 +423,11 @@ class LocalAiManager
 
     /**
      * พยายามหยุด service
-     *
-     * @return array
      */
     private function tryStopService(): array
     {
         // ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
-        if (!$this->canExecuteCommands()) {
+        if (! $this->canExecuteCommands()) {
             return [
                 'success' => false,
                 'message' => 'ไม่สามารถรันคำสั่งได้ (exec ถูก disable) กรุณาหยุด Ollama ด้วยตนเอง',
@@ -458,14 +437,14 @@ class LocalAiManager
         // วิธีที่ 1: systemctl
         $this->runCommand('systemctl stop ollama 2>&1');
         sleep(1);
-        if (!$this->isRunning()) {
+        if (! $this->isRunning()) {
             return ['success' => true, 'method' => 'systemctl'];
         }
 
         // วิธีที่ 2: service command
         $this->runCommand('service ollama stop 2>&1');
         sleep(1);
-        if (!$this->isRunning()) {
+        if (! $this->isRunning()) {
             return ['success' => true, 'method' => 'service'];
         }
 
@@ -476,7 +455,7 @@ class LocalAiManager
                 $this->runCommand("kill {$process['pid']} 2>/dev/null");
             }
             sleep(1);
-            if (!$this->isRunning()) {
+            if (! $this->isRunning()) {
                 return ['success' => true, 'method' => 'kill'];
             }
         }
@@ -489,9 +468,6 @@ class LocalAiManager
 
     /**
      * รอจนกว่า service จะพร้อม
-     *
-     * @param int $maxSeconds
-     * @return bool
      */
     private function waitUntilReady(int $maxSeconds = 10): bool
     {
@@ -515,12 +491,10 @@ class LocalAiManager
 
     /**
      * ดึงรายการโมเดลที่กำลังโหลดอยู่ใน memory
-     *
-     * @return array
      */
     public function getLoadedModels(): array
     {
-        if (!$this->isRunning()) {
+        if (! $this->isRunning()) {
             return [];
         }
 
@@ -551,13 +525,10 @@ class LocalAiManager
 
     /**
      * ทำให้โมเดลพร้อมใช้งาน (load เข้า memory)
-     *
-     * @param string $modelName
-     * @return array
      */
     public function loadModel(string $modelName): array
     {
-        if (!$this->isRunning()) {
+        if (! $this->isRunning()) {
             return [
                 'success' => false,
                 'message' => 'Ollama ไม่ได้ทำงาน',
@@ -585,15 +556,13 @@ class LocalAiManager
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * ดึงสถิติรวม
-     *
-     * @return array
      */
     public function getSummaryStats(): array
     {
@@ -612,30 +581,26 @@ class LocalAiManager
 
     /**
      * ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
-     *
-     * @return bool
      */
     private function canExecuteCommands(): bool
     {
         return function_exists('exec') &&
-               !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
+               ! in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))));
     }
 
     /**
      * รันคำสั่ง shell อย่างปลอดภัย
-     *
-     * @param string $command
-     * @return string
      */
     private function runCommand(string $command): string
     {
-        if (!$this->canExecuteCommands()) {
+        if (! $this->canExecuteCommands()) {
             return '';
         }
 
         try {
             $output = [];
             @exec($command, $output);
+
             return implode("\n", $output);
         } catch (\Exception $e) {
             return '';

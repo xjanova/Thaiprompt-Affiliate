@@ -19,9 +19,6 @@ class SendSoftwarePurchaseEmail implements ShouldQueue
 
     /**
      * จัดการ event
-     *
-     * @param SoftwarePurchased $event
-     * @return void
      */
     public function handle(SoftwarePurchased $event): void
     {
@@ -30,11 +27,12 @@ class SendSoftwarePurchaseEmail implements ShouldQueue
             $license = $event->options['generated_license'] ?? null;
 
             // ถ้าไม่มี license ให้ข้าม (อาจเป็นสินค้าที่ไม่ต้องใช้ license)
-            if (!$license) {
+            if (! $license) {
                 \Log::warning('No license found when sending purchase email', [
                     'product_id' => $event->product->id,
                     'buyer_id' => $event->buyer->id,
                 ]);
+
                 return;
             }
 

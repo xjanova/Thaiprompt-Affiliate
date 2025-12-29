@@ -52,6 +52,7 @@ class MembershipRetentionAdvanceRenewal extends Model
     public function isActive(): bool
     {
         $today = today();
+
         return $this->isPaid()
             && $this->valid_from <= $today
             && $this->valid_until >= $today;
@@ -71,6 +72,7 @@ class MembershipRetentionAdvanceRenewal extends Model
     public function scopeActive($query)
     {
         $today = today();
+
         return $query->where('payment_status', 'paid')
             ->where('valid_from', '<=', $today)
             ->where('valid_until', '>=', $today);

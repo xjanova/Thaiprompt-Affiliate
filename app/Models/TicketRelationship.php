@@ -63,7 +63,7 @@ class TicketRelationship extends Model
      */
     public function getTypeLabelAttribute()
     {
-        return match($this->relationship_type) {
+        return match ($this->relationship_type) {
             'duplicate' => 'ซ้ำกับ',
             'related' => 'เกี่ยวข้องกับ',
             'blocks' => 'ขัดขวาง',
@@ -79,7 +79,7 @@ class TicketRelationship extends Model
      */
     public function getTypeIconAttribute()
     {
-        return match($this->relationship_type) {
+        return match ($this->relationship_type) {
             'duplicate' => 'fa-copy',
             'related' => 'fa-link',
             'blocks' => 'fa-ban',
@@ -126,7 +126,7 @@ class TicketRelationship extends Model
      */
     private static function getReverseType($type)
     {
-        return match($type) {
+        return match ($type) {
             'blocks' => 'blocked_by',
             'blocked_by' => 'blocks',
             'parent' => 'child',

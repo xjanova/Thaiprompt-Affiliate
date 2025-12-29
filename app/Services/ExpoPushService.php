@@ -25,11 +25,10 @@ class ExpoPushService
     /**
      * ส่ง Push Notification ไปยังเครื่องเดียว
      *
-     * @param string $pushToken Expo Push Token
-     * @param string $title หัวข้อ
-     * @param string $body เนื้อหา
-     * @param array $data ข้อมูลเพิ่มเติม
-     * @return array
+     * @param  string  $pushToken  Expo Push Token
+     * @param  string  $title  หัวข้อ
+     * @param  string  $body  เนื้อหา
+     * @param  array  $data  ข้อมูลเพิ่มเติม
      */
     public function sendToDevice(string $pushToken, string $title, string $body, array $data = []): array
     {
@@ -39,11 +38,10 @@ class ExpoPushService
     /**
      * ส่ง Push Notification ไปยังหลายเครื่อง
      *
-     * @param array $pushTokens รายการ Expo Push Token
-     * @param string $title หัวข้อ
-     * @param string $body เนื้อหา
-     * @param array $data ข้อมูลเพิ่มเติม
-     * @return array
+     * @param  array  $pushTokens  รายการ Expo Push Token
+     * @param  string  $title  หัวข้อ
+     * @param  string  $body  เนื้อหา
+     * @param  array  $data  ข้อมูลเพิ่มเติม
      */
     public function send(array $pushTokens, string $title, string $body, array $data = []): array
     {
@@ -60,9 +58,10 @@ class ExpoPushService
         // สร้าง messages สำหรับแต่ละ token
         $messages = [];
         foreach ($pushTokens as $token) {
-            if (!$this->isValidExpoPushToken($token)) {
+            if (! $this->isValidExpoPushToken($token)) {
                 $results['failed']++;
                 $results['errors'][] = "Invalid token: {$token}";
+
                 continue;
             }
 
@@ -102,7 +101,7 @@ class ExpoPushService
                         'body' => $response->body(),
                     ]);
                     $results['failed'] += count($chunk);
-                    $results['errors'][] = 'HTTP Error: ' . $response->status();
+                    $results['errors'][] = 'HTTP Error: '.$response->status();
                 }
             }
         } catch (\Exception $e) {
@@ -118,9 +117,6 @@ class ExpoPushService
 
     /**
      * ส่ง Notification จาก MobilePushNotification model
-     *
-     * @param MobilePushNotification $notification
-     * @return array
      */
     public function sendNotification(MobilePushNotification $notification): array
     {
@@ -132,6 +128,7 @@ class ExpoPushService
                 'status' => 'failed',
                 'error_message' => 'No valid push tokens found',
             ]);
+
             return ['success' => 0, 'failed' => 0, 'errors' => ['No valid push tokens found']];
         }
 
@@ -153,7 +150,7 @@ class ExpoPushService
             'sent_at' => now(),
             'sent_count' => $results['success'],
             'failed_count' => $results['failed'],
-            'error_message' => !empty($results['errors']) ? implode(', ', $results['errors']) : null,
+            'error_message' => ! empty($results['errors']) ? implode(', ', $results['errors']) : null,
         ]);
 
         return $results;
@@ -161,12 +158,6 @@ class ExpoPushService
 
     /**
      * ส่งไปยัง User เฉพาะ
-     *
-     * @param int $userId
-     * @param string $title
-     * @param string $body
-     * @param array $data
-     * @return array
      */
     public function sendToUser(int $userId, string $title, string $body, array $data = []): array
     {
@@ -211,11 +202,6 @@ class ExpoPushService
 
     /**
      * ส่งไปยังทุกเครื่อง (Broadcast)
-     *
-     * @param string $title
-     * @param string $body
-     * @param array $data
-     * @return array
      */
     public function broadcast(string $title, string $body, array $data = []): array
     {
@@ -230,11 +216,7 @@ class ExpoPushService
     /**
      * ส่งไปยัง Platform เฉพาะ
      *
-     * @param string $platform 'ios' หรือ 'android'
-     * @param string $title
-     * @param string $body
-     * @param array $data
-     * @return array
+     * @param  string  $platform  'ios' หรือ 'android'
      */
     public function sendToPlatform(string $platform, string $title, string $body, array $data = []): array
     {
@@ -253,9 +235,6 @@ class ExpoPushService
      * รองรับรูปแบบ:
      * - ExponentPushToken[xxxx]
      * - ExpoPushToken[xxxx]
-     *
-     * @param string $token
-     * @return bool
      */
     private function isValidExpoPushToken(string $token): bool
     {
@@ -265,13 +244,10 @@ class ExpoPushService
 
     /**
      * ประมวลผล response จาก Expo API
-     *
-     * @param array $responseData
-     * @param array &$results
      */
     private function processResponse(array $responseData, array &$results): void
     {
-        if (!isset($responseData['data'])) {
+        if (! isset($responseData['data'])) {
             return;
         }
 
@@ -289,9 +265,6 @@ class ExpoPushService
 
     /**
      * ดึง push tokens สำหรับ notification
-     *
-     * @param MobilePushNotification $notification
-     * @return array
      */
     private function getTokensForNotification(MobilePushNotification $notification): array
     {

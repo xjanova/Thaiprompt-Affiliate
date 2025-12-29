@@ -22,74 +22,72 @@ return new class extends Migration
 {
     /**
      * เพิ่มฟิลด์สำหรับระบบรับสมัคร
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_bot_ai_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_bot_ai_settings')) {
+        if (! Schema::hasTable('line_bot_ai_settings')) {
             return;
         }
 
         Schema::table('line_bot_ai_settings', function (Blueprint $table) {
             // การเปิดใช้งานสำหรับการรับสมัคร
-            if (!Schema::hasColumn('line_bot_ai_settings', 'use_for_recruitment')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'use_for_recruitment')) {
                 $table->boolean('use_for_recruitment')->default(false)->after('is_active');
             }
 
             // System prompt พิเศษสำหรับการรับสมัคร
-            if (!Schema::hasColumn('line_bot_ai_settings', 'recruitment_system_prompt')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'recruitment_system_prompt')) {
                 $table->text('recruitment_system_prompt')->nullable()->after('system_prompt');
             }
 
             // หัวข้อที่อนุญาตให้คุย (JSON array)
-            if (!Schema::hasColumn('line_bot_ai_settings', 'allowed_topics')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'allowed_topics')) {
                 $table->json('allowed_topics')->nullable()->after('recruitment_system_prompt');
             }
 
             // หัวข้อที่ห้ามคุย (JSON array)
-            if (!Schema::hasColumn('line_bot_ai_settings', 'blocked_topics')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'blocked_topics')) {
                 $table->json('blocked_topics')->nullable()->after('allowed_topics');
             }
 
             // สไตล์การตอบ: friendly, professional, casual
-            if (!Schema::hasColumn('line_bot_ai_settings', 'response_style')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'response_style')) {
                 $table->string('response_style', 50)->default('friendly')->after('blocked_topics');
             }
 
             // ข้อความต้อนรับ
-            if (!Schema::hasColumn('line_bot_ai_settings', 'greeting_message')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'greeting_message')) {
                 $table->text('greeting_message')->nullable()->after('response_style');
             }
 
             // จำนวนรอบการคุยสูงสุดก่อนส่งต่อ
-            if (!Schema::hasColumn('line_bot_ai_settings', 'max_conversation_turns')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'max_conversation_turns')) {
                 $table->integer('max_conversation_turns')->default(50)->after('greeting_message');
             }
 
             // เก็บข้อมูลผู้ใช้หรือไม่
-            if (!Schema::hasColumn('line_bot_ai_settings', 'collect_user_info')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'collect_user_info')) {
                 $table->boolean('collect_user_info')->default(true)->after('max_conversation_turns');
             }
 
             // ฟิลด์ที่ต้องเก็บ (JSON array)
-            if (!Schema::hasColumn('line_bot_ai_settings', 'required_fields')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'required_fields')) {
                 $table->json('required_fields')->nullable()->after('collect_user_info');
             }
 
             // ข้อความเมื่อหมดรอบการคุย
-            if (!Schema::hasColumn('line_bot_ai_settings', 'max_turns_message')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'max_turns_message')) {
                 $table->text('max_turns_message')->nullable()->after('required_fields');
             }
 
             // เปิดใช้งาน topic filtering
-            if (!Schema::hasColumn('line_bot_ai_settings', 'enable_topic_filtering')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'enable_topic_filtering')) {
                 $table->boolean('enable_topic_filtering')->default(true)->after('max_turns_message');
             }
 
             // ข้อความเมื่อคุยเรื่องที่ห้าม
-            if (!Schema::hasColumn('line_bot_ai_settings', 'off_topic_message')) {
+            if (! Schema::hasColumn('line_bot_ai_settings', 'off_topic_message')) {
                 $table->text('off_topic_message')->nullable()->after('enable_topic_filtering');
             }
         });
@@ -97,8 +95,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

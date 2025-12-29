@@ -2,17 +2,16 @@
 
 namespace App\Services\Crypto;
 
+use App\Models\CryptoAddress;
+use App\Models\CryptoCurrency;
 use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
-use App\Models\CryptoCurrency;
-use App\Models\CryptoAddress;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class BlockchainTransactionService
 {
     protected Web3Service $web3Service;
+
     protected CryptoPriceService $priceService;
 
     public function __construct(
@@ -25,13 +24,6 @@ class BlockchainTransactionService
 
     /**
      * Send cryptocurrency to external address
-     *
-     * @param CryptoWallet $wallet
-     * @param string $toAddress
-     * @param float $amount
-     * @param CryptoCurrency $currency
-     * @param string $network
-     * @return array
      */
     public function sendTransaction(
         CryptoWallet $wallet,
@@ -56,10 +48,10 @@ class BlockchainTransactionService
             }
 
             $fromAddress = $wallet->cryptoAddresses()
-                ->whereHas('currency', fn($q) => $q->where('network', $network))
+                ->whereHas('currency', fn ($q) => $q->where('network', $network))
                 ->first();
 
-            if (!$fromAddress) {
+            if (! $fromAddress) {
                 throw new \Exception('No address found for this network');
             }
 
@@ -183,19 +175,19 @@ class BlockchainTransactionService
         $transaction = [
             'from' => $this->getAddressFromPrivateKey($privateKey),
             'to' => $toAddress,
-            'value' => '0x' . dechex($amountWei),
+            'value' => '0x'.dechex($amountWei),
             'gas' => '0x5208', // 21000 gas for simple transfer
-            'gasPrice' => '0x' . dechex($gasPrice),
-            'nonce' => '0x' . dechex($nonce),
+            'gasPrice' => '0x'.dechex($gasPrice),
+            'nonce' => '0x'.dechex($nonce),
         ];
 
         // Sign transaction
         $signedTx = $this->signTransaction($transaction, $privateKey);
 
         // Send raw transaction
-        $txHash = $web3->eth->sendRawTransaction('0x' . $signedTx, function ($err, $hash) {
+        $txHash = $web3->eth->sendRawTransaction('0x'.$signedTx, function ($err, $hash) {
             if ($err !== null) {
-                throw new \Exception('Failed to send transaction: ' . $err->getMessage());
+                throw new \Exception('Failed to send transaction: '.$err->getMessage());
             }
         });
 
@@ -225,7 +217,7 @@ class BlockchainTransactionService
         $toAddressEncoded = str_pad(substr($toAddress, 2), 64, '0', STR_PAD_LEFT);
         $amountEncoded = str_pad(dechex($amountInSmallestUnit), 64, '0', STR_PAD_LEFT);
 
-        $data = $functionSignature . $toAddressEncoded . $amountEncoded;
+        $data = $functionSignature.$toAddressEncoded.$amountEncoded;
 
         // Get nonce
         $fromAddress = $this->getAddressFromPrivateKey($privateKey);
@@ -242,9 +234,9 @@ class BlockchainTransactionService
             'from' => $fromAddress,
             'to' => $currency->contract_address,
             'value' => '0x0',
-            'gas' => '0x' . dechex($gasLimit),
-            'gasPrice' => '0x' . dechex($gasPrice),
-            'nonce' => '0x' . dechex($nonce),
+            'gas' => '0x'.dechex($gasLimit),
+            'gasPrice' => '0x'.dechex($gasPrice),
+            'nonce' => '0x'.dechex($nonce),
             'data' => $data,
         ];
 
@@ -252,9 +244,9 @@ class BlockchainTransactionService
         $signedTx = $this->signTransaction($transaction, $privateKey);
 
         // Send raw transaction
-        $txHash = $web3->eth->sendRawTransaction('0x' . $signedTx, function ($err, $hash) {
+        $txHash = $web3->eth->sendRawTransaction('0x'.$signedTx, function ($err, $hash) {
             if ($err !== null) {
-                throw new \Exception('Failed to send token transfer: ' . $err->getMessage());
+                throw new \Exception('Failed to send token transfer: '.$err->getMessage());
             }
         });
 
@@ -339,7 +331,7 @@ class BlockchainTransactionService
     protected function getRequiredConfirmations(CryptoCurrency $currency): int
     {
         // Different networks require different confirmation counts
-        return match($currency->network) {
+        return match ($currency->network) {
             'ethereum' => 12,
             'bsc' => 15,
             'polygon' => 128,
@@ -360,7 +352,7 @@ class BlockchainTransactionService
             'bitcoin' => 'BTC',
         ];
 
-        if (!isset($codes[$network])) {
+        if (! isset($codes[$network])) {
             return null;
         }
 
@@ -376,7 +368,7 @@ class BlockchainTransactionService
         // In production, retrieve from secure key management system
         // For now, this is a placeholder
 
-        if (!$address->encrypted_private_key) {
+        if (! $address->encrypted_private_key) {
             throw new \Exception('Private key not found for custodial wallet');
         }
 
@@ -390,7 +382,7 @@ class BlockchainTransactionService
     {
         // Use elliptic curve cryptography to derive address from private key
         // This is a simplified version
-        return '0x' . substr(hash('sha256', $privateKey), 0, 40);
+        return '0x'.substr(hash('sha256', $privateKey), 0, 40);
     }
 
     /**
@@ -407,7 +399,7 @@ class BlockchainTransactionService
         // Sign with private key (simplified)
         $signature = hash_hmac('sha256', $hash, $privateKey);
 
-        return $signature . $rlpEncoded;
+        return $signature.$rlpEncoded;
     }
 
     /**
@@ -428,7 +420,7 @@ class BlockchainTransactionService
         try {
             $receipt = $this->web3Service->getTransactionReceipt($network, $txHash);
 
-            if (!$receipt) {
+            if (! $receipt) {
                 return [
                     'status' => 'pending',
                     'confirmations' => 0,
@@ -464,7 +456,7 @@ class BlockchainTransactionService
      */
     public function updateTransactionConfirmations(CryptoTransaction $transaction): bool
     {
-        if (!$transaction->tx_hash) {
+        if (! $transaction->tx_hash) {
             return false;
         }
 

@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $product_id
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read User $user
  * @property-read Product $product
  */
@@ -43,8 +42,6 @@ class ProductLike extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -53,8 +50,6 @@ class ProductLike extends Model
 
     /**
      * ความสัมพันธ์กับ Product
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -64,8 +59,6 @@ class ProductLike extends Model
     /**
      * Toggle like สำหรับสินค้า
      *
-     * @param int $userId
-     * @param int $productId
      * @return array{liked: bool, count: int}
      */
     public static function toggle(int $userId, int $productId): array
@@ -94,10 +87,6 @@ class ProductLike extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้กดถูกใจสินค้านี้หรือไม่
-     *
-     * @param int $userId
-     * @param int $productId
-     * @return bool
      */
     public static function isLiked(int $userId, int $productId): bool
     {

@@ -97,6 +97,7 @@ class Quiz extends Model
         }
 
         $attemptCount = $this->userAttempts($userId)->count();
+
         return $attemptCount < $this->max_attempts;
     }
 

@@ -67,8 +67,6 @@ class Affiliate extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -77,8 +75,6 @@ class Affiliate extends Model
 
     /**
      * ความสัมพันธ์กับ Affiliate (sponsor/parent)
-     *
-     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -87,8 +83,6 @@ class Affiliate extends Model
 
     /**
      * ความสัมพันธ์กับ Affiliates ที่แนะนำมา (children/downline)
-     *
-     * @return HasMany
      */
     public function children(): HasMany
     {
@@ -98,7 +92,7 @@ class Affiliate extends Model
     /**
      * Scope สำหรับ affiliate ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -109,7 +103,7 @@ class Affiliate extends Model
     /**
      * Scope สำหรับ affiliate ที่ inactive
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInactive($query)
@@ -120,7 +114,7 @@ class Affiliate extends Model
     /**
      * Scope สำหรับ affiliate ที่ suspended
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuspended($query)
@@ -130,8 +124,6 @@ class Affiliate extends Model
 
     /**
      * ตรวจสอบว่า affiliate เป็น active หรือไม่
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
@@ -141,8 +133,7 @@ class Affiliate extends Model
     /**
      * เพิ่มจำนวนผู้แนะนำ
      *
-     * @param int $count จำนวนที่ต้องการเพิ่ม
-     * @return bool
+     * @param  int  $count  จำนวนที่ต้องการเพิ่ม
      */
     public function incrementReferrals(int $count = 1): bool
     {
@@ -152,8 +143,7 @@ class Affiliate extends Model
     /**
      * เพิ่มรายได้รวม
      *
-     * @param float $amount จำนวนเงินที่ต้องการเพิ่ม
-     * @return bool
+     * @param  float  $amount  จำนวนเงินที่ต้องการเพิ่ม
      */
     public function incrementEarnings(float $amount): bool
     {
@@ -179,8 +169,6 @@ class Affiliate extends Model
 
     /**
      * นับจำนวน downline ทั้งหมด
-     *
-     * @return int
      */
     public function countAllDownline(): int
     {
@@ -190,14 +178,13 @@ class Affiliate extends Model
     /**
      * สร้างรหัสแนะนำแบบ unique
      *
-     * @param string $prefix คำนำหน้า (default: 'REF')
-     * @param int $length ความยาว (default: 8)
-     * @return string
+     * @param  string  $prefix  คำนำหน้า (default: 'REF')
+     * @param  int  $length  ความยาว (default: 8)
      */
     public static function generateReferralCode(string $prefix = 'REF', int $length = 8): string
     {
         do {
-            $code = $prefix . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, $length));
+            $code = $prefix.strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, $length));
         } while (static::where('referral_code', $code)->exists());
 
         return $code;

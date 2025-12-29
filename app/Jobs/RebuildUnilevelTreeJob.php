@@ -45,15 +45,10 @@ class RebuildUnilevelTreeJob implements ShouldQueue
      */
     public int $timeout = 1800;
 
-    /**
-     * @var int
-     */
     protected int $taskId;
 
     /**
      * Create a new job instance.
-     *
-     * @param int $taskId
      */
     public function __construct(int $taskId)
     {
@@ -69,17 +64,19 @@ class RebuildUnilevelTreeJob implements ShouldQueue
 
         $task = MlmRebuildTask::find($this->taskId);
 
-        if (!$task) {
+        if (! $task) {
             Log::error('Task not found', ['task_id' => $this->taskId]);
+
             return;
         }
 
         // ตรวจสอบสถานะ
-        if (!in_array($task->status, [MlmRebuildTask::STATUS_PENDING, MlmRebuildTask::STATUS_RUNNING])) {
+        if (! in_array($task->status, [MlmRebuildTask::STATUS_PENDING, MlmRebuildTask::STATUS_RUNNING])) {
             Log::warning('Task is not in valid state for processing', [
                 'task_id' => $this->taskId,
                 'status' => $task->status,
             ]);
+
             return;
         }
 
@@ -128,7 +125,7 @@ class RebuildUnilevelTreeJob implements ShouldQueue
      */
     public function uniqueId(): string
     {
-        return 'rebuild_unilevel_' . $this->taskId;
+        return 'rebuild_unilevel_'.$this->taskId;
     }
 
     /**
@@ -138,6 +135,6 @@ class RebuildUnilevelTreeJob implements ShouldQueue
      */
     public function tags(): array
     {
-        return ['mlm', 'rebuild', 'unilevel', 'task:' . $this->taskId];
+        return ['mlm', 'rebuild', 'unilevel', 'task:'.$this->taskId];
     }
 }

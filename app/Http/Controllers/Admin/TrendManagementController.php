@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\TrendKeyword;
 use App\Models\TrendSource;
 use App\Models\ViralTrend;
-use App\Models\TrendKeyword;
-use App\Services\TrendDetection\ViralTrendDetectionService;
-use App\Services\TrendDetection\TrendScraperService;
 use App\Services\TrendDetection\TrendContentGeneratorService;
+use App\Services\TrendDetection\TrendScraperService;
+use App\Services\TrendDetection\ViralTrendDetectionService;
 use Illuminate\Http\Request;
 
 class TrendManagementController extends Controller

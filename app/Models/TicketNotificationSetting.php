@@ -72,7 +72,8 @@ class TicketNotificationSetting extends Model
      */
     public function shouldNotifyEmail($event)
     {
-        $field = 'email_on_' . $event;
+        $field = 'email_on_'.$event;
+
         return $this->$field ?? false;
     }
 
@@ -81,7 +82,8 @@ class TicketNotificationSetting extends Model
      */
     public function shouldNotifyInApp($event)
     {
-        $field = 'notify_on_' . $event;
+        $field = 'notify_on_'.$event;
+
         return $this->$field ?? false;
     }
 }

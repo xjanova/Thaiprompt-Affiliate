@@ -108,7 +108,7 @@ class ArticleManagementController extends Controller
         }
 
         // Parse tags
-        if (!empty($validated['tags'])) {
+        if (! empty($validated['tags'])) {
             $validated['tags'] = array_map('trim', explode(',', $validated['tags']));
         }
 
@@ -123,7 +123,7 @@ class ArticleManagementController extends Controller
         $article = LearningArticle::create($validated);
 
         // Sync prerequisites
-        if (!empty($request->prerequisites)) {
+        if (! empty($request->prerequisites)) {
             $prerequisites = [];
             foreach ($request->prerequisites as $prereqId) {
                 $prerequisites[$prereqId] = ['is_required' => true];
@@ -159,7 +159,7 @@ class ArticleManagementController extends Controller
         $validated = $request->validate([
             'category_id' => 'required|exists:learning_categories,id',
             'title' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:learning_articles,slug,' . $article->id,
+            'slug' => 'nullable|string|unique:learning_articles,slug,'.$article->id,
             'excerpt' => 'nullable|string',
             'content' => 'required|string',
             'thumbnail' => 'nullable|image|max:2048',
@@ -198,16 +198,16 @@ class ArticleManagementController extends Controller
         }
 
         // Parse tags
-        if (!empty($validated['tags'])) {
+        if (! empty($validated['tags'])) {
             $validated['tags'] = array_map('trim', explode(',', $validated['tags']));
         } else {
             $validated['tags'] = [];
         }
 
         // Set published_at
-        if (($validated['is_published'] ?? false) && !$article->published_at) {
+        if (($validated['is_published'] ?? false) && ! $article->published_at) {
             $validated['published_at'] = now();
-        } elseif (!($validated['is_published'] ?? false)) {
+        } elseif (! ($validated['is_published'] ?? false)) {
             $validated['published_at'] = null;
         }
 
@@ -272,7 +272,7 @@ class ArticleManagementController extends Controller
         $article->permissions()->delete();
 
         // Add new permissions
-        if (!empty($validated['permissions'])) {
+        if (! empty($validated['permissions'])) {
             foreach ($validated['permissions'] as $permission) {
                 $article->permissions()->create([
                     'permission_type' => $permission['type'],

@@ -156,8 +156,6 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ความสัมพันธ์กับ Deployment
-     *
-     * @return BelongsTo
      */
     public function deployment(): BelongsTo
     {
@@ -166,8 +164,6 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -176,8 +172,6 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ความสัมพันธ์กับ Alert
-     *
-     * @return BelongsTo
      */
     public function alert(): BelongsTo
     {
@@ -187,7 +181,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks ที่สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuccessful($query)
@@ -198,7 +192,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks ที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -209,8 +203,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks ตาม status
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStatus($query, string $status)
@@ -221,7 +214,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks ที่ unhealthy
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnhealthy($query)
@@ -232,7 +225,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks ล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecent($query)
@@ -243,8 +236,7 @@ class AiRentalHealthCheck extends Model
     /**
      * Scope: Health checks สำหรับ deployment
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $deploymentId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForDeployment($query, int $deploymentId)
@@ -254,8 +246,6 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ตรวจสอบว่า healthy หรือไม่
-     *
-     * @return bool
      */
     public function isHealthy(): bool
     {
@@ -264,18 +254,14 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ตรวจสอบว่าควร retry หรือไม่
-     *
-     * @return bool
      */
     public function shouldRetry(): bool
     {
-        return !$this->is_success && $this->retry_count < $this->max_retries;
+        return ! $this->is_success && $this->retry_count < $this->max_retries;
     }
 
     /**
      * เพิ่ม retry count
-     *
-     * @return bool
      */
     public function incrementRetry(): bool
     {
@@ -290,12 +276,10 @@ class AiRentalHealthCheck extends Model
 
     /**
      * ตรวจสอบ thresholds
-     *
-     * @return bool
      */
     public function checkThresholds(): bool
     {
-        if (!$this->thresholds) {
+        if (! $this->thresholds) {
             return false;
         }
 
@@ -329,8 +313,6 @@ class AiRentalHealthCheck extends Model
 
     /**
      * พยายาม auto-recovery
-     *
-     * @return bool
      */
     public function attemptRecovery(): bool
     {
@@ -364,9 +346,7 @@ class AiRentalHealthCheck extends Model
     /**
      * คำนวณ uptime percentage จาก health checks
      *
-     * @param int $deploymentId
-     * @param int $hours ย้อนหลังกี่ชั่วโมง
-     * @return float
+     * @param  int  $hours  ย้อนหลังกี่ชั่วโมง
      */
     public static function calculateUptime(int $deploymentId, int $hours = 24): float
     {

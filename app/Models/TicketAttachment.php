@@ -84,7 +84,7 @@ class TicketAttachment extends Model
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
@@ -155,7 +155,7 @@ class TicketAttachment extends Model
     {
         $extension = strtolower($this->extension);
 
-        return match($extension) {
+        return match ($extension) {
             'pdf' => 'fa-file-pdf text-red-500',
             'doc', 'docx' => 'fa-file-word text-blue-500',
             'xls', 'xlsx' => 'fa-file-excel text-green-500',

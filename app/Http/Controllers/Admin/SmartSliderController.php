@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\SmartSlider;
 use App\Models\SmartSliderTemplate;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class SmartSliderController extends Controller
@@ -128,7 +127,7 @@ class SmartSliderController extends Controller
     public function togglePublish(SmartSlider $smartSlider)
     {
         $smartSlider->update([
-            'is_published' => !$smartSlider->is_published
+            'is_published' => ! $smartSlider->is_published,
         ]);
 
         $status = $smartSlider->is_published ? 'เผยแพร่' : 'ซ่อน';
@@ -136,7 +135,7 @@ class SmartSliderController extends Controller
         return response()->json([
             'success' => true,
             'message' => "Slider ถูก{$status}แล้ว",
-            'is_published' => $smartSlider->is_published
+            'is_published' => $smartSlider->is_published,
         ]);
     }
 
@@ -183,10 +182,10 @@ class SmartSliderController extends Controller
             })->toArray(),
         ];
 
-        $filename = Str::slug($slider->name) . '-' . date('Y-m-d') . '.json';
+        $filename = Str::slug($slider->name).'-'.date('Y-m-d').'.json';
 
         return response()->json($exportData)
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
     /**
@@ -201,13 +200,13 @@ class SmartSliderController extends Controller
         $content = file_get_contents($request->file('file')->getRealPath());
         $data = json_decode($content, true);
 
-        if (!$data) {
+        if (! $data) {
             return back()->with('error', 'ไฟล์ไม่ถูกต้อง');
         }
 
         // Create slider
         $sliderData = [
-            'name' => $data['name'] . ' (Imported)',
+            'name' => $data['name'].' (Imported)',
             'description' => $data['description'] ?? null,
             'type' => $data['type'] ?? 'simple',
             'width' => $data['width'] ?? 1200,

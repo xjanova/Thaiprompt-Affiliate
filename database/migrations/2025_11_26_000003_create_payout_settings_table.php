@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง payout_settings
      * ตั้งค่าระบบจ่ายเงินอัจฉริยะ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -29,7 +27,7 @@ return new class extends Migration
                 'manual',           // Admin อนุมัติทุกรายการ
                 'auto_schedule',    // จ่ายอัตโนมัติตามกำหนด
                 'realtime',         // จ่ายทันทีเมื่อมีรายได้
-                'hybrid'            // ผสม (ยอดน้อย auto, ยอดมาก manual)
+                'hybrid',            // ผสม (ยอดน้อย auto, ยอดมาก manual)
             ])->default('manual');
 
             // ตั้งค่าการจ่ายอัตโนมัติ
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง payout_settings
-     *
-     * @return void
      */
     public function down(): void
     {

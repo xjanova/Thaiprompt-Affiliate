@@ -54,10 +54,15 @@ class PlatformWallet extends Model
      * ประเภทกระเป๋า
      */
     const TYPE_PLATFORM_FEE = 'platform_fee';
+
     const TYPE_VAT = 'vat';
+
     const TYPE_MLM_POOL = 'mlm_pool';
+
     const TYPE_RESERVE = 'reserve';
+
     const TYPE_REFUND_POOL = 'refund_pool';
+
     const TYPE_OTHER = 'other';
 
     /**
@@ -195,12 +200,11 @@ class PlatformWallet extends Model
     /**
      * เพิ่มเงินเข้ากระเป๋า
      *
-     * @param float $amount จำนวนเงิน
-     * @param string $subType ประเภทย่อย
-     * @param string|null $sourceType ที่มา
-     * @param int|null $sourceId ID ที่มา
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $subType  ประเภทย่อย
+     * @param  string|null  $sourceType  ที่มา
+     * @param  int|null  $sourceId  ID ที่มา
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function addFunds(
         float $amount,
@@ -235,12 +239,12 @@ class PlatformWallet extends Model
     /**
      * หักเงินจากกระเป๋า
      *
-     * @param float $amount จำนวนเงิน
-     * @param string $subType ประเภทย่อย
-     * @param string|null $sourceType ที่มา
-     * @param int|null $sourceId ID ที่มา
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $subType  ประเภทย่อย
+     * @param  string|null  $sourceType  ที่มา
+     * @param  int|null  $sourceId  ID ที่มา
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
+     *
      * @throws \Exception
      */
     public function deductFunds(

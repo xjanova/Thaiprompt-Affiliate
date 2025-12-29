@@ -76,7 +76,7 @@ class TradingTrade extends Model
 
         static::creating(function ($trade) {
             if (empty($trade->trade_id)) {
-                $trade->trade_id = 'TRD-' . Str::upper(Str::random(12));
+                $trade->trade_id = 'TRD-'.Str::upper(Str::random(12));
             }
         });
     }

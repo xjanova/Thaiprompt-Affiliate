@@ -136,8 +136,6 @@ class ThemeSetting extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeColor
-     *
-     * @return HasOne
      */
     public function color(): HasOne
     {
@@ -146,8 +144,6 @@ class ThemeSetting extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeRgbEffect (หลายเอฟเฟกต์)
-     *
-     * @return HasMany
      */
     public function rgbEffects(): HasMany
     {
@@ -156,8 +152,6 @@ class ThemeSetting extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeTypography
-     *
-     * @return HasOne
      */
     public function typography(): HasOne
     {
@@ -166,8 +160,6 @@ class ThemeSetting extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeComponent (หลาย components)
-     *
-     * @return HasMany
      */
     public function components(): HasMany
     {
@@ -176,8 +168,6 @@ class ThemeSetting extends Model
 
     /**
      * ดึง Theme Setting ที่กำลัง active
-     *
-     * @return static|null
      */
     public static function active(): ?static
     {

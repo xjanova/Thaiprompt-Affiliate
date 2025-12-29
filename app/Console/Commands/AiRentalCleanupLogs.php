@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AiRental\AuditService;
 use App\Models\AiRentalAuditLog;
+use App\Services\AiRental\AuditService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AI Rental Cleanup Audit Logs Command
@@ -37,15 +37,11 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * Audit Service
-     *
-     * @var AuditService
      */
     protected AuditService $auditService;
 
     /**
      * Statistics
-     *
-     * @var array
      */
     protected array $stats = [
         'total_old_logs' => 0,
@@ -58,8 +54,6 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * Constructor
-     *
-     * @param AuditService $auditService
      */
     public function __construct(AuditService $auditService)
     {
@@ -69,8 +63,6 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * Execute the command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -89,6 +81,7 @@ class AiRentalCleanupLogs extends Command
 
             if ($this->stats['total_old_logs'] === 0) {
                 $this->info('✅ ไม่มี audit logs เก่าต้องลบ');
+
                 return 0;
             }
 
@@ -98,16 +91,17 @@ class AiRentalCleanupLogs extends Command
             }
 
             // ถามยืนยัน
-            if (!$this->option('dry-run') && !$this->option('no-interaction')) {
-                if (!$this->confirm("ต้องการลบ {$this->stats['total_old_logs']} audit logs หรือไม่?", true)) {
+            if (! $this->option('dry-run') && ! $this->option('no-interaction')) {
+                if (! $this->confirm("ต้องการลบ {$this->stats['total_old_logs']} audit logs หรือไม่?", true)) {
                     $this->warn('❌ ยกเลิกการลบ');
+
                     return 0;
                 }
                 $this->newLine();
             }
 
             // ลบ logs
-            if (!$this->option('dry-run')) {
+            if (! $this->option('dry-run')) {
                 $this->deleteLogs($days);
             }
 
@@ -116,37 +110,32 @@ class AiRentalCleanupLogs extends Command
 
             return $this->stats['failed'] > 0 ? 1 : 0;
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาดในการลบ audit logs: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาดในการลบ audit logs: '.$e->getMessage());
             Log::error('AI Rental audit log cleanup failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 1;
         }
     }
 
     /**
      * แสดงข้อมูลเบื้องต้น
-     *
-     * @param int $days
-     * @return void
      */
     protected function displayInitialInfo(int $days): void
     {
         $cutoffDate = now()->subDays($days);
 
         $this->info("📅 จะลบ logs ที่เก่ากว่า {$days} วัน (ก่อน {$cutoffDate->format('Y-m-d H:i:s')})");
-        $this->info("🔒 เงื่อนไข:");
-        $this->line("   • ไม่ลบ logs ที่ sensitive: " . ($this->option('keep-sensitive') ? '✅' : '❌'));
-        $this->line("   • ไม่ลบ logs ที่ต้อง review: " . ($this->option('keep-review') ? '✅' : '❌'));
+        $this->info('🔒 เงื่อนไข:');
+        $this->line('   • ไม่ลบ logs ที่ sensitive: '.($this->option('keep-sensitive') ? '✅' : '❌'));
+        $this->line('   • ไม่ลบ logs ที่ต้อง review: '.($this->option('keep-review') ? '✅' : '❌'));
         $this->newLine();
     }
 
     /**
      * นับจำนวน logs เก่า
-     *
-     * @param int $days
-     * @return void
      */
     protected function countOldLogs(int $days): void
     {
@@ -172,16 +161,16 @@ class AiRentalCleanupLogs extends Command
 
         $this->stats['total_old_logs'] = $deleteQuery->count();
 
-        $this->info("📊 สถิติ Audit Logs:");
-        $this->line("   • Logs ทั้งหมดที่เก่ากว่า {$days} วัน: " . number_format($totalCount));
-        $this->line("   • จะลบ: " . number_format($this->stats['total_old_logs']));
+        $this->info('📊 สถิติ Audit Logs:');
+        $this->line("   • Logs ทั้งหมดที่เก่ากว่า {$days} วัน: ".number_format($totalCount));
+        $this->line('   • จะลบ: '.number_format($this->stats['total_old_logs']));
 
         if ($this->stats['kept_sensitive'] > 0) {
-            $this->line("   • เก็บไว้ (sensitive): " . number_format($this->stats['kept_sensitive']));
+            $this->line('   • เก็บไว้ (sensitive): '.number_format($this->stats['kept_sensitive']));
         }
 
         if ($this->stats['kept_review'] > 0) {
-            $this->line("   • เก็บไว้ (require review): " . number_format($this->stats['kept_review']));
+            $this->line('   • เก็บไว้ (require review): '.number_format($this->stats['kept_review']));
         }
 
         $this->newLine();
@@ -189,9 +178,6 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * แสดง sample logs ที่จะลบ
-     *
-     * @param int $days
-     * @return void
      */
     protected function displaySampleLogs(int $days): void
     {
@@ -239,9 +225,6 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * ลบ logs แบบ batch
-     *
-     * @param int $days
-     * @return void
      */
     protected function deleteLogs(int $days): void
     {
@@ -300,10 +283,6 @@ class AiRentalCleanupLogs extends Command
 
     /**
      * แสดงสรุปผล
-     *
-     * @param \Carbon\Carbon $startTime
-     * @param int $days
-     * @return void
      */
     protected function displaySummary(\Carbon\Carbon $startTime, int $days): void
     {
@@ -313,7 +292,7 @@ class AiRentalCleanupLogs extends Command
         $this->table(
             ['รายการ', 'จำนวน'],
             [
-                ['Logs เก่ากว่า ' . $days . ' วัน', number_format($this->stats['total_old_logs'])],
+                ['Logs เก่ากว่า '.$days.' วัน', number_format($this->stats['total_old_logs'])],
                 ['🗑️  ลบแล้ว', number_format($this->stats['deleted'])],
                 ['🔒 เก็บไว้ (sensitive)', number_format($this->stats['kept_sensitive'])],
                 ['📋 เก็บไว้ (review)', number_format($this->stats['kept_review'])],
@@ -328,11 +307,11 @@ class AiRentalCleanupLogs extends Command
             $this->warn('🔍 Dry-run mode: ไม่มีการลบจริง');
         } elseif ($this->stats['failed'] > 0) {
             $this->newLine();
-            $this->warn("⚠️  การลบล้มเหลว");
+            $this->warn('⚠️  การลบล้มเหลว');
         } elseif ($this->stats['deleted'] > 0) {
             $this->newLine();
             $freed = $this->stats['deleted'] * 2; // ประมาณ 2KB per log
-            $this->info("✅ ทำความสะอาดสำเร็จ! ประหยัดพื้นที่ประมาณ " . number_format($freed) . " KB");
+            $this->info('✅ ทำความสะอาดสำเร็จ! ประหยัดพื้นที่ประมาณ '.number_format($freed).' KB');
         }
 
         $this->newLine();

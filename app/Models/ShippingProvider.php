@@ -82,12 +82,11 @@ class ShippingProvider extends Model
     /**
      * สร้าง URL ติดตามพัสดุ
      *
-     * @param string $trackingNumber เลขพัสดุ
-     * @return string|null
+     * @param  string  $trackingNumber  เลขพัสดุ
      */
     public function getTrackingLink(string $trackingNumber): ?string
     {
-        if (!$this->tracking_url || !$trackingNumber) {
+        if (! $this->tracking_url || ! $trackingNumber) {
             return null;
         }
 

@@ -164,8 +164,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -174,8 +172,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ความสัมพันธ์กับ Deployment
-     *
-     * @return BelongsTo
      */
     public function deployment(): BelongsTo
     {
@@ -184,8 +180,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ความสัมพันธ์กับ Cloud Config
-     *
-     * @return BelongsTo
      */
     public function cloudConfig(): BelongsTo
     {
@@ -194,8 +188,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ความสัมพันธ์กับ Reviewer
-     *
-     * @return BelongsTo
      */
     public function reviewer(): BelongsTo
     {
@@ -204,8 +196,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ความสัมพันธ์กับ Parent Audit Log
-     *
-     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -215,8 +205,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs สำหรับ user
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -227,8 +216,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ตาม action category
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCategory($query, string $category)
@@ -239,8 +227,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ตาม action type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActionType($query, string $type)
@@ -251,7 +238,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -262,7 +249,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ที่ต้องการ review
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRequiresReview($query)
@@ -274,7 +261,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ที่เป็น sensitive
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSensitive($query)
@@ -285,7 +272,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Logs ล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecent($query)
@@ -296,8 +283,7 @@ class AiRentalAuditLog extends Model
     /**
      * Scope: Search logs
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearch($query, string $search)
@@ -311,40 +297,37 @@ class AiRentalAuditLog extends Model
 
     /**
      * บันทึก audit log
-     *
-     * @param array $data
-     * @return static
      */
     public static function log(array $data): static
     {
         // Auto-capture request info ถ้าไม่ได้ระบุ
-        if (!isset($data['ip_address'])) {
+        if (! isset($data['ip_address'])) {
             $data['ip_address'] = Request::ip();
         }
 
-        if (!isset($data['user_agent'])) {
+        if (! isset($data['user_agent'])) {
             $data['user_agent'] = Request::userAgent();
         }
 
-        if (!isset($data['http_method'])) {
+        if (! isset($data['http_method'])) {
             $data['http_method'] = Request::method();
         }
 
-        if (!isset($data['url'])) {
+        if (! isset($data['url'])) {
             $data['url'] = Request::fullUrl();
         }
 
-        if (!isset($data['action_at'])) {
+        if (! isset($data['action_at'])) {
             $data['action_at'] = now();
         }
 
         // Set default status
-        if (!isset($data['status'])) {
+        if (! isset($data['status'])) {
             $data['status'] = 'success';
         }
 
         // Set default severity
-        if (!isset($data['severity'])) {
+        if (! isset($data['severity'])) {
             $data['severity'] = 'low';
         }
 
@@ -353,11 +336,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * บันทึก deployment action
-     *
-     * @param string $action
-     * @param AiRentalDeployment $deployment
-     * @param array $additionalData
-     * @return static
      */
     public static function logDeploymentAction(string $action, AiRentalDeployment $deployment, array $additionalData = []): static
     {
@@ -375,11 +353,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * บันทึก config action
-     *
-     * @param string $action
-     * @param AiRentalCloudConfig $config
-     * @param array $additionalData
-     * @return static
      */
     public static function logConfigAction(string $action, AiRentalCloudConfig $config, array $additionalData = []): static
     {
@@ -397,10 +370,6 @@ class AiRentalAuditLog extends Model
 
     /**
      * ทำเครื่องหมายว่า reviewed แล้ว
-     *
-     * @param int $reviewerId
-     * @param string|null $notes
-     * @return bool
      */
     public function markAsReviewed(int $reviewerId, ?string $notes = null): bool
     {
@@ -417,12 +386,10 @@ class AiRentalAuditLog extends Model
 
     /**
      * คำนวณ changes diff
-     *
-     * @return array
      */
     public function getChangesDiff(): array
     {
-        if (!$this->changes_before || !$this->changes_after) {
+        if (! $this->changes_before || ! $this->changes_after) {
             return [];
         }
 
@@ -442,11 +409,9 @@ class AiRentalAuditLog extends Model
 
     /**
      * ตรวจสอบว่ามี cost impact หรือไม่
-     *
-     * @return bool
      */
     public function hasCostImpact(): bool
     {
-        return !is_null($this->cost_impact) && $this->cost_impact != 0;
+        return ! is_null($this->cost_impact) && $this->cost_impact != 0;
     }
 }

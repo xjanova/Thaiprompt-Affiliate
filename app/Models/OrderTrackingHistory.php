@@ -77,12 +77,6 @@ class OrderTrackingHistory extends Model
 
     /**
      * สร้างประวัติใหม่
-     *
-     * @param Order $order
-     * @param string $status
-     * @param string $title
-     * @param array $options
-     * @return static
      */
     public static function createEntry(
         Order $order,

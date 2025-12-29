@@ -2,16 +2,16 @@
 
 namespace App\Services\TPIX;
 
-use App\Models\User;
+use App\Models\CryptoCurrency;
+use App\Models\CryptoWallet;
 use App\Models\TPIXToken;
 use App\Models\TPIXTokenBalance;
 use App\Models\TPIXTokenTransfer;
-use App\Models\CryptoWallet;
-use App\Models\CryptoCurrency;
+use App\Models\User;
 use App\Services\Crypto\TPIXBlockchainService;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Token Wallet Integration Service
@@ -34,7 +34,7 @@ class TokenWalletIntegrationService
     {
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             throw new Exception('TPIX currency not found in database');
         }
 
@@ -52,7 +52,7 @@ class TokenWalletIntegrationService
         );
 
         // Generate address if not exists
-        if (!$wallet->address) {
+        if (! $wallet->address) {
             $wallet->address = $this->generateTPIXAddress($user);
             $wallet->save();
         }
@@ -120,7 +120,7 @@ class TokenWalletIntegrationService
             } else {
                 // External address
                 $toAddress = $toAddressOrEmail;
-                if (!$this->blockchain->isValidAddress($toAddress)) {
+                if (! $this->blockchain->isValidAddress($toAddress)) {
                     throw new Exception('Invalid recipient address or email');
                 }
             }
@@ -141,7 +141,7 @@ class TokenWalletIntegrationService
                 $toBalance->increment('available_balance', $amount);
                 $toBalance->increment('total_received', $amount);
 
-                if (!$toBalance->first_received_at) {
+                if (! $toBalance->first_received_at) {
                     $toBalance->update(['first_received_at' => now()]);
                 }
 
@@ -173,14 +173,14 @@ class TokenWalletIntegrationService
                 'from_user_id' => $fromUser->id,
                 'to_user_id' => $toUser?->id,
                 'amount' => $amount,
-                'tx_hash' => $txHash
+                'tx_hash' => $txHash,
             ]);
 
             return [
                 'success' => true,
                 'tx_hash' => $txHash,
                 'transfer_id' => $transfer->id,
-                'explorer_url' => config('crypto.networks.tpix.explorer') . '/tx/' . $txHash
+                'explorer_url' => config('crypto.networks.tpix.explorer').'/tx/'.$txHash,
             ];
 
         } catch (Exception $e) {
@@ -188,7 +188,7 @@ class TokenWalletIntegrationService
             Log::error('Token transfer failed', [
                 'token_id' => $token->id,
                 'from_user_id' => $fromUser->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -211,7 +211,7 @@ class TokenWalletIntegrationService
             }
 
             // Calculate token amount based on price
-            if (!$token->current_price_tpix || $token->current_price_tpix <= 0) {
+            if (! $token->current_price_tpix || $token->current_price_tpix <= 0) {
                 throw new Exception('Token price not set');
             }
 
@@ -226,7 +226,7 @@ class TokenWalletIntegrationService
             $tokenBalance->increment('available_balance', $tokenAmount);
             $tokenBalance->increment('total_received', $tokenAmount);
 
-            if (!$tokenBalance->first_received_at) {
+            if (! $tokenBalance->first_received_at) {
                 $tokenBalance->update(['first_received_at' => now()]);
             }
 
@@ -253,7 +253,7 @@ class TokenWalletIntegrationService
                 'token_id' => $token->id,
                 'user_id' => $user->id,
                 'tpix_amount' => $tpixAmount,
-                'token_amount' => $tokenAmount
+                'token_amount' => $tokenAmount,
             ]);
 
             return [
@@ -268,7 +268,7 @@ class TokenWalletIntegrationService
             Log::error('Token purchase failed', [
                 'token_id' => $token->id,
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -291,7 +291,7 @@ class TokenWalletIntegrationService
             }
 
             // Calculate TPIX amount
-            if (!$token->current_price_tpix || $token->current_price_tpix <= 0) {
+            if (! $token->current_price_tpix || $token->current_price_tpix <= 0) {
                 throw new Exception('Token price not set');
             }
 
@@ -329,7 +329,7 @@ class TokenWalletIntegrationService
                 'token_id' => $token->id,
                 'user_id' => $user->id,
                 'token_amount' => $tokenAmount,
-                'tpix_received' => $tpixAmount
+                'tpix_received' => $tpixAmount,
             ]);
 
             return [
@@ -344,7 +344,7 @@ class TokenWalletIntegrationService
             Log::error('Token sale failed', [
                 'token_id' => $token->id,
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -363,6 +363,7 @@ class TokenWalletIntegrationService
 
         // Try by wallet address
         $wallet = CryptoWallet::where('address', $emailOrAddress)->first();
+
         return $wallet ? $wallet->user : null;
     }
 
@@ -373,7 +374,7 @@ class TokenWalletIntegrationService
     {
         // In production: Derive from HD wallet or generate unique address
         // For now: Generate random address
-        return '0x' . bin2hex(random_bytes(20));
+        return '0x'.bin2hex(random_bytes(20));
     }
 
     /**
@@ -381,17 +382,17 @@ class TokenWalletIntegrationService
      */
     protected function simulateTokenTransfer($token, $from, $to, $amount): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     protected function simulateTokenPurchase($token, $user, $tokenAmount, $tpixAmount): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     protected function simulateTokenSale($token, $user, $tokenAmount, $tpixAmount): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     /**

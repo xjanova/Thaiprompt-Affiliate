@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Notification;
 use App\Models\Rank;
 use App\Models\RankPromotion;
-use App\Models\UserRankProgress;
 use App\Models\RankSetting;
-use App\Models\Notification;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Models\UserRankProgress;
 use Illuminate\Support\Facades\Log;
 
 class RankingService
@@ -20,7 +19,7 @@ class RankingService
     {
         $settings = RankSetting::get();
 
-        if (!$settings->enable_ranking_system || !$settings->enable_auto_promotion) {
+        if (! $settings->enable_ranking_system || ! $settings->enable_auto_promotion) {
             return ['success' => false, 'message' => 'Auto promotion is disabled'];
         }
 
@@ -37,7 +36,7 @@ class RankingService
         return [
             'success' => true,
             'count' => count($promoted),
-            'promotions' => $promoted
+            'promotions' => $promoted,
         ];
     }
 
@@ -48,22 +47,22 @@ class RankingService
     {
         $settings = RankSetting::get();
 
-        if (!$user->currentRank) {
+        if (! $user->currentRank) {
             return ['promoted' => false, 'reason' => 'User has no current rank'];
         }
 
         $nextRank = $user->currentRank->next_rank;
-        if (!$nextRank) {
+        if (! $nextRank) {
             return ['promoted' => false, 'reason' => 'User is at highest rank'];
         }
 
         $eligibility = $nextRank->checkUserEligibility($user);
 
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             return [
                 'promoted' => false,
                 'reason' => 'Requirements not met',
-                'eligibility' => $eligibility
+                'eligibility' => $eligibility,
             ];
         }
 
@@ -86,7 +85,7 @@ class RankingService
             return [
                 'promoted' => false,
                 'pending_approval' => true,
-                'promotion' => $promotion
+                'promotion' => $promotion,
             ];
         } else {
             $promotion->status = 'approved';
@@ -103,7 +102,7 @@ class RankingService
             return [
                 'promoted' => true,
                 'promotion' => $promotion,
-                'rank' => $nextRank
+                'rank' => $nextRank,
             ];
         }
     }
@@ -116,7 +115,7 @@ class RankingService
     public function calculateRankPoints(User $user): int
     {
         $settings = RankSetting::get();
-        $earningService = new \App\Services\UnifiedEarningService();
+        $earningService = new \App\Services\UnifiedEarningService;
 
         $points = 0;
 
@@ -147,12 +146,13 @@ class RankingService
     {
         $currentRank = $user->currentRank;
 
-        if (!$currentRank) {
+        if (! $currentRank) {
             // Get default rank and create progress
             $defaultRank = Rank::where('is_default', true)->first();
             if ($defaultRank) {
                 $this->updateProgressForRank($user, $defaultRank);
             }
+
             return;
         }
 
@@ -204,7 +204,7 @@ class RankingService
     {
         $settings = RankSetting::get();
 
-        if (!$settings->enable_rank_purchase) {
+        if (! $settings->enable_rank_purchase) {
             throw new \Exception('Rank purchase is disabled');
         }
 
@@ -242,7 +242,7 @@ class RankingService
                 $bonus->applyToUser($user);
                 Log::info("Applied bonus {$bonus->id} to user {$user->id}");
             } catch (\Exception $e) {
-                Log::error("Failed to apply bonus: " . $e->getMessage());
+                Log::error('Failed to apply bonus: '.$e->getMessage());
             }
         }
     }
@@ -290,7 +290,7 @@ class RankingService
                 'title_th' => 'ต้องการอนุมัติการเลื่อนระดับ',
                 'message' => __('User :name requests promotion to :rank', [
                     'name' => $promotion->user->name,
-                    'rank' => $promotion->toRank->name
+                    'rank' => $promotion->toRank->name,
                 ]),
                 'message_th' => "{$promotion->user->name} ขอเลื่อนระดับเป็น {$promotion->toRank->name_th}",
                 'data' => json_encode([
@@ -312,7 +312,7 @@ class RankingService
             ->orderBy('rank_updated_at')
             ->limit($limit)
             ->get()
-            ->map(function($user, $index) {
+            ->map(function ($user, $index) {
                 // คำนวณรายได้จาก MLM commissions
                 $totalEarnings = $user->mlmCommissions()
                     ->whereIn('status', ['approved', 'paid'])

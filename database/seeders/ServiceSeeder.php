@@ -903,8 +903,6 @@ class ServiceSeeder extends Seeder
 
     /**
      * สร้างบริการตัวอย่าง
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -913,8 +911,9 @@ class ServiceSeeder extends Seeder
         // หา owner (admin user)
         $owner = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->command->error('❌ ไม่พบ User สำหรับเป็น owner บริการ');
+
             return;
         }
 
@@ -925,8 +924,9 @@ class ServiceSeeder extends Seeder
             // หา category
             $category = ServiceCategory::where('slug', $categorySlug)->first();
 
-            if (!$category) {
+            if (! $category) {
                 $this->command->warn("  ⚠️  ไม่พบหมวดหมู่ '{$categorySlug}' ข้าม...");
+
                 continue;
             }
 
@@ -939,6 +939,7 @@ class ServiceSeeder extends Seeder
                 if ($existing) {
                     $this->command->warn("    ⏭️  บริการ '{$serviceData['name']}' มีอยู่แล้ว ข้าม...");
                     $totalSkipped++;
+
                     continue;
                 }
 
@@ -967,7 +968,7 @@ class ServiceSeeder extends Seeder
 
         $total = Service::count();
         $this->command->info('');
-        $this->command->info("✅ Seed บริการตัวอย่างสำเร็จ!");
+        $this->command->info('✅ Seed บริการตัวอย่างสำเร็จ!');
         $this->command->info("   📊 สร้างใหม่: {$totalCreated} บริการ");
         $this->command->info("   ⏭️  ข้าม: {$totalSkipped} บริการ");
         $this->command->info("   📈 รวมทั้งหมด: {$total} บริการ");

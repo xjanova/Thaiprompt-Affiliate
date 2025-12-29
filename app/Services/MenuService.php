@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\MenuItem;
-use App\Models\MenuRoleSetting;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -17,7 +16,9 @@ use Illuminate\Support\Facades\Schema;
  * - แปลง route names เป็น URLs
  *
  * @version 3.1.0
+ *
  * @since 2025-11-15
+ *
  * @updated 2025-12-04 - เพิ่มการดึงเมนูจาก Database และ Role Settings
  */
 class MenuService
@@ -29,8 +30,6 @@ class MenuService
 
     /**
      * Cache สำหรับเมนูที่ดึงมาแล้ว
-     *
-     * @var array
      */
     protected static array $menuCache = [];
 
@@ -50,8 +49,8 @@ class MenuService
      * - Database ใช้สำหรับ Override เท่านั้น (ซ่อน/เรียงลำดับ/ปรับแต่งผ่าน Admin UI)
      * - Pinned menus จัดการแยกทาง localStorage (frontend)
      *
-     * @param string $role Role ของผู้ใช้ (admin, seller, user)
-     * @param mixed $user User instance (optional) สำหรับกรอง permissions
+     * @param  string  $role  Role ของผู้ใช้ (admin, seller, user)
+     * @param  mixed  $user  User instance (optional) สำหรับกรอง permissions
      * @return array เมนูทั้งหมดที่กรองแล้ว
      *
      * @example
@@ -99,15 +98,15 @@ class MenuService
      * - เปลี่ยนลำดับเมนู
      * - เปลี่ยน label/icon
      *
-     * @param array $menus เมนูจาก config
-     * @param string $dashboardType ประเภท dashboard
-     * @param mixed $user User instance
+     * @param  array  $menus  เมนูจาก config
+     * @param  string  $dashboardType  ประเภท dashboard
+     * @param  mixed  $user  User instance
      * @return array เมนูที่ apply overrides แล้ว
      */
     protected function applyDatabaseOverrides(array $menus, string $dashboardType, $user = null): array
     {
         // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
-        if (!Schema::hasTable('menu_items')) {
+        if (! Schema::hasTable('menu_items')) {
             return $menus;
         }
 
@@ -123,14 +122,14 @@ class MenuService
         // Apply overrides
         return array_map(function ($menu) use ($overrides) {
             $menuKey = $menu['id'] ?? null;
-            if (!$menuKey || !$overrides->has($menuKey)) {
+            if (! $menuKey || ! $overrides->has($menuKey)) {
                 return $menu;
             }
 
             $override = $overrides->get($menuKey);
 
             // ซ่อนเมนูถ้า is_visible = false
-            if (!$override->is_visible || !$override->is_active) {
+            if (! $override->is_visible || ! $override->is_active) {
                 $menu['hidden'] = true;
             }
 
@@ -151,20 +150,20 @@ class MenuService
         }, $menus);
 
         // กรองเมนูที่ถูกซ่อน
-        return array_filter($menus, fn($m) => empty($m['hidden']));
+        return array_filter($menus, fn ($m) => empty($m['hidden']));
     }
 
     /**
      * ดึงเมนูจาก Database
      *
-     * @param string $dashboardType ประเภท dashboard (admin, seller, user)
-     * @param mixed $user User instance (optional)
+     * @param  string  $dashboardType  ประเภท dashboard (admin, seller, user)
+     * @param  mixed  $user  User instance (optional)
      * @return array เมนูจาก database
      */
     protected function getMenusFromDatabase(string $dashboardType, $user = null): array
     {
         // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
-        if (!Schema::hasTable('menu_items')) {
+        if (! Schema::hasTable('menu_items')) {
             return [];
         }
 
@@ -212,10 +211,6 @@ class MenuService
 
     /**
      * แปลง MenuItem model เป็น array format
-     *
-     * @param MenuItem $item
-     * @param int|null $roleId
-     * @return array
      */
     protected function convertMenuItemToArray(MenuItem $item, ?int $roleId = null): array
     {
@@ -259,6 +254,7 @@ class MenuService
                         'route' => null,
                     ];
                 }
+
                 return $this->convertMenuItemToArray($child, $roleId);
             })->toArray();
         }
@@ -268,24 +264,20 @@ class MenuService
 
     /**
      * กรองเมนูตาม Role Settings
-     *
-     * @param array $menus
-     * @param int $roleId
-     * @return array
      */
     protected function filterByRoleSettings(array $menus, int $roleId): array
     {
         return array_filter($menus, function ($menu) use ($roleId) {
             // ตรวจสอบ role visibility
-            if (isset($menu['_role_visible']) && !$menu['_role_visible']) {
+            if (isset($menu['_role_visible']) && ! $menu['_role_visible']) {
                 return false;
             }
-            if (isset($menu['_role_enabled']) && !$menu['_role_enabled']) {
+            if (isset($menu['_role_enabled']) && ! $menu['_role_enabled']) {
                 return false;
             }
 
             // กรอง submenu ด้วย
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $menu['submenu'] = $this->filterByRoleSettings($menu['submenu'], $roleId);
             }
 
@@ -295,8 +287,6 @@ class MenuService
 
     /**
      * Clear menu cache
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
@@ -306,8 +296,8 @@ class MenuService
     /**
      * รวมเมนูจาก config กับ providers
      *
-     * @param array $configMenus เมนูจาก config
-     * @param array $providerMenus เมนูจาก providers
+     * @param  array  $configMenus  เมนูจาก config
+     * @param  array  $providerMenus  เมนูจาก providers
      * @return array เมนูที่รวมแล้ว
      */
     protected function mergeMenus(array $configMenus, array $providerMenus): array
@@ -333,8 +323,8 @@ class MenuService
     /**
      * กรองเมนูตาม permissions ของ user
      *
-     * @param array $menus รายการเมนู
-     * @param mixed $user User instance
+     * @param  array  $menus  รายการเมนู
+     * @param  mixed  $user  User instance
      * @return array เมนูที่กรองแล้ว
      */
     public function filterByPermissions(array $menus, $user): array
@@ -343,15 +333,15 @@ class MenuService
 
         foreach ($menus as $menu) {
             // ตรวจสอบ permissions
-            if (!empty($menu['permissions']) && is_array($menu['permissions'])) {
+            if (! empty($menu['permissions']) && is_array($menu['permissions'])) {
                 $hasAllPermissions = true;
                 foreach ($menu['permissions'] as $permission) {
-                    if (!$this->userHasPermission($user, $permission)) {
+                    if (! $this->userHasPermission($user, $permission)) {
                         $hasAllPermissions = false;
                         break;
                     }
                 }
-                if (!$hasAllPermissions) {
+                if (! $hasAllPermissions) {
                     continue; // ข้ามเมนูนี้
                 }
             }
@@ -359,10 +349,10 @@ class MenuService
             // ตรวจสอบเงื่อนไขพิเศษ: condition
             // รองรับ conditions ต่างๆ เช่น hasProviderAccess, hideIfProvider
             // ⚠️ Admin bypass: Admin เห็นเมนูทั้งหมดเสมอ (ไม่ถูกกรองโดย condition)
-            if (!empty($menu['condition']) && $user) {
+            if (! empty($menu['condition']) && $user) {
                 // Admin เห็นเมนูทั้งหมด ไม่ต้องเช็ค condition
-                if (!$this->userHasAdminAccess($user)) {
-                    if (!$this->checkCondition($menu['condition'], $user)) {
+                if (! $this->userHasAdminAccess($user)) {
+                    if (! $this->checkCondition($menu['condition'], $user)) {
                         continue; // ข้ามเมนูนี้
                     }
                 }
@@ -370,14 +360,14 @@ class MenuService
 
             // ตรวจสอบเงื่อนไขพิเศษ: hide_if_kyc_verified
             // ซ่อนเมนูเมื่อ user ยืนยัน KYC แล้ว
-            if (!empty($menu['hide_if_kyc_verified']) && $user) {
+            if (! empty($menu['hide_if_kyc_verified']) && $user) {
                 if (method_exists($user, 'isKycVerified') && $user->isKycVerified()) {
                     continue; // ข้ามเมนูนี้
                 }
             }
 
             // กรอง submenu ด้วย (แก้ไข: อัพเดท submenu ใน $menu ก่อน push)
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $menu['submenu'] = $this->filterByPermissions($menu['submenu'], $user);
 
                 // ถ้า submenu ว่างหมดให้ซ่อนเมนูหลักด้วย
@@ -396,8 +386,8 @@ class MenuService
     /**
      * ตรวจสอบเงื่อนไขพิเศษของเมนู
      *
-     * @param string $condition ชื่อเงื่อนไข
-     * @param mixed $user User instance
+     * @param  string  $condition  ชื่อเงื่อนไข
+     * @param  mixed  $user  User instance
      * @return bool true ถ้าผ่านเงื่อนไข
      */
     protected function checkCondition(string $condition, $user): bool
@@ -411,7 +401,7 @@ class MenuService
             case 'hideIfProvider':
                 // ซ่อนเมนูเมื่อเป็น provider แล้ว (เช่น เมนูสมัครเป็นผู้ให้บริการ)
                 // แสดงเมนูเฉพาะเมื่อยังไม่เป็น provider
-                return !$this->userHasProviderAccess($user);
+                return ! $this->userHasProviderAccess($user);
 
             case 'hasSellerAccess':
                 // ตรวจสอบว่า user เป็น seller หรือไม่
@@ -430,12 +420,11 @@ class MenuService
     /**
      * ตรวจสอบว่า user เป็น Service Provider หรือไม่
      *
-     * @param mixed $user User instance
-     * @return bool
+     * @param  mixed  $user  User instance
      */
     protected function userHasProviderAccess($user): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -447,6 +436,7 @@ class MenuService
         // Fallback: ตรวจสอบ relation serviceProvider
         if (method_exists($user, 'serviceProvider')) {
             $provider = $user->serviceProvider;
+
             // ต้องมี provider และสถานะต้องเป็น approved
             return $provider && $provider->status === 'approved';
         }
@@ -467,12 +457,11 @@ class MenuService
     /**
      * ตรวจสอบว่า user เป็น Seller หรือไม่
      *
-     * @param mixed $user User instance
-     * @return bool
+     * @param  mixed  $user  User instance
      */
     protected function userHasSellerAccess($user): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -492,12 +481,11 @@ class MenuService
     /**
      * ตรวจสอบว่า user เป็น Admin หรือไม่
      *
-     * @param mixed $user User instance
-     * @return bool
+     * @param  mixed  $user  User instance
      */
     protected function userHasAdminAccess($user): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -517,14 +505,13 @@ class MenuService
     /**
      * ตรวจสอบว่า user มี permission หรือไม่
      *
-     * @param mixed $user User instance
-     * @param string $permission Permission name
-     * @return bool
+     * @param  mixed  $user  User instance
+     * @param  string  $permission  Permission name
      */
     protected function userHasPermission($user, string $permission): bool
     {
         // ถ้าไม่มี user แสดงว่าไม่มี permission
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -549,21 +536,21 @@ class MenuService
     /**
      * แปลง route names เป็น URLs
      *
-     * @param array $menus รายการเมนู
+     * @param  array  $menus  รายการเมนู
      * @return array เมนูที่แปลง routes แล้ว
      */
     protected function resolveRoutes(array $menus): array
     {
         return array_map(function ($menu) {
             // แปลง route หลัก
-            if (!empty($menu['route'])) {
+            if (! empty($menu['route'])) {
                 $menu['url'] = $this->routeToUrl($menu['route']);
-            } elseif (!isset($menu['url'])) {
+            } elseif (! isset($menu['url'])) {
                 $menu['url'] = '#';
             }
 
             // แปลง route ใน submenu
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $menu['submenu'] = $this->resolveRoutes($menu['submenu']);
             }
 
@@ -574,8 +561,8 @@ class MenuService
     /**
      * แปลง route name เป็น URL
      *
-     * @param string $routeName Route name
-     * @param string $default URL เริ่มต้นถ้า route ไม่มี
+     * @param  string  $routeName  Route name
+     * @param  string  $default  URL เริ่มต้นถ้า route ไม่มี
      * @return string URL
      */
     protected function routeToUrl(string $routeName, string $default = '#'): string
@@ -597,8 +584,8 @@ class MenuService
         $path = str_replace('.', '/', $path);
 
         // ตรวจสอบว่า path ไม่ว่างเปล่า
-        if (!empty($path) && $path !== $routeName) {
-            return '/' . $path;
+        if (! empty($path) && $path !== $routeName) {
+            return '/'.$path;
         }
 
         return $default;
@@ -607,7 +594,7 @@ class MenuService
     /**
      * เรียงลำดับเมนูตาม order
      *
-     * @param array $menus รายการเมนู
+     * @param  array  $menus  รายการเมนู
      * @return array เมนูที่เรียงแล้ว
      */
     protected function sortMenus(array $menus): array
@@ -615,14 +602,16 @@ class MenuService
         usort($menus, function ($a, $b) {
             $orderA = $a['order'] ?? 9999;
             $orderB = $b['order'] ?? 9999;
+
             return $orderA <=> $orderB;
         });
 
         // เรียง submenu ด้วย
         return array_map(function ($menu) {
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $menu['submenu'] = $this->sortMenus($menu['submenu']);
             }
+
             return $menu;
         }, $menus);
     }
@@ -630,8 +619,8 @@ class MenuService
     /**
      * ค้นหาเมนูจาก keyword
      *
-     * @param array $menus รายการเมนู
-     * @param string $keyword คำค้นหา
+     * @param  array  $menus  รายการเมนู
+     * @param  string  $keyword  คำค้นหา
      * @return array เมนูที่ค้นพบ
      */
     public function search(array $menus, string $keyword): array
@@ -645,13 +634,14 @@ class MenuService
             // ค้นหาในเมนูหลัก
             if (str_contains($label, $keyword)) {
                 $results[] = $menu;
+
                 continue;
             }
 
             // ค้นหาใน submenu
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $subResults = $this->search($menu['submenu'], $keyword);
-                if (!empty($subResults)) {
+                if (! empty($subResults)) {
                     $menu['submenu'] = $subResults;
                     $results[] = $menu;
                 }
@@ -664,8 +654,8 @@ class MenuService
     /**
      * ดึง active menu จาก current route
      *
-     * @param array $menus รายการเมนู
-     * @param string $currentRoute Route ปัจจุบัน
+     * @param  array  $menus  รายการเมนู
+     * @param  string  $currentRoute  Route ปัจจุบัน
      * @return array|null Menu ที่ active หรือ null
      */
     public function getActiveMenu(array $menus, string $currentRoute): ?array
@@ -677,7 +667,7 @@ class MenuService
             }
 
             // ตรวจสอบ submenu
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $activeSubmenu = $this->getActiveMenu($menu['submenu'], $currentRoute);
                 if ($activeSubmenu) {
                     return $menu;
@@ -691,7 +681,7 @@ class MenuService
     /**
      * นับจำนวนเมนูทั้งหมด (รวม submenu)
      *
-     * @param array $menus รายการเมนู
+     * @param  array  $menus  รายการเมนู
      * @return int จำนวนเมนู
      */
     public function count(array $menus): int
@@ -699,7 +689,7 @@ class MenuService
         $count = count($menus);
 
         foreach ($menus as $menu) {
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $count += $this->count($menu['submenu']);
             }
         }
@@ -710,7 +700,7 @@ class MenuService
     /**
      * แปลงเมนูเป็น flat array (ไม่มี submenu)
      *
-     * @param array $menus รายการเมนู
+     * @param  array  $menus  รายการเมนู
      * @return array เมนู flat array
      */
     public function flatten(array $menus): array
@@ -724,7 +714,7 @@ class MenuService
             $flat[] = $flatMenu;
 
             // เพิ่ม submenu
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $flat = array_merge($flat, $this->flatten($menu['submenu']));
             }
         }
@@ -735,9 +725,9 @@ class MenuService
     /**
      * ดึง breadcrumb สำหรับเมนูที่ active
      *
-     * @param array $menus รายการเมนู
-     * @param string $currentRoute Route ปัจจุบัน
-     * @param array $breadcrumb Breadcrumb ปัจจุบัน (ใช้ internal)
+     * @param  array  $menus  รายการเมนู
+     * @param  string  $currentRoute  Route ปัจจุบัน
+     * @param  array  $breadcrumb  Breadcrumb ปัจจุบัน (ใช้ internal)
      * @return array Breadcrumb
      */
     public function getBreadcrumb(array $menus, string $currentRoute, array $breadcrumb = []): array
@@ -751,9 +741,9 @@ class MenuService
             }
 
             // ค้นหาใน submenu
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $result = $this->getBreadcrumb($menu['submenu'], $currentRoute, $currentBreadcrumb);
-                if (!empty($result)) {
+                if (! empty($result)) {
                     return $result;
                 }
             }

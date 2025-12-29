@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PageBuilder;
 use App\Models\PageBuilderSection;
+use Illuminate\Database\Seeder;
 
 class HomepageImportSeeder extends Seeder
 {

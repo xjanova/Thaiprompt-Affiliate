@@ -15,8 +15,6 @@ class VideoAutomationSeeder extends Seeder
 {
     /**
      * รัน seeder
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -30,8 +28,6 @@ class VideoAutomationSeeder extends Seeder
 
     /**
      * สร้างการตั้งค่าเริ่มต้น
-     *
-     * @return void
      */
     protected function seedSettings(): void
     {
@@ -40,6 +36,7 @@ class VideoAutomationSeeder extends Seeder
         // ตรวจสอบว่ามีการตั้งค่าอยู่แล้วหรือไม่
         if (VideoAutoSetting::count() > 0) {
             $this->command->info('  ⏭️ มีการตั้งค่าอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -206,13 +203,11 @@ class VideoAutomationSeeder extends Seeder
             );
         }
 
-        $this->command->info('  ✅ สร้างการตั้งค่า ' . count($settings) . ' รายการ');
+        $this->command->info('  ✅ สร้างการตั้งค่า '.count($settings).' รายการ');
     }
 
     /**
      * สร้าง Template เริ่มต้น
-     *
-     * @return void
      */
     protected function seedDefaultTemplates(): void
     {
@@ -221,6 +216,7 @@ class VideoAutomationSeeder extends Seeder
         // ตรวจสอบว่ามี template อยู่แล้วหรือไม่
         if (VideoAutoTemplate::count() > 0) {
             $this->command->info('  ⏭️ มี template อยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -341,6 +337,6 @@ class VideoAutomationSeeder extends Seeder
             VideoAutoTemplate::create($templateData);
         }
 
-        $this->command->info('  ✅ สร้าง template ' . count($templates) . ' รายการ');
+        $this->command->info('  ✅ สร้าง template '.count($templates).' รายการ');
     }
 }

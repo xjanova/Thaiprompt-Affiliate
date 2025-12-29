@@ -48,7 +48,7 @@ class EmailPreference extends Model
     public function canReceive(string $type): bool
     {
         // If all emails are disabled, return false
-        if (!$this->all_emails) {
+        if (! $this->all_emails) {
             return false;
         }
 

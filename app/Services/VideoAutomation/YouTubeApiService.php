@@ -2,12 +2,11 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoSetting;
-use App\Models\VideoAutoPlatform;
 use App\Models\VideoAutoJob;
+use App\Models\VideoAutoPlatform;
+use App\Models\VideoAutoSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * YouTube API Service
@@ -20,50 +19,36 @@ class YouTubeApiService
 {
     /**
      * Base URL ของ YouTube Data API
-     *
-     * @var string
      */
     protected string $baseUrl = 'https://www.googleapis.com/youtube/v3';
 
     /**
      * Upload URL
-     *
-     * @var string
      */
     protected string $uploadUrl = 'https://www.googleapis.com/upload/youtube/v3/videos';
 
     /**
      * OAuth URL
-     *
-     * @var string
      */
     protected string $oauthUrl = 'https://oauth2.googleapis.com';
 
     /**
      * Platform connection
-     *
-     * @var VideoAutoPlatform|null
      */
     protected ?VideoAutoPlatform $platform = null;
 
     /**
      * Flag เพื่อติดตามว่า platform ถูก set มาจาก constructor หรือไม่
-     *
-     * @var bool
      */
     protected bool $platformWasProvided = false;
 
     /**
      * Flag ป้องกัน lazy load ซ้ำ
-     *
-     * @var bool
      */
     protected bool $platformLoaded = false;
 
     /**
      * สร้าง instance ใหม่
-     *
-     * @param VideoAutoPlatform|null $platform
      */
     public function __construct(?VideoAutoPlatform $platform = null)
     {
@@ -79,13 +64,11 @@ class YouTubeApiService
      * ดึง platform แบบ lazy loading
      *
      * จะ query database เมื่อจำเป็นเท่านั้น ไม่ใช่ตอน construct
-     *
-     * @return VideoAutoPlatform|null
      */
     protected function getPlatform(): ?VideoAutoPlatform
     {
         // ถ้ายังไม่เคย load และไม่ได้ provide มา ให้ load จาก database
-        if (!$this->platformLoaded && !$this->platformWasProvided) {
+        if (! $this->platformLoaded && ! $this->platformWasProvided) {
             try {
                 $this->platform = VideoAutoPlatform::ofType('youtube')
                     ->active()
@@ -104,8 +87,6 @@ class YouTubeApiService
 
     /**
      * ตรวจสอบว่า API พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
@@ -113,15 +94,15 @@ class YouTubeApiService
 
         return $platform
             && $platform->status === 'connected'
-            && !empty($platform->decrypted_access_token);
+            && ! empty($platform->decrypted_access_token);
     }
 
     /**
      * อัปโหลดวีดีโอ
      *
-     * @param string $videoPath Path ของไฟล์วีดีโอ
-     * @param array $metadata ข้อมูลวีดีโอ
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $videoPath  Path ของไฟล์วีดีโอ
+     * @param  array  $metadata  ข้อมูลวีดีโอ
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, data?: array, error?: string}
      *
      * @example
@@ -135,7 +116,7 @@ class YouTubeApiService
      */
     public function uploadVideo(string $videoPath, array $metadata, ?VideoAutoJob $job = null): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'YouTube API ยังไม่ได้เชื่อมต่อ กรุณาเชื่อมต่อบัญชี YouTube ก่อน',
@@ -151,14 +132,14 @@ class YouTubeApiService
             ]);
 
             // ตรวจสอบว่าไฟล์มีอยู่
-            if (!file_exists($videoPath)) {
-                throw new \Exception('ไม่พบไฟล์วีดีโอ: ' . $videoPath);
+            if (! file_exists($videoPath)) {
+                throw new \Exception('ไม่พบไฟล์วีดีโอ: '.$videoPath);
             }
 
             // Refresh token ถ้าหมดอายุ
             if ($platform->is_token_expired) {
                 $refreshResult = $this->refreshAccessToken();
-                if (!$refreshResult['success']) {
+                if (! $refreshResult['success']) {
                     return $refreshResult;
                 }
                 // Reload platform หลัง refresh
@@ -185,7 +166,7 @@ class YouTubeApiService
             $job?->updateProgress(10, 'กำลังเริ่ม upload session...');
             $uploadSession = $this->initiateUpload($videoMetadata, filesize($videoPath));
 
-            if (!$uploadSession['success']) {
+            if (! $uploadSession['success']) {
                 return $uploadSession;
             }
 
@@ -195,12 +176,12 @@ class YouTubeApiService
             $job?->updateProgress(20, 'กำลังอัปโหลดวีดีโอ...');
             $uploadResult = $this->uploadVideoFile($uploadUri, $videoPath, $job);
 
-            if (!$uploadResult['success']) {
+            if (! $uploadResult['success']) {
                 return $uploadResult;
             }
 
             // Step 3: อัปโหลด thumbnail (ถ้ามี)
-            if (!empty($metadata['thumbnail'])) {
+            if (! empty($metadata['thumbnail'])) {
                 $job?->updateProgress(90, 'กำลังอัปโหลด thumbnail...');
                 $this->uploadThumbnail($uploadResult['data']['id'], $metadata['thumbnail'], $job);
             }
@@ -210,13 +191,13 @@ class YouTubeApiService
 
             $job?->logInfo('อัปโหลดวีดีโอสำเร็จ', [
                 'video_id' => $uploadResult['data']['id'] ?? null,
-                'url' => 'https://www.youtube.com/watch?v=' . ($uploadResult['data']['id'] ?? ''),
+                'url' => 'https://www.youtube.com/watch?v='.($uploadResult['data']['id'] ?? ''),
             ]);
 
             return [
                 'success' => true,
                 'data' => $uploadResult['data'],
-                'url' => 'https://www.youtube.com/watch?v=' . ($uploadResult['data']['id'] ?? ''),
+                'url' => 'https://www.youtube.com/watch?v='.($uploadResult['data']['id'] ?? ''),
             ];
 
         } catch (\Exception $e) {
@@ -238,32 +219,28 @@ class YouTubeApiService
 
     /**
      * เริ่ม resumable upload session
-     *
-     * @param array $metadata
-     * @param int $fileSize
-     * @return array
      */
     protected function initiateUpload(array $metadata, int $fileSize): array
     {
         $platform = $this->getPlatform();
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
+            'Authorization' => 'Bearer '.$platform->decrypted_access_token,
             'Content-Type' => 'application/json',
             'X-Upload-Content-Length' => $fileSize,
             'X-Upload-Content-Type' => 'video/*',
-        ])->post($this->uploadUrl . '?uploadType=resumable&part=snippet,status', $metadata);
+        ])->post($this->uploadUrl.'?uploadType=resumable&part=snippet,status', $metadata);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถเริ่ม upload session ได้: ' . $response->body(),
+                'error' => 'ไม่สามารถเริ่ม upload session ได้: '.$response->body(),
             ];
         }
 
         $uploadUri = $response->header('Location');
 
-        if (!$uploadUri) {
+        if (! $uploadUri) {
             return [
                 'success' => false,
                 'error' => 'ไม่ได้รับ upload URI',
@@ -278,11 +255,6 @@ class YouTubeApiService
 
     /**
      * อัปโหลดไฟล์วีดีโอ
-     *
-     * @param string $uploadUri
-     * @param string $videoPath
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function uploadVideoFile(string $uploadUri, string $videoPath, ?VideoAutoJob $job = null): array
     {
@@ -293,13 +265,13 @@ class YouTubeApiService
         $handle = fopen($videoPath, 'rb');
         $uploadedBytes = 0;
 
-        while (!feof($handle)) {
+        while (! feof($handle)) {
             $chunk = fread($handle, $chunkSize);
             $chunkLength = strlen($chunk);
             $endByte = $uploadedBytes + $chunkLength - 1;
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
+                'Authorization' => 'Bearer '.$platform->decrypted_access_token,
                 'Content-Type' => 'video/*',
                 'Content-Length' => $chunkLength,
                 'Content-Range' => "bytes {$uploadedBytes}-{$endByte}/{$fileSize}",
@@ -329,7 +301,7 @@ class YouTubeApiService
 
                 return [
                     'success' => false,
-                    'error' => 'อัปโหลดล้มเหลว: ' . $response->body(),
+                    'error' => 'อัปโหลดล้มเหลว: '.$response->body(),
                 ];
             }
         }
@@ -344,18 +316,13 @@ class YouTubeApiService
 
     /**
      * อัปโหลด thumbnail
-     *
-     * @param string $videoId
-     * @param string $thumbnailPath
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function uploadThumbnail(string $videoId, string $thumbnailPath, ?VideoAutoJob $job = null): array
     {
         try {
             $platform = $this->getPlatform();
 
-            if (!file_exists($thumbnailPath)) {
+            if (! file_exists($thumbnailPath)) {
                 return [
                     'success' => false,
                     'error' => 'ไม่พบไฟล์ thumbnail',
@@ -363,19 +330,20 @@ class YouTubeApiService
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $platform->decrypted_access_token,
+                'Authorization' => 'Bearer '.$platform->decrypted_access_token,
             ])
                 ->attach('media', file_get_contents($thumbnailPath), basename($thumbnailPath))
-                ->post($this->baseUrl . '/thumbnails/set?videoId=' . $videoId);
+                ->post($this->baseUrl.'/thumbnails/set?videoId='.$videoId);
 
             if ($response->successful()) {
                 $job?->logInfo('อัปโหลด thumbnail สำเร็จ');
+
                 return ['success' => true, 'data' => $response->json()];
             }
 
             return [
                 'success' => false,
-                'error' => 'อัปโหลด thumbnail ล้มเหลว: ' . $response->body(),
+                'error' => 'อัปโหลด thumbnail ล้มเหลว: '.$response->body(),
             ];
 
         } catch (\Exception $e) {
@@ -388,8 +356,6 @@ class YouTubeApiService
 
     /**
      * Refresh access token
-     *
-     * @return array
      */
     public function refreshAccessToken(): array
     {
@@ -400,21 +366,21 @@ class YouTubeApiService
             $clientSecret = VideoAutoSetting::getValue('youtube_client_secret');
             $refreshToken = $platform->decrypted_refresh_token;
 
-            if (!$refreshToken) {
+            if (! $refreshToken) {
                 return [
                     'success' => false,
                     'error' => 'ไม่มี refresh token',
                 ];
             }
 
-            $response = Http::asForm()->post($this->oauthUrl . '/token', [
+            $response = Http::asForm()->post($this->oauthUrl.'/token', [
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'refresh_token' => $refreshToken,
                 'grant_type' => 'refresh_token',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $platform->updateConnectionStatus('expired', 'Token refresh failed');
 
                 return [
@@ -446,9 +412,6 @@ class YouTubeApiService
 
     /**
      * ดึง OAuth URL สำหรับ authorization
-     *
-     * @param string $redirectUri
-     * @return string
      */
     public function getAuthorizationUrl(string $redirectUri): string
     {
@@ -467,15 +430,11 @@ class YouTubeApiService
             'prompt' => 'consent',
         ]);
 
-        return 'https://accounts.google.com/o/oauth2/v2/auth?' . $params;
+        return 'https://accounts.google.com/o/oauth2/v2/auth?'.$params;
     }
 
     /**
      * แลก authorization code เป็น access token
-     *
-     * @param string $code
-     * @param string $redirectUri
-     * @return array
      */
     public function exchangeCodeForToken(string $code, string $redirectUri): array
     {
@@ -483,7 +442,7 @@ class YouTubeApiService
             $clientId = VideoAutoSetting::getValue('youtube_client_id');
             $clientSecret = VideoAutoSetting::getValue('youtube_client_secret');
 
-            $response = Http::asForm()->post($this->oauthUrl . '/token', [
+            $response = Http::asForm()->post($this->oauthUrl.'/token', [
                 'client_id' => $clientId,
                 'client_secret' => $clientSecret,
                 'code' => $code,
@@ -491,10 +450,10 @@ class YouTubeApiService
                 'grant_type' => 'authorization_code',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
-                    'error' => 'ไม่สามารถแลก code ได้: ' . $response->body(),
+                    'error' => 'ไม่สามารถแลก code ได้: '.$response->body(),
                 ];
             }
 
@@ -518,22 +477,20 @@ class YouTubeApiService
 
     /**
      * ดึงข้อมูล channel
-     *
-     * @param string $accessToken
-     * @return array|null
      */
     public function getChannelInfo(string $accessToken): ?array
     {
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
-            ])->get($this->baseUrl . '/channels', [
+                'Authorization' => 'Bearer '.$accessToken,
+            ])->get($this->baseUrl.'/channels', [
                 'part' => 'snippet,contentDetails,statistics',
                 'mine' => 'true',
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return $data['items'][0] ?? null;
             }
 
@@ -553,14 +510,14 @@ class YouTubeApiService
     {
         $platform = $this->getPlatform();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้เชื่อมต่อบัญชี YouTube',
             ];
         }
 
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'Token หมดอายุหรือไม่ถูกต้อง กรุณาเชื่อมต่อใหม่',
@@ -573,7 +530,7 @@ class YouTubeApiService
         if ($channelInfo) {
             return [
                 'success' => true,
-                'message' => 'เชื่อมต่อสำเร็จ! Channel: ' . ($channelInfo['snippet']['title'] ?? 'Unknown'),
+                'message' => 'เชื่อมต่อสำเร็จ! Channel: '.($channelInfo['snippet']['title'] ?? 'Unknown'),
             ];
         }
 

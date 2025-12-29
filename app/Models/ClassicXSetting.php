@@ -17,8 +17,8 @@ class ClassicXSetting extends Model
     /**
      * Get a setting value by key
      *
-     * @param string $key Setting key
-     * @param mixed $default Default value if setting doesn't exist
+     * @param  string  $key  Setting key
+     * @param  mixed  $default  Default value if setting doesn't exist
      * @return mixed
      */
     public static function get(string $key, $default = null)
@@ -26,7 +26,7 @@ class ClassicXSetting extends Model
         return Cache::remember("classic_x_setting_{$key}", 3600, function () use ($key, $default) {
             $setting = static::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
@@ -37,10 +37,9 @@ class ClassicXSetting extends Model
     /**
      * Set a setting value
      *
-     * @param string $key Setting key
-     * @param mixed $value Setting value
-     * @param string|null $type Value type
-     * @return bool
+     * @param  string  $key  Setting key
+     * @param  mixed  $value  Setting value
+     * @param  string|null  $type  Value type
      */
     public static function set(string $key, $value, ?string $type = null): bool
     {
@@ -61,8 +60,6 @@ class ClassicXSetting extends Model
 
     /**
      * Get all settings as an associative array
-     *
-     * @return array
      */
     public static function getAll(): array
     {
@@ -81,8 +78,7 @@ class ClassicXSetting extends Model
     /**
      * Cast value based on type
      *
-     * @param mixed $value
-     * @param string $type
+     * @param  mixed  $value
      * @return mixed
      */
     protected static function castValue($value, string $type)
@@ -99,8 +95,6 @@ class ClassicXSetting extends Model
 
     /**
      * Clear all cached settings
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
@@ -114,8 +108,6 @@ class ClassicXSetting extends Model
 
     /**
      * Reset to default settings
-     *
-     * @return void
      */
     public static function resetToDefaults(): void
     {

@@ -56,10 +56,15 @@ class PlatformTransaction extends Model
      * ประเภทรายการ
      */
     const TYPE_INCOME = 'income';
+
     const TYPE_EXPENSE = 'expense';
+
     const TYPE_TRANSFER_IN = 'transfer_in';
+
     const TYPE_TRANSFER_OUT = 'transfer_out';
+
     const TYPE_ADJUSTMENT = 'adjustment';
+
     const TYPE_REFUND = 'refund';
 
     /**
@@ -207,6 +212,6 @@ class PlatformTransaction extends Model
      */
     public function getSignedAmountAttribute(): string
     {
-        return $this->sign . number_format($this->amount, 2);
+        return $this->sign.number_format($this->amount, 2);
     }
 }

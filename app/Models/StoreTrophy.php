@@ -123,9 +123,6 @@ class StoreTrophy extends Model
 
     /**
      * ตรวจสอบว่าร้านค้าผ่านเกณฑ์หรือไม่
-     *
-     * @param VendorStore $store
-     * @return bool
      */
     public function checkRequirement(VendorStore $store): bool
     {
@@ -151,9 +148,6 @@ class StoreTrophy extends Model
 
     /**
      * ให้ Trophy กับร้านค้า
-     *
-     * @param VendorStore $store
-     * @return StoreTrophyAchievement|null
      */
     public function awardTo(VendorStore $store): ?StoreTrophyAchievement
     {
@@ -167,7 +161,7 @@ class StoreTrophy extends Model
         }
 
         // ตรวจสอบเงื่อนไข
-        if (!$this->checkRequirement($store)) {
+        if (! $this->checkRequirement($store)) {
             return null;
         }
 

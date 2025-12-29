@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MobileDevice;
 use App\Models\MobileBanner;
+use App\Models\MobileDevice;
 use App\Models\MobilePushNotification;
 use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * MobileAppController - จัดการแอพมือถือ
@@ -67,9 +66,12 @@ class MobileAppController extends Controller
     private function calculatePushSuccessRate(): float
     {
         $total = MobilePushNotification::count();
-        if ($total === 0) return 0;
+        if ($total === 0) {
+            return 0;
+        }
 
         $success = MobilePushNotification::where('status', 'sent')->count();
+
         return round(($success / $total) * 100, 1);
     }
 
@@ -79,9 +81,12 @@ class MobileAppController extends Controller
     private function calculateBannerCTR(): float
     {
         $views = MobileBanner::sum('view_count');
-        if ($views === 0) return 0;
+        if ($views === 0) {
+            return 0;
+        }
 
         $clicks = MobileBanner::sum('click_count');
+
         return round(($clicks / $views) * 100, 2);
     }
 
@@ -157,8 +162,7 @@ class MobileAppController extends Controller
     /**
      * คำนวณ Retention Rate
      *
-     * @param int $days จำนวนวัน
-     * @return float
+     * @param  int  $days  จำนวนวัน
      */
     private function calculateRetentionRate(int $days): float
     {
@@ -168,7 +172,9 @@ class MobileAppController extends Controller
 
         $cohortDevices = MobileDevice::whereBetween('created_at', [$startDate, $endDate])->count();
 
-        if ($cohortDevices === 0) return 0;
+        if ($cohortDevices === 0) {
+            return 0;
+        }
 
         // เครื่องที่ยังใช้งานอยู่
         $retainedDevices = MobileDevice::whereBetween('created_at', [$startDate, $endDate])
@@ -185,7 +191,7 @@ class MobileAppController extends Controller
      */
     public function exportAnalytics()
     {
-        $filename = 'mobile_devices_' . now()->format('Y-m-d') . '.csv';
+        $filename = 'mobile_devices_'.now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -196,7 +202,7 @@ class MobileAppController extends Controller
             $file = fopen('php://output', 'w');
 
             // BOM for UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header row
             fputcsv($file, [
@@ -294,7 +300,6 @@ class MobileAppController extends Controller
     /**
      * บันทึกและส่ง Push Notification
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function pushStore(Request $request)
@@ -322,9 +327,9 @@ class MobileAppController extends Controller
         ]);
 
         // ถ้าไม่ได้ตั้งเวลา ให้ส่งทันที
-        if (!$validated['schedule_at']) {
+        if (! $validated['schedule_at']) {
             // ส่ง Push Notification ผ่าน Expo API
-            $pushService = new ExpoPushService();
+            $pushService = new ExpoPushService;
 
             // กำหนด data สำหรับ notification
             $data = [
@@ -382,7 +387,6 @@ class MobileAppController extends Controller
     /**
      * แสดงรายละเอียด Push Notification
      *
-     * @param MobilePushNotification $push
      * @return \Illuminate\View\View
      */
     public function pushShow(MobilePushNotification $push)
@@ -427,7 +431,6 @@ class MobileAppController extends Controller
     /**
      * บันทึก Banner ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bannersStore(Request $request)
@@ -446,12 +449,12 @@ class MobileAppController extends Controller
         ]);
 
         // ใช้รูปที่ครอปแล้ว (base64) หรือรูปต้นฉบับ
-        if (!empty($request->cropped_image)) {
+        if (! empty($request->cropped_image)) {
             // แปลง base64 เป็นไฟล์และบันทึก
             $validated['image'] = $this->saveCroppedImage($request->cropped_image, 'banners');
         } elseif ($request->hasFile('image')) {
             $path = $request->file('image')->store('banners', 'public');
-            $validated['image'] = '/storage/' . $path;
+            $validated['image'] = '/storage/'.$path;
         }
 
         // ลบ cropped_image ออกจาก validated data
@@ -478,7 +481,6 @@ class MobileAppController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Banner
      *
-     * @param MobileBanner $banner
      * @return \Illuminate\View\View
      */
     public function bannersEdit(MobileBanner $banner)
@@ -489,8 +491,6 @@ class MobileAppController extends Controller
     /**
      * อัปเดท Banner
      *
-     * @param Request $request
-     * @param MobileBanner $banner
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bannersUpdate(Request $request, MobileBanner $banner)
@@ -509,12 +509,12 @@ class MobileAppController extends Controller
         ]);
 
         // ใช้รูปที่ครอปแล้ว (base64) หรือรูปต้นฉบับ
-        if (!empty($request->cropped_image)) {
+        if (! empty($request->cropped_image)) {
             // แปลง base64 เป็นไฟล์และบันทึก
             $validated['image'] = $this->saveCroppedImage($request->cropped_image, 'banners');
         } elseif ($request->hasFile('image')) {
             $path = $request->file('image')->store('banners', 'public');
-            $validated['image'] = '/storage/' . $path;
+            $validated['image'] = '/storage/'.$path;
         }
 
         // ลบ cropped_image ออกจาก validated data
@@ -539,7 +539,6 @@ class MobileAppController extends Controller
     /**
      * ลบ Banner
      *
-     * @param MobileBanner $banner
      * @return \Illuminate\Http\RedirectResponse
      */
     public function bannersDestroy(MobileBanner $banner)
@@ -554,12 +553,11 @@ class MobileAppController extends Controller
     /**
      * Toggle สถานะ Banner
      *
-     * @param MobileBanner $banner
      * @return \Illuminate\Http\JsonResponse
      */
     public function bannersToggle(MobileBanner $banner)
     {
-        $banner->update(['is_active' => !$banner->is_active]);
+        $banner->update(['is_active' => ! $banner->is_active]);
 
         return response()->json([
             'success' => true,
@@ -571,7 +569,6 @@ class MobileAppController extends Controller
     /**
      * อัปเดทลำดับ Banners
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bannersReorder(Request $request)
@@ -595,8 +592,8 @@ class MobileAppController extends Controller
     /**
      * บันทึกรูปที่ครอปแล้ว (base64) เป็นไฟล์
      *
-     * @param string $base64Image รูปในรูปแบบ base64
-     * @param string $folder โฟลเดอร์สำหรับเก็บรูป
+     * @param  string  $base64Image  รูปในรูปแบบ base64
+     * @param  string  $folder  โฟลเดอร์สำหรับเก็บรูป
      * @return string path ของรูปที่บันทึก
      */
     private function saveCroppedImage(string $base64Image, string $folder = 'banners'): string
@@ -611,11 +608,11 @@ class MobileAppController extends Controller
         $decodedImage = base64_decode($imageData);
 
         // สร้างชื่อไฟล์
-        $filename = $folder . '/' . uniqid() . '_' . time() . '.jpg';
+        $filename = $folder.'/'.uniqid().'_'.time().'.jpg';
 
         // บันทึกไฟล์
         \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $decodedImage);
 
-        return '/storage/' . $filename;
+        return '/storage/'.$filename;
     }
 }

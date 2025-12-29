@@ -14,8 +14,6 @@ return new class extends Migration
      * - cookie_banner_title: หัวข้อแบนเนอร์
      * - cookie_banner_description: คำอธิบาย
      * - cookie_policy_url: URL ไปยังหน้านโยบายคุกกี้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -36,8 +34,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง cookie_settings
-     *
-     * @return void
      */
     public function down(): void
     {

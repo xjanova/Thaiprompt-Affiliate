@@ -82,7 +82,7 @@ class Notification extends Model
      */
     public function markAsRead(): void
     {
-        if (!$this->is_read) {
+        if (! $this->is_read) {
             $this->update([
                 'is_read' => true,
                 'read_at' => now(),
@@ -136,7 +136,7 @@ class Notification extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'wallet' => 'กระเป๋าเงิน',
             'withdrawal' => 'ถอนเงิน',
             'deposit' => 'ฝากเงิน',
@@ -158,7 +158,7 @@ class Notification extends Model
      */
     public function getPriorityLabelAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'ต่ำ',
             'normal' => 'ปกติ',
             'high' => 'สูง',
@@ -172,7 +172,7 @@ class Notification extends Model
      */
     public function getPriorityColorAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'gray',
             'normal' => 'blue',
             'high' => 'orange',
@@ -228,7 +228,7 @@ class Notification extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('expires_at')
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 
@@ -269,7 +269,7 @@ class Notification extends Model
      */
     public function markAsShown(): void
     {
-        if (!$this->shown_at) {
+        if (! $this->shown_at) {
             $this->update([
                 'shown_at' => now(),
             ]);
@@ -290,8 +290,8 @@ class Notification extends Model
     public function scopePendingScheduled($query)
     {
         return $query->where('is_scheduled', true)
-                    ->where('is_sent', false)
-                    ->where('scheduled_at', '<=', now());
+            ->where('is_sent', false)
+            ->where('scheduled_at', '<=', now());
     }
 
     /**

@@ -15,14 +15,12 @@ return new class extends Migration
 {
     /**
      * เพิ่มคอลัมน์ stars
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('video_levels', function (Blueprint $table) {
             // ตรวจสอบว่าคอลัมน์มีอยู่แล้วหรือยัง
-            if (!Schema::hasColumn('video_levels', 'stars')) {
+            if (! Schema::hasColumn('video_levels', 'stars')) {
                 // จำนวนดาว (1-5 ดาว)
                 $table->integer('stars')
                     ->default(1)
@@ -30,7 +28,7 @@ return new class extends Migration
                     ->comment('จำนวนดาว (1-5)');
             }
 
-            if (!Schema::hasColumn('video_levels', 'star_color')) {
+            if (! Schema::hasColumn('video_levels', 'star_color')) {
                 // สีของดาว (bronze, silver, gold, platinum, diamond)
                 $table->string('star_color', 20)
                     ->default('bronze')
@@ -38,7 +36,7 @@ return new class extends Migration
                     ->comment('สีดาว (bronze/silver/gold/platinum/diamond)');
             }
 
-            if (!Schema::hasColumn('video_levels', 'badge_image')) {
+            if (! Schema::hasColumn('video_levels', 'badge_image')) {
                 // รูป badge สำหรับ level นี้
                 $table->string('badge_image')
                     ->nullable()
@@ -46,7 +44,7 @@ return new class extends Migration
                     ->comment('รูป badge ของ level');
             }
 
-            if (!Schema::hasColumn('video_levels', 'title_prefix')) {
+            if (! Schema::hasColumn('video_levels', 'title_prefix')) {
                 // คำนำหน้าชื่อ (เช่น "มือใหม่", "นักดู", "ผู้ชำนาญ")
                 $table->string('title_prefix')
                     ->nullable()
@@ -58,8 +56,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

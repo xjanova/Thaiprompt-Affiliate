@@ -56,7 +56,7 @@ class SitemapController extends Controller
         $cmsPages = Page::where('is_active', true)->get();
         foreach ($cmsPages as $page) {
             $urls[] = [
-                'loc' => url('/page/' . $page->slug),
+                'loc' => url('/page/'.$page->slug),
                 'lastmod' => $page->updated_at->toAtomString(),
                 'changefreq' => 'weekly',
                 'priority' => '0.7',

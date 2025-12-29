@@ -11,7 +11,6 @@ use App\Models\LineRecruitmentTopicBoundary;
 use App\Services\LineBotAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -29,8 +28,6 @@ class LineRecruitmentController extends Controller
 {
     /**
      * แสดง Dashboard หลักของระบบรับสมัคร
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -64,8 +61,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * หน้าตั้งค่าระบบรับสมัคร
-     *
-     * @return View
      */
     public function settings(): View
     {
@@ -97,8 +92,6 @@ class LineRecruitmentController extends Controller
     /**
      * บันทึกการตั้งค่าระบบรับสมัคร
      *
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request, int $id)
@@ -150,7 +143,7 @@ class LineRecruitmentController extends Controller
         }
 
         // ถ้าเปิดใช้งานเป็น active ให้ปิด active ตัวอื่นก่อน
-        if ($request->is_active && !$setting->is_active) {
+        if ($request->is_active && ! $setting->is_active) {
             LineBotAiSetting::where('is_active', true)->update(['is_active' => false]);
         }
 
@@ -164,9 +157,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * แสดงรายการการสนทนาทั้งหมด
-     *
-     * @param Request $request
-     * @return View
      */
     public function conversations(Request $request): View
     {
@@ -194,7 +184,7 @@ class LineRecruitmentController extends Controller
 
         // Search by LINE user ID
         if ($request->filled('search')) {
-            $query->where('line_user_id', 'like', '%' . $request->search . '%');
+            $query->where('line_user_id', 'like', '%'.$request->search.'%');
         }
 
         $conversations = $query->latest()->paginate(20);
@@ -218,9 +208,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * แสดงรายละเอียดการสนทนา
-     *
-     * @param int $id
-     * @return View
      */
     public function conversationDetail(int $id): View
     {
@@ -234,7 +221,6 @@ class LineRecruitmentController extends Controller
     /**
      * ลบการสนทนา
      *
-     * @param int $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteConversation(int $id)
@@ -249,9 +235,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * แสดงหน้า Topic Boundaries
-     *
-     * @param int $aiSettingId
-     * @return View
      */
     public function topicBoundaries(int $aiSettingId): View
     {
@@ -277,8 +260,6 @@ class LineRecruitmentController extends Controller
     /**
      * เพิ่ม Topic Boundary ใหม่
      *
-     * @param Request $request
-     * @param int $aiSettingId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeTopicBoundary(Request $request, int $aiSettingId)
@@ -297,11 +278,11 @@ class LineRecruitmentController extends Controller
         ]);
 
         // แปลง keywords และ example_phrases จาก string เป็น array
-        $validated['keywords'] = !empty($validated['keywords'])
+        $validated['keywords'] = ! empty($validated['keywords'])
             ? array_map('trim', explode(',', $validated['keywords']))
             : null;
 
-        $validated['example_phrases'] = !empty($validated['example_phrases'])
+        $validated['example_phrases'] = ! empty($validated['example_phrases'])
             ? array_map('trim', explode("\n", $validated['example_phrases']))
             : null;
 
@@ -314,9 +295,6 @@ class LineRecruitmentController extends Controller
     /**
      * อัปเดต Topic Boundary
      *
-     * @param Request $request
-     * @param int $aiSettingId
-     * @param int $topicId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateTopicBoundary(Request $request, int $aiSettingId, int $topicId)
@@ -336,11 +314,11 @@ class LineRecruitmentController extends Controller
         ]);
 
         // แปลง keywords และ example_phrases
-        $validated['keywords'] = !empty($validated['keywords'])
+        $validated['keywords'] = ! empty($validated['keywords'])
             ? array_map('trim', explode(',', $validated['keywords']))
             : null;
 
-        $validated['example_phrases'] = !empty($validated['example_phrases'])
+        $validated['example_phrases'] = ! empty($validated['example_phrases'])
             ? array_map('trim', explode("\n", $validated['example_phrases']))
             : null;
 
@@ -353,8 +331,6 @@ class LineRecruitmentController extends Controller
     /**
      * ลบ Topic Boundary
      *
-     * @param int $aiSettingId
-     * @param int $topicId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteTopicBoundary(int $aiSettingId, int $topicId)
@@ -370,9 +346,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * แสดงหน้า Knowledge Base
-     *
-     * @param int $aiSettingId
-     * @return View
      */
     public function knowledgeBase(int $aiSettingId): View
     {
@@ -388,8 +361,6 @@ class LineRecruitmentController extends Controller
     /**
      * เพิ่ม Knowledge Base ใหม่
      *
-     * @param Request $request
-     * @param int $aiSettingId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeKnowledgeBase(Request $request, int $aiSettingId)
@@ -422,9 +393,6 @@ class LineRecruitmentController extends Controller
     /**
      * อัปเดต Knowledge Base
      *
-     * @param Request $request
-     * @param int $aiSettingId
-     * @param int $knowledgeId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateKnowledgeBase(Request $request, int $aiSettingId, int $knowledgeId)
@@ -463,8 +431,6 @@ class LineRecruitmentController extends Controller
     /**
      * ลบ Knowledge Base
      *
-     * @param int $aiSettingId
-     * @param int $knowledgeId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteKnowledgeBase(int $aiSettingId, int $knowledgeId)
@@ -485,10 +451,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * ทดสอบ AI Connection
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function testAi(Request $request, int $id): JsonResponse
     {
@@ -518,10 +480,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * ทดสอบ Topic Filtering
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function testTopicFilter(Request $request, int $id): JsonResponse
     {
@@ -543,7 +501,6 @@ class LineRecruitmentController extends Controller
     /**
      * Export การสนทนาเป็น CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function exportConversations(Request $request)
@@ -554,13 +511,13 @@ class LineRecruitmentController extends Controller
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="conversations_' . date('Y-m-d') . '.csv"',
+            'Content-Disposition' => 'attachment; filename="conversations_'.date('Y-m-d').'.csv"',
         ];
 
         $callback = function () use ($conversations) {
             $file = fopen('php://output', 'w');
             // BOM for UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Headers
             fputcsv($file, [
@@ -593,8 +550,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * รับสถิติการรับสมัคร
-     *
-     * @return array
      */
     private function getRecruitmentStats(): array
     {
@@ -635,8 +590,6 @@ class LineRecruitmentController extends Controller
 
     /**
      * รับข้อมูลกราฟการสนทนา
-     *
-     * @return array
      */
     private function getConversationsChart(): array
     {

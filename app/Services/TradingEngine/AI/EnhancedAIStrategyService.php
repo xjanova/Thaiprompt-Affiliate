@@ -3,10 +3,7 @@
 namespace App\Services\TradingEngine\AI;
 
 use App\Models\TradingStrategy;
-use App\Models\TradingMarketData;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class EnhancedAIStrategyService extends AIStrategyService
 {
@@ -45,7 +42,7 @@ class EnhancedAIStrategyService extends AIStrategyService
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Enhanced AI prediction failed", [
+            Log::error('Enhanced AI prediction failed', [
                 'strategy_id' => $strategy->id,
                 'error' => $e->getMessage(),
             ]);
@@ -101,8 +98,8 @@ class EnhancedAIStrategyService extends AIStrategyService
 
         // Calculate confluence
         $signals = [$shortTerm['signal'], $mediumTerm['signal'], $longTerm['signal']];
-        $buyCount = count(array_filter($signals, fn($s) => $s === 'buy'));
-        $sellCount = count(array_filter($signals, fn($s) => $s === 'sell'));
+        $buyCount = count(array_filter($signals, fn ($s) => $s === 'buy'));
+        $sellCount = count(array_filter($signals, fn ($s) => $s === 'sell'));
 
         $confluence = 'none';
         $confidence = 33;
@@ -260,9 +257,9 @@ class EnhancedAIStrategyService extends AIStrategyService
         $riskAdjustment = 1 - ($riskScore / 200); // Reduce confidence in high-risk scenarios
 
         // Count predictions
-        $buyCount = count(array_filter($predictions, fn($p) => $p === 'buy'));
-        $sellCount = count(array_filter($predictions, fn($p) => $p === 'sell'));
-        $holdCount = count(array_filter($predictions, fn($p) => $p === 'hold'));
+        $buyCount = count(array_filter($predictions, fn ($p) => $p === 'buy'));
+        $sellCount = count(array_filter($predictions, fn ($p) => $p === 'sell'));
+        $holdCount = count(array_filter($predictions, fn ($p) => $p === 'hold'));
 
         // Determine final prediction
         $totalPredictions = count($predictions);
@@ -278,7 +275,7 @@ class EnhancedAIStrategyService extends AIStrategyService
         }
 
         // Calculate average confidence
-        $avgConfidence = !empty($confidences) ? array_sum($confidences) / count($confidences) : 50;
+        $avgConfidence = ! empty($confidences) ? array_sum($confidences) / count($confidences) : 50;
 
         // Apply adjustments
         $adjustedConfidence = min(98, max(50, $avgConfidence * $regimeAdjustment * $riskAdjustment));
@@ -365,6 +362,7 @@ class EnhancedAIStrategyService extends AIStrategyService
         }
 
         $recentTR = array_slice($trueRanges, -min($period, count($trueRanges)));
+
         return array_sum($recentTR) / count($recentTR);
     }
 
@@ -486,6 +484,7 @@ class EnhancedAIStrategyService extends AIStrategyService
         for ($i = 1; $i < count($closes); $i++) {
             $returns[] = ($closes[$i] - $closes[$i - 1]) / $closes[$i - 1];
         }
+
         return $returns;
     }
 
@@ -513,13 +512,13 @@ class EnhancedAIStrategyService extends AIStrategyService
         }
 
         $avgReturn = array_sum($returns) / count($returns);
-        $downside = array_filter($returns, fn($r) => $r < $targetReturn);
+        $downside = array_filter($returns, fn ($r) => $r < $targetReturn);
 
         if (empty($downside)) {
             return 999; // All positive returns
         }
 
-        $downsideDeviation = sqrt(array_sum(array_map(fn($r) => pow($r - $targetReturn, 2), $downside)) / count($downside));
+        $downsideDeviation = sqrt(array_sum(array_map(fn ($r) => pow($r - $targetReturn, 2), $downside)) / count($downside));
 
         if ($downsideDeviation == 0) {
             return 0;
@@ -555,6 +554,7 @@ class EnhancedAIStrategyService extends AIStrategyService
 
         sort($returns);
         $index = (int) ((1 - $confidence) * count($returns));
+
         return abs($returns[$index] ?? 0) * 100;
     }
 
@@ -565,7 +565,7 @@ class EnhancedAIStrategyService extends AIStrategyService
         }
 
         $mean = array_sum($values) / count($values);
-        $variance = array_sum(array_map(fn($v) => pow($v - $mean, 2), $values)) / count($values);
+        $variance = array_sum(array_map(fn ($v) => pow($v - $mean, 2), $values)) / count($values);
 
         return sqrt($variance);
     }

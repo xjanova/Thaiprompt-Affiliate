@@ -36,7 +36,7 @@ class MlmGlobalSetting extends Model
     {
         $value = $this->value;
 
-        return match($this->type) {
+        return match ($this->type) {
             'boolean' => (bool) $value,
             'integer' => (int) $value,
             'decimal', 'float' => (float) $value,
@@ -51,7 +51,7 @@ class MlmGlobalSetting extends Model
      */
     public function getAllowedValuesArray()
     {
-        if (!$this->allowed_values) {
+        if (! $this->allowed_values) {
             return [];
         }
 
@@ -67,6 +67,7 @@ class MlmGlobalSetting extends Model
     {
         return Cache::remember("mlm_setting_{$key}", 3600, function () use ($key, $default) {
             $setting = static::where('key', $key)->first();
+
             return $setting ? $setting->getTypedValue() : $default;
         });
     }
@@ -78,7 +79,7 @@ class MlmGlobalSetting extends Model
     {
         $setting = static::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             $setting = static::create([
                 'key' => $key,
                 'value' => is_array($value) || is_object($value) ? json_encode($value) : $value,
@@ -91,6 +92,7 @@ class MlmGlobalSetting extends Model
         }
 
         Cache::forget("mlm_setting_{$key}");
+
         return true;
     }
 
@@ -148,6 +150,7 @@ class MlmGlobalSetting extends Model
         if (is_array($value) || is_object($value)) {
             return 'json';
         }
+
         return 'string';
     }
 

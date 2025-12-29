@@ -15,7 +15,7 @@ class BuyCryptoRequest extends FormRequest
         // Check if user has a crypto wallet
         $wallet = $this->user()->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return false;
         }
 
@@ -100,7 +100,7 @@ class BuyCryptoRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Set default slippage if not provided
-        if (!$this->slippage_tolerance) {
+        if (! $this->slippage_tolerance) {
             $this->merge([
                 'slippage_tolerance' => 1.0, // 1% default
             ]);

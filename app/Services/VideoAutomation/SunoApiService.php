@@ -2,8 +2,8 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoSetting;
 use App\Models\VideoAutoJob;
+use App\Models\VideoAutoSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,29 +20,21 @@ class SunoApiService
 {
     /**
      * Base URL ของ Suno API
-     *
-     * @var string
      */
     protected string $baseUrl;
 
     /**
      * API Key
-     *
-     * @var string|null
      */
     protected ?string $apiKey;
 
     /**
      * Cookie สำหรับ authentication
-     *
-     * @var string|null
      */
     protected ?string $cookie;
 
     /**
      * Timeout สำหรับ HTTP requests (วินาที)
-     *
-     * @var int
      */
     protected int $timeout = 120;
 
@@ -56,8 +48,6 @@ class SunoApiService
 
     /**
      * โหลดการตั้งค่าจาก database
-     *
-     * @return void
      */
     protected function loadSettings(): void
     {
@@ -69,20 +59,18 @@ class SunoApiService
 
     /**
      * ตรวจสอบว่า API พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey) || !empty($this->cookie);
+        return ! empty($this->apiKey) || ! empty($this->cookie);
     }
 
     /**
      * สร้างเพลงจาก prompt
      *
-     * @param string $prompt คำอธิบายเพลงที่ต้องการ
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $prompt  คำอธิบายเพลงที่ต้องการ
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, data?: array, error?: string}
      *
      * @example
@@ -98,7 +86,7 @@ class SunoApiService
      */
     public function generateMusic(string $prompt, array $options = [], ?VideoAutoJob $job = null): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'Suno API ยังไม่ได้ตั้งค่า กรุณาใส่ API Key หรือ Cookie',
@@ -117,7 +105,7 @@ class SunoApiService
             // เรียก API สร้างเพลง
             $response = Http::timeout($this->timeout)
                 ->withHeaders($this->getHeaders())
-                ->post($this->baseUrl . '/api/generate', $body);
+                ->post($this->baseUrl.'/api/generate', $body);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -132,7 +120,7 @@ class SunoApiService
                 $response->json() ?? []
             );
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $error = $response->json('error') ?? $response->body();
                 $job?->logError('Suno API ตอบกลับ error', ['error' => $error]);
 
@@ -180,11 +168,11 @@ class SunoApiService
     /**
      * สร้างเพลงแบบ custom (กำหนด lyrics และ style)
      *
-     * @param string $lyrics เนื้อเพลง
-     * @param string $style สไตล์เพลง
-     * @param string $title ชื่อเพลง
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $lyrics  เนื้อเพลง
+     * @param  string  $style  สไตล์เพลง
+     * @param  string  $title  ชื่อเพลง
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, data?: array, error?: string}
      */
     public function generateCustomMusic(
@@ -194,7 +182,7 @@ class SunoApiService
         array $options = [],
         ?VideoAutoJob $job = null
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'Suno API ยังไม่ได้ตั้งค่า',
@@ -221,7 +209,7 @@ class SunoApiService
 
             $response = Http::timeout($this->timeout)
                 ->withHeaders($this->getHeaders())
-                ->post($this->baseUrl . '/api/custom_generate', $body);
+                ->post($this->baseUrl.'/api/custom_generate', $body);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -235,10 +223,10 @@ class SunoApiService
                 $response->json() ?? []
             );
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
-                    'error' => 'Suno API error: ' . ($response->json('error') ?? $response->body()),
+                    'error' => 'Suno API error: '.($response->json('error') ?? $response->body()),
                 ];
             }
 
@@ -262,7 +250,7 @@ class SunoApiService
     /**
      * ดึงข้อมูลเพลงตาม ID
      *
-     * @param string $songId ID ของเพลง
+     * @param  string  $songId  ID ของเพลง
      * @return array{success: bool, data?: array, error?: string}
      */
     public function getSong(string $songId): array
@@ -270,9 +258,9 @@ class SunoApiService
         try {
             $response = Http::timeout(30)
                 ->withHeaders($this->getHeaders())
-                ->get($this->baseUrl . "/api/get?ids={$songId}");
+                ->get($this->baseUrl."/api/get?ids={$songId}");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
                     'error' => 'ไม่สามารถดึงข้อมูลเพลงได้',
@@ -297,9 +285,9 @@ class SunoApiService
     /**
      * ดาวน์โหลดไฟล์เพลง
      *
-     * @param string $audioUrl URL ของไฟล์เพลง
-     * @param string $filename ชื่อไฟล์ที่จะบันทึก
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $audioUrl  URL ของไฟล์เพลง
+     * @param  string  $filename  ชื่อไฟล์ที่จะบันทึก
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, path?: string, error?: string}
      */
     public function downloadMusic(string $audioUrl, string $filename, ?VideoAutoJob $job = null): array
@@ -309,7 +297,7 @@ class SunoApiService
 
             $response = Http::timeout(300)->get($audioUrl);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
                     'error' => 'ไม่สามารถดาวน์โหลดเพลงได้',
@@ -352,9 +340,9 @@ class SunoApiService
         try {
             $response = Http::timeout(30)
                 ->withHeaders($this->getHeaders())
-                ->get($this->baseUrl . '/api/get_limit');
+                ->get($this->baseUrl.'/api/get_limit');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
                     'error' => 'ไม่สามารถตรวจสอบ credit ได้',
@@ -382,7 +370,7 @@ class SunoApiService
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'API ยังไม่ได้ตั้งค่า กรุณาใส่ API Key หรือ Cookie',
@@ -394,22 +382,18 @@ class SunoApiService
         if ($result['success']) {
             return [
                 'success' => true,
-                'message' => 'เชื่อมต่อสำเร็จ! Credits คงเหลือ: ' . ($result['credits'] ?? 'ไม่ทราบ'),
+                'message' => 'เชื่อมต่อสำเร็จ! Credits คงเหลือ: '.($result['credits'] ?? 'ไม่ทราบ'),
             ];
         }
 
         return [
             'success' => false,
-            'message' => 'เชื่อมต่อไม่สำเร็จ: ' . ($result['error'] ?? 'Unknown error'),
+            'message' => 'เชื่อมต่อไม่สำเร็จ: '.($result['error'] ?? 'Unknown error'),
         ];
     }
 
     /**
      * สร้าง request body สำหรับสร้างเพลง
-     *
-     * @param string $prompt
-     * @param array $options
-     * @return array
      */
     protected function buildMusicRequestBody(string $prompt, array $options): array
     {
@@ -423,19 +407,19 @@ class SunoApiService
         // เพิ่ม tags จาก options
         $tags = [];
 
-        if (!empty($options['genre'])) {
+        if (! empty($options['genre'])) {
             $tags[] = $options['genre'];
         }
 
-        if (!empty($options['mood'])) {
+        if (! empty($options['mood'])) {
             $tags[] = $options['mood'];
         }
 
-        if (!empty($options['style'])) {
+        if (! empty($options['style'])) {
             $tags[] = $options['style'];
         }
 
-        if (!empty($tags)) {
+        if (! empty($tags)) {
             $body['tags'] = implode(', ', $tags);
         }
 
@@ -444,10 +428,6 @@ class SunoApiService
 
     /**
      * รอให้การสร้างเพลงเสร็จสิ้น
-     *
-     * @param string $songId
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function waitForCompletion(string $songId, ?VideoAutoJob $job = null): array
     {
@@ -460,7 +440,7 @@ class SunoApiService
 
             $result = $this->getSong($songId);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 continue;
             }
 
@@ -477,7 +457,7 @@ class SunoApiService
             }
 
             if ($status === 'error') {
-                throw new \Exception('Suno API error: ' . ($song['error_message'] ?? 'Unknown error'));
+                throw new \Exception('Suno API error: '.($song['error_message'] ?? 'Unknown error'));
             }
         }
 
@@ -486,8 +466,6 @@ class SunoApiService
 
     /**
      * สร้าง HTTP headers
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {

@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ShoppingCart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShippingAddress;
+use App\Models\ShoppingCart;
 use App\Models\Wallet;
-use App\Services\CashbackService;
-use App\Services\WalletService;
-use App\Services\Payment\PaymentService;
 use App\Notifications\NewOrderNotification;
+use App\Services\CashbackService;
+use App\Services\Payment\PaymentService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -18,13 +18,14 @@ use Illuminate\Support\Facades\Notification;
 class CheckoutController extends Controller
 {
     protected CashbackService $cashbackService;
+
     protected PaymentService $paymentService;
 
     public function __construct()
     {
         $this->middleware('auth');
-        $this->cashbackService = new CashbackService(new WalletService());
-        $this->paymentService = new PaymentService();
+        $this->cashbackService = new CashbackService(new WalletService);
+        $this->paymentService = new PaymentService;
     }
 
     /**
@@ -42,7 +43,7 @@ class CheckoutController extends Controller
 
         // Check stock availability
         foreach ($cartItems as $item) {
-            if (!$item->isAvailable() || !$item->hasEnoughStock()) {
+            if (! $item->isAvailable() || ! $item->hasEnoughStock()) {
                 return redirect()->route('cart.index')->with('error', 'มีสินค้าบางรายการหมดสต็อกหรือไม่พร้อมจำหน่าย');
             }
         }
@@ -52,7 +53,7 @@ class CheckoutController extends Controller
             return $item->product->is_virtual;
         });
         $hasPhysicalProducts = $cartItems->contains(function ($item) {
-            return !$item->product->is_virtual;
+            return ! $item->product->is_virtual;
         });
 
         // Get user's shipping addresses (เฉพาะเมื่อมีสินค้าที่ต้องส่ง)
@@ -115,7 +116,7 @@ class CheckoutController extends Controller
 
         // ✅ ตรวจสอบว่ามีสินค้าที่ต้องส่งหรือไม่
         $hasPhysicalProducts = $cartItems->contains(function ($item) {
-            return !$item->product->is_virtual;
+            return ! $item->product->is_virtual;
         });
 
         // ✅ Validation: shipping_address_id required เฉพาะเมื่อมีสินค้าที่ต้องส่ง
@@ -132,7 +133,7 @@ class CheckoutController extends Controller
 
         // Check stock availability again
         foreach ($cartItems as $item) {
-            if (!$item->isAvailable() || !$item->hasEnoughStock()) {
+            if (! $item->isAvailable() || ! $item->hasEnoughStock()) {
                 return redirect()->route('cart.index')->with('error', 'มีสินค้าบางรายการหมดสต็อกหรือไม่พร้อมจำหน่าย');
             }
         }
@@ -224,7 +225,7 @@ class CheckoutController extends Controller
             try {
                 $order->user->notify(new NewOrderNotification($order));
             } catch (\Exception $e) {
-                \Log::error('Failed to send order notification: ' . $e->getMessage());
+                \Log::error('Failed to send order notification: '.$e->getMessage());
             }
 
             // Send notification to sellers
@@ -235,7 +236,7 @@ class CheckoutController extends Controller
                         $seller->notify(new NewOrderNotification($order));
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send seller notification: ' . $e->getMessage());
+                    \Log::error('Failed to send seller notification: '.$e->getMessage());
                 }
             }
 
@@ -246,7 +247,8 @@ class CheckoutController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -268,7 +270,7 @@ class CheckoutController extends Controller
         // Get payment transaction
         $transaction = $order->paymentTransaction;
 
-        if (!$transaction) {
+        if (! $transaction) {
             return redirect()->route('orders.show', $order->id)
                 ->with('error', 'ไม่พบรายการชำระเงิน');
         }
@@ -306,7 +308,7 @@ class CheckoutController extends Controller
 
         $transaction = $order->paymentTransaction;
 
-        if (!$transaction) {
+        if (! $transaction) {
             return back()->with('error', 'ไม่พบรายการชำระเงิน');
         }
 
@@ -322,7 +324,7 @@ class CheckoutController extends Controller
                         try {
                             $this->cashbackService->processOrderCashback($order);
                         } catch (\Exception $e) {
-                            \Log::error('Failed to process cashback: ' . $e->getMessage());
+                            \Log::error('Failed to process cashback: '.$e->getMessage());
                         }
                     }
 
@@ -344,8 +346,9 @@ class CheckoutController extends Controller
             return back()->with('error', $result['message'] ?? 'การชำระเงินล้มเหลว');
 
         } catch (\Exception $e) {
-            \Log::error('Payment processing failed: ' . $e->getMessage());
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            \Log::error('Payment processing failed: '.$e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -364,7 +367,8 @@ class CheckoutController extends Controller
             return response()->json(['success' => false, 'message' => 'Verification failed'], 400);
 
         } catch (\Exception $e) {
-            \Log::error('Payment callback failed: ' . $e->getMessage());
+            \Log::error('Payment callback failed: '.$e->getMessage());
+
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -385,8 +389,7 @@ class CheckoutController extends Controller
     /**
      * คำนวณ PV ที่ลูกค้าจะได้รับ
      *
-     * @param \Illuminate\Support\Collection $cartItems
-     * @return array
+     * @param  \Illuminate\Support\Collection  $cartItems
      */
     private function calculatePvPreview($cartItems): array
     {
@@ -436,9 +439,6 @@ class CheckoutController extends Controller
 
     /**
      * ประมวลผล Wallet Topup Package (เพิ่มยอดเข้า Wallet)
-     *
-     * @param Order $order
-     * @return void
      */
     private function processWalletTopupIfApplicable(Order $order): void
     {
@@ -513,7 +513,7 @@ class CheckoutController extends Controller
             }
 
         } catch (\Exception $e) {
-            \Log::error('[Wallet Topup] เกิดข้อผิดพลาด: ' . $e->getMessage());
+            \Log::error('[Wallet Topup] เกิดข้อผิดพลาด: '.$e->getMessage());
             // ไม่ throw exception เพื่อไม่ให้กระทบกับการทำงานของ order
         }
     }

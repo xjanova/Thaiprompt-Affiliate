@@ -27,7 +27,7 @@ class MembershipRetentionSetting extends Model
             case 'boolean':
                 return filter_var($this->value, FILTER_VALIDATE_BOOLEAN);
             case 'number':
-                return is_numeric($this->value) ? (float)$this->value : 0;
+                return is_numeric($this->value) ? (float) $this->value : 0;
             case 'json':
                 return json_decode($this->value, true);
             default:
@@ -41,6 +41,7 @@ class MembershipRetentionSetting extends Model
     public static function get(string $key, $default = null)
     {
         $setting = static::where('key', $key)->first();
+
         return $setting ? $setting->getTypedValue() : $default;
     }
 
@@ -54,7 +55,7 @@ class MembershipRetentionSetting extends Model
         } elseif ($type === 'boolean') {
             $value = $value ? 'true' : 'false';
         } elseif ($type === 'number') {
-            $value = (string)$value;
+            $value = (string) $value;
         }
 
         static::updateOrCreate(

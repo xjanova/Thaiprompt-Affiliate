@@ -13,8 +13,6 @@ use Illuminate\Queue\SerializesModels;
  *
  * Event ที่ถูก broadcast เมื่อมีการอัพเดทตะกร้าสินค้าใน POS
  * ส่งผ่าน WebSocket ไปยัง Customer Display แบบ real-time
- *
- * @package App\Events
  */
 class PosCartUpdated implements ShouldBroadcast
 {
@@ -22,65 +20,48 @@ class PosCartUpdated implements ShouldBroadcast
 
     /**
      * Device code ของ POS device
-     *
-     * @var string
      */
     public string $deviceCode;
 
     /**
      * รายการสินค้าในตะกร้า
-     *
-     * @var array
      */
     public array $items;
 
     /**
      * ยอดรวมก่อนหักส่วนลด
-     *
-     * @var float
      */
     public float $subtotal;
 
     /**
      * ส่วนลด
-     *
-     * @var float
      */
     public float $discount;
 
     /**
      * ภาษี
-     *
-     * @var float
      */
     public float $tax;
 
     /**
      * ค่าบริการ
-     *
-     * @var float
      */
     public float $serviceCharge;
 
     /**
      * ยอดรวมทั้งหมด
-     *
-     * @var float
      */
     public float $total;
 
     /**
      * สถานะการแสดงผล (cart, payment, completed, idle)
-     *
-     * @var string
      */
     public string $displayMode;
 
     /**
      * สร้าง event instance ใหม่
      *
-     * @param string $deviceCode
-     * @param array $data ข้อมูลตะกร้า
+     * @param  array  $data  ข้อมูลตะกร้า
      */
     public function __construct(string $deviceCode, array $data)
     {
@@ -98,18 +79,14 @@ class PosCartUpdated implements ShouldBroadcast
      * กำหนด channel ที่จะ broadcast
      *
      * ใช้ public channel เพราะ customer display ไม่ต้องการ authentication
-     *
-     * @return Channel
      */
     public function broadcastOn(): Channel
     {
-        return new Channel('pos-display.' . $this->deviceCode);
+        return new Channel('pos-display.'.$this->deviceCode);
     }
 
     /**
      * กำหนดชื่อ event สำหรับ broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -118,8 +95,6 @@ class PosCartUpdated implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะส่งไปกับ broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {

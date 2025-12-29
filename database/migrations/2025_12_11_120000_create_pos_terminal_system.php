@@ -19,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตาราง pos_api_keys - เก็บ API Keys ที่ Server สร้างให้
-        if (!Schema::hasTable('pos_api_keys')) {
+        if (! Schema::hasTable('pos_api_keys')) {
             Schema::create('pos_api_keys', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('shop_id')
@@ -54,7 +54,7 @@ return new class extends Migration
         }
 
         // ตาราง pos_terminals - เก็บข้อมูล POS ที่ลงทะเบียน
-        if (!Schema::hasTable('pos_terminals')) {
+        if (! Schema::hasTable('pos_terminals')) {
             Schema::create('pos_terminals', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('shop_id')
@@ -94,7 +94,7 @@ return new class extends Migration
         }
 
         // ตาราง pos_daily_reports - รายงานประจำวัน
-        if (!Schema::hasTable('pos_daily_reports')) {
+        if (! Schema::hasTable('pos_daily_reports')) {
             Schema::create('pos_daily_reports', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('terminal_id')

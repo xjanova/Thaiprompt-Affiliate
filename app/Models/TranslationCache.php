@@ -63,24 +63,14 @@ class TranslationCache extends Model
 
     /**
      * สร้าง hash สำหรับ cache key
-     *
-     * @param string $text
-     * @param string $sourceLang
-     * @param string $targetLang
-     * @return string
      */
     public static function generateHash(string $text, string $sourceLang, string $targetLang): string
     {
-        return hash('sha256', $text . '|' . $sourceLang . '|' . $targetLang);
+        return hash('sha256', $text.'|'.$sourceLang.'|'.$targetLang);
     }
 
     /**
      * ดึง cache ถ้ามี
-     *
-     * @param string $text
-     * @param string $sourceLang
-     * @param string $targetLang
-     * @return static|null
      */
     public static function getCache(string $text, string $sourceLang, string $targetLang): ?static
     {
@@ -102,12 +92,6 @@ class TranslationCache extends Model
 
     /**
      * บันทึก cache ใหม่
-     *
-     * @param string $sourceText
-     * @param string $translatedText
-     * @param string $sourceLang
-     * @param string $targetLang
-     * @return static
      */
     public static function saveCache(
         string $sourceText,
@@ -132,9 +116,6 @@ class TranslationCache extends Model
 
     /**
      * ล้าง cache เก่าที่ไม่ได้ใช้งาน
-     *
-     * @param int $days
-     * @return int
      */
     public static function clearOldCache(int $days = 30): int
     {

@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\WalletTransaction;
 use App\Models\WalletLog;
+use App\Models\WalletTransaction;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class WalletService
 {
@@ -29,7 +29,7 @@ class WalletService
 
             return $wallet;
         } catch (Exception $e) {
-            Log::error('Failed to create wallet: ' . $e->getMessage());
+            Log::error('Failed to create wallet: '.$e->getMessage());
             throw $e;
         }
     }
@@ -41,7 +41,7 @@ class WalletService
     {
         $wallet = $user->wallet ?? Wallet::where('user_id', $user->id)->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             $wallet = $this->createWallet($user);
         }
 
@@ -63,7 +63,7 @@ class WalletService
             throw new Exception('Amount must be greater than 0');
         }
 
-        if (!$wallet->isActive()) {
+        if (! $wallet->isActive()) {
             throw new Exception('Wallet is not active');
         }
 
@@ -124,7 +124,7 @@ class WalletService
             throw new Exception('Amount must be greater than 0');
         }
 
-        if (!$wallet->isActive()) {
+        if (! $wallet->isActive()) {
             throw new Exception('Wallet is not active');
         }
 
@@ -134,7 +134,7 @@ class WalletService
         }
 
         // Verify PIN
-        if ($wallet->hasPIN() && !$wallet->verifyPIN($pin)) {
+        if ($wallet->hasPIN() && ! $wallet->verifyPIN($pin)) {
             $wallet->incrementFailedAttempts();
             $this->logAction($wallet, 'pin_failed', 'Invalid PIN attempt', 'warning');
             throw new Exception('Invalid PIN');
@@ -197,7 +197,7 @@ class WalletService
             throw new Exception('Amount must be greater than 0');
         }
 
-        if (!$fromWallet->isActive() || !$toWallet->isActive()) {
+        if (! $fromWallet->isActive() || ! $toWallet->isActive()) {
             throw new Exception('One or both wallets are not active');
         }
 
@@ -211,7 +211,7 @@ class WalletService
         }
 
         // Verify PIN
-        if ($fromWallet->hasPIN() && !$fromWallet->verifyPIN($pin)) {
+        if ($fromWallet->hasPIN() && ! $fromWallet->verifyPIN($pin)) {
             $fromWallet->incrementFailedAttempts();
             $this->logAction($fromWallet, 'pin_failed', 'Invalid PIN attempt for transfer', 'warning');
             throw new Exception('Invalid PIN');
@@ -347,38 +347,38 @@ class WalletService
      */
     public function getAllWallets(array $filters = [], int $perPage = 20)
     {
-        $query = Wallet::with(['user', 'transactions' => function($q) {
+        $query = Wallet::with(['user', 'transactions' => function ($q) {
             $q->latest()->limit(5);
         }]);
 
         // Filter by user
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
         // Filter by status
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
         // Filter by balance
-        if (!empty($filters['min_balance'])) {
+        if (! empty($filters['min_balance'])) {
             $query->where('balance', '>=', $filters['min_balance']);
         }
 
-        if (!empty($filters['max_balance'])) {
+        if (! empty($filters['max_balance'])) {
             $query->where('balance', '<=', $filters['max_balance']);
         }
 
         // Search by wallet address or user name
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('wallet_address', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -440,12 +440,12 @@ class WalletService
 
         // Validate amount
         $errors = \App\Models\WalletSetting::validateTransferAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
         if ($fromWallet->balance < $totalAmount) {
-            throw new Exception('ยอดเงินไม่เพียงพอ (รวมค่าธรรมเนียม ' . number_format($fee, 2) . ' บาท)');
+            throw new Exception('ยอดเงินไม่เพียงพอ (รวมค่าธรรมเนียม '.number_format($fee, 2).' บาท)');
         }
 
         return DB::transaction(function () use ($fromWallet, $toWallet, $amount, $fee, $totalAmount, $pin, $description) {
@@ -647,12 +647,12 @@ class WalletService
     /**
      * โอนเงินระหว่างกระเป๋าโดย Admin (ไม่ต้องใช้ PIN)
      *
-     * @param Wallet $fromWallet กระเป๋าต้นทาง
-     * @param Wallet $toWallet กระเป๋าปลายทาง
-     * @param float $amount จำนวนเงิน
-     * @param string $reason เหตุผลในการโอน
-     * @param User $admin แอดมินที่ทำรายการ
-     * @return array
+     * @param  Wallet  $fromWallet  กระเป๋าต้นทาง
+     * @param  Wallet  $toWallet  กระเป๋าปลายทาง
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $reason  เหตุผลในการโอน
+     * @param  User  $admin  แอดมินที่ทำรายการ
+     *
      * @throws Exception
      */
     public function adminTransfer(
@@ -766,10 +766,9 @@ class WalletService
     /**
      * ระงับการใช้งานกระเป๋า (Suspend)
      *
-     * @param Wallet $wallet กระเป๋าที่ต้องการระงับ
-     * @param string $reason เหตุผล
-     * @param User $admin แอดมินที่ทำรายการ
-     * @return Wallet
+     * @param  Wallet  $wallet  กระเป๋าที่ต้องการระงับ
+     * @param  string  $reason  เหตุผล
+     * @param  User  $admin  แอดมินที่ทำรายการ
      */
     public function suspendWallet(Wallet $wallet, string $reason, User $admin): Wallet
     {
@@ -792,10 +791,9 @@ class WalletService
     /**
      * ยกเลิกการระงับกระเป๋า (Unsuspend)
      *
-     * @param Wallet $wallet กระเป๋าที่ต้องการยกเลิกการระงับ
-     * @param string $reason เหตุผล
-     * @param User $admin แอดมินที่ทำรายการ
-     * @return Wallet
+     * @param  Wallet  $wallet  กระเป๋าที่ต้องการยกเลิกการระงับ
+     * @param  string  $reason  เหตุผล
+     * @param  User  $admin  แอดมินที่ทำรายการ
      */
     public function unsuspendWallet(Wallet $wallet, string $reason, User $admin): Wallet
     {
@@ -819,8 +817,8 @@ class WalletService
     /**
      * ดึงธุรกรรมทั้งหมดในระบบ
      *
-     * @param array $filters ตัวกรอง
-     * @param int $perPage จำนวนต่อหน้า
+     * @param  array  $filters  ตัวกรอง
+     * @param  int  $perPage  จำนวนต่อหน้า
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllTransactions(array $filters = [], int $perPage = 20)
@@ -828,53 +826,53 @@ class WalletService
         $query = WalletTransaction::with(['wallet.user', 'relatedWallet.user']);
 
         // กรองตาม wallet_id
-        if (!empty($filters['wallet_id'])) {
+        if (! empty($filters['wallet_id'])) {
             $query->where('wallet_id', $filters['wallet_id']);
         }
 
         // กรองตาม user_id
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
         // กรองตามประเภท
-        if (!empty($filters['type'])) {
+        if (! empty($filters['type'])) {
             $query->where('type', $filters['type']);
         }
 
         // กรองตามสถานะ
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
         // กรองตามวันที่
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
         // กรองตามจำนวนเงิน
-        if (!empty($filters['min_amount'])) {
+        if (! empty($filters['min_amount'])) {
             $query->where('amount', '>=', $filters['min_amount']);
         }
 
-        if (!empty($filters['max_amount'])) {
+        if (! empty($filters['max_amount'])) {
             $query->where('amount', '<=', $filters['max_amount']);
         }
 
         // ค้นหา
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhereHas('wallet.user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('wallet.user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -884,8 +882,8 @@ class WalletService
     /**
      * ดึง logs ทั้งหมดในระบบ
      *
-     * @param array $filters ตัวกรอง
-     * @param int $perPage จำนวนต่อหน้า
+     * @param  array  $filters  ตัวกรอง
+     * @param  int  $perPage  จำนวนต่อหน้า
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getAllLogs(array $filters = [], int $perPage = 20)
@@ -893,38 +891,38 @@ class WalletService
         $query = WalletLog::with(['wallet.user']);
 
         // กรองตาม wallet_id
-        if (!empty($filters['wallet_id'])) {
+        if (! empty($filters['wallet_id'])) {
             $query->where('wallet_id', $filters['wallet_id']);
         }
 
         // กรองตาม action
-        if (!empty($filters['action'])) {
+        if (! empty($filters['action'])) {
             $query->where('action', $filters['action']);
         }
 
         // กรองตาม severity
-        if (!empty($filters['severity'])) {
+        if (! empty($filters['severity'])) {
             $query->where('severity', $filters['severity']);
         }
 
         // กรองตามวันที่
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
         // ค้นหา
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
-                  ->orWhereHas('wallet.user', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('wallet.user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -934,7 +932,7 @@ class WalletService
     /**
      * ดึงรายการกระเป๋าสำหรับ dropdown
      *
-     * @param string|null $exclude Wallet ID ที่ต้องการยกเว้น
+     * @param  string|null  $exclude  Wallet ID ที่ต้องการยกเว้น
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getWalletsForDropdown(?int $excludeId = null)

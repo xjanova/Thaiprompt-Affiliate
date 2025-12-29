@@ -40,8 +40,6 @@ class Permission extends Model
 
     /**
      * Get all permission categories.
-     *
-     * @return array
      */
     public static function getCategories(): array
     {
@@ -52,13 +50,10 @@ class Permission extends Model
      * Get category display name in Thai.
      *
      * แปลงชื่อ category เป็นภาษาไทยสำหรับแสดงผลใน UI
-     *
-     * @param string $category
-     * @return string
      */
     public static function getCategoryDisplayName(string $category): string
     {
-        return match($category) {
+        return match ($category) {
             // Core System
             'system' => '⚙️ ระบบหลัก',
             'users' => '👥 ผู้ใช้งาน',
@@ -127,7 +122,7 @@ class Permission extends Model
 
             // Default
             'general' => '📋 ทั่วไป',
-            default => '📂 ' . ucfirst(str_replace('_', ' ', $category)),
+            default => '📂 '.ucfirst(str_replace('_', ' ', $category)),
         };
     }
 
@@ -135,13 +130,10 @@ class Permission extends Model
      * Get category icon only (without text).
      *
      * ดึงเฉพาะ icon ของ category
-     *
-     * @param string $category
-     * @return string
      */
     public static function getCategoryIcon(string $category): string
     {
-        return match($category) {
+        return match ($category) {
             'system' => '⚙️',
             'users' => '👥',
             'roles' => '🔐',
@@ -187,8 +179,6 @@ class Permission extends Model
      * Get all category definitions with display names and icons.
      *
      * ดึงรายการ categories ทั้งหมดพร้อมชื่อและ icon
-     *
-     * @return array
      */
     public static function getAllCategoryDefinitions(): array
     {
@@ -280,14 +270,14 @@ class Permission extends Model
             $category = $permission->category;
             $group = $categoryDefinitions[$category]['group'] ?? 'other';
 
-            if (!isset($grouped[$group])) {
+            if (! isset($grouped[$group])) {
                 $grouped[$group] = [
                     'name' => static::getGroupDisplayName($group),
                     'categories' => [],
                 ];
             }
 
-            if (!isset($grouped[$group]['categories'][$category])) {
+            if (! isset($grouped[$group]['categories'][$category])) {
                 $grouped[$group]['categories'][$category] = [
                     'name' => $categoryDefinitions[$category]['name'] ?? $category,
                     'icon' => $categoryDefinitions[$category]['icon'] ?? '📂',
@@ -305,13 +295,10 @@ class Permission extends Model
      * Get group display name in Thai.
      *
      * แปลงชื่อกลุ่มเป็นภาษาไทย
-     *
-     * @param string $group
-     * @return string
      */
     public static function getGroupDisplayName(string $group): string
     {
-        return match($group) {
+        return match ($group) {
             'core' => '🏢 ระบบหลัก',
             'identity' => '🪪 ตัวตน & Support',
             'ai' => '🤖 ระบบ AI',
@@ -327,7 +314,7 @@ class Permission extends Model
             'content' => '📄 คอนเทนต์',
             'customization' => '🎨 การปรับแต่ง',
             'settings' => '⚙️ ตั้งค่า',
-            default => '📂 ' . ucfirst($group),
+            default => '📂 '.ucfirst($group),
         };
     }
 }

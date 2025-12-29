@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\FoodProduct;
 use App\Models\FoodCertification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -47,7 +46,7 @@ class CertificationService
         } catch (\Exception $e) {
             \Log::error('Blockchain certification recording failed', [
                 'certification_id' => $certification->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -101,7 +100,7 @@ class CertificationService
 
         $cert->update([
             'status' => 'revoked',
-            'scope' => $cert->scope . "\n\nRevoked: " . $reason,
+            'scope' => $cert->scope."\n\nRevoked: ".$reason,
         ]);
 
         // Notify stakeholders
@@ -168,12 +167,12 @@ class CertificationService
             Storage::disk('public')->put($filename, $qrCode);
 
             $certification->update([
-                'qr_code_url' => Storage::url($filename)
+                'qr_code_url' => Storage::url($filename),
             ]);
         } catch (\Exception $e) {
             \Log::error('Certificate QR code generation failed', [
                 'certification_id' => $certification->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -210,7 +209,7 @@ class CertificationService
             ]);
 
             // Return mock hash for development
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -231,7 +230,7 @@ class CertificationService
             } catch (\Exception $e) {
                 \Log::error('LINE notification failed', [
                     'certification_id' => $certification->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -254,7 +253,7 @@ class CertificationService
             } catch (\Exception $e) {
                 \Log::error('LINE notification failed', [
                     'certification_id' => $certification->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -301,22 +300,22 @@ class CertificationService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => 'ผลิตภัณฑ์: ' . $product->variety,
+                                    'text' => 'ผลิตภัณฑ์: '.$product->variety,
                                     'size' => 'sm',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'เลขที่: ' . $certification->certificate_number,
+                                    'text' => 'เลขที่: '.$certification->certificate_number,
                                     'size' => 'sm',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'ออกโดย: ' . $certification->certifying_body,
+                                    'text' => 'ออกโดย: '.$certification->certifying_body,
                                     'size' => 'sm',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'หมดอายุ: ' . $certification->expiry_date->format('d/m/Y'),
+                                    'text' => 'หมดอายุ: '.$certification->expiry_date->format('d/m/Y'),
                                     'size' => 'sm',
                                 ],
                             ],

@@ -43,7 +43,7 @@ use Illuminate\Support\Str;
  */
 class Service extends Model
 {
-    use HasFactory, SoftDeletes, CalculatesEarnings;
+    use CalculatesEarnings, HasFactory, SoftDeletes;
 
     protected $table = 'services';
 
@@ -126,14 +126,12 @@ class Service extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * หมวดหมู่ของบริการ
-     *
-     * @return BelongsTo
      */
     public function category(): BelongsTo
     {
@@ -142,8 +140,6 @@ class Service extends Model
 
     /**
      * เจ้าของบริการ
-     *
-     * @return BelongsTo
      */
     public function owner(): BelongsTo
     {
@@ -152,8 +148,6 @@ class Service extends Model
 
     /**
      * การจองทั้งหมด
-     *
-     * @return HasMany
      */
     public function bookings(): HasMany
     {
@@ -162,8 +156,6 @@ class Service extends Model
 
     /**
      * รีวิวทั้งหมด
-     *
-     * @return HasMany
      */
     public function reviews(): HasMany
     {
@@ -172,8 +164,6 @@ class Service extends Model
 
     /**
      * Pricing rules สำหรับบริการนี้
-     *
-     * @return HasMany
      */
     public function pricingRules(): HasMany
     {
@@ -183,8 +173,6 @@ class Service extends Model
 
     /**
      * ผู้ที่บล็อกบริการ (Admin)
-     *
-     * @return BelongsTo
      */
     public function blockedByUser(): BelongsTo
     {
@@ -193,17 +181,15 @@ class Service extends Model
 
     /**
      * ผู้ที่ปลดบล็อกบริการ (Admin)
-     *
-     * @return BelongsTo
      */
     public function unblockedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'unblocked_by');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะบริการที่เปิดใช้งาน
@@ -257,14 +243,12 @@ class Service extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Accessors & Mutators
-    //===========================================
+    // ===========================================
 
     /**
      * ได้รูปภาพหลัก
-     *
-     * @return string|null
      */
     public function getMainImageAttribute(): ?string
     {
@@ -277,8 +261,6 @@ class Service extends Model
 
     /**
      * ได้ระยะเวลาในรูปแบบที่อ่านง่าย
-     *
-     * @return string
      */
     public function getDurationTextAttribute(): string
     {
@@ -294,14 +276,12 @@ class Service extends Model
         }
     }
 
-    //===========================================
+    // ===========================================
     // Methods
-    //===========================================
+    // ===========================================
 
     /**
      * เพิ่มจำนวนการดู
-     *
-     * @return void
      */
     public function incrementViewCount(): void
     {
@@ -310,8 +290,6 @@ class Service extends Model
 
     /**
      * เพิ่มจำนวนการจอง
-     *
-     * @return void
      */
     public function incrementBookingCount(): void
     {
@@ -320,8 +298,6 @@ class Service extends Model
 
     /**
      * อัพเดทคะแนนเฉลี่ย
-     *
-     * @return void
      */
     public function updateAverageRating(): void
     {
@@ -334,19 +310,19 @@ class Service extends Model
     /**
      * คำนวณราคารวมค่าเดินทาง
      *
-     * @param float $distanceKm ระยะทาง (กิโลเมตร)
-     * @return float
+     * @param  float  $distanceKm  ระยะทาง (กิโลเมตร)
      */
     public function calculateTotalPrice(float $distanceKm): float
     {
         $distancePrice = $this->calculateDistancePrice($distanceKm);
+
         return $this->base_price + $distancePrice;
     }
 
     /**
      * คำนวณรายได้สุทธิของ Provider (หักค่าธรรมเนียมทั้งหมด)
      *
-     * @param float $totalAmount ราคารวมสุทธิ
+     * @param  float  $totalAmount  ราคารวมสุทธิ
      * @return array ['platform_fee' => float, 'pv' => float, 'earnings' => float]
      */
     public function calculateProviderEarnings(float $totalAmount): array
@@ -375,9 +351,6 @@ class Service extends Model
 
     /**
      * ตรวจสอบว่า PV ที่ตั้งอยู่ในช่วงที่กำหนดหรือไม่
-     *
-     * @param float $pvPercentage
-     * @return bool
      */
     public function isValidPvPercentage(float $pvPercentage): bool
     {
@@ -387,9 +360,6 @@ class Service extends Model
 
     /**
      * คำนวณค่าเดินทางตามระยะทาง
-     *
-     * @param float $distanceKm
-     * @return float
      */
     public function calculateDistancePrice(float $distanceKm): float
     {
@@ -404,7 +374,7 @@ class Service extends Model
             ->orderBy('priority')
             ->first();
 
-        if (!$rule) {
+        if (! $rule) {
             // ถ้าไม่มี rule ใช้ค่า default
             return 0;
         }
@@ -420,8 +390,6 @@ class Service extends Model
 
     /**
      * ได้ URL บริการ
-     *
-     * @return string
      */
     public function getUrl(): string
     {
@@ -430,8 +398,6 @@ class Service extends Model
 
     /**
      * ตรวจสอบว่าสามารถจองได้หรือไม่
-     *
-     * @return bool
      */
     public function isBookable(): bool
     {

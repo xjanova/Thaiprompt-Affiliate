@@ -18,7 +18,7 @@ class SystemResetController extends Controller
     public function index()
     {
         // Only super admin can access
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             abort(403, 'เฉพาะ Super Admin เท่านั้นที่สามารถเข้าถึงหน้านี้ได้');
         }
 
@@ -47,7 +47,7 @@ class SystemResetController extends Controller
                 'count' => $this->getTransactionalDataCount(),
                 'icon' => 'sync-alt',
                 'danger_level' => 'critical',
-                'tables' => [] // Will be handled specially
+                'tables' => [], // Will be handled specially
             ],
 
             // User Data
@@ -58,9 +58,9 @@ class SystemResetController extends Controller
                 'icon' => 'users',
                 'danger_level' => 'critical',
                 'tables' => ['sessions', 'password_reset_tokens', 'personal_access_tokens',
-                            'two_factor_user_settings', 'otp_verifications', 'kyc_verifications',
-                            'user_themes', 'user_taskbar_shortcuts', 'blocked_ips', 'threat_ips',
-                            'line_avatars', 'line_login_logs']
+                    'two_factor_user_settings', 'otp_verifications', 'kyc_verifications',
+                    'user_themes', 'user_taskbar_shortcuts', 'blocked_ips', 'threat_ips',
+                    'line_avatars', 'line_login_logs'],
             ],
 
             // Transactions
@@ -71,13 +71,13 @@ class SystemResetController extends Controller
                 'icon' => 'shopping-cart',
                 'danger_level' => 'critical',
                 'tables' => ['orders', 'order_items', 'payment_transactions', 'commissions',
-                            'wallet_transactions', 'wallet_logs', 'wallets', 'withdrawal_requests',
-                            'shopping_cart', 'shipping_addresses', 'affiliates', 'pos_transactions',
-                            'pos_transaction_items', 'pos_sessions', 'pos_offline_queue',
-                            'accounting_invoices', 'accounting_invoice_items', 'accounting_expenses',
-                            'accounting_expense_items', 'accounting_payments', 'accounting_journal_entries',
-                            'installment_payments', 'marketplace_orders', 'marketplace_order_items',
-                            'marketplace_commissions']
+                    'wallet_transactions', 'wallet_logs', 'wallets', 'withdrawal_requests',
+                    'shopping_cart', 'shipping_addresses', 'affiliates', 'pos_transactions',
+                    'pos_transaction_items', 'pos_sessions', 'pos_offline_queue',
+                    'accounting_invoices', 'accounting_invoice_items', 'accounting_expenses',
+                    'accounting_expense_items', 'accounting_payments', 'accounting_journal_entries',
+                    'installment_payments', 'marketplace_orders', 'marketplace_order_items',
+                    'marketplace_commissions'],
             ],
 
             // MLM Data
@@ -88,10 +88,10 @@ class SystemResetController extends Controller
                 'icon' => 'network-wired',
                 'danger_level' => 'critical',
                 'tables' => ['mlm_members', 'mlm_binary_positions', 'mlm_commissions', 'mlm_genealogy',
-                            'mlm_pv_transactions', 'mlm_rank_achievements', 'mlm_prospects',
-                            'rank_promotions', 'rank_bonuses', 'user_rank_progress',
-                            'staking_positions', 'roi_distributions', 'investment_plans',
-                            'coin_exchange_requests']
+                    'mlm_pv_transactions', 'mlm_rank_achievements', 'mlm_prospects',
+                    'rank_promotions', 'rank_bonuses', 'user_rank_progress',
+                    'staking_positions', 'roi_distributions', 'investment_plans',
+                    'coin_exchange_requests'],
             ],
 
             // All Logs
@@ -102,14 +102,14 @@ class SystemResetController extends Controller
                 'icon' => 'file-alt',
                 'danger_level' => 'medium',
                 'tables' => ['email_logs', 'security_logs', 'ai_usage_logs', 'ai_gen_usage_logs',
-                            'rag_usage_logs', 'api_usage_logs', 'accounting_activity_logs',
-                            'system_analytics', 'ai_installation_logs', 'ticket_notification_logs',
-                            'line_login_logs', 'marketplace_sync_logs', 'system_reset_logs',
-                            'webp_conversion_stats', 'vendor_analytics', 'vendor_features_usage',
-                            'smart_slider_analytics', 'cookie_trackings', 'cookie_analytics_keywords',
-                            'trend_analytics', 'trend_data', 'trend_data_keyword', 'viral_trends',
-                            'vendor_store_visits', 'marketplace_link_clicks', 'deployments',
-                            'failed_jobs', 'jobs', 'job_batches']
+                    'rag_usage_logs', 'api_usage_logs', 'accounting_activity_logs',
+                    'system_analytics', 'ai_installation_logs', 'ticket_notification_logs',
+                    'line_login_logs', 'marketplace_sync_logs', 'system_reset_logs',
+                    'webp_conversion_stats', 'vendor_analytics', 'vendor_features_usage',
+                    'smart_slider_analytics', 'cookie_trackings', 'cookie_analytics_keywords',
+                    'trend_analytics', 'trend_data', 'trend_data_keyword', 'viral_trends',
+                    'vendor_store_visits', 'marketplace_link_clicks', 'deployments',
+                    'failed_jobs', 'jobs', 'job_batches'],
             ],
 
             // Conversations
@@ -120,9 +120,9 @@ class SystemResetController extends Controller
                 'icon' => 'comments',
                 'danger_level' => 'high',
                 'tables' => ['ai_conversations', 'ai_messages', 'bot_support_conversations',
-                            'bot_support_messages', 'bot_sales_conversations', 'bot_sales_messages',
-                            'line_bot_conversations', 'line_bot_messages', 'line_broadcast_messages',
-                            'notifications', 'knowledge_chunks', 'line_bot_knowledge_bases']
+                    'bot_support_messages', 'bot_sales_conversations', 'bot_sales_messages',
+                    'line_bot_conversations', 'line_bot_messages', 'line_broadcast_messages',
+                    'notifications', 'knowledge_chunks', 'line_bot_knowledge_bases'],
             ],
 
             // Bookings
@@ -133,7 +133,7 @@ class SystemResetController extends Controller
                 'icon' => 'hotel',
                 'danger_level' => 'high',
                 'tables' => ['hotel_bookings', 'hotel_reviews', 'hotel_review_votes',
-                            'room_availability', 'tarot_readings', 'tarot_reading_cards']
+                    'room_availability', 'tarot_readings', 'tarot_reading_cards'],
             ],
 
             // User Activities
@@ -144,11 +144,11 @@ class SystemResetController extends Controller
                 'icon' => 'tasks',
                 'danger_level' => 'medium',
                 'tables' => ['user_article_progress', 'user_daily_streaks', 'user_quest_progress',
-                            'user_video_watches', 'user_video_levels', 'video_watch_sessions',
-                            'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
-                            'quiz_answers', 'training_enrollments', 'learning_articles',
-                            'attendance_records', 'leave_requests', 'job_applications',
-                            'tarot_cart_items', 'tarot_user_limits']
+                    'user_video_watches', 'user_video_levels', 'video_watch_sessions',
+                    'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
+                    'quiz_answers', 'training_enrollments', 'learning_articles',
+                    'attendance_records', 'leave_requests', 'job_applications',
+                    'tarot_cart_items', 'tarot_user_limits'],
             ],
 
             // Tickets
@@ -159,8 +159,8 @@ class SystemResetController extends Controller
                 'icon' => 'ticket-alt',
                 'danger_level' => 'medium',
                 'tables' => ['tickets', 'ticket_replies', 'ticket_attachments', 'ticket_ratings',
-                            'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
-                            'article_permissions']
+                    'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
+                    'article_permissions'],
             ],
 
             // AI Activities
@@ -171,9 +171,9 @@ class SystemResetController extends Controller
                 'icon' => 'robot',
                 'danger_level' => 'medium',
                 'tables' => ['ai_gen_generations', 'ai_bot_rentals', 'ai_rental_transactions',
-                            'ai_owner_earnings', 'bot_automation_executions', 'bot_scheduled_posts',
-                            'bot_marketplace_reviews', 'bot_rental_subscriptions', 'bot_platform_connections',
-                            'product_reviews', 'email_preferences', 'cookie_consents']
+                    'ai_owner_earnings', 'bot_automation_executions', 'bot_scheduled_posts',
+                    'bot_marketplace_reviews', 'bot_rental_subscriptions', 'bot_platform_connections',
+                    'product_reviews', 'email_preferences', 'cookie_consents'],
             ],
 
             // Crypto
@@ -184,9 +184,9 @@ class SystemResetController extends Controller
                 'icon' => 'bitcoin',
                 'danger_level' => 'critical',
                 'tables' => ['crypto_transactions', 'crypto_wallets', 'crypto_addresses',
-                            'crypto_deposit_addresses', 'crypto_withdrawal_requests',
-                            'crypto_exchange_transactions', 'crypto_exchange_rates',
-                            'video_coins', 'coin_exchange_rates']
+                    'crypto_deposit_addresses', 'crypto_withdrawal_requests',
+                    'crypto_exchange_transactions', 'crypto_exchange_rates',
+                    'video_coins', 'coin_exchange_rates'],
             ],
 
             // Trading
@@ -197,9 +197,9 @@ class SystemResetController extends Controller
                 'icon' => 'chart-line',
                 'danger_level' => 'critical',
                 'tables' => ['trading_accounts', 'trading_bots', 'trading_bot_subscriptions',
-                            'trading_strategies', 'trading_trades', 'trading_signals',
-                            'trading_market_data', 'trading_portfolio_snapshots', 'trading_backtests',
-                            'trading_notifications', 'trading_strategy_purchases', 'trading_strategy_reviews']
+                    'trading_strategies', 'trading_trades', 'trading_signals',
+                    'trading_market_data', 'trading_portfolio_snapshots', 'trading_backtests',
+                    'trading_notifications', 'trading_strategy_purchases', 'trading_strategy_reviews'],
             ],
 
             // HR Data
@@ -210,8 +210,8 @@ class SystemResetController extends Controller
                 'icon' => 'building',
                 'danger_level' => 'high',
                 'tables' => ['employees', 'employee_documents', 'payroll_records',
-                            'performance_reviews', 'performance_goals', 'job_postings',
-                            'accounting_bank_accounts', 'accounting_contacts']
+                    'performance_reviews', 'performance_goals', 'job_postings',
+                    'accounting_bank_accounts', 'accounting_contacts'],
             ],
 
             // Marketplace
@@ -222,7 +222,7 @@ class SystemResetController extends Controller
                 'icon' => 'store',
                 'danger_level' => 'medium',
                 'tables' => ['marketplace_accounts', 'marketplace_affiliate_links',
-                            'vendor_subscriptions', 'vendor_marketing_campaigns']
+                    'vendor_subscriptions', 'vendor_marketing_campaigns'],
             ],
 
             // Quotations
@@ -233,7 +233,7 @@ class SystemResetController extends Controller
                 'icon' => 'file-invoice',
                 'danger_level' => 'low',
                 'tables' => ['software_quotations', 'software_quotation_items',
-                            'software_quotation_selected_options']
+                    'software_quotation_selected_options'],
             ],
 
             // Membership
@@ -244,8 +244,8 @@ class SystemResetController extends Controller
                 'icon' => 'id-card',
                 'danger_level' => 'medium',
                 'tables' => ['membership_retention_advance_renewals', 'membership_retention_history',
-                            'membership_retention_repairs', 'membership_retention_status',
-                            'membership_retention_transactions']
+                    'membership_retention_repairs', 'membership_retention_status',
+                    'membership_retention_transactions'],
             ],
 
             // Academy
@@ -255,7 +255,7 @@ class SystemResetController extends Controller
                 'count' => $this->getTableCount(['certificates']),
                 'icon' => 'certificate',
                 'danger_level' => 'low',
-                'tables' => ['certificates', 'article_prerequisites']
+                'tables' => ['certificates', 'article_prerequisites'],
             ],
         ];
     }
@@ -292,6 +292,7 @@ class SystemResetController extends Controller
                 $count += DB::table($table)->count();
             }
         }
+
         return $count;
     }
 
@@ -312,7 +313,7 @@ class SystemResetController extends Controller
 
         return response()->json([
             'success' => true,
-            'statistics' => $statistics
+            'statistics' => $statistics,
         ]);
     }
 
@@ -322,10 +323,10 @@ class SystemResetController extends Controller
     public function reset(Request $request)
     {
         // Only super admin can reset
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             return response()->json([
                 'success' => false,
-                'message' => 'เฉพาะ Super Admin เท่านั้นที่สามารถรีเซ็ตระบบได้'
+                'message' => 'เฉพาะ Super Admin เท่านั้นที่สามารถรีเซ็ตระบบได้',
             ], 403);
         }
 
@@ -358,7 +359,7 @@ class SystemResetController extends Controller
             DB::beginTransaction();
 
             foreach ($options as $option) {
-                if (!isset($resetOptions[$option])) {
+                if (! isset($resetOptions[$option])) {
                     continue;
                 }
 
@@ -397,12 +398,12 @@ class SystemResetController extends Controller
                 $summary[$option] = [
                     'label' => $optionData['label'],
                     'deleted_count' => $deletedCount,
-                    'tables' => $optionData['tables']
+                    'tables' => $optionData['tables'],
                 ];
 
                 Log::info("System reset: {$option} completed", [
                     'deleted_count' => $deletedCount,
-                    'performed_by' => auth()->id()
+                    'performed_by' => auth()->id(),
                 ]);
             }
 
@@ -421,7 +422,7 @@ class SystemResetController extends Controller
                 'success' => true,
                 'message' => 'รีเซ็ตระบบเรียบร้อยแล้ว',
                 'summary' => $summary,
-                'log_id' => $resetLog->id
+                'log_id' => $resetLog->id,
             ]);
 
         } catch (\Exception $e) {
@@ -436,12 +437,12 @@ class SystemResetController extends Controller
 
             Log::error('System reset failed', [
                 'error' => $e->getMessage(),
-                'performed_by' => auth()->id()
+                'performed_by' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการรีเซ็ตระบบ: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาดในการรีเซ็ตระบบ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -456,68 +457,68 @@ class SystemResetController extends Controller
         // All transactional tables grouped by category
         $transactionalTables = [
             'users_auth' => ['sessions', 'password_reset_tokens', 'personal_access_tokens',
-                            'two_factor_user_settings', 'otp_verifications', 'kyc_verifications',
-                            'user_themes', 'user_taskbar_shortcuts', 'blocked_ips', 'threat_ips',
-                            'line_avatars'],
+                'two_factor_user_settings', 'otp_verifications', 'kyc_verifications',
+                'user_themes', 'user_taskbar_shortcuts', 'blocked_ips', 'threat_ips',
+                'line_avatars'],
             'transactions' => ['orders', 'order_items', 'payment_transactions', 'commissions',
-                            'wallet_transactions', 'wallet_logs', 'wallets', 'withdrawal_requests',
-                            'shopping_cart', 'shipping_addresses', 'affiliates', 'pos_transactions',
-                            'pos_transaction_items', 'pos_sessions', 'pos_offline_queue',
-                            'accounting_invoices', 'accounting_invoice_items', 'accounting_expenses',
-                            'accounting_expense_items', 'accounting_payments', 'accounting_journal_entries',
-                            'installment_payments', 'marketplace_orders', 'marketplace_order_items',
-                            'marketplace_commissions'],
+                'wallet_transactions', 'wallet_logs', 'wallets', 'withdrawal_requests',
+                'shopping_cart', 'shipping_addresses', 'affiliates', 'pos_transactions',
+                'pos_transaction_items', 'pos_sessions', 'pos_offline_queue',
+                'accounting_invoices', 'accounting_invoice_items', 'accounting_expenses',
+                'accounting_expense_items', 'accounting_payments', 'accounting_journal_entries',
+                'installment_payments', 'marketplace_orders', 'marketplace_order_items',
+                'marketplace_commissions'],
             'mlm_data' => ['mlm_members', 'mlm_binary_positions', 'mlm_commissions', 'mlm_genealogy',
-                            'mlm_pv_transactions', 'mlm_rank_achievements', 'mlm_prospects',
-                            'rank_promotions', 'rank_bonuses', 'user_rank_progress',
-                            'staking_positions', 'roi_distributions', 'investment_plans',
-                            'coin_exchange_requests'],
+                'mlm_pv_transactions', 'mlm_rank_achievements', 'mlm_prospects',
+                'rank_promotions', 'rank_bonuses', 'user_rank_progress',
+                'staking_positions', 'roi_distributions', 'investment_plans',
+                'coin_exchange_requests'],
             'logs' => ['email_logs', 'security_logs', 'ai_usage_logs', 'ai_gen_usage_logs',
-                            'rag_usage_logs', 'api_usage_logs', 'accounting_activity_logs',
-                            'system_analytics', 'ai_installation_logs', 'ticket_notification_logs',
-                            'line_login_logs', 'marketplace_sync_logs', 'system_reset_logs',
-                            'webp_conversion_stats', 'vendor_analytics', 'vendor_features_usage',
-                            'smart_slider_analytics', 'cookie_trackings', 'cookie_analytics_keywords',
-                            'trend_analytics', 'trend_data', 'trend_data_keyword', 'viral_trends',
-                            'vendor_store_visits', 'marketplace_link_clicks', 'deployments',
-                            'failed_jobs', 'jobs', 'job_batches'],
+                'rag_usage_logs', 'api_usage_logs', 'accounting_activity_logs',
+                'system_analytics', 'ai_installation_logs', 'ticket_notification_logs',
+                'line_login_logs', 'marketplace_sync_logs', 'system_reset_logs',
+                'webp_conversion_stats', 'vendor_analytics', 'vendor_features_usage',
+                'smart_slider_analytics', 'cookie_trackings', 'cookie_analytics_keywords',
+                'trend_analytics', 'trend_data', 'trend_data_keyword', 'viral_trends',
+                'vendor_store_visits', 'marketplace_link_clicks', 'deployments',
+                'failed_jobs', 'jobs', 'job_batches'],
             'conversations' => ['ai_conversations', 'ai_messages', 'bot_support_conversations',
-                            'bot_support_messages', 'bot_sales_conversations', 'bot_sales_messages',
-                            'line_bot_conversations', 'line_bot_messages', 'line_broadcast_messages',
-                            'notifications', 'knowledge_chunks', 'line_bot_knowledge_bases'],
+                'bot_support_messages', 'bot_sales_conversations', 'bot_sales_messages',
+                'line_bot_conversations', 'line_bot_messages', 'line_broadcast_messages',
+                'notifications', 'knowledge_chunks', 'line_bot_knowledge_bases'],
             'bookings' => ['hotel_bookings', 'hotel_reviews', 'hotel_review_votes',
-                            'room_availability', 'tarot_readings', 'tarot_reading_cards'],
+                'room_availability', 'tarot_readings', 'tarot_reading_cards'],
             'user_activities' => ['user_article_progress', 'user_daily_streaks', 'user_quest_progress',
-                            'user_video_watches', 'user_video_levels', 'video_watch_sessions',
-                            'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
-                            'quiz_answers', 'training_enrollments', 'learning_articles',
-                            'attendance_records', 'leave_requests', 'job_applications',
-                            'tarot_cart_items', 'tarot_user_limits'],
+                'user_video_watches', 'user_video_levels', 'video_watch_sessions',
+                'video_coin_transactions', 'video_referral_rewards', 'quiz_attempts',
+                'quiz_answers', 'training_enrollments', 'learning_articles',
+                'attendance_records', 'leave_requests', 'job_applications',
+                'tarot_cart_items', 'tarot_user_limits'],
             'tickets' => ['tickets', 'ticket_replies', 'ticket_attachments', 'ticket_ratings',
-                            'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
-                            'article_permissions'],
+                'ticket_relationships', 'kb_article_ticket', 'kb_article_attachments',
+                'article_permissions'],
             'ai_activities' => ['ai_gen_generations', 'ai_bot_rentals', 'ai_rental_transactions',
-                            'ai_owner_earnings', 'bot_automation_executions', 'bot_scheduled_posts',
-                            'bot_marketplace_reviews', 'bot_rental_subscriptions', 'bot_platform_connections',
-                            'product_reviews', 'email_preferences', 'cookie_consents'],
+                'ai_owner_earnings', 'bot_automation_executions', 'bot_scheduled_posts',
+                'bot_marketplace_reviews', 'bot_rental_subscriptions', 'bot_platform_connections',
+                'product_reviews', 'email_preferences', 'cookie_consents'],
             'crypto' => ['crypto_transactions', 'crypto_wallets', 'crypto_addresses',
-                            'crypto_deposit_addresses', 'crypto_withdrawal_requests',
-                            'crypto_exchange_transactions', 'crypto_exchange_rates',
-                            'video_coins', 'coin_exchange_rates'],
+                'crypto_deposit_addresses', 'crypto_withdrawal_requests',
+                'crypto_exchange_transactions', 'crypto_exchange_rates',
+                'video_coins', 'coin_exchange_rates'],
             'trading' => ['trading_accounts', 'trading_bots', 'trading_bot_subscriptions',
-                            'trading_strategies', 'trading_trades', 'trading_signals',
-                            'trading_market_data', 'trading_portfolio_snapshots', 'trading_backtests',
-                            'trading_notifications', 'trading_strategy_purchases', 'trading_strategy_reviews'],
+                'trading_strategies', 'trading_trades', 'trading_signals',
+                'trading_market_data', 'trading_portfolio_snapshots', 'trading_backtests',
+                'trading_notifications', 'trading_strategy_purchases', 'trading_strategy_reviews'],
             'hr_data' => ['employees', 'employee_documents', 'payroll_records',
-                            'performance_reviews', 'performance_goals', 'job_postings',
-                            'accounting_bank_accounts', 'accounting_contacts'],
+                'performance_reviews', 'performance_goals', 'job_postings',
+                'accounting_bank_accounts', 'accounting_contacts'],
             'marketplace' => ['marketplace_accounts', 'marketplace_affiliate_links',
-                            'vendor_subscriptions', 'vendor_marketing_campaigns'],
+                'vendor_subscriptions', 'vendor_marketing_campaigns'],
             'quotations' => ['software_quotations', 'software_quotation_items',
-                            'software_quotation_selected_options'],
+                'software_quotation_selected_options'],
             'membership' => ['membership_retention_advance_renewals', 'membership_retention_history',
-                            'membership_retention_repairs', 'membership_retention_status',
-                            'membership_retention_transactions'],
+                'membership_retention_repairs', 'membership_retention_status',
+                'membership_retention_transactions'],
             'academy' => ['certificates', 'article_prerequisites'],
             'api_keys' => ['api_keys'], // User-specific API keys
         ];
@@ -544,7 +545,7 @@ class SystemResetController extends Controller
                 $summary[$category] = [
                     'label' => $this->getCategoryLabel($category),
                     'deleted_count' => $categoryDeleted,
-                    'tables' => $tables
+                    'tables' => $tables,
                 ];
             }
 
@@ -555,12 +556,12 @@ class SystemResetController extends Controller
         $summary['users'] = [
             'label' => 'ผู้ใช้ (ยกเว้น Super Admin)',
             'deleted_count' => $usersDeleted,
-            'tables' => ['users']
+            'tables' => ['users'],
         ];
 
-        Log::info("Full system reset completed", [
+        Log::info('Full system reset completed', [
             'total_deleted' => $totalDeleted,
-            'performed_by' => auth()->id()
+            'performed_by' => auth()->id(),
         ]);
 
         return $summary;
@@ -599,7 +600,7 @@ class SystemResetController extends Controller
      */
     public function showLog($id)
     {
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             abort(403, 'เฉพาะ Super Admin เท่านั้นที่สามารถเข้าถึงหน้านี้ได้');
         }
 

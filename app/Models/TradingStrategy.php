@@ -82,7 +82,7 @@ class TradingStrategy extends Model
 
         static::creating(function ($strategy) {
             if (empty($strategy->slug)) {
-                $strategy->slug = Str::slug($strategy->name) . '-' . Str::random(8);
+                $strategy->slug = Str::slug($strategy->name).'-'.Str::random(8);
             }
         });
     }
@@ -143,6 +143,7 @@ class TradingStrategy extends Model
         if ($this->total_trades == 0) {
             return 0;
         }
+
         return ($this->winning_trades / $this->total_trades) * 100;
     }
 

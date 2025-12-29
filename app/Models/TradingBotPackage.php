@@ -88,7 +88,7 @@ class TradingBotPackage extends Model
      */
     public function getFormattedPriceAttribute()
     {
-        return number_format($this->price, 2) . ' ' . config('app.currency', 'USD');
+        return number_format($this->price, 2).' '.config('app.currency', 'USD');
     }
 
     /**
@@ -96,7 +96,7 @@ class TradingBotPackage extends Model
      */
     public function getBillingCycleLabelAttribute()
     {
-        return match($this->billing_cycle) {
+        return match ($this->billing_cycle) {
             'monthly' => 'รายเดือน',
             'quarterly' => 'รายไตรมาส',
             'yearly' => 'รายปี',

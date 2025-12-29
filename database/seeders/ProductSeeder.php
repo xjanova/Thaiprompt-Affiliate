@@ -22,8 +22,9 @@ class ProductSeeder extends Seeder
         // Get first admin user as seller
         $seller = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$seller) {
+        if (! $seller) {
             $this->command->error('❌ No users found. Please seed users first.');
+
             return;
         }
 
@@ -31,6 +32,7 @@ class ProductSeeder extends Seeder
 
         if ($categories->isEmpty()) {
             $this->command->error('❌ No categories found. Please seed categories first.');
+
             return;
         }
 
@@ -85,7 +87,7 @@ class ProductSeeder extends Seeder
                         ->where('category_id', $category->id)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         $this->createProduct($seller, $category, $productData);
                         $added++;
                     } else {
@@ -114,8 +116,8 @@ class ProductSeeder extends Seeder
             'category_id' => $category->id,
             'store_id' => null,  // Admin products belong to the main platform store
             'name' => $productData['name'],
-            'slug' => Str::slug($productData['name']) . '-' . strtolower(Str::random(4)),
-            'sku' => 'PRD-' . strtoupper(Str::random(8)),
+            'slug' => Str::slug($productData['name']).'-'.strtolower(Str::random(4)),
+            'sku' => 'PRD-'.strtoupper(Str::random(8)),
             'description' => $this->generateDescription($productData['name'], $category->name),
             'short_description' => $this->generateShortDescription($productData['name']),
             'price' => $productData['price'],
@@ -131,7 +133,7 @@ class ProductSeeder extends Seeder
             'is_featured' => $productData['featured'],
             'published_at' => now(),
             'weight' => rand(100, 5000) / 100,
-            'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
+            'dimensions' => rand(10, 50).'x'.rand(10, 50).'x'.rand(10, 50),
             'rating_average' => rand(35, 50) / 10,
             'rating_count' => rand(5, 200),
             'sales_count' => rand(10, 500),
@@ -147,15 +149,15 @@ class ProductSeeder extends Seeder
      */
     private function generateDescription(string $name, string $category): string
     {
-        return "🌟 {$name}\n\n" .
-               "✅ สินค้าคุณภาพพรีเมี่ยมจากหมวดหมู่{$category}\n" .
-               "✅ ผลิตจากวัสดุคุณภาพดี ทนทาน\n" .
-               "✅ การันตีความพึงพอใจ\n" .
-               "✅ จัดส่งรวดเร็วทั่วประเทศ\n" .
-               "✅ มีบริการหลังการขายที่เป็นเลิศ\n\n" .
-               "🎁 โปรโมชั่นพิเศษ! สั่งซื้อวันนี้รับส่วนลดทันที\n" .
-               "📦 ส่งฟรีเมื่อซื้อครบ 500 บาท\n" .
-               "🔄 สามารถเปลี่ยนหรือคืนสินค้าได้ภายใน 7 วัน";
+        return "🌟 {$name}\n\n".
+               "✅ สินค้าคุณภาพพรีเมี่ยมจากหมวดหมู่{$category}\n".
+               "✅ ผลิตจากวัสดุคุณภาพดี ทนทาน\n".
+               "✅ การันตีความพึงพอใจ\n".
+               "✅ จัดส่งรวดเร็วทั่วประเทศ\n".
+               "✅ มีบริการหลังการขายที่เป็นเลิศ\n\n".
+               "🎁 โปรโมชั่นพิเศษ! สั่งซื้อวันนี้รับส่วนลดทันที\n".
+               "📦 ส่งฟรีเมื่อซื้อครบ 500 บาท\n".
+               '🔄 สามารถเปลี่ยนหรือคืนสินค้าได้ภายใน 7 วัน';
     }
 
     /**

@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\VideoAutoJob;
 use App\Models\VideoAutoProject;
 use App\Models\VideoAutoSchedule;
-use App\Models\VideoAutoPublishHistory;
 use App\Services\VideoAutomation\VideoAutomationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -43,8 +42,6 @@ class ProcessVideoAutomationCommand extends Command
 
     /**
      * VideoAutomationService
-     *
-     * @var VideoAutomationService
      */
     protected VideoAutomationService $service;
 
@@ -56,13 +53,11 @@ class ProcessVideoAutomationCommand extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->service = new VideoAutomationService();
+        $this->service = new VideoAutomationService;
     }
 
     /**
      * รัน command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -78,10 +73,10 @@ class ProcessVideoAutomationCommand extends Command
         }
 
         // ถ้าไม่ระบุ option ใดๆ ให้ทำทั้งหมด
-        $runAll = !$this->option('schedules') &&
-                  !$this->option('pending') &&
-                  !$this->option('retry') &&
-                  !$this->option('cleanup');
+        $runAll = ! $this->option('schedules') &&
+                  ! $this->option('pending') &&
+                  ! $this->option('retry') &&
+                  ! $this->option('cleanup');
 
         $totalProcessed = 0;
 
@@ -113,10 +108,6 @@ class ProcessVideoAutomationCommand extends Command
 
     /**
      * ประมวลผล Scheduled Jobs
-     *
-     * @param int $limit
-     * @param bool $dryRun
-     * @return int
      */
     protected function processSchedules(int $limit, bool $dryRun): int
     {
@@ -137,6 +128,7 @@ class ProcessVideoAutomationCommand extends Command
 
         if ($schedules->isEmpty()) {
             $this->line('   ไม่มี schedule ที่ถึงเวลา');
+
             return 0;
         }
 
@@ -148,6 +140,7 @@ class ProcessVideoAutomationCommand extends Command
             if ($dryRun) {
                 $this->line("      → จะสร้าง {$schedule->videos_per_run} โปรเจกต์");
                 $processed++;
+
                 continue;
             }
 
@@ -157,7 +150,7 @@ class ProcessVideoAutomationCommand extends Command
                     $project = VideoAutoProject::createFromTemplate(
                         $schedule->template,
                         [
-                            'name' => $schedule->name . ' - ' . now()->format('Y-m-d H:i:s') . " #{$i}",
+                            'name' => $schedule->name.' - '.now()->format('Y-m-d H:i:s')." #{$i}",
                             'target_platforms' => $schedule->publish_platforms,
                         ]
                     );
@@ -193,7 +186,7 @@ class ProcessVideoAutomationCommand extends Command
                 if ($schedule->pause_on_error &&
                     $schedule->consecutive_failures >= $schedule->max_consecutive_failures) {
                     $schedule->is_active = false;
-                    $this->warn("      ⚠ Schedule ถูกหยุดเนื่องจากล้มเหลวติดต่อกัน");
+                    $this->warn('      ⚠ Schedule ถูกหยุดเนื่องจากล้มเหลวติดต่อกัน');
                 }
 
                 $schedule->save();
@@ -206,15 +199,12 @@ class ProcessVideoAutomationCommand extends Command
         }
 
         $this->info("   ✅ ประมวลผล Schedule: {$processed} รายการ");
+
         return $processed;
     }
 
     /**
      * ประมวลผล Pending Jobs
-     *
-     * @param int $limit
-     * @param bool $dryRun
-     * @return int
      */
     protected function processPendingJobs(int $limit, bool $dryRun): int
     {
@@ -229,6 +219,7 @@ class ProcessVideoAutomationCommand extends Command
 
         if ($jobs->isEmpty()) {
             $this->line('   ไม่มี pending jobs');
+
             return 0;
         }
 
@@ -242,6 +233,7 @@ class ProcessVideoAutomationCommand extends Command
 
             if ($dryRun) {
                 $processed++;
+
                 continue;
             }
 
@@ -250,7 +242,7 @@ class ProcessVideoAutomationCommand extends Command
                 $result = $this->runJob($job, $project);
 
                 if ($result['success']) {
-                    $this->line("      ✓ สำเร็จ");
+                    $this->line('      ✓ สำเร็จ');
                     $processed++;
 
                     // ลบไฟล์ถ้าตั้งค่าไว้
@@ -274,15 +266,12 @@ class ProcessVideoAutomationCommand extends Command
         }
 
         $this->info("   ✅ ประมวลผล Pending: {$processed} jobs");
+
         return $processed;
     }
 
     /**
      * Retry Failed Jobs
-     *
-     * @param int $limit
-     * @param bool $dryRun
-     * @return int
      */
     protected function retryFailedJobs(int $limit, bool $dryRun): int
     {
@@ -295,6 +284,7 @@ class ProcessVideoAutomationCommand extends Command
 
         if ($jobs->isEmpty()) {
             $this->line('   ไม่มี failed jobs ที่พร้อม retry');
+
             return 0;
         }
 
@@ -305,18 +295,20 @@ class ProcessVideoAutomationCommand extends Command
 
             if ($dryRun) {
                 $processed++;
+
                 continue;
             }
 
             if ($job->retry()) {
-                $this->line("      ✓ เพิ่มเข้า queue แล้ว");
+                $this->line('      ✓ เพิ่มเข้า queue แล้ว');
                 $processed++;
             } else {
-                $this->line("      ✗ ไม่สามารถ retry ได้");
+                $this->line('      ✗ ไม่สามารถ retry ได้');
             }
         }
 
         $this->info("   ✅ Retry: {$processed} jobs");
+
         return $processed;
     }
 
@@ -324,10 +316,6 @@ class ProcessVideoAutomationCommand extends Command
      * ลบไฟล์ต้นฉบับหลังโพสต์สำเร็จ
      *
      * ⚠️ จะลบได้ต่อเมื่อโพสต์ YouTube สำเร็จเท่านั้น!
-     *
-     * @param int $limit
-     * @param bool $dryRun
-     * @return int
      */
     protected function cleanupSourceFiles(int $limit, bool $dryRun): int
     {
@@ -346,6 +334,7 @@ class ProcessVideoAutomationCommand extends Command
 
         if ($projects->isEmpty()) {
             $this->line('   ไม่มีไฟล์ที่ต้องลบ');
+
             return 0;
         }
 
@@ -356,15 +345,17 @@ class ProcessVideoAutomationCommand extends Command
             $this->line("   🗑️ โปรเจกต์: {$project->name}");
 
             // ⚠️ ตรวจสอบว่าโพสต์ YouTube สำเร็จหรือไม่
-            if (!$project->hasSuccessfulYouTubePublish()) {
-                $this->warn("      ⏭️ ข้าม - ยังไม่มีการโพสต์ YouTube สำเร็จ");
+            if (! $project->hasSuccessfulYouTubePublish()) {
+                $this->warn('      ⏭️ ข้าม - ยังไม่มีการโพสต์ YouTube สำเร็จ');
                 $skipped++;
+
                 continue;
             }
 
             if ($dryRun) {
-                $this->line("      → จะลบไฟล์ต้นฉบับ");
+                $this->line('      → จะลบไฟล์ต้นฉบับ');
                 $processed++;
+
                 continue;
             }
 
@@ -376,25 +367,23 @@ class ProcessVideoAutomationCommand extends Command
         if ($skipped > 0) {
             $this->warn("   ⏭️ ข้าม: {$skipped} โปรเจกต์ (ยังไม่โพสต์ YouTube สำเร็จ)");
         }
+
         return $processed;
     }
 
     /**
      * ลบไฟล์ของโปรเจกต์
-     *
-     * @param VideoAutoProject $project
-     * @param bool $dryRun
-     * @return void
      */
     protected function cleanupProjectFiles(VideoAutoProject $project, bool $dryRun): void
     {
         if ($dryRun) {
             $this->line("      → จะลบไฟล์ต้นฉบับของ: {$project->name}");
+
             return;
         }
 
         if ($project->deleteSourceFiles()) {
-            $this->line("      ✓ ลบไฟล์ต้นฉบับแล้ว");
+            $this->line('      ✓ ลบไฟล์ต้นฉบับแล้ว');
 
             // อัพเดท publish history
             $project->publishHistory()
@@ -404,16 +393,12 @@ class ProcessVideoAutomationCommand extends Command
                     'source_deleted_at' => now(),
                 ]);
         } else {
-            $this->line("      - ไม่มีไฟล์ที่ต้องลบ");
+            $this->line('      - ไม่มีไฟล์ที่ต้องลบ');
         }
     }
 
     /**
      * รัน job
-     *
-     * @param VideoAutoJob $job
-     * @param VideoAutoProject $project
-     * @return array
      */
     protected function runJob(VideoAutoJob $job, VideoAutoProject $project): array
     {
@@ -429,6 +414,7 @@ class ProcessVideoAutomationCommand extends Command
                 } else {
                     $job->fail($result['error'] ?? 'Unknown error');
                 }
+
                 return $result;
 
             case 'generate_images':
@@ -439,6 +425,7 @@ class ProcessVideoAutomationCommand extends Command
                 } else {
                     $job->fail($result['error'] ?? 'Unknown error');
                 }
+
                 return $result;
 
             case 'create_video':
@@ -449,6 +436,7 @@ class ProcessVideoAutomationCommand extends Command
                 } else {
                     $job->fail($result['error'] ?? 'Unknown error');
                 }
+
                 return $result;
 
             default:
@@ -461,9 +449,6 @@ class ProcessVideoAutomationCommand extends Command
 
     /**
      * คำนวณเวลารันครั้งต่อไป
-     *
-     * @param VideoAutoSchedule $schedule
-     * @return \Carbon\Carbon|null
      */
     protected function calculateNextRun(VideoAutoSchedule $schedule): ?\Carbon\Carbon
     {
@@ -478,6 +463,7 @@ class ProcessVideoAutomationCommand extends Command
                 if ($next->lte($now)) {
                     $next->addDay();
                 }
+
                 return $next;
 
             case 'weekly':
@@ -493,6 +479,7 @@ class ProcessVideoAutomationCommand extends Command
                     }
                     $next->addDay();
                 }
+
                 return $next;
 
             case 'monthly':
@@ -508,6 +495,7 @@ class ProcessVideoAutomationCommand extends Command
                     }
                     $next->addDay();
                 }
+
                 return $next;
 
             case 'custom':

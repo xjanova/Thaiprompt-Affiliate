@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง theme_components สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -26,7 +24,7 @@ return new class extends Migration
             $table->string('component_name', 100);
             $table->enum('component_type', [
                 'card', 'button', 'input', 'select', 'modal', 'dropdown',
-                'table', 'badge', 'alert', 'navbar', 'sidebar', 'footer'
+                'table', 'badge', 'alert', 'navbar', 'sidebar', 'footer',
             ]);
 
             // Visibility
@@ -79,8 +77,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_components
-     *
-     * @return void
      */
     public function down(): void
     {

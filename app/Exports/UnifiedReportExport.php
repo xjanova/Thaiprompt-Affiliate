@@ -2,17 +2,17 @@
 
 namespace App\Exports;
 
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Illuminate\Support\Collection;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * UnifiedReportExport - ส่งออกรายงานรวมเป็น Excel
@@ -47,9 +47,9 @@ class UnifiedReportExport implements WithMultipleSheets
     /**
      * สร้าง Export instance
      *
-     * @param string $type ประเภทรายงาน
-     * @param array $data ข้อมูลรายงาน
-     * @param string $period ช่วงเวลา
+     * @param  string  $type  ประเภทรายงาน
+     * @param  array  $data  ข้อมูลรายงาน
+     * @param  string  $period  ช่วงเวลา
      */
     public function __construct(string $type, array $data, string $period = 'month')
     {
@@ -60,8 +60,6 @@ class UnifiedReportExport implements WithMultipleSheets
 
     /**
      * สร้าง sheets ตามประเภทรายงาน
-     *
-     * @return array
      */
     public function sheets(): array
     {
@@ -182,9 +180,10 @@ class UnifiedReportExport implements WithMultipleSheets
 /**
  * Base Sheet Class - คลาสพื้นฐานสำหรับทุก Sheet
  */
-abstract class BaseReportSheet implements FromCollection, WithHeadings, WithStyles, WithTitle, ShouldAutoSize
+abstract class BaseReportSheet implements FromCollection, ShouldAutoSize, WithHeadings, WithStyles, WithTitle
 {
     protected array $data;
+
     protected string $title;
 
     public function __construct(array $data, string $title = 'Sheet')
@@ -366,9 +365,9 @@ class MlmSummarySheet extends BaseReportSheet
             ['สมาชิกใหม่', $this->data['new_affiliates'] ?? 0],
             ['สมาชิก Active', $this->data['active_affiliates'] ?? 0],
             ['', ''],
-            ['คอมมิชชั่นรวม', number_format($this->data['total_commissions'] ?? 0, 2) . ' บาท'],
-            ['จ่ายแล้ว', number_format($this->data['paid_commissions'] ?? 0, 2) . ' บาท'],
-            ['รอจ่าย', number_format($this->data['pending_commissions'] ?? 0, 2) . ' บาท'],
+            ['คอมมิชชั่นรวม', number_format($this->data['total_commissions'] ?? 0, 2).' บาท'],
+            ['จ่ายแล้ว', number_format($this->data['paid_commissions'] ?? 0, 2).' บาท'],
+            ['รอจ่าย', number_format($this->data['pending_commissions'] ?? 0, 2).' บาท'],
         ]);
     }
 }
@@ -394,8 +393,8 @@ class EcommerceSummarySheet extends BaseReportSheet
             ['คำสั่งซื้อทั้งหมด', $this->data['total_orders'] ?? 0],
             ['คำสั่งซื้อสำเร็จ', $this->data['completed_orders'] ?? 0],
             ['', ''],
-            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2) . ' บาท'],
-            ['มูลค่าเฉลี่ยต่อคำสั่งซื้อ', number_format($this->data['average_order_value'] ?? 0, 2) . ' บาท'],
+            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2).' บาท'],
+            ['มูลค่าเฉลี่ยต่อคำสั่งซื้อ', number_format($this->data['average_order_value'] ?? 0, 2).' บาท'],
             ['', ''],
             ['สินค้าทั้งหมด', $this->data['total_products'] ?? 0],
         ]);
@@ -609,12 +608,12 @@ class FinanceSummarySheet extends BaseReportSheet
     public function collection(): Collection
     {
         return collect([
-            ['ยอดคงเหลือรวม', number_format($this->data['total_balance'] ?? 0, 2) . ' บาท'],
-            ['ฝากรวม', number_format($this->data['total_deposits'] ?? 0, 2) . ' บาท'],
-            ['ถอนรวม', number_format($this->data['total_withdrawals'] ?? 0, 2) . ' บาท'],
+            ['ยอดคงเหลือรวม', number_format($this->data['total_balance'] ?? 0, 2).' บาท'],
+            ['ฝากรวม', number_format($this->data['total_deposits'] ?? 0, 2).' บาท'],
+            ['ถอนรวม', number_format($this->data['total_withdrawals'] ?? 0, 2).' บาท'],
             ['จำนวน Transaction', $this->data['total_transactions'] ?? 0],
             ['', ''],
-            ['Net Flow', number_format($this->data['net_flow'] ?? 0, 2) . ' บาท'],
+            ['Net Flow', number_format($this->data['net_flow'] ?? 0, 2).' บาท'],
         ]);
     }
 }
@@ -694,6 +693,7 @@ class DailyFlowSheet extends BaseReportSheet
         return collect($this->data)->map(function ($item) {
             $deposits = $item['deposits'] ?? 0;
             $withdrawals = $item['withdrawals'] ?? 0;
+
             return [
                 $item['date'] ?? '-',
                 number_format($deposits, 2),
@@ -776,7 +776,7 @@ class HotelSummarySheet extends BaseReportSheet
         return collect([
             ['การจองทั้งหมด', $this->data['total_bookings'] ?? 0],
             ['การจองสำเร็จ', $this->data['completed_bookings'] ?? 0],
-            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2) . ' บาท'],
+            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2).' บาท'],
         ]);
     }
 }
@@ -853,8 +853,8 @@ class PosSummarySheet extends BaseReportSheet
     {
         return collect([
             ['Transaction ทั้งหมด', $this->data['total_transactions'] ?? 0],
-            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2) . ' บาท'],
-            ['เฉลี่ยต่อ Transaction', number_format($this->data['average_transaction'] ?? 0, 2) . ' บาท'],
+            ['รายได้รวม', number_format($this->data['total_revenue'] ?? 0, 2).' บาท'],
+            ['เฉลี่ยต่อ Transaction', number_format($this->data['average_transaction'] ?? 0, 2).' บาท'],
         ]);
     }
 }

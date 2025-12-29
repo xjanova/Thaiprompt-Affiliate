@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AiRental\MonitoringService;
 use App\Models\AiRentalAlert;
+use App\Services\AiRental\MonitoringService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -35,15 +35,11 @@ class AiRentalCleanupAlerts extends Command
 
     /**
      * Monitoring Service
-     *
-     * @var MonitoringService
      */
     protected MonitoringService $monitoringService;
 
     /**
      * Statistics
-     *
-     * @var array
      */
     protected array $stats = [
         'expired_alerts' => 0,
@@ -55,8 +51,6 @@ class AiRentalCleanupAlerts extends Command
 
     /**
      * Constructor
-     *
-     * @param MonitoringService $monitoringService
      */
     public function __construct(MonitoringService $monitoringService)
     {
@@ -66,8 +60,6 @@ class AiRentalCleanupAlerts extends Command
 
     /**
      * Execute the command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -78,12 +70,12 @@ class AiRentalCleanupAlerts extends Command
 
         try {
             // Auto-resolve expired alerts
-            if (!$this->option('delete-only')) {
+            if (! $this->option('delete-only')) {
                 $this->autoResolveExpiredAlerts();
             }
 
             // Delete old resolved alerts
-            if (!$this->option('resolve-only')) {
+            if (! $this->option('resolve-only')) {
                 $this->deleteOldAlerts();
             }
 
@@ -92,19 +84,18 @@ class AiRentalCleanupAlerts extends Command
 
             return 0;
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาดในการทำความสะอาด alerts: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาดในการทำความสะอาด alerts: '.$e->getMessage());
             Log::error('AI Rental alert cleanup failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 1;
         }
     }
 
     /**
      * Auto-resolve alerts ที่หมดอายุ
-     *
-     * @return void
      */
     protected function autoResolveExpiredAlerts(): void
     {
@@ -120,6 +111,7 @@ class AiRentalCleanupAlerts extends Command
         if ($this->stats['expired_alerts'] === 0) {
             $this->info('  ✅ ไม่มี alerts ที่หมดอายุต้อง resolve');
             $this->newLine();
+
             return;
         }
 
@@ -132,6 +124,7 @@ class AiRentalCleanupAlerts extends Command
         if ($this->option('dry-run')) {
             $this->warn('  🔍 Dry-run mode: จะไม่มีการ resolve จริง');
             $this->newLine();
+
             return;
         }
 
@@ -151,8 +144,6 @@ class AiRentalCleanupAlerts extends Command
 
     /**
      * ลบ alerts เก่าที่ resolved แล้ว
-     *
-     * @return void
      */
     protected function deleteOldAlerts(): void
     {
@@ -172,6 +163,7 @@ class AiRentalCleanupAlerts extends Command
         if ($this->stats['old_alerts'] === 0) {
             $this->info('  ✅ ไม่มี alerts เก่าต้องลบ');
             $this->newLine();
+
             return;
         }
 
@@ -184,14 +176,16 @@ class AiRentalCleanupAlerts extends Command
         if ($this->option('dry-run')) {
             $this->warn('  🔍 Dry-run mode: จะไม่มีการลบจริง');
             $this->newLine();
+
             return;
         }
 
         // ถามยืนยัน
-        if (!$this->option('no-interaction')) {
-            if (!$this->confirm("ต้องการลบ alerts เหล่านี้หรือไม่?", true)) {
+        if (! $this->option('no-interaction')) {
+            if (! $this->confirm('ต้องการลบ alerts เหล่านี้หรือไม่?', true)) {
                 $this->warn('  ❌ ยกเลิกการลบ');
                 $this->newLine();
+
                 return;
             }
         }
@@ -216,8 +210,7 @@ class AiRentalCleanupAlerts extends Command
     /**
      * แสดงรายการ expired alerts
      *
-     * @param \Illuminate\Support\Collection $alerts
-     * @return void
+     * @param  \Illuminate\Support\Collection  $alerts
      */
     protected function displayExpiredAlerts($alerts): void
     {
@@ -234,7 +227,7 @@ class AiRentalCleanupAlerts extends Command
         }
 
         if ($alerts->count() > 10) {
-            $tableData[] = ['...', '...', '...', "และอีก " . ($alerts->count() - 10) . " alerts", '...'];
+            $tableData[] = ['...', '...', '...', 'และอีก '.($alerts->count() - 10).' alerts', '...'];
         }
 
         $this->table(
@@ -246,9 +239,8 @@ class AiRentalCleanupAlerts extends Command
     /**
      * แสดงรายการ old alerts
      *
-     * @param \Illuminate\Support\Collection $alerts
-     * @param \Carbon\Carbon $cutoffDate
-     * @return void
+     * @param  \Illuminate\Support\Collection  $alerts
+     * @param  \Carbon\Carbon  $cutoffDate
      */
     protected function displayOldAlerts($alerts, $cutoffDate): void
     {
@@ -265,7 +257,7 @@ class AiRentalCleanupAlerts extends Command
         }
 
         if ($alerts->count() > 10) {
-            $tableData[] = ['...', '...', "และอีก " . ($alerts->count() - 10) . " alerts", '...', '...'];
+            $tableData[] = ['...', '...', 'และอีก '.($alerts->count() - 10).' alerts', '...', '...'];
         }
 
         $this->table(
@@ -276,9 +268,6 @@ class AiRentalCleanupAlerts extends Command
 
     /**
      * แสดงสรุปผล
-     *
-     * @param \Carbon\Carbon $startTime
-     * @return void
      */
     protected function displaySummary(\Carbon\Carbon $startTime): void
     {

@@ -3,9 +3,7 @@
 namespace App\Services\TradingEngine\AI;
 
 use App\Models\TradingStrategy;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class AIStrategyService
 {
@@ -14,7 +12,7 @@ class AIStrategyService
      */
     public function predict(array $marketData, TradingStrategy $strategy): ?array
     {
-        if (!$strategy->use_ai) {
+        if (! $strategy->use_ai) {
             return null;
         }
 
@@ -30,7 +28,7 @@ class AIStrategyService
             };
 
         } catch (\Exception $e) {
-            Log::error("AI prediction failed", [
+            Log::error('AI prediction failed', [
                 'strategy_id' => $strategy->id,
                 'error' => $e->getMessage(),
             ]);
@@ -108,8 +106,8 @@ class AIStrategyService
             $this->volumeVote($marketData),
         ];
 
-        $buyVotes = count(array_filter($votes, fn($v) => $v === 'buy'));
-        $sellVotes = count(array_filter($votes, fn($v) => $v === 'sell'));
+        $buyVotes = count(array_filter($votes, fn ($v) => $v === 'buy'));
+        $sellVotes = count(array_filter($votes, fn ($v) => $v === 'sell'));
 
         $prediction = $buyVotes > $sellVotes ? 'buy' : ($sellVotes > $buyVotes ? 'sell' : 'hold');
         $confidence = (max($buyVotes, $sellVotes) / count($votes)) * 100;
@@ -271,18 +269,21 @@ class AIStrategyService
     protected function trendVote(array $marketData): string
     {
         $trend = $this->calculateTrendStrength($marketData);
+
         return $trend > 55 ? 'buy' : ($trend < 45 ? 'sell' : 'hold');
     }
 
     protected function momentumVote(array $marketData): string
     {
         $momentum = $this->calculateMomentum($marketData);
+
         return $momentum > 55 ? 'buy' : ($momentum < 45 ? 'sell' : 'hold');
     }
 
     protected function volatilityVote(array $marketData): string
     {
         $volatility = $this->calculateVolatility($marketData);
+
         return $volatility < 30 ? 'buy' : ($volatility > 70 ? 'sell' : 'hold');
     }
 
@@ -314,6 +315,7 @@ class AIStrategyService
         for ($i = 1; $i < count($closes); $i++) {
             $changes[] = (($closes[$i] - $closes[$i - 1]) / $closes[$i - 1]) * 100;
         }
+
         return $changes;
     }
 

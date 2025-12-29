@@ -3,9 +3,9 @@
 namespace App\Providers;
 
 use Carbon\Carbon;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -108,8 +108,6 @@ class AppServiceProvider extends ServiceProvider
      * - Session storage error เมื่อ storage/framework/sessions ไม่มีอยู่
      * - Cache error เมื่อ storage/framework/cache ไม่มีอยู่
      * - View error เมื่อ storage/framework/views ไม่มีอยู่
-     *
-     * @return void
      */
     protected function ensureStorageDirectoriesExist(): void
     {
@@ -122,7 +120,7 @@ class AppServiceProvider extends ServiceProvider
         ];
 
         foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 try {
                     mkdir($directory, 0755, true);
                 } catch (\Exception $e) {

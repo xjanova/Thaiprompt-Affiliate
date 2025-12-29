@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\MlmMember;
-use App\Models\MlmGlobalSetting;
 use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
-use App\Models\LineSignupReward;
+use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\RecruitCustomization;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\LineService;
 use App\Services\LineTokenService;
 use App\Services\MlmBinaryService;
@@ -30,7 +29,6 @@ class RegisterController extends Controller
      * ✅ เปลี่ยนมาใช้ระบบ LINE Registration ใหม่ทั้งหมด
      * บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร และ auto-redirect หลังสมัครเสร็จ
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function showRegistrationForm(Request $request)
@@ -40,7 +38,7 @@ class RegisterController extends Controller
         // ✅ Redirect ไปหน้า LINE Registration ใหม่เสมอ
         $url = route('line.registration.register');
         if ($referralCode) {
-            $url .= '?ref=' . urlencode($referralCode);
+            $url .= '?ref='.urlencode($referralCode);
         }
 
         return redirect($url);
@@ -55,7 +53,7 @@ class RegisterController extends Controller
         $lineRequired = LineOaSetting::isRequired();
         $lineProfile = Session::get('line_temp_profile');
 
-        if ($lineRequired && !$lineProfile) {
+        if ($lineRequired && ! $lineProfile) {
             return redirect()->route('register')
                 ->with('error', 'กรุณาเข้าสู่ระบบด้วย LINE ก่อนสมัครสมาชิก');
         }
@@ -75,6 +73,7 @@ class RegisterController extends Controller
             $existingLineUser = User::where('line_user_id', $lineProfile['line_user_id'])->first();
             if ($existingLineUser) {
                 Session::forget('line_temp_profile');
+
                 return redirect()->route('login')
                     ->with('error', 'บัญชี LINE นี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ');
             }
@@ -117,7 +116,7 @@ class RegisterController extends Controller
             $userData['line_verified'] = true;
 
             // Use LINE picture as profile picture
-            if (!empty($lineProfile['line_picture_url'])) {
+            if (! empty($lineProfile['line_picture_url'])) {
                 $userData['profile_picture'] = $lineProfile['line_picture_url'];
             }
         }
@@ -130,7 +129,7 @@ class RegisterController extends Controller
         $user->save();
 
         // Store encrypted LINE access token if available
-        if ($lineProfile && !empty($lineProfile['line_access_token'])) {
+        if ($lineProfile && ! empty($lineProfile['line_access_token'])) {
             $tokenService = app(LineTokenService::class);
             $tokenService->storeAccessToken($user, $lineProfile['line_access_token']);
         }
@@ -144,19 +143,19 @@ class RegisterController extends Controller
             $referralCode = Setting::get('default_sponsor_member_code');
         }
 
-        if (!empty($referralCode)) {
+        if (! empty($referralCode)) {
             $parentMember = MlmMember::where('member_code', $referralCode)->first();
         }
 
         // Get default MLM plan
         $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
-        if (!$defaultPlan) {
+        if (! $defaultPlan) {
             $defaultPlan = \App\Models\MlmPlan::first(); // Fallback to any plan
         }
 
         // ⚠️ CRITICAL: ถ้าไม่มี MlmPlan ให้สร้างอันใหม่
         // เพราะ mlm_members.mlm_plan_id เป็น NOT NULL
-        if (!$defaultPlan) {
+        if (! $defaultPlan) {
             $defaultPlan = \App\Models\MlmPlan::create([
                 'name' => 'Default Plan',
                 'name_th' => 'แผนมาตรฐาน',
@@ -186,7 +185,7 @@ class RegisterController extends Controller
             // unilevel_sponsor_id: parent ใน Unilevel tree (อาจ spillover ไปคนอื่น)
             'unilevel_sponsor_id' => $unilevelPlacement['sponsor_id'] ?? $parentMember?->id,
             'unilevel_level' => $unilevelPlacement['level'] ?? ($parentMember ? $parentMember->unilevel_level + 1 : 1),
-            'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path . '/' . $parentMember->id : '/' . $user->id),
+            'unilevel_path' => $unilevelPlacement['path'] ?? ($parentMember ? $parentMember->unilevel_path.'/'.$parentMember->id : '/'.$user->id),
             // binary_sponsor_id: parent ใน Binary tree (ตามกลยุทธ์ที่ตั้งค่า)
             'binary_sponsor_id' => $parentMember?->id,
             'member_code' => MlmMember::generateMemberCode(),
@@ -251,13 +250,13 @@ class RegisterController extends Controller
      * - ถ้าผู้แนะนำมีลูกตรงถึง max_width แล้ว → ล้นไปชั้นถัดไปอัตโนมัติ
      * - ใช้ BFS เพื่อเติมเต็มชั้นก่อนไปชั้นถัดไป
      *
-     * @param MlmMember|null $sponsor ผู้แนะนำที่ลูกค้าใช้รหัส
+     * @param  MlmMember|null  $sponsor  ผู้แนะนำที่ลูกค้าใช้รหัส
      * @return array ['sponsor_id' => int, 'level' => int, 'path' => string]
      */
     protected function findUnilevelPlacementForMember(?MlmMember $sponsor): array
     {
         // ถ้าไม่มี sponsor → คืนค่าเริ่มต้น
-        if (!$sponsor) {
+        if (! $sponsor) {
             return [
                 'sponsor_id' => null,
                 'level' => 1,
@@ -266,7 +265,7 @@ class RegisterController extends Controller
         }
 
         try {
-            $unilevelService = new MlmUnilevelService();
+            $unilevelService = new MlmUnilevelService;
             $placement = $unilevelService->findUnilevelPlacement($sponsor);
 
             if ($placement) {
@@ -276,6 +275,7 @@ class RegisterController extends Controller
                     'level' => $placement['level'],
                     'is_spillover' => $placement['sponsor_id'] !== $sponsor->id,
                 ]);
+
                 return $placement;
             }
         } catch (\Exception $e) {
@@ -289,7 +289,7 @@ class RegisterController extends Controller
         return [
             'sponsor_id' => $sponsor->id,
             'level' => $sponsor->unilevel_level + 1,
-            'path' => $sponsor->unilevel_path . '/' . $sponsor->id,
+            'path' => $sponsor->unilevel_path.'/'.$sponsor->id,
         ];
     }
 
@@ -303,37 +303,37 @@ class RegisterController extends Controller
      * - left_first: วางซ้ายก่อนขวา
      * - right_first: วางขวาก่อนซ้าย
      *
-     * @param MlmMember $newMember สมาชิกใหม่
-     * @param MlmMember|null $sponsor ผู้แนะนำ (sponsor)
-     * @return void
+     * @param  MlmMember  $newMember  สมาชิกใหม่
+     * @param  MlmMember|null  $sponsor  ผู้แนะนำ (sponsor)
      */
     protected function placeMemberInBinaryTree(MlmMember $newMember, ?MlmMember $sponsor): void
     {
         // ตรวจสอบว่าเปิดใช้การจัดวาง Binary อัตโนมัติหรือไม่
         $autoPlaceOnRegister = MlmGlobalSetting::get('binary_auto_place_on_register', true);
 
-        if (!$autoPlaceOnRegister || !$sponsor) {
+        if (! $autoPlaceOnRegister || ! $sponsor) {
             return;
         }
 
         try {
-            $binaryService = new MlmBinaryService();
+            $binaryService = new MlmBinaryService;
 
             // หาตำแหน่งที่จะวาง (ใช้ strategy ที่ตั้งค่าไว้)
             $placement = $binaryService->findPlacementPosition($sponsor, null);
 
-            if (!$placement || !isset($placement['parent_id'])) {
+            if (! $placement || ! isset($placement['parent_id'])) {
                 \Log::warning('Binary placement failed - no position found', [
                     'member_id' => $newMember->id,
                     'sponsor_id' => $sponsor->id,
                 ]);
+
                 return;
             }
 
             $parent = MlmMember::find($placement['parent_id']);
             $position = $placement['position'];
 
-            if (!$parent) {
+            if (! $parent) {
                 return;
             }
 
@@ -341,7 +341,7 @@ class RegisterController extends Controller
             $newMember->update([
                 'binary_parent_id' => $parent->id,
                 'binary_position' => $position,
-                'binary_path' => ($parent->binary_path ?? '') . '/' . $position,
+                'binary_path' => ($parent->binary_path ?? '').'/'.$position,
             ]);
 
             // อัพเดทจำนวนสมาชิกในแต่ละขาของ parent
@@ -374,8 +374,7 @@ class RegisterController extends Controller
     /**
      * อัพเดทจำนวนสมาชิกทีมของ upline ทั้งหมดใน Binary Tree
      *
-     * @param MlmMember $member สมาชิกใหม่
-     * @return void
+     * @param  MlmMember  $member  สมาชิกใหม่
      */
     protected function updateBinaryUplineTeamCounts(MlmMember $member): void
     {
@@ -402,16 +401,14 @@ class RegisterController extends Controller
      * - Increment total_conversions ของ RecruitCustomization
      * - Update conversion rate
      *
-     * @param Request $request
-     * @param MlmMember|null $parentMember แม่ทีมที่แนะนำ
-     * @param MlmMember $newMember สมาชิกใหม่ที่สมัคร
-     * @return void
+     * @param  MlmMember|null  $parentMember  แม่ทีมที่แนะนำ
+     * @param  MlmMember  $newMember  สมาชิกใหม่ที่สมัคร
      */
     protected function handleLeadConversion(Request $request, ?MlmMember $parentMember, MlmMember $newMember): void
     {
         try {
             // สร้าง visitor identifier แบบเดียวกับ RecruitController
-            $visitorIdentifier = hash('sha256', $request->ip() . '|' . ($request->userAgent() ?? ''));
+            $visitorIdentifier = hash('sha256', $request->ip().'|'.($request->userAgent() ?? ''));
 
             // หา LeadLock ที่ active สำหรับ visitor นี้
             $leadLock = LeadLock::getActiveLock($visitorIdentifier);

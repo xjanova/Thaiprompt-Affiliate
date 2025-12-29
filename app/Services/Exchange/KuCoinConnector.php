@@ -18,7 +18,7 @@ class KuCoinConnector extends BaseExchangeConnector
     {
         $symbol = $this->normalizeKuCoinSymbol($symbol);
 
-        $response = $this->makeRequest('GET', "/api/v1/market/orderbook/level1", [
+        $response = $this->makeRequest('GET', '/api/v1/market/orderbook/level1', [
             'symbol' => $symbol,
         ]);
 
@@ -178,10 +178,11 @@ class KuCoinConnector extends BaseExchangeConnector
 
             return $response['code'] === '200000';
         } catch (\Exception $e) {
-            Log::error("Failed to cancel KuCoin order", [
+            Log::error('Failed to cancel KuCoin order', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -252,11 +253,13 @@ class KuCoinConnector extends BaseExchangeConnector
         try {
             $this->setAccount($account);
             $this->makeRequest('GET', '/api/v1/accounts', ['type' => 'trade'], true);
+
             return true;
         } catch (\Exception $e) {
-            Log::error("KuCoin connection test failed", [
+            Log::error('KuCoin connection test failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -271,7 +274,7 @@ class KuCoinConnector extends BaseExchangeConnector
         $endpoint = '/api/v1/orders';
         $body = json_encode($params);
 
-        $strToSign = $timestamp . $method . $endpoint . $body;
+        $strToSign = $timestamp.$method.$endpoint.$body;
 
         return base64_encode(hash_hmac('sha256', $strToSign, $secret, true));
     }
@@ -282,7 +285,7 @@ class KuCoinConnector extends BaseExchangeConnector
     protected function makeRequest(string $method, string $endpoint, array $params = [], bool $signed = false): array
     {
         try {
-            $url = $this->baseUrl . $endpoint;
+            $url = $this->baseUrl.$endpoint;
             $headers = [
                 'Content-Type' => 'application/json',
             ];
@@ -295,7 +298,7 @@ class KuCoinConnector extends BaseExchangeConnector
                     $body = json_encode($params);
                 }
 
-                $strToSign = $timestamp . strtoupper($method) . $endpoint . $body;
+                $strToSign = $timestamp.strtoupper($method).$endpoint.$body;
                 $signature = base64_encode(hash_hmac('sha256', $strToSign, $this->account->api_secret, true));
 
                 // Generate passphrase signature
@@ -320,10 +323,9 @@ class KuCoinConnector extends BaseExchangeConnector
                 return $response->json();
             }
 
-            throw new \Exception("KuCoin API error: " . $response->body());
-
+            throw new \Exception('KuCoin API error: '.$response->body());
         } catch (\Exception $e) {
-            Log::error("KuCoin API request failed", [
+            Log::error('KuCoin API request failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);

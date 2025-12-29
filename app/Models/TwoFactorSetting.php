@@ -73,6 +73,7 @@ class TwoFactorSetting extends Model
     public static function isEnabled(): bool
     {
         $settings = self::getActive();
+
         return $settings && $settings->enabled;
     }
 
@@ -83,7 +84,7 @@ class TwoFactorSetting extends Model
     {
         $settings = self::getActive();
 
-        if (!$settings || !$settings->enabled) {
+        if (! $settings || ! $settings->enabled) {
             return false;
         }
 
@@ -98,7 +99,7 @@ class TwoFactorSetting extends Model
             default => false,
         };
 
-        if (!$required) {
+        if (! $required) {
             return false;
         }
 
@@ -135,7 +136,7 @@ class TwoFactorSetting extends Model
     {
         $settings = self::getActive();
 
-        if (!$settings) {
+        if (! $settings) {
             return ['sms'];
         }
 
@@ -162,6 +163,7 @@ class TwoFactorSetting extends Model
     public static function getDefaultMethod(): string
     {
         $settings = self::getActive();
+
         return $settings->default_method ?? 'sms';
     }
 
@@ -171,6 +173,7 @@ class TwoFactorSetting extends Model
     public static function canRememberDevice(): bool
     {
         $settings = self::getActive();
+
         return $settings && $settings->allow_remember_device;
     }
 
@@ -180,6 +183,7 @@ class TwoFactorSetting extends Model
     public static function getGracePeriod(): int
     {
         $settings = self::getActive();
+
         return $settings->grace_period_minutes ?? 15;
     }
 }

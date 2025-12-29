@@ -17,13 +17,11 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง membership_retention_repairs หากยังไม่มี
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบและสร้างตาราง membership_retention_repairs
-        if (!Schema::hasTable('membership_retention_repairs')) {
+        if (! Schema::hasTable('membership_retention_repairs')) {
             Schema::create('membership_retention_repairs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')
@@ -45,8 +43,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง membership_retention_repairs
-     *
-     * @return void
      */
     public function down(): void
     {

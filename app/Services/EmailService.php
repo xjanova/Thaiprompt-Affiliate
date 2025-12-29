@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 class EmailService
 {
     protected ?EmailProviderInterface $provider = null;
+
     protected ?EmailProvider $providerModel = null;
 
     /**
@@ -24,7 +25,7 @@ class EmailService
     public function send(array $data): array
     {
         // Validate required fields
-        if (!isset($data['to']) || !isset($data['subject'])) {
+        if (! isset($data['to']) || ! isset($data['subject'])) {
             return [
                 'success' => false,
                 'error' => 'Missing required fields: to, subject',
@@ -35,7 +36,7 @@ class EmailService
         if (isset($data['user_id']) && isset($data['type'])) {
             $preference = EmailPreference::getOrCreateForUser($data['user_id']);
 
-            if (!$preference->canReceive($data['type'])) {
+            if (! $preference->canReceive($data['type'])) {
                 Log::info('Email blocked by user preference', [
                     'user_id' => $data['user_id'],
                     'type' => $data['type'],
@@ -57,7 +58,7 @@ class EmailService
             // Get provider
             $providerModel = $this->getProvider($data['provider'] ?? null);
 
-            if (!$providerModel) {
+            if (! $providerModel) {
                 throw new \Exception('No email provider available');
             }
 
@@ -126,7 +127,7 @@ class EmailService
     {
         $template = EmailTemplate::getByName($templateName, $language);
 
-        if (!$template) {
+        if (! $template) {
             return [
                 'success' => false,
                 'error' => "Template '{$templateName}' not found",
@@ -134,7 +135,7 @@ class EmailService
         }
 
         // Validate template variables
-        if (!$template->validateVariables($data['template_data'] ?? [])) {
+        if (! $template->validateVariables($data['template_data'] ?? [])) {
             return [
                 'success' => false,
                 'error' => 'Missing required template variables',
@@ -172,7 +173,7 @@ class EmailService
                 return $provider->canSend();
             });
 
-        if (!$fallbackProvider) {
+        if (! $fallbackProvider) {
             Log::error('No fallback provider available for retry', [
                 'email_log_id' => $emailLog->id,
             ]);
@@ -268,6 +269,7 @@ class EmailService
 
         if ($emailLog) {
             $emailLog->markAsOpened();
+
             return true;
         }
 
@@ -283,6 +285,7 @@ class EmailService
 
         if ($emailLog) {
             $emailLog->markAsClicked();
+
             return true;
         }
 
@@ -298,6 +301,7 @@ class EmailService
 
         if ($emailLog) {
             $emailLog->markAsBounced();
+
             return true;
         }
 

@@ -2,9 +2,9 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoSetting;
 use App\Models\VideoAutoJob;
 use App\Models\VideoAutoProject;
+use App\Models\VideoAutoSetting;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,15 +20,11 @@ class VideoCreatorService
 {
     /**
      * Path ของ FFmpeg
-     *
-     * @var string
      */
     protected string $ffmpegPath;
 
     /**
      * Path ของ FFprobe
-     *
-     * @var string
      */
     protected string $ffprobePath;
 
@@ -54,8 +50,6 @@ class VideoCreatorService
 
     /**
      * โหลดการตั้งค่าจาก database
-     *
-     * @return void
      */
     protected function loadSettings(): void
     {
@@ -65,23 +59,22 @@ class VideoCreatorService
 
     /**
      * ตรวจสอบว่า FFmpeg พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
         exec("{$this->ffmpegPath} -version 2>&1", $output, $returnCode);
+
         return $returnCode === 0;
     }
 
     /**
      * สร้างวีดีโอจากภาพและเพลง
      *
-     * @param VideoAutoProject $project โปรเจกต์
-     * @param array $images รายการภาพ
-     * @param string $musicPath Path ของไฟล์เพลง
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  VideoAutoProject  $project  โปรเจกต์
+     * @param  array  $images  รายการภาพ
+     * @param  string  $musicPath  Path ของไฟล์เพลง
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, path?: string, error?: string}
      */
     public function createVideo(
@@ -91,7 +84,7 @@ class VideoCreatorService
         array $options = [],
         ?VideoAutoJob $job = null
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'FFmpeg ไม่พร้อมใช้งาน กรุณาติดตั้ง FFmpeg ก่อน',
@@ -113,8 +106,8 @@ class VideoCreatorService
             $res = self::RESOLUTIONS[$resolution] ?? self::RESOLUTIONS['1080p'];
 
             // สร้าง temp directory
-            $tempDir = storage_path('app/temp/video-' . Str::random(10));
-            if (!is_dir($tempDir)) {
+            $tempDir = storage_path('app/temp/video-'.Str::random(10));
+            if (! is_dir($tempDir)) {
                 mkdir($tempDir, 0755, true);
             }
 
@@ -137,17 +130,17 @@ class VideoCreatorService
             }
 
             // สร้าง input file list
-            $listFile = $tempDir . '/images.txt';
+            $listFile = $tempDir.'/images.txt';
             $this->createImageList($preparedImages, $slideDuration, $listFile);
 
             // สร้างชื่อไฟล์ output
-            $outputFilename = 'video_' . $project->uuid . '_' . time() . '.mp4';
+            $outputFilename = 'video_'.$project->uuid.'_'.time().'.mp4';
             $outputPath = "video-automation/videos/{$outputFilename}";
             $fullOutputPath = Storage::disk('public')->path($outputPath);
 
             // สร้าง directory ถ้าไม่มี
             $outputDir = dirname($fullOutputPath);
-            if (!is_dir($outputDir)) {
+            if (! is_dir($outputDir)) {
                 mkdir($outputDir, 0755, true);
             }
 
@@ -167,7 +160,7 @@ class VideoCreatorService
             $job?->logInfo('FFmpeg command', ['command' => $command]);
 
             // รัน FFmpeg
-            exec($command . ' 2>&1', $output, $returnCode);
+            exec($command.' 2>&1', $output, $returnCode);
 
             if ($returnCode !== 0) {
                 $error = implode("\n", $output);
@@ -176,7 +169,7 @@ class VideoCreatorService
             }
 
             // ตรวจสอบไฟล์ output
-            if (!file_exists($fullOutputPath)) {
+            if (! file_exists($fullOutputPath)) {
                 throw new \Exception('ไม่พบไฟล์วีดีโอที่สร้าง');
             }
 
@@ -224,12 +217,6 @@ class VideoCreatorService
 
     /**
      * เตรียมภาพให้มีขนาดและ format ที่เหมาะสม
-     *
-     * @param array $images
-     * @param array $resolution
-     * @param string $tempDir
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function prepareImages(array $images, array $resolution, string $tempDir, ?VideoAutoJob $job = null): array
     {
@@ -237,16 +224,17 @@ class VideoCreatorService
         $total = count($images);
 
         foreach ($images as $index => $image) {
-            $job?->logInfo("เตรียมภาพ " . ($index + 1) . "/{$total}");
+            $job?->logInfo('เตรียมภาพ '.($index + 1)."/{$total}");
 
             $sourcePath = $image['full_path'] ?? Storage::disk('public')->path($image['path']);
 
-            if (!file_exists($sourcePath)) {
+            if (! file_exists($sourcePath)) {
                 $job?->logError("ไม่พบภาพ: {$sourcePath}");
+
                 continue;
             }
 
-            $outputFile = $tempDir . '/img_' . str_pad($index, 4, '0', STR_PAD_LEFT) . '.jpg';
+            $outputFile = $tempDir.'/img_'.str_pad($index, 4, '0', STR_PAD_LEFT).'.jpg';
 
             // ใช้ FFmpeg ปรับขนาดภาพ
             $command = sprintf(
@@ -265,7 +253,7 @@ class VideoCreatorService
             if ($returnCode === 0 && file_exists($outputFile)) {
                 $prepared[] = $outputFile;
             } else {
-                $job?->logError("ไม่สามารถเตรียมภาพได้: " . implode("\n", $output));
+                $job?->logError('ไม่สามารถเตรียมภาพได้: '.implode("\n", $output));
             }
         }
 
@@ -274,11 +262,6 @@ class VideoCreatorService
 
     /**
      * สร้าง image list file สำหรับ FFmpeg concat
-     *
-     * @param array $images
-     * @param float $duration
-     * @param string $outputFile
-     * @return void
      */
     protected function createImageList(array $images, float $duration, string $outputFile): void
     {
@@ -299,15 +282,6 @@ class VideoCreatorService
 
     /**
      * สร้าง FFmpeg command
-     *
-     * @param string $listFile
-     * @param string $musicPath
-     * @param string $outputPath
-     * @param array $resolution
-     * @param string $transitionType
-     * @param float $transitionDuration
-     * @param array $options
-     * @return string
      */
     protected function buildFFmpegCommand(
         string $listFile,
@@ -322,10 +296,10 @@ class VideoCreatorService
         $command = escapeshellarg($this->ffmpegPath);
 
         // Input: image list
-        $command .= ' -f concat -safe 0 -i ' . escapeshellarg($listFile);
+        $command .= ' -f concat -safe 0 -i '.escapeshellarg($listFile);
 
         // Input: audio
-        $command .= ' -i ' . escapeshellarg($musicPath);
+        $command .= ' -i '.escapeshellarg($musicPath);
 
         // Video filters
         $filters = [];
@@ -336,8 +310,8 @@ class VideoCreatorService
         }
 
         // Apply filters
-        if (!empty($filters)) {
-            $command .= ' -vf "' . implode(',', $filters) . '"';
+        if (! empty($filters)) {
+            $command .= ' -vf "'.implode(',', $filters).'"';
         }
 
         // Video codec settings
@@ -354,16 +328,13 @@ class VideoCreatorService
         $command .= ' -shortest';
 
         // Output
-        $command .= ' -y ' . escapeshellarg($outputPath);
+        $command .= ' -y '.escapeshellarg($outputPath);
 
         return $command;
     }
 
     /**
      * ดึงความยาวของไฟล์เสียง
-     *
-     * @param string $audioPath
-     * @return float
      */
     protected function getAudioDuration(string $audioPath): float
     {
@@ -380,9 +351,6 @@ class VideoCreatorService
 
     /**
      * ดึงข้อมูลของวีดีโอ
-     *
-     * @param string $videoPath
-     * @return array
      */
     protected function getVideoInfo(string $videoPath): array
     {
@@ -410,17 +378,14 @@ class VideoCreatorService
 
     /**
      * ล้าง temp files
-     *
-     * @param string $tempDir
-     * @return void
      */
     protected function cleanupTempFiles(string $tempDir): void
     {
-        if (!is_dir($tempDir)) {
+        if (! is_dir($tempDir)) {
             return;
         }
 
-        $files = glob($tempDir . '/*');
+        $files = glob($tempDir.'/*');
 
         foreach ($files as $file) {
             if (is_file($file)) {
@@ -434,20 +399,19 @@ class VideoCreatorService
     /**
      * สร้าง thumbnail จากวีดีโอ
      *
-     * @param string $videoPath
-     * @param int $position ตำแหน่งในวีดีโอ (วินาที)
+     * @param  int  $position  ตำแหน่งในวีดีโอ (วินาที)
      * @return array{success: bool, path?: string, error?: string}
      */
     public function createThumbnail(string $videoPath, int $position = 5): array
     {
         try {
-            $outputFilename = 'thumb_' . Str::random(10) . '.jpg';
+            $outputFilename = 'thumb_'.Str::random(10).'.jpg';
             $outputPath = "video-automation/thumbnails/{$outputFilename}";
             $fullOutputPath = Storage::disk('public')->path($outputPath);
 
             // สร้าง directory ถ้าไม่มี
             $outputDir = dirname($fullOutputPath);
-            if (!is_dir($outputDir)) {
+            if (! is_dir($outputDir)) {
                 mkdir($outputDir, 0755, true);
             }
 
@@ -461,7 +425,7 @@ class VideoCreatorService
 
             exec($command, $output, $returnCode);
 
-            if ($returnCode !== 0 || !file_exists($fullOutputPath)) {
+            if ($returnCode !== 0 || ! file_exists($fullOutputPath)) {
                 throw new \Exception('ไม่สามารถสร้าง thumbnail ได้');
             }
 

@@ -23,7 +23,7 @@ return new class extends Migration
                 'active_referrals', // คนแนะนำที่ active
                 'team_sales',       // ยอดขายของทีม
                 'consecutive_months', // เดือนติดต่อกันที่ทำได้
-                'custom'            // เงื่อนไขพิเศษ
+                'custom',            // เงื่อนไขพิเศษ
             ])->default('points');
 
             $table->string('name'); // ชื่อเงื่อนไข

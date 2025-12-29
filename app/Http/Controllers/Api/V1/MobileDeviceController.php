@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\MobileDevice;
 use App\Models\MobileBanner;
+use App\Models\MobileDevice;
 use App\Models\PushNotificationDelivery;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * MobileDeviceController - API สำหรับ Mobile App
@@ -22,9 +22,6 @@ class MobileDeviceController extends Controller
 {
     /**
      * ลงทะเบียนเครื่อง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function register(Request $request): JsonResponse
     {
@@ -72,9 +69,6 @@ class MobileDeviceController extends Controller
 
     /**
      * บันทึก Heartbeat (ใช้คำนวณ DAU/MAU)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function heartbeat(Request $request): JsonResponse
     {
@@ -105,9 +99,6 @@ class MobileDeviceController extends Controller
 
     /**
      * ดึง Banners ตามตำแหน่ง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function banners(Request $request): JsonResponse
     {
@@ -122,7 +113,7 @@ class MobileDeviceController extends Controller
         $banners = $query->get()->map(function ($banner) {
             // แปลง relative path เป็น full URL สำหรับ mobile app
             $imageUrl = $banner->image;
-            if ($imageUrl && !str_starts_with($imageUrl, 'http')) {
+            if ($imageUrl && ! str_starts_with($imageUrl, 'http')) {
                 $imageUrl = url($imageUrl);
             }
 
@@ -145,9 +136,6 @@ class MobileDeviceController extends Controller
 
     /**
      * บันทึกการคลิก Banner
-     *
-     * @param int $bannerId
-     * @return JsonResponse
      */
     public function bannerClick(int $bannerId): JsonResponse
     {
@@ -173,9 +161,6 @@ class MobileDeviceController extends Controller
      *
      * รองรับทั้งกรณีที่มีและไม่มี device_id
      * จะสร้าง device record เสมอเพื่อให้ push notification ทำงานได้
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerPushToken(Request $request): JsonResponse
     {
@@ -191,7 +176,7 @@ class MobileDeviceController extends Controller
         $deviceId = $validated['device_id'] ?? null;
 
         // ถ้าไม่มี device_id ให้ลองหาจาก push_token หรือสร้างใหม่
-        if (!$deviceId) {
+        if (! $deviceId) {
             // ลองหา device จาก push_token ที่เคยลงทะเบียนไว้
             $existingDevice = MobileDevice::where('push_token', $validated['token'])->first();
 
@@ -199,7 +184,7 @@ class MobileDeviceController extends Controller
                 $deviceId = $existingDevice->device_id;
             } else {
                 // สร้าง device_id ใหม่
-                $deviceId = $validated['platform'] . '_' . time() . '_' . bin2hex(random_bytes(4));
+                $deviceId = $validated['platform'].'_'.time().'_'.bin2hex(random_bytes(4));
             }
         }
 
@@ -222,7 +207,7 @@ class MobileDeviceController extends Controller
             'device_id' => $device->device_id,
             'platform' => $device->platform,
             'user_id' => $userId,
-            'token_prefix' => substr($validated['token'], 0, 30) . '...',
+            'token_prefix' => substr($validated['token'], 0, 30).'...',
             'is_new' => $device->wasRecentlyCreated,
         ]);
 
@@ -243,9 +228,6 @@ class MobileDeviceController extends Controller
     /**
      * ยืนยันการรับ Push Notification
      * เรียกเมื่อ device ได้รับ notification แล้ว
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function confirmPushDelivery(Request $request): JsonResponse
     {
@@ -256,7 +238,7 @@ class MobileDeviceController extends Controller
 
         $device = MobileDevice::where('device_id', $validated['deviceId'])->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'Device not found',
@@ -285,9 +267,6 @@ class MobileDeviceController extends Controller
     /**
      * ดึง Pending Notifications สำหรับเครื่องที่กลับมา online
      * เรียกเมื่อ device reconnect to internet
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getPendingNotifications(Request $request): JsonResponse
     {
@@ -297,7 +276,7 @@ class MobileDeviceController extends Controller
 
         $device = MobileDevice::where('device_id', $validated['deviceId'])->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'Device not found',
@@ -325,6 +304,7 @@ class MobileDeviceController extends Controller
 
         $notifications = $pendingDeliveries->map(function ($delivery) {
             $notification = $delivery->notification;
+
             return [
                 'id' => $notification->id,
                 'deliveryId' => $delivery->id,
@@ -347,9 +327,6 @@ class MobileDeviceController extends Controller
 
     /**
      * Bulk confirm delivery สำหรับหลาย notifications
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function bulkConfirmDelivery(Request $request): JsonResponse
     {
@@ -361,7 +338,7 @@ class MobileDeviceController extends Controller
 
         $device = MobileDevice::where('device_id', $validated['deviceId'])->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'Device not found',
@@ -386,8 +363,6 @@ class MobileDeviceController extends Controller
 
     /**
      * ดึงสถิติ Push Notification สำหรับ Analytics Dashboard
-     *
-     * @return JsonResponse
      */
     public function pushAnalytics(): JsonResponse
     {
@@ -429,6 +404,7 @@ class MobileDeviceController extends Controller
                         $result['pending'] += $item->count;
                     }
                 }
+
                 return $result;
             });
 

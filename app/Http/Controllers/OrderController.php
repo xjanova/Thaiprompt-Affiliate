@@ -49,7 +49,7 @@ class OrderController extends Controller
         $order = Order::with([
             'items.product',
             'items.reviews',
-            'shippingAddress'
+            'shippingAddress',
         ])
             ->where('id', $id)
             ->where('user_id', auth()->id())
@@ -67,7 +67,7 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        if (!$order->canBeCancelled()) {
+        if (! $order->canBeCancelled()) {
             return back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้');
         }
 

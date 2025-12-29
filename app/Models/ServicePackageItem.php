@@ -41,9 +41,9 @@ class ServicePackageItem extends Model
         'price' => 'decimal:2',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * แพคเกจที่รายการนี้เป็นของ
@@ -65,6 +65,7 @@ class ServicePackageItem extends Model
         } elseif ($this->item_type === 'product') {
             return $this->product();
         }
+
         return null;
     }
 
@@ -84,9 +85,9 @@ class ServicePackageItem extends Model
         return $this->belongsTo(Product::class, 'item_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะรายการที่เป็น service
@@ -104,9 +105,9 @@ class ServicePackageItem extends Model
         return $query->where('item_type', 'product');
     }
 
-    //===========================================
+    // ===========================================
     // Methods
-    //===========================================
+    // ===========================================
 
     /**
      * ดึงข้อมูลรายการจริง (Service หรือ Product)
@@ -118,6 +119,7 @@ class ServicePackageItem extends Model
         } elseif ($this->item_type === 'product') {
             return Product::find($this->item_id);
         }
+
         return null;
     }
 
@@ -127,6 +129,7 @@ class ServicePackageItem extends Model
     public function getItemName(): string
     {
         $item = $this->getItemModel();
+
         return $item ? $item->name : 'ไม่พบข้อมูล';
     }
 
@@ -145,7 +148,7 @@ class ServicePackageItem extends Model
     {
         $item = $this->getItemModel();
 
-        if (!$item) {
+        if (! $item) {
             return 0;
         }
 

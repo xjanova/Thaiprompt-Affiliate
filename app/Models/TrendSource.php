@@ -56,15 +56,16 @@ class TrendSource extends Model
      */
     public function isReadyToScrape(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
-        if (!$this->last_checked_at) {
+        if (! $this->last_checked_at) {
             return true;
         }
 
         $minutesSinceLastCheck = now()->diffInMinutes($this->last_checked_at);
+
         return $minutesSinceLastCheck >= $this->check_interval;
     }
 

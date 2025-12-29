@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CryptoCurrency;
-use App\Models\CryptoWallet;
-use App\Models\CryptoTransaction;
 use App\Models\CryptoAddress;
-use App\Services\Crypto\TPIXBlockchainService;
+use App\Models\CryptoCurrency;
+use App\Models\CryptoTransaction;
+use App\Models\CryptoWallet;
 use App\Services\Crypto\CryptoWalletService;
+use App\Services\Crypto\TPIXBlockchainService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * TPIX Wallet Controller (User Frontend)
@@ -22,6 +22,7 @@ use Exception;
 class TPIXWalletController extends Controller
 {
     protected TPIXBlockchainService $tpixService;
+
     protected CryptoWalletService $walletService;
 
     public function __construct(
@@ -41,7 +42,7 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             return redirect()->route('dashboard')
                 ->with('error', 'TPIX is not available at the moment.');
         }
@@ -50,12 +51,12 @@ class TPIXWalletController extends Controller
         $wallet = CryptoWallet::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'currency_id' => $tpixCurrency->id
+                'currency_id' => $tpixCurrency->id,
             ],
             [
                 'balance' => 0,
                 'status' => 'active',
-                'wallet_type' => 'custodial'
+                'wallet_type' => 'custodial',
             ]
         );
 
@@ -65,7 +66,7 @@ class TPIXWalletController extends Controller
             ->where('address_type', 'deposit')
             ->first();
 
-        if (!$depositAddress) {
+        if (! $depositAddress) {
             $depositAddress = $this->walletService->generateAddressForCurrency($wallet, $tpixCurrency);
             // Update address type to 'deposit'
             $depositAddress->update(['address_type' => 'deposit']);
@@ -131,7 +132,7 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency || !$tpixCurrency->deposit_enabled) {
+        if (! $tpixCurrency || ! $tpixCurrency->deposit_enabled) {
             return redirect()->route('tpix.wallet')
                 ->with('error', 'TPIX deposits are currently disabled.');
         }
@@ -140,12 +141,12 @@ class TPIXWalletController extends Controller
         $wallet = CryptoWallet::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'currency_id' => $tpixCurrency->id
+                'currency_id' => $tpixCurrency->id,
             ],
             [
                 'balance' => 0,
                 'status' => 'active',
-                'wallet_type' => 'custodial'
+                'wallet_type' => 'custodial',
             ]
         );
 
@@ -155,7 +156,7 @@ class TPIXWalletController extends Controller
             ->where('address_type', 'deposit')
             ->first();
 
-        if (!$depositAddress) {
+        if (! $depositAddress) {
             $depositAddress = $this->walletService->generateAddressForCurrency($wallet, $tpixCurrency);
             // Update address type to 'deposit'
             $depositAddress->update(['address_type' => 'deposit']);
@@ -185,7 +186,7 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency || !$tpixCurrency->withdrawal_enabled) {
+        if (! $tpixCurrency || ! $tpixCurrency->withdrawal_enabled) {
             return redirect()->route('tpix.wallet')
                 ->with('error', 'TPIX withdrawals are currently disabled.');
         }
@@ -195,7 +196,7 @@ class TPIXWalletController extends Controller
             ->where('currency_id', $tpixCurrency->id)
             ->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             return redirect()->route('tpix.wallet')
                 ->with('error', 'Wallet not found.');
         }
@@ -228,12 +229,12 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency || !$tpixCurrency->withdrawal_enabled) {
+        if (! $tpixCurrency || ! $tpixCurrency->withdrawal_enabled) {
             return back()->with('error', 'TPIX withdrawals are currently disabled.');
         }
 
         // Validate address
-        if (!$this->tpixService->isValidAddress($request->address)) {
+        if (! $this->tpixService->isValidAddress($request->address)) {
             return back()->with('error', 'Invalid TPIX address.');
         }
 
@@ -243,7 +244,7 @@ class TPIXWalletController extends Controller
             ->lockForUpdate()
             ->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             return back()->with('error', 'Wallet not found.');
         }
 
@@ -253,15 +254,15 @@ class TPIXWalletController extends Controller
 
         // Validate amount
         if ($amount < $tpixCurrency->min_withdrawal) {
-            return back()->with('error', 'Minimum withdrawal amount is ' . $tpixCurrency->min_withdrawal . ' TPIX.');
+            return back()->with('error', 'Minimum withdrawal amount is '.$tpixCurrency->min_withdrawal.' TPIX.');
         }
 
         if ($tpixCurrency->max_withdrawal && $amount > $tpixCurrency->max_withdrawal) {
-            return back()->with('error', 'Maximum withdrawal amount is ' . $tpixCurrency->max_withdrawal . ' TPIX.');
+            return back()->with('error', 'Maximum withdrawal amount is '.$tpixCurrency->max_withdrawal.' TPIX.');
         }
 
         if ($wallet->balance < $totalRequired) {
-            return back()->with('error', 'Insufficient balance. You need ' . $totalRequired . ' TPIX (including ' . $fee . ' TPIX fee).');
+            return back()->with('error', 'Insufficient balance. You need '.$totalRequired.' TPIX (including '.$fee.' TPIX fee).');
         }
 
         try {
@@ -295,10 +296,10 @@ class TPIXWalletController extends Controller
             Log::error('TPIX withdrawal error', [
                 'user_id' => $user->id,
                 'amount' => $amount,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to process withdrawal: ' . $e->getMessage());
+            return back()->with('error', 'Failed to process withdrawal: '.$e->getMessage());
         }
     }
 
@@ -310,7 +311,7 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             return redirect()->route('dashboard')
                 ->with('error', 'TPIX is not available.');
         }
@@ -333,7 +334,7 @@ class TPIXWalletController extends Controller
             $query->where('created_at', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
+            $query->where('created_at', '<=', $request->date_to.' 23:59:59');
         }
 
         $transactions = $query->orderBy('created_at', 'desc')
@@ -360,7 +361,7 @@ class TPIXWalletController extends Controller
             } catch (Exception $e) {
                 Log::warning('Failed to fetch blockchain data', [
                     'tx_hash' => $transaction->tx_hash,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -376,7 +377,7 @@ class TPIXWalletController extends Controller
         $user = Auth::user();
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             return redirect()->route('tpix.wallet')
                 ->with('error', 'TPIX is not available.');
         }
@@ -405,7 +406,7 @@ class TPIXWalletController extends Controller
         $recipient = null;
         if (filter_var($request->recipient, FILTER_VALIDATE_EMAIL)) {
             $recipient = \App\Models\User::where('email', $request->recipient)->first();
-        } else if ($this->tpixService->isValidAddress($request->recipient)) {
+        } elseif ($this->tpixService->isValidAddress($request->recipient)) {
             // Find by wallet address
             $recipientWallet = CryptoWallet::where('address', $request->recipient)
                 ->where('currency_id', $tpixCurrency->id)
@@ -413,7 +414,7 @@ class TPIXWalletController extends Controller
             $recipient = $recipientWallet ? $recipientWallet->user : null;
         }
 
-        if (!$recipient) {
+        if (! $recipient) {
             return back()->with('error', 'Recipient not found.');
         }
 
@@ -432,7 +433,7 @@ class TPIXWalletController extends Controller
 
             if ($result['success']) {
                 return redirect()->route('tpix.wallet')
-                    ->with('success', 'Successfully sent ' . $request->amount . ' TPIX to ' . $recipient->name);
+                    ->with('success', 'Successfully sent '.$request->amount.' TPIX to '.$recipient->name);
             } else {
                 return back()->with('error', $result['message']);
             }
@@ -440,10 +441,10 @@ class TPIXWalletController extends Controller
             Log::error('TPIX send error', [
                 'user_id' => $user->id,
                 'amount' => $request->amount,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to send TPIX: ' . $e->getMessage());
+            return back()->with('error', 'Failed to send TPIX: '.$e->getMessage());
         }
     }
 }

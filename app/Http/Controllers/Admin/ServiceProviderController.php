@@ -16,7 +16,6 @@ class ServiceProviderController extends Controller
     /**
      * แสดงรายการผู้ให้บริการทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -80,7 +79,6 @@ class ServiceProviderController extends Controller
     /**
      * บันทึกผู้ให้บริการใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -108,7 +106,6 @@ class ServiceProviderController extends Controller
     /**
      * แสดงรายละเอียดผู้ให้บริการ
      *
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\View\View
      */
     public function show(ServiceProvider $serviceProvider)
@@ -116,34 +113,31 @@ class ServiceProviderController extends Controller
         $serviceProvider->load([
             'user',
             'services',
-            'bookings' => fn($q) => $q->latest()->limit(10),
+            'bookings' => fn ($q) => $q->latest()->limit(10),
         ]);
 
         return view('admin.service-providers.show', [
             'provider' => $serviceProvider,
-            'pageTitle' => 'รายละเอียดผู้ให้บริการ: ' . $serviceProvider->name,
+            'pageTitle' => 'รายละเอียดผู้ให้บริการ: '.$serviceProvider->name,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไขผู้ให้บริการ
      *
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\View\View
      */
     public function edit(ServiceProvider $serviceProvider)
     {
         return view('admin.service-providers.edit', [
             'provider' => $serviceProvider,
-            'pageTitle' => 'แก้ไขผู้ให้บริการ: ' . $serviceProvider->name,
+            'pageTitle' => 'แก้ไขผู้ให้บริการ: '.$serviceProvider->name,
         ]);
     }
 
     /**
      * อัพเดทผู้ให้บริการ
      *
-     * @param Request $request
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, ServiceProvider $serviceProvider)
@@ -166,7 +160,6 @@ class ServiceProviderController extends Controller
     /**
      * ลบผู้ให้บริการ
      *
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(ServiceProvider $serviceProvider)
@@ -181,8 +174,6 @@ class ServiceProviderController extends Controller
     /**
      * อนุมัติผู้ให้บริการ
      *
-     * @param Request $request
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\Http\RedirectResponse
      */
     public function verify(Request $request, ServiceProvider $serviceProvider)
@@ -203,8 +194,6 @@ class ServiceProviderController extends Controller
     /**
      * ปฏิเสธผู้ให้บริการ
      *
-     * @param Request $request
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, ServiceProvider $serviceProvider)
@@ -228,13 +217,12 @@ class ServiceProviderController extends Controller
     /**
      * เปิด/ปิดการใช้งานผู้ให้บริการ
      *
-     * @param ServiceProvider $serviceProvider
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(ServiceProvider $serviceProvider)
     {
         $serviceProvider->update([
-            'is_active' => !$serviceProvider->is_active,
+            'is_active' => ! $serviceProvider->is_active,
         ]);
 
         $status = $serviceProvider->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';

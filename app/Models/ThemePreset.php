@@ -80,8 +80,6 @@ class ThemePreset extends Model
 
     /**
      * เพิ่มจำนวนการใช้งาน
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -91,9 +89,8 @@ class ThemePreset extends Model
     /**
      * ดึงสีจาก preset
      *
-     * @param string $key คีย์สี (เช่น 'primary_start', 'success_color')
-     * @param string|null $default ค่า default
-     * @return string|null
+     * @param  string  $key  คีย์สี (เช่น 'primary_start', 'success_color')
+     * @param  string|null  $default  ค่า default
      */
     public function getColor(string $key, ?string $default = null): ?string
     {
@@ -103,8 +100,7 @@ class ThemePreset extends Model
     /**
      * ดึง Gradient CSS
      *
-     * @param string $type 'primary' หรือ 'secondary'
-     * @return string
+     * @param  string  $type  'primary' หรือ 'secondary'
      */
     public function getGradientCss(string $type = 'primary'): string
     {
@@ -132,8 +128,7 @@ class ThemePreset extends Model
     /**
      * Apply preset นี้ไปยัง ThemeColor
      *
-     * @param \App\Models\ThemeColor $themeColor
-     * @return void
+     * @param  \App\Models\ThemeColor  $themeColor
      */
     public function applyToThemeColor($themeColor): void
     {
@@ -160,7 +155,7 @@ class ThemePreset extends Model
     /**
      * Scope: Featured presets
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -171,7 +166,7 @@ class ThemePreset extends Model
     /**
      * Scope: Active presets
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -182,8 +177,7 @@ class ThemePreset extends Model
     /**
      * Scope: Popular presets (จาก usage_count)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $limit
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query, int $limit = 10)

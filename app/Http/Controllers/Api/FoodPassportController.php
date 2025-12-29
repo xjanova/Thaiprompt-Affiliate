@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\FoodProduct;
-use App\Models\ConsumerScan;
-use App\Services\FoodTraceabilityService;
 use App\Http\Requests\FoodPassport\CreateFoodProductRequest;
-use App\Http\Resources\FoodProductResource;
 use App\Http\Resources\FoodProductDetailResource;
-use Illuminate\Http\Request;
+use App\Http\Resources\FoodProductResource;
+use App\Models\ConsumerScan;
+use App\Models\FoodProduct;
+use App\Services\FoodTraceabilityService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FoodPassportController extends Controller
 {
@@ -213,9 +213,9 @@ class FoodPassportController extends Controller
         $product = FoodProduct::where('food_passport_id', $passportId)
             ->with([
                 'farmer:id,name',
-                'journeyStages' => fn($q) => $q->latest('sequence_order')->take(5),
-                'qualityCheckpoints' => fn($q) => $q->latest('checked_at')->take(3),
-                'certifications' => fn($q) => $q->active(),
+                'journeyStages' => fn ($q) => $q->latest('sequence_order')->take(5),
+                'qualityCheckpoints' => fn ($q) => $q->latest('checked_at')->take(3),
+                'certifications' => fn ($q) => $q->active(),
             ])
             ->firstOrFail();
 

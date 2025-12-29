@@ -19,7 +19,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตาราง product_likes - ถูกใจสินค้า
-        if (!Schema::hasTable('product_likes')) {
+        if (! Schema::hasTable('product_likes')) {
             Schema::create('product_likes', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -33,7 +33,7 @@ return new class extends Migration
         }
 
         // ตาราง product_favorites - รายการโปรด/wishlist
-        if (!Schema::hasTable('product_favorites')) {
+        if (! Schema::hasTable('product_favorites')) {
             Schema::create('product_favorites', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -51,7 +51,7 @@ return new class extends Migration
         }
 
         // ตาราง product_views - ประวัติการดูสินค้า
-        if (!Schema::hasTable('product_views')) {
+        if (! Schema::hasTable('product_views')) {
             Schema::create('product_views', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
@@ -70,7 +70,7 @@ return new class extends Migration
         }
 
         // ตาราง store_followers - ติดตามร้านค้า
-        if (!Schema::hasTable('store_followers')) {
+        if (! Schema::hasTable('store_followers')) {
             Schema::create('store_followers', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -87,17 +87,17 @@ return new class extends Migration
 
         // เพิ่ม columns ใน products table
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'likes_count')) {
+            if (! Schema::hasColumn('products', 'likes_count')) {
                 $table->unsignedInteger('likes_count')->default(0)->after('rating_count');
             }
-            if (!Schema::hasColumn('products', 'favorites_count')) {
+            if (! Schema::hasColumn('products', 'favorites_count')) {
                 $table->unsignedInteger('favorites_count')->default(0)->after('likes_count');
             }
         });
 
         // เพิ่ม columns ใน vendor_stores table
         Schema::table('vendor_stores', function (Blueprint $table) {
-            if (!Schema::hasColumn('vendor_stores', 'followers_count')) {
+            if (! Schema::hasColumn('vendor_stores', 'followers_count')) {
                 $table->unsignedInteger('followers_count')->default(0)->after('rating_count');
             }
         });

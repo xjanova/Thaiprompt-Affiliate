@@ -28,11 +28,11 @@ class TokenDeployedNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Token Deployed Successfully - ' . $this->token->symbol)
-            ->greeting('สวัสดี ' . $notifiable->name)
+            ->subject('Token Deployed Successfully - '.$this->token->symbol)
+            ->greeting('สวัสดี '.$notifiable->name)
             ->line("Token {$this->token->name} ({$this->token->symbol}) ของคุณถูก deploy สำเร็จแล้ว!")
             ->line("Contract Address: {$this->token->contract_address}")
-            ->line("Total Supply: " . number_format($this->token->total_supply, 2) . " {$this->token->symbol}")
+            ->line('Total Supply: '.number_format($this->token->total_supply, 2)." {$this->token->symbol}")
             ->action('ดู Token', route('user.tokens.show', $this->token->id))
             ->line('ขอบคุณที่ใช้บริการ TPIX Blockchain!');
     }

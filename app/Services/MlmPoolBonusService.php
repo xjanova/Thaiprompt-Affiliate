@@ -2,16 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\MlmPoolBonusPeriod;
 use App\Models\MlmPoolBonusShare;
 use App\Models\Order;
 use App\Models\Rank;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 /**
  * MlmPoolBonusService - จัดการ Pool Bonus (All Sale Bonus)
@@ -30,10 +30,9 @@ class MlmPoolBonusService
     /**
      * สร้าง period ใหม่สำหรับรอบถัดไป
      *
-     * @param string $periodType daily/weekly/monthly
-     * @return MlmPoolBonusPeriod
+     * @param  string  $periodType  daily/weekly/monthly
      */
-    public function createPeriod(string $periodType = null): MlmPoolBonusPeriod
+    public function createPeriod(?string $periodType = null): MlmPoolBonusPeriod
     {
         $periodType = $periodType ?? MlmGlobalSetting::get('pool_bonus_period_type', 'weekly');
 
@@ -63,7 +62,6 @@ class MlmPoolBonusService
     /**
      * คำนวณวันที่ start/end ของ period
      *
-     * @param string $periodType
      * @return array ['start' => Carbon, 'end' => Carbon]
      */
     protected function calculatePeriodDates(string $periodType): array
@@ -93,7 +91,6 @@ class MlmPoolBonusService
     /**
      * คำนวณยอดขายรวมในช่วง period
      *
-     * @param MlmPoolBonusPeriod $period
      * @return array ['total_sales' => float, 'total_pv' => float]
      */
     public function calculatePeriodSales(MlmPoolBonusPeriod $period): array
@@ -122,9 +119,6 @@ class MlmPoolBonusService
      * 1. สถานะ active
      * 2. มี PV ส่วนตัวขั้นต่ำในรอบนี้
      * 3. มี rank ขั้นต่ำ (ถ้าตั้งค่าไว้)
-     *
-     * @param MlmPoolBonusPeriod $period
-     * @return \Illuminate\Support\Collection
      */
     public function getQualifiedMembers(MlmPoolBonusPeriod $period): \Illuminate\Support\Collection
     {
@@ -162,7 +156,7 @@ class MlmPoolBonusService
             // ตรวจสอบ rank
             if ($minRankLevel > 0) {
                 $userRank = $member->user->rank ?? null;
-                if (!$userRank || $userRank->level < $minRankLevel) {
+                if (! $userRank || $userRank->level < $minRankLevel) {
                     return false;
                 }
             }
@@ -177,10 +171,6 @@ class MlmPoolBonusService
 
     /**
      * ดึง PV ส่วนตัวของสมาชิกในรอบนี้
-     *
-     * @param MlmMember $member
-     * @param MlmPoolBonusPeriod $period
-     * @return float
      */
     protected function getMemberPersonalPv(MlmMember $member, MlmPoolBonusPeriod $period): float
     {
@@ -191,15 +181,11 @@ class MlmPoolBonusService
 
     /**
      * ดึง PV ทีมของสมาชิกในรอบนี้
-     *
-     * @param MlmMember $member
-     * @param MlmPoolBonusPeriod $period
-     * @return float
      */
     protected function getMemberTeamPv(MlmMember $member, MlmPoolBonusPeriod $period): float
     {
         // ดึง downline ทั้งหมด
-        $downlineIds = MlmMember::where('unilevel_path', 'like', '%/' . $member->id . '/%')
+        $downlineIds = MlmMember::where('unilevel_path', 'like', '%/'.$member->id.'/%')
             ->orWhere('unilevel_sponsor_id', $member->id)
             ->pluck('id')
             ->toArray();
@@ -219,9 +205,6 @@ class MlmPoolBonusService
      * Shares ขึ้นอยู่กับ:
      * 1. Rank ของสมาชิก (rank สูง = shares มาก)
      * 2. ค่า pool_bonus_share_mode
-     *
-     * @param MlmMember $member
-     * @return int
      */
     public function calculateMemberShares(MlmMember $member): int
     {
@@ -276,12 +259,11 @@ class MlmPoolBonusService
     /**
      * คำนวณและกระจาย Pool Bonus สำหรับ period
      *
-     * @param MlmPoolBonusPeriod $period
      * @return array ผลลัพธ์การคำนวณ
      */
     public function calculateAndDistribute(MlmPoolBonusPeriod $period): array
     {
-        if (!MlmGlobalSetting::get('pool_bonus_enabled', false)) {
+        if (! MlmGlobalSetting::get('pool_bonus_enabled', false)) {
             return [
                 'success' => false,
                 'message' => 'Pool Bonus is disabled',
@@ -418,23 +400,20 @@ class MlmPoolBonusService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * อนุมัติและจ่าย Pool Bonus
-     *
-     * @param MlmPoolBonusPeriod $period
-     * @return array
      */
     public function approveAndPay(MlmPoolBonusPeriod $period): array
     {
         if ($period->status !== 'pending') {
             return [
                 'success' => false,
-                'message' => 'Period status ไม่ถูกต้อง: ' . $period->status,
+                'message' => 'Period status ไม่ถูกต้อง: '.$period->status,
             ];
         }
 
@@ -510,22 +489,19 @@ class MlmPoolBonusService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * ดึงสรุป Pool Bonus
-     *
-     * @param int $limit
-     * @return array
      */
     public function getSummary(int $limit = 10): array
     {
         $periods = MlmPoolBonusPeriod::with(['shares' => function ($q) {
-                $q->where('status', 'paid')->limit(5);
-            }])
+            $q->where('status', 'paid')->limit(5);
+        }])
             ->orderBy('period_start', 'desc')
             ->limit($limit)
             ->get();
@@ -550,16 +526,14 @@ class MlmPoolBonusService
 
     /**
      * รัน Pool Bonus อัตโนมัติ (สำหรับ cron job)
-     *
-     * @return array
      */
     public function runAutoPoolBonus(): array
     {
-        if (!MlmGlobalSetting::get('pool_bonus_enabled', false)) {
+        if (! MlmGlobalSetting::get('pool_bonus_enabled', false)) {
             return ['success' => false, 'message' => 'Pool Bonus is disabled'];
         }
 
-        if (!MlmGlobalSetting::get('pool_bonus_auto_distribute', false)) {
+        if (! MlmGlobalSetting::get('pool_bonus_auto_distribute', false)) {
             return ['success' => false, 'message' => 'Auto distribute is disabled'];
         }
 
@@ -569,7 +543,7 @@ class MlmPoolBonusService
         // คำนวณ
         $calcResult = $this->calculateAndDistribute($period);
 
-        if (!$calcResult['success']) {
+        if (! $calcResult['success']) {
             return $calcResult;
         }
 

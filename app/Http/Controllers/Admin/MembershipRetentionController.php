@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\MembershipRetentionService;
-use App\Models\User;
-use App\Models\MembershipRetentionStatus;
 use App\Models\MembershipRetentionHistory;
 use App\Models\MembershipRetentionSetting;
+use App\Models\MembershipRetentionStatus;
+use App\Models\User;
+use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 
 class MembershipRetentionController extends Controller
@@ -122,7 +122,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -148,7 +148,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -169,7 +169,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -190,7 +190,7 @@ class MembershipRetentionController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands\ArrowX;
 
-use App\Services\ThemeCompilerService;
 use App\Models\ThemeSetting;
+use App\Services\ThemeCompilerService;
 use Illuminate\Console\Command;
 
 /**
@@ -61,8 +61,9 @@ class CompileThemeCommand extends Command
             ? ThemeSetting::find($themeId)
             : ThemeSetting::active();
 
-        if (!$theme) {
+        if (! $theme) {
             $this->error('❌ Theme not found');
+
             return self::FAILURE;
         }
 
@@ -71,9 +72,6 @@ class CompileThemeCommand extends Command
 
     /**
      * Compile single theme
-     *
-     * @param ThemeSetting $theme
-     * @return int
      */
     protected function compileTheme(ThemeSetting $theme): int
     {
@@ -83,7 +81,7 @@ class CompileThemeCommand extends Command
             if ($this->option('file')) {
                 // Compile to file
                 $files = $this->compiler->compileToFile($theme);
-                $this->info("✅ Compiled to files:");
+                $this->info('✅ Compiled to files:');
                 $this->line("   CSS: {$files['css_path']}");
                 $this->line("   JS:  {$files['js_path']}");
             } else {
@@ -92,22 +90,21 @@ class CompileThemeCommand extends Command
                 $cssSize = strlen($compiled['css']);
                 $jsSize = strlen($compiled['js']);
 
-                $this->info("✅ Compiled to cache:");
-                $this->line("   CSS: " . number_format($cssSize) . " bytes");
-                $this->line("   JS:  " . number_format($jsSize) . " bytes");
+                $this->info('✅ Compiled to cache:');
+                $this->line('   CSS: '.number_format($cssSize).' bytes');
+                $this->line('   JS:  '.number_format($jsSize).' bytes');
             }
 
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("❌ Compilation failed: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }
 
     /**
      * Compile all themes
-     *
-     * @return int
      */
     protected function compileAllThemes(): int
     {
@@ -115,6 +112,7 @@ class CompileThemeCommand extends Command
 
         if ($themes->isEmpty()) {
             $this->warn('⚠️  No themes found');
+
             return self::SUCCESS;
         }
 

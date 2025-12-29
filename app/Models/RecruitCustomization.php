@@ -83,8 +83,6 @@ class RecruitCustomization extends Model
 
     /**
      * ความสัมพันธ์กับ User (แม่ทีม)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -93,8 +91,6 @@ class RecruitCustomization extends Model
 
     /**
      * ความสัมพันธ์กับ RecruitTemplate
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -104,8 +100,6 @@ class RecruitCustomization extends Model
     /**
      * ความสัมพันธ์กับ LeadLock
      * ผู้มุ่งหวังทั้งหมดของแม่ทีมคนนี้
-     *
-     * @return HasMany
      */
     public function leadLocks(): HasMany
     {
@@ -115,8 +109,6 @@ class RecruitCustomization extends Model
     /**
      * ความสัมพันธ์กับ RecruitPageVisit
      * การเข้าชมทั้งหมดของแม่ทีมคนนี้
-     *
-     * @return HasMany
      */
     public function visits(): HasMany
     {
@@ -126,7 +118,7 @@ class RecruitCustomization extends Model
     /**
      * Scope: เฉพาะที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -136,8 +128,6 @@ class RecruitCustomization extends Model
 
     /**
      * เพิ่มจำนวนการเข้าชม
-     *
-     * @return void
      */
     public function incrementViews(): void
     {
@@ -147,8 +137,6 @@ class RecruitCustomization extends Model
 
     /**
      * เพิ่มจำนวน leads
-     *
-     * @return void
      */
     public function incrementLeads(): void
     {
@@ -158,8 +146,6 @@ class RecruitCustomization extends Model
 
     /**
      * เพิ่มจำนวนการแปลง (conversion)
-     *
-     * @return void
      */
     public function incrementConversions(): void
     {
@@ -169,8 +155,6 @@ class RecruitCustomization extends Model
 
     /**
      * อัพเดทอัตราการแปลง (Conversion Rate)
-     *
-     * @return void
      */
     public function updateConversionRate(): void
     {
@@ -182,8 +166,6 @@ class RecruitCustomization extends Model
 
     /**
      * ดึง URL หน้า Recruit
-     *
-     * @return string
      */
     public function getRecruitUrl(): string
     {
@@ -196,8 +178,6 @@ class RecruitCustomization extends Model
     /**
      * ดึงรูปภาพที่ใช้แสดง
      * ลำดับความสำคัญ: custom_image > user->profile_picture_url
-     *
-     * @return string
      */
     public function getDisplayImage(): string
     {
@@ -206,7 +186,8 @@ class RecruitCustomization extends Model
             if (filter_var($this->custom_image, FILTER_VALIDATE_URL)) {
                 return $this->custom_image;
             }
-            return asset('storage/' . $this->custom_image);
+
+            return asset('storage/'.$this->custom_image);
         }
 
         // ใช้รูปจาก user profile
@@ -216,8 +197,6 @@ class RecruitCustomization extends Model
     /**
      * ดึงชื่อที่ใช้แสดง
      * ลำดับความสำคัญ: custom_name > user->name
-     *
-     * @return string
      */
     public function getDisplayName(): string
     {

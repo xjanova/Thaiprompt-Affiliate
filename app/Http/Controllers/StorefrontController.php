@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\VendorStore;
 use App\Models\StoreBanner;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -22,7 +22,6 @@ class StorefrontController extends Controller
      *
      * รวม: Banner Carousel, Flash Deals, Categories, Featured Stores, Products
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -177,7 +176,6 @@ class StorefrontController extends Controller
     /**
      * ดึงสินค้าตามตัวกรอง
      *
-     * @param Request $request
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     private function getFilteredProducts(Request $request)
@@ -280,7 +278,7 @@ class StorefrontController extends Controller
     /**
      * แสดงหน้าร้านค้าของแต่ละร้าน
      *
-     * @param string $slug - Store slug
+     * @param  string  $slug  - Store slug
      * @return \Illuminate\View\View
      */
     public function showStore($slug)
@@ -330,7 +328,6 @@ class StorefrontController extends Controller
     /**
      * ดึง Banners ของร้าน
      *
-     * @param VendorStore $store
      * @return \Illuminate\Support\Collection
      */
     private function getStoreBanners(VendorStore $store)
@@ -375,7 +372,6 @@ class StorefrontController extends Controller
     /**
      * Quick Search API
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function quickSearch(Request $request)
@@ -403,7 +399,6 @@ class StorefrontController extends Controller
     /**
      * Load More Products API - สำหรับ Infinite Scroll
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function loadMoreProducts(Request $request)
@@ -435,7 +430,7 @@ class StorefrontController extends Controller
                 'main_image_url' => $product->main_image_url ?? 'https://via.placeholder.com/300',
                 'discount' => $discount,
                 'is_featured' => $product->is_featured,
-                'is_official' => !$product->seller_id,
+                'is_official' => ! $product->seller_id,
                 'rating_average' => $product->rating_average ?? 0,
                 'rating_count' => $product->rating_count ?? 0,
                 'sales_count' => $product->sales_count ?? 0,
@@ -458,7 +453,6 @@ class StorefrontController extends Controller
     /**
      * แสดงหน้ารายการร้านค้าทั้งหมด (Stores Listing)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function stores(Request $request)

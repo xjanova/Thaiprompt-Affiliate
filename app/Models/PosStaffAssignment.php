@@ -152,13 +152,14 @@ class PosStaffAssignment extends Model
     public function hasPermission(string $permission): bool
     {
         $permissions = $this->pos_permissions ?? [];
+
         return in_array($permission, $permissions) || in_array('all', $permissions);
     }
 
     /**
      * ตรวจสอบส่วนลดที่ให้ได้
      */
-    public function canApplyDiscount(float $amount, float $percentage = null): bool
+    public function canApplyDiscount(float $amount, ?float $percentage = null): bool
     {
         if ($percentage !== null && $this->max_discount_percent > 0) {
             if ($percentage > $this->max_discount_percent) {
@@ -270,7 +271,7 @@ class PosStaffAssignment extends Model
     {
         return $query->where(function ($q) use ($deviceId) {
             $q->where('pos_device_id', $deviceId)
-              ->orWhereNull('pos_device_id'); // Can use any device
+                ->orWhereNull('pos_device_id'); // Can use any device
         });
     }
 
@@ -284,11 +285,11 @@ class PosStaffAssignment extends Model
         return $query
             ->where(function ($q) use ($now) {
                 $q->whereNull('effective_from')
-                  ->orWhere('effective_from', '<=', $now);
+                    ->orWhere('effective_from', '<=', $now);
             })
             ->where(function ($q) use ($now) {
                 $q->whereNull('effective_to')
-                  ->orWhere('effective_to', '>=', $now);
+                    ->orWhere('effective_to', '>=', $now);
             });
     }
 

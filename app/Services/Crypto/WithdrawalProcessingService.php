@@ -3,15 +3,13 @@
 namespace App\Services\Crypto;
 
 use App\Models\CryptoWithdrawalRequest;
-use App\Models\CryptoTransaction;
-use App\Models\CryptoWallet;
-use App\Models\CryptoCurrency;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class WithdrawalProcessingService
 {
     protected BlockchainTransactionService $blockchainService;
+
     protected CryptoWalletService $walletService;
 
     public function __construct(
@@ -61,7 +59,7 @@ class WithdrawalProcessingService
                     $withdrawal->update([
                         'status' => 'reviewing',
                         'reviewed_at' => now(),
-                        'admin_note' => 'Flagged for manual review due to risk score: ' . $withdrawal->risk_score,
+                        'admin_note' => 'Flagged for manual review due to risk score: '.$withdrawal->risk_score,
                     ]);
                 }
 
@@ -99,7 +97,7 @@ class WithdrawalProcessingService
         }
 
         // Check user verification status
-        if (!$withdrawal->user->isKycVerified()) {
+        if (! $withdrawal->user->isKycVerified()) {
             return false; // Unverified user - needs manual review
         }
 
@@ -157,6 +155,7 @@ class WithdrawalProcessingService
                     'status' => 'failed',
                     'error_message' => 'Insufficient balance',
                 ]);
+
                 return false;
             }
 
@@ -165,7 +164,7 @@ class WithdrawalProcessingService
                 ->where('crypto_currency_id', $currency->id)
                 ->first();
 
-            if (!$balanceRecord) {
+            if (! $balanceRecord) {
                 throw new \Exception('Balance record not found');
             }
 
@@ -207,7 +206,7 @@ class WithdrawalProcessingService
                 $withdrawal->network
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 throw new \Exception($result['error'] ?? 'Transaction failed');
             }
 
@@ -408,8 +407,8 @@ class WithdrawalProcessingService
      */
     public function cancelWithdrawal(CryptoWithdrawalRequest $withdrawal): bool
     {
-        if (!in_array($withdrawal->status, ['pending', 'approved'])) {
-            throw new \Exception('Cannot cancel withdrawal in ' . $withdrawal->status . ' status');
+        if (! in_array($withdrawal->status, ['pending', 'approved'])) {
+            throw new \Exception('Cannot cancel withdrawal in '.$withdrawal->status.' status');
         }
 
         return DB::transaction(function () use ($withdrawal) {

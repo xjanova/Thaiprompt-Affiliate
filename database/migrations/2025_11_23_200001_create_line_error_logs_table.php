@@ -12,8 +12,6 @@ return new class extends Migration
      *
      * ตารางนี้ใช้สำหรับ Error Analytics และ Monitoring
      * ช่วยให้ Admin วิเคราะห์ปัญหาและ trend ของ errors
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -75,8 +73,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_error_logs
-     *
-     * @return void
      */
     public function down(): void
     {

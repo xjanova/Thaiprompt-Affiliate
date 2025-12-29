@@ -34,6 +34,7 @@ class SendScheduledNotifications extends Command
 
         if ($notifications->isEmpty()) {
             $this->info('No scheduled notifications to send.');
+
             return 0;
         }
 
@@ -46,12 +47,13 @@ class SendScheduledNotifications extends Command
 
                 $this->info("Sent notification ID {$notification->id} to user {$notification->user_id}");
             } catch (\Exception $e) {
-                Log::error("Failed to send scheduled notification {$notification->id}: " . $e->getMessage());
+                Log::error("Failed to send scheduled notification {$notification->id}: ".$e->getMessage());
                 $this->error("Failed to send notification ID {$notification->id}");
             }
         }
 
         $this->info("Successfully sent {$count} scheduled notification(s).");
+
         return 0;
     }
 }

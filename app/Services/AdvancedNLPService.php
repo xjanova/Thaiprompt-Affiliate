@@ -2,15 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\MessageSentiment;
-use App\Models\MessageContext;
-use App\Models\MessageSimilarity;
-use App\Models\MessageEntity;
-use App\Models\MessageIntent;
-use App\Models\LineBotKeyword;
 use App\Models\KeywordRelationship;
-use Illuminate\Support\Facades\DB;
+use App\Models\LineBotKeyword;
+use App\Models\MessageContext;
+use App\Models\MessageSentiment;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Advanced NLP Service
@@ -22,11 +19,6 @@ class AdvancedNLPService
 {
     /**
      * Analyze message with context awareness
-     *
-     * @param MessageSentiment $sentiment
-     * @param string $message
-     * @param string|null $lineUserId
-     * @return array
      */
     public function analyzeWithContext(MessageSentiment $sentiment, string $message, ?string $lineUserId = null): array
     {
@@ -61,11 +53,6 @@ class AdvancedNLPService
 
     /**
      * Determine context type of message
-     *
-     * @param MessageSentiment $sentiment
-     * @param string $message
-     * @param string|null $lineUserId
-     * @return array
      */
     private function determineContext(MessageSentiment $sentiment, string $message, ?string $lineUserId = null): array
     {
@@ -93,7 +80,7 @@ class AdvancedNLPService
                 $minutesSinceLast = $timeDiff;
 
                 // Determine context type based on content
-                if ($sentiment->is_complaint && !$previousContext->sentiment->is_complaint) {
+                if ($sentiment->is_complaint && ! $previousContext->sentiment->is_complaint) {
                     $contextType = 'ESCALATION';
                 } elseif ($sentiment->sentiment_score > $previousContext->sentiment->sentiment_score) {
                     $contextType = 'RESOLUTION';
@@ -118,10 +105,6 @@ class AdvancedNLPService
 
     /**
      * Find similar messages using semantic similarity
-     *
-     * @param string $message
-     * @param int $limit
-     * @return Collection
      */
     public function findSimilarMessages(string $message, int $limit = 10): Collection
     {
@@ -137,11 +120,13 @@ class AdvancedNLPService
                 $msgWords = $this->extractWords($msg->message_text ?? '');
                 $overlap = count(array_intersect($words, $msgWords));
                 $similarity = $overlap / max($wordCount, 1);
+
                 return $similarity >= 0.3; // 30% similarity threshold
             })
             ->sortByDesc(function ($msg) use ($words) {
                 $msgWords = $this->extractWords($msg->message_text ?? '');
                 $overlap = count(array_intersect($words, $msgWords));
+
                 return $overlap / max(count($msgWords), 1);
             })
             ->take($limit);
@@ -151,14 +136,10 @@ class AdvancedNLPService
 
     /**
      * Analyze conversation sentiment trend
-     *
-     * @param string|null $lineUserId
-     * @param MessageSentiment $currentSentiment
-     * @return array
      */
     private function analyzeConversationTrend(?string $lineUserId, MessageSentiment $currentSentiment): array
     {
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return ['trend' => 'NEUTRAL', 'direction' => 'STABLE'];
         }
 
@@ -166,10 +147,10 @@ class AdvancedNLPService
         $recentMessages = MessageSentiment::whereHas('context', function ($q) use ($lineUserId) {
             $q->where('line_user_id', $lineUserId);
         })
-        ->latest()
-        ->take(5)
-        ->pluck('sentiment_score')
-        ->toArray();
+            ->latest()
+            ->take(5)
+            ->pluck('sentiment_score')
+            ->toArray();
 
         if (count($recentMessages) < 2) {
             return ['trend' => 'NEUTRAL', 'direction' => 'STABLE'];
@@ -213,10 +194,6 @@ class AdvancedNLPService
 
     /**
      * Predict next intent based on context
-     *
-     * @param array $context
-     * @param array $sentimentData
-     * @return array|null
      */
     private function predictNextIntent(array $context, array $sentimentData): ?array
     {
@@ -248,7 +225,7 @@ class AdvancedNLPService
             ],
         ];
 
-        if (!isset($predictions[$currentIntent])) {
+        if (! isset($predictions[$currentIntent])) {
             return null;
         }
 
@@ -264,10 +241,6 @@ class AdvancedNLPService
 
     /**
      * Suggest related keywords for a message
-     *
-     * @param MessageSentiment $sentiment
-     * @param string|null $lineUserId
-     * @return Collection
      */
     public function suggestRelatedKeywords(MessageSentiment $sentiment, ?string $lineUserId = null): Collection
     {
@@ -288,6 +261,7 @@ class AdvancedNLPService
                         return true;
                     }
                 }
+
                 return false;
             })
             ->take(5);
@@ -309,11 +283,6 @@ class AdvancedNLPService
 
     /**
      * Record message context to database
-     *
-     * @param MessageSentiment $sentiment
-     * @param array $contextData
-     * @param string|null $lineUserId
-     * @return MessageContext
      */
     private function recordContext(MessageSentiment $sentiment, array $contextData, ?string $lineUserId = null): MessageContext
     {
@@ -326,9 +295,6 @@ class AdvancedNLPService
 
     /**
      * Discover keyword relationships from message patterns
-     *
-     * @param int $days
-     * @return void
      */
     public function discoverKeywordRelationships(int $days = 30): void
     {
@@ -352,15 +318,20 @@ class AdvancedNLPService
                     }
                 }
 
-                if (!$hasMatch) continue;
+                if (! $hasMatch) {
+                    continue;
+                }
 
                 // Find co-occurring keywords
                 foreach ($keywords as $keyword2) {
-                    if ($keyword1->id >= $keyword2->id) continue;
+                    if ($keyword1->id >= $keyword2->id) {
+                        continue;
+                    }
 
                     $coOccurs = $messages
                         ->filter(function ($msg) use ($keyword1, $keyword2) {
                             $text = strtolower($msg->message_text ?? '');
+
                             return stripos($text, $keyword1->keyword_text) !== false &&
                                    stripos($text, $keyword2->keyword_text) !== false;
                         })
@@ -396,9 +367,6 @@ class AdvancedNLPService
 
     /**
      * Extract words from text
-     *
-     * @param string $text
-     * @return array
      */
     private function extractWords(string $text): array
     {
@@ -409,15 +377,11 @@ class AdvancedNLPService
         $words = preg_split('/\s+/', trim($text), -1, PREG_SPLIT_NO_EMPTY);
 
         // Remove short words
-        return array_filter($words, fn($w) => strlen($w) > 2);
+        return array_filter($words, fn ($w) => strlen($w) > 2);
     }
 
     /**
      * Analyze semantic similarity between two messages
-     *
-     * @param MessageSentiment $message1
-     * @param MessageSentiment $message2
-     * @return float
      */
     public function calculateSemanticSimilarity(MessageSentiment $message1, MessageSentiment $message2): float
     {
@@ -437,10 +401,6 @@ class AdvancedNLPService
 
     /**
      * Get conversation analytics for a user
-     *
-     * @param string $lineUserId
-     * @param int $days
-     * @return array
      */
     public function getUserConversationAnalytics(string $lineUserId, int $days = 30): array
     {

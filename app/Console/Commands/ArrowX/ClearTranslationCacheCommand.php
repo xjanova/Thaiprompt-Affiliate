@@ -47,7 +47,7 @@ class ClearTranslationCacheCommand extends Command
         // Clear database cache
         $query = TranslationCache::query();
 
-        if ($lang && !$all) {
+        if ($lang && ! $all) {
             $query->where('target_language', $lang);
             $this->info("🎯 Clearing cache for language: {$lang}");
         } else {

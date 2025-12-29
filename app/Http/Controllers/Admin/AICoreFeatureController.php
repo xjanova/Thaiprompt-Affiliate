@@ -53,7 +53,6 @@ class AICoreFeatureController extends Controller
     /**
      * บันทึก Feature ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -86,7 +85,7 @@ class AICoreFeatureController extends Controller
 
             return redirect()
                 ->route('admin.ai-core.features.index')
-                ->with('success', 'สร้าง Feature สำเร็จ: ' . $feature->feature_name);
+                ->with('success', 'สร้าง Feature สำเร็จ: '.$feature->feature_name);
         } catch (\Exception $e) {
             Log::error('AI Core: สร้าง feature ล้มเหลว', [
                 'error' => $e->getMessage(),
@@ -95,14 +94,13 @@ class AICoreFeatureController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียด Feature
      *
-     * @param AICoreFeature $feature
      * @return \Illuminate\View\View
      */
     public function show(AICoreFeature $feature)
@@ -137,7 +135,6 @@ class AICoreFeatureController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Feature
      *
-     * @param AICoreFeature $feature
      * @return \Illuminate\View\View
      */
     public function edit(AICoreFeature $feature)
@@ -159,14 +156,12 @@ class AICoreFeatureController extends Controller
     /**
      * อัปเดต Feature
      *
-     * @param Request $request
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, AICoreFeature $feature)
     {
         $validated = $request->validate([
-            'feature_key' => 'required|string|max:100|unique:ai_core_features,feature_key,' . $feature->id,
+            'feature_key' => 'required|string|max:100|unique:ai_core_features,feature_key,'.$feature->id,
             'feature_name' => 'required|string|max:255',
             'feature_name_en' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -202,14 +197,13 @@ class AICoreFeatureController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบ Feature
      *
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(AICoreFeature $feature)
@@ -219,7 +213,7 @@ class AICoreFeatureController extends Controller
             $activeAccess = $feature->featureAccess()->where('is_enabled', true)->count();
 
             if ($activeAccess > 0) {
-                return back()->with('error', 'ไม่สามารถลบ Feature ได้ เนื่องจากมี Tenant ที่กำลังใช้งานอยู่ ' . $activeAccess . ' รายการ');
+                return back()->with('error', 'ไม่สามารถลบ Feature ได้ เนื่องจากมี Tenant ที่กำลังใช้งานอยู่ '.$activeAccess.' รายการ');
             }
 
             $featureName = $feature->feature_name;
@@ -227,27 +221,26 @@ class AICoreFeatureController extends Controller
 
             return redirect()
                 ->route('admin.ai-core.features.index')
-                ->with('success', 'ลบ Feature สำเร็จ: ' . $featureName);
+                ->with('success', 'ลบ Feature สำเร็จ: '.$featureName);
         } catch (\Exception $e) {
             Log::error('AI Core: ลบ feature ล้มเหลว', [
                 'feature_id' => $feature->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เปิด/ปิดใช้งาน Feature
      *
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggle(AICoreFeature $feature)
     {
         try {
-            $feature->update(['is_enabled' => !$feature->is_enabled]);
+            $feature->update(['is_enabled' => ! $feature->is_enabled]);
 
             return response()->json([
                 'success' => true,
@@ -257,16 +250,13 @@ class AICoreFeatureController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * คำนวณอัตราความสำเร็จ
-     *
-     * @param AICoreFeature $feature
-     * @return float
      */
     private function calculateSuccessRate(AICoreFeature $feature): float
     {

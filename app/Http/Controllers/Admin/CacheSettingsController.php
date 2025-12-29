@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\CacheManagementService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Artisan;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
+use Illuminate\View\View;
 
 /**
  * Cache Settings Controller
@@ -21,8 +21,6 @@ class CacheSettingsController extends Controller
 {
     /**
      * Cache Management Service
-     *
-     * @var CacheManagementService
      */
     protected CacheManagementService $cacheService;
 
@@ -36,8 +34,6 @@ class CacheSettingsController extends Controller
 
     /**
      * แสดงหน้าตั้งค่า Cache
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -60,9 +56,6 @@ class CacheSettingsController extends Controller
 
     /**
      * ทดสอบการเชื่อมต่อ cache driver
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function testConnection(Request $request): JsonResponse
     {
@@ -77,8 +70,6 @@ class CacheSettingsController extends Controller
 
     /**
      * ดึงสถานะของ cache drivers ทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function getDriversStatus(): JsonResponse
     {
@@ -92,8 +83,6 @@ class CacheSettingsController extends Controller
 
     /**
      * ดึงข้อมูลสถิติ cache ปัจจุบัน
-     *
-     * @return JsonResponse
      */
     public function getStats(): JsonResponse
     {
@@ -107,8 +96,6 @@ class CacheSettingsController extends Controller
 
     /**
      * ล้างแคชทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function clearCache(): JsonResponse
     {
@@ -133,16 +120,13 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * เปลี่ยน cache driver
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function changeDriver(Request $request): JsonResponse
     {
@@ -155,10 +139,10 @@ class CacheSettingsController extends Controller
         // ทดสอบ connection ก่อนเปลี่ยน
         $testResult = $this->cacheService->testConnection($driver);
 
-        if (!$testResult['status']) {
+        if (! $testResult['status']) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถใช้งาน ' . $driver . ' ได้: ' . $testResult['message'],
+                'message' => 'ไม่สามารถใช้งาน '.$driver.' ได้: '.$testResult['message'],
             ], 422);
         }
 
@@ -174,22 +158,19 @@ class CacheSettingsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'เปลี่ยน Cache Driver เป็น ' . $driver . ' สำเร็จ',
+                'message' => 'เปลี่ยน Cache Driver เป็น '.$driver.' สำเร็จ',
                 'driver' => $driver,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงคำแนะนำการติดตั้งสำหรับ driver
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getInstallationGuide(Request $request): JsonResponse
     {
@@ -208,9 +189,6 @@ class CacheSettingsController extends Controller
     /**
      * อัพเดท .env file
      *
-     * @param string $key
-     * @param string $value
-     * @return void
      *
      * @throws Exception
      */
@@ -218,7 +196,7 @@ class CacheSettingsController extends Controller
     {
         $envPath = base_path('.env');
 
-        if (!File::exists($envPath)) {
+        if (! File::exists($envPath)) {
             throw new Exception('ไม่พบไฟล์ .env');
         }
 
@@ -242,8 +220,6 @@ class CacheSettingsController extends Controller
 
     /**
      * Optimize cache (warm up)
-     *
-     * @return JsonResponse
      */
     public function optimize(): JsonResponse
     {
@@ -260,16 +236,13 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ล้าง cache เฉพาะส่วน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function clearSpecific(Request $request): JsonResponse
     {
@@ -313,7 +286,7 @@ class CacheSettingsController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

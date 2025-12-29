@@ -39,7 +39,7 @@ return [
     'client_secret' => env('FLOWACCOUNT_CLIENT_SECRET'),
 
     // Redirect URI สำหรับ OAuth callback
-    'redirect_uri' => env('FLOWACCOUNT_REDIRECT_URI', env('APP_URL') . '/admin/accounting/flowaccount/callback'),
+    'redirect_uri' => env('FLOWACCOUNT_REDIRECT_URI', env('APP_URL').'/admin/accounting/flowaccount/callback'),
 
     // OAuth Scope
     'oauth_scope' => env('FLOWACCOUNT_OAUTH_SCOPE', 'read write'),
@@ -205,7 +205,7 @@ return [
         'secret' => env('FLOWACCOUNT_WEBHOOK_SECRET'),
 
         // Webhook URL ที่ FlowAccount จะส่ง request มา
-        'url' => env('FLOWACCOUNT_WEBHOOK_URL', env('APP_URL') . '/api/flowaccount/webhook'),
+        'url' => env('FLOWACCOUNT_WEBHOOK_URL', env('APP_URL').'/api/flowaccount/webhook'),
     ],
 
     /*

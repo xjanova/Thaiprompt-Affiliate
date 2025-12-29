@@ -28,15 +28,20 @@ class LineSignupConversation extends Model
      * Message roles
      */
     public const ROLE_USER = 'user';
+
     public const ROLE_ASSISTANT = 'assistant';
+
     public const ROLE_SYSTEM = 'system';
 
     /**
      * Message types
      */
     public const TYPE_TEXT = 'text';
+
     public const TYPE_FLEX = 'flex';
+
     public const TYPE_TEMPLATE = 'template';
+
     public const TYPE_QUICK_REPLY = 'quick_reply';
 
     /**

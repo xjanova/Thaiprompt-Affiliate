@@ -99,7 +99,7 @@ class KnowledgeBase extends Model
      */
     public function getFileSizeHumanAttribute(): string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return 'N/A';
         }
 
@@ -112,7 +112,7 @@ class KnowledgeBase extends Model
             $unit++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$unit];
+        return round($bytes, 2).' '.$units[$unit];
     }
 
     /**

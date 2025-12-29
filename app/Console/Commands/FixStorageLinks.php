@@ -34,7 +34,7 @@ class FixStorageLinks extends Command
         $link = public_path('storage');
 
         // 1. ตรวจสอบ target directory
-        if (!is_dir($target)) {
+        if (! is_dir($target)) {
             $this->info('📁 สร้าง storage/app/public directory...');
             File::makeDirectory($target, 0755, true);
             $this->info('✓ สร้าง storage/app/public สำเร็จ');
@@ -43,8 +43,8 @@ class FixStorageLinks extends Command
         }
 
         // 2. สร้าง branding directory ถ้ายังไม่มี
-        $brandingDir = $target . '/branding';
-        if (!is_dir($brandingDir)) {
+        $brandingDir = $target.'/branding';
+        if (! is_dir($brandingDir)) {
             $this->info('📁 สร้าง branding directory...');
             File::makeDirectory($brandingDir, 0755, true);
             $this->info('✓ สร้าง branding directory สำเร็จ');
@@ -60,27 +60,29 @@ class FixStorageLinks extends Command
                 if ($linkTarget === $target) {
                     $this->info('✓ Storage symlink ทำงานถูกต้องอยู่แล้ว');
                     $this->showStorageInfo($target, $link);
+
                     return Command::SUCCESS;
                 } else {
                     // Symlink ชี้ไปผิดที่
-                    $this->warn('⚠ Storage symlink ชี้ไปยัง: ' . $linkTarget);
-                    $this->warn('   แต่ควรชี้ไปยัง: ' . $target);
+                    $this->warn('⚠ Storage symlink ชี้ไปยัง: '.$linkTarget);
+                    $this->warn('   แต่ควรชี้ไปยัง: '.$target);
 
                     if ($this->option('force') || $this->confirm('ต้องการลบและสร้าง symlink ใหม่?')) {
                         unlink($link);
                         $this->info('🗑 ลบ symlink เก่าแล้ว');
                     } else {
                         $this->error('ยกเลิกการดำเนินการ');
+
                         return Command::FAILURE;
                     }
                 }
-            } else if (is_dir($link)) {
+            } elseif (is_dir($link)) {
                 // เป็น directory ธรรมดา
                 $this->warn('⚠ public/storage เป็น directory ธรรมดา (ไม่ใช่ symlink)');
 
                 $files = File::files($link);
                 if (count($files) > 0) {
-                    $this->error('❌ public/storage ไม่ว่างเปล่า มี ' . count($files) . ' ไฟล์');
+                    $this->error('❌ public/storage ไม่ว่างเปล่า มี '.count($files).' ไฟล์');
                     $this->error('   กรุณาสำรองไฟล์ออกก่อน หรือใช้ --force เพื่อลบทิ้ง');
 
                     if ($this->option('force')) {
@@ -97,7 +99,7 @@ class FixStorageLinks extends Command
         }
 
         // 4. สร้าง symlink ใหม่
-        if (!file_exists($link)) {
+        if (! file_exists($link)) {
             $this->info('🔗 กำลังสร้าง storage symlink...');
 
             try {
@@ -108,7 +110,8 @@ class FixStorageLinks extends Command
 
                 return Command::SUCCESS;
             } catch (\Exception $e) {
-                $this->error('❌ ไม่สามารถสร้าง symlink ได้: ' . $e->getMessage());
+                $this->error('❌ ไม่สามารถสร้าง symlink ได้: '.$e->getMessage());
+
                 return Command::FAILURE;
             }
         }
@@ -123,25 +126,25 @@ class FixStorageLinks extends Command
     {
         $this->newLine();
         $this->info('📊 ข้อมูล Storage:');
-        $this->line('   Target: ' . $target);
-        $this->line('   Link:   ' . $link);
+        $this->line('   Target: '.$target);
+        $this->line('   Link:   '.$link);
 
         // นับจำนวนไฟล์
-        $brandingFiles = File::files($target . '/branding');
-        $this->line('   ไฟล์ใน branding/: ' . count($brandingFiles));
+        $brandingFiles = File::files($target.'/branding');
+        $this->line('   ไฟล์ใน branding/: '.count($brandingFiles));
 
         if (count($brandingFiles) > 0) {
             $this->newLine();
             $this->info('📁 ไฟล์ในโฟลเดอร์ branding:');
             foreach ($brandingFiles as $file) {
-                $this->line('   - ' . basename($file) . ' (' . $this->formatBytes(filesize($file)) . ')');
+                $this->line('   - '.basename($file).' ('.$this->formatBytes(filesize($file)).')');
             }
         }
 
         $this->newLine();
         $this->info('💡 วิธีเข้าถึงไฟล์:');
         $this->line('   Path: /storage/branding/filename.ext');
-        $this->line('   URL:  ' . url('/storage/branding/filename.ext'));
+        $this->line('   URL:  '.url('/storage/branding/filename.ext'));
     }
 
     /**
@@ -155,6 +158,6 @@ class FixStorageLinks extends Command
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }

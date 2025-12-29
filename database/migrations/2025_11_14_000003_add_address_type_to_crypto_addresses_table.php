@@ -9,19 +9,17 @@ return new class extends Migration
     /**
      * เพิ่มคอลัมน์ address_type ให้กับตาราง crypto_addresses
      * เพื่อระบุประเภทของที่อยู่ (deposit, withdrawal, etc.)
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง crypto_addresses มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('crypto_addresses')) {
+        if (! Schema::hasTable('crypto_addresses')) {
             return;
         }
 
         Schema::table('crypto_addresses', function (Blueprint $table) {
             // ตรวจสอบและเพิ่มคอลัมน์ address_type
-            if (!Schema::hasColumn('crypto_addresses', 'address_type')) {
+            if (! Schema::hasColumn('crypto_addresses', 'address_type')) {
                 $table->enum('address_type', ['deposit', 'withdrawal', 'general'])
                     ->default('general')
                     ->after('network')
@@ -35,8 +33,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ address_type
-     *
-     * @return void
      */
     public function down(): void
     {

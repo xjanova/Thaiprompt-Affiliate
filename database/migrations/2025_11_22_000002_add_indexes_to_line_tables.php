@@ -20,15 +20,13 @@ return new class extends Migration
      * - Messages: query by conversation_id, created_at
      * - Sessions: query by status, updated_at
      * - Keywords: query by trigger, is_active
-     *
-     * @return void
      */
     public function up(): void
     {
         // ===== LINE BOT CONVERSATIONS =====
         Schema::table('line_bot_conversations', function (Blueprint $table) {
             // Query บ่อย: ดึง conversations ของ user แต่ละคน เรียงตามเวลา
-            if (!Schema::hasColumn('line_bot_conversations', 'line_user_id')) {
+            if (! Schema::hasColumn('line_bot_conversations', 'line_user_id')) {
                 return; // ข้ามถ้าตารางยังไม่มี column นี้
             }
 
@@ -166,8 +164,6 @@ return new class extends Migration
 
     /**
      * ลบ indexes ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

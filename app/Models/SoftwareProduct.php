@@ -224,6 +224,7 @@ class SoftwareProduct extends Model
         if ($this->price_label) {
             return "{$this->price_label} {$price} {$this->currency}";
         }
+
         return "{$price} {$this->currency}";
     }
 
@@ -232,11 +233,11 @@ class SoftwareProduct extends Model
      */
     public function hasFile(): bool
     {
-        return !empty($this->storage_type) && (
-            !empty($this->file_url) ||
-            !empty($this->s3_key) ||
-            !empty($this->google_drive_file_id) ||
-            !empty($this->local_file_path)
+        return ! empty($this->storage_type) && (
+            ! empty($this->file_url) ||
+            ! empty($this->s3_key) ||
+            ! empty($this->google_drive_file_id) ||
+            ! empty($this->local_file_path)
         );
     }
 
@@ -253,11 +254,11 @@ class SoftwareProduct extends Model
      */
     public function getDownloadUrl(): ?string
     {
-        if (!$this->hasFile()) {
+        if (! $this->hasFile()) {
             return null;
         }
 
-        return match($this->storage_type) {
+        return match ($this->storage_type) {
             'url' => $this->file_url,
             's3' => route('software.download', ['product' => $this->id]),
             'google_drive' => route('software.download', ['product' => $this->id]),
@@ -271,7 +272,7 @@ class SoftwareProduct extends Model
      */
     public function getFileSizeFormattedAttribute(): ?string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return null;
         }
 
@@ -284,7 +285,7 @@ class SoftwareProduct extends Model
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**

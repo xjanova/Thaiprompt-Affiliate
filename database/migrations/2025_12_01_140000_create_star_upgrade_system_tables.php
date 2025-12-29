@@ -16,13 +16,11 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง
-     *
-     * @return void
      */
     public function up(): void
     {
         // 1. ตารางราคาอัพเกรดดาว
-        if (!Schema::hasTable('star_upgrade_prices')) {
+        if (! Schema::hasTable('star_upgrade_prices')) {
             Schema::create('star_upgrade_prices', function (Blueprint $table) {
                 $table->id();
 
@@ -62,7 +60,7 @@ return new class extends Migration
         }
 
         // 2. ตารางประวัติการอัพเกรดดาว
-        if (!Schema::hasTable('star_upgrade_history')) {
+        if (! Schema::hasTable('star_upgrade_history')) {
             Schema::create('star_upgrade_history', function (Blueprint $table) {
                 $table->id();
 
@@ -98,13 +96,13 @@ return new class extends Migration
         // 3. เพิ่มคอลัมน์ purchased_stars ใน user_video_levels
         if (Schema::hasTable('user_video_levels')) {
             Schema::table('user_video_levels', function (Blueprint $table) {
-                if (!Schema::hasColumn('user_video_levels', 'purchased_stars')) {
+                if (! Schema::hasColumn('user_video_levels', 'purchased_stars')) {
                     $table->integer('purchased_stars')->default(0)->after('total_exp');
                 }
-                if (!Schema::hasColumn('user_video_levels', 'purchased_star_color')) {
+                if (! Schema::hasColumn('user_video_levels', 'purchased_star_color')) {
                     $table->string('purchased_star_color')->nullable()->after('purchased_stars');
                 }
-                if (!Schema::hasColumn('user_video_levels', 'last_star_upgrade_at')) {
+                if (! Schema::hasColumn('user_video_levels', 'last_star_upgrade_at')) {
                     $table->timestamp('last_star_upgrade_at')->nullable()->after('purchased_star_color');
                 }
             });
@@ -113,8 +111,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -13,7 +13,9 @@ class AddressFrozen
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public TPIXToken $token;
+
     public CoinControlAction $action;
+
     public string $address;
 
     public function __construct(TPIXToken $token, CoinControlAction $action, string $address)

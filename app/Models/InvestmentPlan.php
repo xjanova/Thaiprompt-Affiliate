@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class InvestmentPlan extends Model
 {
@@ -141,7 +141,7 @@ class InvestmentPlan extends Model
     public function canUserInvest(User $user): bool
     {
         // Check if plan is active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -156,7 +156,7 @@ class InvestmentPlan extends Model
         }
 
         // Check rank requirement
-        if ($this->required_rank_id && (!$user->current_rank_id || $user->currentRank->level < $this->requiredRank->level)) {
+        if ($this->required_rank_id && (! $user->current_rank_id || $user->currentRank->level < $this->requiredRank->level)) {
             return false;
         }
 
@@ -249,7 +249,7 @@ class InvestmentPlan extends Model
      */
     public function hasSpace(): bool
     {
-        if (!$this->max_investors) {
+        if (! $this->max_investors) {
             return true;
         }
 
@@ -278,7 +278,6 @@ class InvestmentPlan extends Model
     /**
      * ตรวจสอบว่าแผนเปิดรับการลงทุนอยู่หรือไม่
      *
-     * @return bool
      *
      * @example
      * if ($plan->isOpen()) {
@@ -288,7 +287,7 @@ class InvestmentPlan extends Model
     public function isOpen(): bool
     {
         // ตรวจสอบสถานะ active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -314,12 +313,12 @@ class InvestmentPlan extends Model
     /**
      * ตรวจสอบว่า user สามารถลงทุนด้วย Coin ได้หรือไม่
      *
-     * @param float $coinAmount จำนวน Coin
+     * @param  float  $coinAmount  จำนวน Coin
      * @return array ['can' => bool, 'message' => string|null]
      */
     public function canInvestWithCoin(float $coinAmount): array
     {
-        if (!$this->allow_coin_investment) {
+        if (! $this->allow_coin_investment) {
             return [
                 'can' => false,
                 'message' => 'แผนนี้ไม่รองรับการลงทุนด้วย Coin',
@@ -346,7 +345,7 @@ class InvestmentPlan extends Model
     /**
      * แปลง Coin เป็น THB ตามอัตราของแผน
      *
-     * @param float $coinAmount จำนวน Coin
+     * @param  float  $coinAmount  จำนวน Coin
      * @return float จำนวน THB
      */
     public function convertCoinToThb(float $coinAmount): float
@@ -358,8 +357,6 @@ class InvestmentPlan extends Model
 
     /**
      * ดึงข้อมูลระดับความเสี่ยง
-     *
-     * @return array
      */
     public function getRiskLevelInfoAttribute(): array
     {
@@ -370,8 +367,6 @@ class InvestmentPlan extends Model
 
     /**
      * ดึงข้อความเตือนความเสี่ยง
-     *
-     * @return string
      */
     public function getRiskWarningTextAttribute(): string
     {
@@ -385,12 +380,11 @@ class InvestmentPlan extends Model
     /**
      * ตรวจสอบว่า user ลงทุนเกินจำนวน pot สูงสุดหรือไม่
      *
-     * @param User $user
      * @return bool true ถ้ายังลงทุนได้
      */
     public function canUserAddPosition(User $user): bool
     {
-        if (!$this->max_positions_per_user) {
+        if (! $this->max_positions_per_user) {
             return true; // ไม่จำกัด
         }
 
@@ -404,9 +398,6 @@ class InvestmentPlan extends Model
 
     /**
      * นับจำนวน pot ที่ user ลงทุนอยู่
-     *
-     * @param User $user
-     * @return int
      */
     public function getUserPositionCount(User $user): int
     {
@@ -419,7 +410,7 @@ class InvestmentPlan extends Model
     /**
      * Scope สำหรับแผนที่เปิดรับการลงทุน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOpen($query)
@@ -444,7 +435,7 @@ class InvestmentPlan extends Model
     /**
      * Scope สำหรับแผนที่รองรับ Coin
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAcceptsCoin($query)
@@ -455,8 +446,7 @@ class InvestmentPlan extends Model
     /**
      * หยุดรับการลงทุนชั่วคราว
      *
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  string|null  $reason  เหตุผล
      */
     public function pause(?string $reason = null): bool
     {
@@ -468,8 +458,6 @@ class InvestmentPlan extends Model
 
     /**
      * เปิดรับการลงทุนอีกครั้ง
-     *
-     * @return bool
      */
     public function resume(): bool
     {

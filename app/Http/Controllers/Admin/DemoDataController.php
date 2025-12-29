@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Schema;
  * Controller สำหรับจัดการข้อมูล Demo ในแอดมิน
  *
  * ให้แอดมินสามารถลบข้อมูลทดสอบผ่าน UI ได้สะดวก
- *
- * @package App\Http\Controllers\Admin
  */
 class DemoDataController extends Controller
 {
@@ -84,7 +82,6 @@ class DemoDataController extends Controller
     /**
      * ลบข้อมูล demo ตามหมวดหมู่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function clean(Request $request)
@@ -98,7 +95,7 @@ class DemoDataController extends Controller
         try {
             // รัน Artisan command
             $exitCode = Artisan::call('demo:reset', [
-                '--' . $category => true,
+                '--'.$category => true,
                 '--force' => true,
             ]);
 
@@ -114,7 +111,7 @@ class DemoDataController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.demo-data.index')
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -150,10 +147,6 @@ class DemoDataController extends Controller
 
     /**
      * นับจำนวนข้อมูลในตารางตามเงื่อนไข
-     *
-     * @param string $table
-     * @param string $category
-     * @return int
      */
     protected function getTableCount(string $table, string $category): int
     {

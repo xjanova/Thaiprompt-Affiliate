@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Setting;
 use App\Models\LineAvatar;
 use App\Models\LineRichMenu;
+use App\Models\Setting;
 use App\Models\WithdrawalRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +14,7 @@ class WebPDatabaseUpdateService
     /**
      * Update all image paths in database to use WebP
      *
-     * @param array $updatedRecords Array of ['old_path' => '', 'new_path' => '', 'directory' => '']
+     * @param  array  $updatedRecords  Array of ['old_path' => '', 'new_path' => '', 'directory' => '']
      * @return array Results summary
      */
     public function updateAllImagePaths(array $updatedRecords): array
@@ -32,7 +32,7 @@ class WebPDatabaseUpdateService
         $byDirectory = [];
         foreach ($updatedRecords as $record) {
             $dir = $record['directory'];
-            if (!isset($byDirectory[$dir])) {
+            if (! isset($byDirectory[$dir])) {
                 $byDirectory[$dir] = [];
             }
             $byDirectory[$dir][] = $record;
@@ -85,7 +85,7 @@ class WebPDatabaseUpdateService
         } catch (\Exception $e) {
             DB::rollBack();
             $results['errors'][] = $e->getMessage();
-            Log::error('WebP database update failed: ' . $e->getMessage());
+            Log::error('WebP database update failed: '.$e->getMessage());
         }
 
         return $results;
@@ -99,8 +99,8 @@ class WebPDatabaseUpdateService
         $updated = 0;
 
         foreach ($records as $record) {
-            $oldPath = '/storage/' . $record['old_path'];
-            $newPath = '/storage/' . $record['new_path'];
+            $oldPath = '/storage/'.$record['old_path'];
+            $newPath = '/storage/'.$record['new_path'];
 
             try {
                 // Update logo
@@ -134,7 +134,7 @@ class WebPDatabaseUpdateService
                 }
 
             } catch (\Exception $e) {
-                Log::error("Failed to update setting for {$oldPath}: " . $e->getMessage());
+                Log::error("Failed to update setting for {$oldPath}: ".$e->getMessage());
             }
         }
 
@@ -161,13 +161,13 @@ class WebPDatabaseUpdateService
                 foreach ($avatars as $avatar) {
                     $avatar->update([
                         'file_path' => $newPath,
-                        'file_url' => '/storage/' . $newPath,
+                        'file_url' => '/storage/'.$newPath,
                     ]);
                     $updated++;
                 }
 
             } catch (\Exception $e) {
-                Log::error("Failed to update LINE avatar for {$oldPath}: " . $e->getMessage());
+                Log::error("Failed to update LINE avatar for {$oldPath}: ".$e->getMessage());
             }
         }
 
@@ -194,7 +194,7 @@ class WebPDatabaseUpdateService
                 }
 
             } catch (\Exception $e) {
-                Log::error("Failed to update rich menu for {$oldPath}: " . $e->getMessage());
+                Log::error("Failed to update rich menu for {$oldPath}: ".$e->getMessage());
             }
         }
 
@@ -221,7 +221,7 @@ class WebPDatabaseUpdateService
                 }
 
             } catch (\Exception $e) {
-                Log::error("Failed to update withdrawal request for {$oldPath}: " . $e->getMessage());
+                Log::error("Failed to update withdrawal request for {$oldPath}: ".$e->getMessage());
             }
         }
 
@@ -242,8 +242,8 @@ class WebPDatabaseUpdateService
 
         try {
             foreach ($updatedRecords as $record) {
-                $oldPath = '/storage/' . $record['old_path'];
-                $newPath = '/storage/' . $record['new_path'];
+                $oldPath = '/storage/'.$record['old_path'];
+                $newPath = '/storage/'.$record['new_path'];
 
                 // Rollback Settings
                 Setting::where('value', $newPath)->update(['value' => $oldPath]);

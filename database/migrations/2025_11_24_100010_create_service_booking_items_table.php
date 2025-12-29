@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บรายละเอียดแต่ละรายการในการจอง (บริการ, สินค้า, ออฟชั่น)
      * ใช้สำหรับแสดงใบเสร็จและคำนวณราคา
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_items
-     *
-     * @return void
      */
     public function down(): void
     {

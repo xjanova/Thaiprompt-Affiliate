@@ -154,7 +154,7 @@ class AiContentUsageLog extends Model
     public function scopeThisMonth($query)
     {
         return $query->whereMonth('created_at', now()->month)
-                     ->whereYear('created_at', now()->year);
+            ->whereYear('created_at', now()->year);
     }
 
     // =========================================
@@ -164,7 +164,6 @@ class AiContentUsageLog extends Model
     /**
      * บันทึก Log การใช้งาน
      *
-     * @param array $data
      * @return static
      */
     public static function log(array $data): self
@@ -194,9 +193,7 @@ class AiContentUsageLog extends Model
     /**
      * ดึงสถิติการใช้งานของ User
      *
-     * @param int $userId
-     * @param string $period ('today', 'week', 'month', 'year')
-     * @return array
+     * @param  string  $period  ('today', 'week', 'month', 'year')
      */
     public static function getUserStats(int $userId, string $period = 'month'): array
     {

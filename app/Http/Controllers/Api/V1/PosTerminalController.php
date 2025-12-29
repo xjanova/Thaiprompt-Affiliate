@@ -46,8 +46,6 @@ class PosTerminalController extends Controller
 
     /**
      * Ping endpoint สำหรับทดสอบการเชื่อมต่อ
-     *
-     * @return JsonResponse
      */
     public function ping(): JsonResponse
     {
@@ -67,9 +65,6 @@ class PosTerminalController extends Controller
      * 2. Server decode Product Key ได้ข้อมูลเครื่อง (device_id, timestamp, etc.)
      * 3. สร้าง API Key อัตโนมัติ (ไม่ส่งกลับ)
      * 4. Admin เห็น API Key ใน Dashboard และส่งให้ลูกค้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerDevice(Request $request): JsonResponse
     {
@@ -96,7 +91,7 @@ class PosTerminalController extends Controller
             // Decode Product Key เพื่อดึง device_id จริง
             $decodedData = $this->decodeProductKey($validated['product_key']);
 
-            if (!$decodedData) {
+            if (! $decodedData) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Product Key ไม่ถูกต้อง',
@@ -109,7 +104,7 @@ class PosTerminalController extends Controller
                 ->orWhere('id', $validated['shop_code'])
                 ->first();
 
-            if (!$shop) {
+            if (! $shop) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบร้านค้าจากรหัสที่ระบุ',
@@ -126,7 +121,7 @@ class PosTerminalController extends Controller
                 DB::rollBack();
 
                 // ถ้ายังไม่ยืนยัน → รอ API Key
-                if (!$existingTerminal->is_verified) {
+                if (! $existingTerminal->is_verified) {
                     return response()->json([
                         'success' => true,
                         'message' => 'เครื่องนี้ลงทะเบียนแล้ว รอรับ API Key จากร้านค้า',
@@ -157,7 +152,7 @@ class PosTerminalController extends Controller
             $apiKey = PosApiKey::create([
                 'shop_id' => $shop->id,
                 'name' => "POS: {$validated['device_name']}",
-                'description' => "Device ID: {$decodedData['device_id']}\nModel: {$validated['device_model']}\nสร้างอัตโนมัติเมื่อ: " . now()->format('d/m/Y H:i'),
+                'description' => "Device ID: {$decodedData['device_id']}\nModel: {$validated['device_model']}\nสร้างอัตโนมัติเมื่อ: ".now()->format('d/m/Y H:i'),
                 'is_active' => true,
                 'is_blocked' => false,
             ]);
@@ -224,9 +219,6 @@ class PosTerminalController extends Controller
      *
      * รวมขั้นตอน register + verify เป็นขั้นตอนเดียว
      * ต้องระบุ API Key ตอนลงทะเบียนเลย
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function activate(Request $request): JsonResponse
     {
@@ -258,7 +250,7 @@ class PosTerminalController extends Controller
                 ->orWhere('id', $validated['shop_code'])
                 ->first();
 
-            if (!$shop) {
+            if (! $shop) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบร้านค้าจากรหัสที่ระบุ',
@@ -269,7 +261,7 @@ class PosTerminalController extends Controller
             // ค้นหา API Key
             $apiKey = PosApiKey::where('key', $validated['api_key'])->first();
 
-            if (!$apiKey) {
+            if (! $apiKey) {
                 return response()->json([
                     'success' => false,
                     'message' => 'API Key ไม่ถูกต้อง',
@@ -290,10 +282,10 @@ class PosTerminalController extends Controller
             }
 
             // ตรวจสอบว่า API Key ใช้งานได้
-            if (!$apiKey->isUsable()) {
+            if (! $apiKey->isUsable()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $apiKey->getStatusText() . ')',
+                    'message' => 'API Key ไม่สามารถใช้งานได้ ('.$apiKey->getStatusText().')',
                     'error_code' => 'API_KEY_UNUSABLE',
                 ], 403);
             }
@@ -400,9 +392,6 @@ class PosTerminalController extends Controller
      *
      * ⚠️ สำคัญ: ไม่ส่ง API Key กลับ!
      * Admin ต้องให้ API Key กับลูกค้าเอง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function register(Request $request): JsonResponse
     {
@@ -433,7 +422,7 @@ class PosTerminalController extends Controller
                 ->orWhere('id', $validated['shop_code'])
                 ->first();
 
-            if (!$shop) {
+            if (! $shop) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบร้านค้าจากรหัสที่ระบุ',
@@ -450,6 +439,7 @@ class PosTerminalController extends Controller
                 // ถ้ามีอยู่แล้วและยืนยันแล้ว → แจ้งให้กรอก API Key
                 if ($existingTerminal->is_verified) {
                     DB::rollBack();
+
                     return response()->json([
                         'success' => true,
                         'message' => 'POS นี้ลงทะเบียนและยืนยันแล้ว กรุณา sync ได้เลย',
@@ -465,6 +455,7 @@ class PosTerminalController extends Controller
 
                 // ถ้ามีอยู่แล้วแต่ยังไม่ยืนยัน → บอกให้รอ API Key
                 DB::rollBack();
+
                 return response()->json([
                     'success' => true,
                     'message' => 'POS นี้ลงทะเบียนแล้ว รอรับ API Key จาก Admin',
@@ -555,9 +546,6 @@ class PosTerminalController extends Controller
      * ยืนยัน POS Terminal ด้วย API Key
      *
      * ขั้นตอนที่ 2: ลูกค้ากรอก API Key ที่ POS
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function verify(Request $request): JsonResponse
     {
@@ -584,7 +572,7 @@ class PosTerminalController extends Controller
                 ->where('device_id', $validated['device_id'])
                 ->first();
 
-            if (!$terminal) {
+            if (! $terminal) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ POS Terminal นี้ กรุณาลงทะเบียนก่อน',
@@ -595,7 +583,7 @@ class PosTerminalController extends Controller
             // ค้นหา API Key
             $apiKey = PosApiKey::where('key', $validated['api_key'])->first();
 
-            if (!$apiKey) {
+            if (! $apiKey) {
                 return response()->json([
                     'success' => false,
                     'message' => 'API Key ไม่ถูกต้อง',
@@ -615,10 +603,10 @@ class PosTerminalController extends Controller
             }
 
             // ตรวจสอบว่า API Key ใช้งานได้
-            if (!$apiKey->isUsable()) {
+            if (! $apiKey->isUsable()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $apiKey->getStatusText() . ')',
+                    'message' => 'API Key ไม่สามารถใช้งานได้ ('.$apiKey->getStatusText().')',
                     'error_code' => 'API_KEY_UNUSABLE',
                 ], 403);
             }
@@ -683,9 +671,6 @@ class PosTerminalController extends Controller
      * ใช้สำหรับ:
      * - ตรวจสอบว่า sync ได้หรือไม่
      * - ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function validate(Request $request): JsonResponse
     {
@@ -695,7 +680,7 @@ class PosTerminalController extends Controller
             $productKey = $request->header('X-Product-Key');
             $deviceId = $request->header('X-Device-ID');
 
-            if (!$apiKey || !$productKey || !$deviceId) {
+            if (! $apiKey || ! $productKey || ! $deviceId) {
                 return response()->json([
                     'success' => false,
                     'valid' => false,
@@ -710,7 +695,7 @@ class PosTerminalController extends Controller
                 ->with(['apiKey', 'shop'])
                 ->first();
 
-            if (!$terminal) {
+            if (! $terminal) {
                 return response()->json([
                     'success' => false,
                     'valid' => false,
@@ -741,7 +726,7 @@ class PosTerminalController extends Controller
             }
 
             // ตรวจสอบว่ายืนยันแล้วหรือยัง
-            if (!$terminal->is_verified) {
+            if (! $terminal->is_verified) {
                 return response()->json([
                     'success' => false,
                     'valid' => false,
@@ -754,7 +739,7 @@ class PosTerminalController extends Controller
             // ตรวจสอบ API Key
             $posApiKey = PosApiKey::where('key', $apiKey)->first();
 
-            if (!$posApiKey) {
+            if (! $posApiKey) {
                 return response()->json([
                     'success' => false,
                     'valid' => false,
@@ -778,11 +763,11 @@ class PosTerminalController extends Controller
             }
 
             // ตรวจสอบว่า API Key ใช้งานได้
-            if (!$posApiKey->isUsable()) {
+            if (! $posApiKey->isUsable()) {
                 return response()->json([
                     'success' => false,
                     'valid' => false,
-                    'message' => 'API Key ไม่สามารถใช้งานได้ (' . $posApiKey->getStatusText() . ')',
+                    'message' => 'API Key ไม่สามารถใช้งานได้ ('.$posApiKey->getStatusText().')',
                     'error_code' => 'API_KEY_UNUSABLE',
                 ], 403);
             }
@@ -830,9 +815,6 @@ class PosTerminalController extends Controller
 
     /**
      * ตรวจสอบสถานะ API Key (สำหรับ POS ตรวจสอบเป็นระยะ)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function checkStatus(Request $request): JsonResponse
     {
@@ -840,7 +822,7 @@ class PosTerminalController extends Controller
             $apiKey = $request->header('X-API-Key');
             $productKey = $request->header('X-Product-Key');
 
-            if (!$apiKey || !$productKey) {
+            if (! $apiKey || ! $productKey) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ข้อมูลไม่ครบถ้วน',
@@ -918,17 +900,14 @@ class PosTerminalController extends Controller
 
     /**
      * Sync สินค้าจาก Server
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncProducts(Request $request): JsonResponse
     {
         $terminal = $this->authenticateTerminal($request);
-        if (!$terminal) {
+        if (! $terminal) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่ได้รับอนุญาต'
+                'message' => 'ไม่ได้รับอนุญาต',
             ], 401);
         }
 
@@ -937,7 +916,7 @@ class PosTerminalController extends Controller
             ->where('is_active', true)
             ->with(['category'])
             ->get()
-            ->map(fn($p) => [
+            ->map(fn ($p) => [
                 'id' => $p->id,
                 'sku' => $p->sku,
                 'barcode' => $p->barcode,
@@ -957,23 +936,20 @@ class PosTerminalController extends Controller
         return response()->json([
             'success' => true,
             'data' => $products,
-            'synced_at' => now()->toISOString()
+            'synced_at' => now()->toISOString(),
         ]);
     }
 
     /**
      * Sync หมวดหมู่จาก Server
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncCategories(Request $request): JsonResponse
     {
         $terminal = $this->authenticateTerminal($request);
-        if (!$terminal) {
+        if (! $terminal) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่ได้รับอนุญาต'
+                'message' => 'ไม่ได้รับอนุญาต',
             ], 401);
         }
 
@@ -981,7 +957,7 @@ class PosTerminalController extends Controller
         $categories = \App\Models\Category::where('shop_id', $terminal->shop_id)
             ->where('is_active', true)
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
                 'icon' => $c->icon,
@@ -992,23 +968,20 @@ class PosTerminalController extends Controller
         return response()->json([
             'success' => true,
             'data' => $categories,
-            'synced_at' => now()->toISOString()
+            'synced_at' => now()->toISOString(),
         ]);
     }
 
     /**
      * อัพโหลดคำสั่งซื้อจาก POS ไป Server
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function uploadOrders(Request $request): JsonResponse
     {
         $terminal = $this->authenticateTerminal($request);
-        if (!$terminal) {
+        if (! $terminal) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่ได้รับอนุญาต'
+                'message' => 'ไม่ได้รับอนุญาต',
             ], 401);
         }
 
@@ -1059,7 +1032,7 @@ class PosTerminalController extends Controller
             } catch (\Exception $e) {
                 $errors[] = [
                     'local_id' => $orderData['local_id'],
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ];
             }
         }
@@ -1068,23 +1041,20 @@ class PosTerminalController extends Controller
             'success' => true,
             'uploaded' => $uploadedCount,
             'errors' => $errors,
-            'synced_at' => now()->toISOString()
+            'synced_at' => now()->toISOString(),
         ]);
     }
 
     /**
      * รายงานยอดขาย
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function reportSales(Request $request): JsonResponse
     {
         $terminal = $this->authenticateTerminal($request);
-        if (!$terminal) {
+        if (! $terminal) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่ได้รับอนุญาต'
+                'message' => 'ไม่ได้รับอนุญาต',
             ], 401);
         }
 
@@ -1117,7 +1087,7 @@ class PosTerminalController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'บันทึกรายงานสำเร็จ'
+            'message' => 'บันทึกรายงานสำเร็จ',
         ]);
     }
 
@@ -1127,9 +1097,6 @@ class PosTerminalController extends Controller
 
     /**
      * Authenticate POS Terminal จาก headers
-     *
-     * @param Request $request
-     * @return PosTerminal|null
      */
     private function authenticateTerminal(Request $request): ?PosTerminal
     {
@@ -1146,7 +1113,7 @@ class PosTerminalController extends Controller
             ->where('is_blocked', false) // ต้องไม่ถูกบล็อก
             ->first();
 
-        if (!$posApiKey) {
+        if (! $posApiKey) {
             return null;
         }
 
@@ -1184,9 +1151,6 @@ class PosTerminalController extends Controller
      *
      * Product Key format: TP-POS-XXXX-XXXX-XXXX-XXXX (Base64 encoded + encrypted)
      * เมื่อ decode แล้วจะได้: device_id, timestamp, checksum
-     *
-     * @param string $encryptedKey
-     * @return array|null
      */
     private function decodeProductKey(string $encryptedKey): ?array
     {
@@ -1207,7 +1171,7 @@ class PosTerminalController extends Controller
             if ($decoded === false) {
                 // ถ้า decode ไม่ได้ → ใช้ raw value เป็น device_id
                 return [
-                    'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
+                    'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
                     'raw_key' => $encryptedKey,
                     'decoded_method' => 'hash_fallback',
                 ];
@@ -1230,7 +1194,7 @@ class PosTerminalController extends Controller
             }
 
             // ถ้าไม่ใช่ JSON → ใช้ decrypted string เป็น device_id
-            if (!empty($decrypted) && strlen($decrypted) > 5) {
+            if (! empty($decrypted) && strlen($decrypted) > 5) {
                 return [
                     'device_id' => $decrypted,
                     'raw_key' => $encryptedKey,
@@ -1240,20 +1204,20 @@ class PosTerminalController extends Controller
 
             // Fallback: hash the key
             return [
-                'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
+                'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
                 'raw_key' => $encryptedKey,
                 'decoded_method' => 'hash_fallback',
             ];
 
         } catch (\Exception $e) {
             Log::warning('Failed to decode product key', [
-                'key' => substr($encryptedKey, 0, 20) . '...',
+                'key' => substr($encryptedKey, 0, 20).'...',
                 'error' => $e->getMessage(),
             ]);
 
             // Fallback: hash the key
             return [
-                'device_id' => hash('sha256', $encryptedKey . $this->getSecretKey()),
+                'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
                 'raw_key' => $encryptedKey,
                 'decoded_method' => 'error_fallback',
             ];
@@ -1262,10 +1226,6 @@ class PosTerminalController extends Controller
 
     /**
      * XOR decrypt/encrypt
-     *
-     * @param string $data
-     * @param string $key
-     * @return string
      */
     private function xorDecrypt(string $data, string $key): string
     {

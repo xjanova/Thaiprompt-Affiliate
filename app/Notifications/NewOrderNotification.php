@@ -4,8 +4,8 @@ namespace App\Notifications;
 
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 
 class NewOrderNotification extends Notification
 {
@@ -35,13 +35,13 @@ class NewOrderNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('มีคำสั่งซื้อใหม่: ' . $this->order->order_number)
+            ->subject('มีคำสั่งซื้อใหม่: '.$this->order->order_number)
             ->greeting('สวัสดีครับ Admin')
             ->line('มีคำสั่งซื้อใหม่เข้ามา')
-            ->line('หมายเลขคำสั่งซื้อ: ' . $this->order->order_number)
-            ->line('ลูกค้า: ' . $this->order->user->name)
-            ->line('ยอดรวม: ' . number_format($this->order->total_amount, 2) . ' บาท')
-            ->action('ดูรายละเอียด', url('/admin/orders/' . $this->order->id))
+            ->line('หมายเลขคำสั่งซื้อ: '.$this->order->order_number)
+            ->line('ลูกค้า: '.$this->order->user->name)
+            ->line('ยอดรวม: '.number_format($this->order->total_amount, 2).' บาท')
+            ->action('ดูรายละเอียด', url('/admin/orders/'.$this->order->id))
             ->line('กรุณาตรวจสอบและดำเนินการต่อไป');
     }
 

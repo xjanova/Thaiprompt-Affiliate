@@ -91,23 +91,21 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง label ตาม locale
-     *
-     * @return string
      */
     public function getDisplayLabelAttribute(): string
     {
         $locale = app()->getLocale();
+
         return ($locale === 'th' && $this->label_th) ? $this->label_th : ($this->label ?? $this->key);
     }
 
     /**
      * ดึง description ตาม locale
-     *
-     * @return string|null
      */
     public function getDisplayDescriptionAttribute(): ?string
     {
         $locale = app()->getLocale();
+
         return ($locale === 'th' && $this->description_th) ? $this->description_th : $this->description;
     }
 
@@ -126,18 +124,17 @@ class VideoMissionSetting extends Model
     /**
      * ดึงค่า setting
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function get(string $key, $default = null)
     {
-        $cacheKey = self::CACHE_PREFIX . $key;
+        $cacheKey = self::CACHE_PREFIX.$key;
 
         return Cache::remember($cacheKey, self::CACHE_TTL * 60, function () use ($key, $default) {
             $setting = static::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
@@ -148,10 +145,7 @@ class VideoMissionSetting extends Model
     /**
      * ตั้งค่า setting
      *
-     * @param string $key
-     * @param mixed $value
-     * @param string|null $type
-     * @return self
+     * @param  mixed  $value
      */
     public static function set(string $key, $value, ?string $type = null): self
     {
@@ -175,16 +169,13 @@ class VideoMissionSetting extends Model
         $setting->save();
 
         // Clear cache
-        Cache::forget(self::CACHE_PREFIX . $key);
+        Cache::forget(self::CACHE_PREFIX.$key);
 
         return $setting;
     }
 
     /**
      * ดึงหลาย settings พร้อมกัน
-     *
-     * @param array $keys
-     * @return array
      */
     public static function getMany(array $keys): array
     {
@@ -199,13 +190,10 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง settings ตามกลุ่ม
-     *
-     * @param string $group
-     * @return array
      */
     public static function getGroup(string $group): array
     {
-        $cacheKey = self::CACHE_PREFIX . 'group:' . $group;
+        $cacheKey = self::CACHE_PREFIX.'group:'.$group;
 
         return Cache::remember($cacheKey, self::CACHE_TTL * 60, function () use ($group) {
             $settings = static::inGroup($group)->get();
@@ -221,12 +209,10 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง settings ทั้งหมด
-     *
-     * @return array
      */
     public static function getAll(): array
     {
-        $cacheKey = self::CACHE_PREFIX . 'all';
+        $cacheKey = self::CACHE_PREFIX.'all';
 
         return Cache::remember($cacheKey, self::CACHE_TTL * 60, function () {
             $settings = static::all();
@@ -242,12 +228,10 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง public settings (สำหรับ frontend)
-     *
-     * @return array
      */
     public static function getPublicSettings(): array
     {
-        $cacheKey = self::CACHE_PREFIX . 'public';
+        $cacheKey = self::CACHE_PREFIX.'public';
 
         return Cache::remember($cacheKey, self::CACHE_TTL * 60, function () {
             $settings = static::public()->get();
@@ -263,31 +247,27 @@ class VideoMissionSetting extends Model
 
     /**
      * Clear all cache
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
         $settings = static::all();
 
         foreach ($settings as $setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
         }
 
-        Cache::forget(self::CACHE_PREFIX . 'all');
-        Cache::forget(self::CACHE_PREFIX . 'public');
+        Cache::forget(self::CACHE_PREFIX.'all');
+        Cache::forget(self::CACHE_PREFIX.'public');
 
         // Clear group caches
         $groups = static::distinct('group')->pluck('group');
         foreach ($groups as $group) {
-            Cache::forget(self::CACHE_PREFIX . 'group:' . $group);
+            Cache::forget(self::CACHE_PREFIX.'group:'.$group);
         }
     }
 
     /**
      * ตรวจสอบว่าระบบเปิดใช้งานหรือไม่
-     *
-     * @return bool
      */
     public static function isSystemEnabled(): bool
     {
@@ -296,8 +276,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ตรวจสอบว่าอยู่ในโหมด maintenance หรือไม่
-     *
-     * @return bool
      */
     public static function isMaintenanceMode(): bool
     {
@@ -306,8 +284,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ตรวจสอบว่าระบบป้องกันโกงเปิดหรือไม่
-     *
-     * @return bool
      */
     public static function isAntiCheatEnabled(): bool
     {
@@ -316,8 +292,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง heartbeat interval
-     *
-     * @return int
      */
     public static function getHeartbeatInterval(): int
     {
@@ -326,8 +300,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง max tab switches
-     *
-     * @return int
      */
     public static function getMaxTabSwitches(): int
     {
@@ -336,8 +308,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง suspicious threshold
-     *
-     * @return int
      */
     public static function getSuspiciousThreshold(): int
     {
@@ -346,8 +316,6 @@ class VideoMissionSetting extends Model
 
     /**
      * ดึง default daily limit
-     *
-     * @return int
      */
     public static function getDefaultDailyLimit(): int
     {
@@ -359,8 +327,6 @@ class VideoMissionSetting extends Model
     /**
      * แปลงค่าตาม type
      *
-     * @param string|null $value
-     * @param string $type
      * @return mixed
      */
     protected function castValue(?string $value, string $type)
@@ -386,17 +352,17 @@ class VideoMissionSetting extends Model
         parent::boot();
 
         static::saved(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
-            Cache::forget(self::CACHE_PREFIX . 'all');
-            Cache::forget(self::CACHE_PREFIX . 'public');
-            Cache::forget(self::CACHE_PREFIX . 'group:' . $setting->group);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
+            Cache::forget(self::CACHE_PREFIX.'all');
+            Cache::forget(self::CACHE_PREFIX.'public');
+            Cache::forget(self::CACHE_PREFIX.'group:'.$setting->group);
         });
 
         static::deleted(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
-            Cache::forget(self::CACHE_PREFIX . 'all');
-            Cache::forget(self::CACHE_PREFIX . 'public');
-            Cache::forget(self::CACHE_PREFIX . 'group:' . $setting->group);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
+            Cache::forget(self::CACHE_PREFIX.'all');
+            Cache::forget(self::CACHE_PREFIX.'public');
+            Cache::forget(self::CACHE_PREFIX.'group:'.$setting->group);
         });
     }
 }

@@ -8,10 +8,8 @@ use App\Models\MlmMember;
 use App\Models\RecruitCustomization;
 use App\Models\RecruitPageVisit;
 use App\Models\RecruitTemplate;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
@@ -93,7 +91,6 @@ class RecruitPageController extends Controller
     /**
      * อัพเดทข้อมูลส่วนตัว
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -123,7 +120,7 @@ class RecruitPageController extends Controller
             // จัดการอัพโหลดรูปภาพ
             if ($request->hasFile('custom_image')) {
                 // ลบรูปเก่า (ถ้ามี และไม่ใช่ URL)
-                if ($customization->custom_image && !filter_var($customization->custom_image, FILTER_VALIDATE_URL)) {
+                if ($customization->custom_image && ! filter_var($customization->custom_image, FILTER_VALIDATE_URL)) {
                     Storage::disk('public')->delete($customization->custom_image);
                 }
 
@@ -145,14 +142,13 @@ class RecruitPageController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายการผู้มุ่งหวัง (Leads)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function leads(Request $request)
@@ -197,7 +193,6 @@ class RecruitPageController extends Controller
     /**
      * แสดงสถิติการตลาด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function analytics(Request $request)

@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\QualityCheckpoint;
-use App\Services\QualityControlService;
 use App\Http\Requests\FoodPassport\CreateQualityCheckpointRequest;
 use App\Http\Resources\QualityCheckpointResource;
-use Illuminate\Http\Request;
+use App\Models\QualityCheckpoint;
+use App\Services\QualityControlService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class QualityController extends Controller
 {

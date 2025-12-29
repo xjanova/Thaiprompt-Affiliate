@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Coupon;
+use App\Models\CouponTemplate;
 use App\Models\LineSignupReward;
 use App\Models\LineSignupRewardClaim;
 use App\Models\LineSignupSession;
-use App\Models\Coupon;
-use App\Models\CouponTemplate;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -32,10 +32,10 @@ class LineSignupRewardService
     /**
      * ให้รางวัลทั้งหมดสำหรับการสมัครสมาชิก
      *
-     * @param User $user ผู้ใช้ที่สมัครสมาชิก
-     * @param LineSignupSession|null $session Session การสมัคร
-     * @param int|null $packageId ID ของแพคเกจที่ซื้อ (null = สมัครฟรี)
-     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่ (null = ตรวจสอบจาก user)
+     * @param  User  $user  ผู้ใช้ที่สมัครสมาชิก
+     * @param  LineSignupSession|null  $session  Session การสมัคร
+     * @param  int|null  $packageId  ID ของแพคเกจที่ซื้อ (null = สมัครฟรี)
+     * @param  bool|null  $hasReferrer  มีผู้แนะนำหรือไม่ (null = ตรวจสอบจาก user)
      * @return array ผลลัพธ์การให้รางวัล
      */
     public function grantSignupRewards(User $user, ?LineSignupSession $session = null, ?int $packageId = null, ?bool $hasReferrer = null): array
@@ -53,7 +53,7 @@ class LineSignupRewardService
             // ตรวจสอบสถานะผู้แนะนำ (ถ้าไม่ระบุ)
             if ($hasReferrer === null) {
                 // ตรวจสอบจาก upline_id ของผู้ใช้
-                $hasReferrer = !empty($user->upline_id);
+                $hasReferrer = ! empty($user->upline_id);
             }
 
             // ดึงรางวัลที่สามารถให้ได้ (กรองตามเงื่อนไขผู้แนะนำ)
@@ -62,6 +62,7 @@ class LineSignupRewardService
             if ($rewards->isEmpty()) {
                 $results['message'] = 'ไม่มีรางวัลที่สามารถให้ได้';
                 DB::commit();
+
                 return $results;
             }
 
@@ -111,7 +112,7 @@ class LineSignupRewardService
             ]);
 
             $results['success'] = false;
-            $results['message'] = 'เกิดข้อผิดพลาดในการให้รางวัล: ' . $e->getMessage();
+            $results['message'] = 'เกิดข้อผิดพลาดในการให้รางวัล: '.$e->getMessage();
         }
 
         return $results;
@@ -120,9 +121,9 @@ class LineSignupRewardService
     /**
      * ให้รางวัลแต่ละประเภท
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
-     * @param LineSignupSession|null $session Session การสมัคร
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
+     * @param  LineSignupSession|null  $session  Session การสมัคร
      * @return array ผลลัพธ์
      */
     protected function grantReward(User $user, LineSignupReward $reward, ?LineSignupSession $session = null): array
@@ -210,8 +211,8 @@ class LineSignupRewardService
     /**
      * ให้รางวัลแต้ม Wallet
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantWalletPoints(User $user, LineSignupReward $reward): array
@@ -223,7 +224,7 @@ class LineSignupRewardService
                 $user,
                 $reward->amount,
                 'line_signup_reward',
-                'รางวัลสมัครสมาชิก: ' . $reward->name,
+                'รางวัลสมัครสมาชิก: '.$reward->name,
                 [
                     'reward_id' => $reward->id,
                     'reward_name' => $reward->name,
@@ -240,7 +241,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถเพิ่มแต้ม Wallet: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถเพิ่มแต้ม Wallet: '.$e->getMessage(),
             ];
         }
     }
@@ -248,15 +249,15 @@ class LineSignupRewardService
     /**
      * ให้รางวัลเหรียญ TPIX
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantTpixTokens(User $user, LineSignupReward $reward): array
     {
         try {
             // ตรวจสอบว่ามี TPIX Wallet หรือยัง
-            if (!$user->tpix_wallet_address) {
+            if (! $user->tpix_wallet_address) {
                 return [
                     'success' => false,
                     'error' => 'ผู้ใช้ยังไม่มี TPIX Wallet',
@@ -276,7 +277,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถเพิ่มเหรียญ TPIX: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถเพิ่มเหรียญ TPIX: '.$e->getMessage(),
             ];
         }
     }
@@ -284,15 +285,15 @@ class LineSignupRewardService
     /**
      * ให้รางวัลคูปองส่วนลด
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantCoupon(User $user, LineSignupReward $reward): array
     {
         try {
             // ตรวจสอบว่ามี template หรือไม่
-            if (!$reward->coupon_template_id) {
+            if (! $reward->coupon_template_id) {
                 return [
                     'success' => false,
                     'error' => 'ไม่พบ Coupon Template',
@@ -300,7 +301,7 @@ class LineSignupRewardService
             }
 
             $template = CouponTemplate::find($reward->coupon_template_id);
-            if (!$template) {
+            if (! $template) {
                 return [
                     'success' => false,
                     'error' => 'Coupon Template ไม่มีอยู่',
@@ -337,7 +338,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถสร้างคูปอง: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถสร้างคูปอง: '.$e->getMessage(),
             ];
         }
     }
@@ -345,8 +346,8 @@ class LineSignupRewardService
     /**
      * ให้รางวัลคะแนน Rank
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantRankPoints(User $user, LineSignupReward $reward): array
@@ -365,7 +366,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถเพิ่มคะแนน Rank: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถเพิ่มคะแนน Rank: '.$e->getMessage(),
             ];
         }
     }
@@ -373,8 +374,8 @@ class LineSignupRewardService
     /**
      * ให้รางวัลสิทธิพิเศษ
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantSpecialBenefit(User $user, LineSignupReward $reward): array
@@ -401,7 +402,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถให้สิทธิพิเศษ: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถให้สิทธิพิเศษ: '.$e->getMessage(),
             ];
         }
     }
@@ -409,14 +410,14 @@ class LineSignupRewardService
     /**
      * ให้รางวัลของแถม
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantBonusItem(User $user, LineSignupReward $reward): array
     {
         try {
-            if (!$reward->product_id) {
+            if (! $reward->product_id) {
                 return [
                     'success' => false,
                     'error' => 'ไม่พบสินค้าที่จะแถม',
@@ -437,7 +438,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถให้ของแถม: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถให้ของแถม: '.$e->getMessage(),
             ];
         }
     }
@@ -445,8 +446,8 @@ class LineSignupRewardService
     /**
      * ให้รางวัลลูกทีมฟรี
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantFreeDownlines(User $user, LineSignupReward $reward): array
@@ -465,7 +466,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถให้ลูกทีมฟรี: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถให้ลูกทีมฟรี: '.$e->getMessage(),
             ];
         }
     }
@@ -473,8 +474,8 @@ class LineSignupRewardService
     /**
      * ให้รางวัลคะแนนประสบการณ์
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
      * @return array ผลลัพธ์
      */
     protected function grantExperiencePoints(User $user, LineSignupReward $reward): array
@@ -496,7 +497,7 @@ class LineSignupRewardService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'ไม่สามารถเพิ่มคะแนนประสบการณ์: ' . $e->getMessage(),
+                'error' => 'ไม่สามารถเพิ่มคะแนนประสบการณ์: '.$e->getMessage(),
             ];
         }
     }
@@ -504,7 +505,7 @@ class LineSignupRewardService
     /**
      * สร้างรหัสคูปอง
      *
-     * @param CouponTemplate $template Template
+     * @param  CouponTemplate  $template  Template
      * @return string รหัสคูปอง
      */
     protected function generateCouponCode(CouponTemplate $template): string
@@ -515,39 +516,40 @@ class LineSignupRewardService
         switch ($template->code_format) {
             case 'random':
                 $randomPart = strtoupper(Str::random($length));
-                return $prefix . $randomPart;
+
+                return $prefix.$randomPart;
 
             case 'sequential':
                 // หาเลขลำดับถัดไป
                 $lastCoupon = Coupon::where('template_id', $template->id)
-                    ->where('code', 'like', $prefix . '%')
+                    ->where('code', 'like', $prefix.'%')
                     ->orderBy('id', 'desc')
                     ->first();
 
                 $nextNumber = $lastCoupon ? (intval(substr($lastCoupon->code, strlen($prefix))) + 1) : 1;
-                return $prefix . str_pad($nextNumber, $length, '0', STR_PAD_LEFT);
+
+                return $prefix.str_pad($nextNumber, $length, '0', STR_PAD_LEFT);
 
             case 'custom':
                 // สำหรับอนาคต
-                return $prefix . strtoupper(Str::random($length));
+                return $prefix.strtoupper(Str::random($length));
 
             default:
-                return $prefix . strtoupper(Str::random($length));
+                return $prefix.strtoupper(Str::random($length));
         }
     }
 
     /**
      * ส่งการแจ้งเตือนรางวัล
      *
-     * @param User $user ผู้ใช้
-     * @param LineSignupReward $reward รางวัล
-     * @param array $result ผลลัพธ์การให้รางวัล
-     * @return void
+     * @param  User  $user  ผู้ใช้
+     * @param  LineSignupReward  $reward  รางวัล
+     * @param  array  $result  ผลลัพธ์การให้รางวัล
      */
     protected function sendRewardNotification(User $user, LineSignupReward $reward, array $result): void
     {
         try {
-            $message = $reward->notification_message ?? 'คุณได้รับรางวัล: ' . $reward->name;
+            $message = $reward->notification_message ?? 'คุณได้รับรางวัล: '.$reward->name;
 
             // TODO: Implement LINE notification
             // ส่งข้อความผ่าน LINE OA
@@ -568,8 +570,8 @@ class LineSignupRewardService
     /**
      * ดึงรายการรางวัลที่ผู้ใช้สามารถรับได้
      *
-     * @param int|null $packageId ID ของแพคเกจ
-     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่
+     * @param  int|null  $packageId  ID ของแพคเกจ
+     * @param  bool|null  $hasReferrer  มีผู้แนะนำหรือไม่
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAvailableRewards(?int $packageId = null, ?bool $hasReferrer = null)
@@ -580,7 +582,7 @@ class LineSignupRewardService
     /**
      * ดึงรายการรางวัลที่ผู้ใช้ได้รับแล้ว
      *
-     * @param User $user ผู้ใช้
+     * @param  User  $user  ผู้ใช้
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getUserRewards(User $user)

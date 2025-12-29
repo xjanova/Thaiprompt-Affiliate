@@ -11,14 +11,13 @@ use Illuminate\Support\Facades\Schema;
  * เข้ามาเป็น 1 ไฟล์เดียว เพื่อความง่ายในการจัดการ
  *
  * @version 3.0.0
+ *
  * @date 2025-11-16
  */
 return new class extends Migration
 {
     /**
      * สร้างตาราง users พร้อม columns ครบถ้วน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -181,7 +180,7 @@ return new class extends Migration
         // ===============================================
         // 🔐 PASSWORD RESET TOKENS
         // ===============================================
-        if (!Schema::hasTable('password_reset_tokens')) {
+        if (! Schema::hasTable('password_reset_tokens')) {
             Schema::create('password_reset_tokens', function (Blueprint $table) {
                 $table->string('email')->primary();
                 $table->string('token');
@@ -192,7 +191,7 @@ return new class extends Migration
         // ===============================================
         // 🔒 SESSIONS
         // ===============================================
-        if (!Schema::hasTable('sessions')) {
+        if (! Schema::hasTable('sessions')) {
             Schema::create('sessions', function (Blueprint $table) {
                 $table->string('id')->primary();
                 $table->foreignId('user_id')->nullable()->index();
@@ -209,27 +208,27 @@ return new class extends Migration
         // เพิ่ม foreign keys เฉพาะเมื่อตารางที่อ้างอิงมีอยู่แล้ว
         Schema::table('users', function (Blueprint $table) {
             // role_id -> roles
-            if (Schema::hasTable('roles') && !$this->hasForeignKey('users', 'role_id')) {
+            if (Schema::hasTable('roles') && ! $this->hasForeignKey('users', 'role_id')) {
                 $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
             }
 
             // managed_hotel_id -> hotels
-            if (Schema::hasTable('hotels') && !$this->hasForeignKey('users', 'managed_hotel_id')) {
+            if (Schema::hasTable('hotels') && ! $this->hasForeignKey('users', 'managed_hotel_id')) {
                 $table->foreign('managed_hotel_id')->references('id')->on('hotels')->onDelete('set null');
             }
 
             // current_rank_id -> ranks
-            if (Schema::hasTable('ranks') && !$this->hasForeignKey('users', 'current_rank_id')) {
+            if (Schema::hasTable('ranks') && ! $this->hasForeignKey('users', 'current_rank_id')) {
                 $table->foreign('current_rank_id')->references('id')->on('ranks')->onDelete('set null');
             }
 
             // video_referred_by -> users (self-reference)
-            if (!$this->hasForeignKey('users', 'video_referred_by')) {
+            if (! $this->hasForeignKey('users', 'video_referred_by')) {
                 $table->foreign('video_referred_by')->references('id')->on('users')->onDelete('set null');
             }
 
             // affiliate_id -> affiliates (ตาราง affiliates อาจยังไม่มี - จะถูกเพิ่มทีหลัง)
-            if (Schema::hasTable('affiliates') && !$this->hasForeignKey('users', 'affiliate_id')) {
+            if (Schema::hasTable('affiliates') && ! $this->hasForeignKey('users', 'affiliate_id')) {
                 $table->foreign('affiliate_id')->references('id')->on('affiliates')->onDelete('set null');
             }
         });
@@ -237,8 +236,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง users และตารางที่เกี่ยวข้อง
-     *
-     * @return void
      */
     public function down(): void
     {
@@ -250,9 +247,8 @@ return new class extends Migration
     /**
      * ตรวจสอบว่ามี foreign key อยู่แล้วหรือไม่
      *
-     * @param string $table ชื่อตาราง
-     * @param string $column ชื่อคอลัมน์
-     * @return bool
+     * @param  string  $table  ชื่อตาราง
+     * @param  string  $column  ชื่อคอลัมน์
      */
     protected function hasForeignKey(string $table, string $column): bool
     {

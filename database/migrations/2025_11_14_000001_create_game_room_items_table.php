@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตารางไอเทมในห้องเกม
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -38,8 +36,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง game_room_items
-     *
-     * @return void
      */
     public function down(): void
     {

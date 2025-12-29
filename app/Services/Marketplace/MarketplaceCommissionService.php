@@ -5,10 +5,9 @@ namespace App\Services\Marketplace;
 use App\Models\MarketplaceCommission;
 use App\Models\MarketplaceOrder;
 use App\Models\MlmGlobalSetting;
-use App\Models\User;
-use App\Models\MlmPlan;
 use App\Models\MlmMember;
-use App\Services\MlmUnilevelService;
+use App\Models\MlmPlan;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,9 +15,6 @@ class MarketplaceCommissionService
 {
     /**
      * Calculate and create commissions for an order
-     *
-     * @param MarketplaceOrder $order
-     * @return array
      */
     public function calculateCommissions(MarketplaceOrder $order): array
     {
@@ -26,11 +22,13 @@ class MarketplaceCommissionService
             Log::warning("Order {$order->id} is not pending commission calculation", [
                 'current_status' => $order->commission_status,
             ]);
+
             return [];
         }
 
-        if (!$order->affiliateUser) {
+        if (! $order->affiliateUser) {
             Log::warning("Order {$order->id} has no affiliate user");
+
             return [];
         }
 
@@ -74,9 +72,6 @@ class MarketplaceCommissionService
 
     /**
      * Calculate direct commission for the affiliate user
-     *
-     * @param MarketplaceOrder $order
-     * @return MarketplaceCommission|null
      */
     private function calculateDirectCommission(MarketplaceOrder $order): ?MarketplaceCommission
     {
@@ -108,9 +103,6 @@ class MarketplaceCommissionService
 
     /**
      * Calculate MLM commissions for upline members
-     *
-     * @param MarketplaceOrder $order
-     * @return array
      */
     private function calculateMlmCommissions(MarketplaceOrder $order): array
     {
@@ -121,13 +113,13 @@ class MarketplaceCommissionService
             ->where('status', 'active')
             ->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return [];
         }
 
         $mlmPlan = $mlmMember->mlmPlan;
 
-        if (!$mlmPlan) {
+        if (! $mlmPlan) {
             return [];
         }
 
@@ -150,11 +142,6 @@ class MarketplaceCommissionService
     /**
      * Calculate unilevel commissions
      * ใช้ค่าจาก Global Settings แทน per-plan settings
-     *
-     * @param MarketplaceOrder $order
-     * @param MlmMember $member
-     * @param MlmPlan $plan
-     * @return array
      */
     private function calculateUnilevelCommissions(MarketplaceOrder $order, MlmMember $member, MlmPlan $plan): array
     {
@@ -205,10 +192,6 @@ class MarketplaceCommissionService
 
     /**
      * Get unilevel upline path
-     *
-     * @param MlmMember $member
-     * @param int $maxDepth
-     * @return array
      */
     private function getUnilevelUplinePath(MlmMember $member, int $maxDepth): array
     {
@@ -222,7 +205,7 @@ class MarketplaceCommissionService
                 ->where('status', 'active')
                 ->first();
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 break;
             }
 
@@ -236,10 +219,6 @@ class MarketplaceCommissionService
 
     /**
      * Approve commission and add to wallet
-     *
-     * @param MarketplaceCommission $commission
-     * @param int|null $approvedBy
-     * @return bool
      */
     public function approveCommission(MarketplaceCommission $commission, ?int $approvedBy = null): bool
     {
@@ -275,9 +254,6 @@ class MarketplaceCommissionService
 
     /**
      * Pay commission to user wallet
-     *
-     * @param MarketplaceCommission $commission
-     * @return bool
      */
     public function payCommission(MarketplaceCommission $commission): bool
     {
@@ -291,7 +267,7 @@ class MarketplaceCommissionService
             $user = $commission->user;
             $wallet = $user->wallet;
 
-            if (!$wallet) {
+            if (! $wallet) {
                 throw new \Exception("User {$user->id} has no wallet");
             }
 

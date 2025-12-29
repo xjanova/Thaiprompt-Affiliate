@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Log;
  * จัดการการเชื่อมต่อกับ Meta Llama API ผ่าน Together AI
  * รองรับ Llama 4 Scout, Maverick และ Llama 3.x models
  * ใช้ OpenAI-compatible API
- *
- * @package App\Services\AiContentWriter
  */
 class MetaLlamaService
 {
@@ -64,22 +62,18 @@ class MetaLlamaService
 
     /**
      * ตรวจสอบว่าพร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @return array
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้ตั้งค่า Together AI API Key',
@@ -89,7 +83,7 @@ class MetaLlamaService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(10)
-                ->get($this->baseUrl . '/models');
+                ->get($this->baseUrl.'/models');
 
             if ($response->successful()) {
                 return [
@@ -100,27 +94,22 @@ class MetaLlamaService
 
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถเชื่อมต่อได้: ' . ($response->json()['error']['message'] ?? 'Unknown error'),
+                'message' => 'ไม่สามารถเชื่อมต่อได้: '.($response->json()['error']['message'] ?? 'Unknown error'),
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * สร้าง Content
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param array $options
-     * @return array
      */
     public function generateContent(string $systemPrompt, string $userPrompt, array $options = []): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้ตั้งค่า Together AI API Key',
@@ -137,7 +126,7 @@ class MetaLlamaService
 
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(120)
-                ->post($this->baseUrl . '/chat/completions', [
+                ->post($this->baseUrl.'/chat/completions', [
                     'model' => $model,
                     'messages' => [
                         ['role' => 'system', 'content' => $systemPrompt],
@@ -205,21 +194,17 @@ class MetaLlamaService
 
     /**
      * ดึง Headers สำหรับ API Request
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {
         return [
-            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Authorization' => 'Bearer '.$this->apiKey,
             'Content-Type' => 'application/json',
         ];
     }
 
     /**
      * ดึง Default Model
-     *
-     * @return string
      */
     public function getDefaultModel(): string
     {
@@ -228,8 +213,6 @@ class MetaLlamaService
 
     /**
      * ดึงรายการ Models ที่รองรับ
-     *
-     * @return array
      */
     public function getModels(): array
     {
@@ -238,9 +221,6 @@ class MetaLlamaService
 
     /**
      * ดึงราคาของ Model
-     *
-     * @param string $model
-     * @return array
      */
     public function getPricing(string $model): array
     {

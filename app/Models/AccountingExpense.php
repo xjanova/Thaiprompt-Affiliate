@@ -91,7 +91,7 @@ class AccountingExpense extends Model
             ->whereMonth('created_at', date('m'))
             ->count() + 1;
 
-        return $prefix . $year . $month . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return $prefix.$year.$month.str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -174,7 +174,7 @@ class AccountingExpense extends Model
      */
     public function getReceiptUrlAttribute(): ?string
     {
-        return $this->receipt_image ? asset('storage/' . $this->receipt_image) : null;
+        return $this->receipt_image ? asset('storage/'.$this->receipt_image) : null;
     }
 
     /**

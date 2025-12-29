@@ -21,7 +21,7 @@ class EmailProviderSeeder extends Seeder
         $existingProvidersCount = EmailProvider::whereIn('name', [
             'smtp',
             'gmail_smtp',
-            'gmail_api'
+            'gmail_api',
         ])->count();
 
         if ($existingProvidersCount > 0) {
@@ -44,7 +44,7 @@ class EmailProviderSeeder extends Seeder
             EmailProvider::create($provider);
         }
 
-        $this->command->info('✅ สร้าง Email Providers สำเร็จ: ' . count($providers) . ' providers');
+        $this->command->info('✅ สร้าง Email Providers สำเร็จ: '.count($providers).' providers');
     }
 
     /**
@@ -60,7 +60,7 @@ class EmailProviderSeeder extends Seeder
         $skipped = 0;
 
         foreach ($providers as $provider) {
-            if (!EmailProvider::where('name', $provider['name'])->exists()) {
+            if (! EmailProvider::where('name', $provider['name'])->exists()) {
                 EmailProvider::create($provider);
                 $this->command->info("   ➕ เพิ่ม: {$provider['name']}");
                 $added++;

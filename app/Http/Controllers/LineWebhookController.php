@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiBotProfile;
 use App\Models\LineOaSetting;
 use App\Models\LineRegistrationSession;
 use App\Models\MlmProspect;
 use App\Models\User;
-use App\Models\AiBotProfile;
-use App\Services\LineService;
-use App\Services\MlmProspectService;
-use App\Services\LineSignupService;
-use App\Services\LineKycService;
-use App\Services\LineHybridBotService;
-use App\Services\LineVoiceMessageService;
 use App\Services\AI\ConversationManager;
+use App\Services\LineHybridBotService;
+use App\Services\LineKycService;
+use App\Services\LineService;
+use App\Services\LineSignupService;
+use App\Services\LineVoiceMessageService;
+use App\Services\MlmProspectService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -34,7 +34,7 @@ class LineWebhookController extends Controller
         $events = $request->input('events', []);
 
         Log::info('LINE webhook received', [
-            'has_signature' => !empty($signature),
+            'has_signature' => ! empty($signature),
             'body_length' => strlen($body),
             'events_count' => count($events),
             'ip' => $request->ip(),
@@ -45,14 +45,16 @@ class LineWebhookController extends Controller
         // ต้อง return 200 OK เพื่อให้ verify ผ่าน
         if (empty($events)) {
             Log::info('LINE webhook verification request - returning 200 OK');
+
             return response()->json(['status' => 'ok']);
         }
 
         // ตรวจสอบ settings
         $settings = LineOaSetting::getActive();
 
-        if (!$settings) {
+        if (! $settings) {
             Log::warning('LINE webhook received but settings not configured');
+
             return response()->json(['status' => 'error', 'message' => 'Settings not configured'], 400);
         }
 
@@ -62,21 +64,24 @@ class LineWebhookController extends Controller
                 'ip' => $request->ip(),
                 'events_count' => count($events),
             ]);
+
             return response()->json(['status' => 'error', 'message' => 'Missing signature'], 403);
         }
 
         // ✅ Handle null/empty channel_secret
         if (empty($settings->channel_secret)) {
             Log::error('LINE webhook channel_secret not configured in settings');
+
             return response()->json(['status' => 'error', 'message' => 'Channel secret not configured'], 500);
         }
 
         // Verify webhook signature
-        if (!$this->verifySignature($signature, $body, $settings->channel_secret)) {
+        if (! $this->verifySignature($signature, $body, $settings->channel_secret)) {
             Log::warning('LINE webhook signature verification failed', [
                 'ip' => $request->ip(),
-                'signature_received' => substr($signature, 0, 20) . '...',
+                'signature_received' => substr($signature, 0, 20).'...',
             ]);
+
             return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
         }
 
@@ -140,7 +145,7 @@ class LineWebhookController extends Controller
         $messageText = $message['text'] ?? null;
         $messageId = $message['id'] ?? null;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return;
         }
 
@@ -156,18 +161,21 @@ class LineWebhookController extends Controller
         // ✅ Handle IMAGE messages for KYC
         if ($messageType === 'image') {
             $this->handleKycImageMessage($messageId, $lineUserId, $user);
+
             return;
         }
 
         // ✅ Handle AUDIO/VOICE messages
         if ($messageType === 'audio') {
             $this->handleVoiceMessage($messageId, $lineUserId, $user);
+
             return;
         }
 
         // ⚠️ Only text messages from here on
         if ($messageType !== 'text') {
             Log::info('Unhandled message type', ['type' => $messageType]);
+
             return;
         }
 
@@ -179,6 +187,7 @@ class LineWebhookController extends Controller
             // ยังอยู่ในกระบวนการสมัครสมาชิก → ตอบไปยัง signup flow
             $signupService = app(LineSignupService::class);
             $signupService->handleConversationMessage($prospect, $messageText);
+
             return;
         }
 
@@ -192,7 +201,7 @@ class LineWebhookController extends Controller
             }
         }
 
-        if ($isSignupRequest && !$user) {
+        if ($isSignupRequest && ! $user) {
             // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่
             $lineService = app(LineService::class);
 
@@ -253,6 +262,7 @@ class LineWebhookController extends Controller
             // เริ่ม signup flow
             $signupService = app(LineSignupService::class);
             $signupService->startConversation($prospect);
+
             return;
         }
 
@@ -314,7 +324,7 @@ class LineWebhookController extends Controller
             $lineService = app(LineService::class);
             $lineService->sendPushMessage(
                 $lineUserId,
-                "ขออภัยค่ะ ขณะนี้ระบบ AI ประสบปัญหาชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง 🙏"
+                'ขออภัยค่ะ ขณะนี้ระบบ AI ประสบปัญหาชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง 🙏'
             );
         }
     }
@@ -332,7 +342,7 @@ class LineWebhookController extends Controller
     {
         $lineUserId = $event['source']['userId'] ?? null;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return;
         }
 
@@ -376,8 +386,6 @@ class LineWebhookController extends Controller
 
     /**
      * สร้างข้อความแนะนำดาวน์โหลดแอพ
-     *
-     * @return string
      */
     private function getAppDownloadMessage(): string
     {
@@ -398,15 +406,12 @@ class LineWebhookController extends Controller
      *
      * ค้นหา session ที่ pending อยู่และยังไม่มี line_user_id
      * จากนั้น link กับ LINE User ID ที่ follow มา
-     *
-     * @param string $lineUserId
-     * @return void
      */
     private function updateRegistrationSessionOnFollow(string $lineUserId): void
     {
         try {
             // ตรวจสอบว่า table มีอยู่หรือไม่
-            if (!\Illuminate\Support\Facades\Schema::hasTable('line_registration_sessions')) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('line_registration_sessions')) {
                 return;
             }
 
@@ -422,7 +427,7 @@ class LineWebhookController extends Controller
                 ->first();
 
             // ถ้าไม่มี session ที่รออยู่ ลองค้นหา session ที่มี line_user_id แล้ว
-            if (!$session) {
+            if (! $session) {
                 $session = LineRegistrationSession::where('line_user_id', $lineUserId)
                     ->where('status', LineRegistrationSession::STATUS_PENDING)
                     ->where(function ($query) {
@@ -458,7 +463,7 @@ class LineWebhookController extends Controller
     {
         $lineUserId = $event['source']['userId'] ?? null;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return;
         }
 
@@ -477,23 +482,23 @@ class LineWebhookController extends Controller
      *
      * ระบบจะตรวจสอบสถานะ KYC ของผู้ใช้เพื่อกำหนดว่ารูปที่ส่งมาคือประเภทใด
      *
-     * @param string $messageId LINE Message ID ของรูปภาพ
-     * @param string $lineUserId LINE User ID
-     * @param User|null $user User model
-     * @return void
+     * @param  string  $messageId  LINE Message ID ของรูปภาพ
+     * @param  string  $lineUserId  LINE User ID
+     * @param  User|null  $user  User model
      */
     private function handleKycImageMessage(string $messageId, string $lineUserId, ?User $user): void
     {
         $lineService = app(LineService::class);
 
         // 1. ตรวจสอบว่าผู้ใช้ลงทะเบียนแล้วหรือยัง
-        if (!$user) {
+        if (! $user) {
             $lineService->sendPushMessage(
                 $lineUserId,
-                "❌ คุณยังไม่ได้ลงทะเบียนในระบบ\n\n" .
-                "กรุณาสมัครสมาชิกที่เว็บไซต์ของเราก่อน\n" .
-                "แล้วจึงสามารถทำ KYC ได้"
+                "❌ คุณยังไม่ได้ลงทะเบียนในระบบ\n\n".
+                "กรุณาสมัครสมาชิกที่เว็บไซต์ของเราก่อน\n".
+                'แล้วจึงสามารถทำ KYC ได้'
             );
+
             return;
         }
 
@@ -543,11 +548,6 @@ class LineWebhookController extends Controller
      * 2. แปลง voice เป็น text ด้วย Speech-to-Text
      * 3. ส่งต่อไปยัง Hybrid Bot (เหมือน text message)
      * 4. ตอบกลับผู้ใช้
-     *
-     * @param string $messageId
-     * @param string $lineUserId
-     * @param User|null $user
-     * @return void
      */
     private function handleVoiceMessage(string $messageId, string $lineUserId, ?User $user): void
     {
@@ -569,14 +569,14 @@ class LineWebhookController extends Controller
             // Step 1: Process voice message (download + speech-to-text)
             $result = $voiceService->processVoiceMessage($messageId, 'th-TH');
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 // แปลงไม่สำเร็จ
                 $errorMsg = '😔 ขออภัยค่ะ ไม่สามารถแปลงเสียงเป็นข้อความได้\n\n';
 
                 if (str_contains($result['error'], 'not configured')) {
                     $errorMsg .= 'ระบบยังไม่ได้ตั้งค่า Speech-to-Text\nกรุณาติดต่อผู้ดูแลระบบค่ะ';
                 } else {
-                    $errorMsg .= 'เหตุผล: ' . $result['error'];
+                    $errorMsg .= 'เหตุผล: '.$result['error'];
                 }
 
                 $lineService->sendPushMessage($lineUserId, $errorMsg);
@@ -595,14 +595,14 @@ class LineWebhookController extends Controller
             Log::info('✅ Voice-to-Text successful', [
                 'message_id' => $messageId,
                 'text' => $transcribedText,
-                'confidence' => round($confidence * 100, 2) . '%',
+                'confidence' => round($confidence * 100, 2).'%',
             ]);
 
             // Step 2: ส่งข้อความที่แปลงได้กลับไปให้ผู้ใช้เห็น (เป็น confirmation)
-            $confirmationMsg = '🎧 คุณพูดว่า: "' . $transcribedText . '"';
+            $confirmationMsg = '🎧 คุณพูดว่า: "'.$transcribedText.'"';
 
             if ($confidence < 0.8) {
-                $confirmationMsg .= "\n\n⚠️ ระบบไม่แน่ใจกับการแปลง (" . round($confidence * 100) . "%)";
+                $confirmationMsg .= "\n\n⚠️ ระบบไม่แน่ใจกับการแปลง (".round($confidence * 100).'%)';
             }
 
             $lineService->sendPushMessage($lineUserId, $confirmationMsg);
@@ -611,8 +611,9 @@ class LineWebhookController extends Controller
             $hybridBot = app(LineHybridBotService::class);
             $aiBot = AiBotProfile::where('is_active', true)->first();
 
-            if (!$aiBot) {
+            if (! $aiBot) {
                 Log::warning('No active AI bot found for voice message processing');
+
                 return;
             }
 

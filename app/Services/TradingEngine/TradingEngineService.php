@@ -5,15 +5,18 @@ namespace App\Services\TradingEngine;
 use App\Models\TradingBot;
 use App\Models\TradingSignal;
 use App\Models\TradingTrade;
-use App\Services\TradingEngine\Indicators\TechnicalIndicatorService;
 use App\Services\TradingEngine\AI\AIStrategyService;
+use App\Services\TradingEngine\Indicators\TechnicalIndicatorService;
 use Illuminate\Support\Facades\Log;
 
 class TradingEngineService
 {
     protected TechnicalIndicatorService $indicatorService;
+
     protected AIStrategyService $aiService;
+
     protected SignalGeneratorService $signalGenerator;
+
     protected TradeExecutionService $tradeExecutor;
 
     public function __construct(
@@ -35,20 +38,20 @@ class TradingEngineService
     {
         try {
             // Validate bot can start
-            if (!$this->canStartBot($bot)) {
+            if (! $this->canStartBot($bot)) {
                 throw new \Exception('Bot cannot be started. Check account and subscription status.');
             }
 
             $bot->start();
 
-            Log::info("Trading bot started", [
+            Log::info('Trading bot started', [
                 'bot_id' => $bot->id,
                 'trading_pair' => $bot->trading_pair,
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to start bot", [
+            Log::error('Failed to start bot', [
                 'bot_id' => $bot->id,
                 'error' => $e->getMessage(),
             ]);
@@ -75,11 +78,11 @@ class TradingEngineService
 
             $bot->stop();
 
-            Log::info("Trading bot stopped", ['bot_id' => $bot->id]);
+            Log::info('Trading bot stopped', ['bot_id' => $bot->id]);
 
             return true;
         } catch (\Exception $e) {
-            Log::error("Failed to stop bot", [
+            Log::error('Failed to stop bot', [
                 'bot_id' => $bot->id,
                 'error' => $e->getMessage(),
             ]);
@@ -94,7 +97,7 @@ class TradingEngineService
     public function processTradingCycle(TradingBot $bot): void
     {
         try {
-            if (!$bot->isRunning()) {
+            if (! $bot->isRunning()) {
                 return;
             }
 
@@ -125,7 +128,7 @@ class TradingEngineService
             $bot->updatePerformance();
 
         } catch (\Exception $e) {
-            Log::error("Error in trading cycle", [
+            Log::error('Error in trading cycle', [
                 'bot_id' => $bot->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -144,17 +147,17 @@ class TradingEngineService
     protected function canStartBot(TradingBot $bot): bool
     {
         // Check subscription
-        if (!$bot->subscription->isActive()) {
+        if (! $bot->subscription->isActive()) {
             return false;
         }
 
         // Check account
-        if (!$bot->account->isActive() && !$bot->dry_run) {
+        if (! $bot->account->isActive() && ! $bot->dry_run) {
             return false;
         }
 
         // Check if account can trade
-        if (!$bot->account->canTrade() && !$bot->dry_run) {
+        if (! $bot->account->canTrade() && ! $bot->dry_run) {
             return false;
         }
 
@@ -167,7 +170,7 @@ class TradingEngineService
     protected function fetchMarketData(TradingBot $bot): array
     {
         $exchange = $bot->account->exchange;
-        $connector = app("App\\Services\\Exchange\\" . $exchange->slug . "Connector");
+        $connector = app('App\\Services\\Exchange\\'.$exchange->slug.'Connector');
 
         return $connector->getOHLCV(
             $bot->trading_pair,
@@ -196,11 +199,12 @@ class TradingEngineService
         $dailyPnL = $this->getDailyPnL($bot);
         $maxDailyLoss = ($bot->allocated_capital * $bot->strategy->max_daily_loss) / 100;
         if ($dailyPnL < -$maxDailyLoss) {
-            Log::info("Daily loss limit reached", [
+            Log::info('Daily loss limit reached', [
                 'bot_id' => $bot->id,
                 'daily_pnl' => $dailyPnL,
                 'max_daily_loss' => $maxDailyLoss,
             ]);
+
             return false;
         }
 
@@ -227,12 +231,14 @@ class TradingEngineService
             // Check stop loss
             if ($trade->stop_loss && $this->hitStopLoss($trade, $currentPrice)) {
                 $this->tradeExecutor->closePosition($trade, $currentPrice, 'stop_loss');
+
                 continue;
             }
 
             // Check take profit
             if ($trade->take_profit && $this->hitTakeProfit($trade, $currentPrice)) {
                 $this->tradeExecutor->closePosition($trade, $currentPrice, 'take_profit');
+
                 continue;
             }
 
@@ -262,9 +268,10 @@ class TradingEngineService
     protected function getCurrentPrice(TradingBot $bot): float
     {
         $exchange = $bot->account->exchange;
-        $connector = app("App\\Services\\Exchange\\" . $exchange->slug . "Connector");
+        $connector = app('App\\Services\\Exchange\\'.$exchange->slug.'Connector');
 
         $ticker = $connector->getTicker($bot->trading_pair);
+
         return $ticker['last'] ?? 0;
     }
 

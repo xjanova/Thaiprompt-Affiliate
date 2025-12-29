@@ -14,13 +14,11 @@ return new class extends Migration
 {
     /**
      * เพิ่มฟิลด์ permissions และ preferred_language
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             // ตาราง users ยังไม่มี - ข้าม migration นี้
             // ฟิลด์เหล่านี้จะถูกสร้างใน users_comprehensive migration แทน
             return;
@@ -28,12 +26,12 @@ return new class extends Migration
 
         Schema::table('users', function (Blueprint $table) {
             // เพิ่ม permissions field (JSON) เฉพาะเมื่อยังไม่มี
-            if (!Schema::hasColumn('users', 'permissions')) {
+            if (! Schema::hasColumn('users', 'permissions')) {
                 $table->json('permissions')->nullable()->after('is_super_admin');
             }
 
             // เพิ่ม preferred language เฉพาะเมื่อยังไม่มี
-            if (!Schema::hasColumn('users', 'preferred_language')) {
+            if (! Schema::hasColumn('users', 'preferred_language')) {
                 $table->string('preferred_language', 5)->default('th')->after('permissions');
             }
         });
@@ -41,12 +39,10 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 
@@ -58,7 +54,7 @@ return new class extends Migration
             if (Schema::hasColumn('users', 'preferred_language')) {
                 $columns[] = 'preferred_language';
             }
-            if (!empty($columns)) {
+            if (! empty($columns)) {
                 $table->dropColumn($columns);
             }
         });

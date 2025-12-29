@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\KycVerification;
 use App\Models\User;
-use Illuminate\Database\Seeder;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class KycVerificationSeeder extends Seeder
 {
@@ -18,8 +18,6 @@ class KycVerificationSeeder extends Seeder
      * - pending: รอการตรวจสอบ
      * - approved: อนุมัติแล้ว
      * - rejected: ปฏิเสธแล้ว (มีเหตุผล)
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -29,6 +27,7 @@ class KycVerificationSeeder extends Seeder
         if ($existingCount > 0) {
             $this->command->warn('⚠️  KYC Verification records already exist!');
             $this->command->info('   Skipping to preserve existing KYC data.');
+
             return;
         }
 
@@ -49,7 +48,7 @@ class KycVerificationSeeder extends Seeder
 
         // ดึง admin user สำหรับการ review
         $admin = User::where('role', 'admin')->first();
-        if (!$admin) {
+        if (! $admin) {
             $admin = User::first();
         }
 
@@ -57,8 +56,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 1) {
             KycVerification::create([
                 'user_id' => $users[0]->id,
-                'id_card_image' => 'kyc/idcard_' . $users[0]->id . '.jpg',
-                'selfie_image' => 'kyc/selfie_' . $users[0]->id . '.jpg',
+                'id_card_image' => 'kyc/idcard_'.$users[0]->id.'.jpg',
+                'selfie_image' => 'kyc/selfie_'.$users[0]->id.'.jpg',
                 'status' => 'pending',
                 'submitted_at' => Carbon::now()->subDays(2),
                 'reviewed_by' => null,
@@ -78,8 +77,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 2) {
             KycVerification::create([
                 'user_id' => $users[1]->id,
-                'id_card_image' => 'kyc/idcard_' . $users[1]->id . '.jpg',
-                'selfie_image' => 'kyc/selfie_' . $users[1]->id . '.jpg',
+                'id_card_image' => 'kyc/idcard_'.$users[1]->id.'.jpg',
+                'selfie_image' => 'kyc/selfie_'.$users[1]->id.'.jpg',
                 'status' => 'approved',
                 'submitted_at' => Carbon::now()->subDays(5),
                 'reviewed_by' => $admin?->id,
@@ -99,8 +98,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 3) {
             KycVerification::create([
                 'user_id' => $users[2]->id,
-                'id_card_image' => 'kyc/idcard_' . $users[2]->id . '.jpg',
-                'selfie_image' => 'kyc/selfie_' . $users[2]->id . '_rejected.jpg', // ไฟล์ที่ถูกปฏิเสธ
+                'id_card_image' => 'kyc/idcard_'.$users[2]->id.'.jpg',
+                'selfie_image' => 'kyc/selfie_'.$users[2]->id.'_rejected.jpg', // ไฟล์ที่ถูกปฏิเสธ
                 'status' => 'rejected',
                 'submitted_at' => Carbon::now()->subDays(7),
                 'reviewed_by' => $admin?->id,

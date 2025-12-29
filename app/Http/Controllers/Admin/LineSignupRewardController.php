@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\LineSignupReward;
 use App\Models\CouponTemplate;
+use App\Models\LineSignupReward;
 use App\Models\MlmPackage;
 use App\Models\Product;
 use App\Services\LineSignupRewardService;
@@ -37,7 +37,6 @@ class LineSignupRewardController extends Controller
     /**
      * แสดงรายการรางวัลทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -83,7 +82,7 @@ class LineSignupRewardController extends Controller
     public function create()
     {
         return view('admin.line-membership-signup.rewards.create', [
-            'reward' => new LineSignupReward(),
+            'reward' => new LineSignupReward,
             'pageTitle' => 'สร้างรางวัลใหม่',
             'couponTemplates' => CouponTemplate::where('is_active', true)->get(),
             'packages' => MlmPackage::where('is_active', true)->get(),
@@ -94,7 +93,6 @@ class LineSignupRewardController extends Controller
     /**
      * บันทึกรางวัลใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -146,7 +144,7 @@ class LineSignupRewardController extends Controller
                 'reward_type', 'amount', 'coupon_template_id', 'product_id',
                 'benefit_data', 'icon', 'badge_color', 'display_order',
                 'is_time_limited', 'start_date', 'end_date', 'is_active',
-                'is_stackable', 'notify_user', 'notification_message', 'max_claims'
+                'is_stackable', 'notify_user', 'notification_message', 'max_claims',
             ]);
 
             $reward = LineSignupReward::create($data);
@@ -161,7 +159,7 @@ class LineSignupRewardController extends Controller
             DB::rollBack();
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -169,7 +167,6 @@ class LineSignupRewardController extends Controller
     /**
      * แสดงรายละเอียดรางวัล
      *
-     * @param LineSignupReward $reward
      * @return \Illuminate\View\View
      */
     public function show(LineSignupReward $reward)
@@ -178,21 +175,20 @@ class LineSignupRewardController extends Controller
 
         return view('admin.line-membership-signup.rewards.show', [
             'reward' => $reward,
-            'pageTitle' => 'รายละเอียดรางวัล: ' . $reward->name,
+            'pageTitle' => 'รายละเอียดรางวัล: '.$reward->name,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไขรางวัล
      *
-     * @param LineSignupReward $reward
      * @return \Illuminate\View\View
      */
     public function edit(LineSignupReward $reward)
     {
         return view('admin.line-membership-signup.rewards.edit', [
             'reward' => $reward,
-            'pageTitle' => 'แก้ไขรางวัล: ' . $reward->name,
+            'pageTitle' => 'แก้ไขรางวัล: '.$reward->name,
             'couponTemplates' => CouponTemplate::where('is_active', true)->get(),
             'packages' => MlmPackage::where('is_active', true)->get(),
             'products' => Product::where('is_active', true)->get(),
@@ -202,8 +198,6 @@ class LineSignupRewardController extends Controller
     /**
      * อัพเดทรางวัล
      *
-     * @param Request $request
-     * @param LineSignupReward $reward
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, LineSignupReward $reward)
@@ -247,7 +241,7 @@ class LineSignupRewardController extends Controller
                 'reward_type', 'amount', 'coupon_template_id', 'product_id',
                 'benefit_data', 'icon', 'badge_color', 'display_order',
                 'is_time_limited', 'start_date', 'end_date', 'is_active',
-                'is_stackable', 'notify_user', 'notification_message', 'max_claims'
+                'is_stackable', 'notify_user', 'notification_message', 'max_claims',
             ]);
 
             $reward->update($data);
@@ -262,7 +256,7 @@ class LineSignupRewardController extends Controller
             DB::rollBack();
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -270,7 +264,6 @@ class LineSignupRewardController extends Controller
     /**
      * ลบรางวัล (Soft Delete)
      *
-     * @param LineSignupReward $reward
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(LineSignupReward $reward)
@@ -284,22 +277,20 @@ class LineSignupRewardController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เปลี่ยนสถานะเปิด/ปิด
      *
-     * @param Request $request
-     * @param LineSignupReward $reward
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(Request $request, LineSignupReward $reward)
     {
         try {
             $reward->update([
-                'is_active' => !$reward->is_active,
+                'is_active' => ! $reward->is_active,
             ]);
 
             return response()->json([
@@ -311,7 +302,7 @@ class LineSignupRewardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -319,7 +310,6 @@ class LineSignupRewardController extends Controller
     /**
      * อัพเดทลำดับการแสดงผล
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateOrder(Request $request)
@@ -346,7 +336,7 @@ class LineSignupRewardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

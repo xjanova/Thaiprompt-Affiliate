@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง sliders มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('sliders')) {
+        if (! Schema::hasTable('sliders')) {
             return;
         }
 
@@ -60,7 +60,7 @@ return new class extends Migration
                 'video_file',
                 'video_type',
                 'video_settings',
-                'text_overlay'
+                'text_overlay',
             ]);
         });
     }

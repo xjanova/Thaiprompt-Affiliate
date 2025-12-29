@@ -31,8 +31,11 @@ class LineSignupStepLog extends Model
      * Step statuses
      */
     public const STATUS_STARTED = 'started';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_SKIPPED = 'skipped';
+
     public const STATUS_FAILED = 'failed';
 
     /**
@@ -51,7 +54,7 @@ class LineSignupStepLog extends Model
         $this->status = self::STATUS_COMPLETED;
         $this->completed_at = now();
 
-        if (!empty($stepData)) {
+        if (! empty($stepData)) {
             $this->step_data = array_merge($this->step_data ?? [], $stepData);
         }
 
@@ -74,7 +77,7 @@ class LineSignupStepLog extends Model
      */
     public function getDurationInSeconds(): ?int
     {
-        if (!$this->completed_at) {
+        if (! $this->completed_at) {
             return null;
         }
 

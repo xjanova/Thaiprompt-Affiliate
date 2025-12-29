@@ -3,18 +3,19 @@
 namespace App\Services\AI;
 
 use App\Models\AiBotProfile;
-use App\Models\KnowledgeBase;
-use App\Models\KnowledgeChunk;
-use App\Models\RagUsageLog;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
-use Illuminate\Support\Facades\Log;
+use App\Models\KnowledgeChunk;
+use App\Models\RagUsageLog;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class RagService
 {
     private EmbeddingService $embeddingService;
+
     private float $similarityThreshold;
+
     private int $maxChunks;
 
     public function __construct(
@@ -22,7 +23,7 @@ class RagService
         float $similarityThreshold = 0.7,
         int $maxChunks = 5
     ) {
-        $this->embeddingService = $embeddingService ?? new EmbeddingService();
+        $this->embeddingService = $embeddingService ?? new EmbeddingService;
         $this->similarityThreshold = $similarityThreshold;
         $this->maxChunks = $maxChunks;
     }
@@ -30,9 +31,7 @@ class RagService
     /**
      * Search for relevant chunks based on query
      *
-     * @param AiBotProfile $bot
-     * @param string $query
-     * @param int $topK Number of chunks to retrieve
+     * @param  int  $topK  Number of chunks to retrieve
      * @return array ['chunks' => Collection, 'search_time_ms' => float, 'avg_similarity' => float]
      */
     public function search(AiBotProfile $bot, string $query, int $topK = 5): array
@@ -43,7 +42,7 @@ class RagService
             // Get query embedding
             $embeddingResult = $this->embeddingService->createEmbedding($query);
 
-            if (!$embeddingResult['success']) {
+            if (! $embeddingResult['success']) {
                 Log::error('Failed to create query embedding', [
                     'bot_id' => $bot->id,
                     'error' => $embeddingResult['error'] ?? 'Unknown',
@@ -91,12 +90,13 @@ class RagService
             $chunksWithScores = $chunks->map(function ($chunk) use ($queryEmbedding) {
                 $similarity = $chunk->cosineSimilarity($queryEmbedding);
                 $chunk->similarity_score = $similarity;
+
                 return $chunk;
             });
 
             // Filter by threshold and sort by similarity
             $relevantChunks = $chunksWithScores
-                ->filter(fn($chunk) => $chunk->similarity_score >= $this->similarityThreshold)
+                ->filter(fn ($chunk) => $chunk->similarity_score >= $this->similarityThreshold)
                 ->sortByDesc('similarity_score')
                 ->take($topK);
 
@@ -135,9 +135,7 @@ class RagService
     /**
      * Build RAG context from search results
      *
-     * @param Collection $chunks
-     * @param int $maxTokens Maximum tokens for context
-     * @return string
+     * @param  int  $maxTokens  Maximum tokens for context
      */
     public function buildContext(Collection $chunks, int $maxTokens = 2000): string
     {
@@ -174,9 +172,6 @@ class RagService
     /**
      * Get context for conversation with RAG
      *
-     * @param AiBotProfile $bot
-     * @param string $userMessage
-     * @param int $maxContextTokens
      * @return array ['context' => string, 'chunks_used' => Collection, 'stats' => array]
      */
     public function getContextForMessage(
@@ -224,12 +219,6 @@ class RagService
 
     /**
      * Log RAG usage
-     *
-     * @param AiConversation $conversation
-     * @param AiMessage $message
-     * @param string $query
-     * @param array $ragResult
-     * @return RagUsageLog
      */
     public function logUsage(
         AiConversation $conversation,
@@ -250,16 +239,13 @@ class RagService
             'search_time_ms' => $stats['search_time_ms'] ?? 0,
             'avg_similarity_score' => $stats['avg_similarity'] ?? 0,
             'max_similarity_score' => $stats['max_similarity'] ?? 0,
-            'context_used' => !empty($ragResult['context']),
+            'context_used' => ! empty($ragResult['context']),
             'context_tokens' => $stats['context_tokens'] ?? 0,
         ]);
     }
 
     /**
      * Get RAG statistics for bot
-     *
-     * @param AiBotProfile $bot
-     * @return array
      */
     public function getStatistics(AiBotProfile $bot): array
     {

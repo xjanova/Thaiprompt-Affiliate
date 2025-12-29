@@ -25,7 +25,7 @@ class UpdateCashbackSettingRequest extends FormRequest
             'type' => 'required|in:global,product',
             'product_id' => 'required_if:type,product|nullable|exists:products,id',
             'value_type' => 'required|in:percentage,fixed',
-            'value' => 'required|numeric|min:0|max:' . ($this->value_type === 'percentage' ? '100' : '999999'),
+            'value' => 'required|numeric|min:0|max:'.($this->value_type === 'percentage' ? '100' : '999999'),
             'is_active' => 'boolean',
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_cashback_amount' => 'nullable|numeric|min:0|gt:0',

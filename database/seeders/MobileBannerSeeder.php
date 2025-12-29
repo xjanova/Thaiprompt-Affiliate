@@ -17,8 +17,6 @@ class MobileBannerSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลตัวอย่าง Banner
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -27,6 +25,7 @@ class MobileBannerSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (MobileBanner::count() > 0) {
             $this->command->info('📌 Mobile Banners มีข้อมูลอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -110,6 +109,6 @@ class MobileBannerSeeder extends Seeder
             MobileBanner::create($bannerData);
         }
 
-        $this->command->info('✅ สร้าง Mobile Banners สำเร็จ! (' . count($banners) . ' รายการ)');
+        $this->command->info('✅ สร้าง Mobile Banners สำเร็จ! ('.count($banners).' รายการ)');
     }
 }

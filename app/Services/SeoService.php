@@ -15,7 +15,7 @@ class SeoService
     {
         $seoMeta = SeoMeta::getByPage($pageType, app()->getLocale());
 
-        if (!$seoMeta) {
+        if (! $seoMeta) {
             return $this->getDefaultMetaTags($customData);
         }
 
@@ -131,7 +131,7 @@ class SeoService
      */
     private function getFullUrl(?string $path): ?string
     {
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
@@ -155,7 +155,7 @@ class SeoService
         $html[] = sprintf('<title>%s</title>', e($meta['title']));
         $html[] = sprintf('<meta name="description" content="%s">', e($meta['description']));
 
-        if (!empty($meta['keywords'])) {
+        if (! empty($meta['keywords'])) {
             $html[] = sprintf('<meta name="keywords" content="%s">', e($meta['keywords']));
         }
 
@@ -169,7 +169,7 @@ class SeoService
         $html[] = sprintf('<meta property="og:url" content="%s">', e($meta['og']['url']));
         $html[] = sprintf('<meta property="og:site_name" content="%s">', e($meta['og']['site_name']));
 
-        if (!empty($meta['og']['image'])) {
+        if (! empty($meta['og']['image'])) {
             $html[] = sprintf('<meta property="og:image" content="%s">', e($meta['og']['image']));
         }
 
@@ -178,12 +178,12 @@ class SeoService
         $html[] = sprintf('<meta name="twitter:title" content="%s">', e($meta['twitter']['title']));
         $html[] = sprintf('<meta name="twitter:description" content="%s">', e($meta['twitter']['description']));
 
-        if (!empty($meta['twitter']['image'])) {
+        if (! empty($meta['twitter']['image'])) {
             $html[] = sprintf('<meta name="twitter:image" content="%s">', e($meta['twitter']['image']));
         }
 
         // Structured data
-        if (!empty($meta['structured_data'])) {
+        if (! empty($meta['structured_data'])) {
             $html[] = sprintf(
                 '<script type="application/ld+json">%s</script>',
                 json_encode($meta['structured_data'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)

@@ -140,9 +140,9 @@ class ServiceProvider extends Model
         'last_location_update' => 'datetime',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * บัญชี User ของ provider
@@ -210,9 +210,9 @@ class ServiceProvider extends Model
         return $this->hasMany(ServiceBookingNotification::class, 'provider_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะ provider ที่พร้อมรับงาน
@@ -239,9 +239,9 @@ class ServiceProvider extends Model
         return $query->whereNotNull('line_user_id');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Status Management
-    //===========================================
+    // ===========================================
 
     /**
      * ตั้งสถานะว่าง (Available)
@@ -275,16 +275,16 @@ class ServiceProvider extends Model
         return $this->status === 'available' && $this->is_active;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - LINE Integration
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่าเชื่อม LINE OA แล้วหรือยัง
      */
     public function hasLineConnected(): bool
     {
-        return !empty($this->line_user_id);
+        return ! empty($this->line_user_id);
     }
 
     /**
@@ -315,17 +315,18 @@ class ServiceProvider extends Model
      */
     public function isLineNotificationEnabled(): bool
     {
-        if (!$this->hasLineConnected()) {
+        if (! $this->hasLineConnected()) {
             return false;
         }
 
         $settings = $this->notification_settings ?? [];
+
         return $settings['line'] ?? false;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Statistics
-    //===========================================
+    // ===========================================
 
     /**
      * เพิ่มจำนวนการรับงาน
@@ -386,9 +387,9 @@ class ServiceProvider extends Model
         $this->save();
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Location
-    //===========================================
+    // ===========================================
 
     /**
      * อัพเดทตำแหน่งปัจจุบัน
@@ -407,7 +408,7 @@ class ServiceProvider extends Model
      */
     public function hasLocation(): bool
     {
-        return !is_null($this->current_latitude) && !is_null($this->current_longitude);
+        return ! is_null($this->current_latitude) && ! is_null($this->current_longitude);
     }
 
     /**
@@ -415,7 +416,7 @@ class ServiceProvider extends Model
      */
     public function calculateDistanceTo(float $destinationLat, float $destinationLng): float
     {
-        if (!$this->hasLocation()) {
+        if (! $this->hasLocation()) {
             return 0;
         }
 
@@ -436,16 +437,16 @@ class ServiceProvider extends Model
         return round($angle * $earthRadius, 2);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Auto Accept
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่าควรรับงานอัตโนมัติหรือไม่
      */
     public function shouldAutoAccept(float $distanceKm, int $todayBookingsCount): bool
     {
-        if (!$this->auto_accept_bookings) {
+        if (! $this->auto_accept_bookings) {
             return false;
         }
 

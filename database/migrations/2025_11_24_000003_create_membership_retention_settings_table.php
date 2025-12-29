@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -15,8 +15,6 @@ return new class extends Migration
      * - repair_cost_per_point: ค่าซ่อมต่อแต้ม
      * - grace_period_days: ระยะเวลาผ่อนผัน
      * - enable_retention_system: เปิด/ปิดระบบ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -97,8 +95,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง membership_retention_settings
-     *
-     * @return void
      */
     public function down(): void
     {

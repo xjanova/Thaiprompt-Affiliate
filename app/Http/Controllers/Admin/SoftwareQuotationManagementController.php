@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SoftwareQuotation;
 use App\Mail\QuotationMail;
+use App\Models\SoftwareQuotation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -33,10 +33,10 @@ class SoftwareQuotationManagementController extends Controller
         // Search
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('quotation_number', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%");
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_email', 'like', "%{$search}%");
             });
         }
 
@@ -64,7 +64,7 @@ class SoftwareQuotationManagementController extends Controller
             'softwareProduct',
             'items.selectedOptions',
             'order',
-            'installmentPlan'
+            'installmentPlan',
         ]);
 
         return view('admin.quotations.show', compact('softwareQuotation'));
@@ -76,6 +76,7 @@ class SoftwareQuotationManagementController extends Controller
     public function edit(SoftwareQuotation $softwareQuotation)
     {
         $softwareQuotation->load(['items.selectedOptions']);
+
         return view('admin.quotations.edit', compact('softwareQuotation'));
     }
 
@@ -139,7 +140,7 @@ class SoftwareQuotationManagementController extends Controller
 
             return back()->with('success', 'ส่งใบเสนอราคาทางอีเมลเรียบร้อยแล้ว');
         } catch (\Exception $e) {
-            return back()->with('error', 'ไม่สามารถส่งอีเมลได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถส่งอีเมลได้: '.$e->getMessage());
         }
     }
 
@@ -148,7 +149,7 @@ class SoftwareQuotationManagementController extends Controller
      */
     public function approve(Request $request, SoftwareQuotation $softwareQuotation)
     {
-        if (!in_array($softwareQuotation->status, ['pending', 'draft'])) {
+        if (! in_array($softwareQuotation->status, ['pending', 'draft'])) {
             return back()->with('error', 'ไม่สามารถอนุมัติใบเสนอราคานี้ได้');
         }
 
@@ -156,6 +157,7 @@ class SoftwareQuotationManagementController extends Controller
 
         if ($request->boolean('send_email')) {
             $softwareQuotation->save();
+
             return $this->send($softwareQuotation);
         }
 

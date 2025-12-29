@@ -23,40 +23,40 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_commissions มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_commissions')) {
+        if (! Schema::hasTable('mlm_commissions')) {
             return;
         }
 
         Schema::table('mlm_commissions', function (Blueprint $table) {
             // ระบุว่าเป็น roll-up commission หรือไม่
-            if (!Schema::hasColumn('mlm_commissions', 'is_rollup')) {
+            if (! Schema::hasColumn('mlm_commissions', 'is_rollup')) {
                 $table->boolean('is_rollup')->default(false)->after('status');
             }
 
             // ID ของสมาชิกที่ถูกข้าม (inactive)
-            if (!Schema::hasColumn('mlm_commissions', 'rollup_from_member_id')) {
+            if (! Schema::hasColumn('mlm_commissions', 'rollup_from_member_id')) {
                 $table->unsignedBigInteger('rollup_from_member_id')->nullable()->after('is_rollup');
             }
 
             // Level เดิมก่อน roll-up (เพื่อคำนวณ % ถูกต้อง)
-            if (!Schema::hasColumn('mlm_commissions', 'rollup_original_level')) {
+            if (! Schema::hasColumn('mlm_commissions', 'rollup_original_level')) {
                 $table->unsignedInteger('rollup_original_level')->nullable()->after('rollup_from_member_id');
             }
 
             // Chain ของ roll-up - เก็บทั้ง path ที่ roll-up มา
             // Format: [{"member_id": 5, "level": 2, "reason": "inactive"}, ...]
-            if (!Schema::hasColumn('mlm_commissions', 'rollup_chain')) {
+            if (! Schema::hasColumn('mlm_commissions', 'rollup_chain')) {
                 $table->json('rollup_chain')->nullable()->after('rollup_original_level');
             }
 
             // สาย/ขา ที่มาของ commission (สำหรับ Binary)
-            if (!Schema::hasColumn('mlm_commissions', 'source_leg')) {
+            if (! Schema::hasColumn('mlm_commissions', 'source_leg')) {
                 $table->string('source_leg', 20)->nullable()->after('rollup_chain');
                 // 'left', 'right', หรือ null สำหรับ unilevel
             }
 
             // Tree type ที่ใช้คำนวณ
-            if (!Schema::hasColumn('mlm_commissions', 'tree_type')) {
+            if (! Schema::hasColumn('mlm_commissions', 'tree_type')) {
                 $table->string('tree_type', 20)->default('unilevel')->after('source_leg');
                 // 'unilevel', 'binary', 'genealogy'
             }
@@ -66,12 +66,12 @@ return new class extends Migration
         Schema::table('mlm_commissions', function (Blueprint $table) {
             // ตรวจสอบก่อนสร้าง index
             $indexExists = collect(\DB::select("SHOW INDEX FROM mlm_commissions WHERE Key_name = 'mlm_commissions_is_rollup_index'"))->isNotEmpty();
-            if (!$indexExists) {
+            if (! $indexExists) {
                 $table->index('is_rollup', 'mlm_commissions_is_rollup_index');
             }
 
             $indexExists2 = collect(\DB::select("SHOW INDEX FROM mlm_commissions WHERE Key_name = 'mlm_commissions_tree_type_index'"))->isNotEmpty();
-            if (!$indexExists2) {
+            if (! $indexExists2) {
                 $table->index('tree_type', 'mlm_commissions_tree_type_index');
             }
         });

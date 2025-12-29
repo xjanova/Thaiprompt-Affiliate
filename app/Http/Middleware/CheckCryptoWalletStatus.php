@@ -17,13 +17,13 @@ class CheckCryptoWalletStatus
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return redirect()
                 ->route('user.crypto-wallet.index')
                 ->with('error', 'ไม่พบกระเป๋าคริปโต');

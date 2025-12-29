@@ -2,11 +2,10 @@
 
 namespace App\Services\AI;
 
-use App\Models\AiUsageLog;
 use App\Models\AiConversation;
-use App\Models\AiBotProfile;
-use Illuminate\Support\Facades\DB;
+use App\Models\AiUsageLog;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class AiMonitoringService
 {
@@ -14,7 +13,7 @@ class AiMonitoringService
 
     public function __construct()
     {
-        $this->localAiManager = new LocalAiManager();
+        $this->localAiManager = new LocalAiManager;
     }
 
     /**
@@ -42,7 +41,7 @@ class AiMonitoringService
         return Cache::remember($cacheKey, 5, function () {
             $status = $this->localAiManager->getStatus();
 
-            if (!$status['running']) {
+            if (! $status['running']) {
                 return [
                     'status' => 'stopped',
                     'cpu_percent' => 0,
@@ -187,7 +186,7 @@ class AiMonitoringService
 
         return [
             'model_usage' => $modelUsage,
-            'most_used_model' => !empty($modelUsage) ? $modelUsage[0] : null,
+            'most_used_model' => ! empty($modelUsage) ? $modelUsage[0] : null,
         ];
     }
 
@@ -404,7 +403,7 @@ class AiMonitoringService
         $this->appendToTimeSeries('memory', $timestamp, $metrics['memory_percent']);
 
         // บันทึก GPU (ถ้ามี)
-        if ($metrics['gpu'] && !empty($metrics['gpu']['gpus'])) {
+        if ($metrics['gpu'] && ! empty($metrics['gpu']['gpus'])) {
             $gpuUtil = $metrics['gpu']['gpus'][0]['utilization_percent'];
             $this->appendToTimeSeries('gpu', $timestamp, $gpuUtil);
         }

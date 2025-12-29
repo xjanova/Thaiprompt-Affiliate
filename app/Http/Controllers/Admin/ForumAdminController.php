@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ForumCategory;
-use App\Models\ForumThread;
 use App\Models\ForumPost;
 use App\Models\ForumReport;
+use App\Models\ForumThread;
 use App\Models\ForumTrophy;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,8 +16,6 @@ use Illuminate\Support\Str;
  * ForumAdminController - จัดการฟอรั่มในส่วน Admin
  *
  * ควบคุมการจัดการหมวดหมู่ กระทู้ รายงาน และถ้วยรางวัล
- *
- * @package App\Http\Controllers\Admin
  */
 class ForumAdminController extends Controller
 {
@@ -60,7 +58,6 @@ class ForumAdminController extends Controller
     /**
      * บันทึกหมวดหมู่ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeCategory(Request $request)
@@ -89,7 +86,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงฟอร์มแก้ไขหมวดหมู่
      *
-     * @param ForumCategory $category
      * @return \Illuminate\View\View
      */
     public function editCategory(ForumCategory $category)
@@ -105,8 +101,6 @@ class ForumAdminController extends Controller
     /**
      * อัปเดตหมวดหมู่
      *
-     * @param Request $request
-     * @param ForumCategory $category
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateCategory(Request $request, ForumCategory $category)
@@ -134,7 +128,6 @@ class ForumAdminController extends Controller
     /**
      * ลบหมวดหมู่
      *
-     * @param ForumCategory $category
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteCategory(ForumCategory $category)
@@ -159,7 +152,6 @@ class ForumAdminController extends Controller
     /**
      * จัดเรียงลำดับหมวดหมู่
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function reorderCategories(Request $request)
@@ -180,7 +172,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงรายการกระทู้ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function threads(Request $request)
@@ -226,7 +217,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงรายละเอียดกระทู้
      *
-     * @param ForumThread $thread
      * @return \Illuminate\View\View
      */
     public function showThread(ForumThread $thread)
@@ -239,12 +229,11 @@ class ForumAdminController extends Controller
     /**
      * Toggle Pin กระทู้
      *
-     * @param ForumThread $thread
      * @return \Illuminate\Http\JsonResponse
      */
     public function togglePin(ForumThread $thread)
     {
-        $thread->update(['is_pinned' => !$thread->is_pinned]);
+        $thread->update(['is_pinned' => ! $thread->is_pinned]);
 
         return response()->json([
             'success' => true,
@@ -256,12 +245,11 @@ class ForumAdminController extends Controller
     /**
      * Toggle Lock กระทู้
      *
-     * @param ForumThread $thread
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleLock(ForumThread $thread)
     {
-        $thread->update(['is_locked' => !$thread->is_locked]);
+        $thread->update(['is_locked' => ! $thread->is_locked]);
 
         return response()->json([
             'success' => true,
@@ -273,12 +261,11 @@ class ForumAdminController extends Controller
     /**
      * Toggle Feature กระทู้
      *
-     * @param ForumThread $thread
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleFeature(ForumThread $thread)
     {
-        $thread->update(['is_featured' => !$thread->is_featured]);
+        $thread->update(['is_featured' => ! $thread->is_featured]);
 
         return response()->json([
             'success' => true,
@@ -290,7 +277,6 @@ class ForumAdminController extends Controller
     /**
      * ลบกระทู้
      *
-     * @param ForumThread $thread
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteThread(ForumThread $thread)
@@ -309,7 +295,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงรายการรายงานทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function reports(Request $request)
@@ -336,7 +321,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงรายละเอียดรายงาน
      *
-     * @param ForumReport $report
      * @return \Illuminate\View\View
      */
     public function showReport(ForumReport $report)
@@ -349,8 +333,6 @@ class ForumAdminController extends Controller
     /**
      * Resolve รายงาน (ดำเนินการแล้ว)
      *
-     * @param Request $request
-     * @param ForumReport $report
      * @return \Illuminate\Http\JsonResponse
      */
     public function resolveReport(Request $request, ForumReport $report)
@@ -376,8 +358,6 @@ class ForumAdminController extends Controller
     /**
      * Dismiss รายงาน (ยกเลิก)
      *
-     * @param Request $request
-     * @param ForumReport $report
      * @return \Illuminate\Http\JsonResponse
      */
     public function dismissReport(Request $request, ForumReport $report)
@@ -430,7 +410,6 @@ class ForumAdminController extends Controller
     /**
      * บันทึกถ้วยรางวัลใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeTrophy(Request $request)
@@ -456,7 +435,6 @@ class ForumAdminController extends Controller
     /**
      * แสดงฟอร์มแก้ไขถ้วยรางวัล
      *
-     * @param ForumTrophy $trophy
      * @return \Illuminate\View\View
      */
     public function editTrophy(ForumTrophy $trophy)
@@ -467,8 +445,6 @@ class ForumAdminController extends Controller
     /**
      * อัปเดตถ้วยรางวัล
      *
-     * @param Request $request
-     * @param ForumTrophy $trophy
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateTrophy(Request $request, ForumTrophy $trophy)
@@ -494,7 +470,6 @@ class ForumAdminController extends Controller
     /**
      * ลบถ้วยรางวัล
      *
-     * @param ForumTrophy $trophy
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteTrophy(ForumTrophy $trophy)
@@ -509,8 +484,6 @@ class ForumAdminController extends Controller
     /**
      * มอบถ้วยรางวัลให้ผู้ใช้
      *
-     * @param ForumTrophy $trophy
-     * @param User $user
      * @return \Illuminate\Http\JsonResponse
      */
     public function awardTrophy(ForumTrophy $trophy, User $user)
@@ -605,7 +578,6 @@ class ForumAdminController extends Controller
     /**
      * บันทึกตั้งค่าฟอรั่ม
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function saveSettings(Request $request)

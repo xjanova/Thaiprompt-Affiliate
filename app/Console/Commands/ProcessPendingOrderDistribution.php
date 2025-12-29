@@ -41,7 +41,7 @@ class ProcessPendingOrderDistribution extends Command
         $this->info('🔄 เริ่มประมวลผล Pending Order Distributions...');
         $this->newLine();
 
-        $distributionService = new OrderDistributionService();
+        $distributionService = new OrderDistributionService;
         $limit = (int) $this->option('limit');
         $dryRun = $this->option('dry-run');
 
@@ -52,18 +52,19 @@ class ProcessPendingOrderDistribution extends Command
                 $this->warn('📋 [DRY RUN] รายการที่จะถูกประมวลผล:');
                 $this->table(
                     ['Order ID', 'Order Number', 'Total Amount', 'Status'],
-                    collect($results['orders'] ?? [])->map(fn($o) => [
+                    collect($results['orders'] ?? [])->map(fn ($o) => [
                         $o['id'],
                         $o['order_number'],
                         number_format($o['total_amount'], 2),
                         'pending',
                     ])->toArray()
                 );
+
                 return Command::SUCCESS;
             }
 
             // แสดงผลลัพธ์
-            $this->info("📊 ผลการประมวลผล:");
+            $this->info('📊 ผลการประมวลผล:');
             $this->table(
                 ['รายการ', 'จำนวน'],
                 [
@@ -73,7 +74,7 @@ class ProcessPendingOrderDistribution extends Command
                 ]
             );
 
-            if (!empty($results['errors'])) {
+            if (! empty($results['errors'])) {
                 $this->newLine();
                 $this->error('❗ รายการที่ผิดพลาด:');
                 foreach ($results['errors'] as $error) {
@@ -87,7 +88,8 @@ class ProcessPendingOrderDistribution extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

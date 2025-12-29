@@ -17,7 +17,7 @@ class TpixHelper
      */
     public static function formatTPIX(float $amount, int $decimals = 4): string
     {
-        return number_format($amount, $decimals) . ' TPIX';
+        return number_format($amount, $decimals).' TPIX';
     }
 
     /**
@@ -42,6 +42,7 @@ class TpixHelper
     public static function getTPIXPrice(): float
     {
         $cacheService = app(FoodPassportCacheService::class);
+
         return $cacheService->cacheTPIXPrice();
     }
 
@@ -51,6 +52,7 @@ class TpixHelper
     public static function tpixToTHB(float $tpix): float
     {
         $price = self::getTPIXPrice();
+
         return $tpix * $price;
     }
 
@@ -60,6 +62,7 @@ class TpixHelper
     public static function thbToTPIX(float $thb): float
     {
         $price = self::getTPIXPrice();
+
         return $price > 0 ? $thb / $price : 0;
     }
 
@@ -80,6 +83,7 @@ class TpixHelper
     public static function calculateGasFeeInTHB(int $gasLimit, ?float $gasPrice = null): float
     {
         $gasFeeTPIX = self::calculateGasFee($gasLimit, $gasPrice);
+
         return self::tpixToTHB($gasFeeTPIX);
     }
 
@@ -89,6 +93,7 @@ class TpixHelper
     public static function getTransactionUrl(string $txHash): string
     {
         $explorerUrl = config('tpix-blockchain.network.explorer_url');
+
         return "{$explorerUrl}/tx/{$txHash}";
     }
 
@@ -98,6 +103,7 @@ class TpixHelper
     public static function getAddressUrl(string $address): string
     {
         $explorerUrl = config('tpix-blockchain.network.explorer_url');
+
         return "{$explorerUrl}/address/{$address}";
     }
 
@@ -107,6 +113,7 @@ class TpixHelper
     public static function getNFTUrl(string $contractAddress, int $tokenId): string
     {
         $explorerUrl = config('tpix-blockchain.network.explorer_url');
+
         return "{$explorerUrl}/token/{$contractAddress}?a={$tokenId}";
     }
 
@@ -124,7 +131,7 @@ class TpixHelper
      */
     public static function shortenAddress(string $address, int $prefixLength = 6, int $suffixLength = 4): string
     {
-        if (!self::isValidAddress($address)) {
+        if (! self::isValidAddress($address)) {
             return $address;
         }
 
@@ -140,6 +147,7 @@ class TpixHelper
     public static function getGasLimit(string $operation): int
     {
         $limits = config('tpix-blockchain.gas.limits', []);
+
         return $limits[$operation] ?? config('tpix-blockchain.gas.default_limit', 250000);
     }
 
@@ -164,7 +172,7 @@ class TpixHelper
      */
     public static function hasReachedGasSubsidyLimit(int $userId): bool
     {
-        $key = "user:{$userId}:gas_subsidy:" . date('Y-m-d');
+        $key = "user:{$userId}:gas_subsidy:".date('Y-m-d');
         $usedToday = Cache::get($key, 0);
         $limit = self::getGasSubsidyLimit();
 
@@ -176,7 +184,7 @@ class TpixHelper
      */
     public static function recordGasSubsidyUsage(int $userId, float $amount): void
     {
-        $key = "user:{$userId}:gas_subsidy:" . date('Y-m-d');
+        $key = "user:{$userId}:gas_subsidy:".date('Y-m-d');
         $current = Cache::get($key, 0);
         $new = $current + $amount;
 
@@ -190,7 +198,7 @@ class TpixHelper
      */
     public static function getRemainingGasSubsidy(int $userId): float
     {
-        $key = "user:{$userId}:gas_subsidy:" . date('Y-m-d');
+        $key = "user:{$userId}:gas_subsidy:".date('Y-m-d');
         $usedToday = Cache::get($key, 0);
         $limit = self::getGasSubsidyLimit();
 
@@ -226,7 +234,7 @@ class TpixHelper
      */
     public static function formatTPCC(float $amount, int $decimals = 2): string
     {
-        return number_format($amount, $decimals) . ' TPCC';
+        return number_format($amount, $decimals).' TPCC';
     }
 
     /**

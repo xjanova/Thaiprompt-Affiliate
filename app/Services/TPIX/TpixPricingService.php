@@ -14,9 +14,6 @@ class TpixPricingService
 {
     /**
      * คำนวณราคารวมสำหรับ configuration
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function calculateTotalPrice(TpixConfiguration $config): array
     {
@@ -65,7 +62,7 @@ class TpixPricingService
             $accessPrice = Config::get("tpix-pricing.access_control.{$config->access_control}", 0);
             if ($accessPrice > 0) {
                 $breakdown['access_control'] = [
-                    'label' => 'Access Control: ' . ucwords(str_replace('_', ' ', $config->access_control)),
+                    'label' => 'Access Control: '.ucwords(str_replace('_', ' ', $config->access_control)),
                     'price' => $accessPrice,
                 ];
                 $total += $accessPrice;
@@ -138,10 +135,6 @@ class TpixPricingService
 
     /**
      * คำนวณส่วนลด
-     *
-     * @param TpixConfiguration $config
-     * @param float $total
-     * @return float
      */
     protected function calculateDiscount(TpixConfiguration $config, float $total): float
     {
@@ -164,10 +157,6 @@ class TpixPricingService
 
     /**
      * คำนวณราคาตาม Step ที่กำลังทำ
-     *
-     * @param int $step
-     * @param array $data
-     * @return float
      */
     public function calculateStepPrice(int $step, array $data): float
     {
@@ -229,10 +218,6 @@ class TpixPricingService
 
     /**
      * ตรวจสอบว่ามี TPIX เพียงพอหรือไม่
-     *
-     * @param string $walletAddress
-     * @param float $requiredAmount
-     * @return array
      */
     public function checkBalance(string $walletAddress, float $requiredAmount): array
     {
@@ -254,10 +239,6 @@ class TpixPricingService
 
     /**
      * สร้าง Payment Transaction
-     *
-     * @param TpixConfiguration $config
-     * @param string $walletAddress
-     * @return array
      */
     public function createPaymentTransaction(TpixConfiguration $config, string $walletAddress): array
     {
@@ -265,7 +246,7 @@ class TpixPricingService
 
         // TODO: สร้าง transaction บน blockchain
         // ตอนนี้ใช้ mock data
-        $txHash = '0x' . bin2hex(random_bytes(32));
+        $txHash = '0x'.bin2hex(random_bytes(32));
 
         return [
             'success' => true,
@@ -280,9 +261,6 @@ class TpixPricingService
 
     /**
      * ตรวจสอบสถานะการชำระเงิน
-     *
-     * @param string $txHash
-     * @return array
      */
     public function verifyPayment(string $txHash): array
     {
@@ -299,21 +277,16 @@ class TpixPricingService
 
     /**
      * Format ราคาสำหรับแสดงผล
-     *
-     * @param float $price
-     * @param bool $includeSymbol
-     * @return string
      */
     public function formatPrice(float $price, bool $includeSymbol = true): string
     {
         $formatted = number_format($price, 2);
-        return $includeSymbol ? $formatted . ' TPIX' : $formatted;
+
+        return $includeSymbol ? $formatted.' TPIX' : $formatted;
     }
 
     /**
      * ดึงรายการราคาทั้งหมด (สำหรับแสดงใน UI)
-     *
-     * @return array
      */
     public function getPricingTable(): array
     {

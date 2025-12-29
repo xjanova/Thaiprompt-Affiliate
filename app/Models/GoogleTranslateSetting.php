@@ -88,8 +88,6 @@ class GoogleTranslateSetting extends Model
 
     /**
      * ดึง setting ที่กำลัง active
-     *
-     * @return static|null
      */
     public static function active(): ?static
     {
@@ -98,8 +96,6 @@ class GoogleTranslateSetting extends Model
 
     /**
      * ตรวจสอบว่ายังมี quota หรือไม่
-     *
-     * @return bool
      */
     public function hasQuota(): bool
     {
@@ -116,9 +112,6 @@ class GoogleTranslateSetting extends Model
 
     /**
      * อัปเดต usage count
-     *
-     * @param int $count
-     * @return void
      */
     public function incrementUsage(int $count = 1): void
     {
@@ -129,8 +122,6 @@ class GoogleTranslateSetting extends Model
 
     /**
      * รีเซ็ต daily quota (เรียกทุกวัน)
-     *
-     * @return void
      */
     public function resetDailyQuota(): void
     {
@@ -142,8 +133,6 @@ class GoogleTranslateSetting extends Model
 
     /**
      * รีเซ็ต monthly quota (เรียกทุกเดือน)
-     *
-     * @return void
      */
     public function resetMonthlyQuota(): void
     {

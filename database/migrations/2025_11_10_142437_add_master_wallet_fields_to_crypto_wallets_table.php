@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง crypto_wallets มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('crypto_wallets')) {
+        if (! Schema::hasTable('crypto_wallets')) {
             return;
         }
 

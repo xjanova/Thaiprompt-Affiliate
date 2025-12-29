@@ -40,11 +40,12 @@ class CloudflareCheckAttack extends Command
      */
     public function handle()
     {
-        $cloudflare = new CloudflareService();
+        $cloudflare = new CloudflareService;
 
         // ตรวจสอบว่า Cloudflare ได้ตั้งค่าหรือยัง
-        if (!$cloudflare->isConfigured()) {
+        if (! $cloudflare->isConfigured()) {
             $this->error('Cloudflare ยังไม่ได้ตั้งค่า Zone ID หรือ API Token');
+
             return 1;
         }
 
@@ -54,6 +55,7 @@ class CloudflareCheckAttack extends Command
 
             if ($this->option('dry-run')) {
                 $this->warn('[DRY-RUN] จะเปิด Under Attack Mode');
+
                 return 0;
             }
 
@@ -61,9 +63,11 @@ class CloudflareCheckAttack extends Command
 
             if ($result['success']) {
                 $this->info('เปิด Under Attack Mode สำเร็จ');
+
                 return 0;
             } else {
-                $this->error('ไม่สามารถเปิด Under Attack Mode: ' . ($result['message'] ?? 'Unknown error'));
+                $this->error('ไม่สามารถเปิด Under Attack Mode: '.($result['message'] ?? 'Unknown error'));
+
                 return 1;
             }
         }
@@ -73,6 +77,7 @@ class CloudflareCheckAttack extends Command
 
             if ($this->option('dry-run')) {
                 $this->warn('[DRY-RUN] จะปิด Under Attack Mode');
+
                 return 0;
             }
 
@@ -82,9 +87,11 @@ class CloudflareCheckAttack extends Command
                 // ล้าง auto-enabled flag
                 \App\Models\Setting::set('cloudflare_under_attack_auto_enabled', false, 'boolean', 'cloudflare');
                 $this->info('ปิด Under Attack Mode สำเร็จ');
+
                 return 0;
             } else {
-                $this->error('ไม่สามารถปิด Under Attack Mode: ' . ($result['message'] ?? 'Unknown error'));
+                $this->error('ไม่สามารถปิด Under Attack Mode: '.($result['message'] ?? 'Unknown error'));
+
                 return 1;
             }
         }
@@ -92,8 +99,9 @@ class CloudflareCheckAttack extends Command
         // ตรวจสอบการตั้งค่า Auto Mode
         $settings = $cloudflare->getAutoUnderAttackSettings();
 
-        if (!$settings['enabled']) {
+        if (! $settings['enabled']) {
             $this->line('Auto Under Attack Mode ถูกปิดใช้งาน');
+
             return 0;
         }
 
@@ -112,21 +120,22 @@ class CloudflareCheckAttack extends Command
                 ['Unique Attack IPs', $checkResult['metrics']['unique_attack_ips'] ?? 0],
                 ['Threat Score', $checkResult['threat_score'] ?? 0],
                 ['Threshold', $checkResult['threshold'] ?? 0],
-                ['Time Window', ($checkResult['time_window'] ?? 0) . ' นาที'],
+                ['Time Window', ($checkResult['time_window'] ?? 0).' นาที'],
             ]
         );
 
         $this->line('');
-        $this->line('สถานะปัจจุบัน: ' . ($status['is_under_attack'] ? 'Under Attack Mode เปิดอยู่' : 'ปกติ'));
-        $this->line('Security Level: ' . ($status['current_security_level'] ?? 'unknown'));
+        $this->line('สถานะปัจจุบัน: '.($status['is_under_attack'] ? 'Under Attack Mode เปิดอยู่' : 'ปกติ'));
+        $this->line('Security Level: '.($status['current_security_level'] ?? 'unknown'));
         $this->line('');
 
         // ถ้าตรวจพบการโจมตีและยังไม่ได้เปิด Under Attack Mode
-        if ($checkResult['should_activate'] && !$status['is_under_attack']) {
-            $this->warn('ตรวจพบการโจมตี! ' . $checkResult['reason']);
+        if ($checkResult['should_activate'] && ! $status['is_under_attack']) {
+            $this->warn('ตรวจพบการโจมตี! '.$checkResult['reason']);
 
             if ($this->option('dry-run')) {
                 $this->warn('[DRY-RUN] จะเปิด Under Attack Mode');
+
                 return 0;
             }
 
@@ -140,7 +149,8 @@ class CloudflareCheckAttack extends Command
                     'metrics' => $checkResult['metrics'],
                 ]);
             } else {
-                $this->error('ไม่สามารถเปิด Under Attack Mode: ' . ($result['message'] ?? 'Unknown error'));
+                $this->error('ไม่สามารถเปิด Under Attack Mode: '.($result['message'] ?? 'Unknown error'));
+
                 return 1;
             }
 
@@ -156,8 +166,9 @@ class CloudflareCheckAttack extends Command
                 if ($result['success']) {
                     $this->warn('[DRY-RUN] จะปิด Under Attack Mode');
                 } else {
-                    $this->line('[DRY-RUN] ' . ($result['message'] ?? 'ยังไม่ถึงเวลาปิด'));
+                    $this->line('[DRY-RUN] '.($result['message'] ?? 'ยังไม่ถึงเวลาปิด'));
                 }
+
                 return 0;
             }
 
@@ -174,6 +185,7 @@ class CloudflareCheckAttack extends Command
         }
 
         $this->info('ไม่พบการโจมตีที่ต้องตอบสนอง');
+
         return 0;
     }
 }

@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
-use Exception;
+use Intervention\Image\ImageManager;
 
 class ImageUploadService
 {
@@ -16,7 +16,7 @@ class ImageUploadService
     public function __construct()
     {
         // Initialize ImageManager with GD driver (Intervention Image v3)
-        $this->manager = new ImageManager(new Driver());
+        $this->manager = new ImageManager(new Driver);
     }
 
     /**
@@ -31,7 +31,7 @@ class ImageUploadService
     ): string {
         try {
             // Generate unique filename with .webp extension
-            $filename = Str::random(40) . '.webp';
+            $filename = Str::random(40).'.webp';
             $path = "{$directory}/{$filename}";
 
             // Read and process image with Intervention Image v3
@@ -49,7 +49,7 @@ class ImageUploadService
 
             return $path;
         } catch (Exception $e) {
-            throw new Exception('Failed to upload image: ' . $e->getMessage());
+            throw new Exception('Failed to upload image: '.$e->getMessage());
         }
     }
 
@@ -79,15 +79,17 @@ class ImageUploadService
      */
     public function deleteImage(?string $path): bool
     {
-        if (!$path) {
+        if (! $path) {
             return false;
         }
 
         try {
             if (Storage::disk('public')->exists($path)) {
                 Storage::disk('public')->delete($path);
+
                 return true;
             }
+
             return false;
         } catch (Exception $e) {
             return false;
@@ -127,7 +129,7 @@ class ImageUploadService
 
             // Generate thumbnail path
             $pathInfo = pathinfo($sourcePath);
-            $thumbnailPath = $pathInfo['dirname'] . '/thumb_' . $pathInfo['basename'];
+            $thumbnailPath = $pathInfo['dirname'].'/thumb_'.$pathInfo['basename'];
 
             // Save thumbnail
             $encoded = $image->toWebp(quality: 85);
@@ -135,7 +137,7 @@ class ImageUploadService
 
             return $thumbnailPath;
         } catch (Exception $e) {
-            throw new Exception('Failed to create thumbnail: ' . $e->getMessage());
+            throw new Exception('Failed to create thumbnail: '.$e->getMessage());
         }
     }
 
@@ -144,7 +146,7 @@ class ImageUploadService
      */
     public function getImageUrl(?string $path): ?string
     {
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
@@ -160,7 +162,7 @@ class ImageUploadService
 
         // Check file type
         $allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($file->getMimeType(), $allowedMimes)) {
+        if (! in_array($file->getMimeType(), $allowedMimes)) {
             $errors[] = 'รองรับเฉพาะไฟล์ JPG, PNG, GIF และ WebP เท่านั้น';
         }
 
@@ -193,7 +195,7 @@ class ImageUploadService
 
             // Generate WebP path
             $pathInfo = pathinfo($sourcePath);
-            $webpPath = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '.webp';
+            $webpPath = $pathInfo['dirname'].'/'.$pathInfo['filename'].'.webp';
 
             // Convert and save as WebP
             $encoded = $image->toWebp(quality: 85);
@@ -201,7 +203,7 @@ class ImageUploadService
 
             return $webpPath;
         } catch (Exception $e) {
-            throw new Exception('Failed to convert to WebP: ' . $e->getMessage());
+            throw new Exception('Failed to convert to WebP: '.$e->getMessage());
         }
     }
 
@@ -210,11 +212,11 @@ class ImageUploadService
      *
      * ปรับขนาดให้พอดีกับการ์ด (สัดส่วน 2:3) และแปลงเป็น WebP
      *
-     * @param UploadedFile $file ไฟล์รูปภาพ
-     * @param string $directory โฟลเดอร์ที่จะเก็บ (default: tarot/cards)
-     * @param int $width ความกว้าง (default: 400)
-     * @param int $height ความสูง (default: 600)
-     * @param int $quality คุณภาพ WebP (default: 90)
+     * @param  UploadedFile  $file  ไฟล์รูปภาพ
+     * @param  string  $directory  โฟลเดอร์ที่จะเก็บ (default: tarot/cards)
+     * @param  int  $width  ความกว้าง (default: 400)
+     * @param  int  $height  ความสูง (default: 600)
+     * @param  int  $quality  คุณภาพ WebP (default: 90)
      * @return string path ของไฟล์ที่อัพโหลด
      */
     public function uploadTarotCard(
@@ -226,7 +228,7 @@ class ImageUploadService
     ): string {
         try {
             // สร้างชื่อไฟล์ unique
-            $filename = Str::random(40) . '.webp';
+            $filename = Str::random(40).'.webp';
             $path = "{$directory}/{$filename}";
 
             // อ่านและประมวลผลรูป
@@ -241,16 +243,16 @@ class ImageUploadService
 
             return $path;
         } catch (Exception $e) {
-            throw new Exception('อัพโหลดรูปไพ่ไม่สำเร็จ: ' . $e->getMessage());
+            throw new Exception('อัพโหลดรูปไพ่ไม่สำเร็จ: '.$e->getMessage());
         }
     }
 
     /**
      * อัพโหลดรูปหลังไพ่ทาโร่ต์
      *
-     * @param UploadedFile $file ไฟล์รูปภาพ
-     * @param int $width ความกว้าง (default: 400)
-     * @param int $height ความสูง (default: 600)
+     * @param  UploadedFile  $file  ไฟล์รูปภาพ
+     * @param  int  $width  ความกว้าง (default: 400)
+     * @param  int  $height  ความสูง (default: 600)
      * @return string path ของไฟล์ที่อัพโหลด
      */
     public function uploadTarotCardBack(
@@ -264,12 +266,11 @@ class ImageUploadService
     /**
      * ลบรูปไพ่ทาโร่ต์
      *
-     * @param string|null $imageUrl URL ของรูป (เช่น /storage/tarot/cards/xxx.webp)
-     * @return bool
+     * @param  string|null  $imageUrl  URL ของรูป (เช่น /storage/tarot/cards/xxx.webp)
      */
     public function deleteTarotImage(?string $imageUrl): bool
     {
-        if (!$imageUrl) {
+        if (! $imageUrl) {
             return false;
         }
 

@@ -2,12 +2,11 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoSetting;
 use App\Models\VideoAutoJob;
+use App\Models\VideoAutoSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Freepik API Service
@@ -21,22 +20,16 @@ class FreepikApiService
 {
     /**
      * Base URL ของ Freepik API
-     *
-     * @var string
      */
     protected string $baseUrl = 'https://api.freepik.com/v1';
 
     /**
      * API Key
-     *
-     * @var string|null
      */
     protected ?string $apiKey;
 
     /**
      * Timeout สำหรับ HTTP requests (วินาที)
-     *
-     * @var int
      */
     protected int $timeout = 60;
 
@@ -50,8 +43,6 @@ class FreepikApiService
 
     /**
      * โหลดการตั้งค่าจาก database
-     *
-     * @return void
      */
     protected function loadSettings(): void
     {
@@ -62,20 +53,18 @@ class FreepikApiService
 
     /**
      * ตรวจสอบว่า API พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
      * สร้างภาพด้วย AI
      *
-     * @param string $prompt คำอธิบายภาพที่ต้องการ
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $prompt  คำอธิบายภาพที่ต้องการ
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, data?: array, error?: string}
      *
      * @example
@@ -90,7 +79,7 @@ class FreepikApiService
      */
     public function generateImage(string $prompt, array $options = [], ?VideoAutoJob $job = null): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'Freepik API ยังไม่ได้ตั้งค่า กรุณาใส่ API Key',
@@ -110,12 +99,12 @@ class FreepikApiService
             ];
 
             // เพิ่ม style
-            if (!empty($options['style'])) {
+            if (! empty($options['style'])) {
                 $body['style'] = $options['style'];
             }
 
             // เพิ่ม negative prompt
-            if (!empty($options['negative_prompt'])) {
+            if (! empty($options['negative_prompt'])) {
                 $body['negative_prompt'] = $options['negative_prompt'];
             }
 
@@ -123,7 +112,7 @@ class FreepikApiService
 
             $response = Http::timeout($this->timeout)
                 ->withHeaders($this->getHeaders())
-                ->post($this->baseUrl . '/ai/text-to-image', $body);
+                ->post($this->baseUrl.'/ai/text-to-image', $body);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -137,7 +126,7 @@ class FreepikApiService
                 $response->json() ?? []
             );
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $error = $response->json('error.message') ?? $response->body();
                 $job?->logError('Freepik API error', ['error' => $error]);
 
@@ -176,9 +165,9 @@ class FreepikApiService
     /**
      * สร้างภาพหลายรูปจาก prompts
      *
-     * @param array $prompts รายการ prompts
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  array  $prompts  รายการ prompts
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, images?: array, error?: string}
      */
     public function generateMultipleImages(array $prompts, array $options = [], ?VideoAutoJob $job = null): array
@@ -230,14 +219,14 @@ class FreepikApiService
     /**
      * ค้นหาภาพจาก Freepik
      *
-     * @param string $query คำค้นหา
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $query  คำค้นหา
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, data?: array, error?: string}
      */
     public function searchImages(string $query, array $options = [], ?VideoAutoJob $job = null): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'Freepik API ยังไม่ได้ตั้งค่า',
@@ -255,12 +244,12 @@ class FreepikApiService
             ];
 
             // กรองตาม orientation
-            if (!empty($options['orientation'])) {
+            if (! empty($options['orientation'])) {
                 $params['filters']['orientation'] = $options['orientation'];
             }
 
             // กรองตาม color
-            if (!empty($options['color'])) {
+            if (! empty($options['color'])) {
                 $params['filters']['color'] = $options['color'];
             }
 
@@ -268,7 +257,7 @@ class FreepikApiService
 
             $response = Http::timeout(30)
                 ->withHeaders($this->getHeaders())
-                ->get($this->baseUrl . '/resources', $params);
+                ->get($this->baseUrl.'/resources', $params);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -282,10 +271,10 @@ class FreepikApiService
                 []
             );
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
-                    'error' => 'ค้นหาภาพไม่สำเร็จ: ' . $response->body(),
+                    'error' => 'ค้นหาภาพไม่สำเร็จ: '.$response->body(),
                 ];
             }
 
@@ -305,10 +294,10 @@ class FreepikApiService
     /**
      * ดาวน์โหลดภาพ
      *
-     * @param string $imageUrl URL หรือ base64 ของภาพ
-     * @param string $filename ชื่อไฟล์
-     * @param bool $isBase64 เป็น base64 หรือไม่
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  string  $imageUrl  URL หรือ base64 ของภาพ
+     * @param  string  $filename  ชื่อไฟล์
+     * @param  bool  $isBase64  เป็น base64 หรือไม่
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, path?: string, error?: string}
      */
     public function downloadImage(
@@ -327,7 +316,7 @@ class FreepikApiService
                 // Download from URL
                 $response = Http::timeout(120)->get($imageUrl);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return [
                         'success' => false,
                         'error' => 'ไม่สามารถดาวน์โหลดภาพได้',
@@ -341,7 +330,7 @@ class FreepikApiService
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $mimeType = $finfo->buffer($imageData);
 
-            if (!str_starts_with($mimeType, 'image/')) {
+            if (! str_starts_with($mimeType, 'image/')) {
                 return [
                     'success' => false,
                     'error' => 'ไฟล์ที่ดาวน์โหลดไม่ใช่รูปภาพ',
@@ -358,8 +347,8 @@ class FreepikApiService
             };
 
             // เพิ่ม extension ถ้าไม่มี
-            if (!str_contains($filename, '.')) {
-                $filename .= '.' . $extension;
+            if (! str_contains($filename, '.')) {
+                $filename .= '.'.$extension;
             }
 
             // บันทึกไฟล์
@@ -394,9 +383,9 @@ class FreepikApiService
     /**
      * ดาวน์โหลดภาพหลายรูป
      *
-     * @param array $images รายการภาพ
-     * @param string $projectId ID ของโปรเจกต์
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  array  $images  รายการภาพ
+     * @param  string  $projectId  ID ของโปรเจกต์
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, downloaded?: array, errors?: array}
      */
     public function downloadMultipleImages(array $images, string $projectId, ?VideoAutoJob $job = null): array
@@ -411,7 +400,7 @@ class FreepikApiService
                 "กำลังดาวน์โหลดภาพ {$index}/{$total}"
             );
 
-            $filename = "{$projectId}_" . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+            $filename = "{$projectId}_".str_pad($index + 1, 3, '0', STR_PAD_LEFT);
 
             $result = $this->downloadImage(
                 $image['url'],
@@ -452,7 +441,7 @@ class FreepikApiService
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'API ยังไม่ได้ตั้งค่า กรุณาใส่ API Key',
@@ -463,7 +452,7 @@ class FreepikApiService
             // ทดสอบด้วยการค้นหาภาพง่ายๆ
             $response = Http::timeout(15)
                 ->withHeaders($this->getHeaders())
-                ->get($this->baseUrl . '/resources', [
+                ->get($this->baseUrl.'/resources', [
                     'term' => 'nature',
                     'limit' => 1,
                 ]);
@@ -477,22 +466,19 @@ class FreepikApiService
 
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อไม่สำเร็จ: ' . ($response->json('error.message') ?? $response->status()),
+                'message' => 'เชื่อมต่อไม่สำเร็จ: '.($response->json('error.message') ?? $response->status()),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'เชื่อมต่อไม่สำเร็จ: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * แปลง ratio เป็นขนาดภาพ
-     *
-     * @param string $ratio
-     * @return string
      */
     protected function getImageSize(string $ratio): string
     {
@@ -509,8 +495,6 @@ class FreepikApiService
 
     /**
      * สร้าง HTTP headers
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {

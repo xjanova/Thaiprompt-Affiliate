@@ -48,10 +48,10 @@ return [
     |
     */
     'access_control' => [
-        'owner'        => 0,     // Owner Only (default, ไม่คิดค่าใช้จ่าย)
-        'role_based'   => 150,   // Role-Based Access Control (RBAC)
-        'dao'          => 300,   // DAO Governance (ซับซ้อนมาก)
-        'multi_sig'    => 250,   // Multi-Signature (ต้องมี consensus)
+        'owner' => 0,     // Owner Only (default, ไม่คิดค่าใช้จ่าย)
+        'role_based' => 150,   // Role-Based Access Control (RBAC)
+        'dao' => 300,   // DAO Governance (ซับซ้อนมาก)
+        'multi_sig' => 250,   // Multi-Signature (ต้องมี consensus)
     ],
 
     /*
@@ -75,7 +75,7 @@ return [
     |
     */
     'dex_integration' => [
-        'create_pool'       => 200,  // สร้าง Liquidity Pool
+        'create_pool' => 200,  // สร้าง Liquidity Pool
         'initial_liquidity' => 0,    // เพิ่ม Liquidity ครั้งแรก (ไม่คิดค่าบริการเพิ่ม)
     ],
 
@@ -89,8 +89,8 @@ return [
     */
     'verification_listing' => [
         'contract_verification' => 50,    // Verify Contract บน Block Explorer
-        'coinmarketcap'        => 500,    // Submit ไปยัง CoinMarketCap (Premium Service)
-        'coingecko'            => 500,    // Submit ไปยัง CoinGecko (Premium Service)
+        'coinmarketcap' => 500,    // Submit ไปยัง CoinMarketCap (Premium Service)
+        'coingecko' => 500,    // Submit ไปยัง CoinGecko (Premium Service)
     ],
 
     /*
@@ -102,11 +102,11 @@ return [
     |
     */
     'tokenomics_features' => [
-        'vesting_schedule'  => 100,  // Vesting Schedule สำหรับ Team/Advisors
-        'token_lock'        => 75,   // Token Lock Mechanism
-        'auto_burn'         => 50,   // Auto-Burn บน Transaction
-        'reflection'        => 150,  // Reflection/Redistribution
-        'transaction_tax'   => 100,  // Transaction Tax (Buy/Sell)
+        'vesting_schedule' => 100,  // Vesting Schedule สำหรับ Team/Advisors
+        'token_lock' => 75,   // Token Lock Mechanism
+        'auto_burn' => 50,   // Auto-Burn บน Transaction
+        'reflection' => 150,  // Reflection/Redistribution
+        'transaction_tax' => 100,  // Transaction Tax (Buy/Sell)
     ],
 
     /*
@@ -118,11 +118,11 @@ return [
     |
     */
     'premium_services' => [
-        'audit_report'           => 1000,  // Smart Contract Audit Report
-        'marketing_package'      => 500,   // Marketing Package (Social Media Setup)
-        'whitepaper_creation'    => 750,   // Whitepaper Creation Service
-        'priority_support'       => 300,   // Priority Support (30 วัน)
-        'custom_tokenomics'      => 500,   // Custom Tokenomics Consultation
+        'audit_report' => 1000,  // Smart Contract Audit Report
+        'marketing_package' => 500,   // Marketing Package (Social Media Setup)
+        'whitepaper_creation' => 750,   // Whitepaper Creation Service
+        'priority_support' => 300,   // Priority Support (30 วัน)
+        'custom_tokenomics' => 500,   // Custom Tokenomics Consultation
     ],
 
     /*
@@ -134,9 +134,9 @@ return [
     |
     */
     'discounts' => [
-        'early_adopter'    => 20,  // Early Adopter Discount (20%)
-        'bulk_deployment'  => 15,  // Deploy 5+ tokens (15% per token)
-        'referral'         => 10,  // Referral Discount (10%)
+        'early_adopter' => 20,  // Early Adopter Discount (20%)
+        'bulk_deployment' => 15,  // Deploy 5+ tokens (15% per token)
+        'referral' => 10,  // Referral Discount (10%)
     ],
 
     /*
@@ -148,8 +148,8 @@ return [
     |
     */
     'minimum_balance' => [
-        'deployment'     => 50,   // ต้องมี TPIX อย่างน้อย 50 เพื่อเริ่ม Deploy
-        'gas_reserve'    => 10,   // สำรอง TPIX สำหรับค่า Gas
+        'deployment' => 50,   // ต้องมี TPIX อย่างน้อย 50 เพื่อเริ่ม Deploy
+        'gas_reserve' => 10,   // สำรอง TPIX สำหรับค่า Gas
     ],
 
     /*
@@ -161,10 +161,10 @@ return [
     |
     */
     'payment' => [
-        'wallet_required'        => true,   // บังคับต้องเชื่อม wallet
-        'pay_before_deployment'  => true,   // ชำระก่อน Deploy
-        'refund_on_failure'      => true,   // คืนเงินถ้า Deploy ล้มเหลว
-        'refund_percentage'      => 80,     // คืนเงิน 80% (หัก 20% ค่าดำเนินการ)
+        'wallet_required' => true,   // บังคับต้องเชื่อม wallet
+        'pay_before_deployment' => true,   // ชำระก่อน Deploy
+        'refund_on_failure' => true,   // คืนเงินถ้า Deploy ล้มเหลว
+        'refund_percentage' => 80,     // คืนเงิน 80% (หัก 20% ค่าดำเนินการ)
     ],
 
     /*
@@ -186,9 +186,9 @@ return [
     |
     */
     'display' => [
-        'currency'       => 'TPIX',
+        'currency' => 'TPIX',
         'decimal_places' => 2,
-        'show_usd'       => true,  // แสดงราคาเป็น USD (ถ้ามี exchange rate)
+        'show_usd' => true,  // แสดงราคาเป็น USD (ถ้ามี exchange rate)
     ],
 
 ];

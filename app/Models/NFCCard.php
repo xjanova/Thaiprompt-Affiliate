@@ -4,10 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NFCCard extends Model
 {
@@ -128,17 +127,24 @@ class NFCCard extends Model
      * Card Types
      */
     const TYPE_STANDARD = 'standard';
+
     const TYPE_PREMIUM = 'premium';
+
     const TYPE_VIP = 'vip';
 
     /**
      * Card Status
      */
     const STATUS_ACTIVE = 'active';
+
     const STATUS_INACTIVE = 'inactive';
+
     const STATUS_BLOCKED = 'blocked';
+
     const STATUS_SUSPENDED = 'suspended';
+
     const STATUS_EXPIRED = 'expired';
+
     const STATUS_PENDING = 'pending';
 
     /**
@@ -220,7 +226,7 @@ class NFCCard extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_ACTIVE && !$this->isExpired() && !$this->isBlocked();
+        return $this->status === self::STATUS_ACTIVE && ! $this->isExpired() && ! $this->isBlocked();
     }
 
     /**
@@ -228,7 +234,7 @@ class NFCCard extends Model
      */
     public function isExpired(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return false;
         }
 
@@ -297,7 +303,7 @@ class NFCCard extends Model
     /**
      * Block card
      */
-    public function block(string $reason = null, int $minutes = null): bool
+    public function block(?string $reason = null, ?int $minutes = null): bool
     {
         $minutes = $minutes ?? self::BLOCK_DURATION_MINUTES;
 
@@ -324,7 +330,7 @@ class NFCCard extends Model
     /**
      * Pair card with user
      */
-    public function pairWithUser(int $userId, int $pairedBy = null): bool
+    public function pairWithUser(int $userId, ?int $pairedBy = null): bool
     {
         return $this->update([
             'user_id' => $userId,
@@ -362,7 +368,7 @@ class NFCCard extends Model
      */
     public function deductBalance(float $amount): bool
     {
-        if (!$this->hasSufficientBalance($amount)) {
+        if (! $this->hasSufficientBalance($amount)) {
             return false;
         }
 
@@ -400,7 +406,7 @@ class NFCCard extends Model
     /**
      * Update last used timestamp
      */
-    public function updateLastUsed(string $ip = null): bool
+    public function updateLastUsed(?string $ip = null): bool
     {
         return $this->update([
             'last_used_at' => now(),
@@ -413,7 +419,7 @@ class NFCCard extends Model
      */
     public function getStatusBadgeColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_ACTIVE => 'green',
             self::STATUS_INACTIVE => 'gray',
             self::STATUS_BLOCKED => 'red',
@@ -428,7 +434,7 @@ class NFCCard extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_ACTIVE => 'ใช้งานได้',
             self::STATUS_INACTIVE => 'ไม่ได้ใช้งาน',
             self::STATUS_BLOCKED => 'ถูกบล็อก',
@@ -443,7 +449,7 @@ class NFCCard extends Model
      */
     public function getCardTypeLabelAttribute(): string
     {
-        return match($this->card_type) {
+        return match ($this->card_type) {
             self::TYPE_STANDARD => 'มาตรฐาน',
             self::TYPE_PREMIUM => 'พรีเมียม',
             self::TYPE_VIP => 'วีไอพี',
@@ -457,10 +463,10 @@ class NFCCard extends Model
     public function getMaskedCardNumberAttribute(): string
     {
         if (strlen($this->card_number) <= 8) {
-            return str_repeat('*', strlen($this->card_number) - 4) . substr($this->card_number, -4);
+            return str_repeat('*', strlen($this->card_number) - 4).substr($this->card_number, -4);
         }
 
-        return substr($this->card_number, 0, 4) . str_repeat('*', strlen($this->card_number) - 8) . substr($this->card_number, -4);
+        return substr($this->card_number, 0, 4).str_repeat('*', strlen($this->card_number) - 8).substr($this->card_number, -4);
     }
 
     /**
@@ -518,23 +524,22 @@ class NFCCard extends Model
     /**
      * ตรวจสอบว่าสามารถใช้จ่ายได้หรือไม่
      *
-     * @param float $amount จำนวนเงินที่ต้องการใช้จ่าย
-     * @return bool
+     * @param  float  $amount  จำนวนเงินที่ต้องการใช้จ่าย
      */
     public function canSpend(float $amount): bool
     {
         // ตรวจสอบว่าการ์ดเปิดใช้งานหรือไม่
-        if (!$this->is_enabled) {
+        if (! $this->is_enabled) {
             return false;
         }
 
         // ตรวจสอบสถานะการ์ด
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return false;
         }
 
         // ตรวจสอบยอดเงินคงเหลือ
-        if (!$this->hasSufficientBalance($amount)) {
+        if (! $this->hasSufficientBalance($amount)) {
             return false;
         }
 
@@ -564,9 +569,6 @@ class NFCCard extends Model
 
     /**
      * บันทึกยอดใช้จ่าย
-     *
-     * @param float $amount
-     * @return bool
      */
     public function recordSpending(float $amount): bool
     {
@@ -579,14 +581,12 @@ class NFCCard extends Model
 
     /**
      * Reset ยอดใช้จ่ายรายวันถ้าข้ามวัน
-     *
-     * @return void
      */
     protected function resetDailySpentIfNeeded(): void
     {
         $today = now()->toDateString();
 
-        if (!$this->last_reset_daily || $this->last_reset_daily->toDateString() !== $today) {
+        if (! $this->last_reset_daily || $this->last_reset_daily->toDateString() !== $today) {
             $this->update([
                 'daily_spent' => 0,
                 'last_reset_daily' => $today,
@@ -596,15 +596,13 @@ class NFCCard extends Model
 
     /**
      * Reset ยอดใช้จ่ายรายเดือนถ้าข้ามเดือน
-     *
-     * @return void
      */
     protected function resetMonthlySpentIfNeeded(): void
     {
         $currentMonth = now()->format('Y-m');
         $lastResetMonth = $this->last_reset_monthly ? $this->last_reset_monthly->format('Y-m') : null;
 
-        if (!$lastResetMonth || $lastResetMonth !== $currentMonth) {
+        if (! $lastResetMonth || $lastResetMonth !== $currentMonth) {
             $this->update([
                 'monthly_spent' => 0,
                 'last_reset_monthly' => now()->toDateString(),
@@ -614,9 +612,6 @@ class NFCCard extends Model
 
     /**
      * ตั้งค่าวงเงินรายวัน
-     *
-     * @param float $limit
-     * @return bool
      */
     public function setDailyLimit(float $limit): bool
     {
@@ -625,9 +620,6 @@ class NFCCard extends Model
 
     /**
      * ตั้งค่าวงเงินรายเดือน
-     *
-     * @param float $limit
-     * @return bool
      */
     public function setMonthlyLimit(float $limit): bool
     {
@@ -636,9 +628,6 @@ class NFCCard extends Model
 
     /**
      * ตั้งค่าวงเงินต่อธุรกรรม
-     *
-     * @param float $limit
-     * @return bool
      */
     public function setTransactionLimit(float $limit): bool
     {
@@ -647,23 +636,21 @@ class NFCCard extends Model
 
     /**
      * ดูยอดเงินคงเหลือที่ใช้ได้วันนี้
-     *
-     * @return float
      */
     public function getDailyRemainingAttribute(): float
     {
         $this->resetDailySpentIfNeeded();
+
         return max(0, $this->daily_spending_limit - $this->daily_spent);
     }
 
     /**
      * ดูยอดเงินคงเหลือที่ใช้ได้เดือนนี้
-     *
-     * @return float
      */
     public function getMonthlyRemainingAttribute(): float
     {
         $this->resetMonthlySpentIfNeeded();
+
         return max(0, $this->monthly_spending_limit - $this->monthly_spent);
     }
 
@@ -673,8 +660,6 @@ class NFCCard extends Model
 
     /**
      * เปิดใช้งานการ์ด
-     *
-     * @return bool
      */
     public function enable(): bool
     {
@@ -687,9 +672,6 @@ class NFCCard extends Model
 
     /**
      * ปิดการใช้งานการ์ด
-     *
-     * @param string|null $reason
-     * @return bool
      */
     public function disable(?string $reason = null): bool
     {
@@ -702,8 +684,6 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่าการ์ดเปิดใช้งานอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isEnabled(): bool
     {
@@ -713,12 +693,10 @@ class NFCCard extends Model
     /**
      * ตรวจสอบว่าการ์ดสามารถใช้งานได้จริงหรือไม่
      * (ทั้ง enabled และ active และไม่ expired และไม่ blocked)
-     *
-     * @return bool
      */
     public function isUsable(): bool
     {
-        return $this->isEnabled() && $this->isActive() && !$this->isExpired() && !$this->isBlocked();
+        return $this->isEnabled() && $this->isActive() && ! $this->isExpired() && ! $this->isBlocked();
     }
 
     // ==========================================
@@ -727,9 +705,6 @@ class NFCCard extends Model
 
     /**
      * ผูกกับ Wallet
-     *
-     * @param int $walletId
-     * @return bool
      */
     public function linkWallet(int $walletId): bool
     {
@@ -738,8 +713,6 @@ class NFCCard extends Model
 
     /**
      * ยกเลิกการผูกกับ Wallet
-     *
-     * @return bool
      */
     public function unlinkWallet(): bool
     {
@@ -748,8 +721,6 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่าผูกกับ Wallet แล้วหรือไม่
-     *
-     * @return bool
      */
     public function hasLinkedWallet(): bool
     {
@@ -762,9 +733,6 @@ class NFCCard extends Model
 
     /**
      * เปิดใช้งาน TPIX
-     *
-     * @param string $tpixWalletAddress
-     * @return bool
      */
     public function enableTPIX(string $tpixWalletAddress): bool
     {
@@ -776,8 +744,6 @@ class NFCCard extends Model
 
     /**
      * ปิดใช้งาน TPIX
-     *
-     * @return bool
      */
     public function disableTPIX(): bool
     {
@@ -789,12 +755,10 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่ารองรับ TPIX หรือไม่
-     *
-     * @return bool
      */
     public function supportsTPIX(): bool
     {
-        return $this->supports_tpix === true && !empty($this->tpix_wallet_address);
+        return $this->supports_tpix === true && ! empty($this->tpix_wallet_address);
     }
 
     // ==========================================
@@ -803,10 +767,6 @@ class NFCCard extends Model
 
     /**
      * เปิดใช้งาน Auto Top-up
-     *
-     * @param float $threshold
-     * @param float $amount
-     * @return bool
      */
     public function enableAutoTopup(float $threshold, float $amount): bool
     {
@@ -819,8 +779,6 @@ class NFCCard extends Model
 
     /**
      * ปิดใช้งาน Auto Top-up
-     *
-     * @return bool
      */
     public function disableAutoTopup(): bool
     {
@@ -829,8 +787,6 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่าต้อง Auto Top-up หรือไม่
-     *
-     * @return bool
      */
     public function needsAutoTopup(): bool
     {
@@ -857,15 +813,15 @@ class NFCCard extends Model
     public function scopeUsable($query)
     {
         return $query->where('is_enabled', true)
-                     ->where('status', self::STATUS_ACTIVE)
-                     ->where(function($q) {
-                         $q->whereNull('expires_at')
-                           ->orWhere('expires_at', '>', now());
-                     })
-                     ->where(function($q) {
-                         $q->whereNull('blocked_until')
-                           ->orWhere('blocked_until', '<', now());
-                     });
+            ->where('status', self::STATUS_ACTIVE)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('blocked_until')
+                    ->orWhere('blocked_until', '<', now());
+            });
     }
 
     /**
@@ -890,8 +846,6 @@ class NFCCard extends Model
 
     /**
      * ผู้ที่เขียนข้อมูลลงบัตร NFC
-     *
-     * @return BelongsTo
      */
     public function nfcWriter(): BelongsTo
     {
@@ -900,8 +854,6 @@ class NFCCard extends Model
 
     /**
      * ผู้ที่ล็อคบัตร
-     *
-     * @return BelongsTo
      */
     public function locker(): BelongsTo
     {
@@ -910,8 +862,6 @@ class NFCCard extends Model
 
     /**
      * ผู้ที่ปลดล็อคบัตร
-     *
-     * @return BelongsTo
      */
     public function unlocker(): BelongsTo
     {
@@ -920,8 +870,6 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่าบัตรถูกล็อคหรือไม่
-     *
-     * @return bool
      */
     public function isLocked(): bool
     {
@@ -930,22 +878,18 @@ class NFCCard extends Model
 
     /**
      * ตรวจสอบว่าบัตรถูกเขียนข้อมูลลงแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isNfcWritten(): bool
     {
-        return !empty($this->nfc_uid) && !empty($this->anti_counterfeit_code);
+        return ! empty($this->nfc_uid) && ! empty($this->anti_counterfeit_code);
     }
 
     /**
      * ดึงข้อมูลประเภทบัตรที่ตรวจพบ
-     *
-     * @return string|null
      */
     public function getCardTypeDetectedLabelAttribute(): ?string
     {
-        if (!$this->card_type_detected) {
+        if (! $this->card_type_detected) {
             return null;
         }
 
@@ -964,20 +908,18 @@ class NFCCard extends Model
 
     /**
      * ดึงข้อมูลขนาดหน่วยความจำในหน่วยที่อ่านได้
-     *
-     * @return string|null
      */
     public function getMemorySizeLabelAttribute(): ?string
     {
-        if (!$this->memory_size) {
+        if (! $this->memory_size) {
             return null;
         }
 
         if ($this->memory_size >= 1024) {
-            return round($this->memory_size / 1024, 1) . ' KB';
+            return round($this->memory_size / 1024, 1).' KB';
         }
 
-        return $this->memory_size . ' bytes';
+        return $this->memory_size.' bytes';
     }
 
     /**
@@ -1002,14 +944,11 @@ class NFCCard extends Model
     public function scopeWritten($query)
     {
         return $query->whereNotNull('nfc_uid')
-                     ->whereNotNull('anti_counterfeit_code');
+            ->whereNotNull('anti_counterfeit_code');
     }
 
     /**
      * พักการใช้งานบัตร (Suspend)
-     *
-     * @param string|null $reason
-     * @return bool
      */
     public function suspend(?string $reason = null): bool
     {

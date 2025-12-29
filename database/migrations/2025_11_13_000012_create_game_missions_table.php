@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง game_missions สำหรับเก็บภารกิจและเควสต์ของเกม
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -65,8 +63,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง game_missions
-     *
-     * @return void
      */
     public function down(): void
     {

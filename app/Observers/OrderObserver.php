@@ -3,8 +3,8 @@
 namespace App\Observers;
 
 use App\Models\Order;
-use App\Services\MlmCalculationService;
 use App\Services\CashbackService;
+use App\Services\MlmCalculationService;
 use App\Services\OrderDistributionService;
 use App\Services\WalletService;
 use Illuminate\Support\Facades\Log;
@@ -24,14 +24,16 @@ use Illuminate\Support\Facades\Log;
 class OrderObserver
 {
     protected $mlmService;
+
     protected $cashbackService;
+
     protected $distributionService;
 
     public function __construct()
     {
-        $this->mlmService = new MlmCalculationService();
-        $this->cashbackService = new CashbackService(new WalletService());
-        $this->distributionService = new OrderDistributionService();
+        $this->mlmService = new MlmCalculationService;
+        $this->cashbackService = new CashbackService(new WalletService);
+        $this->distributionService = new OrderDistributionService;
     }
 
     /**
@@ -40,9 +42,6 @@ class OrderObserver
      * เมื่อ Order ถูกอัพเดท จะตรวจสอบและประมวลผล:
      * 1. ถ้า payment_status เปลี่ยนเป็น 'paid' → ประมวลผลทั้งหมด
      * 2. ถ้า COD และ status เปลี่ยนเป็น 'delivered' → จ่าย cashback
-     *
-     * @param Order $order
-     * @return void
      */
     public function updated(Order $order): void
     {
@@ -63,7 +62,7 @@ class OrderObserver
             $this->processCashback($order);
 
             // สำหรับ COD ต้อง distribute เมื่อส่งของสำเร็จด้วย
-            if (!$this->distributionService->isOrderDistributed($order)) {
+            if (! $this->distributionService->isOrderDistributed($order)) {
                 $this->processOrderDistribution($order);
             }
         }
@@ -71,9 +70,6 @@ class OrderObserver
 
     /**
      * ประมวลผล MLM Commission สำหรับ Order
-     *
-     * @param Order $order
-     * @return void
      */
     protected function processMlmCommissions(Order $order): void
     {
@@ -90,9 +86,6 @@ class OrderObserver
 
     /**
      * ประมวลผล Cashback สำหรับ Order
-     *
-     * @param Order $order
-     * @return void
      */
     protected function processCashback(Order $order): void
     {
@@ -116,9 +109,6 @@ class OrderObserver
      * ประมวลผลการแบ่งเงิน Order
      *
      * หักค่า Fee, VAT, MLM Pool แล้วบันทึกรายได้ให้ Seller
-     *
-     * @param Order $order
-     * @return void
      */
     protected function processOrderDistribution(Order $order): void
     {
@@ -126,6 +116,7 @@ class OrderObserver
             // ตรวจสอบว่า distribute ไปแล้วหรือยัง
             if ($this->distributionService->isOrderDistributed($order)) {
                 Log::info('Order already distributed, skipping', ['order_id' => $order->id]);
+
                 return;
             }
 

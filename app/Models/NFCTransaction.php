@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class NFCTransaction extends Model
@@ -67,19 +67,28 @@ class NFCTransaction extends Model
      * Transaction Types
      */
     const TYPE_PAYMENT = 'payment';
+
     const TYPE_TOPUP = 'topup';
+
     const TYPE_REFUND = 'refund';
+
     const TYPE_TRANSFER = 'transfer';
+
     const TYPE_VERIFICATION = 'verification';
 
     /**
      * Transaction Status
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_PROCESSING = 'processing';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
+
     const STATUS_REFUNDED = 'refunded';
 
     /**
@@ -90,11 +99,11 @@ class NFCTransaction extends Model
         parent::boot();
 
         static::creating(function ($transaction) {
-            if (!$transaction->transaction_id) {
+            if (! $transaction->transaction_id) {
                 $transaction->transaction_id = self::generateTransactionId();
             }
 
-            if (!$transaction->receipt_number) {
+            if (! $transaction->receipt_number) {
                 $transaction->receipt_number = self::generateReceiptNumber();
             }
         });
@@ -106,7 +115,7 @@ class NFCTransaction extends Model
     public static function generateTransactionId(): string
     {
         do {
-            $id = 'NFC' . strtoupper(Str::random(10)) . time();
+            $id = 'NFC'.strtoupper(Str::random(10)).time();
         } while (self::where('transaction_id', $id)->exists());
 
         return $id;
@@ -118,7 +127,7 @@ class NFCTransaction extends Model
     public static function generateReceiptNumber(): string
     {
         do {
-            $number = 'RCP' . date('Ymd') . str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $number = 'RCP'.date('Ymd').str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (self::where('receipt_number', $number)->exists());
 
         return $number;
@@ -234,7 +243,7 @@ class NFCTransaction extends Model
     /**
      * Mark as completed
      */
-    public function markAsCompleted(string $message = null): bool
+    public function markAsCompleted(?string $message = null): bool
     {
         return $this->update([
             'status' => self::STATUS_COMPLETED,
@@ -246,7 +255,7 @@ class NFCTransaction extends Model
     /**
      * Mark as failed
      */
-    public function markAsFailed(string $message = null, string $errorMessage = null): bool
+    public function markAsFailed(?string $message = null, ?string $errorMessage = null): bool
     {
         return $this->update([
             'status' => self::STATUS_FAILED,
@@ -259,7 +268,7 @@ class NFCTransaction extends Model
     /**
      * Mark as cancelled
      */
-    public function markAsCancelled(string $message = null): bool
+    public function markAsCancelled(?string $message = null): bool
     {
         return $this->update([
             'status' => self::STATUS_CANCELLED,
@@ -301,7 +310,7 @@ class NFCTransaction extends Model
      */
     public function getStatusBadgeColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_COMPLETED => 'green',
             self::STATUS_PROCESSING => 'blue',
             self::STATUS_PENDING => 'yellow',
@@ -317,7 +326,7 @@ class NFCTransaction extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_COMPLETED => 'สำเร็จ',
             self::STATUS_PROCESSING => 'กำลังดำเนินการ',
             self::STATUS_PENDING => 'รอดำเนินการ',
@@ -333,7 +342,7 @@ class NFCTransaction extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             self::TYPE_PAYMENT => 'ชำระเงิน',
             self::TYPE_TOPUP => 'เติมเงิน',
             self::TYPE_REFUND => 'คืนเงิน',
@@ -348,7 +357,7 @@ class NFCTransaction extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->amount, 2) . ' ' . $this->currency;
+        return number_format($this->amount, 2).' '.$this->currency;
     }
 
     /**
@@ -429,6 +438,6 @@ class NFCTransaction extends Model
     public function scopeThisMonth($query)
     {
         return $query->whereYear('created_at', now()->year)
-                     ->whereMonth('created_at', now()->month);
+            ->whereMonth('created_at', now()->month);
     }
 }

@@ -28,7 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property bool $is_active เปิดใช้งาน
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read \Illuminate\Database\Eloquent\Collection|User[] $users
  */
 class ForumTrophy extends Model
@@ -76,8 +75,6 @@ class ForumTrophy extends Model
 
     /**
      * ความสัมพันธ์กับผู้ใช้ที่ได้รับโทรฟี่
-     *
-     * @return BelongsToMany
      */
     public function users(): BelongsToMany
     {
@@ -89,7 +86,7 @@ class ForumTrophy extends Model
     /**
      * Scope: โทรฟี่ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -100,7 +97,7 @@ class ForumTrophy extends Model
     /**
      * Scope: โทรฟี่ดี
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePositive($query)
@@ -111,7 +108,7 @@ class ForumTrophy extends Model
     /**
      * Scope: โทรฟี่ไม่ดี
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeNegative($query)
@@ -122,7 +119,7 @@ class ForumTrophy extends Model
     /**
      * Scope: โทรฟี่ที่ให้อัตโนมัติ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAutomatic($query)
@@ -133,7 +130,7 @@ class ForumTrophy extends Model
     /**
      * Scope: โทรฟี่ที่ให้ manual
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeManual($query)
@@ -144,7 +141,7 @@ class ForumTrophy extends Model
     /**
      * Scope: เรียงตามลำดับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -154,9 +151,6 @@ class ForumTrophy extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้มีคุณสมบัติได้รับโทรฟี่นี้หรือไม่
-     *
-     * @param User $user
-     * @return bool
      */
     public function isQualified(User $user): bool
     {
@@ -181,10 +175,8 @@ class ForumTrophy extends Model
     /**
      * มอบโทรฟี่ให้ผู้ใช้
      *
-     * @param User $user
-     * @param User|null $awardedBy ผู้มอบ (null = ระบบ)
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  User|null  $awardedBy  ผู้มอบ (null = ระบบ)
+     * @param  string|null  $reason  เหตุผล
      */
     public function awardTo(User $user, ?User $awardedBy = null, ?string $reason = null): bool
     {
@@ -204,9 +196,6 @@ class ForumTrophy extends Model
 
     /**
      * ถอนโทรฟี่จากผู้ใช้ (ไม่ได้สำหรับ permanent)
-     *
-     * @param User $user
-     * @return bool
      */
     public function revokeFrom(User $user): bool
     {
@@ -216,13 +205,12 @@ class ForumTrophy extends Model
         }
 
         $this->users()->detach($user->id);
+
         return true;
     }
 
     /**
      * ดึง gradient class สำหรับ badge
-     *
-     * @return string
      */
     public function getBadgeGradientClassAttribute(): string
     {
@@ -237,8 +225,6 @@ class ForumTrophy extends Model
 
     /**
      * ดึงสีไอคอนเริ่มต้น
-     *
-     * @return string
      */
     public function getIconColorClassAttribute(): string
     {

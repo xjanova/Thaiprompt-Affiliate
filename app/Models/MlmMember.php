@@ -214,7 +214,7 @@ class MlmMember extends Model
     public static function generateMemberCode(): string
     {
         do {
-            $code = 'MLM' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+            $code = 'MLM'.strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
         } while (self::where('member_code', $code)->exists());
 
         return $code;
@@ -300,9 +300,8 @@ class MlmMember extends Model
     /**
      * ตั้งค่า expiry date สำหรับ carried PV
      *
-     * @param string $leg 'left' หรือ 'right'
-     * @param float $pvAmount จำนวน PV ที่จะ carry forward
-     * @return void
+     * @param  string  $leg  'left' หรือ 'right'
+     * @param  float  $pvAmount  จำนวน PV ที่จะ carry forward
      */
     public function setCarriedPvExpiry(string $leg, float $pvAmount): void
     {

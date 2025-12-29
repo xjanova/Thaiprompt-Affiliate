@@ -81,27 +81,39 @@ class PayoutRequest extends Model
      * ประเภทการจ่าย
      */
     const TYPE_SELLER = 'seller';
+
     const TYPE_MLM = 'mlm';
+
     const TYPE_SERVICE = 'service';
+
     const TYPE_WITHDRAWAL = 'withdrawal';
 
     /**
      * สถานะ
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_PROCESSING = 'processing';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_REJECTED = 'rejected';
+
     const STATUS_CANCELLED = 'cancelled';
+
     const STATUS_FAILED = 'failed';
 
     /**
      * วิธีการจ่าย
      */
     const METHOD_WALLET = 'wallet';
+
     const METHOD_BANK_TRANSFER = 'bank_transfer';
+
     const METHOD_PROMPTPAY = 'promptpay';
+
     const METHOD_OTHER = 'other';
 
     /**

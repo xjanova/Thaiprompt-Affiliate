@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง wallet_debts
      * ระบบหนี้/ติดลบ - เมื่อ refund แล้วผู้ขายถอนเงินไปแล้ว
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -40,7 +38,7 @@ return new class extends Migration
                 'active',       // หนี้ยังคงค้าง รอหัก
                 'paid',         // ชำระหนี้ครบแล้ว
                 'waived',       // ยกเว้นหนี้ (Admin ยกเลิก)
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('active');
 
             // การชำระหนี้
@@ -85,8 +83,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง wallet_debts
-     *
-     * @return void
      */
     public function down(): void
     {

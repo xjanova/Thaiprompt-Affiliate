@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,7 +44,9 @@ class LeadLock extends Model
      * สถานะของ Lead Lock
      */
     const STATUS_LOCKED = 'locked';
+
     const STATUS_EXPIRED = 'expired';
+
     const STATUS_CONVERTED = 'converted';
 
     /**
@@ -92,8 +93,6 @@ class LeadLock extends Model
 
     /**
      * ความสัมพันธ์กับ User (แม่ทีม)
-     *
-     * @return BelongsTo
      */
     public function teamLeader(): BelongsTo
     {
@@ -102,8 +101,6 @@ class LeadLock extends Model
 
     /**
      * ความสัมพันธ์กับ MlmMember (ถ้าสมัครแล้ว)
-     *
-     * @return BelongsTo
      */
     public function mlmMember(): BelongsTo
     {
@@ -113,7 +110,7 @@ class LeadLock extends Model
     /**
      * Scope: เฉพาะที่ล็อคอยู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeLocked($query)
@@ -125,7 +122,7 @@ class LeadLock extends Model
     /**
      * Scope: เฉพาะที่หมดอายุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExpired($query)
@@ -137,7 +134,7 @@ class LeadLock extends Model
     /**
      * Scope: เฉพาะที่แปลงแล้ว (converted)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeConverted($query)
@@ -147,11 +144,6 @@ class LeadLock extends Model
 
     /**
      * สร้าง Lead Lock ใหม่
-     *
-     * @param string $visitorIdentifier
-     * @param int $teamLeaderId
-     * @param array $additionalData
-     * @return LeadLock
      */
     public static function createLock(
         string $visitorIdentifier,
@@ -172,9 +164,6 @@ class LeadLock extends Model
 
     /**
      * ตรวจสอบว่ามี Lead Lock ที่ active อยู่หรือไม่
-     *
-     * @param string $visitorIdentifier
-     * @return LeadLock|null
      */
     public static function getActiveLock(string $visitorIdentifier): ?LeadLock
     {
@@ -186,9 +175,6 @@ class LeadLock extends Model
 
     /**
      * ทำเครื่องหมายว่าสมัครสำเร็จ (converted)
-     *
-     * @param int $mlmMemberId
-     * @return bool
      */
     public function markAsConverted(int $mlmMemberId): bool
     {
@@ -207,19 +193,16 @@ class LeadLock extends Model
 
     /**
      * ทำเครื่องหมายว่าหมดอายุ
-     *
-     * @return bool
      */
     public function markAsExpired(): bool
     {
         $this->status = self::STATUS_EXPIRED;
+
         return $this->save();
     }
 
     /**
      * ตรวจสอบว่าหมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -228,18 +211,14 @@ class LeadLock extends Model
 
     /**
      * ตรวจสอบว่า active อยู่หรือไม่
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
-        return $this->status === self::STATUS_LOCKED && !$this->isExpired();
+        return $this->status === self::STATUS_LOCKED && ! $this->isExpired();
     }
 
     /**
      * ดึงเวลาที่เหลือ (ในรูปแบบมนุษย์อ่าน)
-     *
-     * @return string
      */
     public function getTimeRemaining(): string
     {

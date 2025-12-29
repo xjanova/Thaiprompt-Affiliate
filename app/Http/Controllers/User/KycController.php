@@ -7,8 +7,8 @@ use App\Models\KycVerification;
 use App\Services\OCR\ThaiIdCardOcrService;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class KycController extends Controller
 {
@@ -94,7 +94,7 @@ class KycController extends Controller
         // ⚠️ IMPORTANT: ต้องทำ OCR ก่อน WebP conversion เพื่อคุณภาพที่ดีที่สุด
         // เก็บรูป original ชั่วคราวสำหรับ OCR
         $idCardFile = $request->file('id_card_image');
-        $tempIdCardPath = 'kyc/temp/' . uniqid('idcard_') . '.' . $idCardFile->getClientOriginalExtension();
+        $tempIdCardPath = 'kyc/temp/'.uniqid('idcard_').'.'.$idCardFile->getClientOriginalExtension();
         Storage::disk('public')->put($tempIdCardPath, file_get_contents($idCardFile->getRealPath()));
 
         // Extract data from ID card using OCR (ใช้รูปต้นฉบับ)
@@ -102,17 +102,17 @@ class KycController extends Controller
         $ocrError = null;
 
         try {
-            $ocrService = new ThaiIdCardOcrService();
+            $ocrService = new ThaiIdCardOcrService;
             $ocrResult = $ocrService->extractData($tempIdCardPath);
 
-            if (!empty($ocrResult['success'])) {
+            if (! empty($ocrResult['success'])) {
                 // OCR succeeded
                 $extractedData = $ocrResult;
 
                 // Validate ID card number if extracted
-                if (!empty($extractedData['id_card_number'])) {
-                    if (!$ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
-                        Log::warning('Invalid ID card number checksum: ' . $extractedData['id_card_number']);
+                if (! empty($extractedData['id_card_number'])) {
+                    if (! $ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
+                        Log::warning('Invalid ID card number checksum: '.$extractedData['id_card_number']);
                     }
                 }
 
@@ -122,23 +122,23 @@ class KycController extends Controller
                 $ocrError = [
                     'error' => $ocrResult['error'] ?? 'ไม่สามารถอ่านข้อมูลจากบัตรได้',
                     'error_code' => $ocrResult['error_code'] ?? 'UNKNOWN_ERROR',
-                    'suggestion' => $ocrResult['suggestion'] ?? 'กรุณาลองถ่ายรูปใหม่'
+                    'suggestion' => $ocrResult['suggestion'] ?? 'กรุณาลองถ่ายรูปใหม่',
                 ];
 
                 Log::warning('OCR extraction failed', $ocrError);
 
                 // Store partial data if available
-                if (!empty($ocrResult['partial_data'])) {
+                if (! empty($ocrResult['partial_data'])) {
                     $extractedData = $ocrResult['partial_data'];
                     $extractedData['ocr_warning'] = $ocrError;
                 }
             }
         } catch (\Exception $e) {
-            Log::error('OCR extraction exception: ' . $e->getMessage());
+            Log::error('OCR extraction exception: '.$e->getMessage());
             $ocrError = [
                 'error' => 'เกิดข้อผิดพลาดในการประมวลผล',
                 'error_code' => 'EXCEPTION',
-                'suggestion' => 'กรุณาลองอัพโหลดใหม่อีกครั้ง'
+                'suggestion' => 'กรุณาลองอัพโหลดใหม่อีกครั้ง',
             ];
         }
 
@@ -146,7 +146,7 @@ class KycController extends Controller
         Storage::disk('public')->delete($tempIdCardPath);
 
         // Store images with WebP conversion (หลังจาก OCR)
-        $webpService = new WebPService();
+        $webpService = new WebPService;
 
         // Convert ID card image to WebP
         $idCardResult = $webpService->convertAndStore(

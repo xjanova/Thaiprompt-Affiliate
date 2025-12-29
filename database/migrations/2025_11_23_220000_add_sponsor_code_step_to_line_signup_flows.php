@@ -1,9 +1,7 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use App\Models\LineSignupFlow;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -13,8 +11,6 @@ return new class extends Migration
      * ขั้นตอนนี้เป็น optional (ข้ามได้) เพื่อให้ user กรอกรหัสผู้แนะนำได้
      * ถ้าไม่กรอก → ใช้ Super Admin auto-placement
      * ถ้ากรอก → ใช้ sponsor ที่ระบุ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -69,8 +65,6 @@ return new class extends Migration
 
     /**
      * ลบขั้นตอน sponsor_code และคืนค่า step_order เดิม
-     *
-     * @return void
      */
     public function down(): void
     {

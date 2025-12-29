@@ -13,13 +13,11 @@ return new class extends Migration
      * - line_avatars
      * - line_flex_message_templates
      * - line_chat_widget_settings
-     *
-     * @return void
      */
     public function up(): void
     {
         // 1. สร้างตาราง line_avatars ก่อน (เพราะ line_chat_widget_settings มี FK ไปหา)
-        if (!Schema::hasTable('line_avatars')) {
+        if (! Schema::hasTable('line_avatars')) {
             Schema::create('line_avatars', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -42,7 +40,7 @@ return new class extends Migration
         }
 
         // 2. สร้างตาราง line_flex_message_templates
-        if (!Schema::hasTable('line_flex_message_templates')) {
+        if (! Schema::hasTable('line_flex_message_templates')) {
             Schema::create('line_flex_message_templates', function (Blueprint $table) {
                 $table->id();
                 $table->string('name')->comment('ชื่อเทมเพลต');
@@ -66,7 +64,7 @@ return new class extends Migration
         }
 
         // 3. สร้างตาราง line_chat_widget_settings
-        if (!Schema::hasTable('line_chat_widget_settings')) {
+        if (! Schema::hasTable('line_chat_widget_settings')) {
             Schema::create('line_chat_widget_settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('name')->default('Support Chat');
@@ -105,8 +103,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -1806,6 +1806,6 @@ class ApiEndpointSeeder extends Seeder
             );
         }
 
-        $this->command->info('✓ สร้างข้อมูล API endpoints เรียบร้อยแล้ว: ' . count($endpoints) . ' endpoints');
+        $this->command->info('✓ สร้างข้อมูล API endpoints เรียบร้อยแล้ว: '.count($endpoints).' endpoints');
     }
 }

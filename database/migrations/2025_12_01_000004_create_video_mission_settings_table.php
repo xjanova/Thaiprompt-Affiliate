@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง video_mission_settings
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -49,8 +47,6 @@ return new class extends Migration
 
     /**
      * สร้างค่าเริ่มต้นสำหรับการตั้งค่า
-     *
-     * @return void
      */
     private function seedDefaultSettings(): void
     {
@@ -272,8 +268,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_mission_settings
-     *
-     * @return void
      */
     public function down(): void
     {

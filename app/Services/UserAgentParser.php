@@ -9,7 +9,7 @@ class UserAgentParser
      */
     public static function parse(?string $userAgent): array
     {
-        if (!$userAgent) {
+        if (! $userAgent) {
             return [
                 'os' => null,
                 'os_version' => null,
@@ -34,30 +34,30 @@ class UserAgentParser
     protected static function detectOS(string $userAgent): ?string
     {
         $os_array = [
-            '/windows nt 10/i'      => 'Windows 10',
-            '/windows nt 11/i'      => 'Windows 11',
-            '/windows nt 6.3/i'     => 'Windows 8.1',
-            '/windows nt 6.2/i'     => 'Windows 8',
-            '/windows nt 6.1/i'     => 'Windows 7',
-            '/windows nt 6.0/i'     => 'Windows Vista',
-            '/windows nt 5.2/i'     => 'Windows Server 2003/XP x64',
-            '/windows nt 5.1/i'     => 'Windows XP',
-            '/windows xp/i'         => 'Windows XP',
-            '/windows nt 5.0/i'     => 'Windows 2000',
-            '/windows me/i'         => 'Windows ME',
-            '/win98/i'              => 'Windows 98',
-            '/win95/i'              => 'Windows 95',
-            '/win16/i'              => 'Windows 3.11',
+            '/windows nt 10/i' => 'Windows 10',
+            '/windows nt 11/i' => 'Windows 11',
+            '/windows nt 6.3/i' => 'Windows 8.1',
+            '/windows nt 6.2/i' => 'Windows 8',
+            '/windows nt 6.1/i' => 'Windows 7',
+            '/windows nt 6.0/i' => 'Windows Vista',
+            '/windows nt 5.2/i' => 'Windows Server 2003/XP x64',
+            '/windows nt 5.1/i' => 'Windows XP',
+            '/windows xp/i' => 'Windows XP',
+            '/windows nt 5.0/i' => 'Windows 2000',
+            '/windows me/i' => 'Windows ME',
+            '/win98/i' => 'Windows 98',
+            '/win95/i' => 'Windows 95',
+            '/win16/i' => 'Windows 3.11',
             '/macintosh|mac os x/i' => 'macOS',
-            '/mac_powerpc/i'        => 'Mac OS 9',
-            '/linux/i'              => 'Linux',
-            '/ubuntu/i'             => 'Ubuntu',
-            '/iphone/i'             => 'iOS',
-            '/ipod/i'               => 'iOS',
-            '/ipad/i'               => 'iOS',
-            '/android/i'            => 'Android',
-            '/blackberry/i'         => 'BlackBerry',
-            '/webos/i'              => 'WebOS',
+            '/mac_powerpc/i' => 'Mac OS 9',
+            '/linux/i' => 'Linux',
+            '/ubuntu/i' => 'Ubuntu',
+            '/iphone/i' => 'iOS',
+            '/ipod/i' => 'iOS',
+            '/ipad/i' => 'iOS',
+            '/android/i' => 'Android',
+            '/blackberry/i' => 'BlackBerry',
+            '/webos/i' => 'WebOS',
         ];
 
         foreach ($os_array as $regex => $value) {
@@ -108,17 +108,17 @@ class UserAgentParser
         }
 
         $browser_array = [
-            '/edg/i'        => 'Edge',
-            '/edge/i'       => 'Edge',
-            '/opr/i'        => 'Opera',
-            '/opera/i'      => 'Opera',
-            '/chrome/i'     => 'Chrome',
-            '/safari/i'     => 'Safari',
-            '/firefox/i'    => 'Firefox',
-            '/msie/i'       => 'Internet Explorer',
-            '/trident/i'    => 'Internet Explorer',
-            '/brave/i'      => 'Brave',
-            '/vivaldi/i'    => 'Vivaldi',
+            '/edg/i' => 'Edge',
+            '/edge/i' => 'Edge',
+            '/opr/i' => 'Opera',
+            '/opera/i' => 'Opera',
+            '/chrome/i' => 'Chrome',
+            '/safari/i' => 'Safari',
+            '/firefox/i' => 'Firefox',
+            '/msie/i' => 'Internet Explorer',
+            '/trident/i' => 'Internet Explorer',
+            '/brave/i' => 'Brave',
+            '/vivaldi/i' => 'Vivaldi',
         ];
 
         foreach ($browser_array as $regex => $value) {
@@ -197,7 +197,7 @@ class UserAgentParser
      */
     public static function getDeviceIcon(string $deviceType): string
     {
-        return match($deviceType) {
+        return match ($deviceType) {
             'mobile' => '📱',
             'tablet' => '📱',
             'desktop' => '💻',
@@ -211,13 +211,25 @@ class UserAgentParser
      */
     public static function getOsIcon(?string $os): string
     {
-        if (!$os) return '❓';
+        if (! $os) {
+            return '❓';
+        }
 
-        if (str_contains($os, 'Windows')) return '🪟';
-        if (str_contains($os, 'macOS') || str_contains($os, 'Mac')) return '🍎';
-        if (str_contains($os, 'Linux')) return '🐧';
-        if (str_contains($os, 'Android')) return '🤖';
-        if (str_contains($os, 'iOS')) return '📱';
+        if (str_contains($os, 'Windows')) {
+            return '🪟';
+        }
+        if (str_contains($os, 'macOS') || str_contains($os, 'Mac')) {
+            return '🍎';
+        }
+        if (str_contains($os, 'Linux')) {
+            return '🐧';
+        }
+        if (str_contains($os, 'Android')) {
+            return '🤖';
+        }
+        if (str_contains($os, 'iOS')) {
+            return '📱';
+        }
 
         return '❓';
     }
@@ -227,9 +239,11 @@ class UserAgentParser
      */
     public static function getBrowserIcon(?string $browser): string
     {
-        if (!$browser) return '❓';
+        if (! $browser) {
+            return '❓';
+        }
 
-        return match($browser) {
+        return match ($browser) {
             'Chrome' => '🌐',
             'Firefox' => '🦊',
             'Safari' => '🧭',

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\VideoQuest;
 use App\Models\UserQuestProgress;
 use App\Models\UserVideoLevel;
 use App\Models\VideoCoin;
+use App\Models\VideoQuest;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use Illuminate\Http\Request;
@@ -40,7 +40,7 @@ class VideoQuestController extends Controller
             return [
                 'quest' => $quest,
                 'progress' => $progress,
-                'can_claim' => $progress && $progress->completed && !$progress->reward_claimed,
+                'can_claim' => $progress && $progress->completed && ! $progress->reward_claimed,
             ];
         });
 
@@ -58,7 +58,7 @@ class VideoQuestController extends Controller
         $user = $request->user();
         $quest = VideoQuest::findOrFail($questId);
 
-        if (!$quest->isUserEligible($user)) {
+        if (! $quest->isUserEligible($user)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You are not eligible for this quest',
@@ -73,7 +73,7 @@ class VideoQuestController extends Controller
             'data' => [
                 'quest' => $quest,
                 'progress' => $progress,
-                'can_claim' => $progress && $progress->completed && !$progress->reward_claimed,
+                'can_claim' => $progress && $progress->completed && ! $progress->reward_claimed,
             ],
         ]);
     }
@@ -89,7 +89,7 @@ class VideoQuestController extends Controller
         $period = $quest->getCurrentPeriod();
         $progress = $quest->getUserProgress($user->id, $period['start']);
 
-        if (!$progress || !$progress->completed || $progress->reward_claimed) {
+        if (! $progress || ! $progress->completed || $progress->reward_claimed) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot claim reward',
@@ -101,14 +101,14 @@ class VideoQuestController extends Controller
             // Claim rewards
             $rewards = $progress->claimRewards();
 
-            if (!$rewards) {
+            if (! $rewards) {
                 throw new \Exception('Failed to claim rewards');
             }
 
             // Add coins
             if ($rewards['coins'] > 0) {
                 $videoCoin = VideoCoin::firstOrCreate(['user_id' => $user->id]);
-                $videoCoin->addCoins($rewards['coins'], 'earned_quest', 'VideoQuest', $questId, 'Completed quest: ' . $quest->name);
+                $videoCoin->addCoins($rewards['coins'], 'earned_quest', 'VideoQuest', $questId, 'Completed quest: '.$quest->name);
             }
 
             // Add experience
@@ -131,7 +131,7 @@ class VideoQuestController extends Controller
                     'amount' => $rewards['money'],
                     'balance_before' => $wallet->balance,
                     'balance_after' => $wallet->balance + $rewards['money'],
-                    'description' => 'Quest reward: ' . $quest->name,
+                    'description' => 'Quest reward: '.$quest->name,
                     'reference_type' => 'VideoQuest',
                     'reference_id' => $questId,
                     'status' => 'completed',
@@ -154,9 +154,10 @@ class VideoQuestController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to claim reward: ' . $e->getMessage(),
+                'message' => 'Failed to claim reward: '.$e->getMessage(),
             ], 500);
         }
     }

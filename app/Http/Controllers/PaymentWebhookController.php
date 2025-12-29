@@ -35,8 +35,9 @@ class PaymentWebhookController extends Controller
             // Get transaction ID from webhook data
             $transactionId = $request->input('order_id');
 
-            if (!$transactionId) {
+            if (! $transactionId) {
                 Log::warning('PaySolutions webhook missing order_id');
+
                 return response()->json(['error' => 'Missing order_id'], 400);
             }
 
@@ -45,10 +46,11 @@ class PaymentWebhookController extends Controller
                 ->whereIn('status', ['pending', 'processing'])
                 ->first();
 
-            if (!$transaction) {
+            if (! $transaction) {
                 Log::warning('PaySolutions webhook: transaction not found', [
                     'transaction_id' => $transactionId,
                 ]);
+
                 return response()->json(['error' => 'Transaction not found'], 404);
             }
 
@@ -100,7 +102,7 @@ class PaymentWebhookController extends Controller
 
             $refNo = $request->input('ref_no');
 
-            if (!$refNo) {
+            if (! $refNo) {
                 return response()->json(['error' => 'Missing ref_no'], 400);
             }
 
@@ -108,10 +110,11 @@ class PaymentWebhookController extends Controller
                 ->whereIn('status', ['pending', 'processing'])
                 ->first();
 
-            if (!$transaction) {
+            if (! $transaction) {
                 Log::warning('PromptPay webhook: transaction not found', [
                     'ref_no' => $refNo,
                 ]);
+
                 return response()->json(['error' => 'Transaction not found'], 404);
             }
 
@@ -159,6 +162,7 @@ class PaymentWebhookController extends Controller
 
                 default:
                     Log::info('Unhandled Stripe event type', ['type' => $eventType]);
+
                     return response()->json(['status' => 'ok']);
             }
         } catch (\Exception $e) {
@@ -179,13 +183,13 @@ class PaymentWebhookController extends Controller
         $metadata = $paymentIntent['metadata'] ?? [];
         $transactionId = $metadata['transaction_id'] ?? null;
 
-        if (!$transactionId) {
+        if (! $transactionId) {
             return response()->json(['error' => 'Missing transaction_id'], 400);
         }
 
         $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-        if ($transaction && !$transaction->isCompleted()) {
+        if ($transaction && ! $transaction->isCompleted()) {
             $this->paymentService->completePayment($transaction);
         }
 
@@ -204,7 +208,7 @@ class PaymentWebhookController extends Controller
         if ($transactionId) {
             $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-            if ($transaction && !$transaction->isCompleted()) {
+            if ($transaction && ! $transaction->isCompleted()) {
                 $transaction->markAsFailed('Payment failed via Stripe');
             }
         }
@@ -245,7 +249,7 @@ class PaymentWebhookController extends Controller
                 if ($transactionId) {
                     $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-                    if ($transaction && !$transaction->isCompleted()) {
+                    if ($transaction && ! $transaction->isCompleted()) {
                         $verified = $this->paymentService->verifyPayment($transactionId, $event);
                         if ($verified) {
                             Log::info('Omise payment completed', ['transaction_id' => $transactionId]);
@@ -289,6 +293,7 @@ class PaymentWebhookController extends Controller
 
                 default:
                     Log::info('Unhandled PayPal event type', ['type' => $eventType]);
+
                     return response()->json(['status' => 'ok']);
             }
         } catch (\Exception $e) {
@@ -311,7 +316,7 @@ class PaymentWebhookController extends Controller
         if ($orderId) {
             $transaction = PaymentTransaction::where('gateway_transaction_id', $orderId)->first();
 
-            if ($transaction && !$transaction->isCompleted()) {
+            if ($transaction && ! $transaction->isCompleted()) {
                 $verified = $this->paymentService->verifyPayment($transaction->transaction_id, $event);
                 if ($verified) {
                     Log::info('PayPal payment completed', ['order_id' => $orderId]);
@@ -333,7 +338,7 @@ class PaymentWebhookController extends Controller
         if ($orderId) {
             $transaction = PaymentTransaction::where('gateway_transaction_id', $orderId)->first();
 
-            if ($transaction && !$transaction->isCompleted()) {
+            if ($transaction && ! $transaction->isCompleted()) {
                 $transaction->markAsFailed('Payment failed via PayPal');
             }
         }
@@ -364,6 +369,7 @@ class PaymentWebhookController extends Controller
 
                 default:
                     Log::info('Unhandled Razorpay event type', ['type' => $eventType]);
+
                     return response()->json(['status' => 'ok']);
             }
         } catch (\Exception $e) {
@@ -387,7 +393,7 @@ class PaymentWebhookController extends Controller
         if ($transactionId) {
             $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-            if ($transaction && !$transaction->isCompleted()) {
+            if ($transaction && ! $transaction->isCompleted()) {
                 // Save razorpay_payment_id for refunds
                 $transaction->update([
                     'metadata' => array_merge($transaction->metadata ?? [], [
@@ -415,7 +421,7 @@ class PaymentWebhookController extends Controller
         if ($transactionId) {
             $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-            if ($transaction && !$transaction->isCompleted()) {
+            if ($transaction && ! $transaction->isCompleted()) {
                 $errorDesc = $payload['error_description'] ?? 'Payment failed';
                 $transaction->markAsFailed($errorDesc);
             }
@@ -439,29 +445,30 @@ class PaymentWebhookController extends Controller
             $status = $data['status'] ?? '';
             $transactionId = $data['reference_id'] ?? $data['transaction_id'] ?? null;
 
-            if (!$transactionId) {
+            if (! $transactionId) {
                 return response()->json(['error' => 'Missing transaction reference'], 400);
             }
 
             $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
 
-            if (!$transaction) {
+            if (! $transaction) {
                 Log::warning('TrueMoney webhook: transaction not found', [
                     'transaction_id' => $transactionId,
                 ]);
+
                 return response()->json(['error' => 'Transaction not found'], 404);
             }
 
             if (in_array(strtoupper($status), ['SUCCESS', 'COMPLETED'])) {
-                if (!$transaction->isCompleted()) {
+                if (! $transaction->isCompleted()) {
                     $verified = $this->paymentService->verifyPayment($transactionId, $data);
                     if ($verified) {
                         Log::info('TrueMoney payment completed', ['transaction_id' => $transactionId]);
                     }
                 }
             } elseif (in_array(strtoupper($status), ['FAILED', 'CANCELLED'])) {
-                if (!$transaction->isCompleted()) {
-                    $transaction->markAsFailed('Payment ' . strtolower($status));
+                if (! $transaction->isCompleted()) {
+                    $transaction->markAsFailed('Payment '.strtolower($status));
                 }
             }
 

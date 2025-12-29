@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\InvestmentPlan;
+use App\Models\Rank;
 use App\Models\StakingCoinSetting;
 use App\Models\StakingPosition;
-use App\Models\Rank;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Admin Staking Plan Controller
@@ -17,6 +16,7 @@ use Illuminate\Support\Facades\DB;
  * รวมถึงการเปิด/ปิดแผน, ตั้งค่าอัตราแลกเปลี่ยน Coin, และดูสถิติ
  *
  * @version 3.296.0
+ *
  * @since 2025-12-02
  */
 class StakingPlanController extends Controller
@@ -35,11 +35,11 @@ class StakingPlanController extends Controller
             },
             'stakingPositions as total_positions',
         ])
-        ->withSum(['stakingPositions as total_invested' => function ($query) {
-            $query->whereIn('status', ['active', 'locked', 'matured']);
-        }], 'amount')
-        ->orderBy('sort_order')
-        ->get();
+            ->withSum(['stakingPositions as total_invested' => function ($query) {
+                $query->whereIn('status', ['active', 'locked', 'matured']);
+            }], 'amount')
+            ->orderBy('sort_order')
+            ->get();
 
         // สถิติรวม
         $stats = [
@@ -77,7 +77,6 @@ class StakingPlanController extends Controller
     /**
      * บันทึกแผนใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -125,14 +124,13 @@ class StakingPlanController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียดแผน
      *
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\View\View
      */
     public function show(InvestmentPlan $stakingPlan)
@@ -171,7 +169,6 @@ class StakingPlanController extends Controller
     /**
      * แสดงฟอร์มแก้ไขแผน
      *
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\View\View
      */
     public function edit(InvestmentPlan $stakingPlan)
@@ -185,8 +182,6 @@ class StakingPlanController extends Controller
     /**
      * อัพเดทแผน
      *
-     * @param Request $request
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, InvestmentPlan $stakingPlan)
@@ -234,15 +229,13 @@ class StakingPlanController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * หยุดรับการลงทุนชั่วคราว (Pause)
      *
-     * @param Request $request
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\Http\RedirectResponse
      */
     public function pause(Request $request, InvestmentPlan $stakingPlan)
@@ -257,7 +250,6 @@ class StakingPlanController extends Controller
     /**
      * เปิดรับการลงทุนอีกครั้ง (Resume)
      *
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\Http\RedirectResponse
      */
     public function resume(InvestmentPlan $stakingPlan)
@@ -270,13 +262,12 @@ class StakingPlanController extends Controller
     /**
      * สลับสถานะ Active
      *
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(InvestmentPlan $stakingPlan)
     {
         $stakingPlan->update([
-            'is_active' => !$stakingPlan->is_active,
+            'is_active' => ! $stakingPlan->is_active,
         ]);
 
         $status = $stakingPlan->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
@@ -299,7 +290,6 @@ class StakingPlanController extends Controller
     /**
      * อัพเดทตั้งค่า Coin
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateCoinSettings(Request $request)
@@ -323,14 +313,13 @@ class StakingPlanController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * หน้ารายงาน Positions
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function positions(Request $request)
@@ -374,7 +363,6 @@ class StakingPlanController extends Controller
     /**
      * ลบแผน (Soft Delete)
      *
-     * @param InvestmentPlan $stakingPlan
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(InvestmentPlan $stakingPlan)

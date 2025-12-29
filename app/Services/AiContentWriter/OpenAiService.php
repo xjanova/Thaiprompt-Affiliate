@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Log;
  *
  * จัดการการเชื่อมต่อกับ OpenAI API
  * รองรับ GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
- *
- * @package App\Services\AiContentWriter
  */
 class OpenAiService
 {
@@ -64,22 +62,18 @@ class OpenAiService
 
     /**
      * ตรวจสอบว่าพร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @return array
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -89,7 +83,7 @@ class OpenAiService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(10)
-                ->get($this->baseUrl . '/models');
+                ->get($this->baseUrl.'/models');
 
             if ($response->successful()) {
                 return [
@@ -100,30 +94,25 @@ class OpenAiService
 
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อล้มเหลว: ' . $response->body(),
+                'message' => 'เชื่อมต่อล้มเหลว: '.$response->body(),
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * สร้าง Content ด้วย Chat Completion
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param array $options
-     * @return array
      */
     public function generateContent(
         string $systemPrompt,
         string $userPrompt,
         array $options = []
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -136,7 +125,7 @@ class OpenAiService
 
         $messages = [];
 
-        if (!empty($systemPrompt)) {
+        if (! empty($systemPrompt)) {
             $messages[] = [
                 'role' => 'system',
                 'content' => $systemPrompt,
@@ -153,7 +142,7 @@ class OpenAiService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(120)
-                ->post($this->baseUrl . '/chat/completions', [
+                ->post($this->baseUrl.'/chat/completions', [
                     'model' => $model,
                     'messages' => $messages,
                     'temperature' => $temperature,
@@ -204,7 +193,7 @@ class OpenAiService
 
             return [
                 'success' => false,
-                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'error_code' => 'EXCEPTION',
             ];
         }
@@ -212,12 +201,6 @@ class OpenAiService
 
     /**
      * Stream Content (สำหรับ real-time output)
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param callable $callback
-     * @param array $options
-     * @return array
      */
     public function streamContent(
         string $systemPrompt,
@@ -225,7 +208,7 @@ class OpenAiService
         callable $callback,
         array $options = []
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -238,7 +221,7 @@ class OpenAiService
 
         $messages = [];
 
-        if (!empty($systemPrompt)) {
+        if (! empty($systemPrompt)) {
             $messages[] = [
                 'role' => 'system',
                 'content' => $systemPrompt,
@@ -254,7 +237,7 @@ class OpenAiService
             $response = Http::withHeaders($this->getHeaders())
                 ->withOptions(['stream' => true])
                 ->timeout(120)
-                ->post($this->baseUrl . '/chat/completions', [
+                ->post($this->baseUrl.'/chat/completions', [
                     'model' => $model,
                     'messages' => $messages,
                     'temperature' => $temperature,
@@ -297,10 +280,6 @@ class OpenAiService
 
     /**
      * คำนวณค่าใช้จ่าย
-     *
-     * @param string $model
-     * @param array $usage
-     * @return float
      */
     protected function calculateCost(string $model, array $usage): float
     {
@@ -314,13 +293,11 @@ class OpenAiService
 
     /**
      * ดึง Headers สำหรับ Request
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {
         $headers = [
-            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Authorization' => 'Bearer '.$this->apiKey,
             'Content-Type' => 'application/json',
         ];
 

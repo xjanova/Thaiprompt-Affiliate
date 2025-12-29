@@ -46,9 +46,9 @@ class LineBotKnowledgeBase extends Model
     {
         switch ($this->type) {
             case 'url':
-                return "URL: {$this->source}\n" . ($this->content ?? '');
+                return "URL: {$this->source}\n".($this->content ?? '');
             case 'file':
-                return "File: {$this->file_path}\n" . ($this->content ?? '');
+                return "File: {$this->file_path}\n".($this->content ?? '');
             case 'text':
             case 'internal':
             default:
@@ -65,7 +65,7 @@ class LineBotKnowledgeBase extends Model
             return false;
         }
 
-        if (!$this->last_synced_at) {
+        if (! $this->last_synced_at) {
             return true;
         }
 

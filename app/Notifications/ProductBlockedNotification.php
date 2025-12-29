@@ -19,8 +19,6 @@ class ProductBlockedNotification extends Notification implements ShouldQueue
 
     /**
      * สร้าง notification instance
-     *
-     * @param Product $product
      */
     public function __construct(Product $product)
     {
@@ -30,8 +28,7 @@ class ProductBlockedNotification extends Notification implements ShouldQueue
     /**
      * ช่องทางการส่ง notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function via($notifiable): array
     {
@@ -41,16 +38,15 @@ class ProductBlockedNotification extends Notification implements ShouldQueue
     /**
      * Email notification
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
      */
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('⚠️ สินค้าของคุณถูกบล็อกโดย Admin')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line('สินค้า "' . $this->product->name . '" ของคุณถูกบล็อกโดยผู้ดูแลระบบ')
-            ->line('**เหตุผล**: ' . $this->product->block_reason)
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('สินค้า "'.$this->product->name.'" ของคุณถูกบล็อกโดยผู้ดูแลระบบ')
+            ->line('**เหตุผล**: '.$this->product->block_reason)
             ->line('สินค้าจะไม่แสดงในหน้าร้านจนกว่าจะได้รับการปลดบล็อก')
             ->line('กรุณาติดต่อผู้ดูแลระบบเพื่อขอข้อมูลเพิ่มเติมหรือแก้ไขปัญหา')
             ->action('ดูรายละเอียดสินค้า', route('seller.products.edit', $this->product))
@@ -60,8 +56,7 @@ class ProductBlockedNotification extends Notification implements ShouldQueue
     /**
      * Database notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function toArray($notifiable): array
     {
@@ -72,7 +67,7 @@ class ProductBlockedNotification extends Notification implements ShouldQueue
             'block_reason' => $this->product->block_reason,
             'blocked_at' => $this->product->blocked_at,
             'blocked_by' => $this->product->blocked_by,
-            'message' => 'สินค้า "' . $this->product->name . '" ถูกบล็อกโดย Admin',
+            'message' => 'สินค้า "'.$this->product->name.'" ถูกบล็อกโดย Admin',
             'action_url' => route('seller.products.edit', $this->product),
         ];
     }

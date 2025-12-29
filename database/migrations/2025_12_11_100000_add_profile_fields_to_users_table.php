@@ -20,20 +20,20 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // เพิ่ม bio หลัง address
-            if (!Schema::hasColumn('users', 'bio')) {
+            if (! Schema::hasColumn('users', 'bio')) {
                 $table->text('bio')->nullable()->after('address')->comment('แนะนำตัว/ประวัติย่อ');
             }
 
             // เพิ่มข้อมูลธนาคาร
-            if (!Schema::hasColumn('users', 'bank_name')) {
+            if (! Schema::hasColumn('users', 'bank_name')) {
                 $table->string('bank_name', 100)->nullable()->after('bio')->comment('ชื่อธนาคาร');
             }
 
-            if (!Schema::hasColumn('users', 'bank_account')) {
+            if (! Schema::hasColumn('users', 'bank_account')) {
                 $table->string('bank_account', 50)->nullable()->after('bank_name')->comment('เลขบัญชีธนาคาร');
             }
 
-            if (!Schema::hasColumn('users', 'bank_account_name')) {
+            if (! Schema::hasColumn('users', 'bank_account_name')) {
                 $table->string('bank_account_name', 255)->nullable()->after('bank_account')->comment('ชื่อบัญชีธนาคาร');
             }
         });

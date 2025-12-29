@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\ServicePricingRule;
 use App\Models\Service;
 use App\Models\ServiceBooking;
+use App\Models\ServicePricingRule;
 
 /**
  * ServicePricingService
@@ -17,8 +17,8 @@ class ServicePricingService
     /**
      * คำนวณราคาค่าเดินทางตามระยะทาง
      *
-     * @param float $distanceKm ระยะทาง (กิโลเมตร)
-     * @param int|null $serviceId ID ของบริการ (null = ใช้กฎทั่วไป)
+     * @param  float  $distanceKm  ระยะทาง (กิโลเมตร)
+     * @param  int|null  $serviceId  ID ของบริการ (null = ใช้กฎทั่วไป)
      * @return array ['price' => float, 'rule' => ServicePricingRule|null]
      */
     public function calculateDistancePrice(float $distanceKm, ?int $serviceId = null): array
@@ -33,7 +33,7 @@ class ServicePricingService
             ->first();
 
         // ถ้าไม่เจอกฎที่เหมาะสม ใช้ค่า default
-        if (!$rule) {
+        if (! $rule) {
             $defaultRate = config('services.default_price_per_km', 10);
             $price = $distanceKm * $defaultRate;
 
@@ -57,8 +57,7 @@ class ServicePricingService
     /**
      * คำนวณราคารวมทั้งหมดของการจอง
      *
-     * @param array $data ข้อมูลการจอง
-     * @return array
+     * @param  array  $data  ข้อมูลการจอง
      */
     public function calculateTotalPrice(array $data): array
     {
@@ -100,9 +99,7 @@ class ServicePricingService
     /**
      * คำนวณค่าออฟชั่นเพิ่มเติม
      *
-     * @param Service $service
-     * @param array $selectedOptions รายการออฟชั่นที่เลือก
-     * @return array
+     * @param  array  $selectedOptions  รายการออฟชั่นที่เลือก
      */
     public function calculateOptionsPrice(Service $service, array $selectedOptions = []): array
     {
@@ -140,26 +137,25 @@ class ServicePricingService
     /**
      * คำนวณคอมมิชชั่น MLM
      *
-     * @param float $totalAmount ราคารวม
-     * @param float $commissionRate อัตราคอมมิชชั่น (%)
-     * @return float
+     * @param  float  $totalAmount  ราคารวม
+     * @param  float  $commissionRate  อัตราคอมมิชชั่น (%)
      */
     public function calculateCommission(float $totalAmount, float $commissionRate): float
     {
         $commission = ($totalAmount * $commissionRate) / 100;
+
         return round($commission, 2);
     }
 
     /**
      * คำนวณส่วนลดจากคูปอง
      *
-     * @param float $subtotal รวมย่อย
-     * @param array $coupon ข้อมูลคูปอง
-     * @return array
+     * @param  float  $subtotal  รวมย่อย
+     * @param  array  $coupon  ข้อมูลคูปอง
      */
     public function calculateDiscount(float $subtotal, ?array $coupon = null): array
     {
-        if (!$coupon) {
+        if (! $coupon) {
             return [
                 'discount_amount' => 0,
                 'coupon_applied' => false,
@@ -207,11 +203,6 @@ class ServicePricingService
 
     /**
      * แสดงคำอธิบายการคำนวณ
-     *
-     * @param ServicePricingRule $rule
-     * @param float $distanceKm
-     * @param float $price
-     * @return string
      */
     protected function getCalculationExplanation(ServicePricingRule $rule, float $distanceKm, float $price): string
     {
@@ -222,33 +213,28 @@ class ServicePricingService
         }
 
         if ($rule->price_per_km > 0) {
-            $explanation[] = "{$distanceKm} km × {$rule->price_per_km}฿/km = " . ($distanceKm * $rule->price_per_km) . "฿";
+            $explanation[] = "{$distanceKm} km × {$rule->price_per_km}฿/km = ".($distanceKm * $rule->price_per_km).'฿';
         }
 
         if (empty($explanation)) {
-            return "ฟรี";
+            return 'ฟรี';
         }
 
-        return implode(' + ', $explanation) . " = {$price}฿";
+        return implode(' + ', $explanation)." = {$price}฿";
     }
 
     /**
      * ตรวจสอบราคาขั้นต่ำ
-     *
-     * @param float $totalAmount
-     * @return bool
      */
     public function isAboveMinimumPrice(float $totalAmount): bool
     {
         $minimumPrice = config('services.minimum_booking_price', 50);
+
         return $totalAmount >= $minimumPrice;
     }
 
     /**
      * แยกราคาตามประเภทรายการ (สำหรับ ServiceBookingItem)
-     *
-     * @param ServiceBooking $booking
-     * @return array
      */
     public function getItemizedPricing(ServiceBooking $booking): array
     {

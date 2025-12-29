@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Hotel;
 use App\Models\HotelFacility;
 use App\Models\RoomType;
 use App\Services\RoomAvailabilityService;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class HotelSeeder extends Seeder
 {
@@ -133,7 +133,7 @@ class HotelSeeder extends Seeder
             );
 
             // Sync facilities (will replace existing attachments)
-            $facilityIds = array_map(fn($index) => $createdFacilities[$index]->id, $facilityIndexes);
+            $facilityIds = array_map(fn ($index) => $createdFacilities[$index]->id, $facilityIndexes);
             $hotel->facilities()->sync($facilityIds);
 
             // Create Room Types for each hotel
@@ -202,7 +202,7 @@ class HotelSeeder extends Seeder
                 $roomType = RoomType::updateOrCreate(
                     [
                         'hotel_id' => $hotel->id,
-                        'name' => $roomData['name']
+                        'name' => $roomData['name'],
                     ],
                     $roomData
                 );

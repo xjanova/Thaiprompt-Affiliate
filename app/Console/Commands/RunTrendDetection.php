@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Jobs\ScrapeSourcesJob;
 use App\Jobs\AnalyzeTrendDataJob;
 use App\Jobs\DetectViralTrendsJob;
+use App\Jobs\ScrapeSourcesJob;
 use Illuminate\Console\Command;
 
 class RunTrendDetection extends Command
@@ -33,8 +33,9 @@ class RunTrendDetection extends Command
         $detect = $this->option('detect');
         $all = $this->option('all');
 
-        if (!$scrape && !$analyze && !$detect && !$all) {
+        if (! $scrape && ! $analyze && ! $detect && ! $all) {
             $this->error('Please specify at least one option: --scrape, --analyze, --detect, or --all');
+
             return 1;
         }
 

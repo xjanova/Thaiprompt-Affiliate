@@ -22,8 +22,6 @@ class LineSignupRewardApiController extends Controller
      * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
      * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
      *
-     * @param Request $request
-     * @return JsonResponse
      *
      * @example GET /api/v1/line-signup-rewards?signup_type=free
      * @example GET /api/v1/line-signup-rewards?package_id=3
@@ -111,7 +109,7 @@ class LineSignupRewardApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -124,9 +122,6 @@ class LineSignupRewardApiController extends Controller
      * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
      * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
      * - สามารถใช้ได้กับแพคเกจนี้
-     *
-     * @param int $packageId
-     * @return JsonResponse
      */
     public function byPackage(int $packageId): JsonResponse
     {
@@ -153,7 +148,7 @@ class LineSignupRewardApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -165,8 +160,6 @@ class LineSignupRewardApiController extends Controller
      * - เปิดใช้งาน (is_active = true)
      * - อยู่ในช่วงเวลาที่กำหนด (ถ้ามี time limit)
      * - ยังมีโควต้าเหลือ (ถ้ามี max_claims)
-     *
-     * @return JsonResponse
      */
     public function compare(): JsonResponse
     {
@@ -235,7 +228,7 @@ class LineSignupRewardApiController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

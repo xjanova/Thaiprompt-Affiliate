@@ -90,7 +90,7 @@ class EmailLog extends Model
     /**
      * Mark email as sent.
      */
-    public function markAsSent(string $messageId = null): void
+    public function markAsSent(?string $messageId = null): void
     {
         $this->update([
             'status' => 'sent',

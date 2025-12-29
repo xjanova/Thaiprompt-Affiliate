@@ -48,7 +48,6 @@ class SendScheduledBroadcast implements ShouldQueue
     /**
      * สร้าง job instance
      *
-     * @param LineBroadcastMessage $broadcast
      * @return void
      */
     public function __construct(LineBroadcastMessage $broadcast)
@@ -59,16 +58,15 @@ class SendScheduledBroadcast implements ShouldQueue
 
     /**
      * Execute the job
-     *
-     * @return void
      */
     public function handle(): void
     {
         Log::info("🚀 เริ่มส่ง broadcast: {$this->broadcast->name} (ID: {$this->broadcast->id})");
 
         // ตรวจสอบสถานะ
-        if (!in_array($this->broadcast->status, ['draft', 'scheduled', 'failed'])) {
+        if (! in_array($this->broadcast->status, ['draft', 'scheduled', 'failed'])) {
             Log::warning("⚠️ Broadcast {$this->broadcast->id} มีสถานะไม่เหมาะสมสำหรับการส่ง: {$this->broadcast->status}");
+
             return;
         }
 
@@ -87,7 +85,7 @@ class SendScheduledBroadcast implements ShouldQueue
                 'total_recipients' => count($recipients),
             ]);
 
-            Log::info("📊 พบผู้รับทั้งหมด: " . count($recipients) . " คน");
+            Log::info('📊 พบผู้รับทั้งหมด: '.count($recipients).' คน');
 
             // ส่งข้อความ
             $this->sendMessages($recipients);
@@ -101,7 +99,7 @@ class SendScheduledBroadcast implements ShouldQueue
             Log::info("✅ ส่ง broadcast {$this->broadcast->id} สำเร็จ! ส่งได้ {$this->broadcast->sent_count}/{$this->broadcast->total_recipients}");
 
         } catch (\Exception $e) {
-            Log::error("❌ เกิดข้อผิดพลาดในการส่ง broadcast {$this->broadcast->id}: " . $e->getMessage());
+            Log::error("❌ เกิดข้อผิดพลาดในการส่ง broadcast {$this->broadcast->id}: ".$e->getMessage());
 
             // บันทึก error และเพิ่ม retry count
             $this->broadcast->update([
@@ -118,8 +116,6 @@ class SendScheduledBroadcast implements ShouldQueue
 
     /**
      * ดึงรายชื่อผู้รับตาม target_type
-     *
-     * @return array
      */
     protected function getRecipients(): array
     {
@@ -154,13 +150,10 @@ class SendScheduledBroadcast implements ShouldQueue
 
     /**
      * ส่งข้อความไปยังผู้รับทั้งหมด
-     *
-     * @param array $recipients
-     * @return void
      */
     protected function sendMessages(array $recipients): void
     {
-        $lineService = new LineService();
+        $lineService = new LineService;
         $sentCount = 0;
         $failedCount = 0;
         $batchSize = 100; // ส่งทีละ 100 คนเพื่อหลีกเลี่ยง rate limit
@@ -169,7 +162,7 @@ class SendScheduledBroadcast implements ShouldQueue
         $batches = array_chunk($recipients, $batchSize);
 
         foreach ($batches as $batchIndex => $batch) {
-            Log::info("📦 กำลังส่ง batch " . ($batchIndex + 1) . "/" . count($batches));
+            Log::info('📦 กำลังส่ง batch '.($batchIndex + 1).'/'.count($batches));
 
             foreach ($batch as $lineUserId) {
                 try {
@@ -184,7 +177,7 @@ class SendScheduledBroadcast implements ShouldQueue
                     }
 
                 } catch (\Exception $e) {
-                    Log::error("❌ ส่งไปยัง {$lineUserId} ล้มเหลว: " . $e->getMessage());
+                    Log::error("❌ ส่งไปยัง {$lineUserId} ล้มเหลว: ".$e->getMessage());
                     $failedCount++;
                     $this->broadcast->incrementFailed();
                 }
@@ -201,10 +194,6 @@ class SendScheduledBroadcast implements ShouldQueue
 
     /**
      * ส่งข้อความไปยังผู้รับคนเดียว
-     *
-     * @param LineService $lineService
-     * @param string $lineUserId
-     * @return bool
      */
     protected function sendToRecipient(LineService $lineService, string $lineUserId): bool
     {
@@ -214,8 +203,9 @@ class SendScheduledBroadcast implements ShouldQueue
                     return $lineService->sendPushMessage($lineUserId, $this->broadcast->content);
 
                 case 'flex':
-                    if (!$this->broadcast->flexTemplate) {
+                    if (! $this->broadcast->flexTemplate) {
                         Log::error("❌ ไม่พบ Flex Template สำหรับ broadcast {$this->broadcast->id}");
+
                         return false;
                     }
 
@@ -231,7 +221,7 @@ class SendScheduledBroadcast implements ShouldQueue
                     $imageUrl = $this->broadcast->message_data['image_url'] ?? null;
                     $previewUrl = $this->broadcast->message_data['preview_url'] ?? $imageUrl;
 
-                    if (!$imageUrl) {
+                    if (! $imageUrl) {
                         return false;
                     }
 
@@ -247,7 +237,7 @@ class SendScheduledBroadcast implements ShouldQueue
                     $videoUrl = $this->broadcast->message_data['video_url'] ?? null;
                     $previewUrl = $this->broadcast->message_data['preview_url'] ?? null;
 
-                    if (!$videoUrl || !$previewUrl) {
+                    if (! $videoUrl || ! $previewUrl) {
                         return false;
                     }
 
@@ -264,24 +254,22 @@ class SendScheduledBroadcast implements ShouldQueue
             }
 
         } catch (\Exception $e) {
-            Log::error("❌ ข้อผิดพลาดในการส่งข้อความ: " . $e->getMessage());
+            Log::error('❌ ข้อผิดพลาดในการส่งข้อความ: '.$e->getMessage());
+
             return false;
         }
     }
 
     /**
      * Handle job failure
-     *
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("❌ Job SendScheduledBroadcast ล้มเหลวถาวร สำหรับ broadcast {$this->broadcast->id}: " . $exception->getMessage());
+        Log::error("❌ Job SendScheduledBroadcast ล้มเหลวถาวร สำหรับ broadcast {$this->broadcast->id}: ".$exception->getMessage());
 
         $this->broadcast->update([
             'status' => 'failed',
-            'error_message' => 'Job failed after ' . $this->tries . ' attempts: ' . $exception->getMessage(),
+            'error_message' => 'Job failed after '.$this->tries.' attempts: '.$exception->getMessage(),
         ]);
     }
 }

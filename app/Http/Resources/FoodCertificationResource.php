@@ -51,7 +51,7 @@ class FoodCertificationResource extends JsonResource
             ],
 
             // Product
-            'food_product' => $this->whenLoaded('foodProduct', fn() => [
+            'food_product' => $this->whenLoaded('foodProduct', fn () => [
                 'id' => $this->foodProduct->id,
                 'passport_id' => $this->foodProduct->food_passport_id,
                 'variety' => $this->foodProduct->variety,

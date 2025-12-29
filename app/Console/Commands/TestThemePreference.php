@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\User;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 
 class TestThemePreference extends Command
@@ -32,9 +32,10 @@ class TestThemePreference extends Command
 
         // 1. Check if column exists
         $this->info('1. Checking database column...');
-        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+        if (! Schema::hasColumn('users', 'menu_theme_preference')) {
             $this->error('❌ Column "menu_theme_preference" does NOT exist in users table!');
             $this->warn('Run: php artisan migrate');
+
             return 1;
         }
         $this->info('✅ Column "menu_theme_preference" exists');
@@ -42,12 +43,13 @@ class TestThemePreference extends Command
 
         // 2. Check User model fillable
         $this->info('2. Checking User model fillable...');
-        $user = new User();
+        $user = new User;
         $fillable = $user->getFillable();
         if (in_array('menu_theme_preference', $fillable)) {
             $this->info('✅ "menu_theme_preference" is in User fillable array');
         } else {
             $this->error('❌ "menu_theme_preference" is NOT in User fillable array!');
+
             return 1;
         }
         $this->newLine();
@@ -56,14 +58,15 @@ class TestThemePreference extends Command
         $userId = $this->argument('user_id') ?? 1;
         $testUser = User::find($userId);
 
-        if (!$testUser) {
+        if (! $testUser) {
             $this->error("❌ User with ID {$userId} not found!");
             $this->warn('Try: php artisan theme:test <user_id>');
+
             return 1;
         }
 
         $this->info("3. Testing with User ID: {$testUser->id} ({$testUser->name})");
-        $this->info("   Current theme: " . ($testUser->menu_theme_preference ?? 'NULL'));
+        $this->info('   Current theme: '.($testUser->menu_theme_preference ?? 'NULL'));
         $this->newLine();
 
         // 4. Test save to classic_x
@@ -71,8 +74,9 @@ class TestThemePreference extends Command
         $testUser->menu_theme_preference = 'classic_x';
         $saved = $testUser->save();
 
-        if (!$saved) {
+        if (! $saved) {
             $this->error('❌ Failed to save!');
+
             return 1;
         }
 
@@ -82,7 +86,8 @@ class TestThemePreference extends Command
             $this->info("   Verified value: {$testUser->menu_theme_preference}");
         } else {
             $this->error('❌ Save succeeded but value is wrong!');
-            $this->error("   Expected: classic_x, Got: " . ($testUser->menu_theme_preference ?? 'NULL'));
+            $this->error('   Expected: classic_x, Got: '.($testUser->menu_theme_preference ?? 'NULL'));
+
             return 1;
         }
         $this->newLine();
@@ -92,8 +97,9 @@ class TestThemePreference extends Command
         $testUser->menu_theme_preference = 'millennium';
         $saved = $testUser->save();
 
-        if (!$saved) {
+        if (! $saved) {
             $this->error('❌ Failed to save!');
+
             return 1;
         }
 
@@ -103,6 +109,7 @@ class TestThemePreference extends Command
             $this->info("   Verified value: {$testUser->menu_theme_preference}");
         } else {
             $this->error('❌ Save succeeded but value is wrong!');
+
             return 1;
         }
         $this->newLine();
@@ -113,10 +120,10 @@ class TestThemePreference extends Command
 
         $this->table(
             ['ID', 'Name', 'Current Theme'],
-            $users->map(fn($u) => [
+            $users->map(fn ($u) => [
                 $u->id,
                 $u->name,
-                $u->menu_theme_preference ?? 'millennium (default)'
+                $u->menu_theme_preference ?? 'millennium (default)',
             ])
         );
 

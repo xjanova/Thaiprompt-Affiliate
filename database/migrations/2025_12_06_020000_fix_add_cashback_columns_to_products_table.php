@@ -13,13 +13,11 @@ return new class extends Migration
      * ซึ่งอาจไม่ทำงานถูกต้องใน Laravel บางเวอร์ชัน
      *
      * วิธีแก้: ตรวจสอบคอลัมน์ก่อนเข้า Schema::table() callback
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง products มีอยู่หรือไม่
-        if (!Schema::hasTable('products')) {
+        if (! Schema::hasTable('products')) {
             return;
         }
 
@@ -37,7 +35,7 @@ return new class extends Migration
             $hasVatPercentage
         ) {
             // เพิ่มคอลัมน์ customer_cashback ถ้ายังไม่มี
-            if (!$hasCustomerCashback) {
+            if (! $hasCustomerCashback) {
                 $table->decimal('customer_cashback', 10, 2)
                     ->default(0)
                     ->after('commission_rate')
@@ -45,7 +43,7 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ cashback_percentage ถ้ายังไม่มี
-            if (!$hasCashbackPercentage) {
+            if (! $hasCashbackPercentage) {
                 // ใช้ after ที่ถูกต้องขึ้นอยู่กับว่า customer_cashback มีอยู่หรือไม่
                 $afterColumn = $hasCustomerCashback ? 'customer_cashback' : 'commission_rate';
                 $table->decimal('cashback_percentage', 5, 2)
@@ -55,11 +53,11 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ pv_value ถ้ายังไม่มี
-            if (!$hasPvValue) {
+            if (! $hasPvValue) {
                 $afterColumn = 'cashback_percentage';
-                if (!$hasCashbackPercentage && !$hasCustomerCashback) {
+                if (! $hasCashbackPercentage && ! $hasCustomerCashback) {
                     $afterColumn = 'commission_rate';
-                } elseif (!$hasCashbackPercentage) {
+                } elseif (! $hasCashbackPercentage) {
                     $afterColumn = 'customer_cashback';
                 }
                 $table->decimal('pv_value', 10, 2)
@@ -69,9 +67,9 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ vat_percentage ถ้ายังไม่มี
-            if (!$hasVatPercentage) {
+            if (! $hasVatPercentage) {
                 $afterColumn = 'pv_value';
-                if (!$hasPvValue) {
+                if (! $hasPvValue) {
                     $afterColumn = $hasCashbackPercentage ? 'cashback_percentage' : 'commission_rate';
                 }
                 $table->decimal('vat_percentage', 5, 2)
@@ -86,8 +84,6 @@ return new class extends Migration
      * ย้อนกลับ migration
      *
      * หมายเหตุ: ไม่ลบคอลัมน์เพราะอาจมีข้อมูลอยู่แล้ว
-     *
-     * @return void
      */
     public function down(): void
     {

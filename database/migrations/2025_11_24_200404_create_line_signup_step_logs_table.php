@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้ใช้สำหรับเก็บ log การทำงานของแต่ละขั้นตอนในกระบวนการสมัครสมาชิก
      * เช่น welcome, name, email, phone, otp, password, referral, confirmation
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -22,7 +20,7 @@ return new class extends Migration
         }
 
         // ตรวจสอบว่าตาราง parent (line_signup_sessions) มีอยู่หรือไม่
-        if (!Schema::hasTable('line_signup_sessions')) {
+        if (! Schema::hasTable('line_signup_sessions')) {
             throw new \RuntimeException(
                 'ตาราง line_signup_sessions ต้องมีอยู่ก่อนสร้าง line_signup_step_logs กรุณา run migration สำหรับ line_signup_sessions ก่อน'
             );
@@ -71,8 +69,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_step_logs
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -2,16 +2,16 @@
 
 namespace App\Services\TPIX;
 
-use App\Models\User;
-use App\Models\TPIXToken;
 use App\Models\TPIXReferralCode;
-use App\Models\TPIXReferralUse;
 use App\Models\TPIXReferralReward;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use App\Models\TPIXReferralUse;
+use App\Models\TPIXToken;
+use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /**
  * Referral Service with Verification System
@@ -48,7 +48,7 @@ class ReferralService
 
             Log::info('Referral code created', [
                 'code' => $code,
-                'user_id' => $user->id
+                'user_id' => $user->id,
             ]);
 
             return $referralCode;
@@ -57,7 +57,7 @@ class ReferralService
             DB::rollBack();
             Log::error('Failed to create referral code', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -80,7 +80,7 @@ class ReferralService
                 ->where('is_active', true)
                 ->first();
 
-            if (!$referralCode) {
+            if (! $referralCode) {
                 throw new Exception('Invalid referral code');
             }
 
@@ -149,7 +149,7 @@ class ReferralService
             Log::info('Referral code used', [
                 'code' => $code,
                 'referee_id' => $referee->id,
-                'referrer_id' => $referralCode->user_id
+                'referrer_id' => $referralCode->user_id,
             ]);
 
             return $referralUse;
@@ -159,7 +159,7 @@ class ReferralService
             Log::error('Failed to use referral code', [
                 'code' => $code,
                 'referee_id' => $referee->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -227,7 +227,7 @@ class ReferralService
             DB::commit();
 
             Log::info('Referral verified', [
-                'referral_use_id' => $referralUse->id
+                'referral_use_id' => $referralUse->id,
             ]);
 
             return true;
@@ -236,7 +236,7 @@ class ReferralService
             DB::rollBack();
             Log::error('Failed to verify referral', [
                 'referral_use_id' => $referralUse->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -285,7 +285,7 @@ class ReferralService
             Log::info('Referral reward paid', [
                 'reward_id' => $reward->id,
                 'amount' => $reward->amount,
-                'user_id' => $reward->user_id
+                'user_id' => $reward->user_id,
             ]);
 
             return true;
@@ -294,12 +294,12 @@ class ReferralService
             DB::rollBack();
             $reward->update([
                 'status' => 'failed',
-                'notes' => $e->getMessage()
+                'notes' => $e->getMessage(),
             ]);
 
             Log::error('Failed to process reward', [
                 'reward_id' => $reward->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -312,7 +312,7 @@ class ReferralService
     protected function generateUniqueCode(string $prefix = 'REF'): string
     {
         do {
-            $code = strtoupper($prefix . '-' . Str::random(8));
+            $code = strtoupper($prefix.'-'.Str::random(8));
         } while (TPIXReferralCode::where('code', $code)->exists());
 
         return $code;
@@ -323,7 +323,7 @@ class ReferralService
      */
     protected function generateVerificationCode(): string
     {
-        return str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        return str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -336,7 +336,7 @@ class ReferralService
         Log::info('Verification code sent', [
             'user_id' => $user->id,
             'code' => $code,
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         // Example email sending:
@@ -350,6 +350,7 @@ class ReferralService
     {
         if ($referralUse->token_id) {
             $token = TPIXToken::find($referralUse->token_id);
+
             return $token ? $token->symbol : 'TPIX';
         }
 
@@ -361,7 +362,7 @@ class ReferralService
      */
     protected function simulatePayment(TPIXReferralReward $reward): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     /**

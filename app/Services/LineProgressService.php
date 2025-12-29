@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 class LineProgressService
 {
     private const CACHE_TTL = 3600; // 1 hour
+
     private const CACHE_PREFIX = 'line:progress:';
 
     // Signup steps in order
@@ -87,7 +88,7 @@ class LineProgressService
         $progress = $this->getProgress($prospect);
         $completedSteps = $progress['data']['completed_steps'] ?? [];
 
-        if (!in_array($step, $completedSteps)) {
+        if (! in_array($step, $completedSteps)) {
             $completedSteps[] = $step;
         }
 
@@ -155,7 +156,7 @@ class LineProgressService
         }
 
         // Detect from data
-        if (!$prospect->clicked_at) {
+        if (! $prospect->clicked_at) {
             return 'welcome';
         }
 
@@ -256,7 +257,7 @@ class LineProgressService
      */
     private function getStepName(string $step): string
     {
-        return match($step) {
+        return match ($step) {
             'welcome' => 'ยินดีต้อนรับ',
             'name' => 'กรอกชื่อ-นามสกุล',
             'username' => 'ตั้งชื่อผู้ใช้',
@@ -274,7 +275,7 @@ class LineProgressService
      */
     private function getStepDescription(string $step): string
     {
-        return match($step) {
+        return match ($step) {
             'welcome' => 'เริ่มต้นการสมัครสมาชิก',
             'name' => 'กรอกชื่อจริงและนามสกุลของคุณ',
             'username' => 'เลือกชื่อผู้ใช้ที่คุณต้องการ (ภาษาอังกฤษและตัวเลข)',
@@ -292,7 +293,7 @@ class LineProgressService
      */
     private function getStepTips(string $step): array
     {
-        return match($step) {
+        return match ($step) {
             'name' => [
                 'ใช้ชื่อจริงของคุณ',
                 'สะกดชื่อให้ถูกต้อง',
@@ -351,7 +352,7 @@ class LineProgressService
      */
     private function getCacheKey(int $prospectId): string
     {
-        return self::CACHE_PREFIX . $prospectId;
+        return self::CACHE_PREFIX.$prospectId;
     }
 
     /**
@@ -360,7 +361,7 @@ class LineProgressService
     public function getAllSteps(): array
     {
         return array_map(
-            fn($step, $info) => array_merge(['step' => $step], $info, [
+            fn ($step, $info) => array_merge(['step' => $step], $info, [
                 'name' => $this->getStepName($step),
                 'description' => $this->getStepDescription($step),
             ]),
@@ -374,7 +375,7 @@ class LineProgressService
      */
     public function validateStepData(string $step, $data): array
     {
-        return match($step) {
+        return match ($step) {
             'name' => $this->validateName($data),
             'username' => $this->validateUsername($data),
             'email' => $this->validateEmail($data),
@@ -418,7 +419,7 @@ class LineProgressService
             $errors[] = 'ชื่อผู้ใช้ยาวเกินไป (สูงสุด 20 ตัวอักษร)';
         }
 
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        if (! preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
             $errors[] = 'ใช้ได้เฉพาะภาษาอังกฤษ ตัวเลข และ _';
         }
 
@@ -432,7 +433,7 @@ class LineProgressService
     {
         $errors = [];
 
-        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = 'รูปแบบอีเมลไม่ถูกต้อง';
         }
 
@@ -446,7 +447,7 @@ class LineProgressService
     {
         $errors = [];
 
-        if (empty($otp) || !preg_match('/^\d{6}$/', $otp)) {
+        if (empty($otp) || ! preg_match('/^\d{6}$/', $otp)) {
             $errors[] = 'OTP ต้องเป็นตัวเลข 6 หลัก';
         }
 
@@ -462,7 +463,7 @@ class LineProgressService
 
         $cleaned = preg_replace('/[\s\-\(\)]/', '', $phone);
 
-        if (!preg_match('/^0[6-9]\d{8}$/', $cleaned)) {
+        if (! preg_match('/^0[6-9]\d{8}$/', $cleaned)) {
             $errors[] = 'รูปแบบเบอร์โทรไม่ถูกต้อง';
         }
 

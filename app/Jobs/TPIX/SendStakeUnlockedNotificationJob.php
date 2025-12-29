@@ -16,6 +16,7 @@ class SendStakeUnlockedNotificationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 30;
 
     protected int $stakeId;
@@ -31,8 +32,9 @@ class SendStakeUnlockedNotificationJob implements ShouldQueue
         try {
             $stake = TPIXStake::with(['user', 'pool'])->find($this->stakeId);
 
-            if (!$stake || !$stake->user) {
+            if (! $stake || ! $stake->user) {
                 Log::error("Stake or user not found for notification: {$this->stakeId}");
+
                 return;
             }
 
@@ -41,7 +43,7 @@ class SendStakeUnlockedNotificationJob implements ShouldQueue
             Log::info("Stake unlocked notification sent to user {$stake->user_id}");
 
         } catch (\Exception $e) {
-            Log::error("Failed to send stake unlocked notification: " . $e->getMessage());
+            Log::error('Failed to send stake unlocked notification: '.$e->getMessage());
             throw $e;
         }
     }

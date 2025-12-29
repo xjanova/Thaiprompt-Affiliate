@@ -23,7 +23,7 @@ class TarotSetting extends Model
     {
         $setting = static::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -33,7 +33,7 @@ class TarotSetting extends Model
     /**
      * Set setting value
      */
-    public static function set(string $key, $value, string $type = 'string', string $description = null)
+    public static function set(string $key, $value, string $type = 'string', ?string $description = null)
     {
         $setting = static::updateOrCreate(
             ['key' => $key],

@@ -8,7 +8,6 @@ use App\Models\HomepageSection;
 use App\Models\HomepageTemplate;
 use App\Services\HomepageManagerService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,15 +23,10 @@ use Illuminate\View\View;
  */
 class HomepageManagerController extends Controller
 {
-    /**
-     * @var HomepageManagerService
-     */
     protected HomepageManagerService $service;
 
     /**
      * สร้าง controller instance
-     *
-     * @param HomepageManagerService $service
      */
     public function __construct(HomepageManagerService $service)
     {
@@ -41,8 +35,6 @@ class HomepageManagerController extends Controller
 
     /**
      * แสดงหน้า Visual Editor สำหรับจัดการหน้าแรก
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -79,8 +71,6 @@ class HomepageManagerController extends Controller
 
     /**
      * ดึงข้อมูล sections ทั้งหมดในรูปแบบ JSON
-     *
-     * @return JsonResponse
      */
     public function getSections(): JsonResponse
     {
@@ -97,22 +87,19 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * สร้าง section ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function storeSection(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'type' => 'required|string|in:' . implode(',', array_keys(HomepageSection::TYPES)),
+            'type' => 'required|string|in:'.implode(',', array_keys(HomepageSection::TYPES)),
             'is_active' => 'boolean',
             'is_fullwidth' => 'boolean',
             'min_height' => 'nullable|string|max:50',
@@ -184,23 +171,19 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * อัพเดท section
-     *
-     * @param Request $request
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function updateSection(Request $request, HomepageSection $section): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
-            'type' => 'sometimes|string|in:' . implode(',', array_keys(HomepageSection::TYPES)),
+            'type' => 'sometimes|string|in:'.implode(',', array_keys(HomepageSection::TYPES)),
             'is_active' => 'boolean',
             'is_fullwidth' => 'boolean',
             'min_height' => 'nullable|string|max:50',
@@ -244,16 +227,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ section
-     *
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function destroySection(HomepageSection $section): JsonResponse
     {
@@ -274,16 +254,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * จัดเรียงลำดับ sections
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function reorderSections(Request $request): JsonResponse
     {
@@ -317,21 +294,18 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Toggle สถานะ active ของ section
-     *
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function toggleSection(HomepageSection $section): JsonResponse
     {
         try {
-            $section->update(['is_active' => !$section->is_active]);
+            $section->update(['is_active' => ! $section->is_active]);
 
             // Clear cache
             $this->service->clearCache();
@@ -344,16 +318,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Duplicate section พร้อม elements
-     *
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function duplicateSection(HomepageSection $section): JsonResponse
     {
@@ -361,7 +332,7 @@ class HomepageManagerController extends Controller
             $newSection = DB::transaction(function () use ($section) {
                 // สร้าง section ใหม่
                 $newSection = $section->replicate();
-                $newSection->name = $section->name . ' (สำเนา)';
+                $newSection->name = $section->name.' (สำเนา)';
                 $newSection->order = HomepageSection::max('order') + 1;
                 $newSection->save();
 
@@ -386,7 +357,7 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -397,16 +368,12 @@ class HomepageManagerController extends Controller
 
     /**
      * สร้าง element ใหม่
-     *
-     * @param Request $request
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function storeElement(Request $request, HomepageSection $section): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|string|max:255',
-            'type' => 'required|string|in:' . implode(',', array_keys(HomepageElement::TYPES)),
+            'type' => 'required|string|in:'.implode(',', array_keys(HomepageElement::TYPES)),
             'is_active' => 'boolean',
             'position_type' => 'nullable|string|in:relative,absolute',
             'position_x' => 'nullable|numeric',
@@ -481,17 +448,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * อัพเดท element
-     *
-     * @param Request $request
-     * @param HomepageElement $element
-     * @return JsonResponse
      */
     public function updateElement(Request $request, HomepageElement $element): JsonResponse
     {
@@ -509,16 +472,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ element
-     *
-     * @param HomepageElement $element
-     * @return JsonResponse
      */
     public function destroyElement(HomepageElement $element): JsonResponse
     {
@@ -535,22 +495,19 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Duplicate element
-     *
-     * @param HomepageElement $element
-     * @return JsonResponse
      */
     public function duplicateElement(HomepageElement $element): JsonResponse
     {
         try {
             $newElement = $element->replicate();
-            $newElement->name = ($element->name ?? 'Element') . ' (สำเนา)';
+            $newElement->name = ($element->name ?? 'Element').' (สำเนา)';
             $newElement->order = $element->section->elements()->max('order') + 1;
 
             // Offset position slightly
@@ -572,17 +529,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * จัดเรียงลำดับ elements (z-index)
-     *
-     * @param Request $request
-     * @param HomepageSection $section
-     * @return JsonResponse
      */
     public function reorderElements(Request $request, HomepageSection $section): JsonResponse
     {
@@ -618,7 +571,7 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -629,9 +582,6 @@ class HomepageManagerController extends Controller
 
     /**
      * ดึง templates ทั้งหมด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTemplates(Request $request): JsonResponse
     {
@@ -652,16 +602,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * นำเข้าเทมเพลตไปยังหน้าแรก
-     *
-     * @param HomepageTemplate $template
-     * @return JsonResponse
      */
     public function importTemplate(HomepageTemplate $template): JsonResponse
     {
@@ -679,22 +626,19 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * บันทึกหน้าแรกปัจจุบันเป็นเทมเพลต
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveAsTemplate(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'category' => 'required|string|in:' . implode(',', array_keys(HomepageTemplate::CATEGORIES)),
+            'category' => 'required|string|in:'.implode(',', array_keys(HomepageTemplate::CATEGORIES)),
             'description' => 'nullable|string|max:1000',
         ]);
 
@@ -716,6 +660,7 @@ class HomepageManagerController extends Controller
                     $sectionData['elements'] = $section->elements->map(function ($element) {
                         return $element->toArray();
                     })->toArray();
+
                     return $sectionData;
                 })
                 ->toArray();
@@ -736,7 +681,7 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -747,9 +692,6 @@ class HomepageManagerController extends Controller
 
     /**
      * อัพโหลดรูปภาพ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function uploadImage(Request $request): JsonResponse
     {
@@ -778,7 +720,7 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -789,8 +731,6 @@ class HomepageManagerController extends Controller
 
     /**
      * Export หน้าแรกเป็น JSON
-     *
-     * @return JsonResponse
      */
     public function export(): JsonResponse
     {
@@ -804,16 +744,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Import หน้าแรกจาก JSON
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function import(Request $request): JsonResponse
     {
@@ -844,15 +781,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Preview หน้าแรก
-     *
-     * @return View
      */
     public function preview(): View
     {
@@ -870,8 +805,6 @@ class HomepageManagerController extends Controller
      * แสดงหน้า Templates Gallery
      *
      * แสดง templates ทั้งหมดในรูปแบบ Gallery พร้อม filter และ search
-     *
-     * @return View
      */
     public function templatesIndex(): View
     {
@@ -895,8 +828,6 @@ class HomepageManagerController extends Controller
      * แสดงหน้าจัดการ Sections
      *
      * แสดง sections ทั้งหมดในรูปแบบตาราง พร้อม filter, search และจัดเรียงลำดับ
-     *
-     * @return View
      */
     public function sectionsIndex(): View
     {
@@ -915,9 +846,6 @@ class HomepageManagerController extends Controller
 
     /**
      * ดึงข้อมูล sections ของ template สำหรับ preview
-     *
-     * @param HomepageTemplate $template
-     * @return JsonResponse
      */
     public function previewTemplate(HomepageTemplate $template): JsonResponse
     {
@@ -931,16 +859,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * บันทึก sections ทั้งหมดพร้อมกัน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveAll(Request $request): JsonResponse
     {
@@ -990,15 +915,13 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ล้างหน้าแรกทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function clearAll(): JsonResponse
     {
@@ -1018,7 +941,7 @@ class HomepageManagerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }

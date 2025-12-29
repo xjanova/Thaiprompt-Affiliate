@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use SoftDeletes, CalculatesEarnings;
+    use CalculatesEarnings, SoftDeletes;
 
     protected $fillable = [
         'seller_id',
@@ -130,7 +130,7 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
             if (empty($product->sku)) {
-                $product->sku = 'PRD-' . strtoupper(Str::random(8));
+                $product->sku = 'PRD-'.strtoupper(Str::random(8));
             }
         });
     }
@@ -145,8 +145,6 @@ class Product extends Model
 
     /**
      * ร้านค้าเจ้าของสินค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -219,8 +217,6 @@ class Product extends Model
 
     /**
      * ผู้ที่บล็อกสินค้า (Admin)
-     *
-     * @return BelongsTo
      */
     public function blockedByUser(): BelongsTo
     {
@@ -229,8 +225,6 @@ class Product extends Model
 
     /**
      * ผู้ที่ปลดบล็อกสินค้า (Admin)
-     *
-     * @return BelongsTo
      */
     public function unblockedByUser(): BelongsTo
     {
@@ -239,8 +233,6 @@ class Product extends Model
 
     /**
      * รายการใน Official Shop
-     *
-     * @return HasMany
      */
     public function officialShopProducts(): HasMany
     {
@@ -259,8 +251,6 @@ class Product extends Model
 
     /**
      * สินค้าขายดีรายเดือน
-     *
-     * @return HasMany
      */
     public function bestSellerRecords(): HasMany
     {
@@ -273,8 +263,8 @@ class Product extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-                     ->whereNotNull('published_at')
-                     ->where('published_at', '<=', now());
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
     }
 
     /**
@@ -329,8 +319,8 @@ class Product extends Model
     public function scopePublicVisible($query)
     {
         return $query->active()
-                     ->visible()
-                     ->notBlocked();
+            ->visible()
+            ->notBlocked();
     }
 
     /**
@@ -339,10 +329,10 @@ class Product extends Model
     public function scopeInStock($query)
     {
         return $query->where('stock_status', 'in_stock')
-                     ->where(function($q) {
-                         $q->where('track_inventory', false)
-                           ->orWhere('stock_quantity', '>', 0);
-                     });
+            ->where(function ($q) {
+                $q->where('track_inventory', false)
+                    ->orWhere('stock_quantity', '>', 0);
+            });
     }
 
     /**
@@ -351,8 +341,8 @@ class Product extends Model
     public function scopeLowStock($query)
     {
         return $query->where('track_inventory', true)
-                     ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
-                     ->where('stock_quantity', '>', 0);
+            ->whereColumn('stock_quantity', '<=', 'low_stock_threshold')
+            ->where('stock_quantity', '>', 0);
     }
 
     /**
@@ -361,13 +351,13 @@ class Product extends Model
     public function scopeOutOfStock($query)
     {
         return $query->where('track_inventory', true)
-                     ->where('stock_quantity', '<=', 0);
+            ->where('stock_quantity', '<=', 0);
     }
 
     /**
      * Scope: สินค้าของ Official Shop
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfficialShop($query)
@@ -380,7 +370,7 @@ class Product extends Model
     /**
      * Scope: สินค้าของ Seller ทั่วไป (ไม่ใช่ Official Shop)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeNotOfficialShop($query)
@@ -392,8 +382,6 @@ class Product extends Model
 
     /**
      * ดึง Official Shop Seller ID
-     *
-     * @return int
      */
     public static function getOfficialSellerId(): int
     {
@@ -423,8 +411,6 @@ class Product extends Model
 
     /**
      * ตรวจสอบว่าสินค้านี้เป็นของ Official Shop หรือไม่
-     *
-     * @return bool
      */
     public function isOfficialShopProduct(): bool
     {
@@ -436,7 +422,7 @@ class Product extends Model
      */
     public function isInStock(): bool
     {
-        if (!$this->track_inventory) {
+        if (! $this->track_inventory) {
             return true;
         }
 
@@ -448,7 +434,7 @@ class Product extends Model
      */
     public function isLowStock(): bool
     {
-        if (!$this->track_inventory) {
+        if (! $this->track_inventory) {
             return false;
         }
 
@@ -460,7 +446,7 @@ class Product extends Model
      */
     public function getDiscountPercentageAttribute(): ?float
     {
-        if (!$this->compare_at_price || $this->compare_at_price <= $this->price) {
+        if (! $this->compare_at_price || $this->compare_at_price <= $this->price) {
             return null;
         }
 
@@ -472,7 +458,7 @@ class Product extends Model
      */
     public function getProfitMarginAttribute(): ?float
     {
-        if (!$this->cost_price) {
+        if (! $this->cost_price) {
             return null;
         }
 
@@ -519,7 +505,7 @@ class Product extends Model
      */
     public function decreaseStock(int $quantity): bool
     {
-        if (!$this->track_inventory) {
+        if (! $this->track_inventory) {
             return true;
         }
 
@@ -543,7 +529,7 @@ class Product extends Model
      */
     public function increaseStock(int $quantity): void
     {
-        if (!$this->track_inventory) {
+        if (! $this->track_inventory) {
             return;
         }
 
@@ -561,8 +547,6 @@ class Product extends Model
      *
      * แก้ไขปัญหากรณีที่ข้อมูลใน database เป็น string แทน JSON array
      * รวมถึง double-encoded JSON และ unicode escape sequences
-     *
-     * @return array
      */
     public function getTagsAttribute($value): array
     {
@@ -584,13 +568,13 @@ class Product extends Model
 
             for ($i = 0; $i < $maxAttempts; $i++) {
                 $temp = json_decode($decoded, true);
-                if ($temp === null || !is_array($temp)) {
+                if ($temp === null || ! is_array($temp)) {
                     break;
                 }
                 $decoded = $temp;
 
                 // ถ้า decode แล้วได้ array ของ strings ที่ถูกต้อง ให้หยุด
-                if (is_array($decoded) && isset($decoded[0]) && is_string($decoded[0]) && !str_starts_with($decoded[0], '[')) {
+                if (is_array($decoded) && isset($decoded[0]) && is_string($decoded[0]) && ! str_starts_with($decoded[0], '[')) {
                     break;
                 }
             }
@@ -609,9 +593,6 @@ class Product extends Model
     /**
      * ทำความสะอาด tags array
      * แก้ปัญหา unicode escape sequences และ double-quoted strings
-     *
-     * @param array $tags
-     * @return array
      */
     protected function cleanTagsArray(array $tags): array
     {
@@ -626,6 +607,7 @@ class Product extends Model
                     } elseif (is_array($decoded)) {
                         // recursive clean ถ้าเป็น array
                         $cleaned = array_merge($cleaned, $this->cleanTagsArray($decoded));
+
                         continue;
                     }
                 }
@@ -636,13 +618,14 @@ class Product extends Model
                 }, $tag);
 
                 $tag = trim($tag);
-                if (!empty($tag)) {
+                if (! empty($tag)) {
                     $cleaned[] = $tag;
                 }
             } elseif (is_array($tag)) {
                 $cleaned = array_merge($cleaned, $this->cleanTagsArray($tag));
             }
         }
+
         return array_unique($cleaned);
     }
 
@@ -673,6 +656,7 @@ class Product extends Model
             if (filter_var($firstImage->image_url, FILTER_VALIDATE_URL)) {
                 return $firstImage->image_url;
             }
+
             return Storage::url($firstImage->image_url);
         }
 

@@ -68,13 +68,13 @@ class UserVideoWatch extends Model
         $this->watch_count += 1;
         $this->last_watched_at = now();
 
-        if (!$this->first_watched_at) {
+        if (! $this->first_watched_at) {
             $this->first_watched_at = now();
         }
 
         // Check if completed
         $requiredTime = $this->video->required_watch_time;
-        if ($this->watch_time_seconds >= $requiredTime && !$this->completed) {
+        if ($this->watch_time_seconds >= $requiredTime && ! $this->completed) {
             $this->completed = true;
             $this->completed_at = now();
             $this->video->incrementCompletionCount();
@@ -88,7 +88,7 @@ class UserVideoWatch extends Model
      */
     public function claimReward()
     {
-        if ($this->completed && !$this->reward_claimed && $this->video->reward_enabled) {
+        if ($this->completed && ! $this->reward_claimed && $this->video->reward_enabled) {
             $this->coins_earned = $this->video->reward_coins;
             $this->exp_earned = $this->video->reward_exp;
             $this->reward_claimed = true;

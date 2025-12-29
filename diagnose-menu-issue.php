@@ -6,12 +6,11 @@
  *
  * วิธีใช้: php diagnose-menu-issue.php
  */
-
 echo "🔍 กำลังวิเคราะห์ปัญหาเมนู TPIX Blockchain & Token Management...\n";
-echo str_repeat("=", 60) . "\n\n";
+echo str_repeat('=', 60)."\n\n";
 
 // ตรวจสอบว่า Laravel bootstrap ได้หรือไม่
-if (!file_exists(__DIR__ . '/vendor/autoload.php')) {
+if (! file_exists(__DIR__.'/vendor/autoload.php')) {
     echo "❌ ERROR: vendor/autoload.php ไม่พบ\n";
     echo "   กรุณารัน: composer install\n\n";
     exit(1);
@@ -39,7 +38,7 @@ $requiredRoutes = [
 ];
 
 echo "1️⃣  ตรวจสอบ Routes\n";
-echo str_repeat("-", 60) . "\n";
+echo str_repeat('-', 60)."\n";
 
 $allRoutes = Route::getRoutes();
 $foundRoutes = [];
@@ -50,7 +49,7 @@ foreach ($requiredRoutes as $routeName) {
         $route = Route::getRoutes()->getByName($routeName);
         $foundRoutes[] = $routeName;
         echo "  ✅ {$routeName}\n";
-        echo "     → " . $route->uri() . "\n";
+        echo '     → '.$route->uri()."\n";
     } else {
         $missingRoutes[] = $routeName;
         echo "  ❌ {$routeName} (ไม่พบ!)\n";
@@ -61,9 +60,9 @@ echo "\n";
 
 // สรุปผล
 echo "2️⃣  สรุปผลการตรวจสอบ\n";
-echo str_repeat("-", 60) . "\n";
-echo "  Routes ที่พบ: " . count($foundRoutes) . "/" . count($requiredRoutes) . "\n";
-echo "  Routes ที่หายไป: " . count($missingRoutes) . "\n";
+echo str_repeat('-', 60)."\n";
+echo '  Routes ที่พบ: '.count($foundRoutes).'/'.count($requiredRoutes)."\n";
+echo '  Routes ที่หายไป: '.count($missingRoutes)."\n";
 echo "\n";
 
 if (count($missingRoutes) > 0) {
@@ -107,7 +106,7 @@ if (count($missingRoutes) > 0) {
 
 // ตรวจสอบ Controllers
 echo "3️⃣  ตรวจสอบ Controllers\n";
-echo str_repeat("-", 60) . "\n";
+echo str_repeat('-', 60)."\n";
 
 $controllers = [
     'App\Http\Controllers\Admin\TPIXController',
@@ -121,14 +120,14 @@ foreach ($controllers as $controller) {
         // List methods
         $reflection = new ReflectionClass($controller);
         $methods = $reflection->getMethods(\ReflectionMethod::IS_PUBLIC);
-        echo "     Methods: ";
+        echo '     Methods: ';
         $publicMethods = [];
         foreach ($methods as $method) {
-            if ($method->class === $controller && !in_array($method->name, ['__construct', 'middleware'])) {
+            if ($method->class === $controller && ! in_array($method->name, ['__construct', 'middleware'])) {
                 $publicMethods[] = $method->name;
             }
         }
-        echo implode(', ', $publicMethods) . "\n";
+        echo implode(', ', $publicMethods)."\n";
     } else {
         echo "  ❌ {$controller} (ไม่พบ!)\n";
     }
@@ -138,7 +137,7 @@ echo "\n";
 
 // ตรวจสอบ Views
 echo "4️⃣  ตรวจสอบ Views\n";
-echo str_repeat("-", 60) . "\n";
+echo str_repeat('-', 60)."\n";
 
 $views = [
     'admin.tpix.dashboard',
@@ -150,7 +149,7 @@ $views = [
 ];
 
 foreach ($views as $view) {
-    $viewPath = resource_path('views/' . str_replace('.', '/', $view) . '.blade.php');
+    $viewPath = resource_path('views/'.str_replace('.', '/', $view).'.blade.php');
     if (file_exists($viewPath)) {
         echo "  ✅ {$view}\n";
         echo "     → {$viewPath}\n";
@@ -160,5 +159,5 @@ foreach ($views as $view) {
 }
 
 echo "\n";
-echo str_repeat("=", 60) . "\n";
+echo str_repeat('=', 60)."\n";
 echo "✨ การวิเคราะห์เสร็จสิ้น!\n\n";

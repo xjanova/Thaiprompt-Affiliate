@@ -15,7 +15,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตาราง coupons - คูปองของผู้ใช้
-        if (!Schema::hasTable('coupons')) {
+        if (! Schema::hasTable('coupons')) {
             Schema::create('coupons', function (Blueprint $table) {
                 $table->id();
                 $table->string('code', 50)->unique()->comment('รหัสคูปอง');
@@ -57,7 +57,7 @@ return new class extends Migration
         }
 
         // ตาราง coupon_usages - ประวัติการใช้คูปอง
-        if (!Schema::hasTable('coupon_usages')) {
+        if (! Schema::hasTable('coupon_usages')) {
             Schema::create('coupon_usages', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('coupon_id')->constrained('coupons')->onDelete('cascade');
@@ -72,7 +72,7 @@ return new class extends Migration
         }
 
         // ตาราง user_coupons - คูปองที่ผู้ใช้เก็บไว้
-        if (!Schema::hasTable('user_coupons')) {
+        if (! Schema::hasTable('user_coupons')) {
             Schema::create('user_coupons', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -86,7 +86,7 @@ return new class extends Migration
         }
 
         // ตาราง store_trophies - Trophy สำหรับร้านค้า
-        if (!Schema::hasTable('store_trophies')) {
+        if (! Schema::hasTable('store_trophies')) {
             Schema::create('store_trophies', function (Blueprint $table) {
                 $table->id();
                 $table->string('name')->comment('ชื่อ Trophy');
@@ -121,7 +121,7 @@ return new class extends Migration
         }
 
         // ตาราง store_trophy_achievements - Trophy ที่ร้านค้าได้รับ
-        if (!Schema::hasTable('store_trophy_achievements')) {
+        if (! Schema::hasTable('store_trophy_achievements')) {
             Schema::create('store_trophy_achievements', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('store_id')->constrained('vendor_stores')->onDelete('cascade');
@@ -137,7 +137,7 @@ return new class extends Migration
         }
 
         // ตาราง premium_stores - ร้านค้า Premium
-        if (!Schema::hasTable('premium_stores')) {
+        if (! Schema::hasTable('premium_stores')) {
             Schema::create('premium_stores', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('store_id')->constrained('vendor_stores')->onDelete('cascade');
@@ -176,16 +176,16 @@ return new class extends Migration
 
         // เพิ่ม columns ใน vendor_stores
         Schema::table('vendor_stores', function (Blueprint $table) {
-            if (!Schema::hasColumn('vendor_stores', 'trophy_points')) {
+            if (! Schema::hasColumn('vendor_stores', 'trophy_points')) {
                 $table->integer('trophy_points')->default(0)->after('followers_count');
             }
-            if (!Schema::hasColumn('vendor_stores', 'is_premium')) {
+            if (! Schema::hasColumn('vendor_stores', 'is_premium')) {
                 $table->boolean('is_premium')->default(false)->after('trophy_points');
             }
-            if (!Schema::hasColumn('vendor_stores', 'premium_since')) {
+            if (! Schema::hasColumn('vendor_stores', 'premium_since')) {
                 $table->timestamp('premium_since')->nullable()->after('is_premium');
             }
-            if (!Schema::hasColumn('vendor_stores', 'ai_score')) {
+            if (! Schema::hasColumn('vendor_stores', 'ai_score')) {
                 $table->decimal('ai_score', 8, 4)->nullable()->after('premium_since');
             }
         });

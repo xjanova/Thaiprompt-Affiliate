@@ -2,21 +2,18 @@
 
 namespace App\Services;
 
+use App\Models\KbArticle;
 use App\Models\Ticket;
-use App\Models\TicketReply;
-use App\Models\TicketAttachment;
 use App\Models\TicketAssignmentRule;
-use App\Models\TicketSlaPolicy;
-use App\Models\TicketRating;
-use App\Models\TicketRelationship;
 use App\Models\TicketNotificationLog;
 use App\Models\TicketNotificationSetting;
-use App\Models\KbArticle;
+use App\Models\TicketRating;
+use App\Models\TicketRelationship;
+use App\Models\TicketReply;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 
 class TicketService
 {
@@ -45,12 +42,12 @@ class TicketService
             TicketAssignmentRule::autoAssignTicket($ticket);
 
             // Handle file attachments
-            if (!empty($data['attachments'])) {
+            if (! empty($data['attachments'])) {
                 $this->handleAttachments($ticket, $data['attachments']);
             }
 
             // Link suggested KB articles
-            if (!empty($data['suggested_articles'])) {
+            if (! empty($data['suggested_articles'])) {
                 $ticket->kbArticles()->attach($data['suggested_articles']);
             }
 
@@ -62,7 +59,7 @@ class TicketService
             return $ticket->fresh();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to create ticket: ' . $e->getMessage());
+            Log::error('Failed to create ticket: '.$e->getMessage());
             throw $e;
         }
     }
@@ -83,7 +80,7 @@ class TicketService
             ]);
 
             // Handle file attachments for reply
-            if (!empty($data['attachments'])) {
+            if (! empty($data['attachments'])) {
                 $this->handleAttachments($reply, $data['attachments'], $data['user_id']);
             }
 
@@ -111,7 +108,7 @@ class TicketService
             return $reply->fresh();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to add reply: ' . $e->getMessage());
+            Log::error('Failed to add reply: '.$e->getMessage());
             throw $e;
         }
     }
@@ -133,7 +130,7 @@ class TicketService
 
             return $ticket;
         } catch (\Exception $e) {
-            Log::error('Failed to assign ticket: ' . $e->getMessage());
+            Log::error('Failed to assign ticket: '.$e->getMessage());
             throw $e;
         }
     }
@@ -151,13 +148,13 @@ class TicketService
                 $ticket->recordResolution();
             } elseif ($status === 'closed') {
                 $updateData['closed_at'] = now();
-                if (!$ticket->resolved_at) {
+                if (! $ticket->resolved_at) {
                     $updateData['resolved_at'] = now();
                     $ticket->recordResolution();
                 }
 
                 // Request rating when ticket is closed
-                if (!$ticket->isRated()) {
+                if (! $ticket->isRated()) {
                     $this->requestRating($ticket);
                 }
             }
@@ -173,7 +170,7 @@ class TicketService
 
             return $ticket;
         } catch (\Exception $e) {
-            Log::error('Failed to change ticket status: ' . $e->getMessage());
+            Log::error('Failed to change ticket status: '.$e->getMessage());
             throw $e;
         }
     }
@@ -185,9 +182,10 @@ class TicketService
     {
         try {
             $ticket->update(['priority' => $priority]);
+
             return $ticket;
         } catch (\Exception $e) {
-            Log::error('Failed to update ticket priority: ' . $e->getMessage());
+            Log::error('Failed to update ticket priority: '.$e->getMessage());
             throw $e;
         }
     }
@@ -243,12 +241,12 @@ class TicketService
         }
 
         // Notify assigned staff if reply is from customer
-        if (!$reply->isFromStaff() && $ticket->assigned_to && $ticket->assigned_to !== $reply->user_id) {
+        if (! $reply->isFromStaff() && $ticket->assigned_to && $ticket->assigned_to !== $reply->user_id) {
             $this->notifyUser($ticket, $ticket->assigned_to, 'new_reply');
         }
 
         // Notify all admins if ticket is not assigned and reply is from customer
-        if (!$reply->isFromStaff() && !$ticket->assigned_to) {
+        if (! $reply->isFromStaff() && ! $ticket->assigned_to) {
             $this->notifyAdmins($ticket, 'new_reply');
         }
     }
@@ -260,23 +258,23 @@ class TicketService
     {
         $query = Ticket::with(['user', 'assignedTo', 'category', 'rating']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->status($filters['status']);
         }
 
-        if (!empty($filters['priority'])) {
+        if (! empty($filters['priority'])) {
             $query->priority($filters['priority']);
         }
 
-        if (!empty($filters['category_id'])) {
+        if (! empty($filters['category_id'])) {
             $query->category($filters['category_id']);
         }
 
-        if (!empty($filters['assigned_to'])) {
+        if (! empty($filters['assigned_to'])) {
             $query->assignedTo($filters['assigned_to']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             // Use full-text search if available
             if (config('database.default') === 'mysql') {
                 try {
@@ -290,7 +288,7 @@ class TicketService
             }
         }
 
-        if (!empty($filters['tag'])) {
+        if (! empty($filters['tag'])) {
             $query->withTag($filters['tag']);
         }
 
@@ -302,11 +300,11 @@ class TicketService
             $query->overdue();
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->where('created_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->where('created_at', '<=', $filters['date_to']);
         }
 
@@ -342,7 +340,7 @@ class TicketService
      */
     private function uploadFile($attachable, UploadedFile $file, $uploadedBy)
     {
-        $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $filename = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('tickets/attachments', $filename, 'public');
 
         // Generate thumbnail for images
@@ -375,8 +373,9 @@ class TicketService
     private function generateThumbnail(UploadedFile $file, $filename)
     {
         // Basic implementation - can be enhanced with image manipulation library
-        $thumbnailFilename = 'thumb_' . $filename;
+        $thumbnailFilename = 'thumb_'.$filename;
         $thumbnailPath = $file->storeAs('tickets/thumbnails', $thumbnailFilename, 'public');
+
         return $thumbnailPath;
     }
 
@@ -458,7 +457,7 @@ class TicketService
             return $targetTicket->fresh();
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to merge tickets: ' . $e->getMessage());
+            Log::error('Failed to merge tickets: '.$e->getMessage());
             throw $e;
         }
     }
@@ -508,7 +507,7 @@ class TicketService
     public function linkKbArticle(Ticket $ticket, $articleId, $wasHelpful = null)
     {
         $ticket->kbArticles()->syncWithoutDetaching([
-            $articleId => ['was_helpful' => $wasHelpful]
+            $articleId => ['was_helpful' => $wasHelpful],
         ]);
     }
 
@@ -518,8 +517,8 @@ class TicketService
     public function suggestKbArticles(Ticket $ticket, $limit = 5)
     {
         // Simple keyword-based suggestion
-        $keywords = explode(' ', $ticket->subject . ' ' . $ticket->description);
-        $keywords = array_filter($keywords, fn($word) => strlen($word) > 3);
+        $keywords = explode(' ', $ticket->subject.' '.$ticket->description);
+        $keywords = array_filter($keywords, fn ($word) => strlen($word) > 3);
 
         if (empty($keywords)) {
             return KbArticle::published()
@@ -532,7 +531,7 @@ class TicketService
 
         foreach ($keywords as $keyword) {
             $query->orWhere('title', 'like', "%{$keyword}%")
-                  ->orWhere('content', 'like', "%{$keyword}%");
+                ->orWhere('content', 'like', "%{$keyword}%");
         }
 
         return $query->limit($limit)->get();

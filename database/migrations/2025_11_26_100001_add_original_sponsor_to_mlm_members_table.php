@@ -20,13 +20,13 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_members มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_members')) {
+        if (! Schema::hasTable('mlm_members')) {
             return;
         }
 
         Schema::table('mlm_members', function (Blueprint $table) {
             // เพิ่ม original_sponsor_id - คนที่แนะนำตรงจริงๆ
-            if (!Schema::hasColumn('mlm_members', 'original_sponsor_id')) {
+            if (! Schema::hasColumn('mlm_members', 'original_sponsor_id')) {
                 $table->foreignId('original_sponsor_id')
                     ->nullable()
                     ->after('user_id')
@@ -43,7 +43,7 @@ return new class extends Migration
             ->pluck('name')
             ->contains('mlm_members_original_sponsor_id_index');
 
-        if (!$indexExists && Schema::hasColumn('mlm_members', 'original_sponsor_id')) {
+        if (! $indexExists && Schema::hasColumn('mlm_members', 'original_sponsor_id')) {
             Schema::table('mlm_members', function (Blueprint $table) {
                 $table->index('original_sponsor_id', 'mlm_members_original_sponsor_id_index');
             });

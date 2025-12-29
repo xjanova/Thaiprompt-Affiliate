@@ -171,8 +171,6 @@ class HomepageSection extends Model
 
     /**
      * ความสัมพันธ์กับ elements ภายใน section
-     *
-     * @return HasMany
      */
     public function elements(): HasMany
     {
@@ -182,8 +180,6 @@ class HomepageSection extends Model
 
     /**
      * ดึงเฉพาะ elements ที่ active
-     *
-     * @return HasMany
      */
     public function activeElements(): HasMany
     {
@@ -193,7 +189,7 @@ class HomepageSection extends Model
     /**
      * Scope: ดึงเฉพาะ sections ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -204,7 +200,7 @@ class HomepageSection extends Model
     /**
      * Scope: เรียงตาม order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -215,8 +211,7 @@ class HomepageSection extends Model
     /**
      * Scope: ดึงตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -226,9 +221,6 @@ class HomepageSection extends Model
 
     /**
      * สร้าง CSS style string สำหรับ section
-     *
-     * @param bool $isDarkMode
-     * @return string
      */
     public function getStyleAttribute(bool $isDarkMode = false): string
     {
@@ -265,7 +257,7 @@ class HomepageSection extends Model
                     $styles[] = "background-position: {$this->background_position}";
                     $styles[] = "background-size: {$this->background_size}";
                     if ($this->background_fixed) {
-                        $styles[] = "background-attachment: fixed";
+                        $styles[] = 'background-attachment: fixed';
                     }
                 }
                 break;
@@ -276,8 +268,6 @@ class HomepageSection extends Model
 
     /**
      * แปลงเป็น array สำหรับ API response
-     *
-     * @return array
      */
     public function toApiArray(): array
     {

@@ -29,7 +29,7 @@ class VerifyWebhookSignature
             default => false,
         };
 
-        if (!$verified) {
+        if (! $verified) {
             Log::warning("Webhook signature verification failed for {$provider}", [
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -53,7 +53,7 @@ class VerifyWebhookSignature
         $body = $request->getContent();
         $channelSecret = config('services.line.channel_secret');
 
-        if (!$signature || !$channelSecret) {
+        if (! $signature || ! $channelSecret) {
             return false;
         }
 
@@ -72,7 +72,7 @@ class VerifyWebhookSignature
         $body = $request->getContent();
         $secret = config('services.promptpay.webhook_secret');
 
-        if (!$signature || !$secret) {
+        if (! $signature || ! $secret) {
             return false;
         }
 
@@ -91,7 +91,7 @@ class VerifyWebhookSignature
         $body = $request->getContent();
         $secret = config('services.paysolutions.webhook_secret');
 
-        if (!$signature || !$secret) {
+        if (! $signature || ! $secret) {
             return false;
         }
 
@@ -113,7 +113,7 @@ class VerifyWebhookSignature
         $signature = $request->header('Stripe-Signature');
         $secret = config('services.stripe.webhook_secret');
 
-        if (!$signature || !$secret) {
+        if (! $signature || ! $secret) {
             return false;
         }
 
@@ -132,7 +132,7 @@ class VerifyWebhookSignature
         $body = $request->getContent();
         $secret = config('services.omise.secret_key');
 
-        if (!$signature || !$secret) {
+        if (! $signature || ! $secret) {
             return false;
         }
 

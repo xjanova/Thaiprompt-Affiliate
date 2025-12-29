@@ -17,7 +17,6 @@ class LineBotKeywordController extends Controller
     /**
      * ดึงรายการ keywords ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function index(Request $request)
@@ -67,7 +66,6 @@ class LineBotKeywordController extends Controller
     /**
      * ดึงรายละเอียด keyword
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(LineBotKeyword $keyword)
@@ -82,7 +80,6 @@ class LineBotKeywordController extends Controller
     /**
      * สร้าง keyword ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
@@ -114,8 +111,6 @@ class LineBotKeywordController extends Controller
     /**
      * อัปเดต keyword
      *
-     * @param Request $request
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(Request $request, LineBotKeyword $keyword)
@@ -147,7 +142,6 @@ class LineBotKeywordController extends Controller
     /**
      * ลบ keyword
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(LineBotKeyword $keyword)
@@ -164,7 +158,6 @@ class LineBotKeywordController extends Controller
     /**
      * ทดสอบ keyword
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function test(Request $request)

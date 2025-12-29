@@ -20,8 +20,6 @@ return new class extends Migration
      * - DELIVERY: เรื่องการจัดส่ง
      * - RETURN: ต้องการคืนสินค้า
      * - WARRANTY: เรื่องการรับประกัน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -59,7 +57,7 @@ return new class extends Migration
                 'GOODBYE',
                 'THANKS',
                 'APOLOGY',
-                'OTHER'
+                'OTHER',
             ])->index();
 
             // Additional intents (JSON array for multiple intents)
@@ -83,14 +81,14 @@ return new class extends Migration
                 'DELIVERY',
                 'QUALITY',
                 'ACCOUNT',
-                'OTHER'
+                'OTHER',
             ])->nullable();
 
             $table->enum('priority_level', [
                 'LOW',
                 'NORMAL',
                 'HIGH',
-                'URGENT'
+                'URGENT',
             ])->default('NORMAL');
 
             // Timestamps
@@ -105,8 +103,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง message_intents
-     *
-     * @return void
      */
     public function down(): void
     {

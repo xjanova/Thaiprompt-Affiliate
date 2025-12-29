@@ -35,37 +35,41 @@ class AddonDisableCommand extends Command
 
         // Get add-on slug
         $slug = $this->argument('slug');
-        if (!$slug) {
+        if (! $slug) {
             $activeAddons = collect($addonService->checkAllAddons())
-                ->filter(fn($addon) => $addon['enabled'])
+                ->filter(fn ($addon) => $addon['enabled'])
                 ->keys()
                 ->toArray();
 
             if (empty($activeAddons)) {
                 $this->warn('No enabled add-ons found.');
+
                 return self::SUCCESS;
             }
 
             $slug = $this->choice('Select an add-on to disable', $activeAddons);
         }
 
-        if (!$slug) {
+        if (! $slug) {
             $this->error('Add-on slug is required.');
+
             return self::FAILURE;
         }
 
         // Validate slug exists in config
         $configuredAddons = config('license.addons', []);
-        if (!isset($configuredAddons[$slug])) {
+        if (! isset($configuredAddons[$slug])) {
             $this->error("Add-on '{$slug}' is not configured.");
+
             return self::FAILURE;
         }
 
         $addonConfig = $configuredAddons[$slug];
 
         // Check if already disabled
-        if (!$addonService->isAddonActivated($slug)) {
+        if (! $addonService->isAddonActivated($slug)) {
             $this->warn("Add-on '{$addonConfig['name']}' is already disabled.");
+
             return self::SUCCESS;
         }
 
@@ -82,12 +86,13 @@ class AddonDisableCommand extends Command
         $this->newLine();
 
         // Confirmation
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $this->warn('⚠️  Warning: Disabling will turn off all features of this add-on.');
             $this->newLine();
 
-            if (!$this->confirm("Are you sure you want to disable '{$addonConfig['name']}'?", false)) {
+            if (! $this->confirm("Are you sure you want to disable '{$addonConfig['name']}'?", false)) {
                 $this->info('Deactivation cancelled.');
+
                 return self::SUCCESS;
             }
         }

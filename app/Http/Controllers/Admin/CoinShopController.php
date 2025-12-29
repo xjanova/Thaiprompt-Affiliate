@@ -19,7 +19,6 @@ class CoinShopController extends Controller
     /**
      * หน้าจัดการสินค้าทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -114,7 +113,6 @@ class CoinShopController extends Controller
     /**
      * บันทึกสินค้าใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -126,7 +124,7 @@ class CoinShopController extends Controller
             'description_th' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048',
             'icon' => 'nullable|string|max:10',
-            'type' => 'required|in:' . implode(',', array_keys(CoinShopProduct::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(CoinShopProduct::TYPES)),
             'category' => 'nullable|string|max:100',
             'price_coins' => 'required|numeric|min:0',
             'original_price_coins' => 'nullable|numeric|min:0',
@@ -170,7 +168,6 @@ class CoinShopController extends Controller
     /**
      * หน้าแก้ไขสินค้า
      *
-     * @param CoinShopProduct $product
      * @return \Illuminate\View\View
      */
     public function edit(CoinShopProduct $product)
@@ -181,15 +178,13 @@ class CoinShopController extends Controller
             'product' => $product,
             'types' => CoinShopProduct::TYPES,
             'ranks' => $ranks,
-            'pageTitle' => 'แก้ไขสินค้า: ' . $product->display_name,
+            'pageTitle' => 'แก้ไขสินค้า: '.$product->display_name,
         ]);
     }
 
     /**
      * อัปเดตสินค้า
      *
-     * @param Request $request
-     * @param CoinShopProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, CoinShopProduct $product)
@@ -201,7 +196,7 @@ class CoinShopController extends Controller
             'description_th' => 'nullable|string',
             'thumbnail' => 'nullable|image|max:2048',
             'icon' => 'nullable|string|max:10',
-            'type' => 'required|in:' . implode(',', array_keys(CoinShopProduct::TYPES)),
+            'type' => 'required|in:'.implode(',', array_keys(CoinShopProduct::TYPES)),
             'category' => 'nullable|string|max:100',
             'price_coins' => 'required|numeric|min:0',
             'original_price_coins' => 'nullable|numeric|min:0',
@@ -249,7 +244,6 @@ class CoinShopController extends Controller
     /**
      * ลบสินค้า
      *
-     * @param CoinShopProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(CoinShopProduct $product)
@@ -267,13 +261,12 @@ class CoinShopController extends Controller
     /**
      * เปลี่ยนสถานะ Active
      *
-     * @param CoinShopProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(CoinShopProduct $product)
     {
         $product->update([
-            'is_active' => !$product->is_active,
+            'is_active' => ! $product->is_active,
             'updated_by' => auth()->id(),
         ]);
 
@@ -285,7 +278,6 @@ class CoinShopController extends Controller
     /**
      * หน้าจัดการคำสั่งซื้อ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function purchases(Request $request)
@@ -344,7 +336,6 @@ class CoinShopController extends Controller
     /**
      * หน้ารายละเอียดคำสั่งซื้อ (Admin)
      *
-     * @param CoinPurchase $purchase
      * @return \Illuminate\View\View
      */
     public function purchaseDetail(CoinPurchase $purchase)
@@ -352,21 +343,19 @@ class CoinShopController extends Controller
         return view('admin.coin-shop.purchase-detail', [
             'purchase' => $purchase->load(['user', 'product', 'processor', 'refunder']),
             'statuses' => CoinPurchase::STATUSES,
-            'pageTitle' => 'รายละเอียดคำสั่งซื้อ #' . $purchase->order_number,
+            'pageTitle' => 'รายละเอียดคำสั่งซื้อ #'.$purchase->order_number,
         ]);
     }
 
     /**
      * อัปเดตสถานะคำสั่งซื้อ
      *
-     * @param Request $request
-     * @param CoinPurchase $purchase
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updatePurchaseStatus(Request $request, CoinPurchase $purchase)
     {
         $request->validate([
-            'status' => 'required|in:' . implode(',', array_keys(CoinPurchase::STATUSES)),
+            'status' => 'required|in:'.implode(',', array_keys(CoinPurchase::STATUSES)),
             'note' => 'nullable|string|max:500',
             'tracking_number' => 'nullable|string|max:100',
         ]);
@@ -388,18 +377,16 @@ class CoinShopController extends Controller
     /**
      * คืนเงินคำสั่งซื้อ
      *
-     * @param Request $request
-     * @param CoinPurchase $purchase
      * @return \Illuminate\Http\RedirectResponse
      */
     public function refundPurchase(Request $request, CoinPurchase $purchase)
     {
         $request->validate([
             'reason' => 'required|string|max:500',
-            'amount' => 'nullable|numeric|min:0|max:' . $purchase->net_price,
+            'amount' => 'nullable|numeric|min:0|max:'.$purchase->net_price,
         ]);
 
-        if (!$purchase->is_refundable) {
+        if (! $purchase->is_refundable) {
             return back()->with('error', 'ไม่สามารถคืนเงินคำสั่งซื้อนี้ได้');
         }
 

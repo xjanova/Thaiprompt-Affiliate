@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ค้นหาและจัดเก็บความสัมพันธ์ระหว่าง keywords
      * ใช้สำหรับ auto-discovery ของ related keywords
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -46,7 +44,7 @@ return new class extends Migration
                 'SEQUENTIAL',           // One follows the other
                 'CONTEXTUAL',           // Similar context
                 'CATEGORY',             // Same category
-                'ALTERNATIVE'           // Alternative solution
+                'ALTERNATIVE',           // Alternative solution
             ])->index();
 
             // Discovery method
@@ -56,7 +54,7 @@ return new class extends Migration
                 'INTENT_MATCH',         // Shared intent
                 'CLUSTER_MATCH',        // In same cluster
                 'SEMANTIC',             // Semantic analysis
-                'MANUAL'                // Manually added
+                'MANUAL',                // Manually added
             ])->default('CO_OCCURRENCE');
 
             // Additional data
@@ -83,8 +81,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง keyword_relationships
-     *
-     * @return void
      */
     public function down(): void
     {

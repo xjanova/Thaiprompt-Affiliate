@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineBotKeyword;
-use Illuminate\Support\Facades\DB;
 
 /**
  * LINE Bot Keyword Analytics Controller
@@ -45,8 +44,13 @@ class LineBotKeywordAnalyticsController extends Controller
         // Priority distribution
         $priorityDistribution = $keywords
             ->groupBy(function ($keyword) {
-                if ($keyword->priority >= 80) return 'High (80-100)';
-                if ($keyword->priority >= 50) return 'Medium (50-79)';
+                if ($keyword->priority >= 80) {
+                    return 'High (80-100)';
+                }
+                if ($keyword->priority >= 50) {
+                    return 'Medium (50-79)';
+                }
+
                 return 'Low (1-49)';
             })
             ->map->count();
@@ -91,17 +95,16 @@ class LineBotKeywordAnalyticsController extends Controller
             ];
         })->toArray();
 
-        $filename = 'keywords_export_' . now()->format('Y-m-d_H-i-s') . '.json';
+        $filename = 'keywords_export_'.now()->format('Y-m-d_H-i-s').'.json';
 
         return response()->json($data)
             ->header('Content-Type', 'application/json')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
     }
 
     /**
      * Import keywords from JSON
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function import(\Illuminate\Http\Request $request)
@@ -115,7 +118,7 @@ class LineBotKeywordAnalyticsController extends Controller
             $content = file_get_contents($file->getRealPath());
             $data = json_decode($content, true);
 
-            if (!is_array($data)) {
+            if (! is_array($data)) {
                 throw new \Exception('ไฟล์ JSON ต้องเป็น array');
             }
 
@@ -128,6 +131,7 @@ class LineBotKeywordAnalyticsController extends Controller
 
                 if ($existing && $request->input('skip_existing')) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -145,7 +149,7 @@ class LineBotKeywordAnalyticsController extends Controller
                     'notes' => $item['notes'] ?? null,
                 ];
 
-                if ($existing && !$request->input('skip_existing')) {
+                if ($existing && ! $request->input('skip_existing')) {
                     $existing->update($keywordData);
                 } else {
                     LineBotKeyword::create($keywordData);
@@ -162,7 +166,7 @@ class LineBotKeywordAnalyticsController extends Controller
 
             return redirect()
                 ->route('admin.line-bot.keywords.analytics')
-                ->with('success', "นำเข้า $imported Keywords สำเร็จ" . ($skipped > 0 ? " (ข้าม $skipped keywords)" : ''));
+                ->with('success', "นำเข้า $imported Keywords สำเร็จ".($skipped > 0 ? " (ข้าม $skipped keywords)" : ''));
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Import Keywords Error', [
@@ -171,14 +175,13 @@ class LineBotKeywordAnalyticsController extends Controller
 
             return redirect()
                 ->route('admin.line-bot.keywords.analytics')
-                ->with('error', 'เกิดข้อผิดพลาดในการนำเข้า: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาดในการนำเข้า: '.$e->getMessage());
         }
     }
 
     /**
      * Clone keyword
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\RedirectResponse
      */
     public function clone(LineBotKeyword $keyword)
@@ -186,7 +189,7 @@ class LineBotKeywordAnalyticsController extends Controller
         try {
             // สร้างสำเนาใหม่
             $newKeyword = $keyword->replicate();
-            $newKeyword->keyword = $keyword->keyword . '_copy_' . time();
+            $newKeyword->keyword = $keyword->keyword.'_copy_'.time();
             $newKeyword->is_active = false; // ปิดใช้งานสำเนาที่สร้างใหม่
             $newKeyword->save();
 
@@ -197,14 +200,13 @@ class LineBotKeywordAnalyticsController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.line-bot.keywords.index')
-                ->with('error', 'เกิดข้อผิดพลาดในการ Clone: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาดในการ Clone: '.$e->getMessage());
         }
     }
 
     /**
      * Bulk update status
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkUpdateStatus(\Illuminate\Http\Request $request)
@@ -238,7 +240,6 @@ class LineBotKeywordAnalyticsController extends Controller
     /**
      * Bulk delete
      *
-     * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkDelete(\Illuminate\Http\Request $request)

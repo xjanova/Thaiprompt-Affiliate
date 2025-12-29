@@ -48,7 +48,7 @@ class SalaryComponent extends Model
      */
     public function calculateValue($basicSalary)
     {
-        return match($this->calculation_type) {
+        return match ($this->calculation_type) {
             'fixed' => $this->amount,
             'percentage' => $basicSalary * ($this->percentage / 100),
             default => $this->amount
@@ -62,7 +62,7 @@ class SalaryComponent extends Model
     {
         $now = now();
 
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -83,11 +83,11 @@ class SalaryComponent extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-                    ->where(function($q) {
-                        $q->whereNull('effective_to')
-                          ->orWhere('effective_to', '>=', now());
-                    })
-                    ->where('effective_from', '<=', now());
+            ->where(function ($q) {
+                $q->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', now());
+            })
+            ->where('effective_from', '<=', now());
     }
 
     /**

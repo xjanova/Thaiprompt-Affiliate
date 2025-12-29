@@ -6,19 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\User;
-use App\Services\MlmGenealogyService;
 use App\Services\MlmCalculationService;
+use App\Services\MlmGenealogyService;
 use Illuminate\Http\Request;
 
 class MlmMemberController extends Controller
 {
     protected $genealogyService;
+
     protected $calculationService;
 
     public function __construct()
     {
-        $this->genealogyService = new MlmGenealogyService();
-        $this->calculationService = new MlmCalculationService();
+        $this->genealogyService = new MlmGenealogyService;
+        $this->calculationService = new MlmCalculationService;
     }
 
     public function index(Request $request)
@@ -39,7 +40,7 @@ class MlmMemberController extends Controller
             $search = $request->search;
             $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             })->orWhere('member_code', 'like', "%{$search}%");
         }
 
@@ -121,7 +122,7 @@ class MlmMemberController extends Controller
 
     public function toggleQualification(MlmMember $member)
     {
-        $member->update(['is_qualified' => !$member->is_qualified]);
+        $member->update(['is_qualified' => ! $member->is_qualified]);
 
         return response()->json([
             'success' => true,
@@ -166,8 +167,6 @@ class MlmMemberController extends Controller
      * ดึงข้อมูลสายเลือด (Bloodline) สำหรับ API
      * แสดงเส้นทางจาก root ลงมาถึงสมาชิกที่เลือก
      *
-     * @param MlmMember $member
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getBloodlineData(MlmMember $member, Request $request)

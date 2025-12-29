@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\MarketplaceCommission;
-use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
 use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class DashboardController extends Controller
@@ -289,7 +286,7 @@ class DashboardController extends Controller
             $retentionStatistics = $retentionService->getUserStatistics($user);
         } catch (\Exception $e) {
             // ถ้าเกิด error ก็ปล่อยเป็น null
-            \Log::warning('Failed to load retention data for user dashboard: ' . $e->getMessage());
+            \Log::warning('Failed to load retention data for user dashboard: '.$e->getMessage());
         }
 
         // ===============================================
@@ -429,8 +426,6 @@ class DashboardController extends Controller
 
     /**
      * สร้างรายการ Hub Items ทั้ง 8 รายการ
-     *
-     * @return array
      */
     private function getHubItems(): array
     {
@@ -534,14 +529,13 @@ class DashboardController extends Controller
     public function profile()
     {
         $user = Auth::user();
+
         return view('user.profile', compact('user'));
     }
 
     /**
      * อัปเดตโปรไฟล์ของ User
      *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateProfile(Request $request, ImageUploadService $imageUploadService)
@@ -551,7 +545,7 @@ class DashboardController extends Controller
         $rules = [
             // ข้อมูลส่วนตัว
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],
@@ -609,7 +603,7 @@ class DashboardController extends Controller
         // Handle password change
         if ($request->filled('current_password') && $request->filled('new_password')) {
             // Check if current password is correct
-            if (!Hash::check($request->current_password, $user->password)) {
+            if (! Hash::check($request->current_password, $user->password)) {
                 return back()
                     ->withInput()
                     ->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
@@ -725,7 +719,6 @@ class DashboardController extends Controller
     /**
      * อัปเดตรหัสผ่านของ User
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updatePassword(Request $request)
@@ -743,7 +736,7 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Check if current password is correct
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return back()->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
         }
 

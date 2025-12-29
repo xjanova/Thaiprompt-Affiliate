@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง huggingface_trending_models
      *
      * เก็บข้อมูล trending models จาก Hugging Face
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -153,8 +151,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง huggingface_trending_models
-     *
-     * @return void
      */
     public function down(): void
     {

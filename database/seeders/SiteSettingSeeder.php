@@ -15,8 +15,6 @@ class SiteSettingSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้น Site Settings
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -25,6 +23,7 @@ class SiteSettingSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (SiteSetting::count() > 0) {
             $this->command->info('  ✓ Site Settings มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

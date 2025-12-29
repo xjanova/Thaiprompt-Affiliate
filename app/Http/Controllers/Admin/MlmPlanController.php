@@ -29,6 +29,7 @@ class MlmPlanController extends Controller
     public function genealogy()
     {
         $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+
         return view('admin.mlm.genealogy.index', compact('members'));
     }
 
@@ -41,6 +42,7 @@ class MlmPlanController extends Controller
     public function genealogyWorkflow()
     {
         $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+
         return view('admin.mlm.genealogy.workflow', compact('members'));
     }
 
@@ -53,6 +55,7 @@ class MlmPlanController extends Controller
     public function bloodline()
     {
         $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+
         return view('admin.mlm.genealogy.bloodline', compact('members'));
     }
 
@@ -66,6 +69,7 @@ class MlmPlanController extends Controller
     public function bloodlineWorkflow()
     {
         $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+
         return view('admin.mlm.genealogy.bloodline-workflow', compact('members'));
     }
 
@@ -100,7 +104,7 @@ class MlmPlanController extends Controller
         $plan = MlmPlan::create($validated);
 
         // Attach products if any
-        if (!empty($validated['products'])) {
+        if (! empty($validated['products'])) {
             foreach ($validated['products'] as $product) {
                 $plan->products()->attach($product['id'], [
                     'quantity' => $product['quantity'],
@@ -138,7 +142,7 @@ class MlmPlanController extends Controller
 
     public function toggleStatus(MlmPlan $plan)
     {
-        $plan->update(['is_active' => !$plan->is_active]);
+        $plan->update(['is_active' => ! $plan->is_active]);
 
         return response()->json([
             'success' => true,

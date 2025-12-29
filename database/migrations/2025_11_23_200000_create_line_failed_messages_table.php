@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้ใช้สำหรับระบบ Auto-Retry & Error Recovery
      * เก็บข้อความที่ส่งไม่สำเร็จและทำการ retry อัตโนมัติ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -69,8 +67,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_failed_messages
-     *
-     * @return void
      */
     public function down(): void
     {

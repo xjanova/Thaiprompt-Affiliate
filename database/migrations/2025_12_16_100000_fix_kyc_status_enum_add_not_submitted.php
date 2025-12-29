@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -21,13 +20,11 @@ return new class extends Migration
 {
     /**
      * แก้ไข kyc_status enum ให้รวม 'not_submitted' และ 'draft'
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users และ column kyc_status มีอยู่
-        if (!Schema::hasTable('users') || !Schema::hasColumn('users', 'kyc_status')) {
+        if (! Schema::hasTable('users') || ! Schema::hasColumn('users', 'kyc_status')) {
             return;
         }
 
@@ -38,12 +35,10 @@ return new class extends Migration
 
     /**
      * Revert กลับไปใช้ enum เดิม
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('users') || !Schema::hasColumn('users', 'kyc_status')) {
+        if (! Schema::hasTable('users') || ! Schema::hasColumn('users', 'kyc_status')) {
             return;
         }
 

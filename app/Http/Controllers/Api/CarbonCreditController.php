@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CarbonCreditResource;
 use App\Models\CarbonCredit;
 use App\Models\CarbonFootprintRecord;
 use App\Services\CarbonCreditService;
-use App\Http\Resources\CarbonCreditResource;
-use App\Http\Resources\CarbonFootprintRecordResource;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CarbonCreditController extends Controller
 {
@@ -148,7 +147,7 @@ class CarbonCreditController extends Controller
             $request->input('product_id')
         );
 
-        if (!$credit) {
+        if (! $credit) {
             return response()->json([
                 'success' => false,
                 'message' => 'Carbon emission is not below baseline. No credit issued.',
@@ -209,7 +208,7 @@ class CarbonCreditController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $leaderboard->map(fn($item) => [
+            'data' => $leaderboard->map(fn ($item) => [
                 'user' => [
                     'id' => $item->user_id,
                     'name' => $item->user->name,

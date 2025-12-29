@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiRentalCloudProvider;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -17,9 +17,6 @@ class AiRentalCloudProviderController extends Controller
 {
     /**
      * แสดงรายการ Cloud Providers ทั้งหมด
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -30,8 +27,8 @@ class AiRentalCloudProviderController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -83,8 +80,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * แสดงฟอร์มสร้าง Provider ใหม่
-     *
-     * @return View
      */
     public function create(): View
     {
@@ -93,9 +88,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * บันทึก Provider ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function store(Request $request): RedirectResponse
     {
@@ -146,9 +138,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * แสดงรายละเอียด Provider
-     *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return View
      */
     public function show(AiRentalCloudProvider $cloudProvider): View
     {
@@ -170,9 +159,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * แสดงฟอร์มแก้ไข Provider
-     *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return View
      */
     public function edit(AiRentalCloudProvider $cloudProvider): View
     {
@@ -181,17 +167,13 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * อัพเดท Provider
-     *
-     * @param Request $request
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return RedirectResponse
      */
     public function update(Request $request, AiRentalCloudProvider $cloudProvider): RedirectResponse
     {
         // Validation (slug unique ยกเว้นตัวเอง)
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:ai_rental_cloud_providers,slug,' . $cloudProvider->id,
+            'slug' => 'required|string|max:255|unique:ai_rental_cloud_providers,slug,'.$cloudProvider->id,
             'description' => 'nullable|string',
             'tier' => 'required|in:free,paid,both',
             'website_url' => 'required|url',
@@ -235,9 +217,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * ลบ Provider
-     *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return RedirectResponse
      */
     public function destroy(AiRentalCloudProvider $cloudProvider): RedirectResponse
     {
@@ -260,9 +239,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * เปิดใช้งาน Provider
-     *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return RedirectResponse
      */
     public function activate(AiRentalCloudProvider $cloudProvider): RedirectResponse
     {
@@ -275,9 +251,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * ปิดใช้งาน Provider
-     *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return RedirectResponse
      */
     public function deactivate(AiRentalCloudProvider $cloudProvider): RedirectResponse
     {
@@ -290,10 +263,6 @@ class AiRentalCloudProviderController extends Controller
 
     /**
      * เพิ่ม/แก้ไขคะแนน Provider
-     *
-     * @param Request $request
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return RedirectResponse
      */
     public function updateRating(Request $request, AiRentalCloudProvider $cloudProvider): RedirectResponse
     {
@@ -305,13 +274,12 @@ class AiRentalCloudProviderController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', "อัพเดทคะแนนสำเร็จ");
+            ->with('success', 'อัพเดทคะแนนสำเร็จ');
     }
 
     /**
      * อัพเดทลำดับการแสดงผล (Drag & Drop)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateOrder(Request $request)

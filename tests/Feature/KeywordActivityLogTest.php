@@ -19,6 +19,7 @@ class KeywordActivityLogTest extends TestCase
     use RefreshDatabase;
 
     private KeywordActivityLogService $service;
+
     private User $admin;
 
     protected function setUp(): void

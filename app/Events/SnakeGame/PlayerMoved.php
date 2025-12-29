@@ -4,8 +4,6 @@ namespace App\Events\SnakeGame;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -20,21 +18,26 @@ class PlayerMoved implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $playerId;
+
     public array $position;
+
     public array $direction;
+
     public int $score;
+
     public int $length;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่ผู้เล่นอยู่
-     * @param int $playerId ID ผู้เล่น
-     * @param array $position ตำแหน่ง {x, y, z}
-     * @param array $direction ทิศทาง {x, y, z}
-     * @param int $score คะแนน
-     * @param int $length ความยาวงู
+     * @param  int  $roomId  ห้องที่ผู้เล่นอยู่
+     * @param  int  $playerId  ID ผู้เล่น
+     * @param  array  $position  ตำแหน่ง {x, y, z}
+     * @param  array  $direction  ทิศทาง {x, y, z}
+     * @param  int  $score  คะแนน
+     * @param  int  $length  ความยาวงู
      */
     public function __construct(int $roomId, int $playerId, array $position, array $direction, int $score, int $length)
     {
@@ -48,8 +51,6 @@ class PlayerMoved implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -64,8 +65,6 @@ class PlayerMoved implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -80,7 +79,7 @@ class PlayerMoved implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

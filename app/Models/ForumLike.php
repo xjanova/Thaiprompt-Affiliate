@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $likeable_type ประเภท (thread/post)
  * @property int $likeable_id ID ของ item
  * @property \Carbon\Carbon $created_at
- *
  * @property-read User $user
  * @property-read ForumThread|ForumPost $likeable
  */
@@ -101,8 +100,6 @@ class ForumLike extends Model
 
     /**
      * ความสัมพันธ์กับผู้กดไลค์
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -111,8 +108,6 @@ class ForumLike extends Model
 
     /**
      * ความสัมพันธ์ polymorphic กับ item ที่ถูกไลค์
-     *
-     * @return MorphTo
      */
     public function likeable(): MorphTo
     {
@@ -122,8 +117,6 @@ class ForumLike extends Model
     /**
      * Toggle like - กด/ยกเลิกไลค์
      *
-     * @param User $user
-     * @param Model $likeable
      * @return array{liked: bool, likes_count: int}
      */
     public static function toggleLike(User $user, Model $likeable): array

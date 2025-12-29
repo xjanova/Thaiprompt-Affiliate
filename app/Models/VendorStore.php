@@ -349,7 +349,7 @@ class VendorStore extends Model
      */
     public function getLogoUrlAttribute(): ?string
     {
-        if (!$this->store_logo) {
+        if (! $this->store_logo) {
             return null;
         }
 
@@ -361,7 +361,7 @@ class VendorStore extends Model
      */
     public function getBannerUrlAttribute(): ?string
     {
-        if (!$this->store_banner) {
+        if (! $this->store_banner) {
             return null;
         }
 
@@ -374,7 +374,7 @@ class VendorStore extends Model
     public function getStoreUrlAttribute(): string
     {
         if ($this->store_domain) {
-            return 'https://' . $this->store_domain;
+            return 'https://'.$this->store_domain;
         }
 
         return route('vendor.stores.show', $this->store_slug);
@@ -385,11 +385,11 @@ class VendorStore extends Model
      */
     public function canAddProducts(): bool
     {
-        if (!$this->package) {
+        if (! $this->package) {
             return false;
         }
 
-        return !$this->package->isProductLimitReached($this);
+        return ! $this->package->isProductLimitReached($this);
     }
 
     /**
@@ -397,11 +397,11 @@ class VendorStore extends Model
      */
     public function canProcessOrders(): bool
     {
-        if (!$this->package) {
+        if (! $this->package) {
             return false;
         }
 
-        return !$this->package->isMonthlyOrderLimitReached($this);
+        return ! $this->package->isMonthlyOrderLimitReached($this);
     }
 
     /**
@@ -416,7 +416,7 @@ class VendorStore extends Model
 
         // Check purchased add-on features
         return $this->activeFeatures()
-            ->whereHas('feature', function($q) use ($featureSlug) {
+            ->whereHas('feature', function ($q) use ($featureSlug) {
                 $q->where('feature_slug', $featureSlug);
             })
             ->exists();
@@ -443,8 +443,6 @@ class VendorStore extends Model
      *
      * บันทึกการเข้าชมลงในตาราง vendor_store_visits
      * เพื่อใช้ในการวิเคราะห์ข้อมูลและสถิติ
-     *
-     * @return void
      */
     public function incrementVisitCount(): void
     {

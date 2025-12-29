@@ -1,17 +1,17 @@
 <?php
 
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\DashboardController;
-use App\Http\Controllers\Seller\ProductController;
+use App\Http\Controllers\Seller\OnboardingController;
 use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
+use App\Http\Controllers\Seller\ProductController;
+use App\Http\Controllers\Seller\SellerPosController;
+use App\Http\Controllers\Seller\StaffController;
 use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\Seller\StoreLayoutController;
-use App\Http\Controllers\Seller\SellerPosController;
-use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\Seller\SystemMonitoringController;
-use App\Http\Controllers\Seller\StaffController;
-use App\Http\Controllers\Seller\OnboardingController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Seller\UserGuideController;
 use Illuminate\Support\Facades\Route;
 

@@ -48,8 +48,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * สร้างข้อมูล MLM Hierarchy 5 ชั้น (31 สมาชิก)
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -66,8 +64,9 @@ class MlmHierarchySeeder extends Seeder
 
         // 2. ดึง Default MLM Package
         $package = MlmPackage::where('slug', 'bronze-package')->first();
-        if (!$package) {
+        if (! $package) {
             $this->command->error('❌ ไม่พบ MLM Package กรุณารัน MlmPackageSeeder ก่อน');
+
             return;
         }
         $this->command->info("✅ MLM Package: {$package->name}");
@@ -86,8 +85,6 @@ class MlmHierarchySeeder extends Seeder
      * ต้องใช้ withTrashed() เพื่อหา records ที่ถูก soft-delete
      * และใช้ forceDelete() เพื่อลบถาวร
      * เพราะ unique constraint ยังคงมีผลกับ soft-deleted records
-     *
-     * @return void
      */
     private function cleanupOldData(): void
     {
@@ -132,8 +129,6 @@ class MlmHierarchySeeder extends Seeder
      * ⚠️ IMPORTANT: MlmPlan ใช้ SoftDeletes
      * ต้องใช้ withTrashed() เพื่อตรวจสอบ record ที่ถูก soft-delete
      * เพราะ unique constraint ยังคงมีผลกับ soft-deleted records
-     *
-     * @return MlmPlan
      */
     private function getOrCreateDefaultPlan(): MlmPlan
     {
@@ -156,6 +151,7 @@ class MlmHierarchySeeder extends Seeder
                 'is_default' => true,
                 'is_active' => true,
             ]);
+
             return $plan;
         }
 
@@ -185,10 +181,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * สร้างสมาชิก MLM ทั้ง 31 คน
-     *
-     * @param MlmPlan $plan
-     * @param MlmPackage $package
-     * @return array
      */
     private function createAllMembers(MlmPlan $plan, MlmPackage $package): array
     {
@@ -232,10 +224,10 @@ class MlmHierarchySeeder extends Seeder
 
         // ดึง Admin User สำหรับ Root
         $adminUser = User::where('email', 'superadmin@thaiprompt.com')->first();
-        if (!$adminUser) {
+        if (! $adminUser) {
             $adminUser = User::where('role', 'admin')->where('is_super_admin', true)->first();
         }
-        if (!$adminUser) {
+        if (! $adminUser) {
             $adminUser = User::create([
                 'name' => 'MLM Admin (Root)',
                 'email' => 'mlm-admin@thaiprompt.com',
@@ -307,13 +299,9 @@ class MlmHierarchySeeder extends Seeder
     /**
      * สร้าง MLM Member พร้อม 3 ผังสายงาน
      *
-     * @param int $index ตำแหน่งใน array (0-30)
-     * @param User $user
-     * @param MlmPlan $plan
-     * @param MlmPackage $package
-     * @param array $members สมาชิกที่สร้างแล้ว
-     * @param array $crossReferrals mapping ของ original sponsor ที่ข้ามสาย
-     * @return MlmMember
+     * @param  int  $index  ตำแหน่งใน array (0-30)
+     * @param  array  $members  สมาชิกที่สร้างแล้ว
+     * @param  array  $crossReferrals  mapping ของ original sponsor ที่ข้ามสาย
      */
     private function createMember(
         int $index,
@@ -350,7 +338,7 @@ class MlmHierarchySeeder extends Seeder
         $unilevelPath = null;
         if ($unilevelSponsor) {
             $unilevelPath = $unilevelSponsor->unilevel_path
-                ? $unilevelSponsor->unilevel_path . '/' . $unilevelSponsor->id
+                ? $unilevelSponsor->unilevel_path.'/'.$unilevelSponsor->id
                 : (string) $unilevelSponsor->id;
         }
 
@@ -407,10 +395,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * คำนวณ binary_path
-     *
-     * @param int $index
-     * @param array $members
-     * @return string|null
      */
     private function calculateBinaryPath(int $index, array $members): ?string
     {
@@ -434,9 +418,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * อัพเดทสถิติของสมาชิก MLM
-     *
-     * @param array $members
-     * @return void
      */
     private function updateStatistics(array $members): void
     {
@@ -478,9 +459,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * นับจำนวน downline ทั้งหมด (unilevel - recursive)
-     *
-     * @param int $memberId
-     * @return int
      */
     private function countAllDownline(int $memberId): int
     {
@@ -498,9 +476,7 @@ class MlmHierarchySeeder extends Seeder
     /**
      * นับจำนวนสมาชิกในขา Binary
      *
-     * @param int $memberId
-     * @param string $position 'left' หรือ 'right'
-     * @return int
+     * @param  string  $position  'left' หรือ 'right'
      */
     private function countBinaryLegMembers(int $memberId, string $position): int
     {
@@ -508,7 +484,7 @@ class MlmHierarchySeeder extends Seeder
             ->where('binary_position', $position)
             ->first();
 
-        if (!$child) {
+        if (! $child) {
             return 0;
         }
 
@@ -517,9 +493,6 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * นับสมาชิกทั้งหมดใน Binary subtree
-     *
-     * @param int $memberId
-     * @return int
      */
     private function countBinarySubtree(int $memberId): int
     {
@@ -536,14 +509,11 @@ class MlmHierarchySeeder extends Seeder
 
     /**
      * แสดงผลลัพธ์การสร้าง
-     *
-     * @param array $members
-     * @return void
      */
     private function showResults(array $members): void
     {
         $this->command->info('');
-        $this->command->info('✨ สร้าง MLM Hierarchy สำเร็จ! รวม ' . count($members) . ' สมาชิก');
+        $this->command->info('✨ สร้าง MLM Hierarchy สำเร็จ! รวม '.count($members).' สมาชิก');
         $this->command->info('');
         $this->command->info('📊 โครงสร้าง Binary Tree (5 ชั้น):');
         $this->command->info('   Level 0 (Root): 1 คน');

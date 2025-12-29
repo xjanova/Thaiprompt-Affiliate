@@ -21,20 +21,20 @@ class CheckStakingEligibility
     {
         $poolId = $request->route('pool_id') ?? $request->input('pool_id');
 
-        if (!$poolId) {
+        if (! $poolId) {
             return response()->json(['error' => 'Pool ID not found'], 400);
         }
 
         $pool = TPIXStakingPool::find($poolId);
 
-        if (!$pool) {
+        if (! $pool) {
             return response()->json(['error' => 'Staking pool not found'], 404);
         }
 
         $user = $request->user();
 
         // Check if pool is active
-        if (!$pool->isActiveNow()) {
+        if (! $pool->isActiveNow()) {
             return response()->json([
                 'error' => 'Pool not active',
                 'message' => 'This staking pool is not currently active',
@@ -70,7 +70,7 @@ class CheckStakingEligibility
                 ->where('user_id', $user->id)
                 ->first();
 
-            if (!$balance || bccomp($balance->available_balance, $amount, 8) < 0) {
+            if (! $balance || bccomp($balance->available_balance, $amount, 8) < 0) {
                 return response()->json([
                     'error' => 'Insufficient balance',
                     'message' => 'You do not have enough tokens to stake',

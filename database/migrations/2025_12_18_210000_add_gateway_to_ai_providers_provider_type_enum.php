@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -12,13 +11,11 @@ return new class extends Migration
      *
      * PostXAgent AI Manager ต้องการ provider_type = 'gateway'
      * เพราะทำหน้าที่เป็น gateway เชื่อมต่อหลาย AI providers ผ่าน API เดียว
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตารางมีอยู่ก่อน
-        if (!Schema::hasTable('ai_providers')) {
+        if (! Schema::hasTable('ai_providers')) {
             return;
         }
 
@@ -32,12 +29,10 @@ return new class extends Migration
      *
      * ⚠️ หมายเหตุ: การลบ 'gateway' จะทำให้ records ที่มี provider_type = 'gateway' เกิด error
      * ควรลบหรืออัพเดท records เหล่านั้นก่อนรัน rollback
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('ai_providers')) {
+        if (! Schema::hasTable('ai_providers')) {
             return;
         }
 

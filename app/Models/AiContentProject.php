@@ -237,8 +237,6 @@ class AiContentProject extends Model
     /**
      * สร้างโปรเจกต์จาก Template
      *
-     * @param AiContentTemplate $template
-     * @param array $data
      * @return static
      */
     public static function createFromTemplate(AiContentTemplate $template, array $data): self
@@ -247,7 +245,7 @@ class AiContentProject extends Model
             'uuid' => (string) Str::uuid(),
             'user_id' => $data['user_id'],
             'template_id' => $template->id,
-            'name' => $data['name'] ?? $template->name . ' - ' . now()->format('d/m/Y H:i'),
+            'name' => $data['name'] ?? $template->name.' - '.now()->format('d/m/Y H:i'),
             'description' => $data['description'] ?? null,
             'content_type' => $template->content_type,
             'input_variables' => $data['input_variables'] ?? [],
@@ -259,8 +257,6 @@ class AiContentProject extends Model
 
     /**
      * อัพเดทสถิติหลังจากสร้าง Generation
-     *
-     * @param AiContentGeneration $generation
      */
     public function updateStatsFromGeneration(AiContentGeneration $generation): void
     {
@@ -276,8 +272,6 @@ class AiContentProject extends Model
 
     /**
      * เลือก Content จาก Generation
-     *
-     * @param AiContentGeneration $generation
      */
     public function selectGeneration(AiContentGeneration $generation): void
     {

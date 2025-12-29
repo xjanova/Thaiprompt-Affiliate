@@ -91,7 +91,7 @@ class CarbonFootprintRecord extends Model
      */
     public function getReductionPercentageAttribute(): float
     {
-        if (!$this->carbon_offset_applied || !$this->total_co2_equivalent) {
+        if (! $this->carbon_offset_applied || ! $this->total_co2_equivalent) {
             return 0;
         }
 

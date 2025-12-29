@@ -76,7 +76,7 @@ class ShippingAddressController extends Controller
                 'province' => $request->province,
                 'postal_code' => $request->postal_code,
                 'country' => $request->country ?? 'ประเทศไทย',
-                'is_default' => $request->is_default ?? !$hasAddresses,
+                'is_default' => $request->is_default ?? ! $hasAddresses,
                 'notes' => $request->notes,
             ]);
 
@@ -88,9 +88,10 @@ class ShippingAddressController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -161,9 +162,10 @@ class ShippingAddressController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -200,7 +202,8 @@ class ShippingAddressController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -231,7 +234,8 @@ class ShippingAddressController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

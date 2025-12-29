@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -17,8 +16,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร All-in-One Platform
      *
      * แสดงรายละเอียดทุกระบบที่รวมอยู่ในแพลตฟอร์ม
-     *
-     * @return View
      */
     public function allInOne(): View
     {
@@ -35,8 +32,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร AI-Powered Automation
      *
      * แสดงรายละเอียดระบบ AI และ Automation ทั้งหมด
-     *
-     * @return View
      */
     public function aiAutomation(): View
     {
@@ -53,8 +48,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร Blockchain & TPIX Token
      *
      * แสดง Whitepaper TPIX ทั้งหมด
-     *
-     * @return View
      */
     public function blockchainTpix(): View
     {
@@ -71,8 +64,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร Multi-Currency Wallet
      *
      * แสดงรายละเอียดระบบกระเป๋าเงินหลายสกุล
-     *
-     * @return View
      */
     public function multiCurrencyWallet(): View
     {
@@ -89,8 +80,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร MLM & Commission System
      *
      * แสดงรายละเอียดระบบ MLM และคอมมิชชั่น
-     *
-     * @return View
      */
     public function mlmCommission(): View
     {
@@ -107,8 +96,6 @@ class FeatureDocumentController extends Controller
      * หน้าเอกสาร Enterprise Security
      *
      * แสดงรายละเอียดระบบความปลอดภัย
-     *
-     * @return View
      */
     public function enterpriseSecurity(): View
     {
@@ -123,8 +110,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า All-in-One Platform
-     *
-     * @return array
      */
     private function getAllInOneData(): array
     {
@@ -304,8 +289,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า AI-Powered Automation
-     *
-     * @return array
      */
     private function getAiAutomationData(): array
     {
@@ -429,8 +412,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า Blockchain & TPIX Token
-     *
-     * @return array
      */
     private function getBlockchainTpixData(): array
     {
@@ -731,8 +712,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า Multi-Currency Wallet
-     *
-     * @return array
      */
     private function getMultiCurrencyWalletData(): array
     {
@@ -898,8 +877,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า MLM & Commission System
-     *
-     * @return array
      */
     private function getMlmCommissionData(): array
     {
@@ -1056,8 +1033,6 @@ class FeatureDocumentController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับหน้า Enterprise Security
-     *
-     * @return array
      */
     private function getEnterpriseSecurityData(): array
     {

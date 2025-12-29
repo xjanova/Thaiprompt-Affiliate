@@ -35,9 +35,6 @@ class ImmediateNotificationSent implements ShouldBroadcast
 
     /**
      * Create a new event instance.
-     *
-     * @param array $notifications
-     * @param int $userId
      */
     public function __construct(array $notifications, int $userId)
     {
@@ -53,7 +50,7 @@ class ImmediateNotificationSent implements ShouldBroadcast
     public function broadcastOn()
     {
         // Broadcast ไปยัง private channel สำหรับ immediate notifications
-        return new PrivateChannel('notifications.immediate.' . $this->userId);
+        return new PrivateChannel('notifications.immediate.'.$this->userId);
     }
 
     /**
@@ -74,7 +71,7 @@ class ImmediateNotificationSent implements ShouldBroadcast
     public function broadcastWith()
     {
         return [
-            'notifications' => $this->notifications
+            'notifications' => $this->notifications,
         ];
     }
 }

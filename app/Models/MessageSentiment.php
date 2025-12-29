@@ -100,8 +100,6 @@ class MessageSentiment extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotKeyword
-     *
-     * @return BelongsTo
      */
     public function keyword(): BelongsTo
     {
@@ -170,8 +168,6 @@ class MessageSentiment extends Model
 
     /**
      * ได้ emotion หลัก
-     *
-     * @return string
      */
     public function getPrimaryEmotion(): string
     {
@@ -195,8 +191,6 @@ class MessageSentiment extends Model
 
     /**
      * ได้ sentiment label
-     *
-     * @return string
      */
     public function getSentimentLabel(): string
     {
@@ -210,8 +204,6 @@ class MessageSentiment extends Model
 
     /**
      * ได้ urgency icon
-     *
-     * @return string
      */
     public function getUrgencyIcon(): string
     {
@@ -228,9 +220,6 @@ class MessageSentiment extends Model
 
     /**
      * Normalize sentiment score to -1 to 1 range
-     *
-     * @param float $score
-     * @return float
      */
     public static function normalizeSentimentScore(float $score): float
     {
@@ -239,8 +228,6 @@ class MessageSentiment extends Model
 
     /**
      * Convert sentiment score to percentage (0-100)
-     *
-     * @return float
      */
     public function getSentimentPercentage(): float
     {
@@ -250,21 +237,16 @@ class MessageSentiment extends Model
 
     /**
      * ตรวจสอบว่า message นี้ซ้ำกับที่มีอยู่แล้วหรือไม่
-     *
-     * @param string $message
-     * @return bool
      */
     public static function isDuplicate(string $message): bool
     {
         $hash = self::hashMessage($message);
+
         return self::where('message_hash', $hash)->exists();
     }
 
     /**
      * สร้าง hash สำหรับ message
-     *
-     * @param string $message
-     * @return string
      */
     public static function hashMessage(string $message): string
     {

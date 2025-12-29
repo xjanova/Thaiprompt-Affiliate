@@ -17,6 +17,7 @@ class UpdateTokenStatisticsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 300;
 
     protected ?int $tokenId;
@@ -24,7 +25,7 @@ class UpdateTokenStatisticsJob implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param int|null $tokenId If null, update all tokens
+     * @param  int|null  $tokenId  If null, update all tokens
      */
     public function __construct(?int $tokenId = null)
     {
@@ -51,7 +52,8 @@ class UpdateTokenStatisticsJob implements ShouldQueue
                     $this->updateTokenStatistics($token);
                     $count++;
                 } catch (\Exception $e) {
-                    Log::error("Failed to update statistics for token {$token->id}: " . $e->getMessage());
+                    Log::error("Failed to update statistics for token {$token->id}: ".$e->getMessage());
+
                     continue;
                 }
             }
@@ -59,7 +61,7 @@ class UpdateTokenStatisticsJob implements ShouldQueue
             Log::info("Updated statistics for {$count} tokens");
 
         } catch (\Exception $e) {
-            Log::error('Failed to update token statistics: ' . $e->getMessage());
+            Log::error('Failed to update token statistics: '.$e->getMessage());
             throw $e;
         }
     }
@@ -127,6 +129,6 @@ class UpdateTokenStatisticsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error('Token statistics update failed permanently: ' . $exception->getMessage());
+        Log::error('Token statistics update failed permanently: '.$exception->getMessage());
     }
 }

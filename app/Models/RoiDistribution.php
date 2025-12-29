@@ -58,8 +58,8 @@ class RoiDistribution extends Model
         parent::boot();
 
         static::creating(function ($distribution) {
-            if (!$distribution->distribution_number) {
-                $distribution->distribution_number = 'ROI' . strtoupper(uniqid());
+            if (! $distribution->distribution_number) {
+                $distribution->distribution_number = 'ROI'.strtoupper(uniqid());
             }
         });
     }
@@ -224,7 +224,7 @@ class RoiDistribution extends Model
      */
     public function getDisplayStatusAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอจ่าย',
             'processing' => 'กำลังจ่าย',
             'completed' => 'จ่ายแล้ว',
@@ -239,7 +239,7 @@ class RoiDistribution extends Model
      */
     public function getDisplayTypeAttribute(): string
     {
-        return match($this->distribution_type) {
+        return match ($this->distribution_type) {
             'daily' => 'รายวัน',
             'weekly' => 'รายสัปดาห์',
             'monthly' => 'รายเดือน',

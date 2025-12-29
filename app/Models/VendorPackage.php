@@ -109,7 +109,7 @@ class VendorPackage extends Model
      */
     public function getLevelAttribute(): int
     {
-        return match(strtolower($this->package_slug)) {
+        return match (strtolower($this->package_slug)) {
             'free' => 0,
             'basic' => 1,
             'premium' => 2,
@@ -123,7 +123,8 @@ class VendorPackage extends Model
      */
     public function allowsFeature(string $feature): bool
     {
-        $featureKey = 'allow_' . $feature;
+        $featureKey = 'allow_'.$feature;
+
         return $this->$featureKey ?? false;
     }
 
@@ -165,7 +166,7 @@ class VendorPackage extends Model
             return __('Free');
         }
 
-        return '฿' . number_format($this->price, 0);
+        return '฿'.number_format($this->price, 0);
     }
 
     /**
@@ -173,11 +174,11 @@ class VendorPackage extends Model
      */
     public function getFormattedYearlyPriceAttribute(): ?string
     {
-        if (!$this->yearly_price) {
+        if (! $this->yearly_price) {
             return null;
         }
 
-        return '฿' . number_format($this->yearly_price, 0) . '/' . __('year');
+        return '฿'.number_format($this->yearly_price, 0).'/'.__('year');
     }
 
     /**
@@ -185,11 +186,12 @@ class VendorPackage extends Model
      */
     public function getYearlySavingsAttribute(): ?float
     {
-        if (!$this->yearly_price || !$this->price) {
+        if (! $this->yearly_price || ! $this->price) {
             return null;
         }
 
         $monthlyTotal = $this->price * 12;
+
         return $monthlyTotal - $this->yearly_price;
     }
 
@@ -199,7 +201,7 @@ class VendorPackage extends Model
     public function getYearlySavingsPercentageAttribute(): ?int
     {
         $savings = $this->yearly_savings;
-        if (!$savings || !$this->price) {
+        if (! $savings || ! $this->price) {
             return null;
         }
 

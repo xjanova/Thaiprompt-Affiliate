@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Carbon\Carbon $updated_at
  *
  * @version 1.0.0
+ *
  * @since 2025-12-04
  */
 class MenuRoleSetting extends Model
@@ -62,8 +63,6 @@ class MenuRoleSetting extends Model
 
     /**
      * ความสัมพันธ์กับ MenuItem
-     *
-     * @return BelongsTo
      */
     public function menuItem(): BelongsTo
     {
@@ -72,8 +71,6 @@ class MenuRoleSetting extends Model
 
     /**
      * ความสัมพันธ์กับ Role
-     *
-     * @return BelongsTo
      */
     public function role(): BelongsTo
     {
@@ -83,8 +80,7 @@ class MenuRoleSetting extends Model
     /**
      * Scope: ดึงการตั้งค่าสำหรับ Role
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $roleId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForRole($query, int $roleId)
@@ -95,8 +91,7 @@ class MenuRoleSetting extends Model
     /**
      * Scope: ดึงการตั้งค่าสำหรับ MenuItem
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $menuItemId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForMenuItem($query, int $menuItemId)
@@ -107,7 +102,7 @@ class MenuRoleSetting extends Model
     /**
      * Scope: ดึงเฉพาะที่ visible
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVisible($query)
@@ -118,7 +113,7 @@ class MenuRoleSetting extends Model
     /**
      * Scope: ดึงเฉพาะที่ enabled
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEnabled($query)
@@ -128,11 +123,6 @@ class MenuRoleSetting extends Model
 
     /**
      * สร้างหรืออัพเดทการตั้งค่าสำหรับ Menu + Role
-     *
-     * @param int $menuItemId
-     * @param int $roleId
-     * @param array $attributes
-     * @return self
      */
     public static function updateOrCreateSetting(int $menuItemId, int $roleId, array $attributes): self
     {
@@ -147,8 +137,6 @@ class MenuRoleSetting extends Model
 
     /**
      * ตรวจสอบว่าเมนูสามารถใช้งานได้หรือไม่
-     *
-     * @return bool
      */
     public function isAccessible(): bool
     {
@@ -157,8 +145,6 @@ class MenuRoleSetting extends Model
 
     /**
      * ดึงลำดับที่ใช้งานจริง (custom_order หรือ order จาก menu_item)
-     *
-     * @return float
      */
     public function getEffectiveOrder(): float
     {

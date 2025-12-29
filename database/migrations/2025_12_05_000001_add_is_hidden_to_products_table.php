@@ -13,13 +13,11 @@ return new class extends Migration
      * - ไม่แสดงในหน้า storefront, marketplace, search results
      * - ยังสามารถซื้อได้ผ่าน direct link หรือระบบภายใน
      * - เหมาะสำหรับ: สินค้าเติมเงิน, สินค้าพิเศษ, สินค้าภายใน
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'is_hidden')) {
+            if (! Schema::hasColumn('products', 'is_hidden')) {
                 $table->boolean('is_hidden')->default(false)->after('is_featured')
                     ->comment('ซ่อนสินค้าจากหน้าเว็บ (ยังซื้อได้ผ่าน direct link)');
             }
@@ -31,7 +29,7 @@ return new class extends Migration
             $sm = Schema::getConnection()->getDoctrineSchemaManager();
             $indexes = $sm->listTableIndexes('products');
 
-            if (!array_key_exists('products_is_active_is_hidden_index', $indexes)) {
+            if (! array_key_exists('products_is_active_is_hidden_index', $indexes)) {
                 $table->index(['is_active', 'is_hidden'], 'products_is_active_is_hidden_index');
             }
         });
@@ -39,8 +37,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

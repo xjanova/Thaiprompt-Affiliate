@@ -2,9 +2,9 @@
 
 namespace App\Services\Crypto;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Blockchain Indexer Service
@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Cache;
 class BlockchainIndexerService
 {
     protected array $apiEndpoints;
+
     protected array $apiKeys;
 
     public function __construct()
@@ -44,14 +45,6 @@ class BlockchainIndexerService
 
     /**
      * Get normal transactions for address
-     *
-     * @param string $network
-     * @param string $address
-     * @param int|null $startBlock
-     * @param int|null $endBlock
-     * @param int $page
-     * @param int $offset
-     * @return array
      */
     public function getNormalTransactions(
         string $network,
@@ -77,8 +70,8 @@ class BlockchainIndexerService
                     'apikey' => $this->apiKeys[$network],
                 ]);
 
-                if (!$response->successful()) {
-                    throw new \Exception('API request failed: ' . $response->status());
+                if (! $response->successful()) {
+                    throw new \Exception('API request failed: '.$response->status());
                 }
 
                 $data = $response->json();
@@ -87,7 +80,7 @@ class BlockchainIndexerService
                     if ($data['message'] === 'No transactions found') {
                         return [];
                     }
-                    throw new \Exception('API error: ' . ($data['message'] ?? 'Unknown error'));
+                    throw new \Exception('API error: '.($data['message'] ?? 'Unknown error'));
                 }
 
                 return $data['result'] ?? [];
@@ -107,12 +100,8 @@ class BlockchainIndexerService
     /**
      * Get ERC-20 token transfer events
      *
-     * @param string $network
-     * @param string|null $contractAddress Filter by specific token contract
-     * @param string|null $address Filter by address (from or to)
-     * @param int|null $startBlock
-     * @param int|null $endBlock
-     * @return array
+     * @param  string|null  $contractAddress  Filter by specific token contract
+     * @param  string|null  $address  Filter by address (from or to)
      */
     public function getTokenTransfers(
         string $network,
@@ -144,8 +133,8 @@ class BlockchainIndexerService
 
                 $response = Http::timeout(30)->get($this->apiEndpoints[$network], $params);
 
-                if (!$response->successful()) {
-                    throw new \Exception('API request failed: ' . $response->status());
+                if (! $response->successful()) {
+                    throw new \Exception('API request failed: '.$response->status());
                 }
 
                 $data = $response->json();
@@ -154,7 +143,7 @@ class BlockchainIndexerService
                     if ($data['message'] === 'No transactions found') {
                         return [];
                     }
-                    throw new \Exception('API error: ' . ($data['message'] ?? 'Unknown error'));
+                    throw new \Exception('API error: '.($data['message'] ?? 'Unknown error'));
                 }
 
                 return $data['result'] ?? [];
@@ -195,8 +184,8 @@ class BlockchainIndexerService
                     'apikey' => $this->apiKeys[$network],
                 ]);
 
-                if (!$response->successful()) {
-                    throw new \Exception('API request failed: ' . $response->status());
+                if (! $response->successful()) {
+                    throw new \Exception('API request failed: '.$response->status());
                 }
 
                 $data = $response->json();
@@ -205,7 +194,7 @@ class BlockchainIndexerService
                     if ($data['message'] === 'No transactions found') {
                         return [];
                     }
-                    throw new \Exception('API error: ' . ($data['message'] ?? 'Unknown error'));
+                    throw new \Exception('API error: '.($data['message'] ?? 'Unknown error'));
                 }
 
                 return $data['result'] ?? [];
@@ -236,7 +225,7 @@ class BlockchainIndexerService
                 'apikey' => $this->apiKeys[$network],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -274,7 +263,7 @@ class BlockchainIndexerService
                 'apikey' => $this->apiKeys[$network],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -313,7 +302,7 @@ class BlockchainIndexerService
                     'apikey' => $this->apiKeys[$network],
                 ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return null;
                 }
 
@@ -349,7 +338,7 @@ class BlockchainIndexerService
                 'apikey' => $this->apiKeys[$network],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -387,13 +376,13 @@ class BlockchainIndexerService
                     'apikey' => $this->apiKeys[$network],
                 ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     return null;
                 }
 
                 $data = $response->json();
 
-                if (!isset($data['result'])) {
+                if (! isset($data['result'])) {
                     return null;
                 }
 
@@ -415,7 +404,7 @@ class BlockchainIndexerService
      */
     public function isConfigured(string $network): bool
     {
-        return !empty($this->apiKeys[$network]);
+        return ! empty($this->apiKeys[$network]);
     }
 
     /**

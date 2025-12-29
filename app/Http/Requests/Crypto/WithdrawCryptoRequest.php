@@ -15,7 +15,7 @@ class WithdrawCryptoRequest extends FormRequest
         // Check if user has a crypto wallet
         $wallet = $this->user()->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return false;
         }
 
@@ -38,8 +38,8 @@ class WithdrawCryptoRequest extends FormRequest
             'amount' => [
                 'required',
                 'numeric',
-                'min:' . ($currency?->min_withdrawal ?? 0.00001),
-                'max:' . ($currency?->max_withdrawal ?? 1000000),
+                'min:'.($currency?->min_withdrawal ?? 0.00001),
+                'max:'.($currency?->max_withdrawal ?? 1000000),
             ],
             'to_address' => [
                 'required',

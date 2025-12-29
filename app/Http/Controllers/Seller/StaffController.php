@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * ระบบ ERP ฟรีทุกร้าน แยกข้อมูลตาม store_id
  *
  * @author AI Assistant
+ *
  * @since 2024-11-27
  */
 class StaffController extends Controller
@@ -40,7 +41,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาสร้างร้านค้าก่อน');
         }
@@ -91,7 +92,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาสร้างร้านค้าก่อน');
         }
@@ -110,7 +111,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -168,7 +169,7 @@ class StaffController extends Controller
             ]);
 
             // สร้าง POS Staff Assignment (ถ้ามี PIN)
-            if (!empty($validated['pin_code'])) {
+            if (! empty($validated['pin_code'])) {
                 PosStaffAssignment::create([
                     'store_id' => $store->id,
                     'employee_id' => $employee->id,
@@ -187,8 +188,9 @@ class StaffController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -286,7 +288,7 @@ class StaffController extends Controller
                 'is_active' => $validated['employment_status'] === 'active',
             ];
 
-            if (!empty($validated['pin_code'])) {
+            if (! empty($validated['pin_code'])) {
                 $posData['pin_code'] = Hash::make($validated['pin_code']);
             }
 
@@ -302,8 +304,9 @@ class StaffController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -338,7 +341,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาสร้างร้านค้าก่อน');
         }
@@ -408,7 +411,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาสร้างร้านค้าก่อน');
         }
@@ -484,7 +487,7 @@ class StaffController extends Controller
     {
         $store = $this->getStore();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาสร้างร้านค้าก่อน');
         }
@@ -558,7 +561,7 @@ class StaffController extends Controller
         $prefix = Str::upper(Str::substr($store->store_slug, 0, 3));
         $count = Employee::byStore($store->id)->withTrashed()->count() + 1;
 
-        return $prefix . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        return $prefix.'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     /**

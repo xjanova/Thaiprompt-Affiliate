@@ -24,7 +24,7 @@ class OtpController extends Controller
     public function send(Request $request)
     {
         // Check if OTP is enabled
-        if (!OtpSetting::isEnabled()) {
+        if (! OtpSetting::isEnabled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'ระบบ OTP ไม่ได้เปิดใช้งาน',
@@ -48,7 +48,7 @@ class OtpController extends Controller
         $purpose = $request->input('purpose', 'phone_verification');
 
         // Check rate limit
-        if (!OtpVerification::checkRateLimit($phone)) {
+        if (! OtpVerification::checkRateLimit($phone)) {
             $settings = OtpSetting::getActive();
             $window = $settings->rate_limit_window ?? 60;
 

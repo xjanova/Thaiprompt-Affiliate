@@ -2,9 +2,8 @@
 
 namespace App\Services\NFC;
 
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Str;
 use Exception;
+use Illuminate\Support\Str;
 
 /**
  * NFC Card Encryption Service
@@ -35,7 +34,7 @@ class NFCCardEncryptionService
     /**
      * Generate card signature based on card data
      */
-    public function generateCardSignature(string $cardNumber, string $userId = null, array $metadata = []): string
+    public function generateCardSignature(string $cardNumber, ?string $userId = null, array $metadata = []): string
     {
         $data = json_encode([
             'card_number' => $cardNumber,
@@ -51,8 +50,8 @@ class NFCCardEncryptionService
     /**
      * Encrypt card data for writing to NFC card
      *
-     * @param array $cardData ข้อมูลที่จะเข้ารหัส
-     * @param string $encryptionKey คีย์สำหรับเข้ารหัส
+     * @param  array  $cardData  ข้อมูลที่จะเข้ารหัส
+     * @param  string  $encryptionKey  คีย์สำหรับเข้ารหัส
      * @return array ['encrypted_data' => string, 'hash' => string, 'signature' => string]
      */
     public function encryptCardData(array $cardData, string $encryptionKey): array
@@ -79,7 +78,7 @@ class NFCCardEncryptionService
             );
 
             // รวม IV กับ encrypted data
-            $encryptedWithIv = base64_encode($iv . $encrypted);
+            $encryptedWithIv = base64_encode($iv.$encrypted);
 
             // สร้าง hash สำหรับตรวจสอบความถูกต้อง
             $hash = hash_hmac('sha256', $encryptedWithIv, $encryptionKey);
@@ -94,16 +93,16 @@ class NFCCardEncryptionService
                 'version' => self::ENCRYPTION_VERSION,
             ];
         } catch (Exception $e) {
-            throw new Exception('Failed to encrypt card data: ' . $e->getMessage());
+            throw new Exception('Failed to encrypt card data: '.$e->getMessage());
         }
     }
 
     /**
      * Decrypt card data read from NFC card
      *
-     * @param string $encryptedData ข้อมูลที่เข้ารหัส
-     * @param string $encryptionKey คีย์สำหรับถอดรหัส
-     * @param string $expectedHash Hash ที่คาดหวัง
+     * @param  string  $encryptedData  ข้อมูลที่เข้ารหัส
+     * @param  string  $encryptionKey  คีย์สำหรับถอดรหัส
+     * @param  string  $expectedHash  Hash ที่คาดหวัง
      * @return array|null ข้อมูลที่ถอดรหัสแล้ว หรือ null ถ้าถอดรหัสไม่สำเร็จ
      */
     public function decryptCardData(string $encryptedData, string $encryptionKey, string $expectedHash): ?array
@@ -112,7 +111,7 @@ class NFCCardEncryptionService
             // ตรวจสอบ hash
             $calculatedHash = hash_hmac('sha256', $encryptedData, $encryptionKey);
 
-            if (!hash_equals($expectedHash, $calculatedHash)) {
+            if (! hash_equals($expectedHash, $calculatedHash)) {
                 throw new Exception('Hash verification failed - possible tampering detected');
             }
 
@@ -144,7 +143,7 @@ class NFCCardEncryptionService
             }
 
             // ตรวจสอบ version
-            if (!isset($data['version']) || $data['version'] !== self::ENCRYPTION_VERSION) {
+            if (! isset($data['version']) || $data['version'] !== self::ENCRYPTION_VERSION) {
                 throw new Exception('Unsupported encryption version');
             }
 
@@ -158,17 +157,17 @@ class NFCCardEncryptionService
 
             return $data;
         } catch (Exception $e) {
-            throw new Exception('Failed to decrypt card data: ' . $e->getMessage());
+            throw new Exception('Failed to decrypt card data: '.$e->getMessage());
         }
     }
 
     /**
      * Verify card authenticity using two-way encryption
      *
-     * @param string $encryptedData ข้อมูลที่อ่านจากบัตร
-     * @param string $encryptionKey คีย์สำหรับถอดรหัส
-     * @param string $expectedHash Hash ที่คาดหวัง
-     * @param string $expectedSignature Signature ที่คาดหวัง
+     * @param  string  $encryptedData  ข้อมูลที่อ่านจากบัตร
+     * @param  string  $encryptionKey  คีย์สำหรับถอดรหัส
+     * @param  string  $expectedHash  Hash ที่คาดหวัง
+     * @param  string  $expectedSignature  Signature ที่คาดหวัง
      * @return array ['valid' => bool, 'data' => array|null, 'error' => string|null]
      */
     public function verifyCardAuthenticity(
@@ -181,7 +180,7 @@ class NFCCardEncryptionService
             // ตรวจสอบ signature ก่อน
             $calculatedSignature = $this->generateSignature($encryptedData, $expectedHash, $encryptionKey);
 
-            if (!hash_equals($expectedSignature, $calculatedSignature)) {
+            if (! hash_equals($expectedSignature, $calculatedSignature)) {
                 return [
                     'valid' => false,
                     'data' => null,
@@ -219,7 +218,8 @@ class NFCCardEncryptionService
      */
     protected function generateSignature(string $encryptedData, string $hash, string $encryptionKey): string
     {
-        $data = $encryptedData . $hash . config('app.key');
+        $data = $encryptedData.$hash.config('app.key');
+
         return hash_hmac('sha256', $data, $encryptionKey);
     }
 
@@ -228,7 +228,7 @@ class NFCCardEncryptionService
      */
     public function hashEncryptionKey(string $encryptionKey): string
     {
-        return hash('sha256', $encryptionKey . config('app.key'));
+        return hash('sha256', $encryptionKey.config('app.key'));
     }
 
     /**
@@ -245,6 +245,7 @@ class NFCCardEncryptionService
     public function generateCardDataHash(array $cardData): string
     {
         $jsonData = json_encode($cardData);
+
         return hash('sha256', $jsonData);
     }
 
@@ -304,7 +305,7 @@ class NFCCardEncryptionService
         $requiredFields = ['card_number'];
 
         foreach ($requiredFields as $field) {
-            if (!isset($cardData[$field])) {
+            if (! isset($cardData[$field])) {
                 return false;
             }
         }
@@ -327,7 +328,7 @@ class NFCCardEncryptionService
         $token = base64_encode(json_encode($data));
         $signature = hash_hmac('sha256', $token, config('app.key'));
 
-        return $token . '.' . $signature;
+        return $token.'.'.$signature;
     }
 
     /**
@@ -347,14 +348,14 @@ class NFCCardEncryptionService
             // ตรวจสอบ signature
             $expectedSignature = hash_hmac('sha256', $encodedData, config('app.key'));
 
-            if (!hash_equals($expectedSignature, $signature)) {
+            if (! hash_equals($expectedSignature, $signature)) {
                 return false;
             }
 
             // ถอดรหัสข้อมูล
             $data = json_decode(base64_decode($encodedData), true);
 
-            if (!$data || !isset($data['operation'], $data['expires_at'])) {
+            if (! $data || ! isset($data['operation'], $data['expires_at'])) {
                 return false;
             }
 

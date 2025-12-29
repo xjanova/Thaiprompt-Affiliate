@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LearningArticle;
+use App\Models\QuestionOption;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
-use App\Models\QuestionOption;
-use App\Models\LearningArticle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -129,8 +129,9 @@ class QuizManagementController extends Controller
                 ->with('success', 'สร้าง Quiz สำเร็จ!');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }

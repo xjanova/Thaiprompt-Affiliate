@@ -76,6 +76,7 @@ class TPIXLiquidityPosition extends Model
         }
 
         $share = bcdiv(bcmul($this->lp_tokens, '100', 8), $this->pool->total_liquidity, 4);
+
         return (float) $share;
     }
 
@@ -84,7 +85,7 @@ class TPIXLiquidityPosition extends Model
      */
     public function getCurrentValueTPIX(): string
     {
-        if (!$this->pool) {
+        if (! $this->pool) {
             return '0';
         }
 
@@ -125,7 +126,7 @@ class TPIXLiquidityPosition extends Model
      */
     public function getROIAttribute(): ?float
     {
-        if (!$this->initial_value_tpix || bccomp($this->initial_value_tpix, '0', 8) === 0) {
+        if (! $this->initial_value_tpix || bccomp($this->initial_value_tpix, '0', 8) === 0) {
             return null;
         }
 
@@ -143,7 +144,7 @@ class TPIXLiquidityPosition extends Model
      */
     public function calculateImpermanentLoss(): array
     {
-        if (!$this->pool || !$this->initial_value_tpix) {
+        if (! $this->pool || ! $this->initial_value_tpix) {
             return [
                 'loss' => '0',
                 'loss_percentage' => 0,
@@ -248,11 +249,12 @@ class TPIXLiquidityPosition extends Model
      */
     public function getAddExplorerUrlAttribute(): ?string
     {
-        if (!$this->add_tx_hash) {
+        if (! $this->add_tx_hash) {
             return null;
         }
 
         $explorerUrl = config('tpix.explorer_url', 'http://localhost:4000');
+
         return "{$explorerUrl}/tx/{$this->add_tx_hash}";
     }
 
@@ -261,11 +263,12 @@ class TPIXLiquidityPosition extends Model
      */
     public function getRemoveExplorerUrlAttribute(): ?string
     {
-        if (!$this->remove_tx_hash) {
+        if (! $this->remove_tx_hash) {
             return null;
         }
 
         $explorerUrl = config('tpix.explorer_url', 'http://localhost:4000');
+
         return "{$explorerUrl}/tx/{$this->remove_tx_hash}";
     }
 
@@ -275,6 +278,7 @@ class TPIXLiquidityPosition extends Model
     public function getDurationDaysAttribute(): int
     {
         $endDate = $this->removed_at ?? now();
+
         return $this->created_at->diffInDays($endDate);
     }
 }

@@ -4,9 +4,8 @@ namespace App\Notifications;
 
 use App\Models\SoftwareQuotation;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Messages\DatabaseMessage;
+use Illuminate\Notifications\Notification;
 
 class NewQuotationNotification extends Notification
 {
@@ -36,14 +35,14 @@ class NewQuotationNotification extends Notification
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('มีใบเสนอราคาใหม่: ' . $this->quotation->quotation_number)
+            ->subject('มีใบเสนอราคาใหม่: '.$this->quotation->quotation_number)
             ->greeting('สวัสดีครับ Admin')
             ->line('มีใบเสนอราคาใหม่เข้ามา')
-            ->line('หมายเลข: ' . $this->quotation->quotation_number)
-            ->line('ลูกค้า: ' . $this->quotation->customer_name)
-            ->line('สินค้า: ' . $this->quotation->softwareProduct->name)
-            ->line('ยอดรวม: ' . number_format($this->quotation->total_amount, 2) . ' บาท')
-            ->action('ดูรายละเอียด', url('/admin/quotations/' . $this->quotation->id))
+            ->line('หมายเลข: '.$this->quotation->quotation_number)
+            ->line('ลูกค้า: '.$this->quotation->customer_name)
+            ->line('สินค้า: '.$this->quotation->softwareProduct->name)
+            ->line('ยอดรวม: '.number_format($this->quotation->total_amount, 2).' บาท')
+            ->action('ดูรายละเอียด', url('/admin/quotations/'.$this->quotation->id))
             ->line('กรุณาตรวจสอบและดำเนินการต่อไป');
     }
 

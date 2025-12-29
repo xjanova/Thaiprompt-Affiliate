@@ -18,7 +18,6 @@ class CoinShopController extends Controller
     /**
      * หน้าร้านค้า - แสดงรายการสินค้าทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -110,7 +109,6 @@ class CoinShopController extends Controller
     /**
      * หน้ารายละเอียดสินค้า
      *
-     * @param CoinShopProduct $product
      * @return \Illuminate\View\View
      */
     public function show(CoinShopProduct $product)
@@ -159,8 +157,6 @@ class CoinShopController extends Controller
     /**
      * ดำเนินการซื้อสินค้า
      *
-     * @param Request $request
-     * @param CoinShopProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function purchase(Request $request, CoinShopProduct $product)
@@ -175,7 +171,7 @@ class CoinShopController extends Controller
 
         // ตรวจสอบว่าซื้อได้หรือไม่
         $purchaseCheck = $product->canPurchase($user, $quantity);
-        if (!$purchaseCheck['can_purchase']) {
+        if (! $purchaseCheck['can_purchase']) {
             return back()
                 ->with('error', $purchaseCheck['reason'])
                 ->withInput();
@@ -189,7 +185,7 @@ class CoinShopController extends Controller
 
             // หัก Coins จากผู้ใช้
             $videoCoin = $user->videoCoin;
-            $videoCoin->subtractBalance($totalPrice, 'ซื้อสินค้า: ' . $product->display_name . ' x' . $quantity);
+            $videoCoin->subtractBalance($totalPrice, 'ซื้อสินค้า: '.$product->display_name.' x'.$quantity);
 
             // ลดสต็อก
             $product->decreaseStock($quantity);
@@ -221,7 +217,7 @@ class CoinShopController extends Controller
             DB::rollBack();
 
             return back()
-                ->with('error', 'เกิดข้อผิดพลาดในการซื้อสินค้า: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาดในการซื้อสินค้า: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -229,7 +225,6 @@ class CoinShopController extends Controller
     /**
      * หน้าซื้อสำเร็จ
      *
-     * @param CoinPurchase $purchase
      * @return \Illuminate\View\View
      */
     public function purchaseSuccess(CoinPurchase $purchase)
@@ -250,7 +245,6 @@ class CoinShopController extends Controller
     /**
      * หน้าประวัติการซื้อ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function myPurchases(Request $request)
@@ -296,7 +290,6 @@ class CoinShopController extends Controller
     /**
      * หน้ารายละเอียดคำสั่งซื้อ
      *
-     * @param CoinPurchase $purchase
      * @return \Illuminate\View\View
      */
     public function purchaseDetail(CoinPurchase $purchase)
@@ -310,15 +303,13 @@ class CoinShopController extends Controller
 
         return view('user.coin-shop.purchase-detail', [
             'purchase' => $purchase->load('product'),
-            'pageTitle' => 'รายละเอียดคำสั่งซื้อ #' . $purchase->order_number,
+            'pageTitle' => 'รายละเอียดคำสั่งซื้อ #'.$purchase->order_number,
         ]);
     }
 
     /**
      * ใช้งานรหัส/คูปอง
      *
-     * @param Request $request
-     * @param CoinPurchase $purchase
      * @return \Illuminate\Http\RedirectResponse
      */
     public function useItem(Request $request, CoinPurchase $purchase)
@@ -331,7 +322,7 @@ class CoinShopController extends Controller
         }
 
         // ตรวจสอบว่าใช้งานได้หรือไม่
-        if (!$purchase->is_usable) {
+        if (! $purchase->is_usable) {
             return back()->with('error', 'ไม่สามารถใช้งานรายการนี้ได้');
         }
 
@@ -355,9 +346,6 @@ class CoinShopController extends Controller
 
     /**
      * กำหนดสถานะเริ่มต้นตามประเภทสินค้า
-     *
-     * @param CoinShopProduct $product
-     * @return string
      */
     private function getInitialStatus(CoinShopProduct $product): string
     {
@@ -381,9 +369,6 @@ class CoinShopController extends Controller
 
     /**
      * ตรวจสอบว่าควรสร้างรหัสใช้งานหรือไม่
-     *
-     * @param CoinShopProduct $product
-     * @return bool
      */
     private function shouldGenerateCode(CoinShopProduct $product): bool
     {

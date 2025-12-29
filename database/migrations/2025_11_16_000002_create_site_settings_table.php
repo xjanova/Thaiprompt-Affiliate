@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง site_settings สำหรับเก็บการตั้งค่าเว็บไซต์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -84,8 +82,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง site_settings
-     *
-     * @return void
      */
     public function down(): void
     {

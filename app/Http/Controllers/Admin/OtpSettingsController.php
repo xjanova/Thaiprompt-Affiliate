@@ -18,7 +18,7 @@ class OtpSettingsController extends Controller
         $settings = OtpSetting::first();
 
         // Create default settings if none exist
-        if (!$settings) {
+        if (! $settings) {
             $settings = OtpSetting::create([
                 'provider' => 'twilio',
                 'enabled' => false,
@@ -138,7 +138,7 @@ class OtpSettingsController extends Controller
             ], 422);
         }
 
-        if (!OtpSetting::isEnabled()) {
+        if (! OtpSetting::isEnabled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเปิดใช้งานระบบ OTP ก่อนทดสอบ',

@@ -141,8 +141,6 @@ class LabelTemplate extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -151,8 +149,6 @@ class LabelTemplate extends Model
 
     /**
      * ความสัมพันธ์กับ Labels ที่ใช้ template นี้
-     *
-     * @return HasMany
      */
     public function labels(): HasMany
     {
@@ -162,7 +158,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ที่เป็นสาธารณะ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublic($query)
@@ -173,7 +169,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ของระบบ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSystem($query)
@@ -184,7 +180,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -195,8 +191,7 @@ class LabelTemplate extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInCategory($query, string $category)
@@ -207,8 +202,7 @@ class LabelTemplate extends Model
     /**
      * Scope: template ยอดนิยม
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $limit
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query, int $limit = 10)
@@ -218,8 +212,6 @@ class LabelTemplate extends Model
 
     /**
      * เพิ่มจำนวนการใช้งาน
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -247,8 +239,6 @@ class LabelTemplate extends Model
 
     /**
      * คำนวณจำนวนฉลากต่อแผ่น
-     *
-     * @return int
      */
     public function getLabelsPerSheetAttribute(): int
     {
@@ -257,8 +247,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default elements structure
-     *
-     * @return array
      */
     public static function getDefaultElements(): array
     {
@@ -273,8 +261,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default settings structure
-     *
-     * @return array
      */
     public static function getDefaultSettings(): array
     {
@@ -291,8 +277,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default print settings structure
-     *
-     * @return array
      */
     public static function getDefaultPrintSettings(): array
     {

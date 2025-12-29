@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\TrainingEnrollment;
-use App\Models\TrainingCourse;
 use App\Models\Employee;
+use App\Models\TrainingCourse;
+use App\Models\TrainingEnrollment;
 use Illuminate\Http\Request;
 
 class TrainingEnrollmentController extends Controller
@@ -20,9 +20,9 @@ class TrainingEnrollmentController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->whereHas('employee', function($q) use ($search) {
+            $query->whereHas('employee', function ($q) use ($search) {
                 $q->where('first_name', 'like', '%'.$search.'%')
-                  ->orWhere('last_name', 'like', '%'.$search.'%');
+                    ->orWhere('last_name', 'like', '%'.$search.'%');
             });
         }
 
@@ -77,7 +77,7 @@ class TrainingEnrollmentController extends Controller
         TrainingEnrollment::create($validated);
 
         return redirect()->route('admin.hrm.training.enrollments.index')
-                        ->with('success', __('Training enrollment created successfully'));
+            ->with('success', __('Training enrollment created successfully'));
     }
 
     /**
@@ -123,7 +123,7 @@ class TrainingEnrollmentController extends Controller
         $enrollment->update($validated);
 
         return redirect()->route('admin.hrm.training.enrollments.index')
-                        ->with('success', __('Training enrollment updated successfully'));
+            ->with('success', __('Training enrollment updated successfully'));
     }
 
     /**
@@ -134,6 +134,6 @@ class TrainingEnrollmentController extends Controller
         $enrollment->delete();
 
         return redirect()->route('admin.hrm.training.enrollments.index')
-                        ->with('success', __('Training enrollment deleted successfully'));
+            ->with('success', __('Training enrollment deleted successfully'));
     }
 }

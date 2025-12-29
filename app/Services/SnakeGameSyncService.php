@@ -33,9 +33,9 @@ class SnakeGameSyncService
     /**
      * สร้าง game session ใหม่
      *
-     * @param string $playerId ไอดีผู้เล่น (unique)
-     * @param string $playerName ชื่อผู้เล่น
-     * @param string $skin สกินที่ใช้
+     * @param  string  $playerId  ไอดีผู้เล่น (unique)
+     * @param  string  $playerName  ชื่อผู้เล่น
+     * @param  string  $skin  สกินที่ใช้
      * @return array session data
      */
     public function createSession(string $playerId, string $playerName, string $skin): array
@@ -60,9 +60,7 @@ class SnakeGameSyncService
     /**
      * อัปเดตสถานะผู้เล่น (ตำแหน่ง, คะแนน, ความยาว)
      *
-     * @param string $playerId
-     * @param array $state [position, score, length, direction]
-     * @return bool
+     * @param  array  $state  [position, score, length, direction]
      */
     public function updatePlayerState(string $playerId, array $state): bool
     {
@@ -87,6 +85,7 @@ class SnakeGameSyncService
             return true;
         } catch (\Exception $e) {
             Log::warning("[SnakeSync] อัปเดตสถานะล้มเหลว: {$e->getMessage()}");
+
             return false;
         }
     }
@@ -94,15 +93,14 @@ class SnakeGameSyncService
     /**
      * ดึงผู้เล่นที่ active ทั้งหมด (ไม่รวมตัวเอง)
      *
-     * @param string $excludePlayerId ไอดีที่ไม่ต้องการ
-     * @param int $limit จำนวนสูงสุด
-     * @return array
+     * @param  string  $excludePlayerId  ไอดีที่ไม่ต้องการ
+     * @param  int  $limit  จำนวนสูงสุด
      */
     public function getActivePlayers(string $excludePlayerId, int $limit = 10): array
     {
         try {
             // ดึง keys ทั้งหมดที่เกี่ยวข้อง
-            $pattern = self::CACHE_PREFIX . ':player:*';
+            $pattern = self::CACHE_PREFIX.':player:*';
             $keys = $this->getCacheKeys($pattern);
 
             $players = [];
@@ -127,15 +125,13 @@ class SnakeGameSyncService
             return $players;
         } catch (\Exception $e) {
             Log::warning("[SnakeSync] ดึงผู้เล่นล้มเหลว: {$e->getMessage()}");
+
             return [];
         }
     }
 
     /**
      * ผู้เล่นตาย - ลบสถานะ
-     *
-     * @param string $playerId
-     * @return bool
      */
     public function playerDied(string $playerId): bool
     {
@@ -149,15 +145,13 @@ class SnakeGameSyncService
             return true;
         } catch (\Exception $e) {
             Log::warning("[SnakeSync] ลบสถานะล้มเหลว: {$e->getMessage()}");
+
             return false;
         }
     }
 
     /**
      * ออกจากเกม - ลบทั้ง session และสถานะ
-     *
-     * @param string $playerId
-     * @return bool
      */
     public function leaveGame(string $playerId): bool
     {
@@ -171,15 +165,13 @@ class SnakeGameSyncService
             return true;
         } catch (\Exception $e) {
             Log::warning("[SnakeSync] ออกจากเกมล้มเหลว: {$e->getMessage()}");
+
             return false;
         }
     }
 
     /**
      * Ping session เพื่อรักษา session ให้ active
-     *
-     * @param string $playerId
-     * @return bool
      */
     public function pingSession(string $playerId): bool
     {
@@ -190,6 +182,7 @@ class SnakeGameSyncService
             if ($session) {
                 $session['last_ping'] = now()->timestamp;
                 Cache::put($key, $session, self::SESSION_TTL);
+
                 return true;
             }
 
@@ -208,7 +201,7 @@ class SnakeGameSyncService
     {
         try {
             $deletedCount = 0;
-            $pattern = self::CACHE_PREFIX . ':*';
+            $pattern = self::CACHE_PREFIX.':*';
             $keys = $this->getCacheKeys($pattern);
 
             $now = now()->timestamp;
@@ -234,19 +227,18 @@ class SnakeGameSyncService
             return $deletedCount;
         } catch (\Exception $e) {
             Log::error("[SnakeSync] Cleanup error: {$e->getMessage()}");
+
             return 0;
         }
     }
 
     /**
      * ดึงจำนวนผู้เล่น active
-     *
-     * @return int
      */
     public function getActivePlayerCount(): int
     {
         try {
-            $pattern = self::CACHE_PREFIX . ':player:*';
+            $pattern = self::CACHE_PREFIX.':player:*';
             $keys = $this->getCacheKeys($pattern);
 
             $count = 0;
@@ -270,31 +262,22 @@ class SnakeGameSyncService
 
     /**
      * สร้าง cache key สำหรับ session
-     *
-     * @param string $playerId
-     * @return string
      */
     protected function getSessionKey(string $playerId): string
     {
-        return self::CACHE_PREFIX . ':session:' . $playerId;
+        return self::CACHE_PREFIX.':session:'.$playerId;
     }
 
     /**
      * สร้าง cache key สำหรับสถานะผู้เล่น
-     *
-     * @param string $playerId
-     * @return string
      */
     protected function getPlayerStateKey(string $playerId): string
     {
-        return self::CACHE_PREFIX . ':player:' . $playerId;
+        return self::CACHE_PREFIX.':player:'.$playerId;
     }
 
     /**
      * ดึง cache keys ตาม pattern
-     *
-     * @param string $pattern
-     * @return array
      */
     protected function getCacheKeys(string $pattern): array
     {
@@ -302,6 +285,7 @@ class SnakeGameSyncService
             // ถ้าใช้ Redis
             if (Cache::getStore() instanceof \Illuminate\Cache\RedisStore) {
                 $redis = Cache::getStore()->connection();
+
                 return $redis->keys($pattern);
             }
 

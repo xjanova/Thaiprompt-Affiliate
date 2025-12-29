@@ -88,6 +88,7 @@ class AiGenSubscription extends Model
         } elseif ($type === 'video') {
             return $this->remaining_video_credits > 0;
         }
+
         return false;
     }
 
@@ -96,7 +97,7 @@ class AiGenSubscription extends Model
      */
     public function useCredits(string $type, int $amount = 1): bool
     {
-        if (!$this->hasCredits($type)) {
+        if (! $this->hasCredits($type)) {
             return false;
         }
 
@@ -120,6 +121,7 @@ class AiGenSubscription extends Model
 
         if ($this->expires_at && $this->expires_at->isPast()) {
             $this->update(['status' => 'expired']);
+
             return false;
         }
 

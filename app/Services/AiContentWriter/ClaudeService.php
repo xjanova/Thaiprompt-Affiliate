@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Log;
  *
  * จัดการการเชื่อมต่อกับ Anthropic Claude API
  * รองรับ Claude 3.5 Sonnet, Claude 3 Opus, Haiku
- *
- * @package App\Services\AiContentWriter
  */
 class ClaudeService
 {
@@ -63,22 +61,18 @@ class ClaudeService
 
     /**
      * ตรวจสอบว่าพร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return ! empty($this->apiKey);
     }
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @return array
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -89,7 +83,7 @@ class ClaudeService
             // ทดสอบด้วยการส่ง request ง่ายๆ
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(10)
-                ->post($this->baseUrl . '/messages', [
+                ->post($this->baseUrl.'/messages', [
                     'model' => 'claude-3-haiku-20240307',
                     'max_tokens' => 10,
                     'messages' => [
@@ -108,30 +102,25 @@ class ClaudeService
 
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อล้มเหลว: ' . $error,
+                'message' => 'เชื่อมต่อล้มเหลว: '.$error,
             ];
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * สร้าง Content
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param array $options
-     * @return array
      */
     public function generateContent(
         string $systemPrompt,
         string $userPrompt,
         array $options = []
     ): array {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้ตั้งค่า API Key',
@@ -151,7 +140,7 @@ class ClaudeService
         ];
 
         // Claude ใช้ system prompt แยก
-        if (!empty($systemPrompt)) {
+        if (! empty($systemPrompt)) {
             $payload['system'] = $systemPrompt;
         }
 
@@ -165,7 +154,7 @@ class ClaudeService
         try {
             $response = Http::withHeaders($this->getHeaders())
                 ->timeout(120)
-                ->post($this->baseUrl . '/messages', $payload);
+                ->post($this->baseUrl.'/messages', $payload);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 
@@ -222,7 +211,7 @@ class ClaudeService
 
             return [
                 'success' => false,
-                'error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'error_code' => 'EXCEPTION',
             ];
         }
@@ -230,10 +219,6 @@ class ClaudeService
 
     /**
      * คำนวณค่าใช้จ่าย
-     *
-     * @param string $model
-     * @param array $usage
-     * @return float
      */
     protected function calculateCost(string $model, array $usage): float
     {
@@ -247,8 +232,6 @@ class ClaudeService
 
     /**
      * ดึง Headers สำหรับ Request
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {

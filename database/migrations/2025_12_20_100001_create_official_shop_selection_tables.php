@@ -17,13 +17,11 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตาราง 1: official_shop_products - สินค้าที่ถูก AI คัดเลือก
-        if (!Schema::hasTable('official_shop_products')) {
+        if (! Schema::hasTable('official_shop_products')) {
             Schema::create('official_shop_products', function (Blueprint $table) {
                 $table->id();
 
@@ -71,7 +69,7 @@ return new class extends Migration
         }
 
         // ตาราง 2: official_shop_warnings - แจ้งเตือนก่อนถอดสินค้า
-        if (!Schema::hasTable('official_shop_warnings')) {
+        if (! Schema::hasTable('official_shop_warnings')) {
             Schema::create('official_shop_warnings', function (Blueprint $table) {
                 $table->id();
 
@@ -109,7 +107,7 @@ return new class extends Migration
         }
 
         // ตาราง 3: new_product_promotions - โปรโมทสินค้าใหม่ฟรี 7 วัน
-        if (!Schema::hasTable('new_product_promotions')) {
+        if (! Schema::hasTable('new_product_promotions')) {
             Schema::create('new_product_promotions', function (Blueprint $table) {
                 $table->id();
 
@@ -145,7 +143,7 @@ return new class extends Migration
         }
 
         // ตาราง 4: best_seller_monthly - สินค้าขายดีรายเดือน
-        if (!Schema::hasTable('best_seller_monthly')) {
+        if (! Schema::hasTable('best_seller_monthly')) {
             Schema::create('best_seller_monthly', function (Blueprint $table) {
                 $table->id();
 
@@ -177,7 +175,7 @@ return new class extends Migration
         }
 
         // ตาราง 5: official_shop_settings - การตั้งค่า
-        if (!Schema::hasTable('official_shop_settings')) {
+        if (! Schema::hasTable('official_shop_settings')) {
             Schema::create('official_shop_settings', function (Blueprint $table) {
                 $table->id();
 
@@ -191,7 +189,7 @@ return new class extends Migration
         }
 
         // ตาราง 6: store_promotion_cooldowns - ป้องกันการ spam โปรโมท
-        if (!Schema::hasTable('store_promotion_cooldowns')) {
+        if (! Schema::hasTable('store_promotion_cooldowns')) {
             Schema::create('store_promotion_cooldowns', function (Blueprint $table) {
                 $table->id();
 
@@ -212,25 +210,25 @@ return new class extends Migration
 
         // เพิ่มคอลัมน์ใน products table
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'is_in_official_shop')) {
+            if (! Schema::hasColumn('products', 'is_in_official_shop')) {
                 $table->boolean('is_in_official_shop')->default(false)
                     ->after('is_featured')
                     ->comment('อยู่ใน Official Shop');
             }
 
-            if (!Schema::hasColumn('products', 'official_shop_badge')) {
+            if (! Schema::hasColumn('products', 'official_shop_badge')) {
                 $table->string('official_shop_badge', 30)->nullable()
                     ->after('is_in_official_shop')
                     ->comment('ประเภทป้าย: gold_frame, new, bestseller');
             }
 
-            if (!Schema::hasColumn('products', 'is_promotion_locked')) {
+            if (! Schema::hasColumn('products', 'is_promotion_locked')) {
                 $table->boolean('is_promotion_locked')->default(false)
                     ->after('official_shop_badge')
                     ->comment('ล็อคระหว่างโปรโมท');
             }
 
-            if (!Schema::hasColumn('products', 'promotion_lock_until')) {
+            if (! Schema::hasColumn('products', 'promotion_lock_until')) {
                 $table->timestamp('promotion_lock_until')->nullable()
                     ->after('is_promotion_locked');
             }
@@ -239,8 +237,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

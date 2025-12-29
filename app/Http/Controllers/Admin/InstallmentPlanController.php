@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
+use App\Models\InstallmentPlan;
 use Illuminate\Http\Request;
 
 class InstallmentPlanController extends Controller
@@ -19,12 +19,12 @@ class InstallmentPlanController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('plan_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -42,7 +42,7 @@ class InstallmentPlanController extends Controller
 
     public function show(InstallmentPlan $installmentPlan)
     {
-        $installmentPlan->load(['user', 'order', 'quotation', 'payments' => function($query) {
+        $installmentPlan->load(['user', 'order', 'quotation', 'payments' => function ($query) {
             $query->orderBy('installment_number');
         }]);
 

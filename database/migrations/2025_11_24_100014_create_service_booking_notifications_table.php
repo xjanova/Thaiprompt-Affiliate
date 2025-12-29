@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บบันทึกการส่ง notification ทุกช่องทาง (In-App, LINE, Email, SMS)
      * ใช้สำหรับ tracking และ debugging ระบบ notification
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -51,7 +49,7 @@ return new class extends Migration
                 'provider_on_way',      // provider เดินทาง
                 'service_started',      // เริ่มให้บริการ
                 'service_completed',    // เสร็จสิ้น
-                'payment_received'      // รับเงินแล้ว
+                'payment_received',      // รับเงินแล้ว
             ])->comment('ประเภทการแจ้งเตือน');
 
             // ช่องทางการส่ง
@@ -96,8 +94,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_notifications
-     *
-     * @return void
      */
     public function down(): void
     {

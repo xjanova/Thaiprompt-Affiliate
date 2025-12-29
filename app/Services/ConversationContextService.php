@@ -31,9 +31,6 @@ class ConversationContextService
 
     /**
      * Get conversation context for prospect
-     *
-     * @param MlmProspect $prospect
-     * @return array
      */
     public function getContext(MlmProspect $prospect): array
     {
@@ -59,10 +56,6 @@ class ConversationContextService
 
     /**
      * Update conversation context
-     *
-     * @param MlmProspect $prospect
-     * @param array $updates
-     * @return void
      */
     public function updateContext(MlmProspect $prospect, array $updates): void
     {
@@ -84,11 +77,7 @@ class ConversationContextService
     /**
      * Add message to conversation history
      *
-     * @param MlmProspect $prospect
-     * @param string $role 'user' or 'assistant'
-     * @param string $message
-     * @param array $metadata
-     * @return void
+     * @param  string  $role  'user' or 'assistant'
      */
     public function addMessageToHistory(MlmProspect $prospect, string $role, string $message, array $metadata = []): void
     {
@@ -114,10 +103,6 @@ class ConversationContextService
 
     /**
      * Get conversation history
-     *
-     * @param MlmProspect $prospect
-     * @param int $limit
-     * @return array
      */
     public function getHistory(MlmProspect $prospect, int $limit = 10): array
     {
@@ -129,9 +114,6 @@ class ConversationContextService
 
     /**
      * Get conversation summary
-     *
-     * @param MlmProspect $prospect
-     * @return string
      */
     public function getSummary(MlmProspect $prospect): string
     {
@@ -140,15 +122,15 @@ class ConversationContextService
 
         $summary = "📊 สรุปข้อมูลการสมัคร:\n\n";
 
-        if (!empty($data['name'])) {
+        if (! empty($data['name'])) {
             $summary .= "👤 ชื่อ: {$data['name']}\n";
         }
 
-        if (!empty($data['phone'])) {
+        if (! empty($data['phone'])) {
             $summary .= "📱 เบอร์: {$data['phone']}\n";
         }
 
-        if (!empty($data['email'])) {
+        if (! empty($data['email'])) {
             $summary .= "📧 อีเมล: {$data['email']}\n";
         }
 
@@ -160,10 +142,7 @@ class ConversationContextService
     /**
      * Track user preference
      *
-     * @param MlmProspect $prospect
-     * @param string $key
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     public function setPreference(MlmProspect $prospect, string $key, $value): void
     {
@@ -178,9 +157,7 @@ class ConversationContextService
     /**
      * Get user preference
      *
-     * @param MlmProspect $prospect
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getPreference(MlmProspect $prospect, string $key, $default = null)
@@ -194,11 +171,8 @@ class ConversationContextService
     /**
      * Store temporary data in context
      *
-     * @param MlmProspect $prospect
-     * @param string $key
-     * @param mixed $value
-     * @param int $ttl Seconds
-     * @return void
+     * @param  mixed  $value
+     * @param  int  $ttl  Seconds
      */
     public function setTemporaryData(MlmProspect $prospect, string $key, $value, int $ttl = 300): void
     {
@@ -209,23 +183,18 @@ class ConversationContextService
     /**
      * Get temporary data
      *
-     * @param MlmProspect $prospect
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getTemporaryData(MlmProspect $prospect, string $key, $default = null)
     {
         $cacheKey = "temp_data:{$prospect->id}:{$key}";
+
         return Cache::get($cacheKey, $default);
     }
 
     /**
      * Clear temporary data
-     *
-     * @param MlmProspect $prospect
-     * @param string $key
-     * @return void
      */
     public function clearTemporaryData(MlmProspect $prospect, string $key): void
     {
@@ -235,9 +204,6 @@ class ConversationContextService
 
     /**
      * Get relevant context for AI prompt
-     *
-     * @param MlmProspect $prospect
-     * @return string
      */
     public function getAiContext(MlmProspect $prospect): string
     {
@@ -250,7 +216,7 @@ class ConversationContextService
 
         // Add collected data
         $data = $context['conversation_data'] ?? [];
-        if (!empty($data)) {
+        if (! empty($data)) {
             $aiContext .= "Collected Data:\n";
             foreach ($data as $key => $value) {
                 $aiContext .= "- {$key}: {$value}\n";
@@ -260,7 +226,7 @@ class ConversationContextService
 
         // Add recent history
         $history = array_slice($context['history'] ?? [], -5);
-        if (!empty($history)) {
+        if (! empty($history)) {
             $aiContext .= "Recent Messages:\n";
             foreach ($history as $msg) {
                 $role = $msg['role'] === 'user' ? 'User' : 'Bot';
@@ -273,9 +239,6 @@ class ConversationContextService
 
     /**
      * Clear conversation context
-     *
-     * @param MlmProspect $prospect
-     * @return void
      */
     public function clearContext(MlmProspect $prospect): void
     {
@@ -289,9 +252,6 @@ class ConversationContextService
 
     /**
      * Export context for debugging/analysis
-     *
-     * @param MlmProspect $prospect
-     * @return array
      */
     public function exportContext(MlmProspect $prospect): array
     {
@@ -301,9 +261,7 @@ class ConversationContextService
     /**
      * Check if user has shown specific behavior
      *
-     * @param MlmProspect $prospect
-     * @param string $behavior 'confusion', 'frustration', 'eagerness'
-     * @return bool
+     * @param  string  $behavior  'confusion', 'frustration', 'eagerness'
      */
     public function hasShownBehavior(MlmProspect $prospect, string $behavior): bool
     {
@@ -315,10 +273,6 @@ class ConversationContextService
 
     /**
      * Mark user behavior
-     *
-     * @param MlmProspect $prospect
-     * @param string $behavior
-     * @return void
      */
     public function markBehavior(MlmProspect $prospect, string $behavior): void
     {
@@ -332,17 +286,14 @@ class ConversationContextService
 
     /**
      * Get conversation statistics
-     *
-     * @param MlmProspect $prospect
-     * @return array
      */
     public function getStatistics(MlmProspect $prospect): array
     {
         $context = $this->getContext($prospect);
         $history = $context['history'] ?? [];
 
-        $userMessages = array_filter($history, fn($msg) => $msg['role'] === 'user');
-        $botMessages = array_filter($history, fn($msg) => $msg['role'] === 'assistant');
+        $userMessages = array_filter($history, fn ($msg) => $msg['role'] === 'user');
+        $botMessages = array_filter($history, fn ($msg) => $msg['role'] === 'assistant');
 
         return [
             'total_messages' => count($history),
@@ -358,7 +309,6 @@ class ConversationContextService
     /**
      * Calculate average response time
      *
-     * @param array $history
      * @return float Minutes
      */
     private function calculateAvgResponseTime(array $history): float
@@ -369,8 +319,8 @@ class ConversationContextService
 
         $times = [];
         for ($i = 1; $i < count($history); $i++) {
-            if ($history[$i]['role'] === 'user' && $history[$i-1]['role'] === 'assistant') {
-                $t1 = \Carbon\Carbon::parse($history[$i-1]['timestamp']);
+            if ($history[$i]['role'] === 'user' && $history[$i - 1]['role'] === 'assistant') {
+                $t1 = \Carbon\Carbon::parse($history[$i - 1]['timestamp']);
                 $t2 = \Carbon\Carbon::parse($history[$i]['timestamp']);
                 $times[] = $t2->diffInSeconds($t1);
             }

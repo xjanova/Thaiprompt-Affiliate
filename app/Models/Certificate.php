@@ -129,7 +129,7 @@ class Certificate extends Model
      */
     public function isValid()
     {
-        return !$this->is_revoked;
+        return ! $this->is_revoked;
     }
 
     /**

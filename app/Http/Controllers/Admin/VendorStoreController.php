@@ -5,22 +5,18 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * VendorStoreController - จัดการร้านค้าทั้งหมดในระบบ (Admin)
  *
  * Controller นี้ให้ Admin สามารถดูและจัดการร้านค้าของ Vendor ทั้งหมด
  * รวมถึงการอนุมัติ, ปิด/เปิดใช้งาน, และตั้งค่าร้านค้าแนะนำ
- *
- * @package App\Http\Controllers\Admin
  */
 class VendorStoreController extends Controller
 {
     /**
      * แสดงรายการร้านค้าทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -80,7 +76,6 @@ class VendorStoreController extends Controller
     /**
      * แสดงรายละเอียดร้านค้า
      *
-     * @param VendorStore $store
      * @return \Illuminate\View\View
      */
     public function show(VendorStore $store)
@@ -106,7 +101,6 @@ class VendorStoreController extends Controller
     /**
      * แสดงฟอร์มแก้ไขร้านค้า
      *
-     * @param VendorStore $store
      * @return \Illuminate\View\View
      */
     public function edit(VendorStore $store)
@@ -117,8 +111,6 @@ class VendorStoreController extends Controller
     /**
      * อัพเดทข้อมูลร้านค้า
      *
-     * @param Request $request
-     * @param VendorStore $store
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, VendorStore $store)
@@ -138,38 +130,36 @@ class VendorStoreController extends Controller
 
         return redirect()
             ->route('admin.storefront.vendor-stores.index')
-            ->with('success', 'อัพเดทร้านค้า "' . $store->store_name . '" สำเร็จ');
+            ->with('success', 'อัพเดทร้านค้า "'.$store->store_name.'" สำเร็จ');
     }
 
     /**
      * สลับสถานะ Active/Inactive
      *
-     * @param VendorStore $store
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleStatus(VendorStore $store)
     {
-        $store->is_active = !$store->is_active;
+        $store->is_active = ! $store->is_active;
         $store->save();
 
         return response()->json([
             'success' => true,
             'is_active' => $store->is_active,
             'message' => $store->is_active
-                ? 'เปิดใช้งานร้านค้า "' . $store->store_name . '" แล้ว'
-                : 'ปิดใช้งานร้านค้า "' . $store->store_name . '" แล้ว',
+                ? 'เปิดใช้งานร้านค้า "'.$store->store_name.'" แล้ว'
+                : 'ปิดใช้งานร้านค้า "'.$store->store_name.'" แล้ว',
         ]);
     }
 
     /**
      * สลับสถานะ Featured
      *
-     * @param VendorStore $store
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleFeatured(VendorStore $store)
     {
-        $store->is_featured_home = !$store->is_featured_home;
+        $store->is_featured_home = ! $store->is_featured_home;
 
         // ถ้าเป็น featured ใหม่ ให้ตั้ง order
         if ($store->is_featured_home) {
@@ -185,15 +175,14 @@ class VendorStoreController extends Controller
             'success' => true,
             'is_featured' => $store->is_featured_home,
             'message' => $store->is_featured_home
-                ? 'เพิ่มร้าน "' . $store->store_name . '" เป็นร้านค้าแนะนำแล้ว'
-                : 'นำร้าน "' . $store->store_name . '" ออกจากร้านค้าแนะนำแล้ว',
+                ? 'เพิ่มร้าน "'.$store->store_name.'" เป็นร้านค้าแนะนำแล้ว'
+                : 'นำร้าน "'.$store->store_name.'" ออกจากร้านค้าแนะนำแล้ว',
         ]);
     }
 
     /**
      * ลบร้านค้า (Soft Delete)
      *
-     * @param VendorStore $store
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(VendorStore $store)
@@ -205,6 +194,6 @@ class VendorStoreController extends Controller
 
         return redirect()
             ->route('admin.storefront.vendor-stores.index')
-            ->with('success', 'ลบร้านค้า "' . $storeName . '" สำเร็จ');
+            ->with('success', 'ลบร้านค้า "'.$storeName.'" สำเร็จ');
     }
 }

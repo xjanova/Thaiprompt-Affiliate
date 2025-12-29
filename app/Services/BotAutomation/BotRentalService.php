@@ -2,8 +2,8 @@
 
 namespace App\Services\BotAutomation;
 
-use App\Models\BotAutomation\BotRentalSubscription;
 use App\Models\BotAutomation\BotMarketplaceListing;
+use App\Models\BotAutomation\BotRentalSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -46,7 +46,7 @@ class BotRentalService
 
             DB::commit();
 
-            Log::info("Bot subscription created", [
+            Log::info('Bot subscription created', [
                 'user_id' => $user->id,
                 'listing_id' => $listing->id,
                 'subscription_id' => $subscription->subscription_id,
@@ -64,7 +64,7 @@ class BotRentalService
      */
     protected function calculatePrice(BotMarketplaceListing $listing, string $billingCycle): float
     {
-        return match($billingCycle) {
+        return match ($billingCycle) {
             'monthly' => $listing->monthly_price ?? $listing->price,
             'yearly' => $listing->yearly_price ?? ($listing->monthly_price * 10), // 2 months free
             'one_time' => $listing->price,
@@ -77,7 +77,7 @@ class BotRentalService
      */
     protected function calculatePeriodEnd(string $billingCycle): \Carbon\Carbon
     {
-        return match($billingCycle) {
+        return match ($billingCycle) {
             'monthly' => now()->addMonth(),
             'yearly' => now()->addYear(),
             'one_time' => now()->addYear(10), // Long period for one-time purchase
@@ -98,7 +98,7 @@ class BotRentalService
      */
     public function renew(BotRentalSubscription $subscription): bool
     {
-        if (!$subscription->auto_renew) {
+        if (! $subscription->auto_renew) {
             return false;
         }
 
@@ -125,7 +125,7 @@ class BotRentalService
 
             DB::commit();
 
-            Log::info("Subscription renewed", [
+            Log::info('Subscription renewed', [
                 'subscription_id' => $subscription->id,
                 'amount' => $price,
             ]);
@@ -133,10 +133,11 @@ class BotRentalService
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Subscription renewal failed", [
+            Log::error('Subscription renewal failed', [
                 'subscription_id' => $subscription->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -144,11 +145,11 @@ class BotRentalService
     /**
      * Cancel subscription
      */
-    public function cancel(BotRentalSubscription $subscription, string $reason = null): void
+    public function cancel(BotRentalSubscription $subscription, ?string $reason = null): void
     {
         $subscription->cancel($reason);
 
-        Log::info("Subscription cancelled", [
+        Log::info('Subscription cancelled', [
             'subscription_id' => $subscription->id,
             'reason' => $reason,
         ]);
@@ -176,7 +177,7 @@ class BotRentalService
     /**
      * Get subscription statistics
      */
-    public function getStatistics(int $listingId = null): array
+    public function getStatistics(?int $listingId = null): array
     {
         $query = BotRentalSubscription::query();
 

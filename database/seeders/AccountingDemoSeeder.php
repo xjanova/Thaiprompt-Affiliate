@@ -2,19 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\AccountingSetting;
-use App\Models\AccountingCompany;
+use App\Models\AccountingBankAccount;
 use App\Models\AccountingChartOfAccount;
+use App\Models\AccountingCompany;
 use App\Models\AccountingContact;
-use App\Models\AccountingProduct;
-use App\Models\AccountingInvoice;
-use App\Models\AccountingInvoiceItem;
 use App\Models\AccountingExpense;
 use App\Models\AccountingExpenseItem;
-use App\Models\AccountingPayment;
-use App\Models\AccountingBankAccount;
+use App\Models\AccountingInvoice;
+use App\Models\AccountingInvoiceItem;
+use App\Models\AccountingProduct;
+use App\Models\AccountingSetting;
 use App\Models\AccountingTaxRate;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -31,9 +30,10 @@ class AccountingDemoSeeder extends Seeder
     {
         // ✅ ตรวจสอบว่าตาราง accounting ถูกสร้างแล้วหรือไม่
         // ถ้ายังไม่ได้ run migration ของระบบบัญชี จะข้ามการ seed
-        if (!Schema::hasTable('accounting_companies')) {
+        if (! Schema::hasTable('accounting_companies')) {
             $this->command->info('⏭️  ข้ามการ seed AccountingDemoSeeder - ตาราง accounting ยังไม่ถูกสร้าง');
             $this->command->info('   กรุณา run migration ก่อน: php artisan migrate');
+
             return;
         }
 
@@ -43,8 +43,9 @@ class AccountingDemoSeeder extends Seeder
             // Get first user (or create if not exists)
             $user = User::first();
 
-            if (!$user) {
+            if (! $user) {
                 $this->command->error('ไม่พบ User ในระบบ กรุณาสร้าง User ก่อน');
+
                 return;
             }
 
@@ -397,7 +398,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'contact_id' => $customers[0]->id,
                 'document_type' => 'tax_invoice',
-                'document_number' => 'INV-' . now()->format('ym') . '-00001',
+                'document_number' => 'INV-'.now()->format('ym').'-00001',
                 'document_date' => now()->subDays(30),
                 'due_date' => now()->subDays(0),
                 'status' => 'paid',
@@ -448,7 +449,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'contact_id' => $customers[1]->id,
                 'document_type' => 'invoice',
-                'document_number' => 'INV-' . now()->format('ym') . '-00002',
+                'document_number' => 'INV-'.now()->format('ym').'-00002',
                 'document_date' => now()->subDays(15),
                 'due_date' => now()->addDays(15),
                 'status' => 'pending',
@@ -478,7 +479,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'contact_id' => $customers[2]->id,
                 'document_type' => 'tax_invoice',
-                'document_number' => 'INV-' . now()->format('ym') . '-00003',
+                'document_number' => 'INV-'.now()->format('ym').'-00003',
                 'document_date' => now()->subDays(10),
                 'due_date' => now()->addDays(5),
                 'status' => 'partial',
@@ -526,7 +527,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'contact_id' => $customers[0]->id,
                 'document_type' => 'invoice',
-                'document_number' => 'INV-' . now()->format('ym') . '-00004',
+                'document_number' => 'INV-'.now()->format('ym').'-00004',
                 'document_date' => now()->subDays(50),
                 'due_date' => now()->subDays(20),
                 'status' => 'overdue',
@@ -553,7 +554,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'contact_id' => $customers[1]->id,
                 'document_type' => 'quotation',
-                'document_number' => 'QUO-' . now()->format('ym') . '-00001',
+                'document_number' => 'QUO-'.now()->format('ym').'-00001',
                 'document_date' => now(),
                 'due_date' => now()->addDays(30),
                 'status' => 'draft',
@@ -587,7 +588,7 @@ class AccountingDemoSeeder extends Seeder
                 'contact_id' => $vendors[0]->id,
                 'category_id' => $chartAccounts['office_supplies']->id,
                 'document_type' => 'expense',
-                'document_number' => 'EXP-' . now()->format('ym') . '-00001',
+                'document_number' => 'EXP-'.now()->format('ym').'-00001',
                 'document_date' => now()->subDays(20),
                 'status' => 'paid',
                 'note' => 'ซื้อวัสดุสำนักงาน',
@@ -621,7 +622,7 @@ class AccountingDemoSeeder extends Seeder
                 'contact_id' => $vendors[1]->id,
                 'category_id' => $chartAccounts['utilities']->id,
                 'document_type' => 'expense',
-                'document_number' => 'EXP-' . now()->format('ym') . '-00002',
+                'document_number' => 'EXP-'.now()->format('ym').'-00002',
                 'document_date' => now()->subDays(15),
                 'status' => 'paid',
                 'note' => 'ค่าบริการ Hosting รายเดือน',
@@ -653,7 +654,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'category_id' => $chartAccounts['salaries']->id,
                 'document_type' => 'expense',
-                'document_number' => 'EXP-' . now()->format('ym') . '-00003',
+                'document_number' => 'EXP-'.now()->format('ym').'-00003',
                 'document_date' => now()->subDays(5),
                 'status' => 'pending',
                 'note' => 'เงินเดือนพนักงานประจำเดือน',
@@ -679,7 +680,7 @@ class AccountingDemoSeeder extends Seeder
                 'company_id' => $company->id,
                 'category_id' => $chartAccounts['marketing']->id,
                 'document_type' => 'expense',
-                'document_number' => 'EXP-' . now()->format('ym') . '-00004',
+                'document_number' => 'EXP-'.now()->format('ym').'-00004',
                 'document_date' => now()->subDays(10),
                 'status' => 'paid',
                 'note' => 'ค่าโฆษณา Google Ads',
@@ -712,19 +713,19 @@ class AccountingDemoSeeder extends Seeder
             $this->command->info('');
             $this->command->info('Summary:');
             $this->command->info('- 1 Company');
-            $this->command->info('- ' . count($chartAccounts) . ' Chart of Accounts');
+            $this->command->info('- '.count($chartAccounts).' Chart of Accounts');
             $this->command->info('- 2 Bank Accounts');
             $this->command->info('- 2 Tax Rates');
-            $this->command->info('- ' . count($customers) . ' Customers');
-            $this->command->info('- ' . count($vendors) . ' Vendors');
-            $this->command->info('- ' . count($products) . ' Products/Services');
+            $this->command->info('- '.count($customers).' Customers');
+            $this->command->info('- '.count($vendors).' Vendors');
+            $this->command->info('- '.count($products).' Products/Services');
             $this->command->info('- 5 Invoices (1 Paid, 1 Pending, 1 Partial, 1 Overdue, 1 Draft)');
             $this->command->info('- 4 Expenses (3 Paid, 1 Pending)');
             $this->command->info('- 4 Payments');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->command->error('Error: ' . $e->getMessage());
+            $this->command->error('Error: '.$e->getMessage());
             $this->command->error($e->getTraceAsString());
         }
     }

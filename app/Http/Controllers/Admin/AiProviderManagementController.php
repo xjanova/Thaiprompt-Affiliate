@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AiProvider;
 use App\Models\AiModel;
-use App\Services\AI\LocalAiManager;
-use App\Services\AI\AiServiceFactory;
+use App\Models\AiProvider;
 use App\Services\AI\LlamaInstallationService;
+use App\Services\AI\LocalAiManager;
 use App\Services\AI\PostXAgentHealthCheck;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class AiProviderManagementController extends Controller
 {
@@ -20,7 +19,7 @@ class AiProviderManagementController extends Controller
 
     public function __construct()
     {
-        $this->localAiManager = new LocalAiManager();
+        $this->localAiManager = new LocalAiManager;
     }
 
     /**
@@ -95,6 +94,7 @@ class AiProviderManagementController extends Controller
 
             if ($response->successful()) {
                 $models = $response->json()['models'] ?? [];
+
                 return [
                     'running' => true,
                     'endpoint' => 'http://localhost:11434',
@@ -130,13 +130,11 @@ class AiProviderManagementController extends Controller
 
     /**
      * ตรวจสอบสถานะ PostXAgent AI Manager
-     *
-     * @return array
      */
     private function checkPostXAgentStatus(): array
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $status = $healthCheck->getStatus();
 
             if ($status['online'] ?? false) {
@@ -186,7 +184,7 @@ class AiProviderManagementController extends Controller
     {
         $provider = AiProvider::findOrFail($providerId);
 
-        $provider->is_active = !$provider->is_active;
+        $provider->is_active = ! $provider->is_active;
         $provider->save();
 
         return response()->json([
@@ -255,13 +253,14 @@ class AiProviderManagementController extends Controller
 
         try {
             // ทดสอบเชื่อมต่อ Ollama
-            $response = Http::timeout(10)->get(str_replace('/v1', '', $endpoint) . '/api/tags');
+            $response = Http::timeout(10)->get(str_replace('/v1', '', $endpoint).'/api/tags');
 
             if ($response->successful()) {
                 $models = $response->json()['models'] ?? [];
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'เชื่อมต่อ Local AI สำเร็จ (' . count($models) . ' models พร้อมใช้งาน)',
+                    'message' => 'เชื่อมต่อ Local AI สำเร็จ ('.count($models).' models พร้อมใช้งาน)',
                     'details' => [
                         'status' => 'running',
                         'models' => $models,
@@ -272,7 +271,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             // ลอง llama.cpp health check
             try {
-                $response = Http::timeout(5)->get(str_replace('/v1', '', $endpoint) . '/health');
+                $response = Http::timeout(5)->get(str_replace('/v1', '', $endpoint).'/health');
                 if ($response->successful()) {
                     return response()->json([
                         'success' => true,
@@ -320,20 +319,21 @@ class AiProviderManagementController extends Controller
                 'Content-Type' => 'application/json',
             ];
 
-            if (!empty($config['api_key'])) {
-                $headers['Authorization'] = 'Bearer ' . $config['api_key'];
+            if (! empty($config['api_key'])) {
+                $headers['Authorization'] = 'Bearer '.$config['api_key'];
             }
 
             // ทดสอบดึงรายการ models
             $response = Http::withHeaders($headers)
                 ->timeout(15)
-                ->get($endpoint . '/models');
+                ->get($endpoint.'/models');
 
             if ($response->successful()) {
                 $models = $response->json()['data'] ?? [];
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'เชื่อมต่อ ' . $provider->display_name . ' สำเร็จ!',
+                    'message' => 'เชื่อมต่อ '.$provider->display_name.' สำเร็จ!',
                     'details' => [
                         'models_available' => count($models),
                         'endpoint' => $endpoint,
@@ -343,13 +343,13 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'การเชื่อมต่อล้มเหลว: ' . ($response->json()['error']['message'] ?? 'Unknown error'),
+                'message' => 'การเชื่อมต่อล้มเหลว: '.($response->json()['error']['message'] ?? 'Unknown error'),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }
@@ -375,25 +375,25 @@ class AiProviderManagementController extends Controller
                 'Content-Type' => 'application/json',
             ];
 
-            if (!empty($config['api_key'])) {
-                $headers['Authorization'] = 'Bearer ' . $config['api_key'];
+            if (! empty($config['api_key'])) {
+                $headers['Authorization'] = 'Bearer '.$config['api_key'];
             }
 
             $startTime = microtime(true);
 
             $response = Http::withHeaders($headers)
                 ->timeout(60)
-                ->post($endpoint . '/chat/completions', [
+                ->post($endpoint.'/chat/completions', [
                     'model' => $model->model_identifier,
                     'messages' => [
                         [
                             'role' => 'system',
-                            'content' => 'คุณเป็น AI Assistant ของระบบ Thaiprompt Affiliate ตอบภาษาไทยสั้นๆ กระชับ เข้าใจง่าย'
+                            'content' => 'คุณเป็น AI Assistant ของระบบ Thaiprompt Affiliate ตอบภาษาไทยสั้นๆ กระชับ เข้าใจง่าย',
                         ],
                         [
                             'role' => 'user',
-                            'content' => $request->message
-                        ]
+                            'content' => $request->message,
+                        ],
                     ],
                     'max_tokens' => 500,
                     'temperature' => 0.7,
@@ -421,7 +421,7 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'AI ไม่ตอบกลับ: ' . ($response->json()['error']['message'] ?? 'Unknown error'),
+                'message' => 'AI ไม่ตอบกลับ: '.($response->json()['error']['message'] ?? 'Unknown error'),
             ]);
 
         } catch (\Exception $e) {
@@ -433,7 +433,7 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }
@@ -518,7 +518,7 @@ class AiProviderManagementController extends Controller
     {
         $model = AiModel::findOrFail($modelId);
 
-        $model->is_active = !$model->is_active;
+        $model->is_active = ! $model->is_active;
         $model->save();
 
         return response()->json([
@@ -539,7 +539,7 @@ class AiProviderManagementController extends Controller
      */
     public function installPage()
     {
-        $installService = new LlamaInstallationService();
+        $installService = new LlamaInstallationService;
         $progress = $installService->getProgress();
 
         // รายการ Models ที่สามารถติดตั้งได้
@@ -569,7 +569,6 @@ class AiProviderManagementController extends Controller
     /**
      * เริ่มติดตั้ง Llama
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function startInstall(Request $request)
@@ -579,7 +578,7 @@ class AiProviderManagementController extends Controller
             'model' => 'required|string',
         ]);
 
-        $installService = new LlamaInstallationService();
+        $installService = new LlamaInstallationService;
 
         // ตรวจสอบว่ากำลังติดตั้งอยู่หรือไม่
         if ($installService->isInstalling()) {
@@ -604,7 +603,7 @@ class AiProviderManagementController extends Controller
      */
     public function getInstallProgress()
     {
-        $installService = new LlamaInstallationService();
+        $installService = new LlamaInstallationService;
         $progress = $installService->getProgress();
 
         return response()->json([
@@ -620,7 +619,7 @@ class AiProviderManagementController extends Controller
      */
     public function cancelInstall()
     {
-        $installService = new LlamaInstallationService();
+        $installService = new LlamaInstallationService;
         $result = $installService->cancelInstallation();
 
         return response()->json($result);
@@ -633,7 +632,7 @@ class AiProviderManagementController extends Controller
      */
     public function getInstallLog()
     {
-        $installService = new LlamaInstallationService();
+        $installService = new LlamaInstallationService;
         $log = $installService->getLog();
 
         return response()->json([
@@ -647,8 +646,6 @@ class AiProviderManagementController extends Controller
      *
      * ใช้วิธีหลายแบบเพื่อรองรับ shared hosting
      * ที่มี open_basedir restriction
-     *
-     * @return array
      */
     private function getSystemInfo(): array
     {
@@ -681,13 +678,13 @@ class AiProviderManagementController extends Controller
             try {
                 // ดึง RAM
                 @exec('free -g 2>/dev/null | grep Mem | awk \'{print $2}\'', $ramOutput);
-                if (!empty($ramOutput[0]) && is_numeric($ramOutput[0])) {
+                if (! empty($ramOutput[0]) && is_numeric($ramOutput[0])) {
                     $totalRam = (float) $ramOutput[0];
                 }
 
                 // ดึง CPU cores
                 @exec('nproc 2>/dev/null', $cpuOutput);
-                if (!empty($cpuOutput[0]) && is_numeric($cpuOutput[0])) {
+                if (! empty($cpuOutput[0]) && is_numeric($cpuOutput[0])) {
                     $cpuCores = (int) $cpuOutput[0];
                 }
             } catch (\Exception $e) {
@@ -723,9 +720,6 @@ class AiProviderManagementController extends Controller
 
     /**
      * แนะนำ Model ตาม RAM ที่มี
-     *
-     * @param float $ramGb
-     * @return string
      */
     private function getRecommendedModel(float $ramGb): string
     {
@@ -754,7 +748,7 @@ class AiProviderManagementController extends Controller
     public function getPostXAgentStatus()
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $status = $healthCheck->getStatus(true); // fresh = true เพื่อไม่ใช้ cache
 
             return response()->json([
@@ -764,7 +758,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงสถานะ PostXAgent: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถดึงสถานะ PostXAgent: '.$e->getMessage(),
             ]);
         }
     }
@@ -777,7 +771,7 @@ class AiProviderManagementController extends Controller
     public function testPostXAgentConnection()
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
 
             // Clear cache และทดสอบใหม่
             $healthCheck->clearCache();
@@ -785,11 +779,11 @@ class AiProviderManagementController extends Controller
 
             if ($status['online'] ?? false) {
                 $providers = $healthCheck->getAvailableProviders();
-                $readyProviders = array_filter($providers, fn($p) => $p['is_available'] ?? false);
+                $readyProviders = array_filter($providers, fn ($p) => $p['is_available'] ?? false);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'เชื่อมต่อ PostXAgent สำเร็จ! (' . count($readyProviders) . '/' . count($providers) . ' providers พร้อมใช้งาน)',
+                    'message' => 'เชื่อมต่อ PostXAgent สำเร็จ! ('.count($readyProviders).'/'.count($providers).' providers พร้อมใช้งาน)',
                     'details' => [
                         'version' => $status['version'] ?? 'unknown',
                         'uptime' => $status['uptime'] ?? null,
@@ -801,7 +795,7 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'PostXAgent ไม่ตอบสนอง - ' . ($status['error'] ?? 'Unknown error'),
+                'message' => 'PostXAgent ไม่ตอบสนอง - '.($status['error'] ?? 'Unknown error'),
                 'details' => [
                     'endpoint' => config('postxagent.api_url'),
                     'error' => $status['error'] ?? null,
@@ -810,7 +804,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถเชื่อมต่อ PostXAgent: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถเชื่อมต่อ PostXAgent: '.$e->getMessage(),
                 'details' => [
                     'endpoint' => config('postxagent.api_url'),
                 ],
@@ -826,7 +820,7 @@ class AiProviderManagementController extends Controller
     public function clearPostXAgentCache()
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $healthCheck->clearCache();
 
             // ล้าง cache อื่นๆ ที่เกี่ยวข้อง
@@ -839,7 +833,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถล้าง cache: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถล้าง cache: '.$e->getMessage(),
             ]);
         }
     }
@@ -852,7 +846,7 @@ class AiProviderManagementController extends Controller
     public function getPostXAgentProviders()
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $providers = $healthCheck->getAvailableProviders();
 
             return response()->json([
@@ -862,7 +856,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงรายการ providers: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถดึงรายการ providers: '.$e->getMessage(),
             ]);
         }
     }
@@ -870,13 +864,12 @@ class AiProviderManagementController extends Controller
     /**
      * ดึงรายการ models ของ provider ใน PostXAgent
      *
-     * @param string $providerId
      * @return \Illuminate\Http\JsonResponse
      */
     public function getPostXAgentModels(string $providerId)
     {
         try {
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $models = $healthCheck->getAvailableModels($providerId);
 
             return response()->json([
@@ -886,7 +879,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงรายการ models: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถดึงรายการ models: '.$e->getMessage(),
             ]);
         }
     }
@@ -894,7 +887,6 @@ class AiProviderManagementController extends Controller
     /**
      * อัพเดทการตั้งค่า PostXAgent
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function updatePostXAgentConfig(Request $request)
@@ -929,7 +921,7 @@ class AiProviderManagementController extends Controller
             }
 
             // Clear cache
-            $healthCheck = new PostXAgentHealthCheck();
+            $healthCheck = new PostXAgentHealthCheck;
             $healthCheck->clearCache();
 
             return response()->json([
@@ -939,7 +931,7 @@ class AiProviderManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถอัพเดทการตั้งค่า: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถอัพเดทการตั้งค่า: '.$e->getMessage(),
             ]);
         }
     }
@@ -947,7 +939,6 @@ class AiProviderManagementController extends Controller
     /**
      * ทดสอบ Chat กับ PostXAgent
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function testPostXAgentChat(Request $request)
@@ -968,7 +959,7 @@ class AiProviderManagementController extends Controller
                 'X-Source' => 'thaiprompt-affiliate-admin',
             ];
 
-            if (!empty($authConfig['api_key'])) {
+            if (! empty($authConfig['api_key'])) {
                 $headers['X-API-Key'] = $authConfig['api_key'];
             }
 
@@ -976,7 +967,7 @@ class AiProviderManagementController extends Controller
 
             $response = Http::withHeaders($headers)
                 ->timeout(60)
-                ->post($apiUrl . '/ai/chat', [
+                ->post($apiUrl.'/ai/chat', [
                     'provider' => $request->input('provider', config('postxagent.defaults.provider', 'ollama')),
                     'model' => $request->input('model', config('postxagent.defaults.model', 'llama3.2:3b')),
                     'messages' => [
@@ -1010,7 +1001,7 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'PostXAgent ไม่ตอบกลับ: ' . ($response->json()['error'] ?? 'Unknown error'),
+                'message' => 'PostXAgent ไม่ตอบกลับ: '.($response->json()['error'] ?? 'Unknown error'),
             ]);
         } catch (\Exception $e) {
             Log::error('PostXAgent Test Chat Error', [
@@ -1020,7 +1011,7 @@ class AiProviderManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }

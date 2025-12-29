@@ -47,6 +47,6 @@ class AccountingFlowaccountConnection extends Model
 
     public function isConnected(): bool
     {
-        return $this->is_active && $this->access_token && !$this->isTokenExpired();
+        return $this->is_active && $this->access_token && ! $this->isTokenExpired();
     }
 }

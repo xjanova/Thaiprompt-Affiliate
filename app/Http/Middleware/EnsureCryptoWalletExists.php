@@ -17,19 +17,19 @@ class EnsureCryptoWalletExists
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         // Check if user has at least one crypto wallet
-        if (!$user->cryptoWallets()->exists()) {
+        if (! $user->cryptoWallets()->exists()) {
             return redirect()
                 ->route('user.crypto-wallet.index')
                 ->with('warning', 'กรุณาสร้างกระเป๋าคริปโตก่อนใช้งาน');
         }
 
         // Check if default wallet exists
-        if (!$user->defaultCryptoWallet) {
+        if (! $user->defaultCryptoWallet) {
             return redirect()
                 ->route('user.crypto-wallet.wallets')
                 ->with('warning', 'กรุณาตั้งกระเป๋าหลักก่อนใช้งาน');

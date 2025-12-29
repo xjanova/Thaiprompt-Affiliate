@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $notify_live แจ้งเตือน Live
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read User $user
  * @property-read VendorStore $store
  */
@@ -60,8 +59,6 @@ class StoreFollower extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -70,8 +67,6 @@ class StoreFollower extends Model
 
     /**
      * ความสัมพันธ์กับ VendorStore
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -81,9 +76,7 @@ class StoreFollower extends Model
     /**
      * Toggle follow สำหรับร้านค้า
      *
-     * @param int $userId
-     * @param int $storeId
-     * @param array $settings ตั้งค่าการแจ้งเตือน
+     * @param  array  $settings  ตั้งค่าการแจ้งเตือน
      * @return array{following: bool, count: int}
      */
     public static function toggle(int $userId, int $storeId, array $settings = []): array
@@ -115,10 +108,6 @@ class StoreFollower extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้ติดตามร้านนี้หรือไม่
-     *
-     * @param int $userId
-     * @param int $storeId
-     * @return bool
      */
     public static function isFollowing(int $userId, int $storeId): bool
     {
@@ -129,11 +118,6 @@ class StoreFollower extends Model
 
     /**
      * อัพเดทการตั้งค่าการแจ้งเตือน
-     *
-     * @param int $userId
-     * @param int $storeId
-     * @param array $settings
-     * @return bool
      */
     public static function updateSettings(int $userId, int $storeId, array $settings): bool
     {
@@ -144,9 +128,6 @@ class StoreFollower extends Model
 
     /**
      * ดึง followers ที่ต้องการรับการแจ้งเตือนสินค้าใหม่
-     *
-     * @param int $storeId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getNewProductNotifyList(int $storeId): \Illuminate\Database\Eloquent\Collection
     {
@@ -158,9 +139,6 @@ class StoreFollower extends Model
 
     /**
      * ดึง followers ที่ต้องการรับการแจ้งเตือนโปรโมชั่น
-     *
-     * @param int $storeId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getPromotionNotifyList(int $storeId): \Illuminate\Database\Eloquent\Collection
     {

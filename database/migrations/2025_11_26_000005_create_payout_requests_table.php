@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง payout_requests
      * คำขอเบิกเงิน / รายการจ่ายเงิน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -43,7 +41,7 @@ return new class extends Migration
                 'paid',             // จ่ายแล้ว
                 'rejected',         // ปฏิเสธ
                 'cancelled',        // ยกเลิก
-                'failed'            // จ่ายไม่สำเร็จ
+                'failed',            // จ่ายไม่สำเร็จ
             ])->default('pending');
 
             // วิธีการจ่าย
@@ -51,7 +49,7 @@ return new class extends Migration
                 'wallet',           // โอนเข้า wallet
                 'bank_transfer',    // โอนเงินผ่านธนาคาร
                 'promptpay',        // พร้อมเพย์
-                'other'             // อื่นๆ
+                'other',             // อื่นๆ
             ])->default('wallet');
 
             // ข้อมูลบัญชีธนาคาร (ถ้าโอนผ่านธนาคาร)
@@ -112,8 +110,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง payout_requests
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -281,7 +281,7 @@ class LearningArticle extends Model
     public function canUnlock($user)
     {
         // First check if user has access
-        if (!$this->userHasAccess($user)) {
+        if (! $this->userHasAccess($user)) {
             return false;
         }
 
@@ -299,7 +299,7 @@ class LearningArticle extends Model
         foreach ($requiredPrerequisites as $prerequisite) {
             $progress = $prerequisite->progressForUser($user->id);
 
-            if (!$progress || $progress->status !== 'completed') {
+            if (! $progress || $progress->status !== 'completed') {
                 return false;
             }
         }
@@ -321,17 +321,17 @@ class LearningArticle extends Model
     public function getFormattedDurationAttribute()
     {
         if ($this->estimated_duration < 60) {
-            return $this->estimated_duration . ' นาที';
+            return $this->estimated_duration.' นาที';
         }
 
         $hours = floor($this->estimated_duration / 60);
         $minutes = $this->estimated_duration % 60;
 
         if ($minutes === 0) {
-            return $hours . ' ชั่วโมง';
+            return $hours.' ชั่วโมง';
         }
 
-        return $hours . ' ชั่วโมง ' . $minutes . ' นาที';
+        return $hours.' ชั่วโมง '.$minutes.' นาที';
     }
 
     /**
@@ -350,8 +350,6 @@ class LearningArticle extends Model
 
     /**
      * Get course level label
-     *
-     * @return string
      */
     public function getCourseLevelLabelAttribute(): string
     {
@@ -363,13 +361,11 @@ class LearningArticle extends Model
             5 => 'ระดับ 5 (ขั้นสูง)',
         ];
 
-        return $labels[$this->course_level] ?? 'ระดับ ' . $this->course_level;
+        return $labels[$this->course_level] ?? 'ระดับ '.$this->course_level;
     }
 
     /**
      * Get unlock condition label
-     *
-     * @return string
      */
     public function getUnlockConditionLabelAttribute(): string
     {
@@ -386,8 +382,6 @@ class LearningArticle extends Model
 
     /**
      * Check if this article has quiz requirement
-     *
-     * @return bool
      */
     public function hasQuizRequirement(): bool
     {
@@ -397,8 +391,6 @@ class LearningArticle extends Model
 
     /**
      * Get previous article in the same category
-     *
-     * @return LearningArticle|null
      */
     public function getPreviousArticle(): ?LearningArticle
     {
@@ -418,8 +410,6 @@ class LearningArticle extends Model
 
     /**
      * Get next article in the same category
-     *
-     * @return LearningArticle|null
      */
     public function getNextArticle(): ?LearningArticle
     {
@@ -466,8 +456,6 @@ class LearningArticle extends Model
 
     /**
      * ตรวจสอบว่างบประมาณหมดหรือไม่
-     *
-     * @return bool
      */
     public function isBudgetExhausted(): bool
     {
@@ -480,8 +468,6 @@ class LearningArticle extends Model
 
     /**
      * ดึงงบประมาณที่เหลือ
-     *
-     * @return float|null
      */
     public function getRemainingBudget(): ?float
     {
@@ -495,8 +481,7 @@ class LearningArticle extends Model
     /**
      * คำนวณรางวัลที่จะได้รับ (ตรวจสอบงบประมาณด้วย)
      *
-     * @param float $multiplier ตัวคูณรางวัล
-     * @return array
+     * @param  float  $multiplier  ตัวคูณรางวัล
      */
     public function calculateRewards(float $multiplier = 1.0): array
     {
@@ -520,8 +505,7 @@ class LearningArticle extends Model
     /**
      * บันทึกการจ่ายรางวัล
      *
-     * @param float $amount จำนวนที่จ่าย
-     * @return void
+     * @param  float  $amount  จำนวนที่จ่าย
      */
     public function recordRewardGiven(float $amount): void
     {
@@ -541,8 +525,7 @@ class LearningArticle extends Model
     /**
      * รีเซ็ตงบประมาณ
      *
-     * @param float|null $newBudget งบประมาณใหม่
-     * @return void
+     * @param  float|null  $newBudget  งบประมาณใหม่
      */
     public function resetBudget(?float $newBudget = null): void
     {
@@ -558,8 +541,6 @@ class LearningArticle extends Model
 
     /**
      * รางวัลรวมทั้งหมดที่จะได้
-     *
-     * @return string
      */
     public function getTotalRewardsLabelAttribute(): string
     {
@@ -569,16 +550,16 @@ class LearningArticle extends Model
             $parts[] = "{$this->points_reward} แต้ม";
         }
         if ($this->coin_reward > 0) {
-            $parts[] = number_format($this->coin_reward, 2) . ' Coins';
+            $parts[] = number_format($this->coin_reward, 2).' Coins';
         }
         if ($this->money_reward > 0) {
-            $parts[] = '฿' . number_format($this->money_reward, 2);
+            $parts[] = '฿'.number_format($this->money_reward, 2);
         }
         if ($this->exp_reward > 0) {
             $parts[] = "{$this->exp_reward} EXP";
         }
         if ($this->pv_value > 0) {
-            $parts[] = number_format($this->pv_value, 2) . ' PV';
+            $parts[] = number_format($this->pv_value, 2).' PV';
         }
 
         return empty($parts) ? 'ไม่มีรางวัล' : implode(' + ', $parts);

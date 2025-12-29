@@ -9,24 +9,22 @@ return new class extends Migration
     /**
      * เพิ่มคอลัมน์ cancelled_at และ cancel_reason ในตาราง earnings_ledger
      * สำหรับระบบ Refund และ MLM Clawback
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง earnings_ledger มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('earnings_ledger')) {
+        if (! Schema::hasTable('earnings_ledger')) {
             return;
         }
 
         Schema::table('earnings_ledger', function (Blueprint $table) {
             // เพิ่มคอลัมน์ cancelled_at ถ้ายังไม่มี
-            if (!Schema::hasColumn('earnings_ledger', 'cancelled_at')) {
+            if (! Schema::hasColumn('earnings_ledger', 'cancelled_at')) {
                 $table->timestamp('cancelled_at')->nullable()->after('paid_at');
             }
 
             // เพิ่มคอลัมน์ cancel_reason ถ้ายังไม่มี
-            if (!Schema::hasColumn('earnings_ledger', 'cancel_reason')) {
+            if (! Schema::hasColumn('earnings_ledger', 'cancel_reason')) {
                 $table->string('cancel_reason')->nullable()->after('cancelled_at');
             }
         });
@@ -34,8 +32,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

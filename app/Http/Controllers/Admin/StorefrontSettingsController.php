@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\StoreBanner;
 use App\Models\ProductCategory;
+use App\Models\StoreBanner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -73,7 +73,6 @@ class StorefrontSettingsController extends Controller
     /**
      * บันทึก Banner ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeBanner(Request $request)
@@ -116,7 +115,7 @@ class StorefrontSettingsController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Banner
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\View\View
      */
     public function editBanner($id)
@@ -136,8 +135,7 @@ class StorefrontSettingsController extends Controller
     /**
      * อัพเดท Banner
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateBanner(Request $request, $id)
@@ -187,7 +185,7 @@ class StorefrontSettingsController extends Controller
     /**
      * ลบ Banner
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroyBanner($id)
@@ -213,13 +211,13 @@ class StorefrontSettingsController extends Controller
     /**
      * เปลี่ยนสถานะ Banner
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleBannerStatus($id)
     {
         $banner = StoreBanner::findOrFail($id);
-        $banner->is_active = !$banner->is_active;
+        $banner->is_active = ! $banner->is_active;
         $banner->save();
 
         // ล้าง cache
@@ -235,7 +233,6 @@ class StorefrontSettingsController extends Controller
     /**
      * อัพเดทลำดับ Banners
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function reorderBanners(Request $request)
@@ -263,7 +260,6 @@ class StorefrontSettingsController extends Controller
     /**
      * อัพเดทการตั้งค่าธีมและสี
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateTheme(Request $request)
@@ -290,7 +286,6 @@ class StorefrontSettingsController extends Controller
     /**
      * อัพเดทการตั้งค่าเลย์เอาต์
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateLayout(Request $request)
@@ -322,8 +317,6 @@ class StorefrontSettingsController extends Controller
 
     /**
      * ดึงรายการ Gradient Options
-     *
-     * @return array
      */
     private function getGradientOptions(): array
     {

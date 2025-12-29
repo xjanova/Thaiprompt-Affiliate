@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ViralTrend;
 use App\Models\TrendKeyword;
 use App\Models\TrendSource;
-use App\Services\TrendDetection\ViralTrendDetectionService;
+use App\Models\ViralTrend;
 use App\Services\TrendDetection\KeywordAnalyzerService;
 use App\Services\TrendDetection\TrendContentGeneratorService;
+use App\Services\TrendDetection\ViralTrendDetectionService;
 use Illuminate\Http\Request;
 
 class TrendApiController extends Controller
@@ -257,11 +257,11 @@ class TrendApiController extends Controller
         $stats = [
             'total_trends' => ViralTrend::whereBetween('started_at', [
                 $validated['start_date'],
-                $validated['end_date']
+                $validated['end_date'],
             ])->count(),
             'total_keywords' => TrendKeyword::whereBetween('first_seen_at', [
                 $validated['start_date'],
-                $validated['end_date']
+                $validated['end_date'],
             ])->count(),
         ];
 

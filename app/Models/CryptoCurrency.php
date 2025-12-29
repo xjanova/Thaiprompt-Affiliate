@@ -74,6 +74,7 @@ class CryptoCurrency extends Model
         if (empty($value)) {
             return [];
         }
+
         return is_string($value) ? json_decode($value, true) : $value;
     }
 
@@ -109,7 +110,8 @@ class CryptoCurrency extends Model
         if (empty($this->explorer_url)) {
             return '';
         }
-        return rtrim($this->explorer_url, '/') . $this->explorer_tx_path . $txHash;
+
+        return rtrim($this->explorer_url, '/').$this->explorer_tx_path.$txHash;
     }
 
     /**
@@ -120,7 +122,8 @@ class CryptoCurrency extends Model
         if (empty($this->explorer_url)) {
             return '';
         }
-        return rtrim($this->explorer_url, '/') . $this->explorer_address_path . $address;
+
+        return rtrim($this->explorer_url, '/').$this->explorer_address_path.$address;
     }
 
     /**
@@ -137,6 +140,7 @@ class CryptoCurrency extends Model
     public function getCachedCurrentRate()
     {
         $cacheKey = "crypto_rate_{$this->id}";
+
         return Cache::remember($cacheKey, now()->addMinutes(5), function () {
             return $this->getCurrentRate();
         });
@@ -155,7 +159,7 @@ class CryptoCurrency extends Model
      */
     public function fromWei($weiAmount)
     {
-        return bcdiv($weiAmount, bcpow('10', (string)$this->decimals, 0), $this->decimals);
+        return bcdiv($weiAmount, bcpow('10', (string) $this->decimals, 0), $this->decimals);
     }
 
     /**
@@ -163,7 +167,7 @@ class CryptoCurrency extends Model
      */
     public function toWei($amount)
     {
-        return bcmul($amount, bcpow('10', (string)$this->decimals, 0), 0);
+        return bcmul($amount, bcpow('10', (string) $this->decimals, 0), 0);
     }
 
     // ==================== Relationships ====================

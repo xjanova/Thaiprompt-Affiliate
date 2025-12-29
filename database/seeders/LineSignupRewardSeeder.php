@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\LineSignupReward;
 use App\Models\CouponTemplate;
+use App\Models\LineSignupReward;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
@@ -20,24 +20,24 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * สร้างข้อมูลตัวอย่างสำหรับระบบรางวัลการสมัครสมาชิก
-     *
-     * @return void
      */
     public function run(): void
     {
         $this->command->info('🌱 กำลัง seed รางวัลการสมัครสมาชิก...');
 
         // ⚠️ ตรวจสอบว่าตารางมีอยู่หรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             $this->command->warn('⚠️  ตาราง line_signup_rewards ยังไม่มี - ข้าม seeder นี้');
             $this->command->warn('   กรุณารัน: php artisan migrate ก่อน');
+
             return;
         }
 
         // ⚠️ ตรวจสอบว่า schema ถูกต้อง (มี signup_type column)
-        if (!Schema::hasColumn('line_signup_rewards', 'signup_type')) {
+        if (! Schema::hasColumn('line_signup_rewards', 'signup_type')) {
             $this->command->warn('⚠️  ตาราง line_signup_rewards มี schema เก่า - ข้าม seeder นี้');
             $this->command->warn('   กรุณารัน: php artisan migrate:refresh หรือ migrate:fresh');
+
             return;
         }
 
@@ -61,8 +61,6 @@ class LineSignupRewardSeeder extends Seeder
      *
      * Columns พิเศษควรอยู่ใน `line_signup_reward_claims` ไม่ใช่ `line_signup_rewards`
      * Template table ควรเก็บเฉพาณข้อมูลการกำหนดรางวัล ไม่ใช่ข้อมูลการรับรางวัล
-     *
-     * @return void
      */
     protected function cleanupExtraColumns(): void
     {
@@ -109,9 +107,6 @@ class LineSignupRewardSeeder extends Seeder
      *
      * ใช้ raw SQL เพื่อตรวจสอบว่า index มีอยู่ก่อนลบ
      * เพราะ Schema::table() ไม่รองรับ try-catch สำหรับ dropIndex
-     *
-     * @param Blueprint $table
-     * @return void
      */
     protected function dropRelatedIndexes(Blueprint $table): void
     {
@@ -121,8 +116,6 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * ลบ indexes อย่างปลอดภัย (เรียกแยกจาก Schema::table)
-     *
-     * @return void
      */
     protected function dropIndexesSafely(): void
     {
@@ -161,28 +154,23 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * ดึงรายการ indexes ที่มีอยู่ในตาราง
-     *
-     * @param string $tableName
-     * @return array
      */
     protected function getExistingIndexes(string $tableName): array
     {
         $database = config('database.connections.mysql.database');
 
-        $indexes = \DB::select("
+        $indexes = \DB::select('
             SELECT DISTINCT INDEX_NAME
             FROM information_schema.STATISTICS
             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-        ", [$database, $tableName]);
+        ', [$database, $tableName]);
 
-        return array_map(fn($index) => $index->INDEX_NAME, $indexes);
+        return array_map(fn ($index) => $index->INDEX_NAME, $indexes);
     }
 
     /**
      * ลบ foreign keys ที่เกี่ยวข้องกับ columns พิเศษ (legacy - ไม่ใช้แล้ว)
      *
-     * @param Blueprint $table
-     * @return void
      * @deprecated ใช้ dropForeignKeysSafely() แทน
      */
     protected function dropRelatedForeignKeys(Blueprint $table): void
@@ -193,8 +181,6 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * ลบ foreign keys อย่างปลอดภัย (เรียกแยกจาก Schema::table)
-     *
-     * @return void
      */
     protected function dropForeignKeysSafely(): void
     {
@@ -219,9 +205,6 @@ class LineSignupRewardSeeder extends Seeder
 
     /**
      * ดึงรายการ foreign keys ที่มีอยู่ในตาราง
-     *
-     * @param string $tableName
-     * @return array
      */
     protected function getExistingForeignKeys(string $tableName): array
     {
@@ -235,15 +218,13 @@ class LineSignupRewardSeeder extends Seeder
               AND CONSTRAINT_TYPE = 'FOREIGN KEY'
         ", [$database, $tableName]);
 
-        return array_map(fn($fk) => $fk->CONSTRAINT_NAME, $fks);
+        return array_map(fn ($fk) => $fk->CONSTRAINT_NAME, $fks);
     }
 
     /**
      * ตรวจหา columns พิเศษที่ไม่ควรมีใน template table
      *
      * เช็คโดยเปรียบเทียบกับ schema ที่ควรจะเป็น (ตาม migration)
-     *
-     * @return void
      */
     protected function detectExtraColumns(): void
     {

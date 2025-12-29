@@ -97,22 +97,25 @@ class VideoWatchSession extends Model
             // ต้องมี heartbeat อย่างน้อย 3 ครั้ง
             $this->is_valid = false;
             $this->save();
+
             return false;
         }
 
         // ตรวจสอบความต่อเนื่องของเวลา
         for ($i = 1; $i < count($heartbeats); $i++) {
-            $timeDiff = strtotime($heartbeats[$i]['time']) - strtotime($heartbeats[$i-1]['time']);
+            $timeDiff = strtotime($heartbeats[$i]['time']) - strtotime($heartbeats[$i - 1]['time']);
             // ถ้าห่างกันเกิน 30 วินาที อาจเป็นการโกง
             if ($timeDiff > 30) {
                 $this->is_valid = false;
                 $this->save();
+
                 return false;
             }
         }
 
         $this->is_valid = true;
         $this->save();
+
         return true;
     }
 }

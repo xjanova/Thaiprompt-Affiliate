@@ -57,6 +57,7 @@ class AiGenProvider extends Model
     public function getConfig(string $key, $default = null)
     {
         $config = $this->configs()->where('config_key', $key)->first();
+
         return $config ? $config->config_value : $default;
     }
 

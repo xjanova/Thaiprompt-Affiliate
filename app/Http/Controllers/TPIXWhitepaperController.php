@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -14,8 +13,6 @@ class TPIXWhitepaperController extends Controller
 {
     /**
      * แสดงหน้าไวท์เปเปอร์
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -30,8 +27,6 @@ class TPIXWhitepaperController extends Controller
 
     /**
      * แสดงหน้า PDF (สำหรับ Print to PDF)
-     *
-     * @return \Illuminate\View\View
      */
     public function exportPdf(): View
     {
@@ -46,8 +41,6 @@ class TPIXWhitepaperController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับไวท์เปเปอร์
-     *
-     * @return array
      */
     private function getWhitepaperData(): array
     {

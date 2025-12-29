@@ -5,7 +5,6 @@ namespace App\Services\TrendDetection;
 use App\Models\TrendData;
 use App\Models\TrendKeyword;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class KeywordAnalyzerService
 {
@@ -16,6 +15,7 @@ class KeywordAnalyzerService
     ];
 
     protected int $minKeywordLength = 2;
+
     protected int $maxKeywordLength = 50;
 
     /**
@@ -163,7 +163,7 @@ class KeywordAnalyzerService
 
                 // Attach to trend data with weight
                 $trendData->keywords()->syncWithoutDetaching([
-                    $keyword->id => ['weight' => $item['weight']]
+                    $keyword->id => ['weight' => $item['weight']],
                 ]);
 
                 $extractedKeywords[] = $item['keyword'];

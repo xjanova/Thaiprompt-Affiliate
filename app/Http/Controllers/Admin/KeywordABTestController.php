@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\KeywordABTest;
 use App\Models\KeywordABTestResult;
-use App\Models\KeywordABTestVariant;
 use App\Models\LineBotKeyword;
 use App\Services\KeywordABTestService;
 use Illuminate\Http\JsonResponse;
@@ -25,9 +24,6 @@ class KeywordABTestController extends Controller
 
     /**
      * แสดง A/B tests dashboard
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -65,9 +61,6 @@ class KeywordABTestController extends Controller
 
     /**
      * แสดงหน้าสร้าง A/B test ใหม่
-     *
-     * @param Request $request
-     * @return View
      */
     public function create(Request $request): View
     {
@@ -91,7 +84,6 @@ class KeywordABTestController extends Controller
     /**
      * บันทึก A/B test ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -126,9 +118,6 @@ class KeywordABTestController extends Controller
 
     /**
      * แสดงรายละเอียด A/B test
-     *
-     * @param KeywordABTest $test
-     * @return View
      */
     public function show(KeywordABTest $test): View
     {
@@ -163,9 +152,6 @@ class KeywordABTestController extends Controller
 
     /**
      * แสดงหน้าแก้ไข A/B test
-     *
-     * @param KeywordABTest $test
-     * @return View
      */
     public function edit(KeywordABTest $test): View
     {
@@ -185,8 +171,6 @@ class KeywordABTestController extends Controller
     /**
      * อัพเดท A/B test
      *
-     * @param Request $request
-     * @param KeywordABTest $test
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, KeywordABTest $test)
@@ -206,9 +190,6 @@ class KeywordABTestController extends Controller
 
     /**
      * เริ่มทดสอบ
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function start(KeywordABTest $test): JsonResponse
     {
@@ -230,10 +211,6 @@ class KeywordABTestController extends Controller
 
     /**
      * หยุดทดสอบชั่วคราว
-     *
-     * @param Request $request
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function pause(Request $request, KeywordABTest $test): JsonResponse
     {
@@ -256,9 +233,6 @@ class KeywordABTestController extends Controller
 
     /**
      * จบการทดสอบ
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function complete(KeywordABTest $test): JsonResponse
     {
@@ -280,9 +254,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ยกเลิกการทดสอบ
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function cancel(KeywordABTest $test): JsonResponse
     {
@@ -307,9 +278,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ได้ JSON list tests
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function listJson(Request $request): JsonResponse
     {
@@ -330,8 +298,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ได้ A/B test statistics
-     *
-     * @return JsonResponse
      */
     public function statistics(): JsonResponse
     {
@@ -345,8 +311,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ได้ recommendations
-     *
-     * @return JsonResponse
      */
     public function recommendations(): JsonResponse
     {
@@ -360,9 +324,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ได้ chart data สำหรับ variant comparison
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function chartData(KeywordABTest $test): JsonResponse
     {
@@ -394,9 +355,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ได้ timeline chart data
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function timelineData(KeywordABTest $test): JsonResponse
     {
@@ -411,7 +369,7 @@ class KeywordABTestController extends Controller
         $dates = [];
 
         foreach ($timeline as $item) {
-            if (!in_array($item->date, $dates)) {
+            if (! in_array($item->date, $dates)) {
                 $dates[] = $item->date;
             }
 
@@ -432,13 +390,10 @@ class KeywordABTestController extends Controller
 
     /**
      * Apply winner variant ให้เป็น keyword หลัก
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function applyWinner(KeywordABTest $test): JsonResponse
     {
-        if (!$test->winner || $test->status !== 'completed') {
+        if (! $test->winner || $test->status !== 'completed') {
             return response()->json([
                 'success' => false,
                 'message' => 'สามารถนำไปใช้ได้เฉพาะ tests ที่จบแล้วและมี winner',
@@ -463,9 +418,6 @@ class KeywordABTestController extends Controller
 
     /**
      * ลบ A/B test
-     *
-     * @param KeywordABTest $test
-     * @return JsonResponse
      */
     public function destroy(KeywordABTest $test): JsonResponse
     {

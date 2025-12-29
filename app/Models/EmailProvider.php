@@ -90,7 +90,7 @@ class EmailProvider extends Model
      */
     public function hasReachedDailyLimit(): bool
     {
-        if (!$this->daily_limit) {
+        if (! $this->daily_limit) {
             return false;
         }
 
@@ -104,7 +104,7 @@ class EmailProvider extends Model
      */
     public function hasReachedHourlyLimit(): bool
     {
-        if (!$this->hourly_limit) {
+        if (! $this->hourly_limit) {
             return false;
         }
 
@@ -119,8 +119,8 @@ class EmailProvider extends Model
     public function canSend(): bool
     {
         return $this->is_active
-            && !$this->hasReachedDailyLimit()
-            && !$this->hasReachedHourlyLimit();
+            && ! $this->hasReachedDailyLimit()
+            && ! $this->hasReachedHourlyLimit();
     }
 
     /**

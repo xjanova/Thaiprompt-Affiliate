@@ -82,8 +82,6 @@ class MobileAuthToken extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -92,8 +90,6 @@ class MobileAuthToken extends Model
 
     /**
      * ตรวจสอบว่า login_token หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isLoginTokenExpired(): bool
     {
@@ -102,21 +98,18 @@ class MobileAuthToken extends Model
 
     /**
      * ตรวจสอบว่า auth_code หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isAuthCodeExpired(): bool
     {
-        if (!$this->auth_code_expires_at) {
+        if (! $this->auth_code_expires_at) {
             return true;
         }
+
         return $this->auth_code_expires_at < now();
     }
 
     /**
      * ตรวจสอบว่าถูกใช้แล้วหรือยัง
-     *
-     * @return bool
      */
     public function isUsed(): bool
     {

@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration สำหรับเพิ่ม permissions ครอบคลุมทุก modules ในระบบ Admin
@@ -17,8 +16,6 @@ return new class extends Migration
      * Run the migrations.
      *
      * เพิ่ม permissions ใหม่สำหรับทุก modules
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -299,7 +296,7 @@ return new class extends Migration
                 ->where('name', $permission['name'])
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 DB::table('permissions')->insert([
                     'name' => $permission['name'],
                     'display_name' => $permission['display_name'],
@@ -321,7 +318,7 @@ return new class extends Migration
                 ->toArray();
 
             foreach ($allPermissions as $permissionId) {
-                if (!in_array($permissionId, $existingPermissions)) {
+                if (! in_array($permissionId, $existingPermissions)) {
                     DB::table('role_permissions')->insert([
                         'role_id' => $superAdminRole->id,
                         'permission_id' => $permissionId,
@@ -370,7 +367,7 @@ return new class extends Migration
                         ->where('permission_id', $permission->id)
                         ->exists();
 
-                    if (!$exists) {
+                    if (! $exists) {
                         DB::table('role_permissions')->insert([
                             'role_id' => $adminRole->id,
                             'permission_id' => $permission->id,
@@ -387,8 +384,6 @@ return new class extends Migration
      * Reverse the migrations.
      *
      * ลบ permissions ที่เพิ่มใหม่
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_prospects มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_prospects')) {
+        if (! Schema::hasTable('mlm_prospects')) {
             return;
         }
 

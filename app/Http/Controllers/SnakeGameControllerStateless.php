@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
@@ -16,7 +16,9 @@ class SnakeGameControllerStateless extends Controller
 {
     // In-memory storage (จะหายเมื่อ restart server)
     private static array $rooms = [];
+
     private static array $players = [];
+
     private static array $items = [];
 
     /**
@@ -31,10 +33,10 @@ class SnakeGameControllerStateless extends Controller
 
         // สร้าง room ID ง่ายๆ
         $roomId = 1;
-        if (!isset(self::$rooms[$roomId])) {
+        if (! isset(self::$rooms[$roomId])) {
             self::$rooms[$roomId] = [
                 'id' => $roomId,
-                'code' => 'ROOM-' . strtoupper(Str::random(5)),
+                'code' => 'ROOM-'.strtoupper(Str::random(5)),
                 'player_count' => 0,
                 'status' => 'waiting',
             ];
@@ -93,7 +95,7 @@ class SnakeGameControllerStateless extends Controller
     {
         $playerId = $request->input('player_id');
 
-        if (!isset(self::$players[$playerId])) {
+        if (! isset(self::$players[$playerId])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Player not found',
@@ -141,7 +143,7 @@ class SnakeGameControllerStateless extends Controller
      */
     public function getRoomState(int $roomId): JsonResponse
     {
-        $roomPlayers = array_filter(self::$players, fn($p) => $p['room_id'] == $roomId);
+        $roomPlayers = array_filter(self::$players, fn ($p) => $p['room_id'] == $roomId);
 
         return response()->json([
             'success' => true,
@@ -171,7 +173,7 @@ class SnakeGameControllerStateless extends Controller
         // ตรวจสอบว่า user login หรือไม่
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => true,
                 'authenticated' => false,
@@ -202,9 +204,6 @@ class SnakeGameControllerStateless extends Controller
 
     /**
      * บันทึก skin preference ของสมาชิก
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSkinPreference(Request $request): JsonResponse
     {
@@ -214,7 +213,7 @@ class SnakeGameControllerStateless extends Controller
             ]);
 
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'กรุณาเข้าสู่ระบบก่อน',
@@ -245,22 +244,19 @@ class SnakeGameControllerStateless extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึง skin preference ของสมาชิก
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSkinPreference(Request $request): JsonResponse
     {
         try {
             $user = $request->user();
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'กรุณาเข้าสู่ระบบก่อน',
@@ -283,7 +279,7 @@ class SnakeGameControllerStateless extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'skin' => 'classic', // default
             ], 500);
         }

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // สร้างตาราง leaderboard_seasons
-        if (!Schema::hasTable('leaderboard_seasons')) {
+        if (! Schema::hasTable('leaderboard_seasons')) {
             Schema::create('leaderboard_seasons', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('game_id')->constrained()->onDelete('cascade');
@@ -32,7 +32,7 @@ return new class extends Migration
         }
 
         // Add season_id to game_leaderboards ถ้าตาราง game_leaderboards มีอยู่
-        if (Schema::hasTable('game_leaderboards') && !Schema::hasColumn('game_leaderboards', 'season_id')) {
+        if (Schema::hasTable('game_leaderboards') && ! Schema::hasColumn('game_leaderboards', 'season_id')) {
             Schema::table('game_leaderboards', function (Blueprint $table) {
                 $table->foreignId('season_id')->nullable()->after('game_id')
                     ->constrained('leaderboard_seasons')->onDelete('set null');

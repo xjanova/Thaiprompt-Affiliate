@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง software_licenses
      *
      * เก็บข้อมูล License Keys สำหรับซอฟต์แวร์ที่ซื้อ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -90,8 +88,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง software_licenses
-     *
-     * @return void
      */
     public function down(): void
     {

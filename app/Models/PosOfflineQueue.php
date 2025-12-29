@@ -70,13 +70,13 @@ class PosOfflineQueue extends Model
     public function scopeByPriority($query)
     {
         return $query->orderBy('priority', 'desc')
-                     ->orderBy('created_at', 'asc');
+            ->orderBy('created_at', 'asc');
     }
 
     public function scopeRetryable($query)
     {
         return $query->where('status', 'failed')
-                     ->whereColumn('retry_count', '<', 'max_retries');
+            ->whereColumn('retry_count', '<', 'max_retries');
     }
 
     /**
@@ -134,7 +134,7 @@ class PosOfflineQueue extends Model
 
     public function retry(): void
     {
-        if (!$this->canRetry()) {
+        if (! $this->canRetry()) {
             throw new \Exception('Queue item cannot be retried');
         }
 
@@ -159,12 +159,14 @@ class PosOfflineQueue extends Model
 
             if ($result) {
                 $this->markAsCompleted();
+
                 return true;
             }
 
             throw new \Exception('Processing failed');
         } catch (\Exception $e) {
             $this->markAsFailed($e->getMessage());
+
             return false;
         }
     }

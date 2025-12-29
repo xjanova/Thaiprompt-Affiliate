@@ -49,7 +49,7 @@ class InstallmentPayment extends Model
 
         static::creating(function ($payment) {
             if (empty($payment->payment_number)) {
-                $payment->payment_number = 'PMT-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $payment->payment_number = 'PMT-'.date('Ymd').'-'.strtoupper(\Illuminate\Support\Str::random(6));
             }
         });
     }
@@ -65,7 +65,7 @@ class InstallmentPayment extends Model
     /**
      * Mark as paid
      */
-    public function markAsPaid(float $amount, string $paymentMethod, string $reference = null, string $note = null): void
+    public function markAsPaid(float $amount, string $paymentMethod, ?string $reference = null, ?string $note = null): void
     {
         $this->paid_amount = $amount;
         $this->payment_method = $paymentMethod;

@@ -13,8 +13,6 @@ return new class extends Migration
      * - เก็บ token สำหรับแชร์ลิงก์เชิญ
      * - ติดตามจำนวนครั้งที่ใช้งาน
      * - รองรับ referral system
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -60,8 +58,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_invitations
-     *
-     * @return void
      */
     public function down(): void
     {

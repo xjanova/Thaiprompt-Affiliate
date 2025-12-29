@@ -23,13 +23,11 @@ return new class extends Migration
 {
     /**
      * สร้างตารางระบบ Membership Retention ที่หายไป
-     *
-     * @return void
      */
     public function up(): void
     {
         // 1. ตาราง membership_retention_status - เก็บสถานะการรักษายอดของสมาชิก
-        if (!Schema::hasTable('membership_retention_status')) {
+        if (! Schema::hasTable('membership_retention_status')) {
             Schema::create('membership_retention_status', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')
@@ -51,7 +49,7 @@ return new class extends Migration
         }
 
         // 2. ตาราง membership_retention_transactions - รายการซื้อขายที่นับเข้าระบบรักษายอด
-        if (!Schema::hasTable('membership_retention_transactions')) {
+        if (! Schema::hasTable('membership_retention_transactions')) {
             Schema::create('membership_retention_transactions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')
@@ -76,7 +74,7 @@ return new class extends Migration
         }
 
         // 3. ตาราง membership_retention_repairs - การซื้อซ่อมสิทธิ์
-        if (!Schema::hasTable('membership_retention_repairs')) {
+        if (! Schema::hasTable('membership_retention_repairs')) {
             Schema::create('membership_retention_repairs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')
@@ -96,7 +94,7 @@ return new class extends Migration
         }
 
         // 4. ตาราง membership_retention_advance_renewals - การเติมวันล่วงหน้า
-        if (!Schema::hasTable('membership_retention_advance_renewals')) {
+        if (! Schema::hasTable('membership_retention_advance_renewals')) {
             Schema::create('membership_retention_advance_renewals', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')
@@ -117,7 +115,7 @@ return new class extends Migration
         }
 
         // 5. ตาราง membership_retention_settings - การตั้งค่าระบบ
-        if (!Schema::hasTable('membership_retention_settings')) {
+        if (! Schema::hasTable('membership_retention_settings')) {
             Schema::create('membership_retention_settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('key')->unique();
@@ -191,8 +189,6 @@ return new class extends Migration
 
     /**
      * ลบตารางระบบ Membership Retention
-     *
-     * @return void
      */
     public function down(): void
     {

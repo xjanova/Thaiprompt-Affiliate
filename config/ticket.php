@@ -15,7 +15,7 @@ return [
         'max_files_per_reply' => 5,
         'allowed_extensions' => [
             'jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx',
-            'xls', 'xlsx', 'txt', 'zip', 'rar'
+            'xls', 'xlsx', 'txt', 'zip', 'rar',
         ],
         'storage_disk' => 'public',
         'storage_path' => 'tickets/attachments',

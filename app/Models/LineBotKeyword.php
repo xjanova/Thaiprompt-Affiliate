@@ -18,7 +18,6 @@ class LineBotKeyword extends Model
      * - response_text: 'สำหรับการคืนเงิน...'
      * - response_type: 'text' | 'flex_message' | 'quick_reply'
      */
-
     protected $fillable = [
         'keyword',                  // ชื่อ keyword (unique)
         'description',              // คำอธิบาย keyword

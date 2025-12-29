@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 class AccountingContact extends Model
 {
@@ -62,7 +61,7 @@ class AccountingContact extends Model
         $prefix = $type === 'customer' ? 'CUS' : ($type === 'vendor' ? 'VEN' : 'CON');
         $count = self::where('user_id', $userId)->where('type', $type)->count() + 1;
 
-        return $prefix . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 
     /**

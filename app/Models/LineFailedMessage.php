@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
 
 /**
  * LINE Failed Message Model
@@ -44,20 +44,30 @@ class LineFailedMessage extends Model
      * สถานะต่างๆ ของข้อความ
      */
     const STATUS_PENDING = 'pending';      // รอการ retry
+
     const STATUS_RETRYING = 'retrying';    // กำลัง retry
+
     const STATUS_SUCCEEDED = 'succeeded';  // ส่งสำเร็จแล้ว
+
     const STATUS_FAILED = 'failed';        // ล้มเหลว (แต่จะ retry ต่อ)
+
     const STATUS_ABANDONED = 'abandoned';  // ยกเลิกแล้ว (retry เกินจำนวนครั้ง)
 
     /**
      * ประเภทของ Error
      */
     const ERROR_TYPE_NETWORK = 'network';           // ปัญหาเครือข่าย
+
     const ERROR_TYPE_RATE_LIMIT = 'rate_limit';     // เกิน rate limit
+
     const ERROR_TYPE_TIMEOUT = 'timeout';           // Timeout
+
     const ERROR_TYPE_INVALID_TOKEN = 'invalid_token'; // Token ไม่ถูกต้อง
+
     const ERROR_TYPE_USER_NOT_FOUND = 'user_not_found'; // ไม่พบ user
+
     const ERROR_TYPE_BLOCKED = 'blocked';           // User บล็อกบอท
+
     const ERROR_TYPE_UNKNOWN = 'unknown';           // ไม่ทราบสาเหตุ
 
     /**
@@ -101,8 +111,6 @@ class LineFailedMessage extends Model
 
     /**
      * ความสัมพันธ์กับ LineErrorLog
-     *
-     * @return HasMany
      */
     public function errorLogs(): HasMany
     {
@@ -112,7 +120,7 @@ class LineFailedMessage extends Model
     /**
      * Scope: ดึงข้อความที่รอการ retry
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePendingRetry($query)
@@ -128,7 +136,7 @@ class LineFailedMessage extends Model
     /**
      * Scope: ดึงข้อความที่ล้มเหลว (รวมถึงที่จะ retry)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -139,7 +147,7 @@ class LineFailedMessage extends Model
     /**
      * Scope: ดึงข้อความที่ยกเลิกแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAbandoned($query)
@@ -150,8 +158,7 @@ class LineFailedMessage extends Model
     /**
      * Scope: ดึงข้อความของ user คนใดคนหนึ่ง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $lineUserId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, string $lineUserId)
@@ -161,8 +168,6 @@ class LineFailedMessage extends Model
 
     /**
      * ตรวจสอบว่าควร retry หรือไม่
-     *
-     * @return bool
      */
     public function shouldRetry(): bool
     {
@@ -186,8 +191,6 @@ class LineFailedMessage extends Model
 
     /**
      * คำนวณเวลา retry ครั้งถัดไป (Exponential Backoff)
-     *
-     * @return Carbon
      */
     public function calculateNextRetryTime(): Carbon
     {
@@ -200,8 +203,6 @@ class LineFailedMessage extends Model
 
     /**
      * เพิ่มจำนวนครั้งการ retry
-     *
-     * @return void
      */
     public function incrementRetryCount(): void
     {
@@ -214,8 +215,6 @@ class LineFailedMessage extends Model
 
     /**
      * ทำเครื่องหมายว่าส่งสำเร็จ
-     *
-     * @return void
      */
     public function markAsSucceeded(): void
     {
@@ -226,8 +225,6 @@ class LineFailedMessage extends Model
 
     /**
      * ทำเครื่องหมายว่ายกเลิก (retry เกินจำนวนครั้ง)
-     *
-     * @return void
      */
     public function markAsAbandoned(): void
     {
@@ -238,11 +235,6 @@ class LineFailedMessage extends Model
 
     /**
      * บันทึก error ที่เกิดขึ้น
-     *
-     * @param string $errorType
-     * @param string $errorMessage
-     * @param array|null $errorContext
-     * @return void
      */
     public function recordError(string $errorType, string $errorMessage, ?array $errorContext = null): void
     {
@@ -254,13 +246,6 @@ class LineFailedMessage extends Model
 
     /**
      * สร้าง failed message จาก exception
-     *
-     * @param string $lineUserId
-     * @param string $messageType
-     * @param array $messagePayload
-     * @param \Exception $exception
-     * @param int $maxRetries
-     * @return self
      */
     public static function createFromException(
         string $lineUserId,
@@ -289,9 +274,6 @@ class LineFailedMessage extends Model
 
     /**
      * จำแนกประเภท exception
-     *
-     * @param \Exception $exception
-     * @return string
      */
     protected static function classifyException(\Exception $exception): string
     {

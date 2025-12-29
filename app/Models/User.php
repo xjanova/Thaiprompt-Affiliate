@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * ฟิลด์ที่อนุญาตให้ mass assignment (ปลอดภัย)
@@ -133,8 +133,6 @@ class User extends Authenticatable
     /**
      * Avatar accessor สำหรับ Mobile App compatibility
      * เป็น alias ของ profile_picture เพื่อให้ใช้งานกับ Mobile App ได้
-     *
-     * @return string|null
      */
     public function getAvatarAttribute(): ?string
     {
@@ -144,9 +142,6 @@ class User extends Authenticatable
     /**
      * Avatar mutator สำหรับ Mobile App compatibility
      * เมื่อ set avatar จะ save ไปที่ profile_picture
-     *
-     * @param string|null $value
-     * @return void
      */
     public function setAvatarAttribute(?string $value): void
     {
@@ -172,19 +167,22 @@ class User extends Authenticatable
             if (file_exists(public_path($path))) {
                 // Add cache busting using file modification time
                 $timestamp = filemtime(public_path($path));
-                return asset($path) . '?v=' . $timestamp;
+
+                return asset($path).'?v='.$timestamp;
             }
 
             // If path doesn't work, try with storage prefix
-            $storagePath = 'storage/' . $path;
+            $storagePath = 'storage/'.$path;
             if (file_exists(public_path($storagePath))) {
                 $timestamp = filemtime(public_path($storagePath));
-                return asset($storagePath) . '?v=' . $timestamp;
+
+                return asset($storagePath).'?v='.$timestamp;
             }
         }
 
         // Priority 3: Return default avatar based on first letter of name
         $initial = strtoupper(substr($this->name, 0, 1));
+
         return "https://ui-avatars.com/api/?name={$initial}&background=random&color=fff&size=200";
     }
 
@@ -575,6 +573,7 @@ class User extends Authenticatable
 
         // ถ้า kyc_status ยังไม่ถูก sync ให้ตรวจสอบจาก KycVerification record
         $latestKyc = $this->latestKycVerification;
+
         return $latestKyc && $latestKyc->status === 'approved';
     }
 
@@ -592,6 +591,7 @@ class User extends Authenticatable
 
         // ถ้า kyc_status ยังไม่ถูก sync ให้ตรวจสอบจาก KycVerification record
         $latestKyc = $this->latestKycVerification;
+
         return $latestKyc && $latestKyc->status === 'pending';
     }
 
@@ -640,17 +640,18 @@ class User extends Authenticatable
      */
     public function getNextRankProgressAttribute()
     {
-        if (!$this->currentRank) {
+        if (! $this->currentRank) {
             // Get default rank
             $defaultRank = Rank::where('is_default', true)->first();
             if ($defaultRank) {
                 return $this->rankProgress()->where('target_rank_id', $defaultRank->id)->first();
             }
+
             return null;
         }
 
         $nextRank = $this->currentRank->next_rank;
-        if (!$nextRank) {
+        if (! $nextRank) {
             return null;
         }
 
@@ -674,6 +675,7 @@ class User extends Authenticatable
 
         // Fallback to old permissions array for backward compatibility
         $permissions = $this->permissions ?? [];
+
         return in_array($permission, $permissions);
     }
 
@@ -687,6 +689,7 @@ class User extends Authenticatable
                 return true;
             }
         }
+
         return false;
     }
 
@@ -696,7 +699,7 @@ class User extends Authenticatable
     public function grantPermission(string $permission): void
     {
         $permissions = $this->permissions ?? [];
-        if (!in_array($permission, $permissions)) {
+        if (! in_array($permission, $permissions)) {
             $permissions[] = $permission;
             $this->permissions = $permissions;
             $this->save();
@@ -709,7 +712,7 @@ class User extends Authenticatable
     public function revokePermission(string $permission): void
     {
         $permissions = $this->permissions ?? [];
-        $permissions = array_filter($permissions, fn($p) => $p !== $permission);
+        $permissions = array_filter($permissions, fn ($p) => $p !== $permission);
         $this->permissions = array_values($permissions);
         $this->save();
     }
@@ -771,7 +774,7 @@ class User extends Authenticatable
         }
 
         // Fallback to old role field
-        return match($this->role) {
+        return match ($this->role) {
             'user' => 'ผู้ใช้ทั่วไป',
             'seller' => 'ผู้ขาย',
             'admin' => 'ผู้ดูแลระบบ',
@@ -783,8 +786,7 @@ class User extends Authenticatable
     /**
      * Check if user has a specific role or one of multiple roles
      *
-     * @param string|array $roles Role name(s) to check
-     * @return bool
+     * @param  string|array  $roles  Role name(s) to check
      */
     public function hasRole($roles): bool
     {
@@ -819,12 +821,12 @@ class User extends Authenticatable
      */
     public function checkRankEligibility(): ?array
     {
-        if (!$this->currentRank) {
+        if (! $this->currentRank) {
             return null;
         }
 
         $nextRank = $this->currentRank->next_rank;
-        if (!$nextRank) {
+        if (! $nextRank) {
             return null;
         }
 
@@ -1098,8 +1100,6 @@ class User extends Authenticatable
 
     /**
      * ตรวจสอบว่า user เป็น service provider ที่อนุมัติแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isApprovedProvider(): bool
     {
@@ -1197,12 +1197,12 @@ class User extends Authenticatable
         }
 
         // Generate member number with padding
-        $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+        $memberNumber = $prefix.str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
 
         // Ensure uniqueness
         while (static::where('member_number', $memberNumber)->exists()) {
             $nextNumber++;
-            $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+            $memberNumber = $prefix.str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
         }
 
         return $memberNumber;
@@ -1256,8 +1256,7 @@ class User extends Authenticatable
      * ⚠️ LOCK THEME TO ARROW-X ONLY
      * บังคับให้ค่าเป็น 'arrow-x' เสมอ ไม่ว่าจะพยายามตั้งเป็นอะไร
      *
-     * @param string $value
-     * @return void
+     * @param  string  $value
      */
     public function setMenuThemePreferenceAttribute($value): void
     {
@@ -1272,7 +1271,7 @@ class User extends Authenticatable
                 'user_id' => $this->id ?? 'new',
                 'attempted_value' => $value,
                 'forced_value' => 'arrow-x',
-                'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)
+                'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5),
             ]);
         }
     }

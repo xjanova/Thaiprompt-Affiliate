@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmGenealogy;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +22,7 @@ class MlmGenealogyService
             $sponsor = MlmMember::find($unilevelSponsorId);
             $binarySponsor = $binarySponsorId ? MlmMember::find($binarySponsorId) : $sponsor;
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 throw new \Exception('Sponsor not found');
             }
 
@@ -34,7 +34,7 @@ class MlmGenealogyService
                 'mlm_plan_id' => $planId,
                 'unilevel_sponsor_id' => $unilevelSponsorId,
                 'unilevel_level' => $sponsor->unilevel_level + 1,
-                'unilevel_path' => $sponsor->unilevel_path . '/' . $sponsor->id,
+                'unilevel_path' => $sponsor->unilevel_path.'/'.$sponsor->id,
                 'binary_sponsor_id' => $binarySponsor->id,
                 'member_code' => MlmMember::generateMemberCode(),
                 'joined_at' => now(),
@@ -107,27 +107,29 @@ class MlmGenealogyService
      */
     protected function placeBinaryMember(MlmMember $member, MlmMember $sponsor, $preferredPosition = null)
     {
-        $binaryService = new MlmBinaryService();
+        $binaryService = new MlmBinaryService;
         $placement = $binaryService->findPlacementPosition($sponsor, $preferredPosition);
 
         // ตรวจสอบว่าหาตำแหน่งได้หรือไม่
-        if (!$placement || !isset($placement['parent_id'])) {
+        if (! $placement || ! isset($placement['parent_id'])) {
             Log::warning('Binary placement failed - no position found', [
                 'member_id' => $member->id,
                 'sponsor_id' => $sponsor->id,
                 'max_depth' => MlmGlobalSetting::get('binary_max_depth'),
                 'max_width' => MlmGlobalSetting::get('binary_max_width', 2),
             ]);
+
             return $member;
         }
 
         $parent = MlmMember::find($placement['parent_id']);
 
-        if (!$parent) {
+        if (! $parent) {
             Log::warning('Binary placement failed - parent not found', [
                 'member_id' => $member->id,
                 'parent_id' => $placement['parent_id'],
             ]);
+
             return $member;
         }
 
@@ -137,7 +139,7 @@ class MlmGenealogyService
         $member->update([
             'binary_parent_id' => $parent->id,
             'binary_position' => $position,
-            'binary_path' => ($parent->binary_path ?? '') . '/' . $position,
+            'binary_path' => ($parent->binary_path ?? '').'/'.$position,
         ]);
 
         // Build binary genealogy
@@ -213,11 +215,13 @@ class MlmGenealogyService
     public function getTreeData(MlmMember $member, $treeType = 'unilevel', $maxDepth = 5)
     {
         if ($treeType === 'binary') {
-            $binaryService = new MlmBinaryService();
+            $binaryService = new MlmBinaryService;
+
             return $binaryService->getBinaryTree($member, $maxDepth);
         }
 
-        $unilevelService = new MlmUnilevelService();
+        $unilevelService = new MlmUnilevelService;
+
         return $unilevelService->getUnilevelTree($member, $maxDepth);
     }
 
@@ -272,8 +276,8 @@ class MlmGenealogyService
      * ดึงข้อมูลสายเลือด (Bloodline) ของสมาชิก
      * แสดงเส้นทางจาก root (บริษัท/สมาชิกแรก) ลงมาถึงสมาชิกที่ระบุ
      *
-     * @param MlmMember $member สมาชิกที่ต้องการดูสายเลือด
-     * @param string $treeType ประเภทผัง ('unilevel' หรือ 'binary')
+     * @param  MlmMember  $member  สมาชิกที่ต้องการดูสายเลือด
+     * @param  string  $treeType  ประเภทผัง ('unilevel' หรือ 'binary')
      * @return array ข้อมูลสายเลือดเป็น tree structure
      */
     public function getBloodlineData(MlmMember $member, $treeType = 'unilevel')

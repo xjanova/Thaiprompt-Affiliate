@@ -13,7 +13,9 @@ class AddressFrozenNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected TPIXToken $token;
+
     protected string $address;
+
     protected string $reason;
 
     public function __construct(TPIXToken $token, string $address, string $reason)
@@ -32,13 +34,13 @@ class AddressFrozenNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Address Frozen - ' . $this->token->symbol)
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line("ที่อยู่ของคุณถูกระงับการใช้งาน")
+            ->subject('Address Frozen - '.$this->token->symbol)
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('ที่อยู่ของคุณถูกระงับการใช้งาน')
             ->line("Token: {$this->token->symbol}")
             ->line("ที่อยู่: {$this->address}")
             ->line("เหตุผล: {$this->reason}")
-            ->line("กรุณาติดต่อ Support หากคุณคิดว่านี่เป็นความผิดพลาด")
+            ->line('กรุณาติดต่อ Support หากคุณคิดว่านี่เป็นความผิดพลาด')
             ->action('ติดต่อ Support', route('support'));
     }
 

@@ -67,7 +67,7 @@ class JobPosting extends Model
 
         static::creating(function ($jobPosting) {
             if (empty($jobPosting->slug)) {
-                $jobPosting->slug = Str::slug($jobPosting->job_title . '-' . Str::random(6));
+                $jobPosting->slug = Str::slug($jobPosting->job_title.'-'.Str::random(6));
             }
         });
     }
@@ -125,16 +125,16 @@ class JobPosting extends Model
      */
     public function getSalaryRangeAttribute()
     {
-        if (!$this->show_salary || (!$this->salary_min && !$this->salary_max)) {
+        if (! $this->show_salary || (! $this->salary_min && ! $this->salary_max)) {
             return 'Negotiable';
         }
 
         if ($this->salary_min && $this->salary_max) {
-            return number_format($this->salary_min, 0) . ' - ' . number_format($this->salary_max, 0) . ' ' . $this->salary_currency;
+            return number_format($this->salary_min, 0).' - '.number_format($this->salary_max, 0).' '.$this->salary_currency;
         } elseif ($this->salary_min) {
-            return 'From ' . number_format($this->salary_min, 0) . ' ' . $this->salary_currency;
+            return 'From '.number_format($this->salary_min, 0).' '.$this->salary_currency;
         } elseif ($this->salary_max) {
-            return 'Up to ' . number_format($this->salary_max, 0) . ' ' . $this->salary_currency;
+            return 'Up to '.number_format($this->salary_max, 0).' '.$this->salary_currency;
         }
 
         return 'Negotiable';
@@ -194,6 +194,6 @@ class JobPosting extends Model
     public function scopePublic($query)
     {
         return $query->where('show_on_website', true)
-                    ->where('status', 'open');
+            ->where('status', 'open');
     }
 }

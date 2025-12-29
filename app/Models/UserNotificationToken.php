@@ -71,8 +71,6 @@ class UserNotificationToken extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -113,8 +111,6 @@ class UserNotificationToken extends Model
 
     /**
      * อัพเดทเวลาใช้งานล่าสุด
-     *
-     * @return void
      */
     public function updateLastUsed(): void
     {
@@ -123,8 +119,6 @@ class UserNotificationToken extends Model
 
     /**
      * ปิดใช้งาน token
-     *
-     * @return void
      */
     public function deactivate(): void
     {
@@ -133,8 +127,6 @@ class UserNotificationToken extends Model
 
     /**
      * เปิดใช้งาน token
-     *
-     * @return void
      */
     public function activate(): void
     {
@@ -143,11 +135,6 @@ class UserNotificationToken extends Model
 
     /**
      * บันทึกหรืออัพเดท token
-     *
-     * @param int $userId
-     * @param string $token
-     * @param array $deviceInfo
-     * @return self
      */
     public static function registerToken(int $userId, string $token, array $deviceInfo = []): self
     {

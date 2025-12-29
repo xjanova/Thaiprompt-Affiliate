@@ -2,13 +2,13 @@
 
 namespace App\Services\Crypto;
 
-use App\Models\User;
-use App\Models\CryptoWallet;
 use App\Models\CryptoAddress;
 use App\Models\CryptoCurrency;
+use App\Models\CryptoWallet;
+use App\Models\User;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Crypt;
 
 /**
  * HD Wallet Service
@@ -37,10 +37,6 @@ class HDWalletService
 
     /**
      * Create or get master wallet for user
-     *
-     * @param User $user
-     * @param array $options
-     * @return CryptoWallet
      */
     public function getOrCreateMasterWallet(User $user, array $options = []): CryptoWallet
     {
@@ -60,10 +56,6 @@ class HDWalletService
 
     /**
      * Create a new master wallet
-     *
-     * @param User $user
-     * @param array $options
-     * @return CryptoWallet
      */
     public function createMasterWallet(User $user, array $options = []): CryptoWallet
     {
@@ -115,14 +107,10 @@ class HDWalletService
 
     /**
      * Derive a new child wallet from master wallet
-     *
-     * @param CryptoWallet $masterWallet
-     * @param array $options
-     * @return CryptoWallet
      */
     public function deriveChildWallet(CryptoWallet $masterWallet, array $options = []): CryptoWallet
     {
-        if (!$masterWallet->is_master_wallet) {
+        if (! $masterWallet->is_master_wallet) {
             throw new \InvalidArgumentException('Wallet must be a master wallet to derive child wallets');
         }
 
@@ -176,10 +164,6 @@ class HDWalletService
 
     /**
      * Generate addresses for child wallet based on master seed
-     *
-     * @param CryptoWallet $childWallet
-     * @param CryptoWallet $masterWallet
-     * @return void
      */
     private function generateAddressesForChildWallet(CryptoWallet $childWallet, CryptoWallet $masterWallet): void
     {
@@ -208,11 +192,6 @@ class HDWalletService
 
     /**
      * Derive address for specific currency from master seed
-     *
-     * @param CryptoWallet $masterWallet
-     * @param CryptoCurrency $currency
-     * @param int $derivationIndex
-     * @return string
      */
     private function deriveAddressForCurrency(
         CryptoWallet $masterWallet,
@@ -225,20 +204,17 @@ class HDWalletService
         $masterSeed = $masterWallet->getDecryptedSeed() ?? $this->getDecryptedMasterSeed($masterWallet);
 
         // Create deterministic address using hash of master seed + derivation index + currency
-        $hash = hash('sha256', $masterSeed . $derivationIndex . $currency->code);
+        $hash = hash('sha256', $masterSeed.$derivationIndex.$currency->code);
 
         return $this->formatAddressForNetwork($hash, $currency->network);
     }
 
     /**
      * Get decrypted master seed from master wallet
-     *
-     * @param CryptoWallet $masterWallet
-     * @return string
      */
     private function getDecryptedMasterSeed(CryptoWallet $masterWallet): string
     {
-        if (!$masterWallet->is_master_wallet || !$masterWallet->master_seed_encrypted) {
+        if (! $masterWallet->is_master_wallet || ! $masterWallet->master_seed_encrypted) {
             throw new \InvalidArgumentException('Not a valid master wallet');
         }
 
@@ -255,10 +231,6 @@ class HDWalletService
 
     /**
      * Format address based on network type
-     *
-     * @param string $hash
-     * @param string $network
-     * @return string
      */
     private function formatAddressForNetwork(string $hash, string $network): string
     {
@@ -267,27 +239,23 @@ class HDWalletService
             case 'bsc':
             case 'polygon':
                 // EVM address format (0x + 40 hex chars)
-                return '0x' . substr($hash, 0, 40);
+                return '0x'.substr($hash, 0, 40);
 
             case 'bitcoin':
                 // Bitcoin address format (simplified)
-                return '1' . substr($hash, 0, 33);
+                return '1'.substr($hash, 0, 33);
 
             case 'tron':
                 // TRON address format
-                return 'T' . substr($hash, 0, 33);
+                return 'T'.substr($hash, 0, 33);
 
             default:
-                return '0x' . substr($hash, 0, 40);
+                return '0x'.substr($hash, 0, 40);
         }
     }
 
     /**
      * Build BIP44 derivation path
-     *
-     * @param CryptoWallet $masterWallet
-     * @param int $accountIndex
-     * @return string
      */
     private function buildDerivationPath(CryptoWallet $masterWallet, int $accountIndex): string
     {
@@ -299,12 +267,11 @@ class HDWalletService
     /**
      * Generate BIP39 mnemonic seed phrase
      *
-     * @param int $wordCount (12, 15, 18, 21, or 24)
-     * @return string
+     * @param  int  $wordCount  (12, 15, 18, 21, or 24)
      */
     private function generateSeedPhrase(int $wordCount = 12): string
     {
-        if (!in_array($wordCount, [12, 15, 18, 21, 24])) {
+        if (! in_array($wordCount, [12, 15, 18, 21, 24])) {
             throw new \InvalidArgumentException('Word count must be 12, 15, 18, 21, or 24');
         }
 
@@ -321,12 +288,11 @@ class HDWalletService
     /**
      * Get all child wallets for a master wallet
      *
-     * @param CryptoWallet $masterWallet
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getChildWallets(CryptoWallet $masterWallet)
     {
-        if (!$masterWallet->is_master_wallet) {
+        if (! $masterWallet->is_master_wallet) {
             throw new \InvalidArgumentException('Wallet must be a master wallet');
         }
 
@@ -337,9 +303,6 @@ class HDWalletService
 
     /**
      * Get master wallet for a child wallet
-     *
-     * @param CryptoWallet $childWallet
-     * @return CryptoWallet|null
      */
     public function getMasterWallet(CryptoWallet $childWallet): ?CryptoWallet
     {
@@ -352,13 +315,10 @@ class HDWalletService
 
     /**
      * Get wallet statistics including child wallets
-     *
-     * @param CryptoWallet $masterWallet
-     * @return array
      */
     public function getMasterWalletStatistics(CryptoWallet $masterWallet): array
     {
-        if (!$masterWallet->is_master_wallet) {
+        if (! $masterWallet->is_master_wallet) {
             throw new \InvalidArgumentException('Wallet must be a master wallet');
         }
 
@@ -385,10 +345,6 @@ class HDWalletService
 
     /**
      * Regenerate address for existing child wallet (in case of address collision)
-     *
-     * @param CryptoWallet $childWallet
-     * @param CryptoCurrency $currency
-     * @return CryptoAddress
      */
     public function regenerateAddress(CryptoWallet $childWallet, CryptoCurrency $currency): CryptoAddress
     {
@@ -397,7 +353,7 @@ class HDWalletService
         }
 
         $masterWallet = $this->getMasterWallet($childWallet);
-        if (!$masterWallet) {
+        if (! $masterWallet) {
             throw new \Exception('Master wallet not found');
         }
 

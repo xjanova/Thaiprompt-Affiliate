@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Google\Cloud\Speech\V1\SpeechClient;
 use Google\Cloud\Speech\V1\RecognitionAudio;
 use Google\Cloud\Speech\V1\RecognitionConfig;
 use Google\Cloud\Speech\V1\RecognitionConfig\AudioEncoding;
+use Google\Cloud\Speech\V1\SpeechClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -47,12 +47,11 @@ class LineVoiceMessageService
     /**
      * Download voice message จาก LINE
      *
-     * @param string $messageId
      * @return array{success: bool, path: string|null, error: string|null}
      */
     public function downloadVoiceMessage(string $messageId): array
     {
-        if (!$this->accessToken) {
+        if (! $this->accessToken) {
             return [
                 'success' => false,
                 'path' => null,
@@ -61,15 +60,15 @@ class LineVoiceMessageService
         }
 
         try {
-            $url = self::LINE_MESSAGE_API . "/{$messageId}/content";
+            $url = self::LINE_MESSAGE_API."/{$messageId}/content";
 
             // Download content from LINE
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Authorization' => 'Bearer '.$this->accessToken,
             ])->get($url);
 
-            if (!$response->successful()) {
-                throw new \Exception("Failed to download voice message: " . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('Failed to download voice message: '.$response->body());
             }
 
             // บันทึกไฟล์ชั่วคราว
@@ -107,16 +106,16 @@ class LineVoiceMessageService
     /**
      * แปลง voice เป็น text ด้วย Google Cloud Speech-to-Text
      *
-     * @param string $audioFilePath
-     * @param string $languageCode (default: 'th-TH')
+     * @param  string  $languageCode  (default: 'th-TH')
      * @return array{success: bool, text: string|null, confidence: float|null, error: string|null}
      */
     public function speechToText(string $audioFilePath, string $languageCode = 'th-TH'): array
     {
         try {
             // ตรวจสอบว่ามี Google Cloud credentials หรือไม่
-            if (!env('GOOGLE_APPLICATION_CREDENTIALS')) {
+            if (! env('GOOGLE_APPLICATION_CREDENTIALS')) {
                 Log::warning('Google Cloud Speech-to-Text not configured, using fallback');
+
                 return $this->fallbackSpeechToText($audioFilePath);
             }
 
@@ -124,17 +123,17 @@ class LineVoiceMessageService
             $convertedPath = $this->convertAudioFormat($audioFilePath);
 
             // สร้าง Speech Client
-            $speechClient = new SpeechClient();
+            $speechClient = new SpeechClient;
 
             // อ่านไฟล์ audio
             $audioContent = file_get_contents($convertedPath);
 
             // สร้าง RecognitionAudio
-            $audio = (new RecognitionAudio())
+            $audio = (new RecognitionAudio)
                 ->setContent($audioContent);
 
             // สร้าง RecognitionConfig
-            $config = (new RecognitionConfig())
+            $config = (new RecognitionConfig)
                 ->setEncoding(AudioEncoding::LINEAR16) // WAV format
                 ->setSampleRateHertz(16000)
                 ->setLanguageCode($languageCode)
@@ -151,7 +150,7 @@ class LineVoiceMessageService
             foreach ($response->getResults() as $result) {
                 $alternatives = $result->getAlternatives();
                 if ($alternatives && count($alternatives) > 0) {
-                    $transcription .= $alternatives[0]->getTranscript() . ' ';
+                    $transcription .= $alternatives[0]->getTranscript().' ';
                     $confidence = max($confidence, $alternatives[0]->getConfidence());
                 }
             }
@@ -168,6 +167,7 @@ class LineVoiceMessageService
 
             if (empty($transcription)) {
                 Log::warning('Speech-to-Text returned empty result');
+
                 return [
                     'success' => false,
                     'text' => null,
@@ -178,7 +178,7 @@ class LineVoiceMessageService
 
             Log::info('Speech-to-Text successful', [
                 'text' => $transcription,
-                'confidence' => round($confidence * 100, 2) . '%',
+                'confidence' => round($confidence * 100, 2).'%',
                 'language' => $languageCode,
             ]);
 
@@ -207,7 +207,6 @@ class LineVoiceMessageService
     /**
      * แปลง audio format จาก m4a เป็น wav (ใช้ FFmpeg)
      *
-     * @param string $inputPath
      * @return string Path ของไฟล์ที่แปลงแล้ว
      *
      * @throws \Exception
@@ -226,6 +225,7 @@ class LineVoiceMessageService
         exec("which {$ffmpegPath}", $output, $returnCode);
         if ($returnCode !== 0) {
             Log::warning('FFmpeg not found, skipping audio conversion');
+
             // ถ้าไม่มี FFmpeg ให้ใช้ไฟล์เดิม (Google Speech API รองรับหลาย format)
             return $inputPath;
         }
@@ -243,7 +243,7 @@ class LineVoiceMessageService
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
-            throw new \Exception('FFmpeg conversion failed: ' . implode("\n", $output));
+            throw new \Exception('FFmpeg conversion failed: '.implode("\n", $output));
         }
 
         Log::info('Audio converted', [
@@ -256,9 +256,6 @@ class LineVoiceMessageService
 
     /**
      * Fallback Speech-to-Text (ถ้าไม่มี Google Cloud)
-     *
-     * @param string $audioFilePath
-     * @return array
      */
     protected function fallbackSpeechToText(string $audioFilePath): array
     {
@@ -279,8 +276,6 @@ class LineVoiceMessageService
     /**
      * ประมวลผล voice message ทั้งหมด (download + speech-to-text)
      *
-     * @param string $messageId
-     * @param string $languageCode
      * @return array{success: bool, text: string|null, confidence: float|null, error: string|null}
      */
     public function processVoiceMessage(string $messageId, string $languageCode = 'th-TH'): array
@@ -288,12 +283,12 @@ class LineVoiceMessageService
         // Step 1: Download voice message
         $downloadResult = $this->downloadVoiceMessage($messageId);
 
-        if (!$downloadResult['success']) {
+        if (! $downloadResult['success']) {
             return [
                 'success' => false,
                 'text' => null,
                 'confidence' => null,
-                'error' => 'Download failed: ' . $downloadResult['error'],
+                'error' => 'Download failed: '.$downloadResult['error'],
             ];
         }
 

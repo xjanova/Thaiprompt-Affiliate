@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง provinces สำหรับจังหวัดในประเทศไทย
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -55,8 +53,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง provinces
-     *
-     * @return void
      */
     public function down(): void
     {

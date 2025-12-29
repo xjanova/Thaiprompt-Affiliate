@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Admin\BotAutomation;
 
 use App\Http\Controllers\Controller;
-use App\Models\BotAutomation\BotSalesLead;
 use App\Models\BotAutomation\BotSalesConversion;
-use App\Models\BotAutomation\BotSalesPipeline;
+use App\Models\BotAutomation\BotSalesLead;
 use Illuminate\Http\Request;
 
 class BotSalesController extends Controller
@@ -188,8 +187,7 @@ class BotSalesController extends Controller
     /**
      * สร้างข้อมูลรายงานตามช่วงเวลาที่กำหนด
      *
-     * @param string $period day, week, month, year
-     * @return array
+     * @param  string  $period  day, week, month, year
      */
     protected function generateReportData(string $period): array
     {
@@ -232,9 +230,6 @@ class BotSalesController extends Controller
 
     /**
      * คำนวณช่วงเวลาตาม period
-     *
-     * @param string $period
-     * @return array
      */
     protected function getDateRange(string $period): array
     {
@@ -253,9 +248,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึงสถิติภาพรวม
-     *
-     * @param array $dateRange
-     * @return array
      */
     protected function getOverviewStats(array $dateRange): array
     {
@@ -275,10 +267,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึงแนวโน้ม Leads
-     *
-     * @param array $dateRange
-     * @param string $period
-     * @return array
      */
     protected function getLeadsTrend(array $dateRange, string $period): array
     {
@@ -295,10 +283,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึงแนวโน้ม Conversions
-     *
-     * @param array $dateRange
-     * @param string $period
-     * @return array
      */
     protected function getConversionsTrend(array $dateRange, string $period): array
     {
@@ -315,10 +299,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึงแนวโน้ม Revenue
-     *
-     * @param array $dateRange
-     * @param string $period
-     * @return array
      */
     protected function getRevenueTrend(array $dateRange, string $period): array
     {
@@ -335,10 +315,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึงแนวโน้ม Conversion Rate
-     *
-     * @param array $dateRange
-     * @param string $period
-     * @return array
      */
     protected function getConversionRateTrend(array $dateRange, string $period): array
     {
@@ -378,9 +354,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึง Top Performing Automations
-     *
-     * @param array $dateRange
-     * @return array
      */
     protected function getTopAutomations(array $dateRange): array
     {
@@ -404,9 +377,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึง Lead Sources Breakdown
-     *
-     * @param array $dateRange
-     * @return array
      */
     protected function getLeadSourcesBreakdown(array $dateRange): array
     {
@@ -427,8 +397,6 @@ class BotSalesController extends Controller
 
     /**
      * ดึง Pipeline Distribution
-     *
-     * @return array
      */
     protected function getPipelineDistribution(): array
     {
@@ -448,9 +416,6 @@ class BotSalesController extends Controller
 
     /**
      * คำนวณ Conversion Rate สำหรับช่วงเวลา
-     *
-     * @param array $dateRange
-     * @return float
      */
     protected function calculateConversionRateForPeriod(array $dateRange): float
     {
@@ -466,9 +431,6 @@ class BotSalesController extends Controller
 
     /**
      * รับ format สำหรับ GROUP BY ตาม period
-     *
-     * @param string $period
-     * @return string
      */
     protected function getGroupFormat(string $period): string
     {

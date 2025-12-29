@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง email_campaign_recipients สำหรับผู้รับในแคมเปญ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -41,7 +39,7 @@ return new class extends Migration
                 'opened',     // เปิดอ่านแล้ว
                 'clicked',    // คลิกแล้ว
                 'bounced',    // ตีกลับ
-                'failed'      // ล้มเหลว
+                'failed',      // ล้มเหลว
             ])->default('pending')->comment('สถานะการส่ง');
 
             // ข้อมูลเวลา
@@ -70,8 +68,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง email_campaign_recipients
-     *
-     * @return void
      */
     public function down(): void
     {

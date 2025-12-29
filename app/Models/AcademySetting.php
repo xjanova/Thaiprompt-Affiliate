@@ -113,6 +113,7 @@ class AcademySetting extends Model
     public static function get($key, $default = null)
     {
         $instance = self::getInstance();
+
         return $instance->$key ?? $default;
     }
 
@@ -124,6 +125,7 @@ class AcademySetting extends Model
         $instance = self::getInstance();
         $instance->update([$key => $value]);
         self::clearCache();
+
         return $instance;
     }
 
@@ -140,9 +142,10 @@ class AcademySetting extends Model
      */
     public function getLogoUrlAttribute()
     {
-        if (!$this->logo_path) {
+        if (! $this->logo_path) {
             return null;
         }
+
         return Storage::disk('public')->url($this->logo_path);
     }
 
@@ -151,9 +154,10 @@ class AcademySetting extends Model
      */
     public function getSmallLogoUrlAttribute()
     {
-        if (!$this->small_logo_path) {
+        if (! $this->small_logo_path) {
             return $this->logo_url;
         }
+
         return Storage::disk('public')->url($this->small_logo_path);
     }
 
@@ -162,9 +166,10 @@ class AcademySetting extends Model
      */
     public function getFaviconUrlAttribute()
     {
-        if (!$this->favicon_path) {
+        if (! $this->favicon_path) {
             return null;
         }
+
         return Storage::disk('public')->url($this->favicon_path);
     }
 
@@ -173,9 +178,10 @@ class AcademySetting extends Model
      */
     public function getCertificateBackgroundUrlAttribute()
     {
-        if (!$this->certificate_background_path) {
+        if (! $this->certificate_background_path) {
             return null;
         }
+
         return Storage::disk('public')->url($this->certificate_background_path);
     }
 
@@ -184,7 +190,7 @@ class AcademySetting extends Model
      */
     public function getSignaturesWithUrlsAttribute()
     {
-        if (!$this->signatures) {
+        if (! $this->signatures) {
             return [];
         }
 
@@ -192,6 +198,7 @@ class AcademySetting extends Model
             if (isset($signature['signature_path'])) {
                 $signature['signature_url'] = Storage::disk('public')->url($signature['signature_path']);
             }
+
             return $signature;
         })->toArray();
     }
@@ -201,9 +208,10 @@ class AcademySetting extends Model
      */
     public function getCertificateWordTemplateUrlAttribute()
     {
-        if (!$this->certificate_word_template_path) {
+        if (! $this->certificate_word_template_path) {
             return null;
         }
+
         return Storage::disk('public')->url($this->certificate_word_template_path);
     }
 
@@ -212,9 +220,10 @@ class AcademySetting extends Model
      */
     public function getCertificatePdfTemplateUrlAttribute()
     {
-        if (!$this->certificate_pdf_template_path) {
+        if (! $this->certificate_pdf_template_path) {
             return null;
         }
+
         return Storage::disk('public')->url($this->certificate_pdf_template_path);
     }
 

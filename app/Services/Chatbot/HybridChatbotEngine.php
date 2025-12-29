@@ -5,7 +5,6 @@ namespace App\Services\Chatbot;
 use App\Models\AiBotProfile;
 use App\Models\AiConversation;
 use App\Models\ChatbotKeywordResponse;
-use App\Models\ChatbotPlatformIntegration;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Log;
 
@@ -21,9 +20,9 @@ class HybridChatbotEngine
 {
     protected AiServiceFactory $aiServiceFactory;
 
-    public function __construct(AiServiceFactory $aiServiceFactory = null)
+    public function __construct(?AiServiceFactory $aiServiceFactory = null)
     {
-        $this->aiServiceFactory = $aiServiceFactory ?? new AiServiceFactory();
+        $this->aiServiceFactory = $aiServiceFactory ?? new AiServiceFactory;
     }
 
     /**
@@ -181,7 +180,7 @@ class HybridChatbotEngine
     public function processMessageWithConversation(
         AiBotProfile $botProfile,
         string $message,
-        AiConversation $conversation = null
+        ?AiConversation $conversation = null
     ): array {
         // Get conversation history
         $conversationHistory = [];
@@ -237,17 +236,17 @@ class HybridChatbotEngine
 
         $hasAiConfigured = $botProfile->provider_id && $botProfile->model_id;
 
-        if (!$hasKeywordResponses && !$hasAiConfigured) {
+        if (! $hasKeywordResponses && ! $hasAiConfigured) {
             $errors[] = 'บอทต้องมีการตั้งค่า Keyword Responses หรือ AI อย่างน้อย 1 อย่าง';
         }
 
         // Check AI configuration if exists
         if ($hasAiConfigured) {
-            if (!$botProfile->provider->is_active) {
+            if (! $botProfile->provider->is_active) {
                 $errors[] = 'AI Provider ไม่พร้อมใช้งาน';
             }
 
-            if (!$botProfile->model->is_active) {
+            if (! $botProfile->model->is_active) {
                 $errors[] = 'AI Model ไม่พร้อมใช้งาน';
             }
         }

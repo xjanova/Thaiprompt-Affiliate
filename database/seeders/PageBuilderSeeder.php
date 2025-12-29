@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PageBuilderTemplate;
+use Illuminate\Database\Seeder;
 
 class PageBuilderSeeder extends Seeder
 {

@@ -21,7 +21,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $view_duration
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read User|null $user
  * @property-read Product $product
  */
@@ -53,8 +52,6 @@ class ProductView extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -63,8 +60,6 @@ class ProductView extends Model
 
     /**
      * ความสัมพันธ์กับ Product
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -74,10 +69,7 @@ class ProductView extends Model
     /**
      * บันทึกการดูสินค้า
      *
-     * @param int $productId
-     * @param int|null $userId
-     * @param array $data ข้อมูลเพิ่มเติม
-     * @return static
+     * @param  array  $data  ข้อมูลเพิ่มเติม
      */
     public static function recordView(int $productId, ?int $userId = null, array $data = []): static
     {
@@ -98,10 +90,6 @@ class ProductView extends Model
 
     /**
      * ดึงสินค้าที่ดูล่าสุดของผู้ใช้
-     *
-     * @param int $userId
-     * @param int $limit
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getRecentlyViewed(int $userId, int $limit = 20): \Illuminate\Database\Eloquent\Collection
     {
@@ -117,10 +105,6 @@ class ProductView extends Model
 
     /**
      * ดึงสินค้าที่ดูล่าสุดจาก session
-     *
-     * @param string $sessionId
-     * @param int $limit
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getRecentlyViewedBySession(string $sessionId, int $limit = 20): \Illuminate\Database\Eloquent\Collection
     {

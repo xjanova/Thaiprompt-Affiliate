@@ -2,14 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\EarningsLedger;
+use App\Models\MlmGlobalSetting;
 use App\Models\Order;
-use App\Models\OrderItem;
+use App\Models\PayoutSetting;
 use App\Models\Product;
 use App\Models\User;
-use App\Models\EarningsLedger;
-use App\Models\PayoutSetting;
 use App\Models\WalletDebt;
-use App\Models\MlmGlobalSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -30,18 +29,18 @@ use Illuminate\Support\Facades\Log;
 class OrderDistributionService
 {
     protected PlatformRevenueService $revenueService;
+
     protected MlmCommissionService $mlmCommissionService;
 
     public function __construct()
     {
-        $this->revenueService = new PlatformRevenueService();
-        $this->mlmCommissionService = new MlmCommissionService();
+        $this->revenueService = new PlatformRevenueService;
+        $this->mlmCommissionService = new MlmCommissionService;
     }
 
     /**
      * ประมวลผลการแบ่งเงินจาก Order ที่ชำระเงินแล้ว
      *
-     * @param Order $order
      * @return array ผลลัพธ์การแบ่งเงิน
      */
     public function processOrderDistribution(Order $order): array
@@ -69,6 +68,7 @@ class OrderDistributionService
                 if ($this->isOfficialShopSeller($sellerId)) {
                     $adminResult = $this->processAdminShopItems($order, $items);
                     $results['distributions'][] = $adminResult;
+
                     continue;
                 }
 
@@ -77,7 +77,7 @@ class OrderDistributionService
             }
 
             // ตรวจสอบบริการของ Admin (ค่าสมัคร, ค่าบริการ, etc.)
-            $adminServices = $order->items->filter(fn($item) => $item->item_type === 'admin_service');
+            $adminServices = $order->items->filter(fn ($item) => $item->item_type === 'admin_service');
             if ($adminServices->isNotEmpty()) {
                 $serviceResult = $this->processAdminServices($order, $adminServices);
                 $results['distributions'][] = $serviceResult;
@@ -101,15 +101,12 @@ class OrderDistributionService
     /**
      * ประมวลผลรายการของ Seller
      *
-     * @param Order $order
-     * @param int $sellerId
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processSellerItems(Order $order, int $sellerId, $items): array
     {
         $seller = User::find($sellerId);
-        if (!$seller) {
+        if (! $seller) {
             return ['error' => "Seller #{$sellerId} not found"];
         }
 
@@ -191,7 +188,7 @@ class OrderDistributionService
             'available_at' => $availableAt,
             'description' => "รายได้จากการขาย Order #{$order->order_number}",
             'breakdown' => [
-                'items' => $items->map(fn($item) => [
+                'items' => $items->map(fn ($item) => [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product_name,
                     'quantity' => $item->quantity,
@@ -230,8 +227,7 @@ class OrderDistributionService
     /**
      * คำนวณ VAT
      *
-     * @param \Illuminate\Support\Collection $items
-     * @return float
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function calculateVat($items): float
     {
@@ -249,7 +245,7 @@ class OrderDistributionService
      * - PV สูง = สินค้าถูกแนะนำมากขึ้น, Affiliate ได้ค่าคอมฯ มากขึ้น
      * - PV ต่ำ = สินค้าถูกแนะนำน้อยลง, Affiliate ได้ค่าคอมฯ น้อย
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      * @return float จำนวนเงิน (THB) ที่หักเป็นค่าการตลาด PV
      */
     protected function calculateMlmCommissionFromItems($items): float
@@ -284,7 +280,6 @@ class OrderDistributionService
      * - Unilevel Commission: จ่ายให้ unilevel_sponsor หลายชั้น (พร้อม rollup ถ้า inactive)
      * - Binary Commission: จ่ายให้ binary_sponsor (ตาม matching/pairing)
      *
-     * @param Order $order
      * @return array ผลลัพธ์การคำนวณ commission
      */
     protected function processMlmCommissions(Order $order): array
@@ -296,10 +291,11 @@ class OrderDistributionService
             // ตรวจสอบว่ามีการเปิดใช้ระบบ Genealogy หรือไม่
             $genealogyEnabled = MlmGlobalSetting::get('genealogy_enabled', true);
 
-            if (!$genealogyEnabled && $pvData['total_pv'] <= 0) {
+            if (! $genealogyEnabled && $pvData['total_pv'] <= 0) {
                 Log::debug('MLM Commission skipped: genealogy disabled and no PV', [
                     'order_id' => $order->id,
                 ]);
+
                 return [
                     'success' => true,
                     'direct_referral' => null,
@@ -356,7 +352,6 @@ class OrderDistributionService
      * PV (Point Value) คือค่าการตลาดที่ร้านค้าจ่ายเอง เป็น % ของราคาสินค้า
      * ใช้เป็นฐานในการคำนวณ Unilevel และ Binary Commission
      *
-     * @param Order $order
      * @return array ['total_pv' => float, 'pv_amount_thb' => float, 'items' => array]
      */
     protected function calculateTotalPvFromOrder(Order $order): array
@@ -401,9 +396,7 @@ class OrderDistributionService
      * ประมวลผลรายการสินค้าของ Admin Shop (Official Shop)
      * สินค้าที่ seller_id = Official Seller ID คือสินค้าของ Admin
      *
-     * @param Order $order
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processAdminShopItems(Order $order, $items): array
     {
@@ -457,7 +450,7 @@ class OrderDistributionService
                     'gross_amount' => $grossAmount,
                     'vat_amount' => $vatAmount,
                     'mlm_commission' => $mlmCommission,
-                    'items' => $items->map(fn($item) => [
+                    'items' => $items->map(fn ($item) => [
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
                         'quantity' => $item->quantity,
@@ -486,9 +479,7 @@ class OrderDistributionService
     /**
      * ประมวลผลบริการของ Admin (ค่าสมัคร, ค่าบริการ, ค่าอัพเกรด, etc.)
      *
-     * @param Order $order
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processAdminServices(Order $order, $items): array
     {
@@ -551,7 +542,7 @@ class OrderDistributionService
                     'vat_amount' => $vatAmount,
                     'mlm_commission' => $mlmCommission,
                     'service_types' => $items->pluck('service_type')->unique()->toArray(),
-                    'items' => $items->map(fn($item) => [
+                    'items' => $items->map(fn ($item) => [
                         'service_type' => $item->service_type ?? 'general',
                         'service_name' => $item->product_name,
                         'quantity' => $item->quantity,
@@ -580,9 +571,6 @@ class OrderDistributionService
 
     /**
      * ตรวจสอบว่า Order ถูก distribute แล้วหรือยัง
-     *
-     * @param Order $order
-     * @return bool
      */
     public function isOrderDistributed(Order $order): bool
     {
@@ -594,7 +582,6 @@ class OrderDistributionService
     /**
      * ดึงรายการ Order ที่รอ distribute
      *
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     public function getPendingOrders(int $limit = 100)
@@ -608,9 +595,6 @@ class OrderDistributionService
 
     /**
      * Batch process pending orders
-     *
-     * @param int $limit
-     * @return array
      */
     public function processPendingOrders(int $limit = 100): array
     {
@@ -645,12 +629,11 @@ class OrderDistributionService
     /**
      * ตรวจสอบว่า seller_id เป็นของ Official Shop หรือไม่
      *
-     * @param int|null $sellerId
-     * @return bool
+     * @param  int|null  $sellerId
      */
     protected function isOfficialShopSeller($sellerId): bool
     {
-        if (!$sellerId) {
+        if (! $sellerId) {
             return false;
         }
 

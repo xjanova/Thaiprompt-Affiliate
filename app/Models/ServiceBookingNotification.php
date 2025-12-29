@@ -68,9 +68,9 @@ class ServiceBookingNotification extends Model
         'provider_response' => 'array',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * การจอง
@@ -96,9 +96,9 @@ class ServiceBookingNotification extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: กรองตามช่องทาง
@@ -168,9 +168,9 @@ class ServiceBookingNotification extends Model
         return $query->where('notification_type', $type);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Notification Status
-    //===========================================
+    // ===========================================
 
     /**
      * บันทึกว่าส่งสำเร็จ
@@ -200,7 +200,7 @@ class ServiceBookingNotification extends Model
      */
     public function markAsRead(): void
     {
-        if (!$this->is_read) {
+        if (! $this->is_read) {
             $this->update([
                 'is_read' => true,
                 'read_at' => now(),
@@ -229,17 +229,13 @@ class ServiceBookingNotification extends Model
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Static Creation
-    //===========================================
+    // ===========================================
 
     /**
      * สร้างการแจ้งเตือนใหม่
      *
-     * @param ServiceBooking $booking
-     * @param string $notificationType
-     * @param string $channel
-     * @param array $data
      * @return static
      */
     public static function createNotification(
@@ -261,9 +257,9 @@ class ServiceBookingNotification extends Model
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // Accessors
-    //===========================================
+    // ===========================================
 
     /**
      * ประเภทการแจ้งเตือนเป็นภาษาไทย
@@ -336,7 +332,7 @@ class ServiceBookingNotification extends Model
      */
     public function canRetry(): bool
     {
-        return !$this->is_sent && $this->retry_count < 3;
+        return ! $this->is_sent && $this->retry_count < 3;
     }
 
     /**

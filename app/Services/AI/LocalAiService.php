@@ -15,7 +15,7 @@ class LocalAiService extends BaseAiService
 
         try {
             $response = Http::timeout(120)
-                ->post($this->ollamaEndpoint . '/api/chat', [
+                ->post($this->ollamaEndpoint.'/api/chat', [
                     'model' => $this->model->model_identifier,
                     'messages' => $this->formatMessages($messages),
                     'stream' => false,
@@ -70,7 +70,7 @@ class LocalAiService extends BaseAiService
     {
         try {
             $response = Http::timeout(60)
-                ->post($this->ollamaEndpoint . '/api/embeddings', [
+                ->post($this->ollamaEndpoint.'/api/embeddings', [
                     'model' => 'nomic-embed-text', // หรือโมเดล embedding อื่นที่ติดตั้งไว้
                     'prompt' => $text,
                 ]);
@@ -94,7 +94,7 @@ class LocalAiService extends BaseAiService
     public function testConnection(): array
     {
         try {
-            $response = Http::timeout(5)->get($this->ollamaEndpoint . '/api/tags');
+            $response = Http::timeout(5)->get($this->ollamaEndpoint.'/api/tags');
 
             if ($response->successful()) {
                 $models = $response->json()['models'] ?? [];
@@ -111,7 +111,7 @@ class LocalAiService extends BaseAiService
                 return ['success' => false, 'message' => 'ไม่สามารถเชื่อมต่อ Ollama ได้'];
             }
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Ollama ไม่ได้ทำงาน: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Ollama ไม่ได้ทำงาน: '.$e->getMessage()];
         }
     }
 

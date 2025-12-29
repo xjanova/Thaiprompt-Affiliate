@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\MlmMember;
+use App\Models\User;
 
 /**
  * Unified Earning Service
@@ -15,9 +15,6 @@ class UnifiedEarningService
 {
     /**
      * คำนวณ total earnings จาก MLM system
-     *
-     * @param User $user
-     * @return float
      */
     public function getTotalEarnings(User $user): float
     {
@@ -31,16 +28,13 @@ class UnifiedEarningService
 
     /**
      * คำนวณ total referrals จาก MLM system
-     *
-     * @param User $user
-     * @return int
      */
     public function getTotalReferrals(User $user): int
     {
         // Referrals จาก MLM system (นับ direct referrals)
         $mlmMember = $user->mlmMembers()->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return 0;
         }
 
@@ -49,9 +43,6 @@ class UnifiedEarningService
 
     /**
      * ดึงข้อมูลสถิติรวมสำหรับ dashboard
-     *
-     * @param User $user
-     * @return array
      */
     public function getEarningsBreakdown(User $user): array
     {
@@ -79,9 +70,6 @@ class UnifiedEarningService
 
     /**
      * ดึง total PV จาก MLM (สำหรับข้อมูลเพิ่มเติม)
-     *
-     * @param User $user
-     * @return float
      */
     public function getTotalPv(User $user): float
     {
@@ -92,9 +80,6 @@ class UnifiedEarningService
 
     /**
      * ตรวจสอบว่า user มี MLM membership หรือไม่
-     *
-     * @param User $user
-     * @return bool
      */
     public function hasMlm(User $user): bool
     {
@@ -103,9 +88,6 @@ class UnifiedEarningService
 
     /**
      * ดึงข้อมูลรวมสำหรับ rank calculation
-     *
-     * @param User $user
-     * @return array
      */
     public function getRankCalculationData(User $user): array
     {

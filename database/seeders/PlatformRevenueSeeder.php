@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\PlatformWallet;
 use App\Models\PayoutSetting;
+use App\Models\PlatformWallet;
 use Illuminate\Database\Seeder;
 
 /**
@@ -17,8 +17,6 @@ class PlatformRevenueSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้น Platform Revenue
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -32,8 +30,6 @@ class PlatformRevenueSeeder extends Seeder
 
     /**
      * สร้าง Platform Wallets
-     *
-     * @return void
      */
     protected function seedPlatformWallets(): void
     {
@@ -86,6 +82,7 @@ class PlatformRevenueSeeder extends Seeder
             // ตรวจสอบก่อนสร้าง (idempotent)
             if (PlatformWallet::where('slug', $wallet['slug'])->exists()) {
                 $this->command->info("  - Platform Wallet '{$wallet['slug']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 
@@ -107,8 +104,6 @@ class PlatformRevenueSeeder extends Seeder
 
     /**
      * สร้าง Payout Settings
-     *
-     * @return void
      */
     protected function seedPayoutSettings(): void
     {
@@ -175,6 +170,7 @@ class PlatformRevenueSeeder extends Seeder
             // ตรวจสอบก่อนสร้าง (idempotent) - ใช้ payout_type เพราะเป็น unique
             if (PayoutSetting::where('payout_type', $setting['payout_type'])->exists()) {
                 $this->command->info("  - Payout Setting '{$setting['payout_type']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

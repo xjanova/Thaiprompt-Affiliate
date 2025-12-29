@@ -66,6 +66,7 @@ class SoftwareProductSeeder extends Seeder
 
         if ($category) {
             $this->command->info("   ⏭️  Category '{$data['name']}' already exists - preserved");
+
             return $category;
         }
 
@@ -85,6 +86,7 @@ class SoftwareProductSeeder extends Seeder
 
         if ($product) {
             $this->command->warn('⚠️  MLM Product already exists - skipping to preserve customizations');
+
             return $product;
         }
 

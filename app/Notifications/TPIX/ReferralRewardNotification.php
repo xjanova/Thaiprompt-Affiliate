@@ -31,11 +31,11 @@ class ReferralRewardNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('Referral Reward Received!')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line("คุณได้รับรางวัลจากการแนะนำ!")
-            ->line("ประเภท: " . ($this->reward->reward_type === 'referrer' ? 'ผู้แนะนำ' : 'ผู้ถูกแนะนำ'))
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('คุณได้รับรางวัลจากการแนะนำ!')
+            ->line('ประเภท: '.($this->reward->reward_type === 'referrer' ? 'ผู้แนะนำ' : 'ผู้ถูกแนะนำ'))
             ->line("Token: {$token->symbol}")
-            ->line("จำนวน: " . number_format($this->reward->amount, 8) . " {$token->symbol}")
+            ->line('จำนวน: '.number_format($this->reward->amount, 8)." {$token->symbol}")
             ->action('ดู Portfolio', route('user.tokens.portfolio'))
             ->line('ขอบคุณที่แนะนำเพื่อนมาใช้บริการ TPIX!');
     }

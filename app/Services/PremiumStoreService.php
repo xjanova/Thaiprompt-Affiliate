@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\PremiumStore;
 use App\Models\StoreTrophy;
-use App\Models\StoreTrophyAchievement;
 use App\Models\VendorStore;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +29,7 @@ class PremiumStoreService
     /**
      * รันการคัดเลือกร้าน Premium โดย AI
      *
-     * @param bool $autoApprove อนุมัติอัตโนมัติ
+     * @param  bool  $autoApprove  อนุมัติอัตโนมัติ
      * @return array{nominated: int, approved: int, skipped: int}
      */
     public function runAiSelection(bool $autoApprove = false): array
@@ -62,6 +61,7 @@ class PremiumStoreService
             // ข้ามร้านที่คะแนนไม่ถึง
             if ($scoreResult['score'] < self::MIN_PREMIUM_SCORE) {
                 $result['skipped']++;
+
                 continue;
             }
 
@@ -73,7 +73,7 @@ class PremiumStoreService
         }
 
         // เรียงตามคะแนนและเลือกเฉพาะ top
-        usort($nominations, fn($a, $b) => $b['score'] <=> $a['score']);
+        usort($nominations, fn ($a, $b) => $b['score'] <=> $a['score']);
         $nominations = array_slice($nominations, 0, self::MAX_NOMINATIONS_PER_RUN);
 
         // สร้าง nomination records
@@ -114,7 +114,7 @@ class PremiumStoreService
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                Log::error("❌ Error nominating store {$nomination['store']->id}: " . $e->getMessage());
+                Log::error("❌ Error nominating store {$nomination['store']->id}: ".$e->getMessage());
             }
         }
 
@@ -140,7 +140,6 @@ class PremiumStoreService
     /**
      * ตรวจสอบและให้ Trophy ทั้งหมดที่ร้านค้าผ่านเกณฑ์
      *
-     * @param VendorStore $store
      * @return array รายการ Trophy ที่ได้รับใหม่
      */
     public function checkAndAwardTrophies(VendorStore $store): array
@@ -165,9 +164,6 @@ class PremiumStoreService
 
     /**
      * ดึงร้าน Premium ที่แนะนำ
-     *
-     * @param int $limit
-     * @return Collection
      */
     public function getRecommendedPremiumStores(int $limit = 10): Collection
     {
@@ -187,8 +183,6 @@ class PremiumStoreService
 
     /**
      * ดึงร้านที่รอพิจารณาเป็น Premium
-     *
-     * @return Collection
      */
     public function getPendingNominations(): Collection
     {
@@ -201,7 +195,6 @@ class PremiumStoreService
     /**
      * สร้างข้อความแนะนำสำหรับผู้ขาย
      *
-     * @param VendorStore $store
      * @return array{eligible: bool, score: float, message: string, tips: array}
      */
     public function getPremiumEligibilityReport(VendorStore $store): array
@@ -219,7 +212,7 @@ class PremiumStoreService
                     'products' => 'เพิ่มจำนวนสินค้า: เพิ่มความหลากหลายของสินค้าในร้าน',
                     'age' => 'ร้านใหม่: สะสมผลงานต่อไปเรื่อยๆ',
                     'trophies' => 'สะสม Trophy: ทำตามเป้าหมายเพื่อรับ Trophy',
-                    default => 'ปรับปรุง ' . $key,
+                    default => 'ปรับปรุง '.$key,
                 };
             }
         }

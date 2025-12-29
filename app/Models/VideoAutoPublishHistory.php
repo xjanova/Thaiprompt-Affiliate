@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * VideoAutoPublishHistory Model
@@ -246,8 +246,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * โปรเจกต์ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function project(): BelongsTo
     {
@@ -256,8 +254,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * Job ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function job(): BelongsTo
     {
@@ -266,8 +262,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * Schedule ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function schedule(): BelongsTo
     {
@@ -276,8 +270,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ผู้โพสต์
-     *
-     * @return BelongsTo
      */
     public function publishedBy(): BelongsTo
     {
@@ -291,8 +283,7 @@ class VideoAutoPublishHistory extends Model
     /**
      * Scope: กรองตาม platform
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $platform
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePlatform($query, string $platform)
@@ -303,8 +294,8 @@ class VideoAutoPublishHistory extends Model
     /**
      * Scope: กรองตาม status
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|array  $status
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStatus($query, $status)
@@ -319,7 +310,7 @@ class VideoAutoPublishHistory extends Model
     /**
      * Scope: โพสต์สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublished($query)
@@ -330,7 +321,7 @@ class VideoAutoPublishHistory extends Model
     /**
      * Scope: โพสต์วันนี้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeToday($query)
@@ -341,7 +332,7 @@ class VideoAutoPublishHistory extends Model
     /**
      * Scope: ยังไม่ลบไฟล์ต้นฉบับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSourceNotDeleted($query)
@@ -355,8 +346,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ดึงข้อมูล platform
-     *
-     * @return array|null
      */
     public function getPlatformInfoAttribute(): ?array
     {
@@ -365,8 +354,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ดึง label ของ platform
-     *
-     * @return string
      */
     public function getPlatformLabelAttribute(): string
     {
@@ -375,8 +362,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ดึงข้อมูล status
-     *
-     * @return array|null
      */
     public function getStatusInfoAttribute(): ?array
     {
@@ -385,8 +370,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ดึง label ของ status
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -395,8 +378,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ดึง URL ของ thumbnail
-     *
-     * @return string|null
      */
     public function getThumbnailFullUrlAttribute(): ?string
     {
@@ -413,8 +394,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * คำนวณ engagement รวม
-     *
-     * @return int
      */
     public function getTotalEngagementAttribute(): int
     {
@@ -424,8 +403,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * แสดงเวลาโพสต์แบบ human readable
-     *
-     * @return string|null
      */
     public function getPublishedAtHumanAttribute(): ?string
     {
@@ -434,12 +411,10 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * แสดงขนาดไฟล์แบบ human readable
-     *
-     * @return string|null
      */
     public function getVideoSizeHumanAttribute(): ?string
     {
-        if (!$this->video_size) {
+        if (! $this->video_size) {
             return null;
         }
 
@@ -450,7 +425,7 @@ class VideoAutoPublishHistory extends Model
             $bytes /= 1024;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     // =========================================
@@ -460,10 +435,9 @@ class VideoAutoPublishHistory extends Model
     /**
      * บันทึกการโพสต์สำเร็จ
      *
-     * @param string $postId ID ของโพสต์บน Platform
-     * @param string $url URL ของโพสต์
-     * @param array $response Response จาก API
-     * @return void
+     * @param  string  $postId  ID ของโพสต์บน Platform
+     * @param  string  $url  URL ของโพสต์
+     * @param  array  $response  Response จาก API
      */
     public function markAsPublished(string $postId, string $url, array $response = []): void
     {
@@ -480,9 +454,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * บันทึกการโพสต์ล้มเหลว
-     *
-     * @param string $error
-     * @return void
      */
     public function markAsFailed(string $error): void
     {
@@ -494,9 +465,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * อัพเดท engagement
-     *
-     * @param array $data
-     * @return void
      */
     public function updateEngagement(array $data): void
     {
@@ -515,8 +483,7 @@ class VideoAutoPublishHistory extends Model
      *
      * ⚠️ จะลบได้เฉพาะเมื่อโพสต์สำเร็จเท่านั้น!
      *
-     * @param bool $force บังคับลบแม้ยังไม่โพสต์สำเร็จ
-     * @return bool
+     * @param  bool  $force  บังคับลบแม้ยังไม่โพสต์สำเร็จ
      */
     public function deleteSourceFiles(bool $force = false): bool
     {
@@ -526,12 +493,12 @@ class VideoAutoPublishHistory extends Model
         }
 
         // ⚠️ ห้ามลบถ้ายังไม่โพสต์สำเร็จ (ยกเว้น force)
-        if (!$force && $this->status !== 'published') {
+        if (! $force && $this->status !== 'published') {
             return false;
         }
 
         // ⚠️ ต้องมี platform_post_id และ platform_url เพื่อยืนยันว่าโพสต์สำเร็จจริง
-        if (!$force && (empty($this->platform_post_id) || empty($this->platform_url))) {
+        if (! $force && (empty($this->platform_post_id) || empty($this->platform_url))) {
             return false;
         }
 
@@ -549,8 +516,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * ตรวจสอบว่าสามารถลบไฟล์ต้นฉบับได้หรือไม่
-     *
-     * @return bool
      */
     public function canDeleteSourceFiles(): bool
     {
@@ -574,11 +539,6 @@ class VideoAutoPublishHistory extends Model
 
     /**
      * สร้างประวัติจาก project
-     *
-     * @param VideoAutoProject $project
-     * @param string $platform
-     * @param array $data
-     * @return static
      */
     public static function createFromProject(
         VideoAutoProject $project,

@@ -16,22 +16,16 @@ use Illuminate\View\View;
  * TPIX Deployment Controller
  *
  * จัดการ TPIX Native Coin Deployment Wizard แบบ step-by-step
- *
- * @package App\Http\Controllers\Admin
  */
 class TpixDeploymentController extends Controller
 {
     /**
      * Deployment Service
-     *
-     * @var TpixDeploymentService
      */
     protected TpixDeploymentService $deploymentService;
 
     /**
      * Constructor
-     *
-     * @param TpixDeploymentService $deploymentService
      */
     public function __construct(TpixDeploymentService $deploymentService)
     {
@@ -45,9 +39,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงรายการ configurations ทั้งหมด
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -69,9 +60,9 @@ class TpixDeploymentController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('token_name', 'like', "%{$search}%")
-                  ->orWhere('token_symbol', 'like', "%{$search}%")
-                  ->orWhere('contract_address', 'like', "%{$search}%");
+                    ->orWhere('token_name', 'like', "%{$search}%")
+                    ->orWhere('token_symbol', 'like', "%{$search}%")
+                    ->orWhere('contract_address', 'like', "%{$search}%");
             });
         }
 
@@ -90,8 +81,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * สร้าง configuration ใหม่
-     *
-     * @return View
      */
     public function create(): View
     {
@@ -106,8 +95,6 @@ class TpixDeploymentController extends Controller
      * - ขั้นตอนการติดตั้ง Polygon Edge
      * - ขั้นตอนการ Deploy Contracts
      * - การเชื่อมต่อกับ Laravel
-     *
-     * @return View
      */
     public function tutorial(): View
     {
@@ -116,9 +103,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * บันทึก configuration ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function store(Request $request): RedirectResponse
     {
@@ -142,7 +126,7 @@ class TpixDeploymentController extends Controller
             ]);
 
             return back()
-                ->with('error', 'ไม่สามารถสร้าง Configuration ได้: ' . $e->getMessage())
+                ->with('error', 'ไม่สามารถสร้าง Configuration ได้: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -154,7 +138,6 @@ class TpixDeploymentController extends Controller
     /**
      * แสดง Wizard หลัก
      *
-     * @param string $slug
      * @return View|RedirectResponse
      */
     public function wizard(string $slug)
@@ -171,9 +154,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 1: Prerequisites Check
-     *
-     * @param string $slug
-     * @return View
      */
     public function step1(string $slug): View
     {
@@ -187,10 +167,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * บันทึก Step 1 และไปต่อ
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function saveStep1(Request $request, string $slug): RedirectResponse
     {
@@ -200,7 +176,7 @@ class TpixDeploymentController extends Controller
             // ตรวจสอบ prerequisites อีกครั้ง
             $prerequisites = $this->deploymentService->checkPrerequisites();
 
-            if (!$prerequisites['all_passed']) {
+            if (! $prerequisites['all_passed']) {
                 return back()->with('error', 'Prerequisites ยังไม่ผ่านทั้งหมด กรุณาแก้ไขปัญหาก่อน');
             }
 
@@ -220,7 +196,7 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -230,9 +206,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 2: Token Configuration
-     *
-     * @param string $slug
-     * @return View
      */
     public function step2(string $slug): View
     {
@@ -255,10 +228,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * บันทึก Step 2
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function saveStep2(Request $request, string $slug): RedirectResponse
     {
@@ -295,7 +264,7 @@ class TpixDeploymentController extends Controller
             ]);
 
             return back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -306,9 +275,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 3: Tokenomics
-     *
-     * @param string $slug
-     * @return View
      */
     public function step3(string $slug): View
     {
@@ -319,10 +285,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * บันทึก Step 3
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function saveStep3(Request $request, string $slug): RedirectResponse
     {
@@ -356,7 +318,7 @@ class TpixDeploymentController extends Controller
             ]);
 
             return back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -367,9 +329,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 4: Smart Contract
-     *
-     * @param string $slug
-     * @return View
      */
     public function step4(string $slug): View
     {
@@ -395,10 +354,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * บันทึก Step 4
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function saveStep4(Request $request, string $slug): RedirectResponse
     {
@@ -428,7 +383,7 @@ class TpixDeploymentController extends Controller
             ]);
 
             return back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -439,9 +394,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้ายืนยันการชำระเงิน
-     *
-     * @param string $slug
-     * @return View
      */
     public function showPaymentConfirmation(string $slug): View
     {
@@ -464,8 +416,6 @@ class TpixDeploymentController extends Controller
     /**
      * ประมวลผลการชำระเงิน
      *
-     * @param Request $request
-     * @param string $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function processPayment(Request $request, string $slug)
@@ -534,7 +484,7 @@ class TpixDeploymentController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -542,8 +492,6 @@ class TpixDeploymentController extends Controller
     /**
      * ตรวจสอบการชำระเงินบน Blockchain
      *
-     * @param Request $request
-     * @param string $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyPayment(Request $request, string $slug)
@@ -601,16 +549,13 @@ class TpixDeploymentController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * คืนเงิน (กรณี Deploy ล้มเหลว)
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function refundPayment(string $slug): RedirectResponse
     {
@@ -631,7 +576,7 @@ class TpixDeploymentController extends Controller
             $refundAmount = $config->payment_amount * 0.8;
 
             // TODO: ทำ refund transaction จริงบน blockchain
-            $refundTxHash = '0x' . bin2hex(random_bytes(32)); // Mock
+            $refundTxHash = '0x'.bin2hex(random_bytes(32)); // Mock
 
             // อัพเดทข้อมูล
             $config->update([
@@ -655,15 +600,12 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'คืนเงินล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'คืนเงินล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * ตรวจสอบการชำระเงินแบบ async
-     *
-     * @param TpixConfiguration $config
-     * @return void
      */
     protected function verifyPaymentAsync(TpixConfiguration $config): void
     {
@@ -684,9 +626,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 5: Deploy & Verify
-     *
-     * @param string $slug
-     * @return View
      */
     public function step5(string $slug): View
     {
@@ -700,10 +639,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * Deploy Contract
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function deployContract(Request $request, string $slug): RedirectResponse
     {
@@ -720,7 +655,7 @@ class TpixDeploymentController extends Controller
             if ($result['success']) {
                 $config->nextStep();
 
-                return back()->with('success', 'Deploy Contract สำเร็จ! Contract Address: ' . $result['contract_address']);
+                return back()->with('success', 'Deploy Contract สำเร็จ! Contract Address: '.$result['contract_address']);
             }
 
             return back()->with('error', 'Deploy ล้มเหลว');
@@ -730,22 +665,19 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Deploy ล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'Deploy ล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * Verify Contract
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function verifyContract(string $slug): RedirectResponse
     {
         $config = TpixConfiguration::where('slug', $slug)->firstOrFail();
 
         try {
-            if (!$config->isDeployed()) {
+            if (! $config->isDeployed()) {
                 return back()->with('error', 'กรุณา Deploy Contract ก่อน');
             }
 
@@ -762,7 +694,7 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Verify ล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'Verify ล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -772,9 +704,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 6: DEX Integration
-     *
-     * @param string $slug
-     * @return View
      */
     public function step6(string $slug): View
     {
@@ -785,10 +714,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * สร้าง Liquidity Pool
-     *
-     * @param Request $request
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function createLiquidityPool(Request $request, string $slug): RedirectResponse
     {
@@ -801,7 +726,7 @@ class TpixDeploymentController extends Controller
         ]);
 
         try {
-            if (!$config->isDeployed()) {
+            if (! $config->isDeployed()) {
                 return back()->with('error', 'กรุณา Deploy Contract ก่อน');
             }
 
@@ -822,15 +747,12 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'สร้าง Pool ล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'สร้าง Pool ล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * เปิดการซื้อขาย
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function enableTrading(string $slug): RedirectResponse
     {
@@ -854,7 +776,7 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เปิดการซื้อขายล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'เปิดการซื้อขายล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -864,9 +786,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * แสดงหน้า Step 7: Listing
-     *
-     * @param string $slug
-     * @return View
      */
     public function step7(string $slug): View
     {
@@ -877,9 +796,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * ส่งไปยัง CoinMarketCap
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function submitToCMC(string $slug): RedirectResponse
     {
@@ -899,15 +815,12 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'ส่งข้อมูลล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'ส่งข้อมูลล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * ส่งไปยัง CoinGecko
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function submitToCoinGecko(string $slug): RedirectResponse
     {
@@ -927,15 +840,12 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'ส่งข้อมูลล้มเหลว: ' . $e->getMessage());
+            return back()->with('error', 'ส่งข้อมูลล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * เสร็จสิ้นกระบวนการ
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function complete(string $slug): RedirectResponse
     {
@@ -956,7 +866,7 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -966,9 +876,6 @@ class TpixDeploymentController extends Controller
 
     /**
      * ลบ configuration
-     *
-     * @param string $slug
-     * @return RedirectResponse
      */
     public function destroy(string $slug): RedirectResponse
     {
@@ -991,7 +898,7 @@ class TpixDeploymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'ลบไม่สำเร็จ: ' . $e->getMessage());
+            return back()->with('error', 'ลบไม่สำเร็จ: '.$e->getMessage());
         }
     }
 

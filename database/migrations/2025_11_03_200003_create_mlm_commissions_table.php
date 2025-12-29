@@ -32,7 +32,7 @@ return new class extends Migration
                 'rank_bonus',
                 'leadership_bonus',
                 'matching_bonus',
-                'pool_bonus'
+                'pool_bonus',
             ]);
             $table->integer('level')->nullable(); // For unilevel
             $table->enum('leg', ['left', 'right'])->nullable(); // For binary

@@ -67,7 +67,7 @@ class SystemRequirementsChecker
             }
         } catch (\Exception $e) {
             $cpuInfo['status'] = 'error';
-            $cpuInfo['message'] = 'ไม่สามารถตรวจสอบ CPU ได้: ' . $e->getMessage();
+            $cpuInfo['message'] = 'ไม่สามารถตรวจสอบ CPU ได้: '.$e->getMessage();
         }
 
         return $cpuInfo;
@@ -125,7 +125,7 @@ class SystemRequirementsChecker
             }
         } catch (\Exception $e) {
             $ramInfo['status'] = 'error';
-            $ramInfo['message'] = 'ไม่สามารถตรวจสอบ RAM ได้: ' . $e->getMessage();
+            $ramInfo['message'] = 'ไม่สามารถตรวจสอบ RAM ได้: '.$e->getMessage();
         }
 
         return $ramInfo;
@@ -148,10 +148,10 @@ class SystemRequirementsChecker
         try {
             // ตรวจสอบ NVIDIA GPU ด้วย nvidia-smi
             $result = Process::run('which nvidia-smi', timeout: 5);
-            if ($result->successful() && !empty(trim($result->output()))) {
+            if ($result->successful() && ! empty(trim($result->output()))) {
                 $nvidiaSmiResult = Process::run('nvidia-smi --query-gpu=name,memory.total,memory.free,driver_version --format=csv,noheader,nounits 2>/dev/null', timeout: 10);
 
-                if ($nvidiaSmiResult->successful() && !empty(trim($nvidiaSmiResult->output()))) {
+                if ($nvidiaSmiResult->successful() && ! empty(trim($nvidiaSmiResult->output()))) {
                     $gpuInfo['available'] = true;
                     $gpuInfo['type'] = 'nvidia';
 
@@ -177,12 +177,12 @@ class SystemRequirementsChecker
 
                     // ตรวจสอบ CUDA version
                     $cudaResult = Process::run('nvcc --version 2>/dev/null | grep "release" | awk \'{print $5}\' | cut -d "," -f1', timeout: 5);
-                    if ($cudaResult->successful() && !empty(trim($cudaResult->output()))) {
+                    if ($cudaResult->successful() && ! empty(trim($cudaResult->output()))) {
                         $gpuInfo['cuda_version'] = trim($cudaResult->output());
                     }
 
                     // กำหนด status ตาม VRAM
-                    if (!empty($gpuInfo['gpus'])) {
+                    if (! empty($gpuInfo['gpus'])) {
                         $totalVram = array_sum(array_column($gpuInfo['gpus'], 'memory_total_gb'));
 
                         if ($totalVram >= 24) {
@@ -211,9 +211,9 @@ class SystemRequirementsChecker
             }
 
             // ถ้าไม่มี NVIDIA ลองตรวจสอบ AMD GPU
-            if (!$gpuInfo['available']) {
+            if (! $gpuInfo['available']) {
                 $result = Process::run('lspci 2>/dev/null | grep -i "VGA.*AMD"', timeout: 5);
-                if ($result->successful() && !empty(trim($result->output()))) {
+                if ($result->successful() && ! empty(trim($result->output()))) {
                     $gpuInfo['available'] = true;
                     $gpuInfo['type'] = 'amd';
                     $gpuInfo['status'] = 'warning';
@@ -222,13 +222,13 @@ class SystemRequirementsChecker
             }
 
             // ถ้าไม่มี GPU เลย
-            if (!$gpuInfo['available']) {
+            if (! $gpuInfo['available']) {
                 $gpuInfo['status'] = 'none';
                 $gpuInfo['message'] = 'ไม่พบ GPU จะใช้ CPU inference (ช้ากว่า GPU มาก แต่ยังใช้งานได้)';
                 $gpuInfo['recommended_models'] = ['1.3B', '3B', '7B (quantized)'];
             }
         } catch (\Exception $e) {
-            \Log::warning('GPU detection error: ' . $e->getMessage());
+            \Log::warning('GPU detection error: '.$e->getMessage());
             $gpuInfo['status'] = 'none';
             $gpuInfo['message'] = 'ไม่สามารถตรวจสอบ GPU ได้ จะใช้ CPU inference';
             $gpuInfo['recommended_models'] = ['1.3B', '3B', '7B (quantized)'];
@@ -284,7 +284,7 @@ class SystemRequirementsChecker
             }
         } catch (\Exception $e) {
             $diskInfo['status'] = 'error';
-            $diskInfo['message'] = 'ไม่สามารถตรวจสอบ disk ได้: ' . $e->getMessage();
+            $diskInfo['message'] = 'ไม่สามารถตรวจสอบ disk ได้: '.$e->getMessage();
         }
 
         return $diskInfo;
@@ -319,7 +319,7 @@ class SystemRequirementsChecker
             $osInfo['message'] = 'OS รองรับการติดตั้ง';
         } catch (\Exception $e) {
             $osInfo['status'] = 'error';
-            $osInfo['message'] = 'ไม่สามารถตรวจสอบ OS ได้: ' . $e->getMessage();
+            $osInfo['message'] = 'ไม่สามารถตรวจสอบ OS ได้: '.$e->getMessage();
         }
 
         return $osInfo;
@@ -379,7 +379,7 @@ class SystemRequirementsChecker
             }
         } catch (\Exception $e) {
             $pythonInfo['status'] = 'error';
-            $pythonInfo['message'] = 'ไม่สามารถตรวจสอบ Python ได้: ' . $e->getMessage();
+            $pythonInfo['message'] = 'ไม่สามารถตรวจสอบ Python ได้: '.$e->getMessage();
         }
 
         return $pythonInfo;
@@ -485,7 +485,7 @@ class SystemRequirementsChecker
         $recommendations = [];
 
         // ถ้ามี GPU ใช้ VRAM เป็นหลัก
-        if ($gpu['available'] && !empty($gpu['gpus'])) {
+        if ($gpu['available'] && ! empty($gpu['gpus'])) {
             $totalVram = array_sum(array_column($gpu['gpus'], 'memory_total_gb'));
 
             if ($totalVram >= 24) {
@@ -523,7 +523,7 @@ class SystemRequirementsChecker
         }
 
         // CPU-only recommendations
-        if (!$gpu['available'] || empty($recommendations)) {
+        if (! $gpu['available'] || empty($recommendations)) {
             if ($ram['available_gb'] >= 16) {
                 $recommendations[] = [
                     'model' => 'deepseek-coder-6.7b-instruct',

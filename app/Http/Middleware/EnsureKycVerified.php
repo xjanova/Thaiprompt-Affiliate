@@ -27,7 +27,7 @@ class EnsureKycVerified
         $user = $request->user();
 
         // ถ้าไม่มี user ให้ไปหน้า login
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
@@ -37,7 +37,7 @@ class EnsureKycVerified
         }
 
         // ตรวจสอบสถานะ KYC
-        if (!$this->isKycApproved($user)) {
+        if (! $this->isKycApproved($user)) {
             // Redirect ไปหน้า onboarding ของ seller
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณายืนยันตัวตน (KYC) ก่อนเปิดร้านค้า');
@@ -49,8 +49,7 @@ class EnsureKycVerified
     /**
      * ตรวจสอบว่า KYC ได้รับการอนุมัติแล้วหรือไม่
      *
-     * @param \App\Models\User $user
-     * @return bool
+     * @param  \App\Models\User  $user
      */
     private function isKycApproved($user): bool
     {

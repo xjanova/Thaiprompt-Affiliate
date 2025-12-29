@@ -18,8 +18,6 @@ return new class extends Migration
      * ⚠️ NOTE: ตาราง line_signup_rewards ใน migration เก่า (2025_11_12_000001)
      * มี schema สำหรับ reward claims ซึ่งผิด - ควรอยู่ใน line_signup_reward_claims
      * Migration นี้จะ drop และสร้างใหม่ด้วย schema ที่ถูกต้องสำหรับ reward templates
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -27,7 +25,7 @@ return new class extends Migration
         if (Schema::hasTable('line_signup_rewards')) {
             // ตรวจสอบว่าเป็น schema เก่า (มี session_id column) หรือไม่
             if (Schema::hasColumn('line_signup_rewards', 'session_id') ||
-                !Schema::hasColumn('line_signup_rewards', 'signup_type')) {
+                ! Schema::hasColumn('line_signup_rewards', 'signup_type')) {
                 // เป็น schema เก่า - ต้อง drop และสร้างใหม่
                 Schema::dropIfExists('line_signup_rewards');
             } else {
@@ -107,8 +105,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_rewards
-     *
-     * @return void
      */
     public function down(): void
     {

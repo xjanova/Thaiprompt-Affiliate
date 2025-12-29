@@ -23,7 +23,7 @@ class CarbonCreditIssuedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('🎉 คุณได้รับ Carbon Credits!')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("ยินดีด้วย! คุณได้รับ Carbon Credits จากการลดการปล่อยคาร์บอน")
+            ->line('ยินดีด้วย! คุณได้รับ Carbon Credits จากการลดการปล่อยคาร์บอน')
             ->line("จำนวน: {$this->data['amount']} TPCC")
             ->line("มูลค่า: ฿{$this->data['value']}")
             ->line("ระดับ: {$this->data['tier']}")

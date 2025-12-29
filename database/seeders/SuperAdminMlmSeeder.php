@@ -35,8 +35,6 @@ class SuperAdminMlmSeeder extends Seeder
 
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -45,14 +43,15 @@ class SuperAdminMlmSeeder extends Seeder
         $this->command->info('');
 
         // ตรวจสอบว่าตาราง mlm_members มีอยู่หรือไม่
-        if (!$this->requireTable('mlm_members', 'SuperAdminMlmSeeder')) {
+        if (! $this->requireTable('mlm_members', 'SuperAdminMlmSeeder')) {
             return;
         }
 
         // 1. หา SuperAdmin user
         $superAdmin = $this->findSuperAdmin();
-        if (!$superAdmin) {
+        if (! $superAdmin) {
             $this->command->error('❌ ไม่พบ SuperAdmin user - กรุณารัน DemoUsersSeeder ก่อน');
+
             return;
         }
         $this->command->info("✅ พบ SuperAdmin: {$superAdmin->name} ({$superAdmin->email})");
@@ -74,7 +73,7 @@ class SuperAdminMlmSeeder extends Seeder
                 $existingMember->update([
                     'member_code' => self::SUPERADMIN_MEMBER_CODE,
                 ]);
-                $this->command->info("🔄 อัพเดท member_code เป็น: " . self::SUPERADMIN_MEMBER_CODE);
+                $this->command->info('🔄 อัพเดท member_code เป็น: '.self::SUPERADMIN_MEMBER_CODE);
             }
 
             $member = $existingMember;
@@ -82,23 +81,25 @@ class SuperAdminMlmSeeder extends Seeder
         } else {
             // 3. หา Default MLM Plan
             $plan = $this->getDefaultPlan();
-            if (!$plan) {
+            if (! $plan) {
                 $this->command->error('❌ ไม่พบ MLM Plan - กรุณารัน MlmPlanSeeder ก่อน');
+
                 return;
             }
             $this->command->info("✅ MLM Plan: {$plan->name}");
 
             // 4. หา Default MLM Package
             $package = $this->getDefaultPackage();
-            if (!$package) {
+            if (! $package) {
                 $this->command->error('❌ ไม่พบ MLM Package - กรุณารัน MlmPackageSeeder ก่อน');
+
                 return;
             }
             $this->command->info("✅ MLM Package: {$package->name}");
 
             // 5. สร้าง MlmMember สำหรับ SuperAdmin
             $member = $this->createSuperAdminMember($superAdmin, $plan, $package);
-            $this->command->info("✅ สร้าง MlmMember สำหรับ SuperAdmin สำเร็จ!");
+            $this->command->info('✅ สร้าง MlmMember สำหรับ SuperAdmin สำเร็จ!');
         }
 
         // 6. ตั้งค่า default_sponsor_member_code
@@ -118,8 +119,6 @@ class SuperAdminMlmSeeder extends Seeder
      * 1. หา email = superadmin@thaiprompt.com
      * 2. หา is_super_admin = true
      * 3. หา role = admin (fallback)
-     *
-     * @return User|null
      */
     private function findSuperAdmin(): ?User
     {
@@ -141,8 +140,6 @@ class SuperAdminMlmSeeder extends Seeder
 
     /**
      * หา Default MLM Plan
-     *
-     * @return MlmPlan|null
      */
     private function getDefaultPlan(): ?MlmPlan
     {
@@ -167,8 +164,6 @@ class SuperAdminMlmSeeder extends Seeder
      *
      * ⚠️ หมายเหตุ: ตาราง mlm_packages ไม่มีคอลัมน์ is_default
      * ใช้ sort_order หรือ slug ในการหา default package แทน
-     *
-     * @return MlmPackage|null
      */
     private function getDefaultPackage(): ?MlmPackage
     {
@@ -195,11 +190,6 @@ class SuperAdminMlmSeeder extends Seeder
      * สร้าง MlmMember สำหรับ SuperAdmin
      *
      * SuperAdmin จะเป็น Root (ไม่มี sponsor)
-     *
-     * @param User $superAdmin
-     * @param MlmPlan $plan
-     * @param MlmPackage $package
-     * @return MlmMember
      */
     private function createSuperAdminMember(User $superAdmin, MlmPlan $plan, MlmPackage $package): MlmMember
     {
@@ -239,9 +229,6 @@ class SuperAdminMlmSeeder extends Seeder
 
     /**
      * ตั้งค่า default_sponsor_member_code ให้ชี้ไปที่ SuperAdmin
-     *
-     * @param MlmMember $member
-     * @return void
      */
     private function setDefaultSponsor(MlmMember $member): void
     {
@@ -249,6 +236,7 @@ class SuperAdminMlmSeeder extends Seeder
 
         if ($currentValue === $member->member_code) {
             $this->command->info("ℹ️  default_sponsor_member_code ถูกต้องแล้ว: {$member->member_code}");
+
             return;
         }
 

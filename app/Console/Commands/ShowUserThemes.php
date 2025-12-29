@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\User;
+use Illuminate\Console\Command;
 
 class ShowUserThemes extends Command
 {
@@ -39,14 +39,15 @@ class ShowUserThemes extends Command
 
         $this->newLine();
 
-        $data = $users->map(function($user) {
+        $data = $users->map(function ($user) {
             $theme = $user->menu_theme_preference ?? 'millennium';
+
             return [
                 'ID' => $user->id,
                 'Name' => $user->name,
                 'Email' => $user->email,
                 'Theme' => $theme,
-                'Icon' => $theme === 'classic_x' ? '📐' : '⚡'
+                'Icon' => $theme === 'classic_x' ? '📐' : '⚡',
             ];
         });
 

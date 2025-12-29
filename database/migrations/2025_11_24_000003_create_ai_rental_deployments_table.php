@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง ai_rental_deployments
      *
      * เก็บข้อมูลการ deploy AI models ไปยัง Cloud GPU
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -69,7 +67,7 @@ return new class extends Migration
                 'running',
                 'stopped',
                 'error',
-                'deleted'
+                'deleted',
             ])->default('pending')->comment('สถานะ deployment');
 
             $table->timestamp('deployed_at')->nullable()
@@ -142,8 +140,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_deployments
-     *
-     * @return void
      */
     public function down(): void
     {

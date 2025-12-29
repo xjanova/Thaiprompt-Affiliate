@@ -64,13 +64,13 @@ return new class extends Migration
         // Assign permissions to roles
         foreach ($rolePermissions as $roleName => $permissionNames) {
             $role = $roles[$roleName] ?? null;
-            if (!$role) {
+            if (! $role) {
                 continue;
             }
 
             foreach ($permissionNames as $permissionName) {
                 $permission = $permissions[$permissionName] ?? null;
-                if (!$permission) {
+                if (! $permission) {
                     continue;
                 }
 

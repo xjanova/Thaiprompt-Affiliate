@@ -85,7 +85,7 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองเฉพาะที่สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuccess($query)
@@ -96,7 +96,7 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองเฉพาะที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -107,7 +107,7 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองเฉพาะที่รอดำเนินการ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -118,8 +118,8 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองตามประเภทการดำเนินการ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type ประเภทการดำเนินการ
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $type  ประเภทการดำเนินการ
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByType($query, string $type)
@@ -130,8 +130,8 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองตามผู้ดูแลระบบ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $adminId รหัสผู้ดูแลระบบ
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $adminId  รหัสผู้ดูแลระบบ
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByAdmin($query, $adminId)
@@ -142,8 +142,8 @@ class CoinControlAction extends Model
     /**
      * Scope สำหรับกรองเฉพาะรายการล่าสุดตามชั่วโมงที่กำหนด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $hours จำนวนชั่วโมง
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $hours  จำนวนชั่วโมง
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecent($query, $hours = 24)
@@ -153,8 +153,6 @@ class CoinControlAction extends Model
 
     /**
      * ตรวจสอบว่าสำเร็จหรือไม่
-     *
-     * @return bool
      */
     public function isSuccess(): bool
     {
@@ -163,8 +161,6 @@ class CoinControlAction extends Model
 
     /**
      * ตรวจสอบว่าล้มเหลวหรือไม่
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {
@@ -173,8 +169,6 @@ class CoinControlAction extends Model
 
     /**
      * ตรวจสอบว่ารอดำเนินการหรือไม่
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -183,8 +177,6 @@ class CoinControlAction extends Model
 
     /**
      * รับคำอธิบายการดำเนินการเป็นภาษาไทย
-     *
-     * @return string
      */
     public function getActionDescription(): string
     {
@@ -209,8 +201,6 @@ class CoinControlAction extends Model
 
     /**
      * รับไอคอนสำหรับการดำเนินการ
-     *
-     * @return string
      */
     public function getActionIcon(): string
     {
@@ -235,16 +225,15 @@ class CoinControlAction extends Model
 
     /**
      * รับ URL สำหรับดู transaction บน explorer
-     *
-     * @return string|null
      */
     public function getExplorerUrl(): ?string
     {
-        if (!$this->tx_hash) {
+        if (! $this->tx_hash) {
             return null;
         }
 
         $explorerBaseUrl = config('crypto.networks.tpix.explorer');
-        return $explorerBaseUrl . '/tx/' . $this->tx_hash;
+
+        return $explorerBaseUrl.'/tx/'.$this->tx_hash;
     }
 }

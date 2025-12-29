@@ -3,11 +3,11 @@
 namespace App\Services\TradingEngine;
 
 use App\Models\TradingBot;
+use App\Models\TradingNotification;
 use App\Models\TradingSignal;
 use App\Models\TradingTrade;
-use App\Models\TradingNotification;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TradeExecutionService
 {
@@ -40,7 +40,7 @@ class TradeExecutionService
             ]);
 
             // Execute on exchange (if not paper trading)
-            if (!$bot->dry_run) {
+            if (! $bot->dry_run) {
                 $this->executeOnExchange($bot, $trade);
             } else {
                 // Simulate execution for paper trading
@@ -66,7 +66,7 @@ class TradeExecutionService
 
             DB::commit();
 
-            Log::info("Trade executed", [
+            Log::info('Trade executed', [
                 'trade_id' => $trade->id,
                 'bot_id' => $bot->id,
                 'pair' => $trade->trading_pair,
@@ -80,7 +80,7 @@ class TradeExecutionService
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error("Trade execution failed", [
+            Log::error('Trade execution failed', [
                 'bot_id' => $bot->id,
                 'signal_id' => $signal->id,
                 'error' => $e->getMessage(),
@@ -105,7 +105,7 @@ class TradeExecutionService
             $bot = $trade->bot;
 
             // Execute close on exchange (if not paper trading)
-            if (!$bot->dry_run) {
+            if (! $bot->dry_run) {
                 $this->closeOnExchange($bot, $trade, $exitPrice);
             }
 
@@ -141,7 +141,7 @@ class TradeExecutionService
 
             DB::commit();
 
-            Log::info("Position closed", [
+            Log::info('Position closed', [
                 'trade_id' => $trade->id,
                 'exit_price' => $exitPrice,
                 'profit' => $trade->net_profit,
@@ -153,7 +153,7 @@ class TradeExecutionService
         } catch (\Exception $e) {
             DB::rollBack();
 
-            Log::error("Failed to close position", [
+            Log::error('Failed to close position', [
                 'trade_id' => $trade->id,
                 'error' => $e->getMessage(),
             ]);
@@ -168,7 +168,7 @@ class TradeExecutionService
     protected function executeOnExchange(TradingBot $bot, TradingTrade $trade): void
     {
         $exchange = $bot->account->exchange;
-        $connector = app("App\\Services\\Exchange\\" . $exchange->slug . "Connector");
+        $connector = app('App\\Services\\Exchange\\'.$exchange->slug.'Connector');
 
         // Place market order
         $order = $connector->createMarketOrder(
@@ -194,7 +194,7 @@ class TradeExecutionService
     protected function closeOnExchange(TradingBot $bot, TradingTrade $trade, float $exitPrice): void
     {
         $exchange = $bot->account->exchange;
-        $connector = app("App\\Services\\Exchange\\" . $exchange->slug . "Connector");
+        $connector = app('App\\Services\\Exchange\\'.$exchange->slug.'Connector');
 
         // Determine close side (opposite of entry)
         $closeSide = $trade->side === 'buy' ? 'sell' : 'buy';
@@ -239,6 +239,7 @@ class TradeExecutionService
     {
         // Default fee is 0.1% (varies by exchange)
         $feePercentage = $bot->account->exchange->additional_config['trading_fee'] ?? 0.001;
+
         return $orderValue * $feePercentage;
     }
 
@@ -247,7 +248,7 @@ class TradeExecutionService
      */
     protected function sendTradeNotification(TradingBot $bot, TradingTrade $trade, string $event): void
     {
-        if (!$bot->notifications_enabled) {
+        if (! $bot->notifications_enabled) {
             return;
         }
 

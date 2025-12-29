@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง theme_colors สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -74,7 +72,7 @@ return new class extends Migration
             // Gradient Direction
             $table->enum('gradient_direction', [
                 'to-right', 'to-left', 'to-top', 'to-bottom',
-                'to-top-right', 'to-top-left', 'to-bottom-right', 'to-bottom-left'
+                'to-top-right', 'to-top-left', 'to-bottom-right', 'to-bottom-left',
             ])->default('to-right');
 
             // Created/Updated
@@ -88,8 +86,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_colors
-     *
-     * @return void
      */
     public function down(): void
     {

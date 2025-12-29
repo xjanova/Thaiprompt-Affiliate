@@ -17,8 +17,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง membership_retention_history ถ้ายังไม่มี
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -61,8 +59,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง membership_retention_history
-     *
-     * @return void
      */
     public function down(): void
     {

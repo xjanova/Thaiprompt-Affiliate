@@ -17,20 +17,22 @@ class SnakeGameServiceManager
      * Cache keys
      */
     private const CACHE_SERVICE_STATUS = 'snake_game:service:status';
+
     private const CACHE_ONLINE_PLAYERS = 'snake_game:online_players';
+
     private const CACHE_ROOMS = 'snake_game:rooms';
+
     private const CACHE_SUSPICIOUS_ACTIVITIES = 'snake_game:suspicious';
 
     /**
      * Service status
      */
     private const STATUS_ONLINE = 'online';
+
     private const STATUS_OFFLINE = 'offline';
 
     /**
      * ตรวจสอบว่า service เปิดอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isOnline(): bool
     {
@@ -39,8 +41,6 @@ class SnakeGameServiceManager
 
     /**
      * เปิด service (เข้าสู่ online mode)
-     *
-     * @return array
      */
     public function startService(): array
     {
@@ -61,8 +61,6 @@ class SnakeGameServiceManager
      * ปิด service (เข้าสู่ offline mode)
      *
      * ผู้เล่นจะเล่นกับ bots อย่างเดียว
-     *
-     * @return array
      */
     public function stopService(): array
     {
@@ -81,8 +79,6 @@ class SnakeGameServiceManager
 
     /**
      * ดึงสถานะ service
-     *
-     * @return array
      */
     public function getServiceStatus(): array
     {
@@ -101,12 +97,6 @@ class SnakeGameServiceManager
 
     /**
      * เพิ่มผู้เล่น online
-     *
-     * @param int $userId
-     * @param string $username
-     * @param string $ipAddress
-     * @param array $metadata
-     * @return void
      */
     public function addOnlinePlayer(int $userId, string $username, string $ipAddress, array $metadata = []): void
     {
@@ -128,9 +118,6 @@ class SnakeGameServiceManager
 
     /**
      * ลบผู้เล่น online
-     *
-     * @param int $userId
-     * @return void
      */
     public function removeOnlinePlayer(int $userId): void
     {
@@ -141,10 +128,6 @@ class SnakeGameServiceManager
 
     /**
      * อัพเดทกิจกรรมของผู้เล่น
-     *
-     * @param int $userId
-     * @param array $data
-     * @return void
      */
     public function updatePlayerActivity(int $userId, array $data = []): void
     {
@@ -171,8 +154,6 @@ class SnakeGameServiceManager
 
     /**
      * ดึงรายชื่อผู้เล่น online
-     *
-     * @return array
      */
     public function getOnlinePlayers(): array
     {
@@ -193,14 +174,12 @@ class SnakeGameServiceManager
     /**
      * สร้างห้องใหม่
      *
-     * @param string $roomName
-     * @param int $maxPlayers
      * @return string Room ID
      */
     public function createRoom(string $roomName = 'Auto Room', int $maxPlayers = 10): string
     {
         $rooms = $this->getRooms();
-        $roomId = 'room_' . uniqid();
+        $roomId = 'room_'.uniqid();
 
         $rooms[$roomId] = [
             'room_id' => $roomId,
@@ -218,16 +197,12 @@ class SnakeGameServiceManager
 
     /**
      * เพิ่มผู้เล่นเข้าห้อง
-     *
-     * @param string $roomId
-     * @param int $userId
-     * @return bool
      */
     public function addPlayerToRoom(string $roomId, int $userId): bool
     {
         $rooms = $this->getRooms();
 
-        if (!isset($rooms[$roomId])) {
+        if (! isset($rooms[$roomId])) {
             return false;
         }
 
@@ -245,10 +220,6 @@ class SnakeGameServiceManager
 
     /**
      * ลบผู้เล่นออกจากห้อง
-     *
-     * @param string $roomId
-     * @param int $userId
-     * @return void
      */
     public function removePlayerFromRoom(string $roomId, int $userId): void
     {
@@ -256,7 +227,7 @@ class SnakeGameServiceManager
 
         if (isset($rooms[$roomId])) {
             $rooms[$roomId]['players'] = array_values(
-                array_filter($rooms[$roomId]['players'], fn($id) => $id !== $userId)
+                array_filter($rooms[$roomId]['players'], fn ($id) => $id !== $userId)
             );
             $rooms[$roomId]['current_players'] = count($rooms[$roomId]['players']);
 
@@ -271,8 +242,6 @@ class SnakeGameServiceManager
 
     /**
      * ดึงรายการห้อง
-     *
-     * @return array
      */
     public function getRooms(): array
     {
@@ -300,11 +269,6 @@ class SnakeGameServiceManager
 
     /**
      * บันทึกกิจกรรมน่าสงสัย
-     *
-     * @param int $userId
-     * @param string $type
-     * @param array $data
-     * @return void
      */
     public function logSuspiciousActivity(int $userId, string $type, array $data = []): void
     {
@@ -325,8 +289,6 @@ class SnakeGameServiceManager
 
     /**
      * ดึงกิจกรรมน่าสงสัย
-     *
-     * @return array
      */
     public function getSuspiciousActivities(): array
     {
@@ -335,8 +297,6 @@ class SnakeGameServiceManager
 
     /**
      * ล้างข้อมูลทั้งหมด (สำหรับ admin)
-     *
-     * @return void
      */
     public function clearAllData(): void
     {

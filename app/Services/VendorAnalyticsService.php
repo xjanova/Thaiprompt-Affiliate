@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\VendorStore;
-use App\Models\VendorAnalytics;
-use App\Models\VendorStoreVisit;
 use App\Models\OrderItem;
+use App\Models\VendorAnalytics;
+use App\Models\VendorStore;
+use App\Models\VendorStoreVisit;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class VendorAnalyticsService
 {
@@ -124,11 +123,11 @@ class VendorAnalyticsService
             ->get();
 
         return [
-            'dates' => $analytics->pluck('date')->map(fn($d) => Carbon::parse($d)->format('M d'))->toArray(),
+            'dates' => $analytics->pluck('date')->map(fn ($d) => Carbon::parse($d)->format('M d'))->toArray(),
             'page_views' => $analytics->pluck('page_views')->toArray(),
             'unique_visitors' => $analytics->pluck('unique_visitors')->toArray(),
             'orders' => $analytics->pluck('orders_count')->toArray(),
-            'revenue' => $analytics->pluck('total_sales')->map(fn($v) => (float)$v)->toArray(),
+            'revenue' => $analytics->pluck('total_sales')->map(fn ($v) => (float) $v)->toArray(),
         ];
     }
 
@@ -144,7 +143,7 @@ class VendorAnalyticsService
             ->where('date', $today)
             ->first();
 
-        if (!$analytics) {
+        if (! $analytics) {
             $analytics = $this->recordDailyAnalytics($store, $today);
         }
 

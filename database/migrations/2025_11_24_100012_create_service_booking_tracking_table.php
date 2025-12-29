@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บประวัติการอัพเดทตำแหน่งและสถานะของ provider
      * ใช้สำหรับแสดง real-time tracking บนแผนที่
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -65,8 +63,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_tracking
-     *
-     * @return void
      */
     public function down(): void
     {

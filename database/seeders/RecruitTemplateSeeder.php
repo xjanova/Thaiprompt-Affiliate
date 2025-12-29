@@ -14,8 +14,6 @@ class RecruitTemplateSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class RecruitTemplateSeeder extends Seeder
         // ตรวจสอบว่ามีเทมเพลต default อยู่แล้วหรือไม่
         if (RecruitTemplate::where('is_default', true)->exists()) {
             $this->command->info('⏭️  มีเทมเพลต default อยู่แล้ว ข้าม...');
+
             return;
         }
 

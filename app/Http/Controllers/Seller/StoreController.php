@@ -7,8 +7,8 @@ use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class StoreController extends Controller
 {
@@ -24,7 +24,7 @@ class StoreController extends Controller
         $store = VendorStore::where('user_id', $user->id)->first();
 
         // ถ้าไม่มี store (ไม่ควรเกิดขึ้นเพราะมี middleware) ให้ redirect ไป onboarding
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('info', 'กรุณาตั้งค่าร้านค้าของคุณก่อน');
         }
@@ -85,7 +85,7 @@ class StoreController extends Controller
                 400,  // max width
                 400   // max height
             );
-            $validated['store_logo'] = 'storage/' . $logoPath;
+            $validated['store_logo'] = 'storage/'.$logoPath;
         }
 
         // Handle banner upload with WebP conversion
@@ -101,7 +101,7 @@ class StoreController extends Controller
                 1920,  // max width
                 600    // max height
             );
-            $validated['store_banner'] = 'storage/' . $bannerPath;
+            $validated['store_banner'] = 'storage/'.$bannerPath;
         }
 
         // Update store slug if store name changed
@@ -120,21 +120,21 @@ class StoreController extends Controller
      *
      * ใช้ Intervention Image v3 API สำหรับการแปลงรูปภาพ
      *
-     * @param \Illuminate\Http\UploadedFile $file ไฟล์รูปภาพที่อัปโหลด
-     * @param string $directory โฟลเดอร์ที่จะบันทึก
-     * @param int $maxWidth ความกว้างสูงสุด
-     * @param int $maxHeight ความสูงสูงสุด
+     * @param  \Illuminate\Http\UploadedFile  $file  ไฟล์รูปภาพที่อัปโหลด
+     * @param  string  $directory  โฟลเดอร์ที่จะบันทึก
+     * @param  int  $maxWidth  ความกว้างสูงสุด
+     * @param  int  $maxHeight  ความสูงสูงสุด
      * @return string เส้นทางไฟล์ที่บันทึก
      */
     private function convertAndSaveAsWebP($file, $directory, $maxWidth = 1920, $maxHeight = 1080)
     {
         try {
             // สร้างชื่อไฟล์ unique
-            $filename = Str::random(40) . '.webp';
-            $fullPath = $directory . '/' . $filename;
+            $filename = Str::random(40).'.webp';
+            $fullPath = $directory.'/'.$filename;
 
             // สร้าง ImageManager ด้วย GD driver (Intervention Image v3)
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
 
             // โหลดรูปภาพโดยใช้ Intervention Image v3 API
             $image = $manager->read($file->getPathname());
@@ -153,10 +153,11 @@ class StoreController extends Controller
             return $fullPath;
         } catch (\Exception $e) {
             // Fallback: ถ้าแปลง WebP ไม่สำเร็จ ให้บันทึกไฟล์ต้นฉบับ
-            \Log::error('WebP conversion failed: ' . $e->getMessage());
+            \Log::error('WebP conversion failed: '.$e->getMessage());
 
             // บันทึกไฟล์ต้นฉบับโดยไม่แปลง
             $originalPath = $file->store($directory, 'public');
+
             return $originalPath;
         }
     }

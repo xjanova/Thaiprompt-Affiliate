@@ -11,8 +11,6 @@ use Illuminate\Support\Facades\Schema;
  * คำสั่งสำหรับจัดการข้อมูล Demo
  *
  * ใช้สำหรับลบข้อมูล demo และสามารถเลือกได้ว่าจะลบข้อมูลประเภทไหน
- *
- * @package App\Console\Commands
  */
 class ResetDemoData extends Command
 {
@@ -112,9 +110,10 @@ class ResetDemoData extends Command
         $this->displayHeader();
 
         // ตรวจสอบว่าเป็น production หรือไม่
-        if (app()->environment('production') && !$this->option('force')) {
+        if (app()->environment('production') && ! $this->option('force')) {
             $this->error('🚫 คุณกำลังอยู่ใน Production environment!');
             $this->warn('   ใช้ --force ถ้าต้องการดำเนินการจริงๆ');
+
             return 1;
         }
 
@@ -168,15 +167,17 @@ class ResetDemoData extends Command
         $this->warn('   จะลบฐานข้อมูลทั้งหมดและสร้างใหม่!');
         $this->newLine();
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('คุณแน่ใจหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!', false)) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('คุณแน่ใจหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!', false)) {
                 $this->info('ยกเลิกการดำเนินการ');
+
                 return 0;
             }
 
             // ยืนยันอีกครั้ง
-            if (!$this->confirm('ยืนยันอีกครั้ง - ต้องการลบทุกอย่างและเริ่มใหม่?', false)) {
+            if (! $this->confirm('ยืนยันอีกครั้ง - ต้องการลบทุกอย่างและเริ่มใหม่?', false)) {
                 $this->info('ยกเลิกการดำเนินการ');
+
                 return 0;
             }
         }
@@ -189,6 +190,7 @@ class ResetDemoData extends Command
         Artisan::call('db:seed', [], $this->getOutput());
 
         $this->displaySuccess();
+
         return 0;
     }
 
@@ -209,9 +211,10 @@ class ResetDemoData extends Command
         }
         $this->newLine();
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('ดำเนินการต่อ?', false)) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('ดำเนินการต่อ?', false)) {
                 $this->info('ยกเลิกการดำเนินการ');
+
                 return 0;
             }
         }
@@ -222,6 +225,7 @@ class ResetDemoData extends Command
         }
 
         $this->displaySuccess();
+
         return 0;
     }
 
@@ -247,13 +251,14 @@ class ResetDemoData extends Command
         }
 
         $this->line("  {$index}) ลบทั้งหมด (All)");
-        $this->line("  0) ยกเลิก");
+        $this->line('  0) ยกเลิก');
         $this->newLine();
 
         $choice = $this->ask('กรุณาเลือก (ใส่หมายเลข หรือคั่นด้วย , เช่น 1,2,3)');
 
         if ($choice === '0' || $choice === null) {
             $this->info('ยกเลิกการดำเนินการ');
+
             return 0;
         }
 
@@ -267,13 +272,14 @@ class ResetDemoData extends Command
                 return $this->cleanAllDemoData();
             }
 
-            if (isset($choices[(int)$num])) {
-                $categoriesToClean[] = $choices[(int)$num];
+            if (isset($choices[(int) $num])) {
+                $categoriesToClean[] = $choices[(int) $num];
             }
         }
 
         if (empty($categoriesToClean)) {
             $this->error('ไม่มีตัวเลือกที่ถูกต้อง');
+
             return 1;
         }
 
@@ -301,7 +307,6 @@ class ResetDemoData extends Command
     /**
      * ลบข้อมูล demo ที่เลือก
      *
-     * @param array $categories
      * @return int
      */
     protected function cleanSelectedDemoData(array $categories)
@@ -317,9 +322,10 @@ class ResetDemoData extends Command
         }
         $this->newLine();
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('ดำเนินการต่อ?', false)) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('ดำเนินการต่อ?', false)) {
                 $this->info('ยกเลิกการดำเนินการ');
+
                 return 0;
             }
         }
@@ -329,19 +335,20 @@ class ResetDemoData extends Command
         }
 
         $this->displaySuccess();
+
         return 0;
     }
 
     /**
      * ลบข้อมูล demo ตามหมวดหมู่
      *
-     * @param string $category
      * @return void
      */
     protected function cleanDemoCategory(string $category)
     {
-        if (!isset($this->demoTables[$category])) {
+        if (! isset($this->demoTables[$category])) {
             $this->error("ไม่พบหมวดหมู่: {$category}");
+
             return;
         }
 
@@ -351,8 +358,9 @@ class ResetDemoData extends Command
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
         foreach ($config['tables'] as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 $this->line("   ⊘ ข้าม {$table} (ไม่มีตาราง)");
+
                 continue;
             }
 

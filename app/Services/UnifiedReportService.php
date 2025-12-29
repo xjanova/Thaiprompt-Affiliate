@@ -3,21 +3,21 @@
 namespace App\Services;
 
 use App\Models\Affiliate;
+use App\Models\AiBotProfile;
 use App\Models\Commission;
+use App\Models\CryptoTransaction;
+use App\Models\HotelBooking;
 use App\Models\Order;
+use App\Models\PosTransaction;
 use App\Models\Product;
+use App\Models\Rank;
+use App\Models\ServiceBooking;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Models\AiBotProfile;
-use App\Models\HotelBooking;
-use App\Models\PosTransaction;
-use App\Models\ServiceBooking;
-use App\Models\CryptoTransaction;
-use App\Models\Rank;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * UnifiedReportService - บริการดึงข้อมูลรายงานรวมจากทุกระบบ
@@ -42,10 +42,9 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลสรุปภาพรวมทั้งหมด (Executive Summary)
      *
-     * @param string $period ช่วงเวลา (today, week, month, year, custom)
-     * @param string|null $startDate วันที่เริ่มต้น
-     * @param string|null $endDate วันที่สิ้นสุด
-     * @return array
+     * @param  string  $period  ช่วงเวลา (today, week, month, year, custom)
+     * @param  string|null  $startDate  วันที่เริ่มต้น
+     * @param  string|null  $endDate  วันที่สิ้นสุด
      */
     public function getExecutiveSummary(string $period = 'month', ?string $startDate = null, ?string $endDate = null): array
     {
@@ -74,9 +73,8 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลแนวโน้ม (Trends) สำหรับกราฟ
      *
-     * @param string $period ช่วงเวลา
-     * @param string $groupBy กลุ่มตาม (day, week, month)
-     * @return array
+     * @param  string  $period  ช่วงเวลา
+     * @param  string  $groupBy  กลุ่มตาม (day, week, month)
      */
     public function getTrends(string $period = 'month', string $groupBy = 'day'): array
     {
@@ -101,8 +99,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน MLM/Affiliate
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getMlmReport(string $period = 'month'): array
     {
@@ -122,8 +119,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน E-commerce
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getEcommerceReport(string $period = 'month'): array
     {
@@ -142,8 +138,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงานการเงิน (Wallet/Finance)
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getFinanceReport(string $period = 'month'): array
     {
@@ -162,8 +157,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน AI Bot
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getAiBotReport(string $period = 'month'): array
     {
@@ -180,8 +174,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงานโรงแรม
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getHotelReport(string $period = 'month'): array
     {
@@ -198,8 +191,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน POS
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getPosReport(string $period = 'month'): array
     {
@@ -216,8 +208,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน Crypto/TPIX
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getCryptoReport(string $period = 'month'): array
     {
@@ -233,8 +224,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงาน HRM/บุคลากร
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getHrmReport(string $period = 'month'): array
     {
@@ -251,8 +241,7 @@ class UnifiedReportService
     /**
      * ดึงข้อมูลรายงานการเรียนรู้
      *
-     * @param string $period ช่วงเวลา
-     * @return array
+     * @param  string  $period  ช่วงเวลา
      */
     public function getLearningReport(string $period = 'month'): array
     {
@@ -268,8 +257,6 @@ class UnifiedReportService
 
     /**
      * ดึงรายการระบบทั้งหมดที่สามารถสร้างรายงานได้
-     *
-     * @return array
      */
     public function getAvailableSystems(): array
     {
@@ -682,7 +669,7 @@ class UnifiedReportService
      */
     protected function getRevenueTrends(array $dates, string $format): array
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return [];
         }
 
@@ -700,7 +687,7 @@ class UnifiedReportService
      */
     protected function getOrderTrends(array $dates, string $format): array
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return [];
         }
 
@@ -717,7 +704,7 @@ class UnifiedReportService
      */
     protected function getCommissionTrends(array $dates, string $format): array
     {
-        if (!class_exists(\App\Models\Commission::class)) {
+        if (! class_exists(\App\Models\Commission::class)) {
             return [];
         }
 
@@ -734,7 +721,7 @@ class UnifiedReportService
      */
     protected function getRankDistribution(): array
     {
-        if (!class_exists(\App\Models\Rank::class)) {
+        if (! class_exists(\App\Models\Rank::class)) {
             return [];
         }
 
@@ -752,7 +739,7 @@ class UnifiedReportService
      */
     protected function getTopEarners(array $dates, int $limit = 10): array
     {
-        if (!class_exists(\App\Models\Commission::class)) {
+        if (! class_exists(\App\Models\Commission::class)) {
             return [];
         }
 
@@ -786,7 +773,7 @@ class UnifiedReportService
      */
     protected function getCommissionByType(array $dates): array
     {
-        if (!class_exists(\App\Models\Commission::class)) {
+        if (! class_exists(\App\Models\Commission::class)) {
             return [];
         }
 
@@ -815,7 +802,7 @@ class UnifiedReportService
      */
     protected function getMlmGrowthRate(array $dates): array
     {
-        if (!class_exists(\App\Models\Affiliate::class)) {
+        if (! class_exists(\App\Models\Affiliate::class)) {
             return ['growth_rate' => 0, 'previous_period' => 0, 'current_period' => 0];
         }
 
@@ -839,7 +826,7 @@ class UnifiedReportService
      */
     protected function getTopProducts(array $dates, int $limit = 10): array
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return [];
         }
 
@@ -887,7 +874,7 @@ class UnifiedReportService
      */
     protected function getOrderStatusDistribution(array $dates): array
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return [];
         }
 
@@ -903,7 +890,7 @@ class UnifiedReportService
      */
     protected function getAverageOrderValue(array $dates): float
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return 0;
         }
 
@@ -919,7 +906,7 @@ class UnifiedReportService
      */
     protected function getCustomerStats(array $dates): array
     {
-        if (!class_exists(\App\Models\Order::class)) {
+        if (! class_exists(\App\Models\Order::class)) {
             return [
                 'new_customers' => 0,
                 'returning_customers' => 0,
@@ -951,7 +938,7 @@ class UnifiedReportService
      */
     protected function getTransactionTypes(array $dates): array
     {
-        if (!class_exists(\App\Models\WalletTransaction::class)) {
+        if (! class_exists(\App\Models\WalletTransaction::class)) {
             return [];
         }
 
@@ -967,7 +954,7 @@ class UnifiedReportService
      */
     protected function getTopWallets(int $limit = 10): array
     {
-        if (!class_exists(\App\Models\Wallet::class)) {
+        if (! class_exists(\App\Models\Wallet::class)) {
             return [];
         }
 
@@ -983,7 +970,7 @@ class UnifiedReportService
      */
     protected function getWithdrawalStats(array $dates): array
     {
-        if (!class_exists(\App\Models\WalletTransaction::class)) {
+        if (! class_exists(\App\Models\WalletTransaction::class)) {
             return [
                 'total_amount' => 0,
                 'count' => 0,
@@ -1008,7 +995,7 @@ class UnifiedReportService
      */
     protected function getDepositStats(array $dates): array
     {
-        if (!class_exists(\App\Models\WalletTransaction::class)) {
+        if (! class_exists(\App\Models\WalletTransaction::class)) {
             return [
                 'total_amount' => 0,
                 'count' => 0,
@@ -1033,7 +1020,7 @@ class UnifiedReportService
      */
     protected function getDailyFlow(array $dates): array
     {
-        if (!class_exists(\App\Models\WalletTransaction::class)) {
+        if (! class_exists(\App\Models\WalletTransaction::class)) {
             return [];
         }
 
@@ -1054,7 +1041,7 @@ class UnifiedReportService
      */
     protected function getPopularBots(array $dates, int $limit = 10): array
     {
-        if (!class_exists(\App\Models\AiBotProfile::class)) {
+        if (! class_exists(\App\Models\AiBotProfile::class)) {
             return [];
         }
 
@@ -1103,7 +1090,7 @@ class UnifiedReportService
      */
     protected function getRevenueByHotel(array $dates, int $limit = 10): array
     {
-        if (!class_exists(\App\Models\HotelBooking::class)) {
+        if (! class_exists(\App\Models\HotelBooking::class)) {
             return [];
         }
 
@@ -1123,7 +1110,7 @@ class UnifiedReportService
      */
     protected function getBookingStatusDistribution(array $dates): array
     {
-        if (!class_exists(\App\Models\HotelBooking::class)) {
+        if (! class_exists(\App\Models\HotelBooking::class)) {
             return [];
         }
 
@@ -1139,7 +1126,7 @@ class UnifiedReportService
      */
     protected function getSalesByDevice(array $dates): array
     {
-        if (!class_exists(\App\Models\PosTransaction::class)) {
+        if (! class_exists(\App\Models\PosTransaction::class)) {
             return [];
         }
 
@@ -1155,7 +1142,7 @@ class UnifiedReportService
      */
     protected function getPeakHours(array $dates): array
     {
-        if (!class_exists(\App\Models\PosTransaction::class)) {
+        if (! class_exists(\App\Models\PosTransaction::class)) {
             return [];
         }
 
@@ -1172,7 +1159,7 @@ class UnifiedReportService
      */
     protected function getPaymentMethodStats(array $dates): array
     {
-        if (!class_exists(\App\Models\PosTransaction::class)) {
+        if (! class_exists(\App\Models\PosTransaction::class)) {
             return [];
         }
 
@@ -1188,7 +1175,7 @@ class UnifiedReportService
      */
     protected function getCryptoTransactionTypes(array $dates): array
     {
-        if (!class_exists(\App\Models\CryptoTransaction::class)) {
+        if (! class_exists(\App\Models\CryptoTransaction::class)) {
             return [];
         }
 
@@ -1239,7 +1226,7 @@ class UnifiedReportService
      */
     protected function getDepartmentStats(array $dates): array
     {
-        if (!class_exists(\App\Models\Employee::class)) {
+        if (! class_exists(\App\Models\Employee::class)) {
             return [];
         }
 
@@ -1343,7 +1330,7 @@ class UnifiedReportService
      */
     protected function getCourseStats(array $dates): array
     {
-        if (!class_exists(\App\Models\Course::class)) {
+        if (! class_exists(\App\Models\Course::class)) {
             return [];
         }
 
@@ -1362,12 +1349,12 @@ class UnifiedReportService
      */
     protected function getEnrollmentStats(array $dates): array
     {
-        if (!class_exists(\App\Models\Enrollment::class)) {
+        if (! class_exists(\App\Models\Enrollment::class)) {
             return [];
         }
 
         return \App\Models\Enrollment::whereBetween('created_at', [$dates['start'], $dates['end']])
-            ->selectRaw("DATE(created_at) as date, COUNT(*) as count")
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -1379,7 +1366,7 @@ class UnifiedReportService
      */
     protected function getCourseCompletionRate(array $dates): array
     {
-        if (!class_exists(\App\Models\Course::class)) {
+        if (! class_exists(\App\Models\Course::class)) {
             return [];
         }
 
@@ -1397,6 +1384,7 @@ class UnifiedReportService
                 $item->completion_rate = $item->total_enrollments > 0
                     ? round(($item->completions / $item->total_enrollments) * 100, 2)
                     : 0;
+
                 return $item;
             })
             ->toArray();

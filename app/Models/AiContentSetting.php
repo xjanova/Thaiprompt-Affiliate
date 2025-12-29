@@ -137,8 +137,7 @@ class AiContentSetting extends Model
     /**
      * ตั้งค่าและเข้ารหัสถ้าจำเป็น
      *
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     public function setEncodedValue($value): void
     {
@@ -152,9 +151,6 @@ class AiContentSetting extends Model
 
     /**
      * เข้ารหัสค่า
-     *
-     * @param string $value
-     * @return string
      */
     protected function encryptValue(string $value): string
     {
@@ -167,8 +163,6 @@ class AiContentSetting extends Model
 
     /**
      * ถอดรหัสค่า
-     *
-     * @return string|null
      */
     protected function decryptValue(): ?string
     {
@@ -191,15 +185,14 @@ class AiContentSetting extends Model
     /**
      * ดึงค่า setting จาก key
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function getValue(string $key, $default = null)
     {
         $setting = static::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -209,26 +202,24 @@ class AiContentSetting extends Model
     /**
      * ตั้งค่า setting
      *
-     * @param string $key
-     * @param mixed $value
-     * @return bool
+     * @param  mixed  $value
      */
     public static function setValue(string $key, $value): bool
     {
         $setting = static::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return false;
         }
 
         $setting->setEncodedValue($value);
+
         return $setting->save();
     }
 
     /**
      * ดึง settings ทั้งหมดในกลุ่ม
      *
-     * @param string $group
      * @return \Illuminate\Support\Collection
      */
     public static function getGroup(string $group)
@@ -237,6 +228,6 @@ class AiContentSetting extends Model
             ->active()
             ->ordered()
             ->get()
-            ->mapWithKeys(fn($item) => [$item->key => $item->decoded_value]);
+            ->mapWithKeys(fn ($item) => [$item->key => $item->decoded_value]);
     }
 }

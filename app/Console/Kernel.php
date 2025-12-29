@@ -37,7 +37,7 @@ class Kernel extends ConsoleKernel
                     break;
 
                 case 'custom':
-                    if (!empty($customCron)) {
+                    if (! empty($customCron)) {
                         $command->cron($customCron);
                     } else {
                         // Fallback to daily if custom is selected but no cron provided

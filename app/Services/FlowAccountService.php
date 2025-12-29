@@ -2,17 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\AccountingContact;
+use App\Models\AccountingExpense;
 use App\Models\AccountingFlowaccountConnection;
 use App\Models\AccountingFlowaccountSyncLog;
-use App\Models\AccountingContact;
-use App\Models\AccountingProduct;
 use App\Models\AccountingInvoice;
-use App\Models\AccountingExpense;
+use App\Models\AccountingProduct;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * FlowAccount API Integration Service
@@ -75,8 +73,7 @@ class FlowAccountService
     /**
      * ดึงข้อมูลการเชื่อมต่อของ user
      *
-     * @param User $user ผู้ใช้
-     * @return AccountingFlowaccountConnection|null
+     * @param  User  $user  ผู้ใช้
      */
     public function getConnection(User $user): ?AccountingFlowaccountConnection
     {
@@ -86,9 +83,8 @@ class FlowAccountService
     /**
      * บันทึกหรืออัปเดตการเชื่อมต่อ
      *
-     * @param User $user ผู้ใช้
-     * @param array $data ข้อมูลการเชื่อมต่อ
-     * @return AccountingFlowaccountConnection
+     * @param  User  $user  ผู้ใช้
+     * @param  array  $data  ข้อมูลการเชื่อมต่อ
      */
     public function saveConnection(User $user, array $data): AccountingFlowaccountConnection
     {
@@ -101,7 +97,7 @@ class FlowAccountService
     /**
      * ทดสอบการเชื่อมต่อ
      *
-     * @param AccountingFlowaccountConnection $connection การเชื่อมต่อที่จะทดสอบ
+     * @param  AccountingFlowaccountConnection  $connection  การเชื่อมต่อที่จะทดสอบ
      * @return array ผลการทดสอบ ['success' => bool, 'message' => string, 'data' => array]
      */
     public function testConnection(AccountingFlowaccountConnection $connection): array
@@ -111,6 +107,7 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return [
                     'success' => true,
                     'message' => 'เชื่อมต่อสำเร็จ',
@@ -120,14 +117,15 @@ class FlowAccountService
 
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถเชื่อมต่อได้: ' . ($response->json()['message'] ?? 'Unknown error'),
+                'message' => 'ไม่สามารถเชื่อมต่อได้: '.($response->json()['message'] ?? 'Unknown error'),
                 'data' => [],
             ];
         } catch (\Exception $e) {
-            Log::error('FlowAccount connection test failed: ' . $e->getMessage());
+            Log::error('FlowAccount connection test failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'data' => [],
             ];
         }
@@ -136,7 +134,6 @@ class FlowAccountService
     /**
      * ตรวจสอบสถานะการเชื่อมต่อ
      *
-     * @param AccountingFlowaccountConnection $connection
      * @return array ข้อมูลสถานะการเชื่อมต่อ
      */
     public function getConnectionStatus(AccountingFlowaccountConnection $connection): array
@@ -157,12 +154,6 @@ class FlowAccountService
 
     /**
      * สร้าง Authorization URL สำหรับ OAuth
-     *
-     * @param string $clientId
-     * @param string|null $redirectUri
-     * @param string $scope
-     * @param string|null $state
-     * @return string
      */
     public function getAuthorizationUrl(
         string $clientId,
@@ -181,17 +172,11 @@ class FlowAccountService
             $params['state'] = $state;
         }
 
-        return "{$this->baseUrl}/oauth/authorize?" . http_build_query($params);
+        return "{$this->baseUrl}/oauth/authorize?".http_build_query($params);
     }
 
     /**
      * แลกเปลี่ยน Authorization Code เป็น Access Token
-     *
-     * @param string $clientId
-     * @param string $clientSecret
-     * @param string $authCode
-     * @param string|null $redirectUri
-     * @return array|null
      */
     public function getAccessToken(
         string $clientId,
@@ -214,22 +199,22 @@ class FlowAccountService
             if ($response->successful()) {
                 $data = $response->json();
                 Log::info('FlowAccount OAuth token obtained successfully');
+
                 return $data;
             }
 
-            Log::error('FlowAccount OAuth failed: ' . $response->body());
+            Log::error('FlowAccount OAuth failed: '.$response->body());
+
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount OAuth exception: ' . $e->getMessage());
+            Log::error('FlowAccount OAuth exception: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * รีเฟรช Access Token
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @return bool
      */
     public function refreshAccessToken(AccountingFlowaccountConnection $connection): bool
     {
@@ -252,14 +237,17 @@ class FlowAccountService
                     'token_expires_at' => now()->addSeconds($data['expires_in'] ?? 3600),
                 ]);
 
-                Log::info('FlowAccount token refreshed successfully for user: ' . $connection->user_id);
+                Log::info('FlowAccount token refreshed successfully for user: '.$connection->user_id);
+
                 return true;
             }
 
-            Log::error('FlowAccount token refresh failed: ' . $response->body());
+            Log::error('FlowAccount token refresh failed: '.$response->body());
+
             return false;
         } catch (\Exception $e) {
-            Log::error('FlowAccount token refresh exception: ' . $e->getMessage());
+            Log::error('FlowAccount token refresh exception: '.$e->getMessage());
+
             return false;
         }
     }
@@ -270,9 +258,6 @@ class FlowAccountService
 
     /**
      * ดึงข้อมูลบริษัท
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @return array|null
      */
     public function getCompanyInfo(AccountingFlowaccountConnection $connection): ?array
     {
@@ -285,7 +270,8 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get company info failed: ' . $e->getMessage());
+            Log::error('FlowAccount get company info failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -297,9 +283,7 @@ class FlowAccountService
     /**
      * ดึงรายการผู้ติดต่อ
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params ['CurrentPage', 'PageSize', 'Filter', 'SearchString', 'SortBy']
-     * @return array|null
+     * @param  array  $params  ['CurrentPage', 'PageSize', 'Filter', 'SearchString', 'SortBy']
      */
     public function getContacts(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -318,17 +302,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get contacts failed: ' . $e->getMessage());
+            Log::error('FlowAccount get contacts failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ดึงข้อมูลผู้ติดต่อตาม ID
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $contactId
-     * @return array|null
      */
     public function getContact(AccountingFlowaccountConnection $connection, int $contactId): ?array
     {
@@ -341,7 +322,8 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error("FlowAccount get contact {$contactId} failed: " . $e->getMessage());
+            Log::error("FlowAccount get contact {$contactId} failed: ".$e->getMessage());
+
             return null;
         }
     }
@@ -349,9 +331,7 @@ class FlowAccountService
     /**
      * สร้างผู้ติดต่อใหม่
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data ข้อมูลผู้ติดต่อ
-     * @return array|null
+     * @param  array  $data  ข้อมูลผู้ติดต่อ
      */
     public function createContact(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -360,25 +340,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'contact', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'contact', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'contact', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create contact failed: ' . $e->getMessage());
+            Log::error('FlowAccount create contact failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * อัปเดตผู้ติดต่อ
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $contactId
-     * @param array $data
-     * @return array|null
      */
     public function updateContact(AccountingFlowaccountConnection $connection, int $contactId, array $data): ?array
     {
@@ -387,24 +365,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'contact', 'update', true, null, $contactId);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'contact', 'update', false, $response->body(), $contactId);
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'contact', 'update', false, $e->getMessage(), $contactId);
-            Log::error("FlowAccount update contact {$contactId} failed: " . $e->getMessage());
+            Log::error("FlowAccount update contact {$contactId} failed: ".$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ลบผู้ติดต่อ
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $contactId
-     * @return bool
      */
     public function deleteContact(AccountingFlowaccountConnection $connection, int $contactId): bool
     {
@@ -413,14 +390,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'contact', 'delete', true, null, $contactId);
+
                 return true;
             }
 
             $this->logSync($connection, 'contact', 'delete', false, $response->body(), $contactId);
+
             return false;
         } catch (\Exception $e) {
             $this->logSync($connection, 'contact', 'delete', false, $e->getMessage(), $contactId);
-            Log::error("FlowAccount delete contact {$contactId} failed: " . $e->getMessage());
+            Log::error("FlowAccount delete contact {$contactId} failed: ".$e->getMessage());
+
             return false;
         }
     }
@@ -431,10 +411,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการสินค้า
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getProducts(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -453,17 +429,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get products failed: ' . $e->getMessage());
+            Log::error('FlowAccount get products failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ดึงข้อมูลสินค้าตาม ID
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $productId
-     * @return array|null
      */
     public function getProduct(AccountingFlowaccountConnection $connection, int $productId): ?array
     {
@@ -476,17 +449,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error("FlowAccount get product {$productId} failed: " . $e->getMessage());
+            Log::error("FlowAccount get product {$productId} failed: ".$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างสินค้าใหม่
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createProduct(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -495,25 +465,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'product', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'product', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'product', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create product failed: ' . $e->getMessage());
+            Log::error('FlowAccount create product failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * อัปเดตสินค้า
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $productId
-     * @param array $data
-     * @return array|null
      */
     public function updateProduct(AccountingFlowaccountConnection $connection, int $productId, array $data): ?array
     {
@@ -522,24 +490,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'product', 'update', true, null, $productId);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'product', 'update', false, $response->body(), $productId);
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'product', 'update', false, $e->getMessage(), $productId);
-            Log::error("FlowAccount update product {$productId} failed: " . $e->getMessage());
+            Log::error("FlowAccount update product {$productId} failed: ".$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ลบสินค้า
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $productId
-     * @return bool
      */
     public function deleteProduct(AccountingFlowaccountConnection $connection, int $productId): bool
     {
@@ -548,14 +515,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'product', 'delete', true, null, $productId);
+
                 return true;
             }
 
             $this->logSync($connection, 'product', 'delete', false, $response->body(), $productId);
+
             return false;
         } catch (\Exception $e) {
             $this->logSync($connection, 'product', 'delete', false, $e->getMessage(), $productId);
-            Log::error("FlowAccount delete product {$productId} failed: " . $e->getMessage());
+            Log::error("FlowAccount delete product {$productId} failed: ".$e->getMessage());
+
             return false;
         }
     }
@@ -566,10 +536,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบกำกับภาษี
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getTaxInvoices(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -588,17 +554,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get tax invoices failed: ' . $e->getMessage());
+            Log::error('FlowAccount get tax invoices failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ดึงใบกำกับภาษีตาม ID
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $documentId
-     * @return array|null
      */
     public function getTaxInvoice(AccountingFlowaccountConnection $connection, int $documentId): ?array
     {
@@ -611,17 +574,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error("FlowAccount get tax invoice {$documentId} failed: " . $e->getMessage());
+            Log::error("FlowAccount get tax invoice {$documentId} failed: ".$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบกำกับภาษี
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createTaxInvoice(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -630,25 +590,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'tax_invoice', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'tax_invoice', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'tax_invoice', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create tax invoice failed: ' . $e->getMessage());
+            Log::error('FlowAccount create tax invoice failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * อัปเดตสถานะใบกำกับภาษี
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $documentId
-     * @param string $status
-     * @return bool
      */
     public function updateTaxInvoiceStatus(AccountingFlowaccountConnection $connection, int $documentId, string $status): bool
     {
@@ -659,14 +617,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'tax_invoice', 'update_status', true, null, $documentId);
+
                 return true;
             }
 
             $this->logSync($connection, 'tax_invoice', 'update_status', false, $response->body(), $documentId);
+
             return false;
         } catch (\Exception $e) {
             $this->logSync($connection, 'tax_invoice', 'update_status', false, $e->getMessage(), $documentId);
-            Log::error("FlowAccount update tax invoice status {$documentId} failed: " . $e->getMessage());
+            Log::error("FlowAccount update tax invoice status {$documentId} failed: ".$e->getMessage());
+
             return false;
         }
     }
@@ -677,10 +638,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบกำกับภาษีเงินสด
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getCashInvoices(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -699,17 +656,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get cash invoices failed: ' . $e->getMessage());
+            Log::error('FlowAccount get cash invoices failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบกำกับภาษีเงินสด
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createCashInvoice(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -718,14 +672,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'cash_invoice', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'cash_invoice', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'cash_invoice', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create cash invoice failed: ' . $e->getMessage());
+            Log::error('FlowAccount create cash invoice failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -736,10 +693,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบแจ้งหนี้
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getReceivableInvoices(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -758,17 +711,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get receivable invoices failed: ' . $e->getMessage());
+            Log::error('FlowAccount get receivable invoices failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบแจ้งหนี้
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createReceivableInvoice(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -777,25 +727,23 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'receivable_invoice', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'receivable_invoice', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'receivable_invoice', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create receivable invoice failed: ' . $e->getMessage());
+            Log::error('FlowAccount create receivable invoice failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * บันทึกการรับชำระเงิน
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $documentId
-     * @param array $paymentData
-     * @return array|null
      */
     public function recordReceivablePayment(AccountingFlowaccountConnection $connection, int $documentId, array $paymentData): ?array
     {
@@ -809,14 +757,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'receivable_invoice', 'payment', true, null, $documentId);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'receivable_invoice', 'payment', false, $response->body(), $documentId);
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'receivable_invoice', 'payment', false, $e->getMessage(), $documentId);
-            Log::error("FlowAccount record payment for {$documentId} failed: " . $e->getMessage());
+            Log::error("FlowAccount record payment for {$documentId} failed: ".$e->getMessage());
+
             return null;
         }
     }
@@ -827,10 +778,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบเสนอราคา
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getQuotations(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -849,17 +796,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get quotations failed: ' . $e->getMessage());
+            Log::error('FlowAccount get quotations failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบเสนอราคา
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createQuotation(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -868,14 +812,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'quotation', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'quotation', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'quotation', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create quotation failed: ' . $e->getMessage());
+            Log::error('FlowAccount create quotation failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -886,10 +833,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบวางบิล
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getBillingNotes(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -908,17 +851,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get billing notes failed: ' . $e->getMessage());
+            Log::error('FlowAccount get billing notes failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบวางบิล
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createBillingNote(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -927,14 +867,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'billing_note', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'billing_note', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'billing_note', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create billing note failed: ' . $e->getMessage());
+            Log::error('FlowAccount create billing note failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -945,10 +888,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการใบเสร็จรับเงิน
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getReceipts(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -967,17 +906,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get receipts failed: ' . $e->getMessage());
+            Log::error('FlowAccount get receipts failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างใบเสร็จรับเงิน
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createReceipt(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -986,14 +922,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'receipt', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'receipt', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'receipt', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create receipt failed: ' . $e->getMessage());
+            Log::error('FlowAccount create receipt failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -1004,10 +943,6 @@ class FlowAccountService
 
     /**
      * ดึงรายการค่าใช้จ่าย
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $params
-     * @return array|null
      */
     public function getExpenses(AccountingFlowaccountConnection $connection, array $params = []): ?array
     {
@@ -1026,17 +961,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount get expenses failed: ' . $e->getMessage());
+            Log::error('FlowAccount get expenses failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * สร้างค่าใช้จ่าย
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param array $data
-     * @return array|null
      */
     public function createExpense(AccountingFlowaccountConnection $connection, array $data): ?array
     {
@@ -1045,14 +977,17 @@ class FlowAccountService
 
             if ($response->successful()) {
                 $this->logSync($connection, 'expense', 'create', true);
+
                 return $response->json();
             }
 
             $this->logSync($connection, 'expense', 'create', false, $response->body());
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'expense', 'create', false, $e->getMessage());
-            Log::error('FlowAccount create expense failed: ' . $e->getMessage());
+            Log::error('FlowAccount create expense failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -1064,8 +999,6 @@ class FlowAccountService
     /**
      * ซิงค์ผู้ติดต่อจาก FlowAccount มายังระบบ
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $userId
      * @return array ผลการซิงค์
      */
     public function syncContactsFromFlowAccount(AccountingFlowaccountConnection $connection, int $userId): array
@@ -1082,7 +1015,7 @@ class FlowAccountService
                     'PageSize' => $pageSize,
                 ]);
 
-                if (!$response || empty($response['data'])) {
+                if (! $response || empty($response['data'])) {
                     break;
                 }
 
@@ -1104,7 +1037,7 @@ class FlowAccountService
                         }
                     } catch (\Exception $e) {
                         $result['failed']++;
-                        $result['errors'][] = "Contact ID {$contactData['id']}: " . $e->getMessage();
+                        $result['errors'][] = "Contact ID {$contactData['id']}: ".$e->getMessage();
                     }
                 }
 
@@ -1125,8 +1058,6 @@ class FlowAccountService
     /**
      * ซิงค์สินค้าจาก FlowAccount มายังระบบ
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param int $userId
      * @return array ผลการซิงค์
      */
     public function syncProductsFromFlowAccount(AccountingFlowaccountConnection $connection, int $userId): array
@@ -1143,7 +1074,7 @@ class FlowAccountService
                     'PageSize' => $pageSize,
                 ]);
 
-                if (!$response || empty($response['data'])) {
+                if (! $response || empty($response['data'])) {
                     break;
                 }
 
@@ -1165,7 +1096,7 @@ class FlowAccountService
                         }
                     } catch (\Exception $e) {
                         $result['failed']++;
-                        $result['errors'][] = "Product ID {$productData['id']}: " . $e->getMessage();
+                        $result['errors'][] = "Product ID {$productData['id']}: ".$e->getMessage();
                     }
                 }
 
@@ -1184,10 +1115,6 @@ class FlowAccountService
 
     /**
      * ซิงค์ใบแจ้งหนี้ไปยัง FlowAccount
-     *
-     * @param AccountingInvoice $invoice
-     * @param AccountingFlowaccountConnection $connection
-     * @return array|null
      */
     public function syncInvoice(AccountingInvoice $invoice, AccountingFlowaccountConnection $connection): ?array
     {
@@ -1213,24 +1140,23 @@ class FlowAccountService
                 ]);
 
                 $this->logSync($connection, 'invoice', 'sync', true, null, $invoice->id);
+
                 return $result;
             }
 
             $this->logSync($connection, 'invoice', 'sync', false, $response->body(), $invoice->id);
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'invoice', 'sync', false, $e->getMessage(), $invoice->id);
-            Log::error('FlowAccount invoice sync failed: ' . $e->getMessage());
+            Log::error('FlowAccount invoice sync failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ซิงค์ค่าใช้จ่ายไปยัง FlowAccount
-     *
-     * @param AccountingExpense $expense
-     * @param AccountingFlowaccountConnection $connection
-     * @return array|null
      */
     public function syncExpense(AccountingExpense $expense, AccountingFlowaccountConnection $connection): ?array
     {
@@ -1248,14 +1174,17 @@ class FlowAccountService
                 ]);
 
                 $this->logSync($connection, 'expense', 'sync', true, null, $expense->id);
+
                 return $result;
             }
 
             $this->logSync($connection, 'expense', 'sync', false, $response->body(), $expense->id);
+
             return null;
         } catch (\Exception $e) {
             $this->logSync($connection, 'expense', 'sync', false, $e->getMessage(), $expense->id);
-            Log::error('FlowAccount expense sync failed: ' . $e->getMessage());
+            Log::error('FlowAccount expense sync failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -1267,10 +1196,8 @@ class FlowAccountService
     /**
      * สร้าง batch import สำหรับเอกสาร
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param string $documentType ประเภทเอกสาร (invoice, expense, etc.)
-     * @param array $documents รายการเอกสาร
-     * @return array|null
+     * @param  string  $documentType  ประเภทเอกสาร (invoice, expense, etc.)
+     * @param  array  $documents  รายการเอกสาร
      */
     public function createBatchImport(AccountingFlowaccountConnection $connection, string $documentType, array $documents): ?array
     {
@@ -1285,17 +1212,14 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('FlowAccount batch import failed: ' . $e->getMessage());
+            Log::error('FlowAccount batch import failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * ดึงสถานะ batch import
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param string $batchId
-     * @return array|null
      */
     public function getBatchStatus(AccountingFlowaccountConnection $connection, string $batchId): ?array
     {
@@ -1308,7 +1232,8 @@ class FlowAccountService
 
             return null;
         } catch (\Exception $e) {
-            Log::error("FlowAccount get batch status {$batchId} failed: " . $e->getMessage());
+            Log::error("FlowAccount get batch status {$batchId} failed: ".$e->getMessage());
+
             return null;
         }
     }
@@ -1319,9 +1244,6 @@ class FlowAccountService
 
     /**
      * แปลงข้อมูลผู้ติดต่อจาก FlowAccount เป็นรูปแบบของระบบ
-     *
-     * @param array $data
-     * @return array
      */
     protected function mapFlowAccountContactToLocal(array $data): array
     {
@@ -1347,9 +1269,6 @@ class FlowAccountService
 
     /**
      * แปลงข้อมูลสินค้าจาก FlowAccount เป็นรูปแบบของระบบ
-     *
-     * @param array $data
-     * @return array
      */
     protected function mapFlowAccountProductToLocal(array $data): array
     {
@@ -1369,9 +1288,6 @@ class FlowAccountService
 
     /**
      * แปลงข้อมูลใบแจ้งหนี้จากระบบเป็นรูปแบบ FlowAccount
-     *
-     * @param AccountingInvoice $invoice
-     * @return array
      */
     protected function mapLocalInvoiceToFlowAccount(AccountingInvoice $invoice): array
     {
@@ -1401,9 +1317,6 @@ class FlowAccountService
 
     /**
      * แปลงข้อมูลค่าใช้จ่ายจากระบบเป็นรูปแบบ FlowAccount
-     *
-     * @param AccountingExpense $expense
-     * @return array
      */
     protected function mapLocalExpenseToFlowAccount(AccountingExpense $expense): array
     {
@@ -1435,23 +1348,23 @@ class FlowAccountService
     /**
      * ทำ HTTP Request ไปยัง FlowAccount API
      *
-     * @param string $method HTTP Method (GET, POST, PUT, DELETE)
-     * @param string $endpoint API Endpoint
-     * @param AccountingFlowaccountConnection $connection การเชื่อมต่อ
-     * @param array $data ข้อมูลที่จะส่ง
+     * @param  string  $method  HTTP Method (GET, POST, PUT, DELETE)
+     * @param  string  $endpoint  API Endpoint
+     * @param  AccountingFlowaccountConnection  $connection  การเชื่อมต่อ
+     * @param  array  $data  ข้อมูลที่จะส่ง
      * @return \Illuminate\Http\Client\Response
      */
     protected function request(string $method, string $endpoint, AccountingFlowaccountConnection $connection, array $data = [])
     {
         // เช็คและรีเฟรช token ถ้าหมดอายุ
         if ($connection->isTokenExpired() && $connection->refresh_token) {
-            if (!$this->refreshAccessToken($connection)) {
+            if (! $this->refreshAccessToken($connection)) {
                 throw new \Exception('ไม่สามารถรีเฟรช token ได้');
             }
             $connection->refresh();
         }
 
-        $url = $this->baseUrl . $endpoint;
+        $url = $this->baseUrl.$endpoint;
 
         $response = Http::timeout($this->timeout)
             ->retry($this->retryAttempts, 1000)
@@ -1473,12 +1386,11 @@ class FlowAccountService
     /**
      * บันทึก log การซิงค์
      *
-     * @param AccountingFlowaccountConnection $connection
-     * @param string $type ประเภทข้อมูล
-     * @param string $action การดำเนินการ
-     * @param bool $success สำเร็จหรือไม่
-     * @param string|null $errorMessage ข้อความ error (ถ้ามี)
-     * @param int|null $recordId ID ของ record
+     * @param  string  $type  ประเภทข้อมูล
+     * @param  string  $action  การดำเนินการ
+     * @param  bool  $success  สำเร็จหรือไม่
+     * @param  string|null  $errorMessage  ข้อความ error (ถ้ามี)
+     * @param  int|null  $recordId  ID ของ record
      */
     protected function logSync(
         AccountingFlowaccountConnection $connection,
@@ -1502,15 +1414,12 @@ class FlowAccountService
                 ]);
             }
         } catch (\Exception $e) {
-            Log::warning('Failed to log FlowAccount sync: ' . $e->getMessage());
+            Log::warning('Failed to log FlowAccount sync: '.$e->getMessage());
         }
     }
 
     /**
      * ดึงสถิติการซิงค์
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @return array
      */
     public function getSyncStats(AccountingFlowaccountConnection $connection): array
     {
@@ -1541,8 +1450,6 @@ class FlowAccountService
 
     /**
      * Get base URL (public accessor)
-     *
-     * @return string
      */
     public function getBaseUrl(): string
     {
@@ -1551,8 +1458,6 @@ class FlowAccountService
 
     /**
      * ตรวจสอบว่าใช้ sandbox หรือไม่
-     *
-     * @return bool
      */
     public function isSandbox(): bool
     {

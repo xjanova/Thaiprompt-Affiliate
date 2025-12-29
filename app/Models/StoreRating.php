@@ -91,8 +91,6 @@ class StoreRating extends Model
 
     /**
      * ร้านค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -101,8 +99,6 @@ class StoreRating extends Model
 
     /**
      * ผู้ให้คะแนน
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -111,8 +107,6 @@ class StoreRating extends Model
 
     /**
      * คำสั่งซื้อ
-     *
-     * @return BelongsTo
      */
     public function order(): BelongsTo
     {
@@ -157,11 +151,6 @@ class StoreRating extends Model
 
     /**
      * ให้คะแนนร้านค้า
-     *
-     * @param VendorStore $store
-     * @param User $user
-     * @param array $data
-     * @return static
      */
     public static function rateStore(VendorStore $store, User $user, array $data): static
     {
@@ -212,9 +201,6 @@ class StoreRating extends Model
 
     /**
      * อัพเดทคะแนนเฉลี่ยของร้าน
-     *
-     * @param VendorStore $store
-     * @return void
      */
     public static function updateStoreAverages(VendorStore $store): void
     {
@@ -240,11 +226,6 @@ class StoreRating extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้ให้คะแนนแล้วหรือยัง
-     *
-     * @param int $userId
-     * @param int $storeId
-     * @param int|null $orderId
-     * @return bool
      */
     public static function hasRated(int $userId, int $storeId, ?int $orderId = null): bool
     {
@@ -260,9 +241,6 @@ class StoreRating extends Model
 
     /**
      * ดึงสถิติคะแนนของร้าน
-     *
-     * @param int $storeId
-     * @return array
      */
     public static function getStoreStats(int $storeId): array
     {
@@ -282,7 +260,7 @@ class StoreRating extends Model
             'total' => $total,
             'distribution' => $distribution,
             'distribution_percent' => array_map(
-                fn($count) => $total > 0 ? round(($count / $total) * 100, 1) : 0,
+                fn ($count) => $total > 0 ? round(($count / $total) * 100, 1) : 0,
                 $distribution
             ),
             'service_average' => round($ratings->avg('service_rating') ?? 0, 1),
@@ -295,9 +273,6 @@ class StoreRating extends Model
 
     /**
      * ตอบกลับรีวิว
-     *
-     * @param string $response
-     * @return void
      */
     public function addSellerResponse(string $response): void
     {
@@ -308,8 +283,6 @@ class StoreRating extends Model
 
     /**
      * เพิ่ม helpful count
-     *
-     * @return void
      */
     public function incrementHelpful(): void
     {
@@ -320,8 +293,6 @@ class StoreRating extends Model
 
     /**
      * ดาวแสดงผล
-     *
-     * @return string
      */
     public function getRatingStarsAttribute(): string
     {
@@ -330,8 +301,6 @@ class StoreRating extends Model
 
     /**
      * คะแนนเฉลี่ยทุกด้าน
-     *
-     * @return float
      */
     public function getOverallRatingAttribute(): float
     {
@@ -347,8 +316,6 @@ class StoreRating extends Model
 
     /**
      * ชื่อผู้รีวิว (ซ่อนถ้า anonymous)
-     *
-     * @return string
      */
     public function getReviewerNameAttribute(): string
     {
@@ -361,11 +328,9 @@ class StoreRating extends Model
 
     /**
      * ตรวจสอบว่าตอบกลับแล้วหรือยัง
-     *
-     * @return bool
      */
     public function hasSellerResponse(): bool
     {
-        return !empty($this->seller_response);
+        return ! empty($this->seller_response);
     }
 }

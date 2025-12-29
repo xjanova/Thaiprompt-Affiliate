@@ -14,8 +14,6 @@ class LineSignupSettingSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -27,6 +25,7 @@ class LineSignupSettingSeeder extends Seeder
             // ตรวจสอบว่ามีอยู่แล้วหรือไม่ (idempotent)
             if (LineSignupSetting::where('key', $setting['key'])->exists()) {
                 $this->command->info("   ⏭️  {$setting['key']} มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 
@@ -39,8 +38,6 @@ class LineSignupSettingSeeder extends Seeder
 
     /**
      * ดึงการตั้งค่าเริ่มต้นทั้งหมด
-     *
-     * @return array
      */
     protected function getDefaultSettings(): array
     {
@@ -254,7 +251,7 @@ class LineSignupSettingSeeder extends Seeder
             ],
             [
                 'key' => 'integration.webhook_url',
-                'value' => env('APP_URL', '') . '/api/webhook/line-membership-signup',
+                'value' => env('APP_URL', '').'/api/webhook/line-membership-signup',
                 'type' => LineSignupSetting::TYPE_STRING,
                 'group' => LineSignupSetting::GROUP_INTEGRATION,
                 'description' => 'Webhook URL สำหรับรับ events จาก LINE',

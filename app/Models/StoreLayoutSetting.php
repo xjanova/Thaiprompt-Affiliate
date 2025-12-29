@@ -230,8 +230,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ความสัมพันธ์กับ User (เจ้าของร้าน)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -244,12 +242,10 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง URL ของ header image
-     *
-     * @return string|null
      */
     public function getHeaderImageUrlAttribute(): ?string
     {
-        if (!$this->header_image) {
+        if (! $this->header_image) {
             return null;
         }
 
@@ -262,12 +258,10 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง URL ของ promotion image
-     *
-     * @return string|null
      */
     public function getPromotionImageUrlAttribute(): ?string
     {
-        if (!$this->promotion_image) {
+        if (! $this->promotion_image) {
             return null;
         }
 
@@ -280,29 +274,26 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง slider images พร้อม URLs
-     *
-     * @return array
      */
     public function getSliderImagesWithUrlsAttribute(): array
     {
-        if (!$this->slider_images || !is_array($this->slider_images)) {
+        if (! $this->slider_images || ! is_array($this->slider_images)) {
             return [];
         }
 
         return collect($this->slider_images)->map(function ($slide) {
-            if (isset($slide['image']) && !str_starts_with($slide['image'], 'http')) {
+            if (isset($slide['image']) && ! str_starts_with($slide['image'], 'http')) {
                 $slide['image_url'] = Storage::url($slide['image']);
             } else {
                 $slide['image_url'] = $slide['image'] ?? null;
             }
+
             return $slide;
         })->toArray();
     }
 
     /**
      * ดึง CSS variables สำหรับ inline styles
-     *
-     * @return string
      */
     public function getCssVariablesAttribute(): string
     {
@@ -317,8 +308,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง grid classes ตามจำนวนสินค้าต่อแถว
-     *
-     * @return string
      */
     public function getProductGridClassesAttribute(): string
     {
@@ -339,7 +328,7 @@ class StoreLayoutSetting extends Model
     /**
      * Scope: เฉพาะที่เผยแพร่แล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublished($query)
@@ -350,8 +339,7 @@ class StoreLayoutSetting extends Model
     /**
      * Scope: ตาม user_id
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -365,9 +353,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึงหรือสร้าง settings สำหรับ user
-     *
-     * @param int $userId
-     * @return static
      */
     public static function getOrCreateForUser(int $userId): static
     {
@@ -381,9 +366,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง settings ที่เผยแพร่แล้วสำหรับ user
-     *
-     * @param int $userId
-     * @return static|null
      */
     public static function getPublishedForUser(int $userId): ?static
     {
@@ -392,8 +374,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง default sections order
-     *
-     * @return array
      */
     public static function getDefaultSectionsOrder(): array
     {
@@ -410,8 +390,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง default sections visibility
-     *
-     * @return array
      */
     public static function getDefaultSectionsVisibility(): array
     {
@@ -428,8 +406,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง layout styles ที่รองรับ
-     *
-     * @return array
      */
     public static function getLayoutStyles(): array
     {
@@ -459,8 +435,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง header styles ที่รองรับ
-     *
-     * @return array
      */
     public static function getHeaderStyles(): array
     {
@@ -474,8 +448,6 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึง slider effects ที่รองรับ
-     *
-     * @return array
      */
     public static function getSliderEffects(): array
     {
@@ -492,43 +464,37 @@ class StoreLayoutSetting extends Model
 
     /**
      * เผยแพร่ layout
-     *
-     * @return bool
      */
     public function publish(): bool
     {
         $this->is_published = true;
         $this->published_at = now();
+
         return $this->save();
     }
 
     /**
      * ยกเลิกการเผยแพร่ layout
-     *
-     * @return bool
      */
     public function unpublish(): bool
     {
         $this->is_published = false;
+
         return $this->save();
     }
 
     /**
      * ตรวจสอบว่า section นี้แสดงหรือไม่
-     *
-     * @param string $section
-     * @return bool
      */
     public function isSectionVisible(string $section): bool
     {
         $visibility = $this->sections_visibility ?? self::getDefaultSectionsVisibility();
+
         return $visibility[$section] ?? true;
     }
 
     /**
      * ดึง sections ที่เรียงลำดับแล้ว
-     *
-     * @return array
      */
     public function getOrderedSections(): array
     {
@@ -536,7 +502,7 @@ class StoreLayoutSetting extends Model
         $visibility = $this->sections_visibility ?? self::getDefaultSectionsVisibility();
 
         return collect($order)
-            ->filter(fn($section) => $visibility[$section] ?? true)
+            ->filter(fn ($section) => $visibility[$section] ?? true)
             ->values()
             ->toArray();
     }

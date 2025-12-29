@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * บันทึกประวัติการรับรางวัลของผู้ใช้
      * ใช้ติดตามว่าใครได้รับรางวัลอะไรไปแล้วบ้าง
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -44,7 +42,7 @@ return new class extends Migration
             // รายละเอียดรางวัลที่รับ (snapshot)
             $table->enum('reward_type', [
                 'wallet_points', 'tpix_tokens', 'coupon', 'rank_points',
-                'special_benefit', 'bonus_item', 'free_downlines', 'experience_points'
+                'special_benefit', 'bonus_item', 'free_downlines', 'experience_points',
             ])->comment('ประเภทรางวัล');
             $table->decimal('amount', 20, 2)->default(0)->comment('จำนวน');
             $table->json('reward_data')->nullable()->comment('ข้อมูลรางวัลแบบเต็ม (JSON)');
@@ -72,8 +70,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_reward_claims
-     *
-     * @return void
      */
     public function down(): void
     {

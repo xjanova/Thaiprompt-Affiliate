@@ -22,7 +22,7 @@ class MlmProspectController extends Controller
 
         // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำแทนที่จะ redirect
         // ใช้ empty paginator เพื่อให้ view ทำงานได้ถูกต้อง
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return view('user.prospects.index', [
                 'prospects' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15),
                 'stats' => [
@@ -56,7 +56,7 @@ class MlmProspectController extends Controller
         $mlmMember = $user->mlmMember;
 
         // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำ
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return view('user.prospects.create', [
                 'mlmMember' => null,
                 'notMlmMember' => true,
@@ -74,7 +74,7 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
@@ -94,7 +94,7 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
@@ -116,7 +116,7 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
@@ -126,7 +126,7 @@ class MlmProspectController extends Controller
             ->firstOrFail();
 
         // ตรวจสอบว่าสามารถลบได้หรือไม่ (เฉพาะ pending หรือ expired)
-        if (!in_array($prospect->status, ['pending', 'expired'])) {
+        if (! in_array($prospect->status, ['pending', 'expired'])) {
             return redirect()->route('user.prospects.index')
                 ->with('error', 'ไม่สามารถลบลิงก์เชิญที่มีการใช้งานแล้ว');
         }
@@ -146,7 +146,7 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
@@ -156,7 +156,7 @@ class MlmProspectController extends Controller
             ->firstOrFail();
 
         // ตรวจสอบว่าสามารถต่ออายุได้หรือไม่ (เฉพาะ pending หรือ expired)
-        if (!in_array($prospect->status, ['pending', 'expired'])) {
+        if (! in_array($prospect->status, ['pending', 'expired'])) {
             return redirect()->route('user.prospects.show', $id)
                 ->with('error', 'ไม่สามารถต่ออายุลิงก์เชิญที่มีการใช้งานแล้ว');
         }
@@ -180,7 +180,7 @@ class MlmProspectController extends Controller
         $user = auth()->user();
         $mlmMember = $user->mlmMember;
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return redirect()->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }

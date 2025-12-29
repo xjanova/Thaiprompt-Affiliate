@@ -24,7 +24,7 @@ return new class extends Migration
                 'consideration',  // พิจารณา
                 'intent',         // ตั้งใจซื้อ
                 'purchase',       // ซื้อแล้ว
-                'lost'            // สูญเสียโอกาส
+                'lost',            // สูญเสียโอกาส
             ])->default('awareness');
 
             $table->enum('status', ['active', 'inactive', 'converted', 'abandoned'])->default('active');

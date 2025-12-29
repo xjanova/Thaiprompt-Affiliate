@@ -28,7 +28,7 @@ class FoodProductDetailResource extends JsonResource
             ],
 
             // Farmer
-            'farmer' => $this->whenLoaded('farmer', fn() => [
+            'farmer' => $this->whenLoaded('farmer', fn () => [
                 'id' => $this->farmer->id,
                 'name' => $this->farmer->name,
                 'email' => $this->farmer->email,
@@ -43,7 +43,7 @@ class FoodProductDetailResource extends JsonResource
                 'total_footprint' => $this->total_carbon_footprint,
                 'breakdown' => $this->when(
                     $this->relationLoaded('carbonRecords'),
-                    fn() => $this->getCarbonBreakdown()
+                    fn () => $this->getCarbonBreakdown()
                 ),
             ],
 
@@ -53,7 +53,7 @@ class FoodProductDetailResource extends JsonResource
                 'checkpoints_count' => $this->whenCounted('qualityCheckpoints'),
                 'latest_check' => $this->when(
                     $this->latestQualityCheck(),
-                    fn() => new QualityCheckpointResource($this->latestQualityCheck())
+                    fn () => new QualityCheckpointResource($this->latestQualityCheck())
                 ),
             ],
 
@@ -62,16 +62,14 @@ class FoodProductDetailResource extends JsonResource
                 'stages_count' => $this->whenCounted('journeyStages'),
                 'current_location' => $this->when(
                     $this->currentStage(),
-                    fn() => new ProductJourneyResource($this->currentStage())
+                    fn () => new ProductJourneyResource($this->currentStage())
                 ),
-                'stages' => $this->whenLoaded('journeyStages', fn() =>
-                    ProductJourneyResource::collection($this->journeyStages)
+                'stages' => $this->whenLoaded('journeyStages', fn () => ProductJourneyResource::collection($this->journeyStages)
                 ),
             ],
 
             // Certifications
-            'certifications' => $this->whenLoaded('certifications', fn() =>
-                FoodCertificationResource::collection($this->certifications)
+            'certifications' => $this->whenLoaded('certifications', fn () => FoodCertificationResource::collection($this->certifications)
             ),
 
             // Consumer engagement

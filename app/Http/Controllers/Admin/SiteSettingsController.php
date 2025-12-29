@@ -12,8 +12,6 @@ use Illuminate\Http\Request;
  * Site Settings Controller
  *
  * จัดการการตั้งค่าเว็บไซต์ (Admin Only)
- *
- * @package App\Http\Controllers\Admin
  */
 class SiteSettingsController extends Controller
 {
@@ -41,8 +39,6 @@ class SiteSettingsController extends Controller
     /**
      * อัปเดตการตั้งค่าเว็บไซต์
      *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, ImageUploadService $imageUploadService)
@@ -193,16 +189,16 @@ class SiteSettingsController extends Controller
         // ⭐ Sync กับ AppMaintenance เพื่อให้ทั้งสองระบบทำงานตรงกัน
         try {
             $appMaintenance = AppMaintenance::getInstance();
-            if ($validated['maintenance_mode'] && !$appMaintenance->is_maintenance_mode) {
+            if ($validated['maintenance_mode'] && ! $appMaintenance->is_maintenance_mode) {
                 // เปิด maintenance mode
                 $appMaintenance->startMaintenance();
-            } elseif (!$validated['maintenance_mode'] && $appMaintenance->is_maintenance_mode) {
+            } elseif (! $validated['maintenance_mode'] && $appMaintenance->is_maintenance_mode) {
                 // ปิด maintenance mode
                 $appMaintenance->endMaintenance();
             }
         } catch (\Exception $e) {
             // ถ้า AppMaintenance ไม่ทำงาน ให้ข้ามไป
-            \Log::warning('Could not sync AppMaintenance: ' . $e->getMessage());
+            \Log::warning('Could not sync AppMaintenance: '.$e->getMessage());
         }
 
         return redirect()
@@ -213,8 +209,6 @@ class SiteSettingsController extends Controller
     /**
      * ลบโลโก้
      *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteLogo(Request $request, ImageUploadService $imageUploadService)

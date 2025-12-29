@@ -118,7 +118,7 @@ class ChatbotPlatformIntegration extends Model
     {
         if ($this->work_in_all_rooms) {
             // Check if in blocked list
-            return !in_array($roomId, $this->blocked_rooms ?? []);
+            return ! in_array($roomId, $this->blocked_rooms ?? []);
         }
 
         // Only work in allowed rooms
@@ -165,7 +165,7 @@ class ChatbotPlatformIntegration extends Model
     /**
      * Mark as disconnected
      */
-    public function markAsDisconnected(string $error = null): void
+    public function markAsDisconnected(?string $error = null): void
     {
         $this->update([
             'is_verified' => false,
@@ -198,11 +198,11 @@ class ChatbotPlatformIntegration extends Model
     public function verifyCredentials(): bool
     {
         return match ($this->platform_type) {
-            'line' => !empty($this->line_channel_id) && !empty($this->line_channel_secret) && !empty($this->line_channel_access_token),
-            'facebook', 'instagram' => !empty($this->fb_page_id) && !empty($this->access_token),
-            'telegram' => !empty($this->telegram_bot_token),
-            'discord' => !empty($this->discord_bot_token) && !empty($this->discord_client_id),
-            default => !empty($this->access_token),
+            'line' => ! empty($this->line_channel_id) && ! empty($this->line_channel_secret) && ! empty($this->line_channel_access_token),
+            'facebook', 'instagram' => ! empty($this->fb_page_id) && ! empty($this->access_token),
+            'telegram' => ! empty($this->telegram_bot_token),
+            'discord' => ! empty($this->discord_bot_token) && ! empty($this->discord_client_id),
+            default => ! empty($this->access_token),
         };
     }
 
@@ -211,11 +211,11 @@ class ChatbotPlatformIntegration extends Model
      */
     public function getConnectionStatus(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'inactive';
         }
 
-        if (!$this->is_verified) {
+        if (! $this->is_verified) {
             return 'not_verified';
         }
 

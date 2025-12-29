@@ -41,10 +41,10 @@ class SoftwarePurchased
     /**
      * สร้าง event instance ใหม่
      *
-     * @param SoftwareProduct $product สินค้าซอฟต์แวร์ที่ซื้อ
-     * @param User $buyer ผู้ซื้อ
-     * @param Order|null $order คำสั่งซื้อ (optional)
-     * @param array $options ตัวเลือกเพิ่มเติม
+     * @param  SoftwareProduct  $product  สินค้าซอฟต์แวร์ที่ซื้อ
+     * @param  User  $buyer  ผู้ซื้อ
+     * @param  Order|null  $order  คำสั่งซื้อ (optional)
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      */
     public function __construct(
         SoftwareProduct $product,

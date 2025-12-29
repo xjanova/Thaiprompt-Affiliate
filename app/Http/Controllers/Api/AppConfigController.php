@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppBanner;
+use App\Models\AppControlSection;
+use App\Models\AppFeature;
+use App\Models\AppMaintenance;
 use App\Models\AppSetting;
 use App\Models\AppThemeSetting;
-use App\Models\AppFeature;
-use App\Models\AppBanner;
-use App\Models\AppMaintenance;
-use App\Models\AppControlSection;
 use App\Models\ComponentSetting;
 use Illuminate\Http\Request;
 
@@ -36,7 +36,7 @@ class AppConfigController extends Controller
 
             $canBypass = $maintenance->canUserBypass($userId, $bypassKey, $isAdmin);
 
-            if (!$canBypass) {
+            if (! $canBypass) {
                 return response()->json([
                     'success' => false,
                     'is_maintenance' => true,
@@ -171,7 +171,7 @@ class AppConfigController extends Controller
     {
         $banner = AppBanner::find($bannerId);
 
-        if (!$banner) {
+        if (! $banner) {
             return response()->json([
                 'success' => false,
                 'message' => 'Banner not found',
@@ -192,7 +192,7 @@ class AppConfigController extends Controller
     {
         $banner = AppBanner::find($bannerId);
 
-        if (!$banner) {
+        if (! $banner) {
             return response()->json([
                 'success' => false,
                 'message' => 'Banner not found',
@@ -214,7 +214,7 @@ class AppConfigController extends Controller
         $platform = $request->platform ?? null;
         $isInMaintenance = AppMaintenance::isInMaintenanceMode($platform);
 
-        if (!$isInMaintenance) {
+        if (! $isInMaintenance) {
             return response()->json([
                 'success' => true,
                 'is_maintenance' => false,
@@ -271,7 +271,7 @@ class AppConfigController extends Controller
             $forceUpdate = true;
         }
         // Check if there's a newer version available
-        else if ($appSettings->latest_version &&
+        elseif ($appSettings->latest_version &&
                  version_compare($currentVersion, $appSettings->latest_version, '<')) {
             $needsUpdate = true;
             $forceUpdate = $appSettings->force_update;
@@ -280,7 +280,7 @@ class AppConfigController extends Controller
         $storeUrl = null;
         if ($platform === 'android') {
             $storeUrl = $appSettings->play_store_url;
-        } else if ($platform === 'ios') {
+        } elseif ($platform === 'ios') {
             $storeUrl = $appSettings->app_store_url;
         }
 
@@ -303,7 +303,7 @@ class AppConfigController extends Controller
      */
     private function getUserType(Request $request)
     {
-        if (!$request->user()) {
+        if (! $request->user()) {
             return 'guest';
         }
 

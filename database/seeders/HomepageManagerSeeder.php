@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\HomepageElement;
 use App\Models\HomepageSection;
 use App\Models\HomepageTemplate;
 use Illuminate\Database\Seeder;
@@ -17,8 +16,6 @@ class HomepageManagerSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -43,8 +40,6 @@ class HomepageManagerSeeder extends Seeder
 
     /**
      * สร้าง default sections สำหรับหน้าแรก
-     *
-     * @return void
      */
     protected function seedDefaultSections(): void
     {
@@ -314,8 +309,6 @@ class HomepageManagerSeeder extends Seeder
 
     /**
      * สร้าง default templates
-     *
-     * @return void
      */
     protected function seedDefaultTemplates(): void
     {

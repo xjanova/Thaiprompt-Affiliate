@@ -30,7 +30,6 @@ use Illuminate\Support\Str;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read ForumCategory $category
  * @property-read User $user
  * @property-read User|null $lastPostUser
@@ -100,9 +99,9 @@ class ForumThread extends Model
                 $thread->slug = Str::slug($thread->title);
 
                 // ตรวจสอบ slug ซ้ำ
-                $count = static::where('slug', 'like', $thread->slug . '%')->count();
+                $count = static::where('slug', 'like', $thread->slug.'%')->count();
                 if ($count > 0) {
-                    $thread->slug .= '-' . ($count + 1);
+                    $thread->slug .= '-'.($count + 1);
                 }
             }
 
@@ -126,8 +125,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับหมวดหมู่
-     *
-     * @return BelongsTo
      */
     public function category(): BelongsTo
     {
@@ -136,8 +133,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -146,8 +141,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับผู้ตอบกลับล่าสุด
-     *
-     * @return BelongsTo
      */
     public function lastPostUser(): BelongsTo
     {
@@ -156,8 +149,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับคอมเมนต์
-     *
-     * @return HasMany
      */
     public function posts(): HasMany
     {
@@ -166,8 +157,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับไลค์ (polymorphic)
-     *
-     * @return MorphMany
      */
     public function likes(): MorphMany
     {
@@ -176,8 +165,6 @@ class ForumThread extends Model
 
     /**
      * ความสัมพันธ์กับรายงาน (polymorphic)
-     *
-     * @return MorphMany
      */
     public function reports(): MorphMany
     {
@@ -187,7 +174,7 @@ class ForumThread extends Model
     /**
      * Scope: กระทู้ที่ปักหมุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePinned($query)
@@ -198,7 +185,7 @@ class ForumThread extends Model
     /**
      * Scope: กระทู้แนะนำ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -209,7 +196,7 @@ class ForumThread extends Model
     /**
      * Scope: กระทู้ที่ไม่ถูกล็อค
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnlocked($query)
@@ -220,7 +207,7 @@ class ForumThread extends Model
     /**
      * Scope: เรียงตามกิจกรรมล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeLatestActivity($query)
@@ -233,7 +220,7 @@ class ForumThread extends Model
     /**
      * Scope: กระทู้ยอดนิยม (ไลค์เยอะ)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query)
@@ -244,8 +231,6 @@ class ForumThread extends Model
 
     /**
      * เพิ่มจำนวนการเข้าชม
-     *
-     * @return void
      */
     public function incrementViews(): void
     {
@@ -254,9 +239,6 @@ class ForumThread extends Model
 
     /**
      * อัปเดตการตอบกลับล่าสุด
-     *
-     * @param int $userId
-     * @return void
      */
     public function updateLastPost(int $userId): void
     {
@@ -269,19 +251,17 @@ class ForumThread extends Model
     /**
      * ตรวจสอบว่าผู้ใช้กดไลค์กระทู้นี้หรือยัง
      *
-     * @param User|int $user
-     * @return bool
+     * @param  User|int  $user
      */
     public function isLikedBy($user): bool
     {
         $userId = $user instanceof User ? $user->id : $user;
+
         return $this->likes()->where('user_id', $userId)->exists();
     }
 
     /**
      * ดึง URL ของกระทู้
-     *
-     * @return string
      */
     public function getUrlAttribute(): string
     {

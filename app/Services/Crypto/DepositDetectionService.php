@@ -2,18 +2,20 @@
 
 namespace App\Services\Crypto;
 
+use App\Models\CryptoCurrency;
 use App\Models\CryptoDepositAddress;
 use App\Models\CryptoTransaction;
-use App\Models\CryptoCurrency;
 use App\Models\CryptoWallet;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class DepositDetectionService
 {
     protected Web3Service $web3Service;
+
     protected CryptoPriceService $priceService;
+
     protected CryptoWalletService $walletService;
 
     public function __construct(
@@ -49,7 +51,7 @@ class DepositDetectionService
             try {
                 $deposits = $this->checkAddressForDeposits($depositAddress);
 
-                if (!empty($deposits)) {
+                if (! empty($deposits)) {
                     $results['detected'] += count($deposits);
 
                     foreach ($deposits as $deposit) {
@@ -223,6 +225,7 @@ class DepositDetectionService
                 Log::info('Deposit already processed', [
                     'tx_hash' => $depositData['tx_hash'],
                 ]);
+
                 return false;
             }
 
@@ -315,7 +318,7 @@ class DepositDetectionService
      */
     protected function getRequiredConfirmations(CryptoCurrency $currency): int
     {
-        return match($currency->network) {
+        return match ($currency->network) {
             'ethereum' => 12,
             'bsc' => 15,
             'polygon' => 128,
@@ -421,7 +424,7 @@ class DepositDetectionService
      */
     protected function updateDepositConfirmations(CryptoTransaction $deposit): bool
     {
-        if (!$deposit->tx_hash) {
+        if (! $deposit->tx_hash) {
             return false;
         }
 

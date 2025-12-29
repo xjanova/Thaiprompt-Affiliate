@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('trading_signals')) {
+        if (! Schema::hasTable('trading_signals')) {
             Schema::create('trading_signals', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('bot_id')->nullable()->constrained('trading_bots')->onDelete('cascade');

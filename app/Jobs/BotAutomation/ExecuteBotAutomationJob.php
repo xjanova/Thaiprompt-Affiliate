@@ -16,6 +16,7 @@ class ExecuteBotAutomationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 300; // 5 minutes
 
     /**
@@ -30,8 +31,9 @@ class ExecuteBotAutomationJob implements ShouldQueue
      */
     public function handle(BotAutomationService $service): void
     {
-        if (!$this->automation->is_active) {
-            Log::info("Skipping inactive automation", ['automation_id' => $this->automation->id]);
+        if (! $this->automation->is_active) {
+            Log::info('Skipping inactive automation', ['automation_id' => $this->automation->id]);
+
             return;
         }
 
@@ -43,7 +45,7 @@ class ExecuteBotAutomationJob implements ShouldQueue
                 $service->scheduleExecution($this->automation);
             }
         } catch (\Exception $e) {
-            Log::error("Bot automation job failed", [
+            Log::error('Bot automation job failed', [
                 'automation_id' => $this->automation->id,
                 'error' => $e->getMessage(),
             ]);
@@ -57,7 +59,7 @@ class ExecuteBotAutomationJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Bot automation job failed permanently", [
+        Log::error('Bot automation job failed permanently', [
             'automation_id' => $this->automation->id,
             'error' => $exception->getMessage(),
         ]);

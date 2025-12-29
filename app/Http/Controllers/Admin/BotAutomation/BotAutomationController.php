@@ -62,8 +62,6 @@ class BotAutomationController extends Controller
 
     /**
      * คำนวณอัตราความสำเร็จของ automations
-     *
-     * @return float
      */
     protected function calculateSuccessRate(): float
     {
@@ -91,7 +89,7 @@ class BotAutomationController extends Controller
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             })
             ->latest()
@@ -201,7 +199,7 @@ class BotAutomationController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.bot-automation.show', $automation)
-                ->with('error', 'Automation execution failed: ' . $e->getMessage());
+                ->with('error', 'Automation execution failed: '.$e->getMessage());
         }
     }
 
@@ -210,7 +208,7 @@ class BotAutomationController extends Controller
      */
     public function toggle(BotAutomation $automation)
     {
-        $automation->update(['is_active' => !$automation->is_active]);
+        $automation->update(['is_active' => ! $automation->is_active]);
 
         $status = $automation->is_active ? 'activated' : 'deactivated';
 

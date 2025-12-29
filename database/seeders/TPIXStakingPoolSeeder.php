@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use App\Models\TPIXToken;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * TPIX Staking Pool Seeder
@@ -17,8 +17,6 @@ class TPIXStakingPoolSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล Staking Pools เริ่มต้น
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -27,20 +25,22 @@ class TPIXStakingPoolSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (DB::table('tpix_staking_pools')->exists()) {
             $this->command->info('⚠️  ข้อมูล Staking Pools มีอยู่แล้ว ข้าม...');
+
             return;
         }
 
         // ดึง TPIX Token (สมมติว่า TPIX เป็น token แรก หรือมี symbol เป็น 'TPIX')
         $tpixToken = TPIXToken::where('symbol', 'TPIX')->first();
 
-        if (!$tpixToken) {
+        if (! $tpixToken) {
             // หากไม่มี TPIX Token ให้สร้างตัวอย่างแบบง่าย
             $this->command->warn('⚠️  ไม่พบ TPIX Token ในระบบ กำลังสร้าง...');
 
             $adminUser = User::whereIn('role', ['admin', 'super_admin'])->first() ?? User::first();
 
-            if (!$adminUser) {
+            if (! $adminUser) {
                 $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณา seed ผู้ใช้ก่อน');
+
                 return;
             }
 
@@ -73,8 +73,9 @@ class TPIXStakingPoolSeeder extends Seeder
         // สร้าง creator (admin user)
         $creator = User::whereIn('role', ['admin', 'super_admin'])->first() ?? User::first();
 
-        if (!$creator) {
+        if (! $creator) {
             $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณา seed ผู้ใช้ก่อน');
+
             return;
         }
 
@@ -207,11 +208,11 @@ class TPIXStakingPoolSeeder extends Seeder
         // Insert pools
         DB::table('tpix_staking_pools')->insert($pools);
 
-        $this->command->info('✅ Seed ข้อมูล TPIX Staking Pools สำเร็จ! สร้าง ' . count($pools) . ' pools');
+        $this->command->info('✅ Seed ข้อมูล TPIX Staking Pools สำเร็จ! สร้าง '.count($pools).' pools');
         $this->command->info('');
         $this->command->info('📊 Pools ที่สร้าง:');
         foreach ($pools as $pool) {
-            $this->command->info('   - ' . $pool['name'] . ' (APY: ' . $pool['apy'] . '%)');
+            $this->command->info('   - '.$pool['name'].' (APY: '.$pool['apy'].'%)');
         }
     }
 }

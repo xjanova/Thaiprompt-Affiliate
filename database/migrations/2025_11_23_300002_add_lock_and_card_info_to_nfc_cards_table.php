@@ -24,13 +24,11 @@ return new class extends Migration
      * - ndef_records_count: จำนวน NDEF records ที่เขียนไว้
      * - last_read_at: เวลาที่อ่านบัตรครั้งล่าสุด
      * - read_count: จำนวนครั้งที่อ่านบัตร
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง nfc_cards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('nfc_cards')) {
+        if (! Schema::hasTable('nfc_cards')) {
             return;
         }
 
@@ -99,7 +97,7 @@ return new class extends Migration
         $this->safeAddIndex('nfc_cards', 'locked_at');
 
         // เพิ่ม foreign keys
-        if (!$this->foreignKeyExists('nfc_cards', 'nfc_cards_locked_by_foreign')) {
+        if (! $this->foreignKeyExists('nfc_cards', 'nfc_cards_locked_by_foreign')) {
             Schema::table('nfc_cards', function (Blueprint $table) {
                 $table->foreign('locked_by', 'nfc_cards_locked_by_foreign')
                     ->references('id')
@@ -108,7 +106,7 @@ return new class extends Migration
             });
         }
 
-        if (!$this->foreignKeyExists('nfc_cards', 'nfc_cards_unlocked_by_foreign')) {
+        if (! $this->foreignKeyExists('nfc_cards', 'nfc_cards_unlocked_by_foreign')) {
             Schema::table('nfc_cards', function (Blueprint $table) {
                 $table->foreign('unlocked_by', 'nfc_cards_unlocked_by_foreign')
                     ->references('id')
@@ -120,8 +118,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

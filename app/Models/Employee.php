@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class Employee extends Model
 {
@@ -218,7 +218,7 @@ class Employee extends Model
      */
     public function getFullNameAttribute()
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     /**
@@ -227,8 +227,9 @@ class Employee extends Model
     public function getFullNameThAttribute()
     {
         if ($this->first_name_th && $this->last_name_th) {
-            return trim($this->first_name_th . ' ' . $this->last_name_th);
+            return trim($this->first_name_th.' '.$this->last_name_th);
         }
+
         return $this->full_name;
     }
 
@@ -256,6 +257,7 @@ class Employee extends Model
         if ($this->probation_end_date && $this->employment_status === 'probation') {
             return now()->lessThan($this->probation_end_date);
         }
+
         return false;
     }
 
@@ -267,6 +269,7 @@ class Employee extends Model
         if ($this->date_of_birth) {
             return Carbon::parse($this->date_of_birth)->age;
         }
+
         return null;
     }
 
@@ -311,6 +314,7 @@ class Employee extends Model
         if ($store) {
             return $query->where('store_id', $store->id);
         }
+
         return $query->whereNull('store_id');
     }
 

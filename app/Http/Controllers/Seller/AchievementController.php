@@ -19,10 +19,6 @@ class AchievementController extends Controller
 {
     /**
      * หน้าหลัก Achievement Dashboard
-     *
-     * @param Request $request
-     * @param PremiumStoreService $service
-     * @return View
      */
     public function index(Request $request, PremiumStoreService $service): View
     {
@@ -67,10 +63,6 @@ class AchievementController extends Controller
 
     /**
      * แสดง Trophy ทั้งหมด
-     *
-     * @param Request $request
-     * @param PremiumStoreService $service
-     * @return View
      */
     public function trophies(Request $request, PremiumStoreService $service): View
     {
@@ -102,10 +94,6 @@ class AchievementController extends Controller
 
     /**
      * แสดงสถานะ Premium
-     *
-     * @param Request $request
-     * @param PremiumStoreService $service
-     * @return View
      */
     public function premiumStatus(Request $request, PremiumStoreService $service): View
     {
@@ -126,10 +114,6 @@ class AchievementController extends Controller
 
     /**
      * Toggle การแสดง Trophy บนหน้าร้าน
-     *
-     * @param Request $request
-     * @param StoreTrophyAchievement $trophy
-     * @return JsonResponse
      */
     public function toggleTrophyDisplay(Request $request, StoreTrophyAchievement $trophy): JsonResponse
     {

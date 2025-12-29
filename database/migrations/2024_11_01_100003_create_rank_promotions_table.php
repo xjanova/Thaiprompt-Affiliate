@@ -22,7 +22,7 @@ return new class extends Migration
                 'auto',      // ขึ้นอัตโนมัติ
                 'manual',    // ขึ้นด้วยการอนุมัติ
                 'purchase',  // ซื้อเพื่อขึ้น
-                'admin'      // admin จัดการเอง
+                'admin',      // admin จัดการเอง
             ])->default('auto');
 
             // Status
@@ -31,7 +31,7 @@ return new class extends Migration
                 'approved',  // อนุมัติแล้ว
                 'rejected',  // ไม่อนุมัติ
                 'active',    // ใช้งานอยู่
-                'expired'    // หมดอายุ (สำหรับ purchase)
+                'expired',    // หมดอายุ (สำหรับ purchase)
             ])->default('pending');
 
             // Purchase Info

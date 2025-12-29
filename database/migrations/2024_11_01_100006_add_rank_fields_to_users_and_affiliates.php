@@ -14,14 +14,14 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง affiliates มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('affiliates')) {
+        if (! Schema::hasTable('affiliates')) {
             // ตาราง affiliates ยังไม่มี - ข้าม migration นี้
             // columns จะถูกเพิ่มตอนสร้างตาราง affiliates
             return;
         }
 
         // ตรวจสอบว่ามี column อยู่แล้วหรือไม่ (เพื่อป้องกัน error)
-        if (!Schema::hasColumn('affiliates', 'rank_id')) {
+        if (! Schema::hasColumn('affiliates', 'rank_id')) {
             Schema::table('affiliates', function (Blueprint $table) {
                 // ใช้ unsignedBigInteger แทน foreignId()->constrained() เพื่อความปลอดภัย
                 $table->unsignedBigInteger('rank_id')->nullable()->after('status');

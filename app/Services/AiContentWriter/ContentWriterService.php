@@ -2,12 +2,10 @@
 
 namespace App\Services\AiContentWriter;
 
-use App\Models\AiContentSetting;
-use App\Models\AiContentTemplate;
-use App\Models\AiContentProject;
 use App\Models\AiContentGeneration;
+use App\Models\AiContentProject;
+use App\Models\AiContentTemplate;
 use App\Models\AiContentUsageLog;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,8 +13,6 @@ use Illuminate\Support\Facades\Log;
  *
  * Service หลักสำหรับระบบ AI Content Writer
  * รวมการทำงานของ Meta Llama, OpenAI, Claude, และ Gemini
- *
- * @package App\Services\AiContentWriter
  */
 class ContentWriterService
 {
@@ -45,10 +41,10 @@ class ContentWriterService
      */
     public function __construct()
     {
-        $this->metaLlama = new MetaLlamaService();
-        $this->openAi = new OpenAiService();
-        $this->claude = new ClaudeService();
-        $this->gemini = new GeminiService();
+        $this->metaLlama = new MetaLlamaService;
+        $this->openAi = new OpenAiService;
+        $this->claude = new ClaudeService;
+        $this->gemini = new GeminiService;
     }
 
     // =========================================
@@ -57,8 +53,6 @@ class ContentWriterService
 
     /**
      * ดึงรายการ Providers ที่พร้อมใช้งาน
-     *
-     * @return array
      */
     public function getAvailableProviders(): array
     {
@@ -89,8 +83,6 @@ class ContentWriterService
 
     /**
      * ตรวจสอบสถานะ API ทั้งหมด
-     *
-     * @return array
      */
     public function checkAllApiStatus(): array
     {
@@ -112,9 +104,6 @@ class ContentWriterService
 
     /**
      * ทดสอบการเชื่อมต่อ Provider
-     *
-     * @param string $provider
-     * @return array
      */
     public function testProvider(string $provider): array
     {
@@ -132,12 +121,6 @@ class ContentWriterService
 
     /**
      * สร้าง Content จาก Template
-     *
-     * @param AiContentTemplate $template
-     * @param array $variables
-     * @param int $userId
-     * @param array $options
-     * @return array
      */
     public function generateFromTemplate(
         AiContentTemplate $template,
@@ -172,10 +155,6 @@ class ContentWriterService
 
     /**
      * สร้าง Content สำหรับ Project
-     *
-     * @param AiContentProject $project
-     * @param array $options
-     * @return AiContentGeneration
      */
     public function generateForProject(
         AiContentProject $project,
@@ -245,12 +224,6 @@ class ContentWriterService
 
     /**
      * สร้าง Content
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @param int $userId
-     * @param array $options
-     * @return array
      */
     public function generate(
         string $systemPrompt,
@@ -297,9 +270,6 @@ class ContentWriterService
 
     /**
      * ดึง Default Model ของ Provider
-     *
-     * @param string $provider
-     * @return string
      */
     protected function getDefaultModel(string $provider): string
     {
@@ -318,8 +288,6 @@ class ContentWriterService
 
     /**
      * ดึงสถิติระบบ
-     *
-     * @return array
      */
     public function getStatistics(): array
     {
@@ -349,9 +317,6 @@ class ContentWriterService
 
     /**
      * ดึงสถิติการใช้งานของ User
-     *
-     * @param int $userId
-     * @return array
      */
     public function getUserStatistics(int $userId): array
     {

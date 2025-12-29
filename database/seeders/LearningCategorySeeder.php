@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\LearningCategory;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 
 /**
  * Seeder สำหรับหมวดหมู่วิชา Academy Knowledge
@@ -45,7 +44,7 @@ class LearningCategorySeeder extends Seeder
             LearningCategory::create($category);
         }
 
-        $this->command->info('✅ Academy Knowledge categories seeded: ' . count($categories) . ' หมวดหมู่');
+        $this->command->info('✅ Academy Knowledge categories seeded: '.count($categories).' หมวดหมู่');
     }
 
     /**
@@ -61,7 +60,7 @@ class LearningCategorySeeder extends Seeder
         $skipped = 0;
 
         foreach ($categories as $category) {
-            if (!LearningCategory::where('slug', $category['slug'])->exists()) {
+            if (! LearningCategory::where('slug', $category['slug'])->exists()) {
                 LearningCategory::create($category);
                 $this->command->info("   ➕ เพิ่ม: {$category['name']}");
                 $added++;

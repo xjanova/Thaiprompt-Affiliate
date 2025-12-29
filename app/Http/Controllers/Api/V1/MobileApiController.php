@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Product;
-use App\Models\ProductCategory;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\User;
 use App\Services\ImageUploadService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -27,8 +27,6 @@ class MobileApiController extends Controller
 {
     /**
      * Cache สำหรับ Official Seller
-     *
-     * @var User|null
      */
     protected static ?User $officialSeller = null;
 
@@ -39,8 +37,6 @@ class MobileApiController extends Controller
     /**
      * สร้างหรือดึง Official Shop Seller
      * ใช้ logic เดียวกันกับ OfficialShopAdminController
-     *
-     * @return User
      */
     protected function getOrCreateOfficialSeller(): User
     {
@@ -54,7 +50,7 @@ class MobileApiController extends Controller
         // หา Official Seller จาก email
         $seller = User::where('email', $email)->first();
 
-        if (!$seller) {
+        if (! $seller) {
             // สร้าง Official Seller ใหม่ถ้าไม่มี (เหมือน OfficialShopAdminController)
             // ⚠️ หมายเหตุ: role อยู่ใน $guarded ดังนั้นต้องใช้ direct assignment
             $seller = User::create([
@@ -80,9 +76,6 @@ class MobileApiController extends Controller
 
     /**
      * สมัครสมาชิกใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function register(Request $request): JsonResponse
     {
@@ -159,6 +152,7 @@ class MobileApiController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาดในการสมัครสมาชิก',
@@ -184,8 +178,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูลโปรไฟล์
-     *
-     * @return JsonResponse
      */
     public function getProfile(): JsonResponse
     {
@@ -206,7 +198,7 @@ class MobileApiController extends Controller
                 'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
                 'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'referralLink' => url('/register?ref='.$user->referral_code),
                 'wallet_address' => $user->wallet?->wallet_address ?? null,
                 'createdAt' => $user->created_at->toISOString(),
             ],
@@ -215,9 +207,6 @@ class MobileApiController extends Controller
 
     /**
      * อัพเดทโปรไฟล์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateProfile(Request $request): JsonResponse
     {
@@ -280,10 +269,6 @@ class MobileApiController extends Controller
 
     /**
      * อัพโหลดรูปโปรไฟล์ (Avatar)
-     *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
-     * @return JsonResponse
      */
     public function uploadAvatar(Request $request, ImageUploadService $imageUploadService): JsonResponse
     {
@@ -352,16 +337,13 @@ class MobileApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการอัพโหลดรูป: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการอัพโหลดรูป: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบรูปโปรไฟล์ (Avatar)
-     *
-     * @param ImageUploadService $imageUploadService
-     * @return JsonResponse
      */
     public function deleteAvatar(ImageUploadService $imageUploadService): JsonResponse
     {
@@ -396,9 +378,6 @@ class MobileApiController extends Controller
 
     /**
      * เปลี่ยนรหัสผ่าน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function changePassword(Request $request): JsonResponse
     {
@@ -423,7 +402,7 @@ class MobileApiController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบรหัสผ่านปัจจุบัน
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
@@ -443,8 +422,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึง Referral Code
-     *
-     * @return JsonResponse
      */
     public function getReferralCode(): JsonResponse
     {
@@ -454,7 +431,7 @@ class MobileApiController extends Controller
             'success' => true,
             'data' => [
                 'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'referralLink' => url('/register?ref='.$user->referral_code),
             ],
         ]);
     }
@@ -465,9 +442,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการสินค้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getProducts(Request $request): JsonResponse
     {
@@ -509,9 +483,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายละเอียดสินค้า
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function getProduct(int $id): JsonResponse
     {
@@ -519,7 +490,7 @@ class MobileApiController extends Controller
             ->where('is_active', true)
             ->find($id);
 
-        if (!$product) {
+        if (! $product) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบสินค้า',
@@ -534,8 +505,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงหมวดหมู่สินค้า
-     *
-     * @return JsonResponse
      */
     public function getProductCategories(): JsonResponse
     {
@@ -566,6 +535,7 @@ class MobileApiController extends Controller
     private function getUserCart($user): array
     {
         $cacheKey = "cart_{$user->id}";
+
         return cache()->get($cacheKey, [
             'items' => [],
             'total' => 0,
@@ -602,7 +572,7 @@ class MobileApiController extends Controller
         }
 
         // ถ้ายังไม่มี ให้เพิ่มใหม่
-        if (!$found) {
+        if (! $found) {
             $items[] = [
                 'product_id' => $product->id,
                 'name' => $product->name,
@@ -639,7 +609,7 @@ class MobileApiController extends Controller
 
         if ($quantity <= 0) {
             // ลบสินค้า
-            $items = array_filter($items, fn($item) => $item['product_id'] != $productId);
+            $items = array_filter($items, fn ($item) => $item['product_id'] != $productId);
             $items = array_values($items);
         } else {
             // อัพเดทจำนวน
@@ -681,15 +651,13 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูล charts สำหรับ Dashboard
-     *
-     * @return JsonResponse
      */
     public function getDashboardCharts(): JsonResponse
     {
         $user = Auth::user();
 
         // ข้อมูล 7 วันล่าสุด
-        $last7Days = collect(range(6, 0))->map(function ($daysAgo) use ($user) {
+        $last7Days = collect(range(6, 0))->map(function ($daysAgo) {
             $date = now()->subDays($daysAgo)->format('Y-m-d');
             $dayName = now()->subDays($daysAgo)->locale('th')->dayName;
 
@@ -721,8 +689,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึง Referral Link และ Stats
-     *
-     * @return JsonResponse
      */
     public function getReferralLink(): JsonResponse
     {
@@ -738,7 +704,7 @@ class MobileApiController extends Controller
             'success' => true,
             'data' => [
                 'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'referralLink' => url('/register?ref='.$user->referral_code),
                 'totalReferrals' => $totalReferrals,
                 'activeReferrals' => $activeReferrals,
                 'pendingReferrals' => 0,
@@ -754,8 +720,6 @@ class MobileApiController extends Controller
 
     /**
      * ตรวจสอบสถานะ LINE Login สำหรับ Mobile App
-     *
-     * @return JsonResponse
      */
     public function lineStatus(): JsonResponse
     {
@@ -790,15 +754,12 @@ class MobileApiController extends Controller
 
     /**
      * ดึง LINE Login URL สำหรับ Mobile App
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getLineLoginUrl(Request $request): JsonResponse
     {
         $lineService = app(\App\Services\LineService::class);
 
-        if (!$lineService->isConfigured()) {
+        if (! $lineService->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'LINE Login ยังไม่ได้ตั้งค่า',
@@ -830,9 +791,6 @@ class MobileApiController extends Controller
 
     /**
      * LINE Login callback สำหรับ Mobile App
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function lineLoginCallback(Request $request): JsonResponse
     {
@@ -925,7 +883,7 @@ class MobileApiController extends Controller
             // สร้าง user ใหม่
             $user = User::create([
                 'name' => $displayName,
-                'email' => $lineUserId . '@line.user', // email placeholder
+                'email' => $lineUserId.'@line.user', // email placeholder
                 'password' => Hash::make(Str::random(32)), // random password
                 'referral_code' => $referralCode,
                 'sponsor_id' => $sponsorId,
@@ -985,8 +943,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูลกระเป๋าเงิน
-     *
-     * @return JsonResponse
      */
     public function getWallet(): JsonResponse
     {
@@ -1026,8 +982,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงยอดคงเหลือกระเป๋าเงิน (แบบ lightweight สำหรับ topbar)
-     *
-     * @return JsonResponse
      */
     public function getWalletBalance(): JsonResponse
     {
@@ -1058,9 +1012,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงประวัติธุรกรรม
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getWalletTransactions(Request $request): JsonResponse
     {
@@ -1150,8 +1101,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงสถานะ KYC
-     *
-     * @return JsonResponse
      */
     public function getKycStatus(): JsonResponse
     {
@@ -1172,8 +1121,8 @@ class MobileApiController extends Controller
                     'submittedAt' => $kyc->submitted_at?->format('Y-m-d H:i:s'),
                     'reviewedAt' => $kyc->reviewed_at?->format('Y-m-d H:i:s'),
                     'rejectionReason' => $kyc->rejection_reason,
-                    'hasIdCard' => !empty($kyc->id_card_image),
-                    'hasSelfie' => !empty($kyc->selfie_image),
+                    'hasIdCard' => ! empty($kyc->id_card_image),
+                    'hasSelfie' => ! empty($kyc->selfie_image),
                 ] : null,
             ],
         ]);
@@ -1181,9 +1130,6 @@ class MobileApiController extends Controller
 
     /**
      * ส่ง KYC verification
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function submitKyc(Request $request): JsonResponse
     {
@@ -1236,7 +1182,7 @@ class MobileApiController extends Controller
             DB::beginTransaction();
 
             // สร้าง directory สำหรับเก็บไฟล์ KYC
-            $kycPath = 'kyc/' . $user->id;
+            $kycPath = 'kyc/'.$user->id;
 
             // อัพโหลดรูปบัตรประชาชน (ใช้ 'public' disk เพื่อให้ admin สามารถดูรูปได้ผ่าน URL)
             $idCardPath = $request->file('id_card_image')->store($kycPath, 'public');
@@ -1285,9 +1231,6 @@ class MobileApiController extends Controller
 
     /**
      * อัพโหลดรูปภาพ KYC แบบแยกทีละรูป (สำหรับ mobile app)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function uploadKycImage(Request $request, ImageUploadService $imageUploadService): JsonResponse
     {
@@ -1320,7 +1263,7 @@ class MobileApiController extends Controller
             // อัพโหลดรูปด้วย ImageUploadService (แปลง WebP + resize)
             $imagePath = $imageUploadService->uploadImage(
                 $request->file('image'),
-                'kyc/' . $user->id,  // directory
+                'kyc/'.$user->id,  // directory
                 1600,                 // max width (KYC ต้องการความละเอียดสูง)
                 1600,                 // max height
                 95                    // quality (สูงเพื่อให้อ่าน ID card ชัดเจน)
@@ -1332,7 +1275,7 @@ class MobileApiController extends Controller
                 ->latest()
                 ->first();
 
-            if (!$kyc) {
+            if (! $kyc) {
                 // สร้าง draft ใหม่
                 $kyc = \App\Models\KycVerification::create([
                     'user_id' => $user->id,
@@ -1358,11 +1301,11 @@ class MobileApiController extends Controller
                     'kycId' => $kyc->id,
                     'type' => $type,
                     'imageUrl' => $imageUrl,  // URL ของรูปที่อัพโหลด (สำหรับ preview)
-                    'hasIdCard' => !empty($kyc->id_card_image),
-                    'hasSelfie' => !empty($kyc->selfie_image),
+                    'hasIdCard' => ! empty($kyc->id_card_image),
+                    'hasSelfie' => ! empty($kyc->selfie_image),
                     'idCardUrl' => $idCardUrl,   // URL รูปบัตรประชาชน
                     'selfieUrl' => $selfieUrl,   // URL รูป selfie
-                    'canSubmit' => !empty($kyc->id_card_image) && !empty($kyc->selfie_image),
+                    'canSubmit' => ! empty($kyc->id_card_image) && ! empty($kyc->selfie_image),
                 ],
             ]);
 
@@ -1381,8 +1324,6 @@ class MobileApiController extends Controller
 
     /**
      * ยืนยันส่ง KYC (หลังจาก upload รูปครบแล้ว)
-     *
-     * @return JsonResponse
      */
     public function confirmKycSubmission(): JsonResponse
     {
@@ -1396,7 +1337,7 @@ class MobileApiController extends Controller
             ->latest()
             ->first();
 
-        if (!$kyc) {
+        if (! $kyc) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาอัพโหลดเอกสารให้ครบถ้วนก่อน',
@@ -1430,15 +1371,13 @@ class MobileApiController extends Controller
 
     /**
      * ดึงสถานะการสมัครเป็นไรเดอร์
-     *
-     * @return JsonResponse
      */
     public function getRiderStatus(): JsonResponse
     {
         $user = Auth::user();
         $rider = \App\Models\Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1480,9 +1419,6 @@ class MobileApiController extends Controller
 
     /**
      * สมัครเป็นไรเดอร์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerRider(Request $request): JsonResponse
     {
@@ -1546,16 +1482,13 @@ class MobileApiController extends Controller
 
     /**
      * อัพโหลดเอกสารไรเดอร์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function uploadRiderDocument(Request $request): JsonResponse
     {
         $user = Auth::user();
         $rider = \App\Models\Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาสมัครเป็นไรเดอร์ก่อน',
@@ -1598,16 +1531,13 @@ class MobileApiController extends Controller
 
     /**
      * บันทึกสิทธิ์ที่ได้รับจากผู้ใช้
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateRiderPermissions(Request $request): JsonResponse
     {
         $user = Auth::user();
         $rider = \App\Models\Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาสมัครเป็นไรเดอร์ก่อน',
@@ -1647,9 +1577,6 @@ class MobileApiController extends Controller
 
     /**
      * ตั้งค่าสถานะออนไลน์/ออฟไลน์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function setRiderAvailability(Request $request): JsonResponse
     {
@@ -1658,7 +1585,7 @@ class MobileApiController extends Controller
             ->where('status', 'approved')
             ->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณยังไม่ได้รับการอนุมัติเป็นไรเดอร์',
@@ -1671,7 +1598,7 @@ class MobileApiController extends Controller
         ]);
 
         // ตรวจสอบสิทธิ์ GPS ก่อนเปิดออนไลน์
-        if ($request->availability === 'online' && !$rider->gps_permission_granted) {
+        if ($request->availability === 'online' && ! $rider->gps_permission_granted) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาอนุญาตการเข้าถึงตำแหน่งก่อนเปิดรับงาน',
@@ -1698,9 +1625,6 @@ class MobileApiController extends Controller
     /**
      * อัพเดทตำแหน่ง GPS
      * เก็บเฉพาะตอนที่มีงานเท่านั้น
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateRiderLocation(Request $request): JsonResponse
     {
@@ -1709,7 +1633,7 @@ class MobileApiController extends Controller
             ->where('status', 'approved')
             ->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบข้อมูลไรเดอร์',
@@ -1761,18 +1685,15 @@ class MobileApiController extends Controller
             'success' => true,
             'message' => 'อัพเดทตำแหน่งสำเร็จ',
             'data' => [
-                'hasActiveJob' => !is_null($activeJob),
+                'hasActiveJob' => ! is_null($activeJob),
                 'jobId' => $activeJob?->id,
-                'isTracking' => !is_null($activeJob),
+                'isTracking' => ! is_null($activeJob),
             ],
         ]);
     }
 
     /**
      * ดึงงานที่รอไรเดอร์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAvailableJobs(Request $request): JsonResponse
     {
@@ -1782,7 +1703,7 @@ class MobileApiController extends Controller
             ->where('availability', 'online')
             ->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเปิดรับงานก่อน',
@@ -1794,10 +1715,10 @@ class MobileApiController extends Controller
 
         // ถ้ามีตำแหน่งล่าสุด ให้จัดเรียงตามระยะทาง
         if ($rider->last_latitude && $rider->last_longitude) {
-            $query->selectRaw("*,
+            $query->selectRaw('*,
                 (6371 * acos(cos(radians(?)) * cos(radians(pickup_latitude)) *
                 cos(radians(pickup_longitude) - radians(?)) +
-                sin(radians(?)) * sin(radians(pickup_latitude)))) AS distance_km",
+                sin(radians(?)) * sin(radians(pickup_latitude)))) AS distance_km',
                 [$rider->last_latitude, $rider->last_longitude, $rider->last_latitude])
                 ->having('distance_km', '<=', 10) // ภายใน 10 กม.
                 ->orderBy('distance_km');
@@ -1843,10 +1764,6 @@ class MobileApiController extends Controller
 
     /**
      * รับงาน
-     *
-     * @param Request $request
-     * @param int $jobId
-     * @return JsonResponse
      */
     public function acceptJob(Request $request, int $jobId): JsonResponse
     {
@@ -1855,7 +1772,7 @@ class MobileApiController extends Controller
             ->where('status', 'approved')
             ->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณยังไม่ได้รับการอนุมัติเป็นไรเดอร์',
@@ -1879,7 +1796,7 @@ class MobileApiController extends Controller
 
         $job = \App\Models\RiderJob::find($jobId);
 
-        if (!$job) {
+        if (! $job) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบงานนี้',
@@ -1931,15 +1848,13 @@ class MobileApiController extends Controller
 
     /**
      * ดึงงานปัจจุบันของไรเดอร์
-     *
-     * @return JsonResponse
      */
     public function getCurrentJob(): JsonResponse
     {
         $user = Auth::user();
         $rider = \App\Models\Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบข้อมูลไรเดอร์',
@@ -1950,7 +1865,7 @@ class MobileApiController extends Controller
             ->whereIn('status', ['accepted', 'picking_up', 'picked_up', 'delivering'])
             ->first();
 
-        if (!$job) {
+        if (! $job) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -2002,17 +1917,13 @@ class MobileApiController extends Controller
 
     /**
      * อัพเดทสถานะงาน
-     *
-     * @param Request $request
-     * @param int $jobId
-     * @return JsonResponse
      */
     public function updateJobStatus(Request $request, int $jobId): JsonResponse
     {
         $user = Auth::user();
         $rider = \App\Models\Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบข้อมูลไรเดอร์',
@@ -2023,7 +1934,7 @@ class MobileApiController extends Controller
             ->where('rider_id', $rider->id)
             ->first();
 
-        if (!$job) {
+        if (! $job) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบงานนี้',
@@ -2124,9 +2035,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการ tickets ของผู้ใช้
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTickets(Request $request): JsonResponse
     {
@@ -2167,9 +2075,6 @@ class MobileApiController extends Controller
 
     /**
      * สร้าง ticket ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createTicket(Request $request): JsonResponse
     {
@@ -2220,18 +2125,16 @@ class MobileApiController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถสร้าง Ticket ได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถสร้าง Ticket ได้: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดูรายละเอียด ticket
-     *
-     * @param int $ticketId
-     * @return JsonResponse
      */
     public function getTicket(int $ticketId): JsonResponse
     {
@@ -2242,7 +2145,7 @@ class MobileApiController extends Controller
             ->with('messages.user')
             ->first();
 
-        if (!$ticket) {
+        if (! $ticket) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ Ticket นี้',
@@ -2290,10 +2193,6 @@ class MobileApiController extends Controller
 
     /**
      * ส่งข้อความใน ticket
-     *
-     * @param Request $request
-     * @param int $ticketId
-     * @return JsonResponse
      */
     public function replyTicket(Request $request, int $ticketId): JsonResponse
     {
@@ -2303,7 +2202,7 @@ class MobileApiController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$ticket) {
+        if (! $ticket) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ Ticket นี้',
@@ -2342,10 +2241,6 @@ class MobileApiController extends Controller
 
     /**
      * ให้คะแนนความพึงพอใจ
-     *
-     * @param Request $request
-     * @param int $ticketId
-     * @return JsonResponse
      */
     public function rateTicket(Request $request, int $ticketId): JsonResponse
     {
@@ -2356,7 +2251,7 @@ class MobileApiController extends Controller
             ->whereIn('status', ['resolved', 'closed'])
             ->first();
 
-        if (!$ticket) {
+        if (! $ticket) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ Ticket นี้หรือยังไม่ได้แก้ไข',
@@ -2383,9 +2278,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการการแจ้งเตือน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getNotifications(Request $request): JsonResponse
     {
@@ -2430,10 +2322,6 @@ class MobileApiController extends Controller
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @param Request $request
-     * @param int $notificationId
-     * @return JsonResponse
      */
     public function markNotificationRead(Request $request, int $notificationId): JsonResponse
     {
@@ -2443,7 +2331,7 @@ class MobileApiController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบการแจ้งเตือนนี้',
@@ -2460,9 +2348,6 @@ class MobileApiController extends Controller
 
     /**
      * ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function markAllNotificationsRead(Request $request): JsonResponse
     {
@@ -2483,10 +2368,6 @@ class MobileApiController extends Controller
 
     /**
      * ลบการแจ้งเตือน
-     *
-     * @param Request $request
-     * @param int $notificationId
-     * @return JsonResponse
      */
     public function deleteNotification(Request $request, int $notificationId): JsonResponse
     {
@@ -2496,7 +2377,7 @@ class MobileApiController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบการแจ้งเตือนนี้',
@@ -2517,9 +2398,6 @@ class MobileApiController extends Controller
 
     /**
      * บันทึก Push Token
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerPushToken(Request $request): JsonResponse
     {
@@ -2553,9 +2431,6 @@ class MobileApiController extends Controller
 
     /**
      * ลบ Push Token
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function removePushToken(Request $request): JsonResponse
     {
@@ -2578,8 +2453,6 @@ class MobileApiController extends Controller
 
     /**
      * จำนวนการแจ้งเตือนที่ยังไม่อ่าน
-     *
-     * @return JsonResponse
      */
     public function getUnreadNotificationCount(): JsonResponse
     {
@@ -2603,8 +2476,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการ Rank ทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function getRanks(): JsonResponse
     {
@@ -2644,16 +2515,13 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายละเอียด Rank
-     *
-     * @param int $rankId
-     * @return JsonResponse
      */
     public function getRankDetail(int $rankId): JsonResponse
     {
         $rank = \App\Models\Rank::with(['requirements', 'bonuses'])
             ->find($rankId);
 
-        if (!$rank) {
+        if (! $rank) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบข้อมูล Rank',
@@ -2714,8 +2582,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงความคืบหน้า Rank ของผู้ใช้
-     *
-     * @return JsonResponse
      */
     public function getUserRankProgress(): JsonResponse
     {
@@ -2723,7 +2589,7 @@ class MobileApiController extends Controller
 
         // ดึง current rank
         $currentRank = $user->currentRank;
-        if (!$currentRank) {
+        if (! $currentRank) {
             $currentRank = \App\Models\Rank::where('is_default', true)->first()
                 ?? \App\Models\Rank::orderBy('level', 'asc')->first();
         }
@@ -2804,9 +2670,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึง Leaderboard
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getLeaderboard(Request $request): JsonResponse
     {
@@ -2952,8 +2815,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูล Affiliate ของผู้ใช้
-     *
-     * @return JsonResponse
      */
     public function getMyAffiliate(): JsonResponse
     {
@@ -2985,7 +2846,7 @@ class MobileApiController extends Controller
             'success' => true,
             'data' => [
                 'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref=' . $user->referral_code),
+                'referralLink' => url('/register?ref='.$user->referral_code),
                 'statistics' => [
                     'directReferrals' => $directReferrals,
                     'totalTeamMembers' => $totalTeamMembers,
@@ -3010,9 +2871,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายชื่อลูกทีมโดยตรง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDirectReferrals(Request $request): JsonResponse
     {
@@ -3058,9 +2916,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงผังทีม (Unilevel Tree)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTeamTree(Request $request): JsonResponse
     {
@@ -3106,6 +2961,7 @@ class MobileApiController extends Controller
 
         return $children->map(function ($child) use ($depth, $currentDepth) {
             $childrenCount = \App\Models\User::where('sponsor_id', $child->id)->count();
+
             return [
                 'id' => $child->id,
                 'name' => $child->name,
@@ -3134,7 +2990,7 @@ class MobileApiController extends Controller
         $total = 0;
         $currentLevel = [$userId];
 
-        for ($i = 0; $i < $maxDepth && !empty($currentLevel); $i++) {
+        for ($i = 0; $i < $maxDepth && ! empty($currentLevel); $i++) {
             $children = \App\Models\User::whereIn('sponsor_id', $currentLevel)->pluck('id')->toArray();
             $total += count($children);
             $currentLevel = $children;
@@ -3155,9 +3011,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึง children ของ member ใน MLM tree
-     *
-     * @param int $userId
-     * @return JsonResponse
      */
     public function getTeamTreeChildren(int $userId): JsonResponse
     {
@@ -3168,7 +3021,7 @@ class MobileApiController extends Controller
             ->whereNotNull('sponsor_id')
             ->exists();
 
-        if (!$isMember && $userId !== $user->id) {
+        if (! $isMember && $userId !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบสมาชิก',
@@ -3187,9 +3040,6 @@ class MobileApiController extends Controller
 
     /**
      * ค้นหาสมาชิกในทีม
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchTeamMember(Request $request): JsonResponse
     {
@@ -3239,16 +3089,13 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูล profile ของสมาชิกในทีม
-     *
-     * @param int $userId
-     * @return JsonResponse
      */
     public function getMemberProfile(int $userId): JsonResponse
     {
         $member = \App\Models\User::with('currentRank:id,name,name_th,icon,color')
             ->find($userId);
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบสมาชิก',
@@ -3289,9 +3136,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการคอมมิชชัน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getCommissions(Request $request): JsonResponse
     {
@@ -3355,8 +3199,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงสรุปรายได้
-     *
-     * @return JsonResponse
      */
     public function getEarningsSummary(): JsonResponse
     {
@@ -3473,8 +3315,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงข้อมูลตะกร้าสินค้า (พร้อมคำนวณทุกอย่างจาก server)
-     *
-     * @return JsonResponse
      */
     public function getCart(): JsonResponse
     {
@@ -3560,9 +3400,6 @@ class MobileApiController extends Controller
 
     /**
      * เพิ่มสินค้าลงตะกร้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function addToCart(Request $request): JsonResponse
     {
@@ -3593,7 +3430,7 @@ class MobileApiController extends Controller
             // ตรวจสอบสินค้า
             $product = Product::findOrFail($request->product_id);
 
-            if (!$product->is_active) {
+            if (! $product->is_active) {
                 return response()->json([
                     'success' => false,
                     'message' => 'สินค้านี้ไม่พร้อมจำหน่าย',
@@ -3670,10 +3507,6 @@ class MobileApiController extends Controller
 
     /**
      * อัพเดทจำนวนสินค้าในตะกร้า
-     *
-     * @param Request $request
-     * @param int $itemId
-     * @return JsonResponse
      */
     public function updateCartItem(Request $request, int $itemId): JsonResponse
     {
@@ -3742,9 +3575,6 @@ class MobileApiController extends Controller
 
     /**
      * ลบสินค้าออกจากตะกร้า
-     *
-     * @param int $itemId
-     * @return JsonResponse
      */
     public function removeFromCart(int $itemId): JsonResponse
     {
@@ -3781,8 +3611,6 @@ class MobileApiController extends Controller
 
     /**
      * ล้างตะกร้าทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function clearCart(): JsonResponse
     {
@@ -3825,9 +3653,6 @@ class MobileApiController extends Controller
 
     /**
      * ใช้โค้ดส่วนลด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function applyPromoCode(Request $request): JsonResponse
     {
@@ -3854,7 +3679,7 @@ class MobileApiController extends Controller
                 ->with(['items.product'])
                 ->first();
 
-            if (!$cart || $cart->items->isEmpty()) {
+            if (! $cart || $cart->items->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่มีสินค้าในตะกร้า',
@@ -3864,6 +3689,7 @@ class MobileApiController extends Controller
             // คำนวณยอดรวม
             $totalPrice = $cart->items->sum(function ($item) {
                 $price = $item->product->discount_price ?? $item->product->price;
+
                 return $price * $item->quantity;
             });
 
@@ -3927,9 +3753,6 @@ class MobileApiController extends Controller
 
     /**
      * สร้างคำสั่งซื้อ (Checkout)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function checkout(Request $request): JsonResponse
     {
@@ -3961,7 +3784,7 @@ class MobileApiController extends Controller
                 ->with(['items.product'])
                 ->first();
 
-            if (!$cart || $cart->items->isEmpty()) {
+            if (! $cart || $cart->items->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่มีสินค้าในตะกร้า',
@@ -3970,7 +3793,7 @@ class MobileApiController extends Controller
 
             // ตรวจสอบสต็อกทุกรายการ
             foreach ($cart->items as $item) {
-                if (!$item->isAvailable()) {
+                if (! $item->isAvailable()) {
                     return response()->json([
                         'success' => false,
                         'message' => "สินค้า '{$item->product->name}' หมดสต็อกหรือไม่พร้อมจำหน่าย",
@@ -4047,7 +3870,7 @@ class MobileApiController extends Controller
             // สร้าง Order
             $order = Order::create([
                 'user_id' => $user->id,
-                'order_number' => 'ORD-' . strtoupper(Str::random(8)),
+                'order_number' => 'ORD-'.strtoupper(Str::random(8)),
                 'status' => $request->payment_method === 'cod' ? 'pending' : 'processing',
                 'payment_method' => $request->payment_method,
                 'payment_status' => $request->payment_method === 'wallet' ? 'paid' : 'pending',
@@ -4136,9 +3959,6 @@ class MobileApiController extends Controller
 
     /**
      * ค้นหา Wallet Address
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function lookupWalletAddress(Request $request): JsonResponse
     {
@@ -4158,7 +3978,7 @@ class MobileApiController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if (!$wallet) {
+            if (! $wallet) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Wallet นี้ในระบบ',
@@ -4176,7 +3996,7 @@ class MobileApiController extends Controller
             // ดึงข้อมูล User เจ้าของ Wallet
             $recipient = $wallet->user;
 
-            if (!$recipient) {
+            if (! $recipient) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบผู้ใช้เจ้าของ Wallet นี้',
@@ -4208,9 +4028,6 @@ class MobileApiController extends Controller
 
     /**
      * โอนเงินไปยัง Wallet อื่น
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function transferMoney(Request $request): JsonResponse
     {
@@ -4246,7 +4063,7 @@ class MobileApiController extends Controller
             $senderWallet = $walletService->getOrCreateWallet($user);
 
             // ตรวจสอบ PIN
-            if (!$senderWallet->pin_hash || !Hash::check($request->pin, $senderWallet->pin_hash)) {
+            if (! $senderWallet->pin_hash || ! Hash::check($request->pin, $senderWallet->pin_hash)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'PIN ไม่ถูกต้อง',
@@ -4258,7 +4075,7 @@ class MobileApiController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if (!$recipientWallet) {
+            if (! $recipientWallet) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Wallet ผู้รับ',
@@ -4283,7 +4100,7 @@ class MobileApiController extends Controller
             if ($senderWallet->balance < $totalDeduction) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ยอดเงินไม่เพียงพอ (ต้องการ ' . number_format($totalDeduction, 2) . ' บาท)',
+                    'message' => 'ยอดเงินไม่เพียงพอ (ต้องการ '.number_format($totalDeduction, 2).' บาท)',
                 ], 400);
             }
 
@@ -4301,8 +4118,8 @@ class MobileApiController extends Controller
                 'amount' => -$totalDeduction,
                 'fee' => $fee,
                 'balance_after' => $senderWallet->balance,
-                'description' => 'โอนเงินไปยัง ' . $recipientWallet->wallet_address,
-                'reference' => 'TF' . time() . rand(1000, 9999),
+                'description' => 'โอนเงินไปยัง '.$recipientWallet->wallet_address,
+                'reference' => 'TF'.time().rand(1000, 9999),
                 'metadata' => [
                     'recipient_wallet' => $recipientWallet->wallet_address,
                     'recipient_user_id' => $recipientWallet->user_id,
@@ -4321,8 +4138,8 @@ class MobileApiController extends Controller
                 'amount' => $amount,
                 'fee' => 0,
                 'balance_after' => $recipientWallet->balance,
-                'description' => 'รับโอนเงินจาก ' . $senderWallet->wallet_address,
-                'reference' => 'TF' . time() . rand(1000, 9999),
+                'description' => 'รับโอนเงินจาก '.$senderWallet->wallet_address,
+                'reference' => 'TF'.time().rand(1000, 9999),
                 'metadata' => [
                     'sender_wallet' => $senderWallet->wallet_address,
                     'sender_user_id' => $user->id,
@@ -4371,15 +4188,12 @@ class MobileApiController extends Controller
 
     /**
      * แชร์ตำแหน่ง GPS
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function shareGpsLocation(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -4451,15 +4265,12 @@ class MobileApiController extends Controller
 
     /**
      * หยุดแชร์ตำแหน่ง GPS
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function stopGpsSharing(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -4498,8 +4309,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการร้านค้าทางการ (Official Stores)
-     *
-     * @return JsonResponse
      */
     public function getOfficialStores(): JsonResponse
     {
@@ -4541,8 +4350,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการร้านแนะนำติดดาว (Featured Stores)
-     *
-     * @return JsonResponse
      */
     public function getFeaturedStores(): JsonResponse
     {
@@ -4585,9 +4392,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายละเอียดร้านค้า
-     *
-     * @param string $storeId
-     * @return JsonResponse
      */
     public function getStoreDetail(string $storeId): JsonResponse
     {
@@ -4596,7 +4400,7 @@ class MobileApiController extends Controller
                 ->where('is_active', true)
                 ->first();
 
-            if (!$store) {
+            if (! $store) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบร้านค้า',
@@ -4636,10 +4440,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงสินค้าของร้านค้า
-     *
-     * @param Request $request
-     * @param string $storeId
-     * @return JsonResponse
      */
     public function getStoreProducts(Request $request, string $storeId): JsonResponse
     {
@@ -4648,7 +4448,7 @@ class MobileApiController extends Controller
                 ->where('is_active', true)
                 ->first();
 
-            if (!$store) {
+            if (! $store) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบร้านค้า',
@@ -4707,8 +4507,6 @@ class MobileApiController extends Controller
     /**
      * ดึงข้อมูลร้านพรีเมี่ยม (Official Shop)
      * มีร้านเดียวในระบบที่ขายสินค้าจากแพลตฟอร์ม
-     *
-     * @return JsonResponse
      */
     public function getPremiumStore(): JsonResponse
     {
@@ -4769,9 +4567,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงสินค้าจากร้านพรีเมี่ยม (Official Shop)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getPremiumStoreProducts(Request $request): JsonResponse
     {
@@ -4795,7 +4590,7 @@ class MobileApiController extends Controller
                 $query->where('seller_id', $seller->id);
             } else {
                 // ดึงทุกสินค้า แต่ให้ Official Shop มาก่อน
-                $query->orderByRaw("CASE WHEN seller_id = ? THEN 0 ELSE 1 END", [$seller->id]);
+                $query->orderByRaw('CASE WHEN seller_id = ? THEN 0 ELSE 1 END', [$seller->id]);
             }
 
             // กรองตามหมวดหมู่
@@ -4876,9 +4671,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการหลักสูตร
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getCourses(Request $request): JsonResponse
     {
@@ -4999,11 +4791,11 @@ class MobileApiController extends Controller
 
             // กรองตาม category
             if ($category === 'free') {
-                $courses = array_filter($courses, fn($c) => $c['isFree']);
+                $courses = array_filter($courses, fn ($c) => $c['isFree']);
             } elseif ($category === 'popular') {
-                $courses = array_filter($courses, fn($c) => $c['isPopular']);
+                $courses = array_filter($courses, fn ($c) => $c['isPopular']);
             } elseif ($category === 'new') {
-                $courses = array_filter($courses, fn($c) => $c['isNew']);
+                $courses = array_filter($courses, fn ($c) => $c['isNew']);
             }
 
             return response()->json([
@@ -5025,9 +4817,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายละเอียดหลักสูตร
-     *
-     * @param string $courseId
-     * @return JsonResponse
      */
     public function getCourseDetail(string $courseId): JsonResponse
     {
@@ -5049,14 +4838,12 @@ class MobileApiController extends Controller
 
     /**
      * ดึงหลักสูตรของฉัน
-     *
-     * @return JsonResponse
      */
     public function getMyCourses(): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -5079,9 +4866,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการวิดีโอ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getVideos(Request $request): JsonResponse
     {
@@ -5173,14 +4957,12 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายได้จากการดูวิดีโอ
-     *
-     * @return JsonResponse
      */
     public function getVideoEarnings(): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -5202,15 +4984,12 @@ class MobileApiController extends Controller
 
     /**
      * บันทึกการดูวิดีโอ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function submitVideoWatch(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -5260,9 +5039,6 @@ class MobileApiController extends Controller
      * สร้าง one-time token สำหรับเปิดหน้าเว็บพร้อม authentication
      *
      * ใช้สำหรับ: Wallet topup, Payment pages, Profile settings
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function generateWebSessionToken(Request $request): JsonResponse
     {
@@ -5275,7 +5051,7 @@ class MobileApiController extends Controller
             $tokenHash = hash('sha256', $token);
 
             // บันทึกลง Cache (หมดอายุใน 5 นาที)
-            $cacheKey = 'web_session_token:' . $tokenHash;
+            $cacheKey = 'web_session_token:'.$tokenHash;
             \Cache::put($cacheKey, [
                 'user_id' => $user->id,
                 'redirect_path' => $redirectPath,
@@ -5285,13 +5061,13 @@ class MobileApiController extends Controller
 
             // สร้าง URL
             $baseUrl = rtrim(config('app.url'), '/');
-            $webUrl = $baseUrl . '/mobile-web-session?token=' . $token;
+            $webUrl = $baseUrl.'/mobile-web-session?token='.$token;
 
             // ถ้ามี query params เพิ่มเติม (เช่น amount)
             if ($request->has('query_params')) {
                 $queryParams = $request->input('query_params');
                 if (is_array($queryParams)) {
-                    $webUrl .= '&' . http_build_query($queryParams);
+                    $webUrl .= '&'.http_build_query($queryParams);
                 }
             }
 
@@ -5321,9 +5097,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการ Orders ที่ผู้ขายต้องจัดการ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSellerOrders(Request $request): JsonResponse
     {
@@ -5331,7 +5104,7 @@ class MobileApiController extends Controller
             $user = Auth::user();
 
             // ตรวจสอบว่าเป็น seller หรือไม่
-            if (!$user->is_seller && !$user->hasRole('seller')) {
+            if (! $user->is_seller && ! $user->hasRole('seller')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'คุณไม่มีสิทธิ์เข้าถึงส่วนนี้',
@@ -5362,10 +5135,10 @@ class MobileApiController extends Controller
 
             // Statistics
             $stats = [
-                'pending' => Order::pending()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
-                'processing' => Order::processing()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
-                'shipped' => Order::shipped()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
-                'completed' => Order::completed()->whereHas('items', fn($q) => $q->where('seller_id', $user->id))->count(),
+                'pending' => Order::pending()->whereHas('items', fn ($q) => $q->where('seller_id', $user->id))->count(),
+                'processing' => Order::processing()->whereHas('items', fn ($q) => $q->where('seller_id', $user->id))->count(),
+                'shipped' => Order::shipped()->whereHas('items', fn ($q) => $q->where('seller_id', $user->id))->count(),
+                'completed' => Order::completed()->whereHas('items', fn ($q) => $q->where('seller_id', $user->id))->count(),
             ];
 
             return response()->json([
@@ -5393,9 +5166,6 @@ class MobileApiController extends Controller
 
     /**
      * ดูรายละเอียด Order สำหรับผู้ขาย
-     *
-     * @param int $orderId
-     * @return JsonResponse
      */
     public function getSellerOrderDetail(int $orderId): JsonResponse
     {
@@ -5415,7 +5185,7 @@ class MobileApiController extends Controller
                 })
                 ->find($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Order',
@@ -5446,7 +5216,7 @@ class MobileApiController extends Controller
                         'avatar' => $order->user->avatar ?? null,
                     ],
                     'shipping' => $order->shipping_address_snapshot,
-                    'items' => $sellerItems->map(fn($item) => [
+                    'items' => $sellerItems->map(fn ($item) => [
                         'id' => $item->id,
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name ?? $item->product?->name,
@@ -5468,7 +5238,7 @@ class MobileApiController extends Controller
                         'tracking_url' => $order->tracking_url,
                         'estimated_delivery_at' => $order->estimated_delivery_at?->toISOString(),
                     ],
-                    'tracking_history' => $order->trackingHistory->map(fn($h) => [
+                    'tracking_history' => $order->trackingHistory->map(fn ($h) => [
                         'id' => $h->id,
                         'status' => $h->status,
                         'title' => $h->title,
@@ -5490,10 +5260,6 @@ class MobileApiController extends Controller
 
     /**
      * อัพเดท Tracking Number สำหรับ Order
-     *
-     * @param Request $request
-     * @param int $orderId
-     * @return JsonResponse
      */
     public function updateOrderTracking(Request $request, int $orderId): JsonResponse
     {
@@ -5522,7 +5288,7 @@ class MobileApiController extends Controller
                 $q->where('seller_id', $user->id);
             })->find($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Order หรือคุณไม่มีสิทธิ์',
@@ -5582,17 +5348,13 @@ class MobileApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * เพิ่มประวัติ Tracking (สถานะการขนส่ง)
-     *
-     * @param Request $request
-     * @param int $orderId
-     * @return JsonResponse
      */
     public function addOrderTrackingHistory(Request $request, int $orderId): JsonResponse
     {
@@ -5621,7 +5383,7 @@ class MobileApiController extends Controller
                 $q->where('seller_id', $user->id);
             })->find($orderId);
 
-            if (!$order) {
+            if (! $order) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Order หรือคุณไม่มีสิทธิ์',
@@ -5686,8 +5448,6 @@ class MobileApiController extends Controller
 
     /**
      * ดึงรายการบริษัทขนส่ง
-     *
-     * @return JsonResponse
      */
     public function getShippingProviders(): JsonResponse
     {
@@ -5695,7 +5455,7 @@ class MobileApiController extends Controller
             $providers = \App\Models\ShippingProvider::active()
                 ->ordered()
                 ->get()
-                ->map(fn($p) => [
+                ->map(fn ($p) => [
                     'id' => $p->id,
                     'code' => $p->code,
                     'name' => $p->name,

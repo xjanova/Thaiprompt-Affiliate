@@ -72,7 +72,7 @@ class TicketCannedResponse extends Model
     {
         return $query->where(function ($q) use ($userId) {
             $q->where('is_public', true)
-              ->orWhere('created_by', $userId);
+                ->orWhere('created_by', $userId);
         });
     }
 
@@ -83,8 +83,8 @@ class TicketCannedResponse extends Model
     {
         return $query->where(function ($q) use ($keyword) {
             $q->where('title', 'like', "%{$keyword}%")
-              ->orWhere('content', 'like', "%{$keyword}%")
-              ->orWhere('shortcode', 'like', "%{$keyword}%");
+                ->orWhere('content', 'like', "%{$keyword}%")
+                ->orWhere('shortcode', 'like', "%{$keyword}%");
         });
     }
 
@@ -142,6 +142,7 @@ class TicketCannedResponse extends Model
     public function getAvailableVariables()
     {
         preg_match_all('/\{([^}]+)\}/', $this->content, $matches);
+
         return $matches[1] ?? [];
     }
 }

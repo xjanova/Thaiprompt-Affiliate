@@ -15,7 +15,7 @@ class SellCryptoRequest extends FormRequest
         // Check if user has a crypto wallet
         $wallet = $this->user()->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return false;
         }
 
@@ -38,8 +38,8 @@ class SellCryptoRequest extends FormRequest
             'crypto_amount' => [
                 'required',
                 'numeric',
-                'min:' . ($currency?->min_withdrawal ?? 0.00001),
-                'max:' . ($currency?->max_withdrawal ?? 1000000),
+                'min:'.($currency?->min_withdrawal ?? 0.00001),
+                'max:'.($currency?->max_withdrawal ?? 1000000),
             ],
             'expected_rate' => [
                 'nullable',
@@ -100,7 +100,7 @@ class SellCryptoRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Set default slippage if not provided
-        if (!$this->slippage_tolerance) {
+        if (! $this->slippage_tolerance) {
             $this->merge([
                 'slippage_tolerance' => 1.0, // 1% default
             ]);

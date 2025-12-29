@@ -16,8 +16,6 @@ return new class extends Migration
      *
      * การแก้ไข: Update สินค้าที่มี is_active = true แต่ published_at = null
      * ให้มี published_at = now() เพื่อให้แสดงในหน้าเว็บได้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -47,8 +45,6 @@ return new class extends Migration
      *
      * หมายเหตุ: ไม่สามารถ rollback ได้อย่างสมบูรณ์
      * เพราะเราไม่รู้ว่าสินค้าไหนเคยมี published_at = null
-     *
-     * @return void
      */
     public function down(): void
     {

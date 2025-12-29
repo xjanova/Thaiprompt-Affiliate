@@ -56,7 +56,7 @@ class BotSalesMessage extends Model
      */
     public function markAsRead(): void
     {
-        if (!$this->read_at) {
+        if (! $this->read_at) {
             $this->update(['read_at' => now()]);
         }
     }
@@ -66,7 +66,7 @@ class BotSalesMessage extends Model
      */
     public function markAsClicked(): void
     {
-        if (!$this->clicked_at) {
+        if (! $this->clicked_at) {
             $this->update(['clicked_at' => now()]);
         }
     }

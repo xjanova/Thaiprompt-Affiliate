@@ -151,6 +151,7 @@ class TPIXStake extends Model
     public function getDaysStaked(): int
     {
         $endDate = $this->unstaked_at ?? now();
+
         return $this->staked_at->diffInDays($endDate);
     }
 
@@ -165,14 +166,14 @@ class TPIXStake extends Model
 
     public function calculateCurrentRewards(): string
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return $this->rewards_earned;
         }
 
         $daysStaked = $this->getDaysStaked();
         $pool = $this->pool;
 
-        if (!$pool) {
+        if (! $pool) {
             return '0';
         }
 
@@ -192,18 +193,20 @@ class TPIXStake extends Model
         }
 
         $this->increment('rewards_claimed', $amount);
+
         return true;
     }
 
     public function getUnclaimedRewards(): string
     {
         $this->updateRewards();
+
         return bcsub($this->rewards_earned, $this->rewards_claimed, 8);
     }
 
     public function unstake()
     {
-        if (!$this->canUnstake()) {
+        if (! $this->canUnstake()) {
             throw new \Exception('Cannot unstake yet - still locked');
         }
 

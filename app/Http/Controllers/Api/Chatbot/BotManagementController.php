@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\Chatbot;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
-use App\Models\ChatbotKeywordResponse;
 use App\Services\Chatbot\HybridChatbotEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -243,7 +242,7 @@ class BotManagementController extends Controller
         $originalBot = AiBotProfile::where('owner_id', $user->id)->findOrFail($id);
 
         $newBot = $originalBot->replicate();
-        $newBot->name = $originalBot->name . ' (Copy)';
+        $newBot->name = $originalBot->name.' (Copy)';
         $newBot->is_public = false;
         $newBot->save();
 

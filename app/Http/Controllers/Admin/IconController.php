@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\IconHelper;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -89,7 +89,7 @@ class IconController extends Controller
         $category = $request->input('category');
 
         // Only allow deleting from custom category for safety
-        if ($category !== 'custom' && !auth()->user()->hasRole('super-admin')) {
+        if ($category !== 'custom' && ! auth()->user()->hasRole('super-admin')) {
             return response()->json([
                 'success' => false,
                 'message' => __('You can only delete custom icons'),

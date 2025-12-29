@@ -2,11 +2,11 @@
 
 namespace App\Observers;
 
-use App\Models\CarbonCredit;
-use App\Services\BlockchainRecordService;
+use App\Jobs\FoodPassport\ProcessCarbonCreditCommissionJob;
 use App\Jobs\FoodPassport\RecordCarbonCreditOnBlockchainJob;
 use App\Jobs\FoodPassport\SendCarbonCreditNotificationJob;
-use App\Jobs\FoodPassport\ProcessCarbonCreditCommissionJob;
+use App\Models\CarbonCredit;
+use App\Services\BlockchainRecordService;
 use Illuminate\Support\Facades\Log;
 
 class CarbonCreditObserver
@@ -67,7 +67,7 @@ class CarbonCreditObserver
 
         Log::info('Carbon credit updated', [
             'credit_id' => $credit->id,
-            'changes' => $credit->getChanges()
+            'changes' => $credit->getChanges(),
         ]);
     }
 
@@ -85,7 +85,7 @@ class CarbonCreditObserver
             'new_status' => $newStatus,
         ]);
 
-        match($newStatus) {
+        match ($newStatus) {
             'traded' => $this->handleTradedStatus($credit),
             'retired' => $this->handleRetiredStatus($credit),
             'expired' => $this->handleExpiredStatus($credit),

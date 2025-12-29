@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 class OtpService
 {
     private ?OtpSetting $settings;
+
     private LineService $lineService;
 
     public function __construct(LineService $lineService)
@@ -25,7 +26,7 @@ class OtpService
      */
     public function sendOTP(string $phone, string $purpose = 'phone_verification'): array
     {
-        if (!$this->settings || !$this->settings->enabled) {
+        if (! $this->settings || ! $this->settings->enabled) {
             return [
                 'success' => false,
                 'message' => 'OTP service is not enabled',
@@ -33,7 +34,7 @@ class OtpService
         }
 
         // Check rate limit
-        if (!OtpVerification::checkRateLimit($phone)) {
+        if (! OtpVerification::checkRateLimit($phone)) {
             return [
                 'success' => false,
                 'message' => 'Too many OTP requests. Please try again later.',
@@ -91,7 +92,7 @@ class OtpService
 
             return [
                 'success' => false,
-                'message' => 'Error sending OTP: ' . $e->getMessage(),
+                'message' => 'Error sending OTP: '.$e->getMessage(),
             ];
         }
     }
@@ -101,7 +102,7 @@ class OtpService
      */
     public function sendOTPToUser(User $user, string $purpose = '2fa_verification', ?string $channel = null): array
     {
-        if (!$this->settings || !$this->settings->enabled) {
+        if (! $this->settings || ! $this->settings->enabled) {
             return [
                 'success' => false,
                 'message' => 'OTP service is not enabled',
@@ -109,7 +110,7 @@ class OtpService
         }
 
         // Check rate limit
-        if (!OtpVerification::checkRateLimitForUser($user->id)) {
+        if (! OtpVerification::checkRateLimitForUser($user->id)) {
             return [
                 'success' => false,
                 'message' => 'Too many OTP requests. Please try again later.',
@@ -139,7 +140,7 @@ class OtpService
             if ($sent) {
                 return [
                     'success' => true,
-                    'message' => 'OTP sent successfully via ' . $otp->channel,
+                    'message' => 'OTP sent successfully via '.$otp->channel,
                     'channel' => $otp->channel,
                     'expires_at' => $otp->expires_at->toDateTimeString(),
                 ];
@@ -159,7 +160,7 @@ class OtpService
 
             return [
                 'success' => false,
-                'message' => 'Error sending OTP: ' . $e->getMessage(),
+                'message' => 'Error sending OTP: '.$e->getMessage(),
             ];
         }
     }
@@ -229,11 +230,11 @@ class OtpService
      */
     private function sendViaLine(User $user, string $code): bool
     {
-        if (!$this->settings->isLineOtpEnabled()) {
+        if (! $this->settings->isLineOtpEnabled()) {
             return false;
         }
 
-        if (!$user->line_user_id) {
+        if (! $user->line_user_id) {
             return false;
         }
 
@@ -276,6 +277,7 @@ class OtpService
         ]);
 
         $data = $response->json();
+
         return $response->successful() && isset($data['messages'][0]['status']) && $data['messages'][0]['status'] === '0';
     }
 
@@ -290,7 +292,7 @@ class OtpService
         }
 
         if ($this->settings->custom_api_key) {
-            $headers['Authorization'] = 'Bearer ' . $this->settings->custom_api_key;
+            $headers['Authorization'] = 'Bearer '.$this->settings->custom_api_key;
         }
 
         $response = Http::withHeaders($headers)->post($this->settings->custom_api_url, [
@@ -312,14 +314,14 @@ class OtpService
 
         // Add Thailand country code if not present
         if (strlen($phone) === 10 && substr($phone, 0, 1) === '0') {
-            $phone = '66' . substr($phone, 1);
+            $phone = '66'.substr($phone, 1);
         } elseif (strlen($phone) === 9) {
-            $phone = '66' . $phone;
+            $phone = '66'.$phone;
         }
 
         // Add + prefix
         if (substr($phone, 0, 1) !== '+') {
-            $phone = '+' . $phone;
+            $phone = '+'.$phone;
         }
 
         return $phone;
@@ -330,19 +332,19 @@ class OtpService
      */
     public function isConfigured(): bool
     {
-        if (!$this->settings || !$this->settings->enabled) {
+        if (! $this->settings || ! $this->settings->enabled) {
             return false;
         }
 
         switch ($this->settings->provider) {
             case 'twilio':
-                return !empty($this->settings->twilio_sid) && !empty($this->settings->twilio_token);
+                return ! empty($this->settings->twilio_sid) && ! empty($this->settings->twilio_token);
 
             case 'nexmo':
-                return !empty($this->settings->nexmo_key) && !empty($this->settings->nexmo_secret);
+                return ! empty($this->settings->nexmo_key) && ! empty($this->settings->nexmo_secret);
 
             case 'custom':
-                return !empty($this->settings->custom_api_url);
+                return ! empty($this->settings->custom_api_url);
 
             default:
                 return false;

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บการตั้งค่า layout ของร้านค้าผู้เช่า (Seller Store)
      * รองรับ: สี, แบนเนอร์, สไลด์, sections, และ custom styles
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -114,8 +112,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง store_layout_settings
-     *
-     * @return void
      */
     public function down(): void
     {

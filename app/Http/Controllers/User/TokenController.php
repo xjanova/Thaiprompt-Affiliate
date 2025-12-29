@@ -5,13 +5,11 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\TPIXToken;
 use App\Models\TPIXTokenBalance;
-use App\Models\CryptoWallet;
-use App\Services\TPIX\TokenFactoryService;
 use App\Services\TPIX\ReferralService;
+use App\Services\TPIX\TokenFactoryService;
 use App\Services\TPIX\TokenWalletIntegrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 /**
  * User Token Controller
@@ -19,7 +17,9 @@ use Illuminate\Support\Facades\DB;
 class TokenController extends Controller
 {
     protected TokenFactoryService $tokenFactory;
+
     protected ReferralService $referralService;
+
     protected TokenWalletIntegrationService $walletIntegration;
 
     public function __construct(
@@ -46,7 +46,7 @@ class TokenController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('symbol', 'like', "%{$search}%");
+                    ->orWhere('symbol', 'like', "%{$search}%");
             });
         }
 
@@ -205,7 +205,7 @@ class TokenController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to create token: ' . $e->getMessage());
+                ->with('error', 'Failed to create token: '.$e->getMessage());
         }
     }
 
@@ -226,9 +226,9 @@ class TokenController extends Controller
             $result = $this->tokenFactory->deployToken($token);
 
             return redirect()->route('user.tokens.show', $token->id)
-                ->with('success', 'Token deployed successfully! Contract: ' . $result['contract_address']);
+                ->with('success', 'Token deployed successfully! Contract: '.$result['contract_address']);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Deployment failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Deployment failed: '.$e->getMessage());
         }
     }
 
@@ -253,9 +253,9 @@ class TokenController extends Controller
                 $request->amount
             );
 
-            return redirect()->back()->with('success', 'Transfer successful! TX: ' . $result['tx_hash']);
+            return redirect()->back()->with('success', 'Transfer successful! TX: '.$result['tx_hash']);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Transfer failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Transfer failed: '.$e->getMessage());
         }
     }
 
@@ -336,7 +336,7 @@ class TokenController extends Controller
         try {
             $referralCode = $this->referralService->createReferralCode(Auth::user(), $request->all());
 
-            return redirect()->back()->with('success', 'Referral code created: ' . $referralCode->code);
+            return redirect()->back()->with('success', 'Referral code created: '.$referralCode->code);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

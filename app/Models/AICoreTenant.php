@@ -91,8 +91,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ User (เจ้าของ tenant)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -101,8 +99,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Feature Access
-     *
-     * @return HasMany
      */
     public function featureAccess(): HasMany
     {
@@ -111,8 +107,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Usage Logs
-     *
-     * @return HasMany
      */
     public function usageLogs(): HasMany
     {
@@ -121,8 +115,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Quotas
-     *
-     * @return HasMany
      */
     public function quotas(): HasMany
     {
@@ -131,8 +123,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Schedules
-     *
-     * @return HasMany
      */
     public function schedules(): HasMany
     {
@@ -141,8 +131,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Alerts
-     *
-     * @return HasMany
      */
     public function alerts(): HasMany
     {
@@ -151,8 +139,6 @@ class AICoreTenant extends Model
 
     /**
      * ความสัมพันธ์กับ Settings
-     *
-     * @return HasMany
      */
     public function settings(): HasMany
     {
@@ -162,7 +148,7 @@ class AICoreTenant extends Model
     /**
      * Scope: เฉพาะ tenants ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -173,7 +159,7 @@ class AICoreTenant extends Model
     /**
      * Scope: เฉพาะ tenants ที่ subscription ยังไม่หมดอายุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSubscriptionActive($query)
@@ -187,8 +173,7 @@ class AICoreTenant extends Model
     /**
      * Scope: กรองตาม subscription tier
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $tier
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSubscriptionTier($query, string $tier)
@@ -198,8 +183,6 @@ class AICoreTenant extends Model
 
     /**
      * ตรวจสอบว่า tenant active หรือไม่
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
@@ -208,12 +191,10 @@ class AICoreTenant extends Model
 
     /**
      * ตรวจสอบว่า subscription หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isSubscriptionExpired(): bool
     {
-        if (!$this->subscription_ends_at) {
+        if (! $this->subscription_ends_at) {
             return false;
         }
 
@@ -223,24 +204,20 @@ class AICoreTenant extends Model
     /**
      * ตรวจสอบว่า subscription ใกล้หมดอายุหรือไม่ (ภายใน X วัน)
      *
-     * @param int $days จำนวนวันที่ถือว่าใกล้หมดอายุ
-     * @return bool
+     * @param  int  $days  จำนวนวันที่ถือว่าใกล้หมดอายุ
      */
     public function isSubscriptionExpiringSoon(int $days = 7): bool
     {
-        if (!$this->subscription_ends_at) {
+        if (! $this->subscription_ends_at) {
             return false;
         }
 
         return $this->subscription_ends_at->diffInDays(now()) <= $days
-            && !$this->isSubscriptionExpired();
+            && ! $this->isSubscriptionExpired();
     }
 
     /**
      * ตรวจสอบว่ามีสิทธิ์เข้าถึง feature หรือไม่
-     *
-     * @param string $featureKey
-     * @return bool
      */
     public function hasFeatureAccess(string $featureKey): bool
     {
@@ -257,8 +234,7 @@ class AICoreTenant extends Model
     /**
      * ดึงการตั้งค่าเฉพาะจาก settings
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getSetting(string $key, $default = null)
@@ -269,14 +245,13 @@ class AICoreTenant extends Model
     /**
      * อัปเดตการตั้งค่าเฉพาะใน settings
      *
-     * @param string $key
-     * @param mixed $value
-     * @return bool
+     * @param  mixed  $value
      */
     public function setSetting(string $key, $value): bool
     {
         $settings = $this->settings ?? [];
         data_set($settings, $key, $value);
+
         return $this->update(['settings' => $settings]);
     }
 }

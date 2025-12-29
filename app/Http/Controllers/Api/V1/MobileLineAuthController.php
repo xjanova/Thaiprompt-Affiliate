@@ -8,7 +8,6 @@ use App\Models\LineOaSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\User;
-use App\Services\LineTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,15 +33,13 @@ class MobileLineAuthController extends Controller
 {
     /**
      * ดึง LINE Login configuration สำหรับ Mobile App
-     *
-     * @return JsonResponse
      */
     public function config(): JsonResponse
     {
         try {
             $settings = LineOaSetting::getActive();
 
-            if (!$settings || !$settings->isMobileLineLoginConfigured()) {
+            if (! $settings || ! $settings->isMobileLineLoginConfigured()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Mobile LINE Login ยังไม่ถูกตั้งค่า',
@@ -73,9 +70,6 @@ class MobileLineAuthController extends Controller
 
     /**
      * ตรวจสอบ LINE Access Token จาก Mobile App และ issue app token
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function verify(Request $request): JsonResponse
     {
@@ -98,7 +92,7 @@ class MobileLineAuthController extends Controller
         try {
             $settings = LineOaSetting::getActive();
 
-            if (!$settings || !$settings->isMobileLineLoginConfigured()) {
+            if (! $settings || ! $settings->isMobileLineLoginConfigured()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Mobile LINE Login ยังไม่ถูกตั้งค่า',
@@ -108,7 +102,7 @@ class MobileLineAuthController extends Controller
             // ตรวจสอบ access_token กับ LINE API
             $lineProfile = $this->verifyLineAccessToken($request->access_token);
 
-            if (!$lineProfile) {
+            if (! $lineProfile) {
                 return response()->json([
                     'success' => false,
                     'message' => 'LINE Access Token ไม่ถูกต้องหรือหมดอายุ',
@@ -138,16 +132,13 @@ class MobileLineAuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ตรวจสอบ LINE Access Token กับ LINE API
-     *
-     * @param string $accessToken
-     * @return array|null
      */
     protected function verifyLineAccessToken(string $accessToken): ?array
     {
@@ -178,12 +169,6 @@ class MobileLineAuthController extends Controller
 
     /**
      * Login user ที่มีอยู่แล้ว
-     *
-     * @param User $user
-     * @param Request $request
-     * @param string $displayName
-     * @param string|null $pictureUrl
-     * @return JsonResponse
      */
     protected function loginExistingUser(User $user, Request $request, string $displayName, ?string $pictureUrl): JsonResponse
     {
@@ -231,17 +216,11 @@ class MobileLineAuthController extends Controller
 
     /**
      * สร้าง user ใหม่จาก LINE Login
-     *
-     * @param string $lineUserId
-     * @param string $displayName
-     * @param string|null $pictureUrl
-     * @param Request $request
-     * @return JsonResponse
      */
     protected function registerNewUser(string $lineUserId, string $displayName, ?string $pictureUrl, Request $request): JsonResponse
     {
         // สร้าง email แบบ unique
-        $email = 'line_' . Str::random(10) . '@line.local';
+        $email = 'line_'.Str::random(10).'@line.local';
 
         // สร้าง user
         $user = User::create([
@@ -303,10 +282,6 @@ class MobileLineAuthController extends Controller
 
     /**
      * สร้าง MLM Member สำหรับ user ใหม่
-     *
-     * @param User $user
-     * @param string|null $referralCode
-     * @return void
      */
     protected function createMlmMember(User $user, ?string $referralCode): void
     {
@@ -314,14 +289,14 @@ class MobileLineAuthController extends Controller
             $parentMember = null;
 
             // หา sponsor จาก referral code
-            if (!empty($referralCode)) {
+            if (! empty($referralCode)) {
                 $parentMember = MlmMember::where('member_code', $referralCode)->first();
             }
 
             // ถ้าไม่มี referral code ใช้ default sponsor
-            if (!$parentMember) {
+            if (! $parentMember) {
                 $defaultSponsorCode = \App\Models\Setting::get('default_sponsor_member_code');
-                if (!empty($defaultSponsorCode)) {
+                if (! empty($defaultSponsorCode)) {
                     $parentMember = MlmMember::where('member_code', $defaultSponsorCode)->first();
                 }
             }
@@ -330,7 +305,7 @@ class MobileLineAuthController extends Controller
             $defaultPlan = MlmPlan::where('is_default', true)->first()
                 ?? MlmPlan::first();
 
-            if (!$defaultPlan) {
+            if (! $defaultPlan) {
                 $defaultPlan = MlmPlan::create([
                     'name' => 'Default Plan',
                     'name_th' => 'แผนมาตรฐาน',
@@ -349,8 +324,8 @@ class MobileLineAuthController extends Controller
                 'unilevel_sponsor_id' => $parentMember?->id,
                 'unilevel_level' => $parentMember ? $parentMember->unilevel_level + 1 : 1,
                 'unilevel_path' => $parentMember
-                    ? $parentMember->unilevel_path . '/' . $parentMember->id
-                    : '/' . $user->id,
+                    ? $parentMember->unilevel_path.'/'.$parentMember->id
+                    : '/'.$user->id,
                 'member_code' => MlmMember::generateMemberCode(),
                 'status' => 'active',
                 'is_qualified' => true,

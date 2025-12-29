@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\MembershipRetentionStatus;
-use App\Models\MembershipRetentionHistory;
-use App\Models\MembershipRetentionTransaction;
-use App\Models\MembershipRetentionRepair;
 use App\Models\MembershipRetentionAdvanceRenewal;
+use App\Models\MembershipRetentionHistory;
+use App\Models\MembershipRetentionRepair;
 use App\Models\MembershipRetentionSetting;
+use App\Models\MembershipRetentionStatus;
+use App\Models\MembershipRetentionTransaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -63,7 +63,7 @@ class MembershipRetentionService
         $periodMonth = $now->format('Y-m');
 
         // ตรวจสอบว่าเป็นการซื้อครั้งแรกหรือไม่ (ไม่รวมการเติม wallet)
-        if (!$status->membership_start_date && $transactionType !== 'wallet_deposit') {
+        if (! $status->membership_start_date && $transactionType !== 'wallet_deposit') {
             // บันทึกวันที่เริ่มเป็นสมาชิก
             $status->membership_start_date = $now->copy()->startOfDay();
 
@@ -104,7 +104,7 @@ class MembershipRetentionService
     {
         $status = MembershipRetentionStatus::where('user_id', $user->id)->first();
 
-        if (!$status) {
+        if (! $status) {
             $status = $this->initializeUser($user);
         }
 
@@ -206,7 +206,7 @@ class MembershipRetentionService
                         ->active()
                         ->exists();
 
-                    if (!$hasAdvanceRenewal) {
+                    if (! $hasAdvanceRenewal) {
                         $history->status = 'failed';
                         $status->status = 'expired';
                         $status->consecutive_months = 0;
@@ -235,7 +235,7 @@ class MembershipRetentionService
                     'user_id' => $status->user_id,
                     'error' => $e->getMessage(),
                 ];
-                Log::error('Membership renewal error for user ' . $status->user_id, [
+                Log::error('Membership renewal error for user '.$status->user_id, [
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
@@ -254,7 +254,7 @@ class MembershipRetentionService
             ->where('period_month', $repairPeriodMonth)
             ->first();
 
-        if (!$history) {
+        if (! $history) {
             return 0;
         }
 
@@ -363,18 +363,18 @@ class MembershipRetentionService
     public function canEarnCommission(User $user): bool
     {
         // Check if system is enabled
-        if (!$this->getSetting('enable_retention_system', true)) {
+        if (! $this->getSetting('enable_retention_system', true)) {
             return true;
         }
 
         // Check if blocking is enabled
-        if (!$this->getSetting('block_commission_if_expired', true)) {
+        if (! $this->getSetting('block_commission_if_expired', true)) {
             return true;
         }
 
         $status = MembershipRetentionStatus::where('user_id', $user->id)->first();
 
-        if (!$status) {
+        if (! $status) {
             return true; // New user, allow commission
         }
 
@@ -436,8 +436,8 @@ class MembershipRetentionService
     /**
      * ดึงค่า setting จากฐานข้อมูล
      *
-     * @param string $key คีย์ของ setting
-     * @param mixed $default ค่าเริ่มต้น
+     * @param  string  $key  คีย์ของ setting
+     * @param  mixed  $default  ค่าเริ่มต้น
      * @return mixed
      */
     public function getSetting(string $key, $default = null)
@@ -471,7 +471,7 @@ class MembershipRetentionService
                 ->active()
                 ->exists();
 
-            if (!$hasAdvanceRenewal) {
+            if (! $hasAdvanceRenewal) {
                 $status->status = 'expired';
                 $status->consecutive_months = 0;
                 $status->save();

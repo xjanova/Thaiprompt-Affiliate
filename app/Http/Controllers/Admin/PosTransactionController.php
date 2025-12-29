@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PosTransaction;
 use App\Models\PosDevice;
+use App\Models\PosTransaction;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 
@@ -20,9 +20,9 @@ class PosTransactionController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('transaction_code', 'like', "%{$search}%")
-                  ->orWhere('receipt_number', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_phone', 'like', "%{$search}%");
+                    ->orWhere('receipt_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%");
             });
         }
 
@@ -89,7 +89,7 @@ class PosTransactionController extends Controller
             'user',
             'customer',
             'approvedBy',
-            'items.product'
+            'items.product',
         ]);
 
         return view('admin.pos.transactions.show', compact('transaction'));
@@ -101,7 +101,7 @@ class PosTransactionController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        if (!$transaction->canBeRefunded()) {
+        if (! $transaction->canBeRefunded()) {
             return back()->with('error', 'This transaction cannot be refunded.');
         }
 
@@ -119,7 +119,7 @@ class PosTransactionController extends Controller
 
             return back()->with('success', 'Transaction refunded successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to refund transaction: ' . $e->getMessage());
+            return back()->with('error', 'Failed to refund transaction: '.$e->getMessage());
         }
     }
 
@@ -189,7 +189,7 @@ class PosTransactionController extends Controller
 
         $transactions = $query->get();
 
-        $filename = 'pos_transactions_' . now()->format('YmdHis') . '.csv';
+        $filename = 'pos_transactions_'.now()->format('YmdHis').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

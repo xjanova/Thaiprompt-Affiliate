@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\MlmProspect;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 class LineAchievementService
 {
     private const CACHE_PREFIX = 'line:achievement:';
+
     private const CACHE_TTL = 86400; // 24 hours
 
     // Achievement definitions
@@ -177,7 +178,7 @@ class LineAchievementService
         // Check team size achievements
         $teamSize = $this->getTeamSize($sponsor);
         foreach ([100, 50, 25, 10, 5] as $size) {
-            if ($teamSize === $size && !in_array("team_{$size}", $achievements)) {
+            if ($teamSize === $size && ! in_array("team_{$size}", $achievements)) {
                 $achievements[] = "team_{$size}";
                 break;
             }
@@ -186,7 +187,7 @@ class LineAchievementService
         // Check streak achievements
         $streak = $this->getSignupStreak($sponsor);
         foreach ([30, 7, 3] as $days) {
-            if ($streak === $days && !in_array("streak_{$days}", $achievements)) {
+            if ($streak === $days && ! in_array("streak_{$days}", $achievements)) {
                 $achievements[] = "streak_{$days}";
                 break;
             }
@@ -210,7 +211,7 @@ class LineAchievementService
         // Award new achievements
         $newAchievements = [];
         foreach ($achievements as $achievementKey) {
-            if (!$this->hasAchievement($sponsor, $achievementKey)) {
+            if (! $this->hasAchievement($sponsor, $achievementKey)) {
                 $this->awardAchievement($sponsor, $achievementKey);
                 $newAchievements[] = $achievementKey;
             }
@@ -231,7 +232,7 @@ class LineAchievementService
     {
         $achievement = self::ACHIEVEMENTS[$achievementKey] ?? null;
 
-        if (!$achievement) {
+        if (! $achievement) {
             return;
         }
 
@@ -263,7 +264,7 @@ class LineAchievementService
     {
         $achievement = self::ACHIEVEMENTS[$achievementKey] ?? null;
 
-        if (!$achievement || !$sponsor->line_user_id) {
+        if (! $achievement || ! $sponsor->line_user_id) {
             return;
         }
 
@@ -332,7 +333,7 @@ class LineAchievementService
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => '+' . number_format($achievement['points']),
+                                    'text' => '+'.number_format($achievement['points']),
                                     'size' => 'lg',
                                     'weight' => 'bold',
                                     'color' => '#FFD43B',
@@ -370,7 +371,7 @@ class LineAchievementService
     {
         $cacheKey = $this->getCacheKey($user->id);
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($user) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () {
             // In real implementation, fetch from database
             return [];
         });
@@ -528,11 +529,12 @@ class LineAchievementService
 
     private function isFastSignup(MlmProspect $prospect): bool
     {
-        if (!$prospect->conversation_started_at) {
+        if (! $prospect->conversation_started_at) {
             return false;
         }
 
         $minutes = $prospect->conversation_started_at->diffInMinutes($prospect->conversation_updated_at);
+
         return $minutes <= 3;
     }
 
@@ -568,6 +570,6 @@ class LineAchievementService
 
     private function getCacheKey(int $userId): string
     {
-        return self::CACHE_PREFIX . $userId;
+        return self::CACHE_PREFIX.$userId;
     }
 }

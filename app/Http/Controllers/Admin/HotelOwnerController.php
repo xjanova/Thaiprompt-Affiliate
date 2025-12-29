@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Hotel;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -14,7 +14,6 @@ class HotelOwnerController extends Controller
     /**
      * แสดงรายการเจ้าของโรงแรมทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -25,7 +24,7 @@ class HotelOwnerController extends Controller
         // ค้นหา
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%");
@@ -52,10 +51,10 @@ class HotelOwnerController extends Controller
 
         // กรองตามสถานะโรงแรม
         if ($request->has('hotel_status')) {
-            $query->whereHas('managedHotel', function($q) use ($request) {
+            $query->whereHas('managedHotel', function ($q) use ($request) {
                 if ($request->hotel_status === 'active') {
                     $q->where('is_active', true);
-                } else if ($request->hotel_status === 'inactive') {
+                } elseif ($request->hotel_status === 'inactive') {
                     $q->where('is_active', false);
                 }
             });
@@ -70,7 +69,7 @@ class HotelOwnerController extends Controller
         $hotelOwners = $query->paginate($request->get('per_page', 20));
 
         // เพิ่มสถิติสำหรับแต่ละเจ้าของ
-        $hotelOwners->getCollection()->transform(function($owner) {
+        $hotelOwners->getCollection()->transform(function ($owner) {
             $hotel = $owner->managedHotel;
 
             if ($hotel) {
@@ -104,7 +103,7 @@ class HotelOwnerController extends Controller
     /**
      * แสดงรายละเอียดเจ้าของโรงแรม
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\View\View
      */
     public function show($id)
@@ -152,7 +151,7 @@ class HotelOwnerController extends Controller
     /**
      * แสดงฟอร์มแก้ไขเจ้าของโรงแรม
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\View\View
      */
     public function edit($id)
@@ -162,9 +161,9 @@ class HotelOwnerController extends Controller
             ->findOrFail($id);
 
         // ดึงรายการโรงแรมที่ยังไม่มีเจ้าของ หรือเป็นโรงแรมที่เจ้าของคนนี้จัดการอยู่
-        $availableHotels = Hotel::where(function($query) use ($hotelOwner) {
+        $availableHotels = Hotel::where(function ($query) use ($hotelOwner) {
             $query->whereNull('owner_id')
-                  ->orWhere('owner_id', $hotelOwner->id);
+                ->orWhere('owner_id', $hotelOwner->id);
         })->get();
 
         return view('admin.hotel-owners.edit', compact('hotelOwner', 'availableHotels'));
@@ -173,7 +172,6 @@ class HotelOwnerController extends Controller
     /**
      * บันทึกเจ้าของโรงแรมใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -205,8 +203,7 @@ class HotelOwnerController extends Controller
     /**
      * อัพเดทเจ้าของโรงแรม
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
@@ -293,7 +290,7 @@ class HotelOwnerController extends Controller
         $hotelOwner = User::where('is_hotel_admin', true)
             ->findOrFail($id);
 
-        if (!$hotelOwner->blocked_at) {
+        if (! $hotelOwner->blocked_at) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hotel owner is not blocked',
@@ -314,7 +311,7 @@ class HotelOwnerController extends Controller
     /**
      * ลบเจ้าของโรงแรม
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)
@@ -381,7 +378,7 @@ class HotelOwnerController extends Controller
         $hotelOwner = User::where('is_hotel_admin', true)
             ->findOrFail($id);
 
-        if (!$hotelOwner->managed_hotel_id) {
+        if (! $hotelOwner->managed_hotel_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hotel owner does not have an assigned hotel',

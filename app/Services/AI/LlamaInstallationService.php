@@ -2,9 +2,8 @@
 
 namespace App\Services\AI;
 
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Service สำหรับจัดการการติดตั้ง Llama AI
@@ -44,16 +43,15 @@ class LlamaInstallationService
     /**
      * เริ่มการติดตั้ง Llama
      *
-     * @param string $method วิธีติดตั้ง: 'ollama' หรือ 'huggingface'
-     * @param string $model Model ที่ต้องการติดตั้ง
-     * @return array
+     * @param  string  $method  วิธีติดตั้ง: 'ollama' หรือ 'huggingface'
+     * @param  string  $model  Model ที่ต้องการติดตั้ง
      */
     public function startInstallation(string $method = 'ollama', string $model = 'llama3.2:3b'): array
     {
         // ตรวจสอบว่าสามารถติดตั้งได้หรือไม่
         $canInstall = $this->checkInstallCapability();
 
-        if (!$canInstall['can_install']) {
+        if (! $canInstall['can_install']) {
             // บันทึก log
             $this->log("ไม่สามารถติดตั้งได้: {$canInstall['reason']}");
 
@@ -100,13 +98,13 @@ class LlamaInstallationService
         $scriptPath = base_path('scripts/install-llama-with-progress.sh');
 
         // สร้าง script ถ้ายังไม่มี
-        if (!file_exists($scriptPath)) {
+        if (! file_exists($scriptPath)) {
             $this->createInstallScript($scriptPath);
         }
 
         // รัน script
-        $progressFile = storage_path('app/' . self::PROGRESS_FILE);
-        $logFile = storage_path('app/' . self::LOG_FILE);
+        $progressFile = storage_path('app/'.self::PROGRESS_FILE);
+        $logFile = storage_path('app/'.self::LOG_FILE);
 
         $command = sprintf(
             'bash %s %s %s %s %s > /dev/null 2>&1 &',
@@ -153,13 +151,11 @@ class LlamaInstallationService
 
     /**
      * ตรวจสอบความสามารถในการติดตั้ง
-     *
-     * @return array
      */
     private function checkInstallCapability(): array
     {
         // 1. ตรวจสอบ exec function
-        if (!function_exists('exec')) {
+        if (! function_exists('exec')) {
             return [
                 'can_install' => false,
                 'reason' => 'PHP function exec() ถูก disable - ไม่สามารถรันคำสั่งติดตั้งได้',
@@ -197,7 +193,7 @@ class LlamaInstallationService
 
         // 5. ตรวจสอบว่าสามารถเขียนไฟล์ script ได้
         $scriptsDir = base_path('scripts');
-        if (!is_writable($scriptsDir)) {
+        if (! is_writable($scriptsDir)) {
             return [
                 'can_install' => false,
                 'reason' => 'ไม่สามารถเขียนไฟล์ในโฟลเดอร์ scripts/ ได้',
@@ -212,10 +208,6 @@ class LlamaInstallationService
 
     /**
      * คำแนะนำการติดตั้งแบบ manual
-     *
-     * @param string $method
-     * @param string $model
-     * @return array
      */
     private function getManualInstructions(string $method, string $model): array
     {
@@ -255,8 +247,6 @@ class LlamaInstallationService
 
     /**
      * ทางเลือกอื่นสำหรับใช้ AI
-     *
-     * @return array
      */
     private function getAlternativeOptions(): array
     {
@@ -294,12 +284,10 @@ class LlamaInstallationService
 
     /**
      * ดึง progress ปัจจุบัน
-     *
-     * @return array
      */
     public function getProgress(): array
     {
-        if (!Storage::exists(self::PROGRESS_FILE)) {
+        if (! Storage::exists(self::PROGRESS_FILE)) {
             return [
                 'status' => 'idle',
                 'percentage' => 0,
@@ -310,7 +298,7 @@ class LlamaInstallationService
         $content = Storage::get(self::PROGRESS_FILE);
         $progress = json_decode($content, true);
 
-        if (!$progress) {
+        if (! $progress) {
             return [
                 'status' => 'error',
                 'percentage' => 0,
@@ -323,8 +311,6 @@ class LlamaInstallationService
 
     /**
      * อัพเดท progress
-     *
-     * @param array $data
      */
     public function updateProgress(array $data): void
     {
@@ -349,12 +335,10 @@ class LlamaInstallationService
 
     /**
      * ดึง installation log
-     *
-     * @return string
      */
     public function getLog(): string
     {
-        if (!Storage::exists(self::LOG_FILE)) {
+        if (! Storage::exists(self::LOG_FILE)) {
             return '';
         }
 
@@ -363,8 +347,6 @@ class LlamaInstallationService
 
     /**
      * บันทึก log
-     *
-     * @param string $message
      */
     public function log(string $message): void
     {
@@ -377,8 +359,6 @@ class LlamaInstallationService
 
     /**
      * ยกเลิกการติดตั้ง
-     *
-     * @return array
      */
     public function cancelInstallation(): array
     {
@@ -401,19 +381,16 @@ class LlamaInstallationService
 
     /**
      * ตรวจสอบว่ากำลังติดตั้งอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isInstalling(): bool
     {
         $progress = $this->getProgress();
+
         return $progress['status'] === 'running';
     }
 
     /**
      * สร้าง installation script
-     *
-     * @param string $path
      */
     private function createInstallScript(string $path): void
     {
@@ -424,8 +401,6 @@ class LlamaInstallationService
 
     /**
      * เนื้อหา installation script
-     *
-     * @return string
      */
     private function getInstallScriptContent(): string
     {

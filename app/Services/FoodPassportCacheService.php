@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\FoodProduct;
 use App\Models\CarbonCredit;
+use App\Models\FoodProduct;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -17,9 +17,13 @@ class FoodPassportCacheService
 {
     // Cache TTLs (in seconds)
     const TTL_SHORT = 300;      // 5 minutes
+
     const TTL_MEDIUM = 1800;    // 30 minutes
+
     const TTL_LONG = 3600;      // 1 hour
+
     const TTL_DAY = 86400;      // 24 hours
+
     const TTL_WEEK = 604800;    // 7 days
 
     /**
@@ -122,7 +126,7 @@ class FoodPassportCacheService
         return Cache::remember($key, self::TTL_LONG, function () use ($productId) {
             $product = FoodProduct::find($productId);
 
-            if (!$product) {
+            if (! $product) {
                 return [];
             }
 

@@ -18,7 +18,6 @@ class DeveloperApprovalController extends Controller
     /**
      * แสดงรายการนักพัฒนาทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -55,7 +54,6 @@ class DeveloperApprovalController extends Controller
     /**
      * แสดงรายละเอียดนักพัฒนา
      *
-     * @param DeveloperProfile $developer
      * @return \Illuminate\View\View
      */
     public function show(DeveloperProfile $developer)
@@ -63,7 +61,7 @@ class DeveloperApprovalController extends Controller
         $developer->load(['user', 'approver', 'products']);
 
         return view('admin.developers.show', [
-            'pageTitle' => 'รายละเอียดนักพัฒนา: ' . $developer->display_name,
+            'pageTitle' => 'รายละเอียดนักพัฒนา: '.$developer->display_name,
             'developer' => $developer,
         ]);
     }
@@ -71,7 +69,6 @@ class DeveloperApprovalController extends Controller
     /**
      * อนุมัตินักพัฒนา
      *
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function approve(DeveloperProfile $developer)
@@ -105,15 +102,14 @@ class DeveloperApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปฏิเสธนักพัฒนา
      *
-     * @param Request $request
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, DeveloperProfile $developer)
@@ -150,15 +146,14 @@ class DeveloperApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ระงับการใช้งานนักพัฒนา
      *
-     * @param Request $request
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function suspend(Request $request, DeveloperProfile $developer)
@@ -193,19 +188,19 @@ class DeveloperApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ยกเลิกการระงับ
      *
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unsuspend(DeveloperProfile $developer)
     {
-        if (!$developer->isSuspended()) {
+        if (! $developer->isSuspended()) {
             return back()->with('error', 'นักพัฒนารายนี้ไม่ได้ถูกระงับ');
         }
 
@@ -230,15 +225,14 @@ class DeveloperApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * อัพเดทค่าคอมมิชชั่น
      *
-     * @param Request $request
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateCommission(Request $request, DeveloperProfile $developer)
@@ -271,14 +265,13 @@ class DeveloperApprovalController extends Controller
             return back()->with('success', 'อัพเดทค่าคอมมิชชั่นสำเร็จ');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบนักพัฒนา (soft delete)
      *
-     * @param DeveloperProfile $developer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(DeveloperProfile $developer)
@@ -303,7 +296,7 @@ class DeveloperApprovalController extends Controller
                 ->with('success', 'ลบนักพัฒนาสำเร็จ');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

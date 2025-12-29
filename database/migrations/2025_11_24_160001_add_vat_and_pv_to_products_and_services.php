@@ -11,20 +11,18 @@ return new class extends Migration
      *
      * VAT หักจากผู้ขาย/ผู้ให้บริการ และผู้รับค่าคอม MLM
      * PV ใช้คำนวณค่าคอม MLM
-     *
-     * @return void
      */
     public function up(): void
     {
         // เพิ่มใน products table
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'vat_percentage')) {
+            if (! Schema::hasColumn('products', 'vat_percentage')) {
                 $table->decimal('vat_percentage', 5, 2)
                     ->default(7.00)
                     ->comment('ภาษี VAT (%) หักจากผู้ขาย');
             }
 
-            if (!Schema::hasColumn('products', 'pv_value')) {
+            if (! Schema::hasColumn('products', 'pv_value')) {
                 $table->decimal('pv_value', 10, 2)
                     ->default(0)
                     ->comment('PV สำหรับคำนวณ MLM Commission (0 = ไม่มีคอม)');
@@ -34,19 +32,19 @@ return new class extends Migration
         // เพิ่มใน services table
         if (Schema::hasTable('services')) {
             Schema::table('services', function (Blueprint $table) {
-                if (!Schema::hasColumn('services', 'vat_percentage')) {
+                if (! Schema::hasColumn('services', 'vat_percentage')) {
                     $table->decimal('vat_percentage', 5, 2)
                         ->default(7.00)
                         ->comment('ภาษี VAT (%) หักจากผู้ให้บริการ');
                 }
 
-                if (!Schema::hasColumn('services', 'cashback_percentage')) {
+                if (! Schema::hasColumn('services', 'cashback_percentage')) {
                     $table->decimal('cashback_percentage', 5, 2)
                         ->default(0)
                         ->comment('Cashback (%) ผู้ให้บริการจ่ายเอง');
                 }
 
-                if (!Schema::hasColumn('services', 'pv_value')) {
+                if (! Schema::hasColumn('services', 'pv_value')) {
                     $table->decimal('pv_value', 10, 2)
                         ->default(0)
                         ->comment('PV สำหรับคำนวณ MLM Commission');
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

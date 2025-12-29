@@ -86,6 +86,7 @@ class SystemAnalytic extends Model
     public function scopeTimeRange($query, $start, $end = null)
     {
         $end = $end ?? now();
+
         return $query->whereBetween('recorded_at', [$start, $end]);
     }
 
@@ -141,7 +142,7 @@ class SystemAnalytic extends Model
     {
         $latest = static::getLatest();
 
-        if (!$latest) {
+        if (! $latest) {
             return [
                 'status' => 'unknown',
                 'message' => 'No metrics available',

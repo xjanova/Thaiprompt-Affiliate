@@ -65,7 +65,7 @@ class DashboardController extends Controller
         $user = $request->user();
         $mlmMember = $user->mlmMembers()->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -76,7 +76,7 @@ class DashboardController extends Controller
         }
 
         $referrals = $mlmMember->directReferrals()->with('user')->get();
-        $referralLink = url('/register?ref=' . $mlmMember->member_code);
+        $referralLink = url('/register?ref='.$mlmMember->member_code);
 
         return response()->json([
             'success' => true,

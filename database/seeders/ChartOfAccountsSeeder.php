@@ -485,7 +485,7 @@ class ChartOfAccountsSeeder extends Seeder
      */
     public static function getChartOfAccountsData(): array
     {
-        return (new self())->getAccountsArray();
+        return (new self)->getAccountsArray();
     }
 
     private function getAccountsArray(): array

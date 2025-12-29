@@ -2,12 +2,12 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\VendorStore;
 use App\Models\VendorAnalytics;
-use App\Models\VendorStoreVisit;
 use App\Models\VendorAnalyticsSetting;
+use App\Models\VendorStore;
+use App\Models\VendorStoreVisit;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class CleanupVendorAnalytics extends Command
 {
@@ -43,6 +43,7 @@ class CleanupVendorAnalytics extends Command
 
         if ($stores->isEmpty()) {
             $this->warn('No stores found to cleanup.');
+
             return 1;
         }
 
@@ -55,8 +56,9 @@ class CleanupVendorAnalytics extends Command
             $settings = VendorAnalyticsSetting::getForStore($store);
 
             // Check if auto-cleanup is enabled (unless forced)
-            if (!$settings->auto_cleanup_enabled && !$this->option('force')) {
+            if (! $settings->auto_cleanup_enabled && ! $this->option('force')) {
                 $this->info("Store {$store->id}: Auto-cleanup disabled, skipping...");
+
                 continue;
             }
 
@@ -76,7 +78,7 @@ class CleanupVendorAnalytics extends Command
                 ->count();
 
             if ($this->option('dry-run')) {
-                $this->info("  [DRY RUN] Would delete:");
+                $this->info('  [DRY RUN] Would delete:');
                 $this->info("    - {$analyticsCount} analytics records");
                 $this->info("    - {$visitsCount} visit records");
             } else {
@@ -94,7 +96,7 @@ class CleanupVendorAnalytics extends Command
 
                 $totalVisitsDeleted += $deletedVisits;
 
-                $this->info("  Deleted:");
+                $this->info('  Deleted:');
                 $this->info("    - {$deleted} analytics records");
                 $this->info("    - {$deletedVisits} visit records");
             }

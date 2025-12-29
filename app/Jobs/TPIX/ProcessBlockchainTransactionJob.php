@@ -16,10 +16,13 @@ class ProcessBlockchainTransactionJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 5;
+
     public $timeout = 120;
+
     public $backoff = [30, 60, 120, 300, 600];
 
     protected string $txHash;
+
     protected ?int $transferId;
 
     /**
@@ -43,9 +46,10 @@ class ProcessBlockchainTransactionJob implements ShouldQueue
             // Get transaction details from blockchain
             $txData = $blockchainService->getTransaction($this->txHash);
 
-            if (!$txData) {
+            if (! $txData) {
                 Log::warning("Transaction not found yet: {$this->txHash}");
                 $this->release(30); // Retry after 30 seconds
+
                 return;
             }
 
@@ -56,6 +60,7 @@ class ProcessBlockchainTransactionJob implements ShouldQueue
             if ($confirmations < $requiredConfirmations) {
                 Log::info("Transaction {$this->txHash} has {$confirmations}/{$requiredConfirmations} confirmations");
                 $this->release(15); // Check again in 15 seconds
+
                 return;
             }
 
@@ -83,7 +88,7 @@ class ProcessBlockchainTransactionJob implements ShouldQueue
             }
 
         } catch (\Exception $e) {
-            Log::error("Failed to process transaction {$this->txHash}: " . $e->getMessage());
+            Log::error("Failed to process transaction {$this->txHash}: ".$e->getMessage());
             throw $e;
         }
     }
@@ -93,7 +98,7 @@ class ProcessBlockchainTransactionJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Transaction processing failed permanently for {$this->txHash}: " . $exception->getMessage());
+        Log::error("Transaction processing failed permanently for {$this->txHash}: ".$exception->getMessage());
 
         // Update transfer status to failed
         if ($this->transferId) {

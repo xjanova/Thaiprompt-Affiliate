@@ -13,8 +13,6 @@ return new class extends Migration
      * - ตรวจสอบรหัสป้องกันปลอม
      * - ตรวจสอบ UID
      * - ตรวจสอบ Digital Signature
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -83,8 +81,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง nfc_verification_logs
-     *
-     * @return void
      */
     public function down(): void
     {

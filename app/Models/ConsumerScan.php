@@ -67,7 +67,7 @@ class ConsumerScan extends Model
      */
     public function isRegisteredUser(): bool
     {
-        return !is_null($this->user_id);
+        return ! is_null($this->user_id);
     }
 
     /**
@@ -88,9 +88,15 @@ class ConsumerScan extends Model
         $score = 0;
 
         // +25 for each section viewed
-        if ($this->viewed_journey) $score += 25;
-        if ($this->viewed_quality) $score += 25;
-        if ($this->viewed_carbon) $score += 25;
+        if ($this->viewed_journey) {
+            $score += 25;
+        }
+        if ($this->viewed_quality) {
+            $score += 25;
+        }
+        if ($this->viewed_carbon) {
+            $score += 25;
+        }
 
         // +10 for spending > 30 seconds
         if ($this->time_spent_seconds && $this->time_spent_seconds > 30) {
@@ -134,9 +140,9 @@ class ConsumerScan extends Model
      */
     public function scopeWithFeedback($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->whereNotNull('consumer_rating')
-              ->orWhereNotNull('feedback');
+                ->orWhereNotNull('feedback');
         });
     }
 
@@ -145,10 +151,10 @@ class ConsumerScan extends Model
      */
     public function scopeHighEngagement($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->where('viewed_journey', true)
-              ->where('viewed_quality', true)
-              ->where('viewed_carbon', true);
+                ->where('viewed_quality', true)
+                ->where('viewed_carbon', true);
         });
     }
 

@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\PageBuilder;
 use App\Services\PageBuilderService;
-use Illuminate\Http\Request;
 
 class HomeControllerWithPageBuilder extends Controller
 {
@@ -23,7 +21,7 @@ class HomeControllerWithPageBuilder extends Controller
     public function index()
     {
         // Check if system needs setup
-        if (!User::where('is_super_admin', true)->exists()) {
+        if (! User::where('is_super_admin', true)->exists()) {
             return redirect()->route('setup.index');
         }
 
@@ -31,7 +29,7 @@ class HomeControllerWithPageBuilder extends Controller
         $homepage = $this->pageBuilderService->getPageByType('homepage');
 
         // If Page Builder homepage doesn't exist, return old view
-        if (!$homepage) {
+        if (! $homepage) {
             return $this->fallbackToOldHomepage();
         }
 

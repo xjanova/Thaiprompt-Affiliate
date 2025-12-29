@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Forum;
 use App\Http\Controllers\Controller;
 use App\Models\ForumCategory;
 use App\Models\ForumThread;
-use Illuminate\Http\Request;
 
 /**
  * ForumCategoryController - จัดการหมวดหมู่ฟอรั่ม
@@ -17,7 +16,6 @@ class ForumCategoryController extends Controller
     /**
      * แสดงกระทู้ในหมวดหมู่
      *
-     * @param string $slug
      * @return \Illuminate\View\View
      */
     public function show(string $slug)
@@ -56,9 +54,6 @@ class ForumCategoryController extends Controller
 
     /**
      * สร้าง breadcrumbs สำหรับหมวดหมู่
-     *
-     * @param ForumCategory $category
-     * @return array
      */
     protected function buildBreadcrumbs(ForumCategory $category): array
     {

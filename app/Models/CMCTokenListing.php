@@ -94,7 +94,7 @@ class CMCTokenListing extends Model
      */
     public function getExplorerUrl(): ?string
     {
-        if (!$this->platform_name || !$this->token_address) {
+        if (! $this->platform_name || ! $this->token_address) {
             return null;
         }
 
@@ -105,17 +105,18 @@ class CMCTokenListing extends Model
         ];
 
         $baseUrl = $explorers[$this->platform_name] ?? null;
-        return $baseUrl ? $baseUrl . $this->token_address : null;
+
+        return $baseUrl ? $baseUrl.$this->token_address : null;
     }
 
     public function getCmcUrl(): string
     {
-        return 'https://coinmarketcap.com/currencies/' . $this->slug . '/';
+        return 'https://coinmarketcap.com/currencies/'.$this->slug.'/';
     }
 
     public function getPriceChangeColor(string $period = '24h'): string
     {
-        $field = 'percent_change_' . $period;
+        $field = 'percent_change_'.$period;
         $change = $this->$field ?? 0;
 
         if ($change > 0) {

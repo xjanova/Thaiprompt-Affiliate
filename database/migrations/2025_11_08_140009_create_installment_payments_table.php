@@ -34,7 +34,7 @@ return new class extends Migration
                 'overdue',      // เกินกำหนด
                 'partial',      // ชำระบางส่วน
                 'cancelled',    // ยกเลิก
-                'refunded'      // คืนเงิน
+                'refunded',      // คืนเงิน
             ])->default('pending');
             $table->string('payment_method')->nullable(); // วิธีชำระเงิน
             $table->string('payment_reference')->nullable(); // หมายเลขอ้างอิง

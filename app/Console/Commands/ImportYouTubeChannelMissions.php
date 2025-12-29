@@ -55,7 +55,7 @@ class ImportYouTubeChannelMissions extends Command
         $channelId = $this->argument('channel_id');
         $apiKey = $this->option('api-key') ?: config('services.youtube.api_key') ?: env('YOUTUBE_API_KEY');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             $this->error('❌ ไม่พบ YouTube API Key!');
             $this->info('กรุณาระบุ --api-key หรือตั้งค่า YOUTUBE_API_KEY ใน .env');
             $this->newLine();
@@ -73,21 +73,21 @@ class ImportYouTubeChannelMissions extends Command
 
         // ดึงข้อมูลช่อง
         $channelInfo = $this->getChannelInfo($channelId, $apiKey);
-        if (!$channelInfo) {
+        if (! $channelInfo) {
             $this->error('❌ ไม่พบช่อง YouTube หรือ API Key ไม่ถูกต้อง');
 
             return Command::FAILURE;
         }
 
         $this->info("📺 ช่อง: {$channelInfo['title']}");
-        $this->info("📝 คำอธิบาย: " . substr($channelInfo['description'] ?? 'ไม่มี', 0, 100) . '...');
-        $this->info("👥 ผู้ติดตาม: " . number_format($channelInfo['subscriberCount'] ?? 0));
-        $this->info("🎥 วิดีโอทั้งหมด: " . number_format($channelInfo['videoCount'] ?? 0));
+        $this->info('📝 คำอธิบาย: '.substr($channelInfo['description'] ?? 'ไม่มี', 0, 100).'...');
+        $this->info('👥 ผู้ติดตาม: '.number_format($channelInfo['subscriberCount'] ?? 0));
+        $this->info('🎥 วิดีโอทั้งหมด: '.number_format($channelInfo['videoCount'] ?? 0));
         $this->newLine();
 
         // ดึง Playlist ID ของวิดีโอที่อัปโหลด
         $uploadsPlaylistId = $channelInfo['uploadsPlaylistId'] ?? null;
-        if (!$uploadsPlaylistId) {
+        if (! $uploadsPlaylistId) {
             $this->error('❌ ไม่พบ Uploads Playlist');
 
             return Command::FAILURE;
@@ -103,7 +103,7 @@ class ImportYouTubeChannelMissions extends Command
             return Command::SUCCESS;
         }
 
-        $this->info("📋 พบวิดีโอ: " . count($videos) . " รายการ");
+        $this->info('📋 พบวิดีโอ: '.count($videos).' รายการ');
         $this->newLine();
 
         if ($this->option('dry-run')) {
@@ -153,12 +153,12 @@ class ImportYouTubeChannelMissions extends Command
             ]
         );
 
-        if ($created > 0 && !$this->option('dry-run')) {
+        if ($created > 0 && ! $this->option('dry-run')) {
             $this->newLine();
             $this->info("🎉 นำเข้าภารกิจสำเร็จ {$created} รายการ!");
-            $this->info("💰 รางวัลต่อภารกิจ: ฿" . number_format($this->option('reward'), 2) .
-                       " + " . $this->option('coins') . " Coins" .
-                       " + " . $this->option('exp') . " EXP");
+            $this->info('💰 รางวัลต่อภารกิจ: ฿'.number_format($this->option('reward'), 2).
+                       ' + '.$this->option('coins').' Coins'.
+                       ' + '.$this->option('exp').' EXP');
         }
 
         return Command::SUCCESS;
@@ -176,8 +176,8 @@ class ImportYouTubeChannelMissions extends Command
                 'part' => 'snippet,contentDetails,statistics',
             ]);
 
-            if (!$response->successful()) {
-                $this->error('API Error: ' . $response->body());
+            if (! $response->successful()) {
+                $this->error('API Error: '.$response->body());
 
                 return null;
             }
@@ -200,7 +200,7 @@ class ImportYouTubeChannelMissions extends Command
                 'uploadsPlaylistId' => $channel['contentDetails']['relatedPlaylists']['uploads'] ?? null,
             ];
         } catch (\Exception $e) {
-            $this->error('Error: ' . $e->getMessage());
+            $this->error('Error: '.$e->getMessage());
 
             return null;
         }
@@ -228,7 +228,7 @@ class ImportYouTubeChannelMissions extends Command
 
             $response = Http::get("{$this->apiBaseUrl}/playlistItems", $params);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 break;
             }
 
@@ -270,7 +270,7 @@ class ImportYouTubeChannelMissions extends Command
                 'part' => 'contentDetails,statistics',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -313,7 +313,7 @@ class ImportYouTubeChannelMissions extends Command
     {
         $videoId = $video['videoId'];
 
-        if (!$videoId) {
+        if (! $videoId) {
             return 'error';
         }
 

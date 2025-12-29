@@ -7,10 +7,10 @@ use App\Models\CryptoCurrency;
 use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
 use App\Services\Crypto\TPIXBlockchainService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * TPIX Admin Controller
@@ -37,7 +37,7 @@ class TPIXController extends Controller
             // Get TPIX currency
             $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-            if (!$tpixCurrency) {
+            if (! $tpixCurrency) {
                 return redirect()->route('admin.crypto.dashboard')
                     ->with('error', 'TPIX currency not found. Please run the seeder first.');
             }
@@ -107,7 +107,7 @@ class TPIXController extends Controller
 
             // ถ้า TPIX currency ไม่มี ให้ redirect ไป crypto dashboard
             $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
-            if (!$tpixCurrency) {
+            if (! $tpixCurrency) {
                 return redirect()->route('admin.crypto.dashboard')
                     ->with('error', 'TPIX currency not found. Please run the seeder first.');
             }
@@ -199,7 +199,7 @@ class TPIXController extends Controller
 
             $networkInfo = [
                 'error' => true,
-                'message' => 'Failed to connect to TPIX blockchain: ' . $e->getMessage(),
+                'message' => 'Failed to connect to TPIX blockchain: '.$e->getMessage(),
             ];
 
             return view('admin.tpix.network-status', compact('status', 'networkInfo'))
@@ -214,7 +214,7 @@ class TPIXController extends Controller
     {
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             return redirect()->route('admin.crypto.dashboard')
                 ->with('error', 'TPIX currency not found.');
         }
@@ -227,10 +227,10 @@ class TPIXController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('address', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($uq) use ($search) {
-                      $uq->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -256,7 +256,7 @@ class TPIXController extends Controller
     {
         $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
 
-        if (!$tpixCurrency) {
+        if (! $tpixCurrency) {
             return redirect()->route('admin.crypto.dashboard')
                 ->with('error', 'TPIX currency not found.');
         }
@@ -279,12 +279,12 @@ class TPIXController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('tx_hash', 'like', "%{$search}%")
-                  ->orWhere('from_address', 'like', "%{$search}%")
-                  ->orWhere('to_address', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($uq) use ($search) {
-                      $uq->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhere('from_address', 'like', "%{$search}%")
+                    ->orWhere('to_address', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -293,7 +293,7 @@ class TPIXController extends Controller
             $query->where('created_at', '>=', $request->date_from);
         }
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->date_to . ' 23:59:59');
+            $query->where('created_at', '<=', $request->date_to.' 23:59:59');
         }
 
         $query->orderBy('created_at', 'desc');
@@ -330,7 +330,7 @@ class TPIXController extends Controller
                 Log::warning('Failed to fetch blockchain data for transaction', [
                     'tx_id' => $id,
                     'tx_hash' => $transaction->tx_hash,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -418,13 +418,13 @@ class TPIXController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Connected to TPIX blockchain',
-                'block_number' => $blockNumber
+                'block_number' => $blockNumber,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to connect to TPIX blockchain',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }

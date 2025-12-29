@@ -2,12 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\ThemeSetting;
-use App\Models\ThemeColor;
-use App\Models\ThemeRgbEffect;
-use App\Models\ThemeTypography;
 use Database\Seeders\Concerns\SafeSeeder;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class ArrowXThemeSeeder extends Seeder
@@ -16,13 +13,11 @@ class ArrowXThemeSeeder extends Seeder
 
     /**
      * สร้างข้อมูลเริ่มต้นสำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function run(): void
     {
         // ตรวจสอบว่าตาราง theme_settings มีอยู่หรือไม่
-        if (!$this->requireTable('theme_settings', 'ArrowXThemeSeeder')) {
+        if (! $this->requireTable('theme_settings', 'ArrowXThemeSeeder')) {
             return;
         }
 
@@ -33,6 +28,7 @@ class ArrowXThemeSeeder extends Seeder
         // ✅ CRITICAL: ตรวจสอบก่อนสร้าง (idempotent)
         if (ThemeSetting::where('theme_name', 'Arrow X')->exists()) {
             $this->command->info('⏭️  Arrow X Theme มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

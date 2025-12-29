@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_oa_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_oa_settings')) {
+        if (! Schema::hasTable('line_oa_settings')) {
             return;
         }
 

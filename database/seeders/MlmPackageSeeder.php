@@ -21,7 +21,7 @@ class MlmPackageSeeder extends Seeder
         $existingPackagesCount = MlmPackage::whereIn('slug', [
             'bronze-package',
             'silver-package',
-            'gold-package'
+            'gold-package',
         ])->count();
 
         if ($existingPackagesCount > 0) {
@@ -60,7 +60,7 @@ class MlmPackageSeeder extends Seeder
         $skipped = 0;
 
         foreach ($packages as $package) {
-            if (!MlmPackage::where('slug', $package['slug'])->exists()) {
+            if (! MlmPackage::where('slug', $package['slug'])->exists()) {
                 MlmPackage::create($package);
                 $this->command->info("   ➕ Added: {$package['name']}");
                 $added++;

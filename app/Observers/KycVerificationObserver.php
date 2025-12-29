@@ -26,7 +26,7 @@ class KycVerificationObserver
             try {
                 $this->notificationService->notifyAdminNewKyc($kycVerification);
             } catch (\Exception $e) {
-                \Log::error('Failed to notify admin about new KYC verification: ' . $e->getMessage(), [
+                \Log::error('Failed to notify admin about new KYC verification: '.$e->getMessage(), [
                     'kyc_id' => $kycVerification->id,
                 ]);
             }
@@ -43,7 +43,7 @@ class KycVerificationObserver
             try {
                 $this->notificationService->notifyKycApproved($kycVerification->user, $kycVerification);
             } catch (\Exception $e) {
-                \Log::error('Failed to notify user about KYC approval: ' . $e->getMessage(), [
+                \Log::error('Failed to notify user about KYC approval: '.$e->getMessage(), [
                     'kyc_id' => $kycVerification->id,
                 ]);
             }
@@ -55,7 +55,7 @@ class KycVerificationObserver
                 $reason = $kycVerification->rejection_reason ?? 'ไม่ระบุเหตุผล';
                 $this->notificationService->notifyKycRejected($kycVerification->user, $kycVerification, $reason);
             } catch (\Exception $e) {
-                \Log::error('Failed to notify user about KYC rejection: ' . $e->getMessage(), [
+                \Log::error('Failed to notify user about KYC rejection: '.$e->getMessage(), [
                     'kyc_id' => $kycVerification->id,
                 ]);
             }
@@ -73,7 +73,7 @@ class KycVerificationObserver
         try {
             $this->deleteKycImages($kycVerification);
         } catch (\Exception $e) {
-            Log::error('Failed to delete KYC images during deleting event: ' . $e->getMessage(), [
+            Log::error('Failed to delete KYC images during deleting event: '.$e->getMessage(), [
                 'kyc_id' => $kycVerification->id,
                 'user_id' => $kycVerification->user_id,
             ]);
@@ -108,7 +108,7 @@ class KycVerificationObserver
         try {
             $this->deleteKycImages($kycVerification);
         } catch (\Exception $e) {
-            Log::error('Failed to delete KYC images during force delete: ' . $e->getMessage(), [
+            Log::error('Failed to delete KYC images during force delete: '.$e->getMessage(), [
                 'kyc_id' => $kycVerification->id,
             ]);
         }
@@ -116,9 +116,6 @@ class KycVerificationObserver
 
     /**
      * ลบรูปภาพ KYC ออกจาก storage
-     *
-     * @param KycVerification $kycVerification
-     * @return void
      */
     protected function deleteKycImages(KycVerification $kycVerification): void
     {
@@ -140,7 +137,7 @@ class KycVerificationObserver
             }
         }
 
-        if (!empty($deletedFiles)) {
+        if (! empty($deletedFiles)) {
             Log::info('Deleted KYC images for privacy protection', [
                 'kyc_id' => $kycVerification->id,
                 'user_id' => $kycVerification->user_id,

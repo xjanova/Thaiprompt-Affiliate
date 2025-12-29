@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บรายการบริการหรือสินค้าที่อยู่ในแพคเกจ
      * เช่น แพคเกจ "นวดผ่อนคลาย" ประกอบด้วย: บริการนวด + โลชั่น
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_package_items
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class GoogleGeminiService implements AiServiceInterface
 {
     protected string $apiKey;
+
     protected string $apiEndpoint;
 
     public function __construct()
@@ -46,8 +47,8 @@ class GoogleGeminiService implements AiServiceInterface
                 'key' => $this->apiKey,
             ]);
 
-            if (!$response->successful()) {
-                throw new \Exception("Google Gemini API error: " . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('Google Gemini API error: '.$response->body());
             }
 
             $data = $response->json();

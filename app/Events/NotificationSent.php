@@ -36,9 +36,6 @@ class NotificationSent implements ShouldBroadcast
 
     /**
      * Create a new event instance.
-     *
-     * @param Notification $notification
-     * @param int $userId
      */
     public function __construct(Notification $notification, int $userId)
     {
@@ -54,7 +51,7 @@ class NotificationSent implements ShouldBroadcast
     public function broadcastOn()
     {
         // Broadcast ไปยัง private channel ของ user
-        return new PrivateChannel('notifications.' . $this->userId);
+        return new PrivateChannel('notifications.'.$this->userId);
     }
 
     /**
@@ -86,7 +83,7 @@ class NotificationSent implements ShouldBroadcast
                 'action_url' => $this->notification->action_url,
                 'action_text' => $this->notification->action_text ?? 'ดูเพิ่มเติม',
                 'created_at' => $this->notification->created_at->toISOString(),
-            ]
+            ],
         ];
     }
 }

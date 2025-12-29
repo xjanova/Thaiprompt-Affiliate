@@ -28,7 +28,7 @@ class CarbonFootprintRecordResource extends JsonResource
             ],
 
             // Offsets
-            'offsets' => $this->when($this->carbon_offset_applied, fn() => [
+            'offsets' => $this->when($this->carbon_offset_applied, fn () => [
                 'offset_applied' => $this->carbon_offset_applied,
                 'offset_source' => $this->offset_source,
                 'reduction_percentage' => $this->reduction_percentage,

@@ -69,7 +69,7 @@ class Ticket extends Model
     public static function generateTicketNumber()
     {
         do {
-            $number = 'TKT-' . strtoupper(Str::random(3)) . '-' . date('Ymd') . '-' . rand(1000, 9999);
+            $number = 'TKT-'.strtoupper(Str::random(3)).'-'.date('Ymd').'-'.rand(1000, 9999);
         } while (self::where('ticket_number', $number)->exists());
 
         return $number;
@@ -273,8 +273,8 @@ class Ticket extends Model
     {
         return $query->where(function ($q) use ($keyword) {
             $q->where('ticket_number', 'like', "%{$keyword}%")
-              ->orWhere('subject', 'like', "%{$keyword}%")
-              ->orWhere('description', 'like', "%{$keyword}%");
+                ->orWhere('subject', 'like', "%{$keyword}%")
+                ->orWhere('description', 'like', "%{$keyword}%");
         });
     }
 
@@ -284,7 +284,7 @@ class Ticket extends Model
     public function scopeFullTextSearch($query, $keyword)
     {
         return $query->whereRaw(
-            "MATCH(ticket_number, subject, description) AGAINST(? IN NATURAL LANGUAGE MODE)",
+            'MATCH(ticket_number, subject, description) AGAINST(? IN NATURAL LANGUAGE MODE)',
             [$keyword]
         );
     }
@@ -310,7 +310,7 @@ class Ticket extends Model
      */
     public function getPriorityColorAttribute()
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'gray',
             'medium' => 'blue',
             'high' => 'orange',
@@ -324,7 +324,7 @@ class Ticket extends Model
      */
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'open' => 'blue',
             'in_progress' => 'yellow',
             'waiting_customer' => 'purple',
@@ -339,7 +339,7 @@ class Ticket extends Model
      */
     public function getPriorityLabelAttribute()
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'ต่ำ',
             'medium' => 'ปานกลาง',
             'high' => 'สูง',
@@ -353,7 +353,7 @@ class Ticket extends Model
      */
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'open' => 'เปิด',
             'in_progress' => 'กำลังดำเนินการ',
             'waiting_customer' => 'รอลูกค้า',
@@ -381,13 +381,13 @@ class Ticket extends Model
      */
     public function checkOverdue()
     {
-        if (!$this->due_at || $this->isClosed()) {
+        if (! $this->due_at || $this->isClosed()) {
             return false;
         }
 
         $isOverdue = now()->isAfter($this->due_at);
 
-        if ($isOverdue && !$this->is_overdue) {
+        if ($isOverdue && ! $this->is_overdue) {
             $this->update([
                 'is_overdue' => true,
                 'sla_breached_at' => now(),
@@ -407,6 +407,7 @@ class Ticket extends Model
         if ($policy) {
             $dueAt = $policy->calculateDueDate('first_response_time');
             $this->update(['due_at' => $dueAt]);
+
             return $policy;
         }
 
@@ -418,7 +419,7 @@ class Ticket extends Model
      */
     public function recordFirstResponse()
     {
-        if (!$this->first_response_at) {
+        if (! $this->first_response_at) {
             $responseTime = now()->diffInMinutes($this->created_at);
             $this->update([
                 'first_response_at' => now(),
@@ -432,7 +433,7 @@ class Ticket extends Model
      */
     public function recordResolution()
     {
-        if (!$this->resolution_time_minutes) {
+        if (! $this->resolution_time_minutes) {
             $resolutionTime = now()->diffInMinutes($this->created_at);
             $this->update([
                 'resolved_at' => now(),
@@ -446,7 +447,7 @@ class Ticket extends Model
      */
     public function getSlaStatusColorAttribute()
     {
-        if (!$this->due_at || $this->isClosed()) {
+        if (! $this->due_at || $this->isClosed()) {
             return 'gray';
         }
 
@@ -470,7 +471,7 @@ class Ticket extends Model
      */
     public function getSlaStatusLabelAttribute()
     {
-        if (!$this->due_at || $this->isClosed()) {
+        if (! $this->due_at || $this->isClosed()) {
             return 'ไม่มี SLA';
         }
 
@@ -502,7 +503,7 @@ class Ticket extends Model
      */
     public function isMerged()
     {
-        return !is_null($this->merged_into_ticket_id);
+        return ! is_null($this->merged_into_ticket_id);
     }
 
     /**
@@ -511,7 +512,7 @@ class Ticket extends Model
     public function addTag($tag)
     {
         $tags = $this->tags ?? [];
-        if (!in_array($tag, $tags)) {
+        if (! in_array($tag, $tags)) {
             $tags[] = $tag;
             $this->update(['tags' => $tags]);
         }
@@ -523,7 +524,7 @@ class Ticket extends Model
     public function removeTag($tag)
     {
         $tags = $this->tags ?? [];
-        $tags = array_filter($tags, fn($t) => $t !== $tag);
+        $tags = array_filter($tags, fn ($t) => $t !== $tag);
         $this->update(['tags' => array_values($tags)]);
     }
 }

@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmGenealogy;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\MlmRebuildTask;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * MlmTreeRebuildService - จัดการการ rebuild MLM tree structure
@@ -33,9 +32,6 @@ class MlmTreeRebuildService
     // Progress update frequency (ทุก X items)
     const PROGRESS_UPDATE_FREQUENCY = 50;
 
-    /**
-     * @var MlmRebuildTask|null
-     */
     protected ?MlmRebuildTask $task = null;
 
     /**
@@ -50,21 +46,20 @@ class MlmTreeRebuildService
 
     /**
      * @var Collection เก็บ member ที่อยู่ในแต่ละ level (สำหรับหาตำแหน่งว่าง)
-     * Format: ['level_0' => [member1, member2, ...], 'level_1' => [...], ...]
+     *                 Format: ['level_0' => [member1, member2, ...], 'level_1' => [...], ...]
      */
     protected Collection $levelQueues;
 
     /**
      * @var array นับจำนวน children ของแต่ละ member
-     * Format: [member_id => count, ...]
+     *            Format: [member_id => count, ...]
      */
     protected array $childrenCount = [];
 
     /**
      * เริ่ม rebuild Unilevel tree จาก Genealogy
      *
-     * @param int|null $userId ผู้เริ่ม task
-     * @return MlmRebuildTask|null
+     * @param  int|null  $userId  ผู้เริ่ม task
      */
     public function startUnilevelRebuild(?int $userId = null): ?MlmRebuildTask
     {
@@ -83,8 +78,9 @@ class MlmTreeRebuildService
             $userId
         );
 
-        if (!$this->task) {
+        if (! $this->task) {
             Log::warning('Cannot start rebuild - another task is running');
+
             return null;
         }
 
@@ -105,9 +101,6 @@ class MlmTreeRebuildService
 
     /**
      * ดำเนินการ rebuild (เรียกจาก Job)
-     *
-     * @param MlmRebuildTask $task
-     * @return bool
      */
     public function executeRebuild(MlmRebuildTask $task): bool
     {
@@ -116,6 +109,7 @@ class MlmTreeRebuildService
         // ตรวจสอบว่า task ยังทำงานได้หรือไม่
         if ($task->status !== MlmRebuildTask::STATUS_RUNNING) {
             Log::warning('Task is not in running state', ['task_id' => $task->id, 'status' => $task->status]);
+
             return false;
         }
 
@@ -188,8 +182,6 @@ class MlmTreeRebuildService
 
     /**
      * ตั้งค่า root member
-     *
-     * @param MlmMember $root
      */
     protected function setupRootMember(MlmMember $root): void
     {
@@ -210,10 +202,6 @@ class MlmTreeRebuildService
 
     /**
      * Rebuild จาก Genealogy tree ใช้ BFS
-     *
-     * @param MlmMember $root
-     * @param int|null $maxWidth
-     * @param int $maxDepth
      */
     protected function rebuildFromGenealogy(MlmMember $root, ?int $maxWidth, int $maxDepth): void
     {
@@ -238,9 +226,10 @@ class MlmTreeRebuildService
             // หาตำแหน่งว่างใน Unilevel tree
             $placement = $this->findUnilevelPlacement($originalSponsorId, $maxWidth, $maxDepth);
 
-            if (!$placement) {
+            if (! $placement) {
                 Log::warning('Cannot find placement for member', ['member_id' => $member->id]);
                 $this->failedCount++;
+
                 continue;
             }
 
@@ -269,9 +258,7 @@ class MlmTreeRebuildService
     /**
      * หาตำแหน่งว่างใน Unilevel tree
      *
-     * @param int $originalSponsorId ID ของ original sponsor
-     * @param int|null $maxWidth
-     * @param int $maxDepth
+     * @param  int  $originalSponsorId  ID ของ original sponsor
      * @return array|null ['sponsor_id' => int, 'level' => int, 'path' => string]
      */
     protected function findUnilevelPlacement(int $originalSponsorId, ?int $maxWidth, int $maxDepth): ?array
@@ -279,7 +266,7 @@ class MlmTreeRebuildService
         // ถ้าไม่จำกัด width → วางใต้ original sponsor ได้เลย
         if ($maxWidth === null || $maxWidth === 0) {
             $sponsor = MlmMember::find($originalSponsorId);
-            if (!$sponsor) {
+            if (! $sponsor) {
                 return null;
             }
 
@@ -293,13 +280,13 @@ class MlmTreeRebuildService
             return [
                 'sponsor_id' => $sponsor->id,
                 'level' => $newLevel,
-                'path' => $sponsor->unilevel_path ? $sponsor->unilevel_path . '/' . $sponsor->id : (string) $sponsor->id,
+                'path' => $sponsor->unilevel_path ? $sponsor->unilevel_path.'/'.$sponsor->id : (string) $sponsor->id,
             ];
         }
 
         // BFS หาตำแหน่งว่าง - เริ่มจาก original sponsor แล้วไปชั้นถัดไป
         $startMember = MlmMember::find($originalSponsorId);
-        if (!$startMember) {
+        if (! $startMember) {
             return null;
         }
 
@@ -326,7 +313,7 @@ class MlmTreeRebuildService
                 return [
                     'sponsor_id' => $current->id,
                     'level' => $currentDepth + 1,
-                    'path' => $current->unilevel_path ? $current->unilevel_path . '/' . $current->id : (string) $current->id,
+                    'path' => $current->unilevel_path ? $current->unilevel_path.'/'.$current->id : (string) $current->id,
                 ];
             }
 
@@ -336,7 +323,7 @@ class MlmTreeRebuildService
                 ->get();
 
             foreach ($children as $child) {
-                if (!$visited->contains($child->id)) {
+                if (! $visited->contains($child->id)) {
                     $visited->push($child->id);
                     $searchQueue->push(['member' => $child, 'depth' => $currentDepth + 1]);
                 }
@@ -348,9 +335,6 @@ class MlmTreeRebuildService
 
     /**
      * วาง member ใน Unilevel tree
-     *
-     * @param MlmMember $member
-     * @param array $placement
      */
     protected function placeMemberInUnilevel(MlmMember $member, array $placement): void
     {
@@ -367,14 +351,11 @@ class MlmTreeRebuildService
 
     /**
      * เพิ่ม member เข้า level queue
-     *
-     * @param MlmMember $member
-     * @param int $level
      */
     protected function addToLevelQueue(MlmMember $member, int $level): void
     {
-        $key = 'level_' . $level;
-        if (!$this->levelQueues->has($key)) {
+        $key = 'level_'.$level;
+        if (! $this->levelQueues->has($key)) {
             $this->levelQueues->put($key, collect());
         }
         $this->levelQueues->get($key)->push($member);
@@ -382,8 +363,6 @@ class MlmTreeRebuildService
 
     /**
      * อัพเดท progress
-     *
-     * @param int $lastProcessedId
      */
     protected function updateProgress(int $lastProcessedId): void
     {
@@ -441,7 +420,7 @@ class MlmTreeRebuildService
         }
 
         // Insert remaining
-        if (!empty($batch)) {
+        if (! empty($batch)) {
             MlmGenealogy::insert($batch);
         }
 
@@ -472,9 +451,6 @@ class MlmTreeRebuildService
 
     /**
      * นับ downline ทั้งหมด (recursive)
-     *
-     * @param int $memberId
-     * @return int
      */
     protected function countAllDownline(int $memberId): int
     {
@@ -491,15 +467,12 @@ class MlmTreeRebuildService
 
     /**
      * ดึงสถานะของ task ล่าสุด
-     *
-     * @param string $type
-     * @return array|null
      */
     public function getLatestTaskStatus(string $type = MlmRebuildTask::TYPE_UNILEVEL_REBUILD): ?array
     {
         $task = MlmRebuildTask::getLatestTask($type);
 
-        if (!$task) {
+        if (! $task) {
             return null;
         }
 
@@ -508,9 +481,6 @@ class MlmTreeRebuildService
 
     /**
      * ตรวจสอบว่ามี task กำลังทำงานอยู่หรือไม่
-     *
-     * @param string $type
-     * @return bool
      */
     public function hasRunningTask(string $type = MlmRebuildTask::TYPE_UNILEVEL_REBUILD): bool
     {

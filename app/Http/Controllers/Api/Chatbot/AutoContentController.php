@@ -105,7 +105,7 @@ class AutoContentController extends Controller
 
         $result = $this->autoContentService->generateContent($post);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['error'],
@@ -168,7 +168,7 @@ class AutoContentController extends Controller
         if (empty($post->generated_content)) {
             $result = $this->autoContentService->generateContent($post);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['error'],
@@ -185,7 +185,7 @@ class AutoContentController extends Controller
         $post->update(['status' => 'processing']);
         $results = $this->autoContentService->postToPlatforms($post);
 
-        $allSuccess = collect($results)->every(fn($r) => $r['success'] ?? false);
+        $allSuccess = collect($results)->every(fn ($r) => $r['success'] ?? false);
 
         if ($allSuccess) {
             $post->markAsPosted($results);

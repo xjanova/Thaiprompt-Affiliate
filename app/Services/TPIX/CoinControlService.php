@@ -2,13 +2,13 @@
 
 namespace App\Services\TPIX;
 
+use App\Models\CoinControlAction;
 use App\Models\TPIXToken;
 use App\Models\User;
-use App\Models\CoinControlAction;
 use App\Services\Crypto\TPIXBlockchainService;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Coin Control Service
@@ -29,7 +29,7 @@ class CoinControlService
      */
     public function mint(TPIXToken $token, User $admin, string $toAddress, string $amount, string $reason): array
     {
-        if (!$token->canMint()) {
+        if (! $token->canMint()) {
             throw new Exception('Token is not mintable or not active');
         }
 
@@ -77,7 +77,7 @@ class CoinControlService
                 'token_id' => $token->id,
                 'amount' => $amount,
                 'to_address' => $toAddress,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -92,13 +92,13 @@ class CoinControlService
             if (isset($action)) {
                 $action->update([
                     'status' => 'failed',
-                    'error_message' => $e->getMessage()
+                    'error_message' => $e->getMessage(),
                 ]);
             }
 
             Log::error('Minting failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -110,7 +110,7 @@ class CoinControlService
      */
     public function burn(TPIXToken $token, User $admin, string $fromAddress, string $amount, string $reason): array
     {
-        if (!$token->canBurn()) {
+        if (! $token->canBurn()) {
             throw new Exception('Token is not burnable or not active');
         }
 
@@ -155,7 +155,7 @@ class CoinControlService
                 'token_id' => $token->id,
                 'amount' => $amount,
                 'from_address' => $fromAddress,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -171,13 +171,13 @@ class CoinControlService
             if (isset($action)) {
                 $action->update([
                     'status' => 'failed',
-                    'error_message' => $e->getMessage()
+                    'error_message' => $e->getMessage(),
                 ]);
             }
 
             Log::error('Burning failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -189,7 +189,7 @@ class CoinControlService
      */
     public function freezeAddress(TPIXToken $token, User $admin, string $address, string $reason): array
     {
-        if (!$token->is_freezable) {
+        if (! $token->is_freezable) {
             throw new Exception('Token does not support freezing');
         }
 
@@ -219,7 +219,7 @@ class CoinControlService
             if ($balance) {
                 $balance->update([
                     'is_frozen' => true,
-                    'freeze_reason' => $reason
+                    'freeze_reason' => $reason,
                 ]);
             }
 
@@ -228,7 +228,7 @@ class CoinControlService
             Log::info('Address frozen', [
                 'token_id' => $token->id,
                 'address' => $address,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -241,7 +241,7 @@ class CoinControlService
             DB::rollBack();
             Log::error('Address freeze failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -279,7 +279,7 @@ class CoinControlService
             if ($balance) {
                 $balance->update([
                     'is_frozen' => false,
-                    'freeze_reason' => null
+                    'freeze_reason' => null,
                 ]);
             }
 
@@ -288,7 +288,7 @@ class CoinControlService
             Log::info('Address unfrozen', [
                 'token_id' => $token->id,
                 'address' => $address,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -301,7 +301,7 @@ class CoinControlService
             DB::rollBack();
             Log::error('Address unfreeze failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -313,7 +313,7 @@ class CoinControlService
      */
     public function pauseContract(TPIXToken $token, User $admin, string $reason): array
     {
-        if (!$token->is_pausable) {
+        if (! $token->is_pausable) {
             throw new Exception('Token does not support pausing');
         }
 
@@ -333,7 +333,7 @@ class CoinControlService
 
             Log::info('Contract paused', [
                 'token_id' => $token->id,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -368,7 +368,7 @@ class CoinControlService
 
             Log::info('Contract unpaused', [
                 'token_id' => $token->id,
-                'admin_id' => $admin->id
+                'admin_id' => $admin->id,
             ]);
 
             return [
@@ -387,22 +387,22 @@ class CoinControlService
      */
     protected function simulateMintTransaction($token, $toAddress, $amount): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     protected function simulateBurnTransaction($token, $fromAddress, $amount): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     protected function simulateFreezeTransaction($token, $address): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     protected function simulateUnfreezeTransaction($token, $address): string
     {
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     /**
@@ -412,7 +412,7 @@ class CoinControlService
     {
         $balance = $token->balances()->where('wallet_address', $address)->first();
 
-        if (!$balance) {
+        if (! $balance) {
             if ($operation === 'add') {
                 $token->balances()->create([
                     'user_id' => $this->getUserIdFromAddress($address),
@@ -421,6 +421,7 @@ class CoinControlService
                     'available_balance' => $amount,
                 ]);
             }
+
             return;
         }
 
@@ -443,6 +444,7 @@ class CoinControlService
     protected function getBalance(TPIXToken $token, string $address): string
     {
         $balance = $token->balances()->where('wallet_address', $address)->first();
+
         return $balance ? $balance->balance : '0';
     }
 
@@ -452,6 +454,7 @@ class CoinControlService
     protected function getUserIdFromAddress(string $address): ?int
     {
         $wallet = \App\Models\CryptoWallet::where('address', $address)->first();
+
         return $wallet ? $wallet->user_id : null;
     }
 }

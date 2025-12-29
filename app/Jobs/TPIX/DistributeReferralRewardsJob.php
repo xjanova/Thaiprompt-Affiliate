@@ -17,6 +17,7 @@ class DistributeReferralRewardsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 60;
 
     protected int $referralUseId;
@@ -45,6 +46,7 @@ class DistributeReferralRewardsJob implements ShouldQueue
 
             if ($rewards->isEmpty()) {
                 Log::info("No pending rewards found for referral use {$this->referralUseId}");
+
                 return;
             }
 
@@ -69,7 +71,7 @@ class DistributeReferralRewardsJob implements ShouldQueue
                     $balance->increment('available_balance', $reward->amount);
 
                     // Generate mock transaction hash
-                    $txHash = '0x' . bin2hex(random_bytes(32));
+                    $txHash = '0x'.bin2hex(random_bytes(32));
 
                     // Mark reward as paid
                     $reward->markAsPaid($txHash);
@@ -80,8 +82,9 @@ class DistributeReferralRewardsJob implements ShouldQueue
                     dispatch(new \App\Jobs\TPIX\SendRewardNotificationJob($reward->id));
 
                 } catch (\Exception $e) {
-                    Log::error("Failed to distribute reward {$reward->id}: " . $e->getMessage());
+                    Log::error("Failed to distribute reward {$reward->id}: ".$e->getMessage());
                     $reward->markAsFailed($e->getMessage());
+
                     continue;
                 }
             }
@@ -92,7 +95,7 @@ class DistributeReferralRewardsJob implements ShouldQueue
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to distribute referral rewards: " . $e->getMessage());
+            Log::error('Failed to distribute referral rewards: '.$e->getMessage());
             throw $e;
         }
     }
@@ -102,7 +105,7 @@ class DistributeReferralRewardsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Referral reward distribution failed permanently: " . $exception->getMessage());
+        Log::error('Referral reward distribution failed permanently: '.$exception->getMessage());
 
         // Mark all pending rewards as failed
         TPIXReferralReward::where('referral_use_id', $this->referralUseId)

@@ -48,19 +48,21 @@ class UserGameProgress extends Model
     public function hasUnlockedShip($shipSlug)
     {
         $unlocked = $this->unlocked_ships ?? [];
+
         return in_array($shipSlug, $unlocked);
     }
 
     public function hasUnlockedWeapon($weaponSlug)
     {
         $unlocked = $this->unlocked_weapons ?? [];
+
         return in_array($weaponSlug, $unlocked);
     }
 
     public function unlockShip($shipSlug)
     {
         $unlocked = $this->unlocked_ships ?? [];
-        if (!in_array($shipSlug, $unlocked)) {
+        if (! in_array($shipSlug, $unlocked)) {
             $unlocked[] = $shipSlug;
             $this->unlocked_ships = $unlocked;
             $this->save();
@@ -70,7 +72,7 @@ class UserGameProgress extends Model
     public function unlockWeapon($weaponSlug)
     {
         $unlocked = $this->unlocked_weapons ?? [];
-        if (!in_array($weaponSlug, $unlocked)) {
+        if (! in_array($weaponSlug, $unlocked)) {
             $unlocked[] = $weaponSlug;
             $this->unlocked_weapons = $unlocked;
             $this->save();

@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\NFCCard;
 use App\Models\NFCReader;
-use App\Services\NFC\NFCCardService;
 use App\Services\NFC\NFCCardEncryptionService;
-use Illuminate\Http\Request;
+use App\Services\NFC\NFCCardService;
 use Exception;
+use Illuminate\Http\Request;
 
 /**
  * NFC Card API Controller
@@ -18,6 +18,7 @@ use Exception;
 class NFCCardApiController extends Controller
 {
     protected NFCCardService $nfcCardService;
+
     protected NFCCardEncryptionService $encryptionService;
 
     public function __construct(
@@ -118,7 +119,7 @@ class NFCCardApiController extends Controller
                 $validated['encrypted_data']
             );
 
-            if (!$result['verified']) {
+            if (! $result['verified']) {
                 return response()->json([
                     'success' => false,
                     'verified' => false,
@@ -182,10 +183,10 @@ class NFCCardApiController extends Controller
                 $validated['encrypted_data']
             );
 
-            if (!$verification['verified']) {
+            if (! $verification['verified']) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'Card verification failed: ' . $verification['error'],
+                    'error' => 'Card verification failed: '.$verification['error'],
                 ], 400);
             }
 

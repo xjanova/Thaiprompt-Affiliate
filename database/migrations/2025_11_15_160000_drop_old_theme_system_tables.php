@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -23,8 +22,6 @@ return new class extends Migration
      * - theme_components (Arrow X component settings)
      * - translation_cache (Google Translate cache)
      * - google_translate_settings (Google Translate API settings)
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -51,8 +48,6 @@ return new class extends Migration
 
     /**
      * Reverse migration - สร้าง tables กลับ (ไม่แนะนำ - ควรใช้ Arrow X แทน)
-     *
-     * @return void
      */
     public function down(): void
     {

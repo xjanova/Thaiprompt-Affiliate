@@ -60,8 +60,6 @@ class StorePromotionCooldown extends Model
 
     /**
      * ร้านค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -93,10 +91,6 @@ class StorePromotionCooldown extends Model
 
     /**
      * ตรวจสอบว่าร้านพร้อมใช้งานหรือไม่
-     *
-     * @param int $storeId
-     * @param string $promotionType
-     * @return bool
      */
     public static function isAvailable(int $storeId, string $promotionType): bool
     {
@@ -104,19 +98,15 @@ class StorePromotionCooldown extends Model
             ->where('promotion_type', $promotionType)
             ->first();
 
-        if (!$cooldown) {
+        if (! $cooldown) {
             return true;
         }
 
-        return !$cooldown->available_at || $cooldown->available_at->isPast();
+        return ! $cooldown->available_at || $cooldown->available_at->isPast();
     }
 
     /**
      * ดึงเวลาที่จะพร้อมใช้งาน
-     *
-     * @param int $storeId
-     * @param string $promotionType
-     * @return \Carbon\Carbon|null
      */
     public static function getAvailableAt(int $storeId, string $promotionType): ?\Carbon\Carbon
     {
@@ -124,7 +114,7 @@ class StorePromotionCooldown extends Model
             ->where('promotion_type', $promotionType)
             ->first();
 
-        if (!$cooldown || !$cooldown->available_at) {
+        if (! $cooldown || ! $cooldown->available_at) {
             return null;
         }
 
@@ -137,11 +127,6 @@ class StorePromotionCooldown extends Model
 
     /**
      * บันทึกการใช้งาน
-     *
-     * @param int $storeId
-     * @param string $promotionType
-     * @param int $cooldownDays
-     * @return self
      */
     public static function recordUsage(int $storeId, string $promotionType, int $cooldownDays = 7): self
     {
@@ -162,8 +147,6 @@ class StorePromotionCooldown extends Model
 
     /**
      * ยังอยู่ใน cooldown หรือไม่
-     *
-     * @return bool
      */
     public function getIsOnCooldownAttribute(): bool
     {
@@ -172,12 +155,10 @@ class StorePromotionCooldown extends Model
 
     /**
      * เวลาคงเหลือ
-     *
-     * @return string|null
      */
     public function getTimeRemainingAttribute(): ?string
     {
-        if (!$this->is_on_cooldown) {
+        if (! $this->is_on_cooldown) {
             return null;
         }
 

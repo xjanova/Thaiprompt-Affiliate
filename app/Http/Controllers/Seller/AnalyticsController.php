@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
-use App\Models\VendorStore;
 use App\Models\VendorAnalytics;
-use App\Models\VendorStoreVisit;
 use App\Models\VendorAnalyticsSetting;
-use App\Services\VendorAnalyticsService;
+use App\Models\VendorStore;
+use App\Models\VendorStoreVisit;
 use App\Services\AnalyticsAIService;
+use App\Services\VendorAnalyticsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Artisan;
-use Carbon\Carbon;
 
 class AnalyticsController extends Controller
 {
     protected VendorAnalyticsService $analyticsService;
+
     protected AnalyticsAIService $aiService;
 
     public function __construct(
@@ -35,7 +35,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found. Please set up your store first.');
         }
@@ -99,7 +99,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found. Please set up your store first.');
         }
@@ -117,7 +117,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -149,7 +149,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'Store not found.');
         }
 
@@ -181,7 +181,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'Store not found.');
         }
 
@@ -200,7 +200,7 @@ class AnalyticsController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($analytics) {
+        $callback = function () use ($analytics) {
             $file = fopen('php://output', 'w');
 
             // Header row
@@ -245,7 +245,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -280,7 +280,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -302,7 +302,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -324,7 +324,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -346,7 +346,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['error' => 'Store not found'], 404);
         }
 
@@ -364,7 +364,7 @@ class AnalyticsController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['error' => 'Store not found'], 404);
         }
 

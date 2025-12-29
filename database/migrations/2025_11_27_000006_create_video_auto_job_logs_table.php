@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_job_logs
      * เก็บ log การทำงานของแต่ละ job
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -35,7 +33,7 @@ return new class extends Migration
                 'error',
                 'critical',
                 'alert',
-                'emergency'
+                'emergency',
             ])->default('info')->index();
 
             $table->string('step')->nullable()->comment('ขั้นตอนที่ log');
@@ -79,8 +77,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_job_logs
-     *
-     * @return void
      */
     public function down(): void
     {

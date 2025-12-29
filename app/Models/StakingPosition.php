@@ -4,10 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StakingPosition extends Model
 {
@@ -83,8 +82,8 @@ class StakingPosition extends Model
         parent::boot();
 
         static::creating(function ($position) {
-            if (!$position->position_number) {
-                $position->position_number = 'STK' . strtoupper(uniqid());
+            if (! $position->position_number) {
+                $position->position_number = 'STK'.strtoupper(uniqid());
             }
         });
     }
@@ -238,6 +237,7 @@ class StakingPosition extends Model
         // Check if unlocked
         if ($this->isLocked()) {
             $plan = $this->investmentPlan;
+
             return $plan && $plan->allow_early_withdrawal;
         }
 
@@ -249,7 +249,7 @@ class StakingPosition extends Model
      */
     public function getDaysElapsedAttribute(): int
     {
-        if (!$this->invested_at) {
+        if (! $this->invested_at) {
             return 0;
         }
 
@@ -261,7 +261,7 @@ class StakingPosition extends Model
      */
     public function getDaysRemainingAttribute(): int
     {
-        if (!$this->maturity_date) {
+        if (! $this->maturity_date) {
             return 0;
         }
 
@@ -277,11 +277,11 @@ class StakingPosition extends Model
      */
     public function getDaysUntilUnlockAttribute(): int
     {
-        if (!$this->unlock_date) {
+        if (! $this->unlock_date) {
             return 0;
         }
 
-        if (!$this->isLocked()) {
+        if (! $this->isLocked()) {
             return 0;
         }
 

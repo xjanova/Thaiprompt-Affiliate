@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Services\AI\AiServiceFactory;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
+use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Log;
 
 class PromptToWebService
@@ -19,9 +19,9 @@ class PromptToWebService
     /**
      * Generate a web page from a prompt using AI
      *
-     * @param string $prompt User's description of the desired web page
-     * @param string|null $providerName AI provider to use (default: auto-select)
-     * @param string|null $modelName Specific model to use
+     * @param  string  $prompt  User's description of the desired web page
+     * @param  string|null  $providerName  AI provider to use (default: auto-select)
+     * @param  string|null  $modelName  Specific model to use
      * @return array Generated HTML, CSS, JS and metadata
      */
     public function generateWebPage(string $prompt, ?string $providerName = null, ?string $modelName = null): array
@@ -29,7 +29,7 @@ class PromptToWebService
         try {
             // Check if prompt requests complex system
             $complexityCheck = $this->checkPromptComplexity($prompt);
-            if (!$complexityCheck['allowed']) {
+            if (! $complexityCheck['allowed']) {
                 throw new \Exception($complexityCheck['message']);
             }
 
@@ -37,7 +37,7 @@ class PromptToWebService
             $provider = $this->getProvider($providerName);
             $model = $this->getModel($provider, $modelName);
 
-            if (!$provider || !$model) {
+            if (! $provider || ! $model) {
                 throw new \Exception('ไม่พบ AI provider หรือ model ที่ระบุ');
             }
 
@@ -79,7 +79,7 @@ class PromptToWebService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Prompt to Web generation error: ' . $e->getMessage());
+            Log::error('Prompt to Web generation error: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -96,7 +96,7 @@ class PromptToWebService
      */
     protected function buildSystemPrompt(): string
     {
-        return <<<EOT
+        return <<<'EOT'
 You are an expert web developer specializing in creating SIMPLE, CLEAN, and beautiful web pages.
 
 IMPORTANT: Create SIMPLE pages only. Keep it minimal and easy to understand.
@@ -283,25 +283,25 @@ EOT;
             if (strpos($lowerPrompt, $keyword) !== false) {
                 return [
                     'allowed' => false,
-                    'message' => "⚠️ ขออภัยครับ ระบบนี้รองรับเฉพาะการสร้างหน้าเว็บแบบง่ายๆ (Landing Page, Presentation Page) เท่านั้น\n\n" .
-                                "ไม่รองรับการสร้าง:\n" .
-                                "- ระบบที่ต้องใช้ฐานข้อมูล\n" .
-                                "- ระบบ Backend/API\n" .
-                                "- ระบบ Login/สมาชิก\n" .
-                                "- ระบบ E-commerce\n" .
-                                "- ระบบที่ซับซ้อนอื่นๆ\n\n" .
-                                "💡 แนะนำ: ลองขอหน้าเว็บแบบง่ายๆ เช่น:\n" .
-                                "- หน้า Landing Page แนะนำธุรกิจ\n" .
-                                "- หน้าแสดงข้อมูลบริษัท\n" .
-                                "- หน้าแสดงโปรโมชั่น\n" .
-                                "- หน้าแสดงรายละเอียดสินค้า (แบบ static)"
+                    'message' => "⚠️ ขออภัยครับ ระบบนี้รองรับเฉพาะการสร้างหน้าเว็บแบบง่ายๆ (Landing Page, Presentation Page) เท่านั้น\n\n".
+                                "ไม่รองรับการสร้าง:\n".
+                                "- ระบบที่ต้องใช้ฐานข้อมูล\n".
+                                "- ระบบ Backend/API\n".
+                                "- ระบบ Login/สมาชิก\n".
+                                "- ระบบ E-commerce\n".
+                                "- ระบบที่ซับซ้อนอื่นๆ\n\n".
+                                "💡 แนะนำ: ลองขอหน้าเว็บแบบง่ายๆ เช่น:\n".
+                                "- หน้า Landing Page แนะนำธุรกิจ\n".
+                                "- หน้าแสดงข้อมูลบริษัท\n".
+                                "- หน้าแสดงโปรโมชั่น\n".
+                                '- หน้าแสดงรายละเอียดสินค้า (แบบ static)',
                 ];
             }
         }
 
         return [
             'allowed' => true,
-            'message' => ''
+            'message' => '',
         ];
     }
 
@@ -367,7 +367,7 @@ EOT;
 
         foreach ($preferredModels as $modelPrefix) {
             $model = AiModel::where('provider_id', $provider->id)
-                ->where('model_identifier', 'like', $modelPrefix . '%')
+                ->where('model_identifier', 'like', $modelPrefix.'%')
                 ->where('is_active', true)
                 ->first();
 
@@ -391,7 +391,7 @@ EOT;
             $provider = $this->getProvider($providerName);
             $model = $this->getModel($provider);
 
-            if (!$provider || !$model) {
+            if (! $provider || ! $model) {
                 throw new \Exception('ไม่พบ AI provider หรือ model ที่ระบุ');
             }
 
@@ -438,7 +438,7 @@ EOT;
             ];
 
         } catch (\Exception $e) {
-            Log::error('Prompt to Web improvement error: ' . $e->getMessage());
+            Log::error('Prompt to Web improvement error: '.$e->getMessage());
 
             return [
                 'success' => false,

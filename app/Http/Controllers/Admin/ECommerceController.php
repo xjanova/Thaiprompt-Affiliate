@@ -3,20 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\ProductCategory;
-use App\Models\ProductReview;
-use App\Models\User;
-use App\Models\ShippingProvider;
-use App\Models\OrderTrackingHistory;
 use App\Models\OrderMessage;
+use App\Models\OrderTrackingHistory;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProductImage;
+use App\Models\ProductReview;
+use App\Models\ShippingProvider;
+use App\Models\User;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ECommerceController extends Controller
 {
@@ -26,6 +25,7 @@ class ECommerceController extends Controller
     {
         $this->imageUploadService = $imageUploadService;
     }
+
     /**
      * Show E-commerce Dashboard
      */
@@ -85,7 +85,7 @@ class ECommerceController extends Controller
 
         // Top selling products
         $topProducts = Product::with('images')
-            ->withCount(['orderItems as total_sales' => function($query) {
+            ->withCount(['orderItems as total_sales' => function ($query) {
                 $query->select(DB::raw('SUM(quantity)'));
             }])
             ->orderBy('total_sales', 'desc')
@@ -128,10 +128,10 @@ class ECommerceController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -164,7 +164,6 @@ class ECommerceController extends Controller
     /**
      * แสดงรายการสินค้าที่ถูกบล็อก
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function blockedProducts(Request $request)
@@ -175,10 +174,10 @@ class ECommerceController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('block_reason', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('block_reason', 'like', "%{$search}%");
             });
         }
 
@@ -298,7 +297,8 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -329,6 +329,7 @@ class ECommerceController extends Controller
     {
         $product->load('images');
         $categories = ProductCategory::active()->orderBy('name')->get();
+
         return view('admin.ecommerce.products.edit', compact('product', 'categories'));
     }
 
@@ -339,7 +340,7 @@ class ECommerceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'nullable|string|max:100|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|max:100|unique:products,sku,'.$product->id,
             'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
             'price' => 'required|numeric|min:0',
@@ -395,7 +396,7 @@ class ECommerceController extends Controller
 
                 // ตรวจสอบว่า slug ซ้ำหรือไม่ (ยกเว้นสินค้าปัจจุบัน)
                 while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
-                    $slug = $baseSlug . '-' . $counter;
+                    $slug = $baseSlug.'-'.$counter;
                     $counter++;
                 }
 
@@ -501,7 +502,8 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -526,12 +528,12 @@ class ECommerceController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -586,12 +588,12 @@ class ECommerceController extends Controller
         $order->update($validated);
 
         // If status is shipped, update shipped_at timestamp
-        if ($validated['status'] === 'shipped' && !$order->shipped_at) {
+        if ($validated['status'] === 'shipped' && ! $order->shipped_at) {
             $order->update(['shipped_at' => now()]);
         }
 
         // If status is completed, update delivered_at timestamp
-        if ($validated['status'] === 'completed' && !$order->delivered_at) {
+        if ($validated['status'] === 'completed' && ! $order->delivered_at) {
             $order->update(['delivered_at' => now()]);
         }
 
@@ -610,7 +612,7 @@ class ECommerceController extends Controller
         $order->update($validated);
 
         // If payment is marked as paid, update paid_at timestamp
-        if ($validated['payment_status'] === 'paid' && !$order->paid_at) {
+        if ($validated['payment_status'] === 'paid' && ! $order->paid_at) {
             $order->update(['paid_at' => now()]);
         }
 
@@ -679,7 +681,8 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -690,7 +693,7 @@ class ECommerceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:product_categories,slug,' . $category->id,
+            'slug' => 'nullable|string|max:255|unique:product_categories,slug,'.$category->id,
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
             'sort_order' => 'nullable|integer',
@@ -731,7 +734,8 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -760,11 +764,11 @@ class ECommerceController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('comment', 'like', "%{$search}%")
-                  ->orWhereHas('product', function($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('product', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -823,7 +827,6 @@ class ECommerceController extends Controller
      * - สถานะคำสั่งซื้อ
      * - สถิติลูกค้า
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function reports(Request $request)
@@ -834,7 +837,7 @@ class ECommerceController extends Controller
         $dateTo = $request->get('date_to');
 
         // ถ้าไม่ได้กำหนด date range ให้ใช้ period presets
-        if (!$dateFrom || !$dateTo) {
+        if (! $dateFrom || ! $dateTo) {
             $dates = $this->getDateRangeFromPeriod($period);
             $dateFrom = $dates['start'];
             $dateTo = $dates['end'];
@@ -842,7 +845,7 @@ class ECommerceController extends Controller
 
         // สรุปยอดขายรายวัน สำหรับกราฟ
         $salesReport = Order::where('payment_status', 'paid')
-            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
             ->selectRaw('DATE(created_at) as date, COUNT(*) as orders, SUM(total_amount) as revenue')
             ->groupBy('date')
             ->orderBy('date')
@@ -854,7 +857,7 @@ class ECommerceController extends Controller
             ->selectRaw('SUM(order_items.quantity) as total_sales')
             ->selectRaw('SUM(order_items.subtotal) as total_revenue')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo.' 23:59:59'])
             ->groupBy('order_items.product_id');
 
         $topProducts = Product::query()
@@ -876,7 +879,7 @@ class ECommerceController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.payment_status', 'paid')
-            ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->whereBetween('orders.created_at', [$dateFrom, $dateTo.' 23:59:59'])
             ->groupBy('products.category_id');
 
         $categoryPerformance = ProductCategory::query()
@@ -893,11 +896,12 @@ class ECommerceController extends Controller
         $totalCategoryRevenue = $categoryPerformance->sum('total_revenue') ?: 1;
         $categoryPerformance = $categoryPerformance->map(function ($cat) use ($totalCategoryRevenue) {
             $cat->percentage = round(($cat->total_revenue / $totalCategoryRevenue) * 100, 1);
+
             return $cat;
         });
 
         // สถานะคำสั่งซื้อ
-        $orderStatusDistribution = Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+        $orderStatusDistribution = Order::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->orderByDesc('count')
@@ -923,44 +927,45 @@ class ECommerceController extends Controller
                 ];
                 $item->label = $statusLabels[$item->status] ?? $item->status;
                 $item->color = $statusColors[$item->status] ?? 'gray';
+
                 return $item;
             });
 
         // สถิติลูกค้า
         $customerStats = [
-            'total_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            'total_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->distinct('user_id')
                 ->count('user_id'),
-            'returning_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            'returning_customers' => Order::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->select('user_id')
                 ->groupBy('user_id')
                 ->havingRaw('COUNT(*) > 1')
                 ->get()
                 ->count(),
-            'new_customers' => User::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            'new_customers' => User::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->whereHas('orders')
                 ->count(),
         ];
 
         // สรุปสถิติ
         $summary = [
-            'total_orders' => Order::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+            'total_orders' => Order::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])->count(),
             'completed_orders' => Order::where('status', 'completed')
-                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+                ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])->count(),
             'pending_orders' => Order::where('status', 'pending')
-                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+                ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])->count(),
             'cancelled_orders' => Order::where('status', 'cancelled')
-                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count(),
+                ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])->count(),
             'total_revenue' => Order::where('payment_status', 'paid')
-                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->sum('total_amount'),
             'average_order_value' => Order::where('payment_status', 'paid')
-                ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->avg('total_amount') ?? 0,
             'total_items_sold' => DB::table('order_items')
                 ->join('orders', 'order_items.order_id', '=', 'orders.id')
                 ->where('orders.payment_status', 'paid')
-                ->whereBetween('orders.created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+                ->whereBetween('orders.created_at', [$dateFrom, $dateTo.' 23:59:59'])
                 ->sum('order_items.quantity'),
         ];
 
@@ -970,10 +975,10 @@ class ECommerceController extends Controller
         $prevDateTo = now()->parse($dateFrom)->subDay()->format('Y-m-d');
 
         $prevRevenue = Order::where('payment_status', 'paid')
-            ->whereBetween('created_at', [$prevDateFrom, $prevDateTo . ' 23:59:59'])
+            ->whereBetween('created_at', [$prevDateFrom, $prevDateTo.' 23:59:59'])
             ->sum('total_amount');
 
-        $prevOrders = Order::whereBetween('created_at', [$prevDateFrom, $prevDateTo . ' 23:59:59'])->count();
+        $prevOrders = Order::whereBetween('created_at', [$prevDateFrom, $prevDateTo.' 23:59:59'])->count();
 
         $summary['revenue_growth'] = $prevRevenue > 0
             ? round((($summary['total_revenue'] - $prevRevenue) / $prevRevenue) * 100, 1)
@@ -998,9 +1003,6 @@ class ECommerceController extends Controller
 
     /**
      * แปลง period preset เป็น date range
-     *
-     * @param string $period
-     * @return array
      */
     private function getDateRangeFromPeriod(string $period): array
     {
@@ -1039,8 +1041,6 @@ class ECommerceController extends Controller
     /**
      * บล็อกสินค้า (Admin)
      *
-     * @param Request $request
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function blockProduct(Request $request, Product $product)
@@ -1082,14 +1082,14 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปลดบล็อกสินค้า (Admin)
      *
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unblockProduct(Product $product)
@@ -1125,7 +1125,8 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -1154,8 +1155,6 @@ class ECommerceController extends Controller
     /**
      * อัพเดทข้อมูล Tracking
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateOrderTracking(Request $request, Order $order)
@@ -1190,7 +1189,7 @@ class ECommerceController extends Controller
             OrderTrackingHistory::createEntry(
                 $order,
                 'shipped',
-                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: ' . $validated['tracking_number'],
+                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: '.$validated['tracking_number'],
                 auth()->id()
             );
 
@@ -1200,15 +1199,14 @@ class ECommerceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เพิ่ม Tracking History
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function addTrackingHistory(Request $request, Order $order)
@@ -1244,7 +1242,6 @@ class ECommerceController extends Controller
     /**
      * ดึงข้อความของ Order (AJAX)
      *
-     * @param Order $order
      * @return \Illuminate\Http\JsonResponse
      */
     public function getOrderMessages(Order $order)
@@ -1263,8 +1260,6 @@ class ECommerceController extends Controller
     /**
      * ส่งข้อความในนามของ Admin
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function sendOrderMessage(Request $request, Order $order)
@@ -1288,7 +1283,6 @@ class ECommerceController extends Controller
     /**
      * ทำเครื่องหมายข้อความว่าอ่านแล้ว
      *
-     * @param Order $order
      * @return \Illuminate\Http\JsonResponse
      */
     public function markOrderMessagesRead(Order $order)

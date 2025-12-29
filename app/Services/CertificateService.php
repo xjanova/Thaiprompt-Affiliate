@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\Certificate;
 use App\Models\LearningArticle;
+use App\Models\QuizAttempt;
 use App\Models\User;
 use App\Models\UserArticleProgress;
-use App\Models\QuizAttempt;
 use Illuminate\Support\Facades\Storage;
 
 class CertificateService
@@ -31,7 +31,7 @@ class CertificateService
             ->where('article_id', $article->id)
             ->first();
 
-        if (!$progress || $progress->status !== 'completed') {
+        if (! $progress || $progress->status !== 'completed') {
             throw new \Exception('User has not completed this course');
         }
 
@@ -162,7 +162,7 @@ class CertificateService
             ->where('article_id', $article->id)
             ->first();
 
-        if (!$progress || $progress->status !== 'completed') {
+        if (! $progress || $progress->status !== 'completed') {
             return false;
         }
 
@@ -175,7 +175,7 @@ class CertificateService
                 ->where('passed', true)
                 ->exists();
 
-            if (!$passed) {
+            if (! $passed) {
                 return false;
             }
         }
@@ -195,14 +195,15 @@ class CertificateService
         $user = $progress->user;
         $article = $progress->article;
 
-        if (!$this->canIssueCertificate($user, $article)) {
+        if (! $this->canIssueCertificate($user, $article)) {
             return null;
         }
 
         try {
             return $this->generateCertificate($user, $article);
         } catch (\Exception $e) {
-            \Log::error('Failed to auto-issue certificate: ' . $e->getMessage());
+            \Log::error('Failed to auto-issue certificate: '.$e->getMessage());
+
             return null;
         }
     }

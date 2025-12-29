@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\VendorStore;
 use App\Services\VendorAnalyticsService;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class AggregateVendorAnalytics extends Command
 {
@@ -48,6 +48,7 @@ class AggregateVendorAnalytics extends Command
 
         if ($stores->isEmpty()) {
             $this->warn('No stores found to aggregate.');
+
             return 1;
         }
 
@@ -64,7 +65,7 @@ class AggregateVendorAnalytics extends Command
                 $this->analyticsService->recordDailyAnalytics($store, $date);
                 $successCount++;
             } catch (\Exception $e) {
-                $this->error("\nFailed to aggregate analytics for store {$store->id}: " . $e->getMessage());
+                $this->error("\nFailed to aggregate analytics for store {$store->id}: ".$e->getMessage());
                 $errorCount++;
             }
 
@@ -74,7 +75,7 @@ class AggregateVendorAnalytics extends Command
         $progressBar->finish();
         $this->newLine(2);
 
-        $this->info("Aggregation complete!");
+        $this->info('Aggregation complete!');
         $this->info("Success: {$successCount}");
 
         if ($errorCount > 0) {

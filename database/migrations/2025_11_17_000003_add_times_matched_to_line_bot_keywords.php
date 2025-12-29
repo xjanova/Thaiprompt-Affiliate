@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_bot_keywords มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_bot_keywords')) {
+        if (! Schema::hasTable('line_bot_keywords')) {
             return;
         }
 

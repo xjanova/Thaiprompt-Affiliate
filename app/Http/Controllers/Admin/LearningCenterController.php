@@ -18,15 +18,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class LearningCenterController extends Controller
 {
-    /**
-     * @var CourseProgressionService
-     */
     protected CourseProgressionService $progressionService;
 
     /**
      * Constructor
-     *
-     * @param CourseProgressionService $progressionService
      */
     public function __construct(CourseProgressionService $progressionService)
     {
@@ -122,7 +117,7 @@ class LearningCenterController extends Controller
     /**
      * แสดงบทความในหมวดหมู่
      *
-     * @param string $slug Slug ของหมวดหมู่
+     * @param  string  $slug  Slug ของหมวดหมู่
      * @return \Illuminate\View\View
      */
     public function category($slug)
@@ -148,7 +143,7 @@ class LearningCenterController extends Controller
                     'article' => $article,
                     'progress' => $progress,
                     'can_access' => $accessInfo['can_access'],
-                    'is_locked' => !$accessInfo['can_access'],
+                    'is_locked' => ! $accessInfo['can_access'],
                     'lock_reason' => $accessInfo['reason'],
                     'requirements' => $accessInfo['requirements'],
                     'quiz_passed' => $quizResult['passed'],
@@ -174,7 +169,7 @@ class LearningCenterController extends Controller
     /**
      * แสดงบทความ
      *
-     * @param string $slug Slug ของบทความ
+     * @param  string  $slug  Slug ของบทความ
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function article($slug)
@@ -189,7 +184,7 @@ class LearningCenterController extends Controller
         // ตรวจสอบสิทธิ์การเข้าถึง
         $accessInfo = $this->progressionService->canAccessArticle($user, $article);
 
-        if (!$accessInfo['can_access']) {
+        if (! $accessInfo['can_access']) {
             // ถ้าไม่มีสิทธิ์ แสดงหน้าแจ้งเตือน
             return view('admin.learning-center.locked', [
                 'article' => $article,
@@ -250,8 +245,7 @@ class LearningCenterController extends Controller
     /**
      * จบบทความ
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function complete(Request $request, $slug)
@@ -266,7 +260,7 @@ class LearningCenterController extends Controller
         if ($article->require_quiz_pass) {
             $quizResult = $this->progressionService->checkQuizPassForArticle($user, $article);
 
-            if (!$quizResult['passed']) {
+            if (! $quizResult['passed']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'คุณต้องผ่านแบบทดสอบก่อนจึงจะเรียนจบได้',
@@ -279,7 +273,7 @@ class LearningCenterController extends Controller
         // จบคอร์สและให้รางวัล
         $result = $this->progressionService->completeArticle($user, $article);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'],
@@ -301,8 +295,7 @@ class LearningCenterController extends Controller
     /**
      * อัพเดท progress ของบทความ
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateProgress(Request $request, $slug)
@@ -343,7 +336,7 @@ class LearningCenterController extends Controller
     /**
      * ดึงข้อมูลการเข้าถึงบทความ
      *
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function checkAccess($slug)

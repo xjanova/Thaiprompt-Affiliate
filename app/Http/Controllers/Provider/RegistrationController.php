@@ -58,7 +58,6 @@ class RegistrationController extends Controller
     /**
      * บันทึกการลงทะเบียน
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -154,7 +153,7 @@ class RegistrationController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -168,7 +167,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('info', 'คุณยังไม่ได้ลงทะเบียนเป็นผู้ให้บริการ');
         }
@@ -194,7 +193,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register');
         }
 
@@ -212,7 +211,6 @@ class RegistrationController extends Controller
     /**
      * อัพเดทข้อมูลโปรไฟล์
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateProfile(Request $request)
@@ -220,7 +218,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register');
         }
 
@@ -268,14 +266,13 @@ class RegistrationController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * อัพเดทข้อมูลบัญชีธนาคาร
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateBankInfo(Request $request)
@@ -283,7 +280,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register');
         }
 
@@ -309,7 +306,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider || $provider->verification_status !== 'approved') {
+        if (! $provider || $provider->verification_status !== 'approved') {
             return redirect()->route('provider.register');
         }
 
@@ -352,7 +349,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -371,7 +368,6 @@ class RegistrationController extends Controller
     /**
      * อัพเดทตั้งค่า Provider
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)
@@ -379,7 +375,7 @@ class RegistrationController extends Controller
         $user = auth()->user();
         $provider = ServiceProvider::where('user_id', $user->id)->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register');
         }
 
@@ -426,7 +422,7 @@ class RegistrationController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

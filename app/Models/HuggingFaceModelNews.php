@@ -138,7 +138,7 @@ class HuggingFaceModelNews extends Model
         // สร้าง slug อัตโนมัติ
         static::creating(function ($model) {
             if (empty($model->slug)) {
-                $model->slug = Str::slug($model->title) . '-' . Str::random(6);
+                $model->slug = Str::slug($model->title).'-'.Str::random(6);
             }
 
             if (empty($model->published_at) && $model->is_published) {
@@ -149,12 +149,10 @@ class HuggingFaceModelNews extends Model
 
     /**
      * ตรวจสอบว่าข่าวนี้แสดงเด่นอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isFeaturedNow(): bool
     {
-        if (!$this->is_featured) {
+        if (! $this->is_featured) {
             return false;
         }
 
@@ -167,8 +165,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * เพิ่มจำนวนการอ่าน
-     *
-     * @return void
      */
     public function incrementViews(): void
     {
@@ -177,8 +173,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * เพิ่มจำนวนการแชร์
-     *
-     * @return void
      */
     public function incrementShares(): void
     {
@@ -187,8 +181,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * เพิ่มจำนวน bookmark
-     *
-     * @return void
      */
     public function incrementBookmarks(): void
     {
@@ -197,8 +189,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * เผยแพร่ข่าว
-     *
-     * @return void
      */
     public function publish(): void
     {
@@ -209,8 +199,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * ยกเลิกการเผยแพร่
-     *
-     * @return void
      */
     public function unpublish(): void
     {
@@ -221,8 +209,7 @@ class HuggingFaceModelNews extends Model
     /**
      * ตั้งเป็นข่าวเด่น
      *
-     * @param int|null $days จำนวนวันที่แสดงเด่น
-     * @return void
+     * @param  int|null  $days  จำนวนวันที่แสดงเด่น
      */
     public function feature(?int $days = null): void
     {
@@ -237,8 +224,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * ยกเลิกข่าวเด่น
-     *
-     * @return void
      */
     public function unfeature(): void
     {
@@ -250,7 +235,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: เฉพาะข่าวที่เผยแพร่แล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublished($query)
@@ -263,7 +248,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: เฉพาะข่าวเด่น
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -278,7 +263,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: เฉพาะข่าวที่ปักหมุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePinned($query)
@@ -289,8 +274,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: ตามประเภทข่าว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -301,8 +285,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: ตามระดับความสำคัญ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $importance
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeImportant($query, string $importance = 'high')
@@ -313,8 +296,8 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: เฉพาะข่าวล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $days จำนวนวัน
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $days  จำนวนวัน
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecent($query, int $days = 7)
@@ -325,8 +308,7 @@ class HuggingFaceModelNews extends Model
     /**
      * Scope: ค้นหาข้อความ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearch($query, string $search)
@@ -341,8 +323,6 @@ class HuggingFaceModelNews extends Model
 
     /**
      * ได้รับ URL เต็ม
-     *
-     * @return string
      */
     public function getUrlAttribute(): string
     {
