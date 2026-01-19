@@ -195,13 +195,45 @@
                 // แยก path จาก URL (รองรับทั้ง full URL และ relative path)
                 $childPath = parse_url($childUrl, PHP_URL_PATH) ?? $childUrl;
                 $childPath = ltrim($childPath, '/');
+                $childPath = rtrim($childPath, '/'); // ลบ trailing slash
 
-                // ตรวจสอบ active หลายรูปแบบ
-                $currentPath = request()->path();
-                $isChildActive = $currentPath === $childPath
-                    || str_starts_with($currentPath, $childPath . '/')
-                    || (isset($child['route']) && request()->routeIs($child['route']))
-                    || (isset($child['route']) && request()->routeIs($child['route'] . '.*'));
+                // ตรวจสอบ active - ใช้ exact match เป็นหลัก
+                $currentPath = rtrim(request()->path(), '/');
+
+                // ตรวจสอบ active:
+                // 1. Exact match (path ตรงกันเป๊ะ)
+                // 2. Route match (ถ้ามี route กำหนด)
+                // 3. Child path match (current path ต้องเป็น child ของ menu path และ menu path ต้องไม่ใช่ parent ของ path อื่นใน submenu)
+                $isExactMatch = $currentPath === $childPath;
+                $isRouteMatch = isset($child['route']) && (
+                    request()->routeIs($child['route']) ||
+                    request()->routeIs($child['route'] . '.*')
+                );
+
+                // สำหรับ child path match - ตรวจสอบว่า current path เริ่มต้นด้วย child path
+                // แต่ต้องไม่ให้ parent path active เมื่ออยู่ใน child path
+                $isChildPathMatch = false;
+                if (!$isExactMatch && !$isRouteMatch && $childPath !== '') {
+                    // ตรวจสอบว่า current path เป็น child ของ menu path
+                    if (str_starts_with($currentPath, $childPath . '/')) {
+                        // ตรวจสอบว่าไม่มี submenu item อื่นที่ match ดีกว่า
+                        $hasMoreSpecificMatch = false;
+                        foreach ($submenu as $otherChild) {
+                            $otherPath = parse_url($otherChild['url'] ?? '#', PHP_URL_PATH) ?? '';
+                            $otherPath = trim($otherPath, '/');
+                            if ($otherPath !== $childPath && str_starts_with($currentPath, $otherPath)) {
+                                // ถ้า otherPath ยาวกว่า childPath แสดงว่ามี match ที่เฉพาะเจาะจงกว่า
+                                if (strlen($otherPath) > strlen($childPath)) {
+                                    $hasMoreSpecificMatch = true;
+                                    break;
+                                }
+                            }
+                        }
+                        $isChildPathMatch = !$hasMoreSpecificMatch;
+                    }
+                }
+
+                $isChildActive = $isExactMatch || $isRouteMatch || $isChildPathMatch;
             @endphp
             <a href="{{ $childUrl }}"
                @click="$store.sidebar.closeOnMenuClick()"
