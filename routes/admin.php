@@ -3770,3 +3770,8 @@ Route::prefix('developers')->name('developers.')->group(function () {
 // Sidebar Footer (Iframe Component)
 Route::get("/sidebar/footer", [SidebarFooterController::class, "index"])->name("sidebar.footer");
 Route::post("/sidebar/footer/reload", [SidebarFooterController::class, "reload"])->name("sidebar.footer.reload");
+
+// Debug: Iframe Navigation Test (Development Only)
+Route::get('/debug-iframe', function() {
+    return view('admin.debug-iframe');
+})->name('debug.iframe');
