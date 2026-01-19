@@ -762,6 +762,69 @@
             </div>
         </div>
 
+        {{-- Central AI - ระบบจัดการ AI รวมศูนย์ (Ollama + PostXAgent) 🧠 --}}
+        @php $centralAiActive = request()->routeIs('admin.central-ai.*'); @endphp
+        <div class="space-y-1"
+             data-menu-active="{{ $centralAiActive ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             x-data="{ centralAiOpen: {{ $centralAiActive ? 'true' : 'false' }} }">
+            {{-- Central AI Header Button --}}
+            <button @click="centralAiOpen = !centralAiOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ $centralAiActive ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-brain w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Central AI</span>
+                @if(!$centralAiActive)
+                <span x-show="$store.sidebar.shouldExpand" class="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-blue-500 to-purple-600 rounded-full">NEW</span>
+                @endif
+                <i x-show="$store.sidebar.shouldExpand && centralAiOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !centralAiOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Central AI Submenu --}}
+            <div x-show="centralAiOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Dashboard --}}
+                <a href="{{ route('admin.central-ai.dashboard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.central-ai.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                </a>
+
+                {{-- Setup Wizard --}}
+                <a href="{{ route('admin.central-ai.wizard') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.central-ai.wizard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.wizard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-magic w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Setup Wizard</span>
+                </a>
+
+                {{-- Ollama Management --}}
+                <a href="{{ route('admin.central-ai.ollama.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.central-ai.ollama.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.ollama.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-robot w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Ollama Management</span>
+                </a>
+
+                {{-- Settings --}}
+                <a href="{{ route('admin.central-ai.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.central-ai.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.central-ai.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Settings</span>
+                </a>
+            </div>
+        </div>
+
         {{-- AI Core - ระบบควบคุม AI แบบรวมศูนย์ 🆕 --}}
         @php $aiCoreActive = request()->routeIs('admin.ai-core.*'); @endphp
         <div class="space-y-1"
