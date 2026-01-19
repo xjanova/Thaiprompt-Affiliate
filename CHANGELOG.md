@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.426.0] - 2026-01-19
+
+### ✨ Features
+- feat: activate iframe navigation system for admin panel (da596251)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2401 from xjanova/claude/admin-panel-bot-setup-qf5bq (872367f0)
+- docs: อัพเดทเอกสารสำหรับฟีเจอร์ใหม่ (Iframe Navigation, Central AI, Sidebar Footer) (a7a6b6f6)
+
 ## [v3.425.0] - 2026-01-19
 
 ### ✨ Features
