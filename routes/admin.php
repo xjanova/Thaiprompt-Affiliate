@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
 use App\Http\Controllers\Admin\CentralAiController;
+use App\Http\Controllers\Admin\SidebarFooterController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
@@ -3764,3 +3765,8 @@ Route::prefix('developers')->name('developers.')->group(function () {
     Route::delete('/{developer}', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'destroy'])
         ->name('destroy');
 });
+
+
+// Sidebar Footer (Iframe Component)
+Route::get("/sidebar/footer", [SidebarFooterController::class, "index"])->name("sidebar.footer");
+Route::post("/sidebar/footer/reload", [SidebarFooterController::class, "reload"])->name("sidebar.footer.reload");
