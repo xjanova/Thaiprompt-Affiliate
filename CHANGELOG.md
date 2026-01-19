@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.425.0] - 2026-01-19
+
+### ✨ Features
+- feat: add sidebar footer iframe component for seamless updates (e05b6006)
+- feat: add seamless iframe navigation system for admin panel (d8a609ba)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2400 from xjanova/claude/admin-panel-bot-setup-qf5bq (367c1a3e)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (8c12b7c1)
+
 ## [v3.424.3] - 2026-01-19
 
 ### ✨ Features
