@@ -232,8 +232,8 @@ Alpine.store('sidebar', {
     },
 
     /**
-     * Step 1: Scroll ไปที่ parent menu ที่ active ก่อน
-     * Parent menu จะมองเห็นเสมอ (ไม่อยู่ใน collapsed area)
+     * Step 1: Scroll ไปที่ parent menu หรือ menu item ที่ active ก่อน
+     * เมนูหลักจะมองเห็นเสมอ (ไม่อยู่ใน collapsed area)
      */
     _scrollStep1_ToParent() {
         const nav = this._navElement || document.querySelector('[data-sidebar-nav]');
@@ -242,41 +242,59 @@ Alpine.store('sidebar', {
             return;
         }
 
-        // หา parent menu ที่ active
-        const activeParent = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
+        // หา active element - ลำดับความสำคัญ:
+        // 1. Parent menu (มี submenu)
+        // 2. Single menu item (ไม่มี submenu)
+        let activeMainMenu = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
 
-        if (activeParent) {
-            // ตรวจสอบว่า parent อยู่นอก viewport หรือไม่
+        if (!activeMainMenu) {
+            // หาเมนูหลักที่ไม่มี submenu (type="item")
+            activeMainMenu = nav.querySelector('[data-menu-active="true"][data-menu-type="item"]');
+        }
+
+        if (activeMainMenu) {
+            // ตรวจสอบว่า element อยู่นอก viewport หรือไม่
             const navRect = nav.getBoundingClientRect();
-            const parentRect = activeParent.getBoundingClientRect();
+            const menuRect = activeMainMenu.getBoundingClientRect();
 
-            // ถ้า parent อยู่นอก viewport ของ nav → scroll ไปหา
-            if (parentRect.top < navRect.top || parentRect.bottom > navRect.bottom) {
-                this._scrollToElement(nav, activeParent);
-                console.log('[Sidebar] Step 1: Scrolled to parent menu');
+            // ถ้า element อยู่นอก viewport ของ nav → scroll ไปหา
+            if (menuRect.top < navRect.top || menuRect.bottom > navRect.bottom) {
+                this._scrollToElement(nav, activeMainMenu);
+                console.log('[Sidebar] Step 1: Scrolled to main menu');
             }
 
-            // Step 2: รอ submenu expand แล้วค่อย scroll ไปที่ submenu item
-            setTimeout(() => {
-                this._scrollStep2_ToSubmenuItem(nav);
-            }, 400); // รอ x-collapse animation เสร็จ
+            // ถ้าเป็น parent menu (มี submenu) → รอ submenu expand แล้วค่อย scroll ไปที่ submenu item
+            if (activeMainMenu.getAttribute('data-menu-type') === 'parent') {
+                setTimeout(() => {
+                    this._scrollStep2_ToSubmenuItem(nav);
+                }, 400); // รอ x-collapse animation เสร็จ
+            }
+            // ถ้าเป็น single item → จบเลย ไม่ต้องหา submenu
         } else {
-            // ไม่มี parent ที่ active → ลองหา submenu item โดยตรง
+            // ไม่มี main menu ที่ active → ลองหา submenu item โดยตรง
             this._scrollStep2_ToSubmenuItem(nav);
         }
     },
 
     /**
-     * Step 2: Scroll ไปที่ submenu item ที่ active
-     * เรียกหลังจาก submenu expand แล้ว
+     * Step 2: Scroll ไปที่ active element (submenu item, parent, หรือ single item)
+     * เรียกหลังจาก submenu expand แล้ว (ถ้ามี submenu)
      */
     _scrollStep2_ToSubmenuItem(nav, retryCount = 0) {
-        const maxRetries = 8; // เพิ่ม retry เพราะ animation อาจใช้เวลา
+        const maxRetries = 8;
 
-        // หา submenu item ที่ active
+        // หา active element - ลำดับความสำคัญ:
+        // 1. Submenu item (ในเมนูที่มี submenu)
+        // 2. Single menu item (เมนูหลักที่ไม่มี submenu)
+        // 3. Parent menu (fallback)
         let activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
 
-        // Fallback: หาจาก CSS class (สำหรับ hardcoded menus)
+        // Fallback 1: หา single menu item
+        if (!activeElement) {
+            activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="item"]');
+        }
+
+        // Fallback 2: หาจาก CSS class (สำหรับ hardcoded menus)
         if (!activeElement) {
             const allAnchors = nav.querySelectorAll('a');
             for (const anchor of allAnchors) {
@@ -287,7 +305,7 @@ Alpine.store('sidebar', {
             }
         }
 
-        // ถ้ายังไม่เจอ submenu item → ลองหา parent แทน
+        // Fallback 3: หา parent menu
         if (!activeElement) {
             activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
         }
@@ -308,7 +326,7 @@ Alpine.store('sidebar', {
 
         // Scroll ไปที่ element
         this._scrollToElement(nav, activeElement);
-        console.log('[Sidebar] Step 2: Scrolled to active item:', activeElement.textContent?.trim().substring(0, 30));
+        console.log('[Sidebar] Step 2: Scrolled to:', activeElement.textContent?.trim().substring(0, 30));
     },
 
     /**
