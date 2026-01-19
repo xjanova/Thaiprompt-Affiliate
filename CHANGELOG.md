@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.421.1] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2387 from xjanova/claude/add-barcode-label-printing-Dy1xJ (4c5816dd)
+- feat(pos): add professional canvas-style drag & drop with 8-point resize and rotation (28a4793e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/add-barcode-label-printing-Dy1xJ (6871fb20)
+
 ## [v3.421.0] - 2026-01-19
 
 ### ✨ Features
