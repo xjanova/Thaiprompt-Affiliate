@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.421.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2389 from xjanova/claude/resolve-merge-conflicts-WsCgV (6f7b82bb)
+- style: sort use statements alphabetically in routes/admin.php (b739df64)
+
 ## [v3.421.1] - 2026-01-19
 
 ### ✨ Features
