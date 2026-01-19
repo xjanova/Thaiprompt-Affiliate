@@ -234,10 +234,14 @@ Alpine.store('sidebar', {
 
     /**
      * ทำการ scroll จริง (internal method)
+     * ใช้ scrollTop ของ nav container โดยตรงเพื่อไม่ให้ scroll ทั้งหน้า
      */
     _performScroll() {
         const nav = this._navElement || document.querySelector('[data-sidebar-nav]');
-        if (!nav) return;
+        if (!nav) {
+            console.warn('[Sidebar] ไม่พบ nav element สำหรับ scroll');
+            return;
+        }
 
         // หาเมนูที่ active (ลำดับความสำคัญ: submenu item > parent menu > any active)
         const activeSubmenuItem = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
@@ -247,12 +251,24 @@ Alpine.store('sidebar', {
         const activeElement = activeSubmenuItem || activeParentMenu || anyActiveItem;
 
         if (activeElement) {
-            // ใช้ scrollIntoView แทนการคำนวณเอง เพื่อความแม่นยำ
-            activeElement.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'nearest'
+            // คำนวณตำแหน่งสัมพัทธ์ของ activeElement ภายใน nav container
+            const navRect = nav.getBoundingClientRect();
+            const elementRect = activeElement.getBoundingClientRect();
+
+            // คำนวณตำแหน่งที่ต้อง scroll ให้ element อยู่กลาง nav
+            const elementOffsetTop = elementRect.top - navRect.top + nav.scrollTop;
+            const navVisibleHeight = nav.clientHeight;
+            const targetScrollTop = elementOffsetTop - (navVisibleHeight / 2) + (elementRect.height / 2);
+
+            // Scroll ภายใน nav container (ไม่กระทบหน้าหลัก)
+            nav.scrollTo({
+                top: Math.max(0, targetScrollTop),
+                behavior: 'smooth'
             });
+
+            console.log('[Sidebar] Scroll to active menu:', activeElement.getAttribute('data-menu-key') || 'unknown');
+        } else {
+            console.log('[Sidebar] ไม่พบเมนูที่ active');
         }
     },
 
