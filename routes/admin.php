@@ -3775,3 +3775,8 @@ Route::post("/sidebar/footer/reload", [SidebarFooterController::class, "reload"]
 Route::get('/debug-iframe', function() {
     return view('admin.debug-iframe');
 })->name('debug.iframe');
+
+// Two-Iframe System Routes
+Route::get('/sidebar', function() {
+    return view('admin.sidebar-only');
+})->name('sidebar');
