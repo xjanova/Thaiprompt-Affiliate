@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.427.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add missing dependencies for navbar-v3 to work properly (4db446e9)
+- fix: resolve double sidebar/navbar by implementing iframe mode detection (7174d805)
+### 🔧 Other Changes
+- Merge pull request #2406 from xjanova/claude/admin-panel-bot-setup-qf5bq (a3408204)
+
 ## [v3.427.0] - 2026-01-19
 
 ### ✨ Features
