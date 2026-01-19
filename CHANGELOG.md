@@ -5,6 +5,25 @@
 ## [v3.424.3] - 2026-01-19
 
 ### ✨ Features
+- **Iframe Navigation System** - ระบบนำทางแบบ seamless ด้วย iframe (60-80% เร็วขึ้น)
+  - Fixed sidebar และ navbar ไม่โหลดซ้ำ
+  - Layout: admin-iframe.blade.php และ admin-content-only.blade.php
+  - DetectIframeMode middleware สำหรับ auto-detect iframe mode
+  - History API integration สำหรับ URL syncing
+  - PostMessage communication ระหว่าง iframe และ parent
+  - Loading overlay และ skeleton screens
+- **Central AI Management System** - ระบบจัดการ AI แบบรวมศูนย์
+  - Setup Wizard สำหรับติดตั้ง Ollama และ PostXAgent
+  - Dashboard สำหรับควบคุมและติดตามระบบ
+  - Ollama Management (start/stop/restart/download models)
+  - System resources monitoring
+  - CentralAiMenuSeeder สำหรับ database-driven menu
+- **Sidebar Footer Iframe Component** - Footer แบบ dynamic
+  - Auto-refresh ทุก 5 นาที
+  - Real-time license status
+  - Version badge
+  - 3D logo animation
+  - Compact/Full mode support
 
 ### 🐛 Bug Fixes
 
