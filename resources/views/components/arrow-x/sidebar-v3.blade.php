@@ -64,13 +64,12 @@
     @mouseleave="$store.sidebar.setHovered(false)"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0
-           transform md:transform-none"
+           w-64 -translate-x-full md:translate-x-0"
     :class="{
         'translate-x-0': $store.sidebar.shouldShow,
         '-translate-x-full': !$store.sidebar.shouldShow
     }"
     :style="'width: ' + $store.sidebar.sidebarWidth + 'px'"
-    x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
