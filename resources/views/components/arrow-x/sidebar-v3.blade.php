@@ -332,6 +332,8 @@
         {{-- Marketplace Affiliate (Collapsible Menu) 🛒 --}}
         @if($type === 'admin')
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.marketplace.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
              x-data="{ marketplaceOpen: {{ request()->routeIs('admin.marketplace.*') ? 'true' : 'false' }} }">
             {{-- Marketplace Header Button --}}
             <button @click="marketplaceOpen = !marketplaceOpen"
@@ -348,6 +350,8 @@
                 {{-- บัญชี Marketplace 🔑 --}}
                 <a href="{{ route('admin.marketplace.accounts.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.marketplace.accounts.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.accounts.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-key w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บัญชี API</span>
@@ -356,6 +360,8 @@
                 {{-- สินค้า Marketplace 📦 --}}
                 <a href="{{ route('admin.marketplace.products.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.marketplace.products.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.products.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-boxes w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สินค้า</span>
@@ -364,6 +370,8 @@
                 {{-- ออเดอร์ 🛒 --}}
                 <a href="{{ route('admin.marketplace.orders.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.marketplace.orders.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.orders.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-shopping-bag w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ออเดอร์</span>
@@ -372,6 +380,8 @@
                 {{-- คอมมิชชั่น 💰 --}}
                 <a href="{{ route('admin.marketplace.commissions.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.marketplace.commissions.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.marketplace.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-coins w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
@@ -382,6 +392,8 @@
 
         {{-- LINE Membership Signup (Collapsible Menu) 🤖 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
              x-data="{ lineSignupOpen: {{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }} }">
             {{-- LINE Signup Header Button --}}
             <button @click="lineSignupOpen = !lineSignupOpen"
@@ -398,6 +410,8 @@
                 {{-- Dashboard 📊 --}}
                 <a href="{{ route('admin.line-membership-signup.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -406,6 +420,8 @@
                 {{-- Sessions 💬 --}}
                 <a href="{{ route('admin.line-membership-signup.sessions') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.sessions*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.sessions*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comments w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Sessions</span>
@@ -414,6 +430,8 @@
                 {{-- Templates 📝 --}}
                 <a href="{{ route('admin.line-membership-signup.templates') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.templates*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.templates*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-file-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
@@ -422,6 +440,8 @@
                 {{-- Rewards 🎁 --}}
                 <a href="{{ route('admin.line-membership-signup.rewards.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.rewards.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.rewards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-gift w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rewards</span>
@@ -430,15 +450,20 @@
                 {{-- Invitations 📧 --}}
                 <a href="{{ route('admin.line-membership-signup.invitations') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.invitations') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.invitations') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-envelope-open-text w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Invitations</span>
                 </a>
 
                 {{-- Settings ⚙️ --}}
+                @php $lineSettingsActive = request()->routeIs('admin.line-oa.index') && request()->query('tab') === 'membership'; @endphp
                 <a href="{{ route('admin.line-oa.index', ['tab' => 'membership']) }}"
                    @click="$store.sidebar.closeOnMenuClick()"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.index') && request()->query('tab') === 'membership' ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                   data-menu-active="{{ $lineSettingsActive ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ $lineSettingsActive ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Settings</span>
                 </a>
@@ -446,8 +471,13 @@
         </div>
 
         {{-- Wallet & Finance (Collapsible Menu) 💰 --}}
+        @php
+            $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.cashback.*') || request()->routeIs('admin.investments.*') || request()->routeIs('admin.nfc-*');
+        @endphp
         <div class="space-y-1"
-             x-data="{ walletOpen: {{ request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.cashback.*') || request()->routeIs('admin.investments.*') || request()->routeIs('admin.nfc-*') ? 'true' : 'false' }} }">
+             data-menu-active="{{ $walletActive ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             x-data="{ walletOpen: {{ $walletActive ? 'true' : 'false' }} }">
             {{-- Wallet Header Button --}}
             <button @click="walletOpen = !walletOpen"
                     type="button"
