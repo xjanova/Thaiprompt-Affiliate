@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.427.0] - 2026-01-19
+
+### ✨ Features
+- feat: implement simplified iframe navigation system (6f338441)
+- feat: implement true two-iframe system (simple & works!) (ff594fc1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2405 from xjanova/claude/admin-panel-bot-setup-qf5bq (a1425d1c)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (e5fb8cbc)
+- build: compile Vite assets after npm install (cc785f3e)
+
 ## [v3.426.3] - 2026-01-19
 
 ### ✨ Features
