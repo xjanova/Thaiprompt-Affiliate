@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.424.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2397 from xjanova/claude/review-code-improvements-E1Tzp (cf5f7953)
+- fix: ปรับปรุง scroll-to-active ให้ scroll เสมอเมื่อพบ active menu (v7) (3efaf5de)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (9f016a2a)
+
 ## [v3.424.0] - 2026-01-19
 
 ### ✨ Features
