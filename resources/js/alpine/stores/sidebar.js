@@ -225,10 +225,13 @@ Alpine.store('sidebar', {
      * 2. รอ animation เสร็จ แล้วค่อย scroll ไปที่ submenu item
      */
     scrollToActiveMenu() {
-        // รอให้ DOM render เสร็จก่อน
+        console.log('[Sidebar] scrollToActiveMenu() called, รอ 300ms ก่อน...');
+
+        // รอให้ DOM render เสร็จก่อน (เพิ่มเป็น 300ms)
         setTimeout(() => {
+            console.log('[Sidebar] เริ่ม _scrollStep1_ToParent()...');
             this._scrollStep1_ToParent();
-        }, 200);
+        }, 300);
     },
 
     /**
@@ -243,6 +246,14 @@ Alpine.store('sidebar', {
         }
 
         console.log('[Sidebar] Step 1: เริ่มค้นหา active menu...');
+
+        // Debug: ตรวจสอบว่า nav สามารถ scroll ได้หรือไม่
+        const canScroll = nav.scrollHeight > nav.clientHeight;
+        console.log('[Sidebar] Nav scrollable:', canScroll, '| scrollHeight:', nav.scrollHeight, '| clientHeight:', nav.clientHeight);
+
+        // Debug: แสดงจำนวน elements ทั้งหมดที่มี data-menu-type
+        const allMenuItems = nav.querySelectorAll('[data-menu-type]');
+        console.log('[Sidebar] พบ menu items ทั้งหมด (มี data-menu-type):', allMenuItems.length);
 
         // Debug: แสดงจำนวน elements ที่มี data-menu-active
         const allActiveItems = nav.querySelectorAll('[data-menu-active="true"]');
