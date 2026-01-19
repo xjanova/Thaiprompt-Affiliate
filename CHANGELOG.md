@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.424.0] - 2026-01-19
+
+### ✨ Features
+- feat: เพิ่มเมนู Central AI ใน Admin sidebar (bddde649)
+### 🐛 Bug Fixes
+- fix: เพิ่ม data-menu-active attributes ให้ AI Core menu (v6) (b615b92d)
+- fix: เพิ่มการรองรับเมนูหลักที่ไม่มี submenu ใน scroll-to-active (v5) (db9a2b64)
+### 🔧 Other Changes
+- Merge pull request #2396 from xjanova/claude/review-code-improvements-E1Tzp (2c57f93f)
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (a6388215)
+
 ## [v3.423.3] - 2026-01-19
 
 ### ✨ Features
