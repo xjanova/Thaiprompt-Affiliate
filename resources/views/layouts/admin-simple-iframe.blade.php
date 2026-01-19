@@ -192,9 +192,22 @@
             </div>
 
             {{-- Content Iframe --}}
+            @php
+                // สร้าง iframe URL จาก current URL + ?iframe=1
+                $currentPath = request()->path();
+                $queryString = request()->getQueryString();
+
+                // ลบ ?iframe=1 ออกก่อน (ถ้ามี)
+                $queryString = preg_replace('/([&?])iframe=1(&|$)/', '$1', $queryString);
+                $queryString = trim($queryString, '&?');
+
+                // สร้าง URL ใหม่
+                $iframeUrl = '/' . $currentPath;
+                $iframeUrl .= $queryString ? '?' . $queryString . '&iframe=1' : '?iframe=1';
+            @endphp
             <iframe
                 id="content-iframe"
-                src="{{ route('admin.dashboard') }}?iframe=1"
+                src="{{ $iframeUrl }}"
                 title="Content">
             </iframe>
         </div>
