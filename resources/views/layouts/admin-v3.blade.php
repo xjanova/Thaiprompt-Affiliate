@@ -1,4 +1,13 @@
-@if($isIframeMode ?? false)
+@php
+    /**
+     * ตรวจสอบว่าเป็น iframe mode หรือไม่
+     * ถ้ามี ?iframe=1 → แสดงเฉพาะ content (ไม่มี sidebar/navbar)
+     * ถ้าไม่มี → แสดง parent layout (sidebar + navbar + iframe)
+     */
+    $isIframeMode = request()->query('iframe') === '1';
+@endphp
+
+@if($isIframeMode)
     {{-- ========================================
          IFRAME MODE: Content Only
          คัดลอกทั้งหมดจาก admin-content-only.blade.php
@@ -389,7 +398,7 @@
         </div>
 
         {{-- Sidebar Component with Iframe Navigation --}}
-        <x-arrow-x.sidebar-v3 :iframe-mode="true" />
+        <x-arrow-x.sidebar-v3 :iframe-mode="false" />
 
         {{-- Main Content Area with Iframe --}}
         <div class="flex flex-col flex-1 h-full overflow-hidden">
@@ -421,6 +430,7 @@
                 <iframe
                     id="content-iframe"
                     name="content-frame"
+                    src="{{ route('admin.dashboard') }}?iframe=1"
                     :src="currentUrl"
                     @load="handleIframeLoad()"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
