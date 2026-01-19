@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.424.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2398 from xjanova/claude/review-code-improvements-E1Tzp (2943f8d1)
+- debug: เพิ่ม debug logs เพิ่มเติมและเพิ่ม delay เป็น 300ms (084a4efb)
+- debug: เพิ่ม console.log เพื่อ debug scroll-to-active สำหรับ single menu items (e97d50c9)
+
 ## [v3.424.1] - 2026-01-19
 
 ### ✨ Features
