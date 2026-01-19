@@ -1115,6 +1115,7 @@ Route::prefix('central-ai')->name('central-ai.')->group(function () {
 
     // Ollama Management
     Route::prefix('ollama')->name('ollama.')->group(function () {
+        Route::get('/', [CentralAiController::class, 'ollamaIndex'])->name('index');
         Route::get('/status', [CentralAiController::class, 'checkOllamaStatus'])->name('status');
         Route::post('/install', [CentralAiController::class, 'installOllama'])->name('install');
         Route::post('/start', [CentralAiController::class, 'startOllama'])->name('start');
