@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.428.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2410 from xjanova/claude/fix-right-panel-display-0EDFE (71eba15d)
+- fix: resolve right panel iframe not displaying content in Dashboard (856f3527)
+### 🔧 Other Changes
+
+
 ## [v3.428.2] - 2026-01-19
 
 ### ✨ Features
