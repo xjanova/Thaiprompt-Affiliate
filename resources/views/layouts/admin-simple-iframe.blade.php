@@ -26,11 +26,43 @@
         @endphp
         <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
 
+        {{-- Google Fonts --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+        {{-- Font Awesome 6.5.1 --}}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
         {{-- Vite Assets --}}
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         {{-- Arrow X Theme Styles --}}
         <x-arrow-x.theme-styles />
+
+        {{-- Alpine.js CDN Fallback (เผื่อ Vite ไม่โหลด) --}}
+        <script>
+            window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    if (typeof Alpine === 'undefined') {
+                        console.warn('⚠️ Alpine.js not loaded from Vite, loading from CDN...');
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js';
+                        script.defer = true;
+                        script.onload = function() {
+                            console.log('✅ Alpine.js loaded from CDN');
+                            window.dispatchEvent(new Event('alpine:init'));
+                        };
+                        script.onerror = function() {
+                            console.error('❌ Failed to load Alpine.js from CDN');
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        console.log('✅ Alpine.js loaded from Vite');
+                    }
+                }, 1000);
+            });
+        </script>
 
         @stack('styles')
 
@@ -68,13 +100,52 @@
         @endphp
         <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
 
+        {{-- Google Fonts --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+        {{-- Font Awesome 6.5.1 --}}
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
         {{-- Vite Assets --}}
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         {{-- Arrow X Theme Styles --}}
         <x-arrow-x.theme-styles />
 
+        {{-- Alpine.js CDN Fallback (เผื่อ Vite ไม่โหลด) --}}
+        <script>
+            window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    if (typeof Alpine === 'undefined') {
+                        console.warn('⚠️ Alpine.js not loaded from Vite, loading from CDN...');
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js';
+                        script.defer = true;
+                        script.onload = function() {
+                            console.log('✅ Alpine.js loaded from CDN');
+                            window.dispatchEvent(new Event('alpine:init'));
+                        };
+                        script.onerror = function() {
+                            console.error('❌ Failed to load Alpine.js from CDN');
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        console.log('✅ Alpine.js loaded from Vite');
+                    }
+                }, 1000);
+            });
+        </script>
+
+        @stack('styles')
+
     <style>
+        /* Alpine.js x-cloak */
+        [x-cloak] {
+            display: none !important;
+        }
+
         /* Content Iframe - Seamless */
         #content-iframe {
             border: none;
