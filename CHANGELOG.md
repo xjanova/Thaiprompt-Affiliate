@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.426.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2404 from xjanova/claude/admin-panel-bot-setup-qf5bq (4f1bd847)
+- fix: add Alpine.js CDN fallback and retry mechanism (215673de)
+### 🔧 Other Changes
+
+
 ## [v3.426.2] - 2026-01-19
 
 ### ✨ Features
