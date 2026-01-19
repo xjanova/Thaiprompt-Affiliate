@@ -2,6 +2,128 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.421.0] - 2026-01-19
+
+### ✨ Features
+- feat: add Central AI menu and dashboard views (1718322f)
+- feat: add Central AI management system for Ollama control (0432ae4b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2386 from xjanova/claude/admin-panel-bot-setup-qf5bq (c55383ed)
+
+## [v3.420.12] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2385 from xjanova/claude/add-barcode-label-printing-Dy1xJ (e66faeb3)
+- feat(pos): add zoom in/out controls to label designer (2b1282a9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.420.11] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2384 from xjanova/claude/add-barcode-label-printing-Dy1xJ (81e55ef8)
+- fix(pos): fix 'Undefined constant' error in JavaScript placeholders (6701d0ce)
+### 🔧 Other Changes
+
+
+## [v3.420.10] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(pos): fix ParseError in seller label designer blade syntax (778dbec0)
+- fix(pos): fix remaining ParseError in designer placeholders (d4bc5a92)
+### 🔧 Other Changes
+- Merge pull request #2383 from xjanova/claude/add-barcode-label-printing-Dy1xJ (adc09278)
+
+## [v3.420.9] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2382 from xjanova/claude/add-barcode-label-printing-Dy1xJ (ba6731a7)
+- fix(pos): fix ParseError in label designer blade syntax (8dbb7b7d)
+### 🔧 Other Changes
+
+
+## [v3.420.8] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2381 from xjanova/claude/add-barcode-label-printing-Dy1xJ (0f52baeb)
+- feat(pos): add template designer buttons to main labels page (cf95009f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.420.7] - 2025-12-26
+
+### ✨ Features
+- feat(pos): add EPIC drag & drop label designer! 🎨🚀 (2edd6c86)
+- feat(pos): add template creation page with live preview (31473645)
+- feat(pos): add templates list page with stats and actions (55cb8f87)
+- feat(pos): add template management routes and controller methods (fdd51207)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2380 from xjanova/claude/add-barcode-label-printing-Dy1xJ (7cc5d1ba)
+
+## [v3.420.6] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2379 from xjanova/claude/add-barcode-label-printing-Dy1xJ (141ab72e)
+- feat(pos): add complete preview and print system for barcode labels (09b1fa18)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.420.5] - 2025-12-26
+
+### ✨ Features
+- Merge pull request #2378 from xjanova/claude/add-barcode-label-printing-Dy1xJ (0f9fc72f)
+- feat(pos): add product list with pagination and auto-load for barcode label printing (8c1aa353)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.420.4] - 2025-12-26
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2377 from xjanova/claude/add-barcode-label-printing-Dy1xJ (a9c84cea)
+- fix(pos): resolve product visibility issues - admin sees all, seller sees own store (8792840e)
+### 🔧 Other Changes
+
+
+## [v3.420.3] - 2025-12-26
+
+### ✨ Features
+- feat(pos): add barcode label printing menus and seller support (7c3c6e80)
+### 🐛 Bug Fixes
+- fix(pos): filter products correctly for admin (premium) and seller (own store) (948b9885)
+### 🔧 Other Changes
+- Merge pull request #2376 from xjanova/claude/add-barcode-label-printing-Dy1xJ (00607b47)
+
+## [v3.420.2] - 2025-12-26
+
+### ✨ Features
+- feat(pos): add views for barcode label printing system (Phase 3) (362d5c76)
+- feat(pos): add routes and templates for barcode label printing (Phase 2) (2e9d179b)
+- feat(pos): add barcode label printing system (Phase 1 - Core) (8d40f9a5)
+### 🐛 Bug Fixes
+- fix(pos): add barcode field to products table and update label printing (1f63812d)
+### 🔧 Other Changes
+- Merge pull request #2375 from xjanova/claude/add-barcode-label-printing-Dy1xJ (6dc7ccca)
+
 ## [v3.420.1] - 2025-12-26
 
 ### ✨ Features

@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\LineRecruitmentController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
+use App\Http\Controllers\Admin\CentralAiController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
@@ -1101,6 +1102,40 @@ Route::prefix('ai-core')->name('ai-core.')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Admin\AICoreController::class, 'settings'])->name('settings.index');
     Route::post('/settings', [\App\Http\Controllers\Admin\AICoreController::class, 'updateSettings'])->name('settings.update');
 });
+
+// Central AI Management (Ollama + PostXAgent)
+Route::prefix('central-ai')->name('central-ai.')->group(function () {
+    // Main index (แสดง Wizard หรือ Dashboard)
+    Route::get('/', [CentralAiController::class, 'index'])->name('index');
+    Route::get('/wizard', [CentralAiController::class, 'wizard'])->name('wizard');
+    Route::get('/dashboard', [CentralAiController::class, 'dashboard'])->name('dashboard');
+
+    // System Resources
+    Route::get('/system/resources', [CentralAiController::class, 'checkSystemResources'])->name('system.resources');
+
+    // Ollama Management
+    Route::prefix('ollama')->name('ollama.')->group(function () {
+        Route::get('/status', [CentralAiController::class, 'checkOllamaStatus'])->name('status');
+        Route::post('/install', [CentralAiController::class, 'installOllama'])->name('install');
+        Route::post('/start', [CentralAiController::class, 'startOllama'])->name('start');
+        Route::post('/stop', [CentralAiController::class, 'stopOllama'])->name('stop');
+        Route::post('/restart', [CentralAiController::class, 'restartOllama'])->name('restart');
+        Route::post('/download-model', [CentralAiController::class, 'downloadModel'])->name('download-model');
+    });
+
+    // PostXAgent Management
+    Route::prefix('postxagent')->name('postxagent.')->group(function () {
+        Route::get('/status', [CentralAiController::class, 'checkPostXAgentStatus'])->name('status');
+    });
+
+    // Settings
+    Route::post('/settings', [CentralAiController::class, 'saveSettings'])->name('settings.save');
+    Route::post('/setup/complete', [CentralAiController::class, 'completeSetup'])->name('setup.complete');
+
+    // Health Check
+    Route::get('/health-check', [CentralAiController::class, 'performHealthCheck'])->name('health-check');
+});
+
 
 // AI Installation & Management
 Route::prefix('ai-installation')->name('ai-installation.')->group(function () {

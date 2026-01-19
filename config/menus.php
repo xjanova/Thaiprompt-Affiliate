@@ -113,6 +113,23 @@ return [
         ],
 
         [
+            'id' => 'central-ai',
+            'label' => 'Central AI',
+            'icon' => '🧠',
+            'route' => null,
+            'order' => 4.2,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-600',
+            'submenu' => [
+                ['label' => '🎯 Dashboard', 'route' => 'admin.central-ai.dashboard', 'description' => 'ควบคุมและติดตามระบบ'],
+                ['label' => '🔧 Setup Wizard', 'route' => 'admin.central-ai.wizard', 'description' => 'ติดตั้งและตั้งค่า'],
+                ['label' => '🤖 Ollama Management', 'route' => 'admin.central-ai.ollama.status', 'description' => 'จัดการ Ollama Service'],
+                ['label' => '⚙️ Settings', 'route' => 'admin.central-ai.index', 'description' => 'ตั้งค่าระบบ'],
+            ],
+        ],
+
+        [
             'id' => 'chatbot',
             'label' => 'ระบบบอทแชท',
             'icon' => '💬',
