@@ -16,12 +16,12 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CYhK05Ar.css",
+    "file": "assets/app-DdO67aBs.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BSa5moj9.js",
+    "file": "assets/app-C0MU4YWl.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

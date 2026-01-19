@@ -2,6 +2,137 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.424.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2399 from xjanova/claude/review-code-improvements-E1Tzp (29bef085)
+- refactor: ปรับปรุง scroll-to-active เป็น V8 - ง่ายและเชื่อถือได้มากขึ้น (814cde11)
+
+## [v3.424.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2398 from xjanova/claude/review-code-improvements-E1Tzp (2943f8d1)
+- debug: เพิ่ม debug logs เพิ่มเติมและเพิ่ม delay เป็น 300ms (084a4efb)
+- debug: เพิ่ม console.log เพื่อ debug scroll-to-active สำหรับ single menu items (e97d50c9)
+
+## [v3.424.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2397 from xjanova/claude/review-code-improvements-E1Tzp (cf5f7953)
+- fix: ปรับปรุง scroll-to-active ให้ scroll เสมอเมื่อพบ active menu (v7) (3efaf5de)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (9f016a2a)
+
+## [v3.424.0] - 2026-01-19
+
+### ✨ Features
+- feat: เพิ่มเมนู Central AI ใน Admin sidebar (bddde649)
+### 🐛 Bug Fixes
+- fix: เพิ่ม data-menu-active attributes ให้ AI Core menu (v6) (b615b92d)
+- fix: เพิ่มการรองรับเมนูหลักที่ไม่มี submenu ใน scroll-to-active (v5) (db9a2b64)
+### 🔧 Other Changes
+- Merge pull request #2396 from xjanova/claude/review-code-improvements-E1Tzp (2c57f93f)
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (a6388215)
+
+## [v3.423.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: ปรับปรุง scroll-to-active ด้วย 2-step approach (v4) (01f2d85e)
+- fix: ปรับปรุง scroll-to-active และเพิ่ม data attributes (v3) (68851b28)
+### 🔧 Other Changes
+- Merge pull request #2395 from xjanova/claude/review-code-improvements-E1Tzp (44077863)
+
+## [v3.423.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2394 from xjanova/claude/review-code-improvements-E1Tzp (5ac4fc79)
+- fix: ปรับปรุง submenu active detection และ scroll-to-active (v2) (e49e91b2)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (9640f962)
+
+## [v3.423.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2393 from xjanova/claude/review-code-improvements-E1Tzp (2cf647cd)
+- fix: ปรับปรุง submenu active detection และ scroll-to-active (c60109f9)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-code-improvements-E1Tzp (bbab1f89)
+
+## [v3.423.0] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2392 from xjanova/claude/admin-panel-bot-setup-qf5bq (80fd4c63)
+- feat: add Central AI menu seeder for database sync (be2854ab)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.422.0] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2391 from xjanova/claude/review-code-improvements-E1Tzp (dc28fd56)
+- feat: เพิ่ม scroll-to-active และ auto-expand submenu ใน sidebar (9df30b29)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.421.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve Central AI code quality and add Ollama Management view (07d620f6)
+### 🔧 Other Changes
+- Merge pull request #2390 from xjanova/claude/review-code-improvements-E1Tzp (43818693)
+
+## [v3.421.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2389 from xjanova/claude/resolve-merge-conflicts-WsCgV (6f7b82bb)
+- style: sort use statements alphabetically in routes/admin.php (b739df64)
+
+## [v3.421.1] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2387 from xjanova/claude/add-barcode-label-printing-Dy1xJ (4c5816dd)
+- feat(pos): add professional canvas-style drag & drop with 8-point resize and rotation (28a4793e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/add-barcode-label-printing-Dy1xJ (6871fb20)
+
+## [v3.421.0] - 2026-01-19
+
+### ✨ Features
+- feat: add Central AI menu and dashboard views (1718322f)
+- feat: add Central AI management system for Ollama control (0432ae4b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2386 from xjanova/claude/admin-panel-bot-setup-qf5bq (c55383ed)
+
 ## [v3.420.12] - 2025-12-26
 
 ### ✨ Features

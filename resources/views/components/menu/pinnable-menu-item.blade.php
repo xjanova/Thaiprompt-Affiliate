@@ -53,6 +53,9 @@
 
 {{-- Menu Item Container with pin interaction --}}
 <div
+    data-menu-active="{{ $isActive ? 'true' : 'false' }}"
+    data-menu-type="item"
+    data-menu-key="{{ $menuKey }}"
     x-data="{
         showPinButton: false,
         longPressTimer: null,

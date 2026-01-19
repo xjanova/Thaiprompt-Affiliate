@@ -152,6 +152,25 @@ class CentralAiController extends Controller
     }
 
     /**
+     * แสดงหน้า Ollama Management
+     *
+     * @return View
+     */
+    public function ollamaIndex(): View
+    {
+        $setting = CentralAiSetting::getActive();
+
+        // ตรวจสอบ system resources
+        $systemResources = $this->detectSystemResources();
+
+        return view('admin.central-ai.ollama', [
+            'setting' => $setting,
+            'systemResources' => $systemResources,
+            'recommendedModels' => $this->getRecommendedModels($systemResources),
+        ]);
+    }
+
+    /**
      * ตรวจสอบสถานะ Ollama
      *
      * @return JsonResponse
@@ -243,7 +262,11 @@ class CentralAiController extends Controller
     public function downloadModel(Request $request): JsonResponse
     {
         $request->validate([
-            'model' => 'required|string',
+            // รูปแบบชื่อโมเดล: alphanumeric, colon, dot, dash, underscore, slash
+            // ตัวอย่าง: llama3:8b, mistral:7b-instruct, deepseek-coder:6.7b
+            'model' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9][a-zA-Z0-9:.\-_\/]*$/'],
+        ], [
+            'model.regex' => 'ชื่อโมเดลไม่ถูกต้อง ต้องขึ้นต้นด้วยตัวอักษรหรือตัวเลข และมีเฉพาะ a-z, 0-9, :, ., -, _, / เท่านั้น',
         ]);
 
         try {
@@ -624,59 +647,44 @@ class CentralAiController extends Controller
     /**
      * แนะนำโมเดลที่เหมาะสมตาม system resources
      *
-     * @param array $resources
-     * @return array
+     * ดึงข้อมูลจาก config/central-ai.php แทนการ hard-code
+     *
+     * @param array $resources ข้อมูล system resources (cpu_cores, ram_gb, disk_gb, etc.)
+     * @return array รายการโมเดลที่แนะนำพร้อม flag recommended
      */
     protected function getRecommendedModels(array $resources): array
     {
         $ramGb = $resources['ram_gb'] ?? 0;
         $models = [];
 
-        // โมเดลขนาดเล็ก (< 8GB RAM)
-        if ($ramGb >= 4) {
-            $models[] = [
-                'name' => 'llama3.2:3b',
-                'size' => '2GB',
-                'description' => 'โมเดลขนาดเล็ก เหมาะกับ RAM 4-8GB',
-                'recommended' => $ramGb < 8,
-            ];
+        // ดึงรายการโมเดลจาก config
+        $configModels = config('central-ai.recommended_models', []);
+
+        foreach ($configModels as $model) {
+            $minRam = $model['min_ram'] ?? 0;
+            $maxRam = $model['max_ram'] ?? PHP_INT_MAX;
+
+            // ตรวจสอบว่า RAM เพียงพอหรือไม่
+            if ($ramGb >= $minRam) {
+                // ตรวจสอบว่าเป็นโมเดลที่แนะนำหรือไม่ (อยู่ในช่วง RAM ที่เหมาะสม)
+                $isRecommended = $ramGb >= $minRam && $ramGb < $maxRam;
+
+                $models[] = [
+                    'name' => $model['name'],
+                    'size' => $model['size'],
+                    'description' => $model['description'],
+                    'recommended' => $isRecommended,
+                ];
+            }
         }
 
-        // โมเดลขนาดกลาง (8-16GB RAM)
-        if ($ramGb >= 8) {
+        // ถ้าไม่มีโมเดลที่เหมาะสม ให้แสดงโมเดลแรกจาก config (ขนาดเล็กสุด)
+        if (empty($models) && !empty($configModels)) {
+            $firstModel = $configModels[0];
             $models[] = [
-                'name' => 'llama3:8b',
-                'size' => '4.7GB',
-                'description' => 'โมเดลขนาดกลาง เหมาะกับ RAM 8-16GB',
-                'recommended' => $ramGb >= 8 && $ramGb < 16,
-            ];
-        }
-
-        // โมเดลขนาดใหญ่ (> 16GB RAM)
-        if ($ramGb >= 16) {
-            $models[] = [
-                'name' => 'llama3.1:8b',
-                'size' => '4.9GB',
-                'description' => 'โมเดลขนาดกลาง-ใหญ่ เหมาะกับ RAM 16GB+',
-                'recommended' => $ramGb >= 16 && $ramGb < 32,
-            ];
-        }
-
-        if ($ramGb >= 32) {
-            $models[] = [
-                'name' => 'llama3.1:70b',
-                'size' => '40GB',
-                'description' => 'โมเดลขนาดใหญ่ เหมาะกับ RAM 32GB+',
-                'recommended' => $ramGb >= 32,
-            ];
-        }
-
-        // ถ้า RAM น้อยเกินไป
-        if (empty($models)) {
-            $models[] = [
-                'name' => 'llama3.2:1b',
-                'size' => '1.3GB',
-                'description' => 'โมเดลขนาดเล็กมาก สำหรับ RAM < 4GB',
+                'name' => $firstModel['name'],
+                'size' => $firstModel['size'],
+                'description' => $firstModel['description'],
                 'recommended' => true,
             ];
         }
