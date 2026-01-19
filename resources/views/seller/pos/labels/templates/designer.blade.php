@@ -38,31 +38,147 @@
     position: absolute;
     cursor: move;
     border: 2px dashed transparent;
-    transition: border-color 0.2s;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
 }
 
 .element-draggable:hover {
     border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
 .element-draggable.selected {
     border-color: #3b82f6;
     border-style: solid;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
+.element-draggable.dragging {
+    opacity: 0.8;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    cursor: grabbing !important;
+}
+
+/* Resize Handles - 8 points + rotation */
 .element-draggable .resize-handle {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.15s ease;
+    z-index: 10;
+}
+
+.element-draggable .resize-handle:hover {
     background: #3b82f6;
-    border: 1px solid white;
+    transform: scale(1.3);
+}
+
+/* Corner handles - larger */
+.element-draggable .resize-handle.corner {
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
 }
 
-.element-draggable .resize-handle.nw { top: -4px; left: -4px; cursor: nw-resize; }
-.element-draggable .resize-handle.ne { top: -4px; right: -4px; cursor: ne-resize; }
-.element-draggable .resize-handle.sw { bottom: -4px; left: -4px; cursor: sw-resize; }
-.element-draggable .resize-handle.se { bottom: -4px; right: -4px; cursor: se-resize; }
+.element-draggable .resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+.element-draggable .resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
+.element-draggable .resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
+.element-draggable .resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
+
+/* Edge handles - rectangular */
+.element-draggable .resize-handle.edge {
+    background: #3b82f6;
+    border-radius: 2px;
+}
+
+.element-draggable .resize-handle.n {
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 6px;
+    cursor: n-resize;
+}
+
+.element-draggable .resize-handle.s {
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 6px;
+    cursor: s-resize;
+}
+
+.element-draggable .resize-handle.e {
+    top: 50%;
+    right: -4px;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 20px;
+    cursor: e-resize;
+}
+
+.element-draggable .resize-handle.w {
+    top: 50%;
+    left: -4px;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 20px;
+    cursor: w-resize;
+}
+
+/* Rotation handle */
+.element-draggable .rotate-handle {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: #10b981;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    z-index: 10;
+}
+
+.element-draggable .rotate-handle:hover {
+    background: #059669;
+    transform: translateX(-50%) scale(1.2);
+}
+
+.element-draggable .rotate-handle::before {
+    content: "↻";
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Alignment guides */
+.alignment-guide {
+    position: absolute;
+    background: #ef4444;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.alignment-guide.vertical {
+    width: 1px;
+    height: 100%;
+    top: 0;
+}
+
+.alignment-guide.horizontal {
+    width: 100%;
+    height: 1px;
+    left: 0;
+}
 
 /* ===== TOOLBAR ===== */
 .toolbar-item {
@@ -257,12 +373,16 @@
                     {{-- Elements --}}
                     <template x-for="element in elements" :key="element.id">
                         <div class="element-draggable"
-                             :class="{ 'selected': selectedElement?.id === element.id }"
+                             :class="{
+                                 'selected': selectedElement?.id === element.id,
+                                 'dragging': isDragging && selectedElement?.id === element.id
+                             }"
                              :style="{
                                  left: (element.x * canvasScale) + 'px',
                                  top: (element.y * canvasScale) + 'px',
                                  width: (element.width * canvasScale) + 'px',
                                  height: (element.height * canvasScale) + 'px',
+                                 transform: `rotate(${element.rotation || 0}deg)`,
                                  zIndex: element.zIndex || 1
                              }"
                              @mousedown="startDrag($event, element)"
@@ -309,13 +429,23 @@
                                      class="w-full h-full"></div>
                             </template>
 
-                            {{-- Resize Handles --}}
+                            {{-- Resize Handles (8 points + rotation) --}}
                             <template x-if="selectedElement?.id === element.id">
                                 <div>
-                                    <div class="resize-handle nw" @mousedown.stop="startResize($event, element, 'nw')"></div>
-                                    <div class="resize-handle ne" @mousedown.stop="startResize($event, element, 'ne')"></div>
-                                    <div class="resize-handle sw" @mousedown.stop="startResize($event, element, 'sw')"></div>
-                                    <div class="resize-handle se" @mousedown.stop="startResize($event, element, 'se')"></div>
+                                    {{-- Corner handles --}}
+                                    <div class="resize-handle corner nw" @mousedown.stop="startResize($event, element, 'nw')"></div>
+                                    <div class="resize-handle corner ne" @mousedown.stop="startResize($event, element, 'ne')"></div>
+                                    <div class="resize-handle corner sw" @mousedown.stop="startResize($event, element, 'sw')"></div>
+                                    <div class="resize-handle corner se" @mousedown.stop="startResize($event, element, 'se')"></div>
+
+                                    {{-- Edge handles --}}
+                                    <div class="resize-handle edge n" @mousedown.stop="startResize($event, element, 'n')"></div>
+                                    <div class="resize-handle edge s" @mousedown.stop="startResize($event, element, 's')"></div>
+                                    <div class="resize-handle edge e" @mousedown.stop="startResize($event, element, 'e')"></div>
+                                    <div class="resize-handle edge w" @mousedown.stop="startResize($event, element, 'w')"></div>
+
+                                    {{-- Rotation handle --}}
+                                    <div class="rotate-handle" @mousedown.stop="startRotate($event, element)" title="หมุน (Rotate)"></div>
                                 </div>
                             </template>
                         </div>
@@ -347,7 +477,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    X
+                                    X (px)
                                 </label>
                                 <input type="number"
                                        x-model.number="selectedElement.x"
@@ -356,7 +486,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Y
+                                    Y (px)
                                 </label>
                                 <input type="number"
                                        x-model.number="selectedElement.y"
@@ -365,7 +495,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Width
+                                    Width (px)
                                 </label>
                                 <input type="number"
                                        x-model.number="selectedElement.width"
@@ -375,7 +505,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Height
+                                    Height (px)
                                 </label>
                                 <input type="number"
                                        x-model.number="selectedElement.height"
@@ -383,6 +513,32 @@
                                        min="1"
                                        class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             </div>
+                        </div>
+
+                        {{-- Rotation --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                มุมหมุน (Rotation) °
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input type="range"
+                                       x-model.number="selectedElement.rotation"
+                                       min="0"
+                                       max="360"
+                                       step="1"
+                                       class="flex-1"
+                                       @input="if (!selectedElement.rotation) selectedElement.rotation = 0">
+                                <input type="number"
+                                       x-model.number="selectedElement.rotation"
+                                       min="0"
+                                       max="360"
+                                       step="1"
+                                       @input="if (!selectedElement.rotation) selectedElement.rotation = 0"
+                                       class="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                กด Shift ขณะลากเพื่อ Snap ทุก 15°
+                            </p>
                         </div>
 
                         {{-- Text Properties --}}
@@ -570,9 +726,11 @@ function labelDesigner() {
         // Drag & Drop
         isDragging: false,
         isResizing: false,
+        isRotating: false,
         resizeHandle: null,
         dragStart: { x: 0, y: 0 },
         elementStart: { x: 0, y: 0, width: 0, height: 0 },
+        rotationStart: 0,
 
         // UI
         showPreview: false,
@@ -602,11 +760,13 @@ function labelDesigner() {
             document.addEventListener('mousemove', (e) => {
                 if (this.isDragging) this.drag(e);
                 if (this.isResizing) this.resize(e);
+                if (this.isRotating) this.rotate(e);
             });
 
             document.addEventListener('mouseup', () => {
                 this.isDragging = false;
                 this.isResizing = false;
+                this.isRotating = false;
             });
 
             // Add keyboard shortcuts for zoom
@@ -734,26 +894,51 @@ function labelDesigner() {
             const dx = (event.clientX - this.dragStart.x) / this.canvasScale;
             const dy = (event.clientY - this.dragStart.y) / this.canvasScale;
 
+            const minSize = 10;
+
             switch (this.resizeHandle) {
+                // Corner handles
                 case 'se':
-                    this.selectedElement.width = Math.max(10, this.elementStart.width + dx);
-                    this.selectedElement.height = Math.max(10, this.elementStart.height + dy);
+                    this.selectedElement.width = Math.max(minSize, this.elementStart.width + dx);
+                    this.selectedElement.height = Math.max(minSize, this.elementStart.height + dy);
                     break;
                 case 'sw':
-                    this.selectedElement.width = Math.max(10, this.elementStart.width - dx);
-                    this.selectedElement.height = Math.max(10, this.elementStart.height + dy);
-                    this.selectedElement.x = this.elementStart.x + dx;
+                    const newWidthSW = Math.max(minSize, this.elementStart.width - dx);
+                    this.selectedElement.width = newWidthSW;
+                    this.selectedElement.height = Math.max(minSize, this.elementStart.height + dy);
+                    this.selectedElement.x = this.elementStart.x + (this.elementStart.width - newWidthSW);
                     break;
                 case 'ne':
-                    this.selectedElement.width = Math.max(10, this.elementStart.width + dx);
-                    this.selectedElement.height = Math.max(10, this.elementStart.height - dy);
-                    this.selectedElement.y = this.elementStart.y + dy;
+                    this.selectedElement.width = Math.max(minSize, this.elementStart.width + dx);
+                    const newHeightNE = Math.max(minSize, this.elementStart.height - dy);
+                    this.selectedElement.height = newHeightNE;
+                    this.selectedElement.y = this.elementStart.y + (this.elementStart.height - newHeightNE);
                     break;
                 case 'nw':
-                    this.selectedElement.width = Math.max(10, this.elementStart.width - dx);
-                    this.selectedElement.height = Math.max(10, this.elementStart.height - dy);
-                    this.selectedElement.x = this.elementStart.x + dx;
-                    this.selectedElement.y = this.elementStart.y + dy;
+                    const newWidthNW = Math.max(minSize, this.elementStart.width - dx);
+                    const newHeightNW = Math.max(minSize, this.elementStart.height - dy);
+                    this.selectedElement.width = newWidthNW;
+                    this.selectedElement.height = newHeightNW;
+                    this.selectedElement.x = this.elementStart.x + (this.elementStart.width - newWidthNW);
+                    this.selectedElement.y = this.elementStart.y + (this.elementStart.height - newHeightNW);
+                    break;
+
+                // Edge handles
+                case 'n':
+                    const newHeightN = Math.max(minSize, this.elementStart.height - dy);
+                    this.selectedElement.height = newHeightN;
+                    this.selectedElement.y = this.elementStart.y + (this.elementStart.height - newHeightN);
+                    break;
+                case 's':
+                    this.selectedElement.height = Math.max(minSize, this.elementStart.height + dy);
+                    break;
+                case 'e':
+                    this.selectedElement.width = Math.max(minSize, this.elementStart.width + dx);
+                    break;
+                case 'w':
+                    const newWidthW = Math.max(minSize, this.elementStart.width - dx);
+                    this.selectedElement.width = newWidthW;
+                    this.selectedElement.x = this.elementStart.x + (this.elementStart.width - newWidthW);
                     break;
             }
 
@@ -764,6 +949,49 @@ function labelDesigner() {
             if (this.selectedElement.type === 'qrcode') {
                 this.$nextTick(() => this.renderQRCode(this.selectedElement));
             }
+        },
+
+        // Rotation
+        startRotate(event, element) {
+            event.stopPropagation();
+            this.isRotating = true;
+            this.dragStart = { x: event.clientX, y: event.clientY };
+            this.rotationStart = element.rotation || 0;
+            this.selectElement(element);
+
+            // คำนวณจุดศูนย์กลางของ element
+            const rect = event.target.closest('.element-draggable').getBoundingClientRect();
+            this.elementCenter = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        },
+
+        rotate(event) {
+            if (!this.isRotating || !this.selectedElement) return;
+
+            // คำนวณมุมจากจุดศูนย์กลางของ element
+            const dx = event.clientX - this.elementCenter.x;
+            const dy = event.clientY - this.elementCenter.y;
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+            // คำนวณมุมเริ่มต้น
+            const startDx = this.dragStart.x - this.elementCenter.x;
+            const startDy = this.dragStart.y - this.elementCenter.y;
+            const startAngle = Math.atan2(startDy, startDx) * (180 / Math.PI);
+
+            // คำนวณมุมใหม่
+            let newRotation = this.rotationStart + (angle - startAngle);
+
+            // Snap to 15 degrees ถ้ากด Shift
+            if (event.shiftKey) {
+                newRotation = Math.round(newRotation / 15) * 15;
+            }
+
+            // ให้อยู่ในช่วง 0-360
+            newRotation = ((newRotation % 360) + 360) % 360;
+
+            this.selectedElement.rotation = newRotation;
         },
 
         // Barcode rendering
