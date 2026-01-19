@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.426.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2402 from xjanova/claude/admin-panel-bot-setup-qf5bq (a4bbfbec)
+- refactor: separate iframe and content views cleanly (c8e6cc47)
+
 ## [v3.426.0] - 2026-01-19
 
 ### ✨ Features
