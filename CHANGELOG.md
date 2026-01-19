@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.424.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2399 from xjanova/claude/review-code-improvements-E1Tzp (29bef085)
+- refactor: ปรับปรุง scroll-to-active เป็น V8 - ง่ายและเชื่อถือได้มากขึ้น (814cde11)
+
 ## [v3.424.2] - 2026-01-19
 
 ### ✨ Features
