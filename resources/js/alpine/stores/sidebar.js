@@ -220,114 +220,116 @@ Alpine.store('sidebar', {
 
     /**
      * Scroll ไปยังเมนูที่ active
-     * เรียกใช้เมื่อหน้าโหลดเสร็จเพื่อให้ sidebar scroll ไปยังเมนูที่กำลังใช้งาน
+     * ใช้ 2-step approach:
+     * 1. Scroll ไปที่ parent menu ก่อน (เพื่อให้ submenu มองเห็นและ expand)
+     * 2. รอ animation เสร็จ แล้วค่อย scroll ไปที่ submenu item
      */
     scrollToActiveMenu() {
-        // รอให้ DOM และ Alpine.js render เสร็จสมบูรณ์
-        // delay 600ms เพื่อรอให้ x-collapse animation เสร็จ
+        // รอให้ DOM render เสร็จก่อน
         setTimeout(() => {
-            this._performScroll();
-        }, 600);
+            this._scrollStep1_ToParent();
+        }, 200);
     },
 
     /**
-     * ทำการ scroll จริง (internal method)
-     * ใช้ scrollTop ของ nav container โดยตรงเพื่อไม่ให้ scroll ทั้งหน้า
+     * Step 1: Scroll ไปที่ parent menu ที่ active ก่อน
+     * Parent menu จะมองเห็นเสมอ (ไม่อยู่ใน collapsed area)
      */
-    _performScroll(retryCount = 0) {
-        const maxRetries = 3;
+    _scrollStep1_ToParent() {
         const nav = this._navElement || document.querySelector('[data-sidebar-nav]');
-
         if (!nav) {
-            console.warn('[Sidebar] ไม่พบ nav element สำหรับ scroll');
+            console.warn('[Sidebar] ไม่พบ nav element');
             return;
         }
 
-        // หาเมนูที่ active - ลองหลายวิธี
-        let activeElement = null;
+        // หา parent menu ที่ active
+        const activeParent = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
 
-        // 1. หา submenu item ที่มี data-menu-active="true" ก่อน (มีความสำคัญสูงสุด)
-        activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
+        if (activeParent) {
+            // ตรวจสอบว่า parent อยู่นอก viewport หรือไม่
+            const navRect = nav.getBoundingClientRect();
+            const parentRect = activeParent.getBoundingClientRect();
 
-        // 2. ถ้าไม่เจอ ลองหา parent menu ที่มี data-menu-active="true"
-        if (!activeElement) {
-            activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
+            // ถ้า parent อยู่นอก viewport ของ nav → scroll ไปหา
+            if (parentRect.top < navRect.top || parentRect.bottom > navRect.bottom) {
+                this._scrollToElement(nav, activeParent);
+                console.log('[Sidebar] Step 1: Scrolled to parent menu');
+            }
+
+            // Step 2: รอ submenu expand แล้วค่อย scroll ไปที่ submenu item
+            setTimeout(() => {
+                this._scrollStep2_ToSubmenuItem(nav);
+            }, 400); // รอ x-collapse animation เสร็จ
+        } else {
+            // ไม่มี parent ที่ active → ลองหา submenu item โดยตรง
+            this._scrollStep2_ToSubmenuItem(nav);
         }
+    },
 
-        // 3. ถ้ายังไม่เจอ ลองหาจาก CSS class (สำหรับ hardcoded menus)
-        // Tailwind's bg-white/30 class - ต้องเช็คทุก anchor ใน nav
+    /**
+     * Step 2: Scroll ไปที่ submenu item ที่ active
+     * เรียกหลังจาก submenu expand แล้ว
+     */
+    _scrollStep2_ToSubmenuItem(nav, retryCount = 0) {
+        const maxRetries = 8; // เพิ่ม retry เพราะ animation อาจใช้เวลา
+
+        // หา submenu item ที่ active
+        let activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
+
+        // Fallback: หาจาก CSS class (สำหรับ hardcoded menus)
         if (!activeElement) {
             const allAnchors = nav.querySelectorAll('a');
             for (const anchor of allAnchors) {
-                // เช็คว่ามี class ที่บ่งบอกว่า active (bg-white/30 และ font-bold)
-                if (anchor.classList.contains('font-bold') &&
-                    (anchor.className.includes('bg-white/30') || anchor.className.includes('bg-white\\/30'))) {
+                if (anchor.classList.contains('font-bold') && anchor.className.includes('bg-white/30')) {
                     activeElement = anchor;
                     break;
                 }
             }
         }
 
-        // 4. ลองหา element ที่มี data-menu-active="true" ทั่วไป
+        // ถ้ายังไม่เจอ submenu item → ลองหา parent แทน
         if (!activeElement) {
-            activeElement = nav.querySelector('[data-menu-active="true"]');
-        }
-
-        // 5. Fallback สุดท้าย - หา anchor ที่มี font-bold class (บ่งบอกว่า active)
-        if (!activeElement) {
-            const allAnchors = nav.querySelectorAll('a.font-bold');
-            if (allAnchors.length > 0) {
-                // เลือก anchor สุดท้ายที่มี font-bold (น่าจะเป็น submenu item)
-                activeElement = allAnchors[allAnchors.length - 1];
-            }
+            activeElement = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
         }
 
         if (!activeElement) {
             if (retryCount < maxRetries) {
-                console.log(`[Sidebar] ไม่พบเมนูที่ active, retry ${retryCount + 1}/${maxRetries}`);
-                setTimeout(() => this._performScroll(retryCount + 1), 300);
-            } else {
-                console.log('[Sidebar] ไม่พบเมนูที่ active หลังจาก retry ทั้งหมด');
+                setTimeout(() => this._scrollStep2_ToSubmenuItem(nav, retryCount + 1), 150);
             }
             return;
         }
 
-        // ตรวจสอบว่า element มองเห็นได้ (ไม่ถูก collapse)
-        const elementRect = activeElement.getBoundingClientRect();
-        if (elementRect.height === 0 && retryCount < maxRetries) {
-            console.log(`[Sidebar] Active element ยังถูก collapse, retry ${retryCount + 1}/${maxRetries}`);
-            setTimeout(() => this._performScroll(retryCount + 1), 300);
+        // ตรวจสอบว่า element มองเห็นได้ (height > 0)
+        const rect = activeElement.getBoundingClientRect();
+        if (rect.height === 0 && retryCount < maxRetries) {
+            setTimeout(() => this._scrollStep2_ToSubmenuItem(nav, retryCount + 1), 150);
             return;
         }
 
-        // คำนวณตำแหน่งโดยใช้ getBoundingClientRect
+        // Scroll ไปที่ element
+        this._scrollToElement(nav, activeElement);
+        console.log('[Sidebar] Step 2: Scrolled to active item:', activeElement.textContent?.trim().substring(0, 30));
+    },
+
+    /**
+     * Helper: Scroll nav container ไปที่ element ที่กำหนด
+     * ให้ element อยู่ที่ 1/3 จากบนของ nav viewport
+     */
+    _scrollToElement(nav, element) {
         const navRect = nav.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
         const currentScrollTop = nav.scrollTop;
 
         // คำนวณตำแหน่งของ element เทียบกับ nav (รวม scroll ปัจจุบัน)
         const elementTopRelativeToNav = elementRect.top - navRect.top + currentScrollTop;
 
-        // คำนวณตำแหน่งที่ต้อง scroll ให้ element อยู่ค่อนไปทางบนของ nav (1/3 จากบน)
-        const navVisibleHeight = nav.clientHeight;
-        const targetScrollTop = elementTopRelativeToNav - (navVisibleHeight / 3);
+        // Scroll ให้ element อยู่ 1/3 จากบนของ nav viewport
+        const targetScrollTop = elementTopRelativeToNav - (nav.clientHeight / 3);
 
-        console.log('[Sidebar] Scroll calculation:', {
-            elementTop: elementRect.top,
-            navTop: navRect.top,
-            currentScrollTop: currentScrollTop,
-            elementTopRelativeToNav: elementTopRelativeToNav,
-            navVisibleHeight: navVisibleHeight,
-            targetScrollTop: targetScrollTop,
-            elementText: activeElement.textContent?.trim().substring(0, 30)
-        });
-
-        // Scroll ภายใน nav container
         nav.scrollTo({
             top: Math.max(0, targetScrollTop),
             behavior: 'smooth'
         });
-
-        console.log('[Sidebar] ✓ Scrolled to active menu');
     },
 
     /**
