@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.421.0] - 2026-01-19
+
+### ✨ Features
+- feat: add Central AI menu and dashboard views (1718322f)
+- feat: add Central AI management system for Ollama control (0432ae4b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2386 from xjanova/claude/admin-panel-bot-setup-qf5bq (c55383ed)
+
 ## [v3.420.12] - 2025-12-26
 
 ### ✨ Features
