@@ -1,1 +1,1 @@
-admin-two-iframe.blade.php
+admin-simple-iframe.blade.php
