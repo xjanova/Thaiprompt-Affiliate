@@ -62,6 +62,7 @@ class DatabaseSeeder extends Seeder
             LineRecruitmentSeeder::class,       // 🆕 LINE Recruitment System (AI-powered recruitment with topic filtering)
 
             // 5. AI & Integrations
+            CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)
             AICoreFeatureSeeder::class,         // 🆕 AI Core Feature Registry (8 AI feature groups)
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini, Meta Llama 4)
             AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
