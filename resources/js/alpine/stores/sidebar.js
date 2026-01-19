@@ -223,31 +223,37 @@ Alpine.store('sidebar', {
      * เรียกใช้เมื่อหน้าโหลดเสร็จเพื่อให้ sidebar scroll ไปยังเมนูที่กำลังใช้งาน
      */
     scrollToActiveMenu() {
-        // รอให้ DOM พร้อม
-        setTimeout(() => {
-            const nav = this._navElement || document.querySelector('[data-sidebar-nav]');
-            if (!nav) return;
+        // รอให้ DOM และ Alpine.js render เสร็จสมบูรณ์
+        // ใช้ requestAnimationFrame + setTimeout เพื่อให้แน่ใจว่า DOM พร้อม
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                this._performScroll();
+            }, 300); // เพิ่ม delay เป็น 300ms เพื่อรอให้ x-collapse animation เสร็จ
+        });
+    },
 
-            // หาเมนูที่ active (ลำดับความสำคัญ: submenu item > parent menu > any active)
-            const activeSubmenuItem = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
-            const activeParentMenu = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
-            const anyActiveItem = nav.querySelector('[data-menu-active="true"]');
+    /**
+     * ทำการ scroll จริง (internal method)
+     */
+    _performScroll() {
+        const nav = this._navElement || document.querySelector('[data-sidebar-nav]');
+        if (!nav) return;
 
-            const activeElement = activeSubmenuItem || activeParentMenu || anyActiveItem;
+        // หาเมนูที่ active (ลำดับความสำคัญ: submenu item > parent menu > any active)
+        const activeSubmenuItem = nav.querySelector('[data-menu-active="true"][data-menu-type="submenu"]');
+        const activeParentMenu = nav.querySelector('[data-menu-active="true"][data-menu-type="parent"]');
+        const anyActiveItem = nav.querySelector('[data-menu-active="true"]');
 
-            if (activeElement) {
-                // คำนวณตำแหน่งที่ต้อง scroll โดยให้ element อยู่ตรงกลางของ nav
-                const navRect = nav.getBoundingClientRect();
-                const elementRect = activeElement.getBoundingClientRect();
-                const scrollTop = activeElement.offsetTop - (navRect.height / 2) + (elementRect.height / 2);
+        const activeElement = activeSubmenuItem || activeParentMenu || anyActiveItem;
 
-                // Scroll อย่างนุ่มนวล
-                nav.scrollTo({
-                    top: Math.max(0, scrollTop),
-                    behavior: 'smooth'
-                });
-            }
-        }, 100); // รอให้ Alpine.js render เสร็จ
+        if (activeElement) {
+            // ใช้ scrollIntoView แทนการคำนวณเอง เพื่อความแม่นยำ
+            activeElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+            });
+        }
     },
 
     /**

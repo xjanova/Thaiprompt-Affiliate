@@ -192,8 +192,16 @@
         @foreach($submenu as $child)
             @php
                 $childUrl = $child['url'] ?? '#';
-                $childPath = ltrim($childUrl, '/');
-                $isChildActive = request()->is($childPath) || request()->is($childPath . '/*');
+                // แยก path จาก URL (รองรับทั้ง full URL และ relative path)
+                $childPath = parse_url($childUrl, PHP_URL_PATH) ?? $childUrl;
+                $childPath = ltrim($childPath, '/');
+
+                // ตรวจสอบ active หลายรูปแบบ
+                $currentPath = request()->path();
+                $isChildActive = $currentPath === $childPath
+                    || str_starts_with($currentPath, $childPath . '/')
+                    || (isset($child['route']) && request()->routeIs($child['route']))
+                    || (isset($child['route']) && request()->routeIs($child['route'] . '.*'));
             @endphp
             <a href="{{ $childUrl }}"
                @click="$store.sidebar.closeOnMenuClick()"
