@@ -242,6 +242,17 @@ Alpine.store('sidebar', {
             return;
         }
 
+        console.log('[Sidebar] Step 1: เริ่มค้นหา active menu...');
+
+        // Debug: แสดงจำนวน elements ที่มี data-menu-active
+        const allActiveItems = nav.querySelectorAll('[data-menu-active="true"]');
+        console.log('[Sidebar] พบ active items ทั้งหมด:', allActiveItems.length);
+        allActiveItems.forEach((item, i) => {
+            const type = item.getAttribute('data-menu-type');
+            const key = item.getAttribute('data-menu-key') || item.textContent?.trim().substring(0, 30);
+            console.log(`[Sidebar] Active item ${i + 1}: type="${type}", key="${key}"`);
+        });
+
         // หา active element - ลำดับความสำคัญ:
         // 1. Parent menu (มี submenu)
         // 2. Single menu item (ไม่มี submenu)
@@ -250,10 +261,17 @@ Alpine.store('sidebar', {
         if (!activeMainMenu) {
             // หาเมนูหลักที่ไม่มี submenu (type="item")
             activeMainMenu = nav.querySelector('[data-menu-active="true"][data-menu-type="item"]');
+            if (activeMainMenu) {
+                console.log('[Sidebar] พบ single menu item (type="item")');
+            }
+        } else {
+            console.log('[Sidebar] พบ parent menu (type="parent")');
         }
 
         if (activeMainMenu) {
             const menuType = activeMainMenu.getAttribute('data-menu-type');
+            const menuKey = activeMainMenu.getAttribute('data-menu-key');
+            console.log('[Sidebar] จะ scroll ไปที่:', menuType, menuKey);
 
             // Scroll ไปที่ element เสมอ (ไม่ต้องเช็ค viewport)
             this._scrollToElement(nav, activeMainMenu);
@@ -267,6 +285,7 @@ Alpine.store('sidebar', {
             }
             // ถ้าเป็น single item (type="item") → จบเลย ไม่ต้องหา submenu
         } else {
+            console.log('[Sidebar] ไม่พบ active main menu → ลองหา submenu item');
             // ไม่มี main menu ที่ active → ลองหา submenu item โดยตรง
             this._scrollStep2_ToSubmenuItem(nav);
         }
@@ -334,11 +353,21 @@ Alpine.store('sidebar', {
         const elementRect = element.getBoundingClientRect();
         const currentScrollTop = nav.scrollTop;
 
+        console.log('[Sidebar] _scrollToElement called');
+        console.log('[Sidebar] nav.scrollTop:', currentScrollTop);
+        console.log('[Sidebar] nav.clientHeight:', nav.clientHeight);
+        console.log('[Sidebar] nav.scrollHeight:', nav.scrollHeight);
+        console.log('[Sidebar] element rect:', elementRect.top, elementRect.bottom, 'height:', elementRect.height);
+
         // คำนวณตำแหน่งของ element เทียบกับ nav (รวม scroll ปัจจุบัน)
         const elementTopRelativeToNav = elementRect.top - navRect.top + currentScrollTop;
 
         // Scroll ให้ element อยู่ 1/3 จากบนของ nav viewport
         const targetScrollTop = elementTopRelativeToNav - (nav.clientHeight / 3);
+
+        console.log('[Sidebar] elementTopRelativeToNav:', elementTopRelativeToNav);
+        console.log('[Sidebar] targetScrollTop:', targetScrollTop);
+        console.log('[Sidebar] จะ scroll ไปที่:', Math.max(0, targetScrollTop));
 
         nav.scrollTo({
             top: Math.max(0, targetScrollTop),
