@@ -35,6 +35,34 @@
         {{-- Arrow X Theme Styles --}}
         <x-arrow-x.theme-styles />
 
+        {{-- Alpine.js CDN Fallback (เผื่อ Vite ไม่โหลด) --}}
+        <script>
+            // เช็คว่า Alpine.js โหลดจาก Vite หรือยัง
+            window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    if (typeof Alpine === 'undefined') {
+                        console.warn('⚠️ Alpine.js not loaded from Vite, loading from CDN...');
+
+                        // โหลด Alpine.js จาก CDN
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js';
+                        script.defer = true;
+                        script.onload = function() {
+                            console.log('✅ Alpine.js loaded from CDN');
+                            // Dispatch event เพื่อบอกว่า Alpine พร้อมแล้ว
+                            window.dispatchEvent(new Event('alpine:init'));
+                        };
+                        script.onerror = function() {
+                            console.error('❌ Failed to load Alpine.js from CDN');
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        console.log('✅ Alpine.js loaded from Vite');
+                    }
+                }, 1000);
+            });
+        </script>
+
         @stack('styles')
 
         {{-- Alpine.js x-cloak --}}
@@ -247,6 +275,34 @@
         {{-- Arrow X Theme Styles --}}
         <x-arrow-x.theme-styles />
 
+        {{-- Alpine.js CDN Fallback (เผื่อ Vite ไม่โหลด) --}}
+        <script>
+            // เช็คว่า Alpine.js โหลดจาก Vite หรือยัง
+            window.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    if (typeof Alpine === 'undefined') {
+                        console.warn('⚠️ Alpine.js not loaded from Vite, loading from CDN...');
+
+                        // โหลด Alpine.js จาก CDN
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js';
+                        script.defer = true;
+                        script.onload = function() {
+                            console.log('✅ Alpine.js loaded from CDN');
+                            // Dispatch event เพื่อบอกว่า Alpine พร้อมแล้ว
+                            window.dispatchEvent(new Event('alpine:init'));
+                        };
+                        script.onerror = function() {
+                            console.error('❌ Failed to load Alpine.js from CDN');
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        console.log('✅ Alpine.js loaded from Vite');
+                    }
+                }, 1000);
+            });
+        </script>
+
         @stack('styles')
 
         {{-- Alpine.js x-cloak - ซ่อน element จนกว่า Alpine จะโหลดเสร็จ --}}
@@ -398,12 +454,34 @@
                     init() {
                         console.log('🚀 Iframe Navigation Manager: Starting initialization...');
 
+                        // เช็คว่า Alpine.js พร้อมหรือยัง
+                        if (typeof this.$store === 'undefined') {
+                            console.error('❌ Alpine.js stores not available!');
+                            console.warn('⚠️ Retrying in 500ms...');
+
+                            // Retry after delay
+                            setTimeout(() => {
+                                this.init();
+                            }, 500);
+                            return;
+                        }
+
                         // เริ่มต้น theme store และ sidebar store
-                        this.$store.theme.init();
-                        this.$store.sidebar.init();
+                        try {
+                            this.$store.theme.init();
+                            this.$store.sidebar.init();
+                            console.log('✅ Alpine stores initialized');
+                        } catch (error) {
+                            console.error('❌ Failed to initialize Alpine stores:', error);
+                        }
 
                         // เก็บ reference ของ iframe
                         this.iframe = document.getElementById('content-iframe');
+                        if (!this.iframe) {
+                            console.error('❌ Content iframe not found!');
+                            return;
+                        }
+                        console.log('✅ Iframe element found:', this.iframe);
 
                         // ฟัง message จาก iframe (สำหรับ communication)
                         window.addEventListener('message', (event) => {
