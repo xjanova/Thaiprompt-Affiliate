@@ -334,6 +334,52 @@
         }
     </script>
 
+    {{-- Theme Customizer --}}
+    <x-arrow-x.theme-customizer />
+
+    {{-- LINE Quick Settings Panel --}}
+    <x-line.quick-settings-panel />
+
+    {{-- Toast Notifications --}}
+    <div class="fixed bottom-4 right-4 z-50 space-y-2"
+         x-data="{ notifications: [] }"
+         @notify.window="notifications.push($event.detail); setTimeout(() => notifications.shift(), 3000)">
+        <template x-for="(notification, index) in notifications" :key="index">
+            <div x-show="true"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="glass-fusion rounded-xl p-4 shadow-2xl border border-white/30 min-w-[300px]"
+                 :class="{
+                     'border-l-4 border-l-green-500': notification.type === 'success',
+                     'border-l-4 border-l-red-500': notification.type === 'error',
+                     'border-l-4 border-l-yellow-500': notification.type === 'warning',
+                     'border-l-4 border-l-blue-500': notification.type === 'info'
+                 }">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        <template x-if="notification.type === 'success'">
+                            <i class="fas fa-check-circle text-2xl text-green-400"></i>
+                        </template>
+                        <template x-if="notification.type === 'error'">
+                            <i class="fas fa-exclamation-circle text-2xl text-red-400"></i>
+                        </template>
+                        <template x-if="notification.type === 'warning'">
+                            <i class="fas fa-exclamation-triangle text-2xl text-yellow-400"></i>
+                        </template>
+                        <template x-if="notification.type === 'info'">
+                            <i class="fas fa-info-circle text-2xl text-blue-400"></i>
+                        </template>
+                    </div>
+                    <p class="flex-1 text-white font-medium" x-text="notification.message"></p>
+                </div>
+            </div>
+        </template>
+    </div>
+
     @stack('scripts')
 </body>
 </html>
