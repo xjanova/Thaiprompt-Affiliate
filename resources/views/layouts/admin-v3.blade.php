@@ -427,14 +427,29 @@
                 </div>
 
                 {{-- Content Iframe (Seamless) --}}
+                {{--
+                    ⚠️ แก้ไข:
+                    - ใช้ currentUrl จาก Alpine.js (dynamic)
+                    - ถ้า Alpine ยังไม่โหลด ใช้ route dashboard เป็น fallback
+                    - loading="eager" เพื่อโหลดทันที
+                --}}
+                @php
+                    // สร้าง iframe URL จาก current path
+                    $currentPath = request()->path();
+                    $queryString = request()->getQueryString();
+                    $queryString = preg_replace('/([&?])iframe=1(&|$)/', '$1', $queryString);
+                    $queryString = trim($queryString, '&?');
+
+                    $iframeUrl = '/' . $currentPath;
+                    $iframeUrl .= $queryString ? '?' . $queryString . '&iframe=1' : '?iframe=1';
+                @endphp
                 <iframe
                     id="content-iframe"
                     name="content-frame"
-                    src="{{ route('admin.dashboard') }}?iframe=1"
-                    :src="currentUrl"
+                    src="{{ $iframeUrl }}"
                     @load="handleIframeLoad()"
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
-                    loading="lazy"
+                    loading="eager"
                     allowfullscreen>
                 </iframe>
             </div>
