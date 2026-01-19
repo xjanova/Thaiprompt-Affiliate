@@ -48,6 +48,9 @@
 {{-- Menu Group Container with pin interaction --}}
 <div
     class="space-y-1"
+    data-menu-active="{{ $isActive ? 'true' : 'false' }}"
+    data-menu-type="parent"
+    data-menu-key="{{ $menuKey }}"
     x-data="{
         menuOpen: {{ $isActive ? 'true' : 'false' }},
         showPinButton: false,
@@ -187,13 +190,20 @@
     {{-- Submenu --}}
     <div x-show="menuOpen" x-collapse x-cloak class="ml-8 space-y-1">
         @foreach($submenu as $child)
-            <a href="{{ $child['url'] ?? '#' }}"
+            @php
+                $childUrl = $child['url'] ?? '#';
+                $childPath = ltrim($childUrl, '/');
+                $isChildActive = request()->is($childPath) || request()->is($childPath . '/*');
+            @endphp
+            <a href="{{ $childUrl }}"
                @click="$store.sidebar.closeOnMenuClick()"
-               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->is(ltrim($child['url'] ?? '', '/')) ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+               data-menu-active="{{ $isChildActive ? 'true' : 'false' }}"
+               data-menu-type="submenu"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ $isChildActive ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                 @if(isset($child['icon']))
                     <i class="{{ $child['icon'] }} w-4 text-center drop-shadow"></i>
                 @else
-                    <div class="w-1.5 h-1.5 rounded-full bg-white/50"></div>
+                    <div class="w-1.5 h-1.5 rounded-full {{ $isChildActive ? 'bg-white' : 'bg-white/50' }}"></div>
                 @endif
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $child['label'] }}</span>
             </a>
