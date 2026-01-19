@@ -2,6 +2,79 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.427.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add missing dependencies for navbar-v3 to work properly (4db446e9)
+- fix: resolve double sidebar/navbar by implementing iframe mode detection (7174d805)
+### 🔧 Other Changes
+- Merge pull request #2406 from xjanova/claude/admin-panel-bot-setup-qf5bq (a3408204)
+
+## [v3.427.0] - 2026-01-19
+
+### ✨ Features
+- feat: implement simplified iframe navigation system (6f338441)
+- feat: implement true two-iframe system (simple & works!) (ff594fc1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2405 from xjanova/claude/admin-panel-bot-setup-qf5bq (a1425d1c)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (e5fb8cbc)
+- build: compile Vite assets after npm install (cc785f3e)
+
+## [v3.426.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2404 from xjanova/claude/admin-panel-bot-setup-qf5bq (4f1bd847)
+- fix: add Alpine.js CDN fallback and retry mechanism (215673de)
+### 🔧 Other Changes
+
+
+## [v3.426.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add full conditional layout with debug logging (6d721d51)
+### 🔧 Other Changes
+- Merge pull request #2403 from xjanova/claude/admin-panel-bot-setup-qf5bq (8b07b52b)
+- debug: add iframe diagnostic page (325da830)
+
+## [v3.426.1] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2402 from xjanova/claude/admin-panel-bot-setup-qf5bq (a4bbfbec)
+- refactor: separate iframe and content views cleanly (c8e6cc47)
+
+## [v3.426.0] - 2026-01-19
+
+### ✨ Features
+- feat: activate iframe navigation system for admin panel (da596251)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2401 from xjanova/claude/admin-panel-bot-setup-qf5bq (872367f0)
+- docs: อัพเดทเอกสารสำหรับฟีเจอร์ใหม่ (Iframe Navigation, Central AI, Sidebar Footer) (a7a6b6f6)
+
+## [v3.425.0] - 2026-01-19
+
+### ✨ Features
+- feat: add sidebar footer iframe component for seamless updates (e05b6006)
+- feat: add seamless iframe navigation system for admin panel (d8a609ba)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2400 from xjanova/claude/admin-panel-bot-setup-qf5bq (367c1a3e)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (8c12b7c1)
+
 ## [v3.424.3] - 2026-01-19
 
 ### ✨ Features
