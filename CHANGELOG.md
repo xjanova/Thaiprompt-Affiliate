@@ -2,6 +2,35 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.423.0] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2392 from xjanova/claude/admin-panel-bot-setup-qf5bq (80fd4c63)
+- feat: add Central AI menu seeder for database sync (be2854ab)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.422.0] - 2026-01-19
+
+### ✨ Features
+- Merge pull request #2391 from xjanova/claude/review-code-improvements-E1Tzp (dc28fd56)
+- feat: เพิ่ม scroll-to-active และ auto-expand submenu ใน sidebar (9df30b29)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.421.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve Central AI code quality and add Ollama Management view (07d620f6)
+### 🔧 Other Changes
+- Merge pull request #2390 from xjanova/claude/review-code-improvements-E1Tzp (43818693)
+
 ## [v3.421.2] - 2026-01-19
 
 ### ✨ Features
