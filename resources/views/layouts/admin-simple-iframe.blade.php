@@ -1,25 +1,78 @@
-<!DOCTYPE html>
-<html lang="th" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') - Admin - {{ config('app.name') }}</title>
+@php
+    /**
+     * ตรวจสอบว่าเป็น iframe mode หรือไม่
+     * ถ้ามี ?iframe=1 → แสดงเฉพาะ content (ไม่มี sidebar/navbar)
+     * ถ้าไม่มี → แสดง parent layout (sidebar + navbar + iframe)
+     */
+    $isIframeMode = request()->query('iframe') === '1';
+@endphp
 
-    {{-- Favicon --}}
-    @php
-        $themeSetting = \App\Models\ThemeSetting::active();
-        $faviconPath = $themeSetting && $themeSetting->favicon_path
-            ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('favicon.ico');
-    @endphp
-    <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
+@if($isIframeMode)
+    {{-- ⚡ Content-Only Mode (สำหรับโหลดใน iframe) --}}
+    <!DOCTYPE html>
+    <html lang="th" class="h-full">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>@yield('title', 'Dashboard') - Admin - {{ config('app.name') }}</title>
 
-    {{-- Vite Assets --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+        {{-- Favicon --}}
+        @php
+            $themeSetting = \App\Models\ThemeSetting::active();
+            $faviconPath = $themeSetting && $themeSetting->favicon_path
+                ? asset('storage/' . $themeSetting->favicon_path)
+                : asset('favicon.ico');
+        @endphp
+        <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
 
-    {{-- Arrow X Theme Styles --}}
-    <x-arrow-x.theme-styles />
+        {{-- Vite Assets --}}
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        {{-- Arrow X Theme Styles --}}
+        <x-arrow-x.theme-styles />
+
+        @stack('styles')
+
+        <style>
+            [x-cloak] { display: none !important; }
+            body { background: transparent !important; }
+        </style>
+    </head>
+    <body class="h-full font-sans antialiased bg-transparent">
+        {{-- เฉพาะ Content (ไม่มี sidebar/navbar) --}}
+        <main class="h-full overflow-y-auto p-4 md:p-6">
+            @yield('content')
+        </main>
+
+        @stack('scripts')
+    </body>
+    </html>
+
+@else
+    {{-- 🖼️ Parent Layout (Sidebar + Navbar + Iframe) --}}
+    <!DOCTYPE html>
+    <html lang="th" class="h-full">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>@yield('title', 'Dashboard') - Admin - {{ config('app.name') }}</title>
+
+        {{-- Favicon --}}
+        @php
+            $themeSetting = \App\Models\ThemeSetting::active();
+            $faviconPath = $themeSetting && $themeSetting->favicon_path
+                ? asset('storage/' . $themeSetting->favicon_path)
+                : asset('favicon.ico');
+        @endphp
+        <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
+
+        {{-- Vite Assets --}}
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        {{-- Arrow X Theme Styles --}}
+        <x-arrow-x.theme-styles />
 
     <style>
         /* Content Iframe - Seamless */
@@ -70,7 +123,7 @@
             {{-- Content Iframe --}}
             <iframe
                 id="content-iframe"
-                src="{{ route('admin.dashboard') }}"
+                src="{{ route('admin.dashboard') }}?iframe=1"
                 title="Content">
             </iframe>
         </div>
@@ -86,22 +139,26 @@
             const link = e.target.closest('a[href]');
 
             if (link) {
-                const href = link.getAttribute('href');
+                let href = link.getAttribute('href');
 
                 // ถ้าเป็น internal link
                 if (href && !href.startsWith('#') && !href.startsWith('http') && href !== 'javascript:void(0)') {
                     e.preventDefault();
 
+                    // เพิ่ม ?iframe=1 parameter
+                    const separator = href.includes('?') ? '&' : '?';
+                    const iframeUrl = href + separator + 'iframe=1';
+
                     // แสดง loading
                     loading.classList.add('show');
 
                     // เปลี่ยน iframe
-                    contentIframe.src = href;
+                    contentIframe.src = iframeUrl;
 
-                    // อัพเดท URL
+                    // อัพเดท URL (ไม่เอา ?iframe=1 ไปอยู่ใน URL bar)
                     history.pushState({ url: href }, '', href);
 
-                    console.log('Navigate to:', href);
+                    console.log('Navigate to:', href, '(iframe:', iframeUrl, ')');
                 }
             }
         });
@@ -120,5 +177,6 @@
 
         console.log('✅ Simple iframe navigation ready');
     </script>
-</body>
-</html>
+    </body>
+    </html>
+@endif
