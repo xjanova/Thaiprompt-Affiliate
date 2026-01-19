@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.426.2] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add full conditional layout with debug logging (6d721d51)
+### 🔧 Other Changes
+- Merge pull request #2403 from xjanova/claude/admin-panel-bot-setup-qf5bq (8b07b52b)
+- debug: add iframe diagnostic page (325da830)
+
 ## [v3.426.1] - 2026-01-19
 
 ### ✨ Features
