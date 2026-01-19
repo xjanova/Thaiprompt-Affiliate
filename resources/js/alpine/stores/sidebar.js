@@ -253,23 +253,19 @@ Alpine.store('sidebar', {
         }
 
         if (activeMainMenu) {
-            // ตรวจสอบว่า element อยู่นอก viewport หรือไม่
-            const navRect = nav.getBoundingClientRect();
-            const menuRect = activeMainMenu.getBoundingClientRect();
+            const menuType = activeMainMenu.getAttribute('data-menu-type');
 
-            // ถ้า element อยู่นอก viewport ของ nav → scroll ไปหา
-            if (menuRect.top < navRect.top || menuRect.bottom > navRect.bottom) {
-                this._scrollToElement(nav, activeMainMenu);
-                console.log('[Sidebar] Step 1: Scrolled to main menu');
-            }
+            // Scroll ไปที่ element เสมอ (ไม่ต้องเช็ค viewport)
+            this._scrollToElement(nav, activeMainMenu);
+            console.log('[Sidebar] Step 1: Scrolled to main menu, type:', menuType);
 
             // ถ้าเป็น parent menu (มี submenu) → รอ submenu expand แล้วค่อย scroll ไปที่ submenu item
-            if (activeMainMenu.getAttribute('data-menu-type') === 'parent') {
+            if (menuType === 'parent') {
                 setTimeout(() => {
                     this._scrollStep2_ToSubmenuItem(nav);
                 }, 400); // รอ x-collapse animation เสร็จ
             }
-            // ถ้าเป็น single item → จบเลย ไม่ต้องหา submenu
+            // ถ้าเป็น single item (type="item") → จบเลย ไม่ต้องหา submenu
         } else {
             // ไม่มี main menu ที่ active → ลองหา submenu item โดยตรง
             this._scrollStep2_ToSubmenuItem(nav);
