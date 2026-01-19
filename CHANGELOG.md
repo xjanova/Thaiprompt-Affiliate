@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.421.3] - 2026-01-19
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve Central AI code quality and add Ollama Management view (07d620f6)
+### 🔧 Other Changes
+- Merge pull request #2390 from xjanova/claude/review-code-improvements-E1Tzp (43818693)
+
 ## [v3.421.2] - 2026-01-19
 
 ### ✨ Features
