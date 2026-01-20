@@ -96,12 +96,6 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\QualityCheckpoint::observe(\App\Observers\QualityCheckpointObserver::class);
         \App\Models\CarbonCredit::observe(\App\Observers\CarbonCreditObserver::class);
 
-        // Register View Composers สำหรับ Iframe Navigation
-        \Illuminate\Support\Facades\View::composer(
-            'layouts.admin-v3',
-            \App\View\Composers\AdminLayoutComposer::class
-        );
-
         // Register AI Rental GPU System Observers
         \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
         \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);

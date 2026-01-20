@@ -143,10 +143,6 @@ php artisan serve
 8. **[.claude/seeder-guidelines.md](.claude/seeder-guidelines.md)** - Seeder synchronization rules
 9. **[.claude/ROUTES_GUIDELINES.md](.claude/ROUTES_GUIDELINES.md)** - Route and view conventions
 
-**🆕 Architecture & Performance (สำคัญ!):**
-
-10. **[.claude/IFRAME_NAVIGATION_GUIDE.md](.claude/IFRAME_NAVIGATION_GUIDE.md)** ⭐ **NEW** - Seamless iframe navigation system (60-80% faster)
-
 **⚠️ WARNING**: Not reading these guidelines will result in:
 - Code not meeting V3 standards ⚠️ **NEW**
 - Using deprecated technologies (jQuery, Bootstrap) ⚠️ **NEW**
@@ -1142,8 +1138,7 @@ class Feature extends Model
 ```blade
 {{-- resources/views/admin/features/index.blade.php --}}
 
-{{-- 🆕 V3: ใช้ conditional layout สำหรับ iframe mode --}}
-@extends($isIframeMode ?? false ? 'layouts.admin-content-only' : 'layouts.admin-iframe')
+@extends('layouts.admin')
 
 @section('title', 'จัดการ Feature')
 
@@ -1211,14 +1206,6 @@ class Feature extends Model
     </div>
 </div>
 @endsection
-
-{{--
-🆕 V3 Navigation Tips:
-- DetectIframeMode middleware จะตั้ง $isIframeMode อัตโนมัติ
-- ใช้ iframeNavigate(url, title) สำหรับ navigation ใน iframe mode
-- ใช้ iframeNotify(message, type) สำหรับ notification
-- อ่านเพิ่มเติม: .claude/IFRAME_NAVIGATION_GUIDE.md
---}}
 ```
 
 ### Task 4: Create API Endpoint
@@ -1696,11 +1683,6 @@ test -x .git/hooks/pre-commit && echo "✓ Installed" || echo "✗ Not installed
 - [TPIX_TOKEN_SYSTEM.md](TPIX_TOKEN_SYSTEM.md) - Blockchain integration
 - [MLM_SYSTEM_DOCUMENTATION.md](MLM_SYSTEM_DOCUMENTATION.md) - MLM features
 - [API_ARCHITECTURE_GUIDE.md](API_ARCHITECTURE_GUIDE.md) - API design patterns
-
-**🆕 New Features (2026-01):**
-- **Iframe Navigation System** - Seamless navigation with fixed sidebar/navbar (60-80% faster page loads)
-- **Central AI Management** - Unified Ollama + PostXAgent management system
-- **Sidebar Footer Iframe** - Real-time version/license status updates (auto-refresh every 5 min)
 
 ### Quick Commands Reference
 
