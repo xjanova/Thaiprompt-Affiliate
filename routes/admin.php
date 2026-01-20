@@ -67,7 +67,6 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\SidebarFooterController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\SloganController;
 use App\Http\Controllers\Admin\SuperAdminHotelController;
@@ -3766,22 +3765,3 @@ Route::prefix('developers')->name('developers.')->group(function () {
     Route::delete('/{developer}', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'destroy'])
         ->name('destroy');
 });
-
-// Sidebar Footer (Iframe Component)
-Route::get("/sidebar/footer", [SidebarFooterController::class, "index"])->name("sidebar.footer");
-Route::post("/sidebar/footer/reload", [SidebarFooterController::class, "reload"])->name("sidebar.footer.reload");
-
-// Debug: Iframe Navigation Test (Development Only)
-Route::get('/debug-iframe', function() {
-    return view('admin.debug-iframe');
-})->name('debug.iframe');
-
-// Test Sidebar Route
-Route::get('/test-sidebar', function() {
-    return view('test-sidebar');
-})->name('test.sidebar');
-
-// Two-Iframe System Routes
-Route::get('/sidebar', function() {
-    return view('admin.sidebar-only');
-})->name('sidebar');

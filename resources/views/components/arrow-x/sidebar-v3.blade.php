@@ -26,7 +26,6 @@
     'title' => config('app.name'),
     'logo' => null,
     'type' => 'admin', // Type: admin, user, seller
-    'iframeMode' => false, // 🆕 Iframe Navigation Mode
 ])
 
 @php
@@ -64,12 +63,13 @@
     @mouseleave="$store.sidebar.setHovered(false)"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0
-           w-64 -translate-x-full md:translate-x-0"
+           transform md:transform-none"
     :class="{
         'translate-x-0': $store.sidebar.shouldShow,
         '-translate-x-full': !$store.sidebar.shouldShow
     }"
     :style="'width: ' + $store.sidebar.sidebarWidth + 'px'"
+    x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
@@ -2240,54 +2240,3 @@
     animation-delay: 300ms;
 }
 </style>
-
-@if($iframeMode)
-{{-- Iframe Navigation Mode: Intercept ทุกการคลิกลิงก์ใน sidebar --}}
-<script>
-(function() {
-    'use strict';
-
-    console.log('🖼️ Sidebar Iframe Mode: ENABLED');
-
-    // รอให้ DOM โหลดเสร็จ
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.querySelector('aside');
-        if (!sidebar) return;
-
-        // Intercept การคลิกลิงก์ทั้งหมดใน sidebar
-        sidebar.addEventListener('click', function(e) {
-            const link = e.target.closest('a[href]');
-
-            if (link) {
-                const href = link.getAttribute('href');
-
-                // ตรวจสอบว่าเป็น internal link (ไม่ใช่ external หรือ #)
-                if (href && !href.startsWith('http') && !href.startsWith('#') && href !== 'javascript:void(0)') {
-                    e.preventDefault();
-
-                    // ดึง title จาก link text
-                    const title = link.textContent.trim();
-
-                    // Dispatch event เพื่อให้ parent จัดการ navigation
-                    const event = new CustomEvent('navigate-iframe', {
-                        detail: { url: href, title: title },
-                        bubbles: true
-                    });
-
-                    document.dispatchEvent(event);
-
-                    console.log('🎯 Iframe Navigation:', href, '|', title);
-
-                    // ปิด sidebar บนมือถือ (ถ้าจำเป็น)
-                    if (window.Alpine && window.Alpine.store && window.Alpine.store('sidebar')) {
-                        window.Alpine.store('sidebar').closeOnMenuClick();
-                    }
-                }
-            }
-        });
-
-        console.log('✅ Sidebar link interceptor initialized');
-    });
-})();
-</script>
-@endif

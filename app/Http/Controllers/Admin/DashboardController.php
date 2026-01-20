@@ -174,9 +174,8 @@ class DashboardController extends Controller
             ];
         }
 
-        // ✅ ใช้ dashboard view (ไม่ใช่ dashboard-v3)
-        // dashboard.blade.php มี content ครบถ้วนและทำงานได้ดี
-        return view('admin.dashboard', compact(
+        // ใช้ dashboard-v3 view สำหรับ V3 theme
+        return view('admin.dashboard-v3', compact(
             'stats',
             'monthlyRevenue',
             'commissionTypes',
