@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.428.4] - 2026-01-20
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2411 from xjanova/claude/revert-to-v3424-0EDFE (244e2d1f)
+- revert: roll back to v3.424.3 - remove problematic iframe system (be87c7b3)
+
 ## [v3.428.3] - 2026-01-19
 
 ### ✨ Features
