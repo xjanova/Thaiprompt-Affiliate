@@ -24,6 +24,9 @@ class User extends Authenticatable
         'password',
         'member_number',
         'profile_picture',
+        // Referral system fields (Mobile App Registration)
+        'referral_code',
+        'sponsor_id',
         // ✅ ลบ 'role', 'role_id', 'is_super_admin', 'is_hotel_admin' ออกแล้ว
         'managed_hotel_id',
         // ✅ ลบ 'blocked_at' ออกแล้ว

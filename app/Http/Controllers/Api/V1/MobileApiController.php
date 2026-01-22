@@ -125,6 +125,8 @@ class MobileApiController extends Controller
             $referralCode = $this->generateReferralCode();
 
             // สร้าง user
+            // หมายเหตุ: ไม่ต้องใส่ role เพราะ database default เป็น 'user' อยู่แล้ว
+            // และ role อยู่ใน $guarded เพื่อป้องกัน privilege escalation
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -132,7 +134,6 @@ class MobileApiController extends Controller
                 'phone' => $request->phone,
                 'referral_code' => $referralCode,
                 'sponsor_id' => $sponsorId,
-                'role' => 'user',
             ]);
 
             // สร้าง token
@@ -159,9 +160,20 @@ class MobileApiController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Log error สำหรับ debugging
+            \Log::error('Mobile Register Error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'email' => $request->email,
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาดในการสมัครสมาชิก',
+                // แสดง error detail เฉพาะใน debug mode
+                'debug' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
