@@ -2,6 +2,59 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.426.0] - 2026-01-22
+
+### ✨ Features
+- Merge pull request #2407 from xjanova/claude/admin-panel-bot-setup-qf5bq (2ff9b2f1)
+- feat: implement true two-iframe system (simple & works!) (e5e3e69e)
+- feat: implement simplified iframe navigation system (6f338441)
+- feat: implement true two-iframe system (simple & works!) (ff594fc1)
+- feat: activate iframe navigation system for admin panel (da596251)
+### 🐛 Bug Fixes
+- fix: แก้ไข Mobile App Registration API Error 500 (cac9704e)
+- Merge pull request #2410 from xjanova/claude/fix-right-panel-display-0EDFE (71eba15d)
+- fix: resolve right panel iframe not displaying content in Dashboard (856f3527)
+- Merge pull request #2409 from xjanova/claude/admin-panel-bot-setup-qf5bq (430d4469)
+- fix: remove x-cloak from sidebar to show menu immediately (74a18308)
+- Merge pull request #2408 from xjanova/claude/admin-panel-bot-setup-qf5bq (6cd9f804)
+- fix: iframe now loads current URL instead of always dashboard (c3105a16)
+- fix: add missing dependencies for navbar-v3 to work properly (4db446e9)
+- fix: resolve double sidebar/navbar by implementing iframe mode detection (7174d805)
+- Merge pull request #2404 from xjanova/claude/admin-panel-bot-setup-qf5bq (4f1bd847)
+- fix: add Alpine.js CDN fallback and retry mechanism (215673de)
+- fix: add full conditional layout with debug logging (6d721d51)
+### 🔧 Other Changes
+- chore: bump version to 3.425.0 [skip ci] (032bdf76)
+- Merge pull request #2413 from xjanova/claude/fix-version-3424-0EDFE (d3a93289)
+- chore: fix VERSION to 3.424.3 after revert (371dfe08)
+- chore: bump version to 3.425.0 [skip ci] (e16fdf4c)
+- Merge pull request #2412 from xjanova/claude/force-revert-to-v3424-0EDFE (2296017d)
+- revert: force roll back to v3.424.3 - completely remove iframe system (c2012d65)
+- chore: bump version to 3.428.4 [skip ci] (b8da5f98)
+- Merge pull request #2411 from xjanova/claude/revert-to-v3424-0EDFE (244e2d1f)
+- revert: roll back to v3.424.3 - remove problematic iframe system (be87c7b3)
+- chore: bump version to 3.428.3 [skip ci] (17798112)
+- chore: bump version to 3.428.2 [skip ci] (3d5552b2)
+- chore: bump version to 3.428.1 [skip ci] (951109bc)
+- chore: bump version to 3.428.0 [skip ci] (bd3290f5)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (30d9699a)
+- chore: bump version to 3.427.1 [skip ci] (c0f2742f)
+- Merge pull request #2406 from xjanova/claude/admin-panel-bot-setup-qf5bq (a3408204)
+- chore: bump version to 3.427.0 [skip ci] (1cbb1f64)
+- Merge pull request #2405 from xjanova/claude/admin-panel-bot-setup-qf5bq (a1425d1c)
+- Merge branch 'claude/Main' into claude/admin-panel-bot-setup-qf5bq (e5fb8cbc)
+- build: compile Vite assets after npm install (cc785f3e)
+- chore: bump version to 3.426.3 [skip ci] (568d640d)
+- chore: bump version to 3.426.2 [skip ci] (fb9ace2a)
+- Merge pull request #2403 from xjanova/claude/admin-panel-bot-setup-qf5bq (8b07b52b)
+- debug: add iframe diagnostic page (325da830)
+- chore: bump version to 3.426.1 [skip ci] (5fadbac0)
+- Merge pull request #2402 from xjanova/claude/admin-panel-bot-setup-qf5bq (a4bbfbec)
+- refactor: separate iframe and content views cleanly (c8e6cc47)
+- chore: bump version to 3.426.0 [skip ci] (3396e15a)
+- Merge pull request #2401 from xjanova/claude/admin-panel-bot-setup-qf5bq (872367f0)
+- docs: อัพเดทเอกสารสำหรับฟีเจอร์ใหม่ (Iframe Navigation, Central AI, Sidebar Footer) (a7a6b6f6)
+
 ## [v3.425.0] - 2026-01-20
 
 ### ✨ Features
