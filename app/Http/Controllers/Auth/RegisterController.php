@@ -67,7 +67,7 @@ class RegisterController extends Controller
 
         // ดึงรางวัลสมัครสมาชิก
         $signupRewards = LineSignupReward::where('is_active', true)
-            ->orderBy('sort_order')
+            ->orderBy('display_order')
             ->get();
 
         return view('auth.register', [
