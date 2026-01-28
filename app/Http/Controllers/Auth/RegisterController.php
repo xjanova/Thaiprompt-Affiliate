@@ -27,23 +27,56 @@ class RegisterController extends Controller
     /**
      * แสดงฟอร์มสมัครสมาชิก
      *
-     * ✅ เปลี่ยนมาใช้ระบบ LINE Registration ใหม่ทั้งหมด
-     * บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร และ auto-redirect หลังสมัครเสร็จ
+     * รองรับทั้ง LINE Registration และ Standard Registration
+     * - ถ้า require_line_registration = true: แสดงแค่ปุ่ม LINE + QR code
+     * - ถ้า require_line_registration = false: แสดงฟอร์มสมัครปกติ + ตัวเลือก LINE
      *
      * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\View\View
      */
     public function showRegistrationForm(Request $request)
     {
+        // ดึงรหัสแนะนำจาก URL
         $referralCode = $request->query('ref');
 
-        // ✅ Redirect ไปหน้า LINE Registration ใหม่เสมอ
-        $url = route('line.registration.register');
+        // ค้นหาข้อมูลผู้แนะนำ
+        $referrer = null;
+        $referrerName = null;
+        $referrerPicture = null;
+
         if ($referralCode) {
-            $url .= '?ref=' . urlencode($referralCode);
+            $referrerMember = MlmMember::where('member_code', $referralCode)->first();
+            if ($referrerMember) {
+                $referrer = $referrerMember->user;
+                $referrerName = $referrer->name;
+                $referrerPicture = $referrer->profile_picture ?? $referrer->line_picture_url;
+            }
         }
 
-        return redirect($url);
+        // ดึงชื่อ default sponsor (ถ้าไม่มี referral code)
+        $defaultSponsorName = null;
+        if (empty($referralCode)) {
+            $defaultSponsorCode = Setting::get('default_sponsor_member_code');
+            if ($defaultSponsorCode) {
+                $defaultSponsorMember = MlmMember::where('member_code', $defaultSponsorCode)->first();
+                if ($defaultSponsorMember) {
+                    $defaultSponsorName = $defaultSponsorMember->user->name;
+                }
+            }
+        }
+
+        // ดึงรางวัลสมัครสมาชิก
+        $signupRewards = LineSignupReward::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('auth.register', [
+            'referralCode' => $referralCode,
+            'referrerName' => $referrerName,
+            'referrerPicture' => $referrerPicture,
+            'defaultSponsorName' => $defaultSponsorName,
+            'signupRewards' => $signupRewards,
+        ]);
     }
 
     /**
