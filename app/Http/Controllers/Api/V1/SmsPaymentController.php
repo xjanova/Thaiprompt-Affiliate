@@ -25,7 +25,7 @@ class SmsPaymentController extends Controller
      */
     public function notify(Request $request): JsonResponse
     {
-        $device = $request->get('sms_checker_device');
+        $device = $request->attributes->get('sms_checker_device');
         if (!$device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -121,7 +121,7 @@ class SmsPaymentController extends Controller
      */
     public function status(Request $request): JsonResponse
     {
-        $device = $request->get('sms_checker_device');
+        $device = $request->attributes->get('sms_checker_device');
         if (!$device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
@@ -145,7 +145,7 @@ class SmsPaymentController extends Controller
      */
     public function registerDevice(Request $request): JsonResponse
     {
-        $device = $request->get('sms_checker_device');
+        $device = $request->attributes->get('sms_checker_device');
         if (!$device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }

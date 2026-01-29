@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\V1\SmsPaymentController;
 use App\Http\Middleware\VerifySmsCheckerDevice;
 use Illuminate\Support\Facades\Route;
 
+// Note: When loaded from api.php, the /api prefix is already applied by Laravel.
+// So full URL will be: /api/v1/sms-payment/*
 Route::prefix('v1/sms-payment')->group(function () {
 
     // Protected by device API key
