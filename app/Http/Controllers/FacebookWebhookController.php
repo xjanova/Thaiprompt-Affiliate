@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessFortuneTelling;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
 use App\Services\FacebookWebhookService;
@@ -251,6 +252,10 @@ class FacebookWebhookController extends Controller
     /**
      * ทำนายดวง (รองรับพื้นฐานและเชิงลึก)
      *
+     * เมื่อ queue driver ไม่ใช่ 'sync' จะ dispatch job แบบ async
+     * เพื่อไม่ให้ webhook response ช้า (Facebook timeout 20 วินาที)
+     * ถ้าเป็น 'sync' จะประมวลผลแบบ inline ทันที
+     *
      * @param array $data ข้อมูลจาก Facebook
      * @param array $questions คำถามที่แยกแล้ว
      * @param bool $isComment เป็นคอมเมนต์หรือ direct message
@@ -271,6 +276,61 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // เตรียมข้อมูลสำหรับ job
+        $jobData = [
+            'facebook_user_id' => $fromId,
+            'facebook_user_name' => $fromName,
+            'questions' => $questions,
+            'is_comment' => $isComment,
+            'is_deep' => $isDeep,
+            'is_paid' => false,
+            'amount_paid' => 0,
+            'user_image_url' => $userImageUrl,
+            'comment_id' => $isComment ? ($data['comment_id'] ?? null) : null,
+            'post_id' => $isComment ? ($data['post_id'] ?? null) : null,
+            'reply_type' => $isComment ? 'comment' : 'message',
+        ];
+
+        // ใช้ queue แบบ async เมื่อมี queue driver ที่รองรับ
+        // เพื่อ return 200 ให้ Facebook ทันเวลา (Facebook timeout 20 วินาที)
+        $queueDriver = config('queue.default', 'sync');
+
+        if ($queueDriver !== 'sync') {
+            // Async: dispatch job ให้ queue จัดการ
+            ProcessFortuneTelling::dispatch($jobData);
+
+            Log::info('Fortune telling job dispatched (async)', [
+                'facebook_user_id' => $fromId,
+                'reading_type' => $isDeep ? 'deep' : 'basic',
+                'queue_driver' => $queueDriver,
+            ]);
+            return;
+        }
+
+        // Sync fallback: ประมวลผลทันที (สำหรับ dev หรือเมื่อไม่มี queue)
+        $this->processFortuneSync($data, $questions, $isComment, $isDeep, $userImageUrl, $fromId, $fromName);
+    }
+
+    /**
+     * ประมวลผลคำทำนายแบบ synchronous (ใช้เมื่อ queue = sync)
+     *
+     * @param array $data ข้อมูลจาก Facebook
+     * @param array $questions คำถาม
+     * @param bool $isComment เป็นคอมเมนต์
+     * @param bool $isDeep เป็นเชิงลึก
+     * @param string|null $userImageUrl รูปจากผู้ใช้
+     * @param string $fromId Facebook User ID
+     * @param string|null $fromName ชื่อผู้ใช้
+     */
+    protected function processFortuneSync(
+        array $data,
+        array $questions,
+        bool $isComment,
+        bool $isDeep,
+        ?string $userImageUrl,
+        string $fromId,
+        ?string $fromName
+    ): void {
         // ส่ง typing indicator ขณะ AI กำลังประมวลผล
         if (!$isComment) {
             $this->facebookService->sendTypingIndicator($fromId);
@@ -286,11 +346,14 @@ class FacebookWebhookController extends Controller
                 ? $this->settings->getDeepPromptTemplate()
                 : $this->settings->getBasicPromptTemplate();
 
+            $readingType = $isDeep ? 'deep' : 'basic';
+
             $aiResponse = $this->aiService->generateFortuneTelling(
                 $questions,
                 $userProfile,
                 $userPosts,
-                $promptTemplate
+                $promptTemplate,
+                $readingType
             );
 
             // บันทึกผลลงฐานข้อมูล
@@ -307,7 +370,7 @@ class FacebookWebhookController extends Controller
                 'ai_model' => $aiResponse['model'],
                 'tokens_used' => $aiResponse['tokens_used'],
                 'response_type' => ($isComment && $this->settings->respond_in_comment) ? 'comment' : 'private_message',
-                'reading_type' => $isDeep ? 'deep' : 'basic',
+                'reading_type' => $readingType,
                 'user_image_url' => $userImageUrl,
                 'is_paid' => false,
             ]);
@@ -317,7 +380,7 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendTypingIndicator($fromId, false);
             }
 
-            // ส่งคำทำนายกลับ
+            // ส่งคำทำนายกลับ (รองรับรูปภาพ + message splitting)
             if ($this->facebookService->sendFortuneTelling($reading, $aiResponse['response'])) {
                 $reading->markAsResponded();
             }
@@ -332,9 +395,9 @@ class FacebookWebhookController extends Controller
                 ]);
             }
 
-            Log::info('ทำนายสำเร็จ', [
+            Log::info('ทำนายสำเร็จ (sync)', [
                 'reading_id' => $reading->id,
-                'type' => $isDeep ? 'deep' : 'basic',
+                'type' => $readingType,
                 'provider' => $aiResponse['provider'],
                 'tokens' => $aiResponse['tokens_used'],
             ]);

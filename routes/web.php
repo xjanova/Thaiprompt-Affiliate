@@ -1078,6 +1078,15 @@ Route::get('/download/{token}', [SoftwareDownloadController::class, 'downloadByT
 |--------------------------------------------------------------------------
 | Routes สำหรับรับ webhook events จาก Facebook Messenger
 | ใช้สำหรับระบบดูดวงผ่าน Facebook
+|
+| ⚠️ Rate Limiting Strategy:
+| ไม่ใช้ FortuneRateLimitMiddleware ที่นี่ เพราะ:
+| 1. Facebook ต้องได้รับ HTTP 200 เสมอ (429 จะทำให้ Facebook disable webhook)
+| 2. Rate limiting จัดการภายใน controller (checkFreeLimit, checkDeepFreeLimit)
+| 3. Webhook signature verification ป้องกัน fake requests แล้ว
+| 4. Facebook ควบคุม event volume ที่ส่งมาเอง
+|
+| FortuneRateLimitMiddleware ใช้สำหรับ public API routes เท่านั้น
 */
 
 use App\Http\Controllers\FacebookWebhookController;
@@ -1086,7 +1095,7 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
     // Webhook verification (GET) และรับ events (POST)
     Route::match(['GET', 'POST'], '/facebook', [FacebookWebhookController::class, 'webhook'])
         ->name('facebook');
-    
+
     // Verify webhook (GET only - สำหรับ Facebook verification)
     Route::get('/facebook/verify', [FacebookWebhookController::class, 'verify'])
         ->name('facebook.verify');
