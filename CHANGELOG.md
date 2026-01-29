@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.437.1] - 2026-01-29
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2427 from xjanova/feature/sms-payment-checker (62ae4fd8)
+- fix: resolve bugs found during code review (f963e2cf)
+### 🔧 Other Changes
+
+
 ## [v3.437.0] - 2026-01-29
 
 ### ✨ Features
