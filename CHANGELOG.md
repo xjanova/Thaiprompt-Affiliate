@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.430.0] - 2026-01-29
+
+### ✨ Features
+- Merge pull request #2419 from xjanova/claude/add-fortune-telling-service-KvbRK (cc0e75a4)
+- feat: add fortune telling service with Facebook Messenger integration (df3fdc82)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.429.2] - 2026-01-29
 
 ### ✨ Features
