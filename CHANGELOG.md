@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.433.0] - 2026-01-29
+
+### ✨ Features
+- feat: implement global AI settings integration (a15d4ae2)
+- feat: add support for using global AI settings from main system (da678b4b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2422 from xjanova/claude/add-fortune-telling-service-KvbRK (2a739137)
+
 ## [v3.432.0] - 2026-01-29
 
 ### ✨ Features
