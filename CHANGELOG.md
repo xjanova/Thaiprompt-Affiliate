@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.435.0] - 2026-01-29
+
+### ✨ Features
+- feat: production-grade fortune-telling with Messenger image support and reading types (9541d243)
+- feat: add freemium fortune-telling system with admin icons and subscription support (01751aa1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2424 from xjanova/claude/fortune-admin-icons-d93i4 (a74a5a1a)
+
 ## [v3.434.0] - 2026-01-29
 
 ### ✨ Features
