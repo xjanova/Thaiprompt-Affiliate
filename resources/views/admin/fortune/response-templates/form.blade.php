@@ -119,6 +119,8 @@
                             '{remaining_free}' => 'ครั้งฟรีที่เหลือ',
                             '{max_free}' => 'ครั้งฟรีสูงสุด',
                             '{price}' => 'ราคา',
+                            '{birth_date}' => 'วันเดือนปีเกิด',
+                            '{zodiac}' => 'ราศี',
                         ] as $placeholder => $desc)
                             <button type="button"
                                     @click="insertPlaceholder('{{ $placeholder }}')"
