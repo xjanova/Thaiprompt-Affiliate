@@ -31,26 +31,43 @@ class FortuneAIService
     }
 
     /**
+     * กำหนด maxTokens และ temperature ตาม reading type
+     */
+    protected const READING_CONFIG = [
+        'basic' => [
+            'max_tokens' => 512,
+            'temperature' => 0.7,
+        ],
+        'deep' => [
+            'max_tokens' => 2048,
+            'temperature' => 0.8,
+        ],
+    ];
+
+    /**
      * สร้างคำทำนายจาก AI
      *
      * @param array $questions คำถามที่ต้องการทำนาย
      * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้
      * @param array|null $userPosts โพสล่าสุดของผู้ใช้ (เฉพาะเชิงลึก)
      * @param string|null $promptTemplate Prompt template ที่กำหนดเอง (ถ้าไม่ระบุจะใช้ค่าเริ่มต้น)
+     * @param string $readingType ประเภทคำทำนาย: 'basic' หรือ 'deep' (ส่งผลต่อ maxTokens/temperature)
      */
     public function generateFortuneTelling(
         array $questions,
         ?array $userProfile = null,
         ?array $userPosts = null,
-        ?string $promptTemplate = null
+        ?string $promptTemplate = null,
+        string $readingType = 'basic'
     ): array {
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate);
+        $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
 
         return match ($this->provider) {
-            'gemini' => $this->callGemini($prompt),
-            'groq' => $this->callGroq($prompt),
-            'qwen' => $this->callQwen($prompt),
-            'openrouter' => $this->callOpenRouter($prompt),
+            'gemini' => $this->callGemini($prompt, $config),
+            'groq' => $this->callGroq($prompt, $config),
+            'qwen' => $this->callQwen($prompt, $config),
+            'openrouter' => $this->callOpenRouter($prompt, $config),
             default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
         };
     }
@@ -104,7 +121,7 @@ class FortuneAIService
         return !empty($formatted) ? implode("\n", $formatted) : 'ไม่มีข้อมูลโพสล่าสุด';
     }
 
-    protected function callGemini(string $prompt): array
+    protected function callGemini(string $prompt, array $config = []): array
     {
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
@@ -112,10 +129,10 @@ class FortuneAIService
             $response = Http::timeout(60)->post($url, [
                 'contents' => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => [
-                    'temperature' => 0.7,
+                    'temperature' => $config['temperature'] ?? 0.7,
                     'topK' => 40,
                     'topP' => 0.95,
-                    'maxOutputTokens' => 2048,
+                    'maxOutputTokens' => $config['max_tokens'] ?? 2048,
                 ],
             ])->throw();
 
@@ -133,7 +150,7 @@ class FortuneAIService
         }
     }
 
-    protected function callGroq(string $prompt): array
+    protected function callGroq(string $prompt, array $config = []): array
     {
         try {
             $response = Http::timeout(60)
@@ -144,8 +161,8 @@ class FortuneAIService
                         ['role' => 'system', 'content' => 'คุณเป็นหมอดูมืออาชีพ'],
                         ['role' => 'user', 'content' => $prompt],
                     ],
-                    'temperature' => 0.7,
-                    'max_tokens' => 2048,
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
                 ])->throw();
 
             $data = $response->json();
@@ -162,7 +179,7 @@ class FortuneAIService
         }
     }
 
-    protected function callQwen(string $prompt): array
+    protected function callQwen(string $prompt, array $config = []): array
     {
         try {
             $response = Http::timeout(120)
@@ -170,8 +187,8 @@ class FortuneAIService
                 ->post("https://api-inference.huggingface.co/models/{$this->model}", [
                     'inputs' => $prompt,
                     'parameters' => [
-                        'max_new_tokens' => 2048,
-                        'temperature' => 0.7,
+                        'max_new_tokens' => $config['max_tokens'] ?? 2048,
+                        'temperature' => $config['temperature'] ?? 0.7,
                     ],
                 ])->throw();
 
@@ -189,7 +206,7 @@ class FortuneAIService
         }
     }
 
-    protected function callOpenRouter(string $prompt): array
+    protected function callOpenRouter(string $prompt, array $config = []): array
     {
         try {
             $response = Http::timeout(60)
@@ -201,6 +218,8 @@ class FortuneAIService
                         ['role' => 'system', 'content' => 'คุณเป็นหมอดูมืออาชีพ'],
                         ['role' => 'user', 'content' => $prompt],
                     ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
                 ])->throw();
 
             $data = $response->json();

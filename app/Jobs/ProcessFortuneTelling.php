@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Services\FortuneAIService;
 use App\Services\FacebookWebhookService;
 use Illuminate\Bus\Queueable;
@@ -20,6 +21,9 @@ use Exception;
  * - Retry logic with exponential backoff
  * - Error handling และ logging
  * - ส่งผลลัพธ์กลับ Facebook อัตโนมัติ
+ * - รองรับ Freemium (basic/deep) พร้อม prompt template
+ * - ส่ง typing indicator ระหว่างประมวลผล
+ * - รองรับส่งรูปภาพกลับ
  */
 class ProcessFortuneTelling implements ShouldQueue
 {
@@ -49,6 +53,19 @@ class ProcessFortuneTelling implements ShouldQueue
 
     /**
      * ข้อมูลที่ใช้ในการทำนาย
+     *
+     * Expected keys:
+     * - facebook_user_id: string
+     * - facebook_user_name: string|null
+     * - questions: array
+     * - reply_type: 'comment'|'message'
+     * - comment_id: string|null
+     * - post_id: string|null
+     * - is_comment: bool
+     * - is_deep: bool
+     * - is_paid: bool
+     * - amount_paid: float
+     * - user_image_url: string|null
      */
     protected array $data;
 
@@ -76,21 +93,31 @@ class ProcessFortuneTelling implements ShouldQueue
     public function handle(FortuneAIService $aiService, FacebookWebhookService $facebookService): void
     {
         $startTime = microtime(true);
+        $fromId = $this->data['facebook_user_id'] ?? null;
+        $isComment = $this->data['is_comment'] ?? false;
+        $isDeep = $this->data['is_deep'] ?? false;
 
         try {
             Log::info('🔮 Processing fortune telling job', [
-                'facebook_user_id' => $this->data['facebook_user_id'] ?? null,
+                'facebook_user_id' => $fromId,
+                'reading_type' => $isDeep ? 'deep' : 'basic',
                 'attempt' => $this->attempts(),
             ]);
+
+            // ส่ง typing indicator ขณะ AI กำลังประมวลผล (Messenger only)
+            if (!$isComment && $fromId) {
+                $facebookService->sendTypingIndicator($fromId);
+            }
 
             // ดึงข้อมูลผู้ใช้จาก Facebook (optional)
             $userProfile = null;
             $userPosts = null;
 
-            if (isset($this->data['facebook_user_id'])) {
+            if ($fromId) {
                 try {
-                    $userProfile = $facebookService->getUserProfile($this->data['facebook_user_id']);
-                    $userPosts = $facebookService->getUserPosts($this->data['facebook_user_id']);
+                    $userProfile = $facebookService->getUserProfile($fromId);
+                    // ดึงโพสล่าสุดเฉพาะคำทำนายเชิงลึก
+                    $userPosts = $isDeep ? $facebookService->getUserPosts($fromId, 3) : null;
                 } catch (Exception $e) {
                     // ไม่ throw error ถ้าดึงข้อมูล user ไม่ได้
                     Log::warning('Could not fetch user data', [
@@ -99,29 +126,59 @@ class ProcessFortuneTelling implements ShouldQueue
                 }
             }
 
-            // เรียก AI เพื่อทำนาย
+            // เลือก prompt template ตามระดับ
+            $settings = FortuneTellingSetting::getSettings();
+            $promptTemplate = $isDeep
+                ? $settings->getDeepPromptTemplate()
+                : $settings->getBasicPromptTemplate();
+
+            // เรียก AI เพื่อทำนาย (ส่ง readingType เพื่อกำหนด maxTokens/temperature)
+            $readingType = $isDeep ? 'deep' : 'basic';
             $aiResponse = $aiService->generateFortuneTelling(
                 $this->data['questions'],
                 $userProfile,
-                $userPosts
+                $userPosts,
+                $promptTemplate,
+                $readingType
             );
 
             // บันทึกลงฐานข้อมูล
-            $reading = $this->saveReading($aiResponse);
+            $reading = $this->saveReading($aiResponse, $userProfile, $userPosts);
+
+            // ปิด typing indicator
+            if (!$isComment && $fromId) {
+                $facebookService->sendTypingIndicator($fromId, false);
+            }
 
             // ส่งผลกลับไปที่ Facebook
-            $this->sendResponse($facebookService, $reading);
+            $this->sendResponse($facebookService, $reading, $aiResponse['response']);
+
+            // หลังส่งคำทำนายเชิงลึกฟรี ส่ง quick replies แนะนำสมัครสมาชิก
+            if ($isDeep && $settings->isTryBeforeBuyEnabled() && !$isComment && $fromId) {
+                $tryBeforeBuyMsg = $settings->getTryBeforeBuyMessage();
+                $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
+                    ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
+                    ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                    ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
+                ]);
+            }
 
             // Log success
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             Log::info('✅ Fortune telling completed', [
                 'reading_id' => $reading->id,
+                'reading_type' => $isDeep ? 'deep' : 'basic',
                 'duration_ms' => $duration,
                 'tokens_used' => $aiResponse['tokens_used'] ?? 0,
                 'provider' => $aiResponse['provider'] ?? 'unknown',
             ]);
 
         } catch (Exception $e) {
+            // ปิด typing indicator ถ้า error
+            if (!$isComment && $fromId) {
+                $facebookService->sendTypingIndicator($fromId, false);
+            }
+
             // Log error
             $duration = round((microtime(true) - $startTime) * 1000, 2);
             Log::error('❌ Fortune telling job failed', [
@@ -144,48 +201,55 @@ class ProcessFortuneTelling implements ShouldQueue
     /**
      * บันทึกผลการทำนายลงฐานข้อมูล
      *
-     * @param array $aiResponse
+     * @param array $aiResponse ผลลัพธ์จาก AI
+     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้
+     * @param array|null $userPosts ข้อมูลโพสล่าสุดของผู้ใช้
      * @return FortuneReading
      */
-    protected function saveReading(array $aiResponse): FortuneReading
+    protected function saveReading(array $aiResponse, ?array $userProfile, ?array $userPosts): FortuneReading
     {
+        $isComment = $this->data['is_comment'] ?? false;
+        $isDeep = $this->data['is_deep'] ?? false;
+        $settings = FortuneTellingSetting::getSettings();
+
         return FortuneReading::create([
             'facebook_user_id' => $this->data['facebook_user_id'] ?? null,
-            'facebook_user_name' => $this->data['facebook_user_name'] ?? 'Unknown',
+            'facebook_user_name' => $this->data['facebook_user_name'] ?? $userProfile['name'] ?? 'Unknown',
+            'facebook_comment_id' => $isComment ? ($this->data['comment_id'] ?? null) : null,
+            'facebook_post_id' => $isComment ? ($this->data['post_id'] ?? null) : null,
             'user_id' => $this->data['user_id'] ?? null,
             'questions' => $this->data['questions'],
             'ai_provider' => $aiResponse['provider'],
             'ai_model' => $aiResponse['model'],
             'ai_response' => $aiResponse['response'],
             'tokens_used' => $aiResponse['tokens_used'] ?? 0,
+            'user_profile' => $userProfile,
+            'user_posts_context' => $userPosts,
+            'response_type' => ($isComment && $settings->respond_in_comment) ? 'comment' : 'private_message',
+            'reading_type' => $isDeep ? 'deep' : 'basic',
+            'user_image_url' => $this->data['user_image_url'] ?? null,
             'is_paid' => $this->data['is_paid'] ?? false,
             'amount_paid' => $this->data['amount_paid'] ?? 0,
-            'metadata' => [
-                'ip_address' => $this->data['ip_address'] ?? null,
-                'user_agent' => $this->data['user_agent'] ?? null,
-                'processing_time_ms' => $aiResponse['processing_time_ms'] ?? 0,
-            ],
         ]);
     }
 
     /**
      * ส่งผลการทำนายกลับไปที่ Facebook
      *
+     * ใช้ sendFortuneTelling ของ FacebookWebhookService ซึ่งรองรับ:
+     * - ข้อความยาว (auto-split)
+     * - รูปภาพ (ถ้ามี reading_image_url)
+     * - ตอบในคอมเมนต์หรือ Messenger ตามการตั้งค่า
+     *
      * @param FacebookWebhookService $facebookService
      * @param FortuneReading $reading
+     * @param string $response คำตอบจาก AI
      * @return void
      */
-    protected function sendResponse(FacebookWebhookService $facebookService, FortuneReading $reading): void
+    protected function sendResponse(FacebookWebhookService $facebookService, FortuneReading $reading, string $response): void
     {
-        $message = "🔮 **การทำนายของคุณ**\n\n";
-        $message .= $reading->ai_response;
-        $message .= "\n\n✨ ขอให้โชคดี!";
-
-        // ส่ง message กลับ
-        if ($this->data['reply_type'] === 'comment' && isset($this->data['comment_id'])) {
-            $facebookService->replyToComment($this->data['comment_id'], $message);
-        } elseif ($this->data['reply_type'] === 'message' && isset($this->data['facebook_user_id'])) {
-            $facebookService->sendMessage($this->data['facebook_user_id'], $message);
+        if ($facebookService->sendFortuneTelling($reading, $response)) {
+            $reading->markAsResponded();
         }
     }
 
@@ -201,9 +265,11 @@ class ProcessFortuneTelling implements ShouldQueue
         $message .= "กรุณาลองใหม่อีกครั้งในภายหลัง";
 
         try {
-            if ($this->data['reply_type'] === 'comment' && isset($this->data['comment_id'])) {
+            $isComment = $this->data['is_comment'] ?? ($this->data['reply_type'] === 'comment');
+
+            if ($isComment && isset($this->data['comment_id'])) {
                 $facebookService->replyToComment($this->data['comment_id'], $message);
-            } elseif ($this->data['reply_type'] === 'message' && isset($this->data['facebook_user_id'])) {
+            } elseif (isset($this->data['facebook_user_id'])) {
                 $facebookService->sendMessage($this->data['facebook_user_id'], $message);
             }
         } catch (Exception $e) {
@@ -223,12 +289,10 @@ class ProcessFortuneTelling implements ShouldQueue
     {
         Log::critical('🚨 Fortune telling job failed permanently', [
             'error' => $exception->getMessage(),
-            'data' => $this->data,
+            'facebook_user_id' => $this->data['facebook_user_id'] ?? 'unknown',
+            'reading_type' => ($this->data['is_deep'] ?? false) ? 'deep' : 'basic',
             'attempts' => $this->attempts(),
         ]);
-
-        // TODO: ส่ง notification ไป admin
-        // TODO: บันทึก failed job ลงฐานข้อมูล
     }
 
     /**
@@ -239,7 +303,8 @@ class ProcessFortuneTelling implements ShouldQueue
     public function displayName(): string
     {
         $userId = $this->data['facebook_user_id'] ?? 'unknown';
-        return "ProcessFortuneTelling[{$userId}]";
+        $type = ($this->data['is_deep'] ?? false) ? 'deep' : 'basic';
+        return "ProcessFortuneTelling[{$userId}:{$type}]";
     }
 
     /**
@@ -251,8 +316,8 @@ class ProcessFortuneTelling implements ShouldQueue
     {
         return [
             'fortune-telling',
+            'type:' . (($this->data['is_deep'] ?? false) ? 'deep' : 'basic'),
             'facebook:' . ($this->data['facebook_user_id'] ?? 'unknown'),
-            'provider:' . ($this->data['ai_provider'] ?? 'default'),
         ];
     }
 }
