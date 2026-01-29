@@ -64,6 +64,7 @@ class FortuneResponseTemplateSeeder extends Seeder
 
 💡 ต้องการคำทำนายเชิงลึกละเอียดกว่านี้?
 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายแบบเจาะลึก
+📅 บอกวันเดือนปีเกิด เพื่อทำนายแม่นยำยิ่งขึ้น!
 EOT,
                 'header_text' => null,
                 'footer_text' => null,
@@ -122,8 +123,10 @@ EOT,
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 📅 ทำนายเมื่อ: {date_thai}
+♈ ราศี: {zodiac}
 ⭐ ให้คะแนนความพึงพอใจ: {rate_url}
 
+💡 บอกวันเดือนปีเกิด เพื่อรับคำทำนายที่แม่นยำยิ่งขึ้น!
 🙏 ขอบคุณที่ไว้วางใจใช้บริการ
 📱 สมัครสมาชิกเพื่อรับคำทำนายไม่จำกัด: {register_url}
 EOT,
@@ -134,6 +137,7 @@ EOT,
                 'available_placeholders' => [
                     '{response}', '{user_name}', '{questions}',
                     '{date_thai}', '{rate_url}', '{register_url}',
+                    '{birth_date}', '{zodiac}',
                 ],
                 'is_active' => true,
                 'is_default' => true,
@@ -163,6 +167,7 @@ EOT,
 ⭐ ให้คะแนน: {rate_url}
 
 💡 ดูดวงอีกครั้งได้เลย → พิมพ์ "ดูดวง"
+📅 บอกวันเดือนปีเกิด เพื่อทำนายแม่นยำยิ่งขึ้น!
 📱 สมัครสมาชิก VIP: {register_url}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EOT,
@@ -173,6 +178,7 @@ EOT,
                 'available_placeholders' => [
                     '{response}', '{user_name}', '{questions}', '{date_thai}',
                     '{reading_id}', '{rate_url}', '{register_url}',
+                    '{birth_date}', '{zodiac}',
                 ],
                 'is_active' => true,
                 'is_default' => false,
