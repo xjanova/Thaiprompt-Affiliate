@@ -1528,3 +1528,6 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
     Route::post('/report/sales', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'reportSales'])
         ->name('report.sales');
 });
+
+// SMS Payment Checker Routes
+require __DIR__ . '/sms_payment_api.php';

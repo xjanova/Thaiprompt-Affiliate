@@ -96,6 +96,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Developer & Software License middleware
             'developer.approved' => \App\Http\Middleware\CheckDeveloperApproved::class,
             'license.owner' => \App\Http\Middleware\CheckLicenseOwnership::class,
+            // SMS Payment Checker middleware
+            'smschecker' => \App\Http\Middleware\VerifySmsCheckerDevice::class,
         ]);
 
         // Global middleware for IP blocking
