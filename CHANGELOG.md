@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.432.0] - 2026-01-29
+
+### ✨ Features
+- feat: add admin panel views and menu for fortune telling system (9e2cc823)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2421 from xjanova/claude/add-fortune-telling-service-KvbRK (53c75984)
+- docs: add comprehensive fortune telling system guide (dd5b305a)
+
 ## [v3.431.0] - 2026-01-29
 
 ### ✨ Features
