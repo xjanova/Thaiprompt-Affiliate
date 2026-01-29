@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.434.0] - 2026-01-29
+
+### ✨ Features
+- feat: add Circuit Breaker pattern for AI provider resilience (2274cc2a)
+- feat: add production-grade infrastructure components (93f1a272)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2423 from xjanova/claude/add-fortune-telling-service-KvbRK (7b90d610)
+- docs: add comprehensive production features documentation (1003fbf8)
+
 ## [v3.433.0] - 2026-01-29
 
 ### ✨ Features
