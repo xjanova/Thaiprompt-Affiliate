@@ -2,6 +2,40 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.429.0] - 2026-01-29
+
+### ✨ Features
+- Merge pull request #2414 from xjanova/claude/add-standard-signup-3Ypdp (d7d996dd)
+- feat: เพิ่มการสมัครสมาชิกแบบปกติควบคู่กับ LINE (f952557e)
+### 🐛 Bug Fixes
+- Merge pull request #2416 from xjanova/claude/add-standard-signup-3Ypdp (0a7449e4)
+- fix: แก้ไข symlink admin.blade.php ให้ชี้ไปที่ admin-v3.blade.php (43fbe8b2)
+- Merge pull request #2415 from xjanova/claude/add-standard-signup-3Ypdp (5388109a)
+- fix: แก้ไข column name จาก sort_order เป็น display_order (b24a1a8e)
+- fix: แก้ไข Mobile App Registration API Error 500 (cac9704e)
+- Merge pull request #2410 from xjanova/claude/fix-right-panel-display-0EDFE (71eba15d)
+- fix: resolve right panel iframe not displaying content in Dashboard (856f3527)
+- Merge pull request #2409 from xjanova/claude/admin-panel-bot-setup-qf5bq (430d4469)
+- fix: remove x-cloak from sidebar to show menu immediately (74a18308)
+- Merge pull request #2408 from xjanova/claude/admin-panel-bot-setup-qf5bq (6cd9f804)
+- fix: iframe now loads current URL instead of always dashboard (c3105a16)
+### 🔧 Other Changes
+- chore: bump version to 3.428.0 [skip ci] (ed8827f4)
+- chore: bump version to 3.427.0 [skip ci] (2bd4f4e2)
+- chore: bump version to 3.426.0 [skip ci] (69b0d05a)
+- chore: bump version to 3.425.0 [skip ci] (032bdf76)
+- Merge pull request #2413 from xjanova/claude/fix-version-3424-0EDFE (d3a93289)
+- chore: fix VERSION to 3.424.3 after revert (371dfe08)
+- chore: bump version to 3.425.0 [skip ci] (e16fdf4c)
+- Merge pull request #2412 from xjanova/claude/force-revert-to-v3424-0EDFE (2296017d)
+- revert: force roll back to v3.424.3 - completely remove iframe system (c2012d65)
+- chore: bump version to 3.428.4 [skip ci] (b8da5f98)
+- Merge pull request #2411 from xjanova/claude/revert-to-v3424-0EDFE (244e2d1f)
+- revert: roll back to v3.424.3 - remove problematic iframe system (be87c7b3)
+- chore: bump version to 3.428.3 [skip ci] (17798112)
+- chore: bump version to 3.428.2 [skip ci] (3d5552b2)
+- chore: bump version to 3.428.1 [skip ci] (951109bc)
+
 ## [v3.428.0] - 2026-01-28
 
 ### ✨ Features
