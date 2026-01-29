@@ -177,7 +177,7 @@
                         <template x-if="headerImageUrl">
                             <img :src="headerImageUrl" alt="ตัวอย่างรูปส่วนหัว"
                                  class="mt-2 rounded-lg max-h-32 object-contain border border-gray-200 dark:border-gray-600"
-                                 @error="$el.style.display='none'">
+                                 x-on:error="$el.style.display='none'">
                         </template>
                     </div>
 
@@ -193,7 +193,7 @@
                         <template x-if="footerImageUrl">
                             <img :src="footerImageUrl" alt="ตัวอย่างรูปส่วนท้าย"
                                  class="mt-2 rounded-lg max-h-32 object-contain border border-gray-200 dark:border-gray-600"
-                                 @error="$el.style.display='none'">
+                                 x-on:error="$el.style.display='none'">
                         </template>
                     </div>
                 </div>
