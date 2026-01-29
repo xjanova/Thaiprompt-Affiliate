@@ -228,6 +228,7 @@
         </div>
     </form>
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -274,4 +275,3 @@ function templateForm() {
 }
 </script>
 @endpush
-@endsection
