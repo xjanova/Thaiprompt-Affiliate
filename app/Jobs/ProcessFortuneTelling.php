@@ -66,9 +66,6 @@ class ProcessFortuneTelling implements ShouldQueue
      * - is_paid: bool
      * - amount_paid: float
      * - user_image_url: string|null
-     * - ip_address: string|null
-     * - user_agent: string|null
-     * - user_id: int|null
      */
     protected array $data;
 
@@ -233,11 +230,6 @@ class ProcessFortuneTelling implements ShouldQueue
             'user_image_url' => $this->data['user_image_url'] ?? null,
             'is_paid' => $this->data['is_paid'] ?? false,
             'amount_paid' => $this->data['amount_paid'] ?? 0,
-            'metadata' => [
-                'ip_address' => $this->data['ip_address'] ?? null,
-                'user_agent' => $this->data['user_agent'] ?? null,
-                'processing_time_ms' => $aiResponse['processing_time_ms'] ?? 0,
-            ],
         ]);
     }
 

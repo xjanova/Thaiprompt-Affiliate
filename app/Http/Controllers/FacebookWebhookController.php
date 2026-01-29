@@ -63,13 +63,21 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * รับ webhook events (POST request จาก Facebook)
+     * รับ webhook events (GET/POST request จาก Facebook)
      *
-     * ⚠️ CRITICAL: ต้อง return 200 เสมอ
+     * GET: Facebook ส่ง verify request พร้อม hub.mode, hub.verify_token, hub.challenge
+     * POST: Facebook ส่ง events (messages, comments, etc.)
+     *
+     * ⚠️ CRITICAL: POST ต้อง return 200 เสมอ
      * Facebook จะ retry ถ้าได้ non-200 response และจะ disable webhook หลัง retry หลายครั้ง
      */
-    public function webhook(Request $request): JsonResponse
+    public function webhook(Request $request)
     {
+        // จัดการ GET verification request จาก Facebook
+        if ($request->isMethod('GET')) {
+            return $this->verify($request);
+        }
+
         try {
             // ตรวจสอบ webhook signature (security)
             $signature = $request->header('X-Hub-Signature-256', '');
