@@ -470,6 +470,55 @@
             </div>
         </div>
 
+        {{-- Fortune Telling (Collapsible Menu) 🔮 --}}
+        <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.fortune.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             x-data="{ fortuneOpen: {{ request()->routeIs('admin.fortune.*') ? 'true' : 'false' }} }">
+            {{-- Fortune Telling Header Button --}}
+            <button @click="fortuneOpen = !fortuneOpen"
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.fortune.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+                <i class="fas fa-crystal-ball w-5 text-center drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">ดูดวงออนไลน์</span>
+                <i x-show="$store.sidebar.shouldExpand && fortuneOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !fortuneOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+            </button>
+
+            {{-- Fortune Telling Submenu --}}
+            <div x-show="fortuneOpen" x-collapse x-cloak class="ml-8 space-y-1">
+                {{-- Settings ⚙️ --}}
+                <a href="{{ route('admin.fortune.settings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.settings.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-cog w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่าระบบ</span>
+                </a>
+
+                {{-- Categories 📂 --}}
+                <a href="{{ route('admin.fortune.categories.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.categories.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-folder-open w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่การทำนาย</span>
+                </a>
+
+                {{-- Readings 📊 --}}
+                <a href="{{ route('admin.fortune.readings.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.readings.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.readings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-history w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติการทำนาย</span>
+                </a>
+            </div>
+        </div>
+
         {{-- Wallet & Finance (Collapsible Menu) 💰 --}}
         @php
             $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*') || request()->routeIs('admin.cashback.*') || request()->routeIs('admin.investments.*') || request()->routeIs('admin.nfc-*');
