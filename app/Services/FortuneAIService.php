@@ -23,9 +23,11 @@ class FortuneAIService
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
-        $this->provider = $this->settings->ai_provider;
-        $this->apiKey = $this->settings->ai_api_key;
-        $this->model = $this->settings->ai_model;
+
+        // ใช้ methods ใหม่ที่รองรับ global AI settings
+        $this->provider = $this->settings->getActualAIProvider();
+        $this->apiKey = $this->settings->getActualAIApiKey();
+        $this->model = $this->settings->getActualAIModel();
     }
 
     /**

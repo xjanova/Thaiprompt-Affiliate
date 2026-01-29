@@ -105,18 +105,71 @@
         </div>
 
         {{-- AI Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ useGlobal: {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     🤖 การตั้งค่า AI Provider
                 </h3>
-                <button type="button" @click="testAI()" 
+                <button type="button" @click="testAI()"
                         class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    ทดสอบการเชื่อมต่อ
+                    🧪 ทดสอบการเชื่อมต่อ
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {{-- Toggle: Use Global AI Settings --}}
+            <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox"
+                                   name="use_global_ai_settings"
+                                   value="1"
+                                   x-model="useGlobal"
+                                   {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'checked' : '' }}
+                                   class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
+                                🔗 ใช้การตั้งค่า AI จากระบบหลัก
+                            </span>
+                        </label>
+                        <p class="mt-1 ml-8 text-xs text-gray-600 dark:text-gray-400">
+                            เมื่อเปิดใช้งาน ระบบจะใช้ Gemini/Claude API Key จากการตั้งค่าระบบหลัก (ไม่ต้องตั้งค่าซ้ำ)
+                        </p>
+                    </div>
+                    <div x-show="useGlobal" class="ml-4">
+                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full">
+                            ✓ ใช้ค่าจากระบบหลัก
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- แสดงเมื่อใช้ Global Settings --}}
+            <div x-show="useGlobal" x-cloak class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                            กำลังใช้การตั้งค่า AI จากระบบหลัก
+                        </h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            ระบบจะอ่าน API Key จากการตั้งค่าระบบหลัก (AiContentSetting) โดยอัตโนมัติ
+                        </p>
+                        <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini</div>
+                            <div>• หากมี <strong>Claude API Key</strong> จะใช้ Claude (via OpenRouter)</div>
+                            <div>• หากมี <strong>OpenAI API Key</strong> จะใช้ GPT (via OpenRouter)</div>
+                        </div>
+                        <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                            💡 หากต้องการตั้งค่าแยกเฉพาะระบบดูดวง ให้ปิดตัวเลือกนี้
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- แสดงเมื่อใช้ Custom Settings --}}
+            <div x-show="!useGlobal" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         AI Provider
@@ -144,13 +197,13 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         API Key
                     </label>
-                    <input type="password" name="ai_api_key" 
+                    <input type="password" name="ai_api_key"
                            value="{{ old('ai_api_key', $settings->ai_api_key) }}"
                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                            placeholder="AIz...">
                 </div>
-            </div>
-        </div>
+            </div> {{-- End of custom settings grid --}}
+        </div> {{-- End of AI Settings card --}}
 
         {{-- Usage Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">

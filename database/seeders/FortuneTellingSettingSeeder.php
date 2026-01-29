@@ -26,6 +26,7 @@ class FortuneTellingSettingSeeder extends Seeder
         }
 
         FortuneTellingSetting::create([
+            'use_global_ai_settings' => true, // ใช้ AI Config จากระบบหลักโดยค่าเริ่มต้น
             'ai_provider' => 'gemini',
             'ai_model' => 'gemini-2.0-flash-exp',
             'max_free_readings' => 3,

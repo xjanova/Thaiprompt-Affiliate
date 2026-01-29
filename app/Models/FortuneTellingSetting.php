@@ -56,6 +56,7 @@ class FortuneTellingSetting extends Model
         'facebook_page_id',
         'facebook_page_token',
         'facebook_verify_token',
+        'use_global_ai_settings',
         'ai_provider',
         'ai_api_key',
         'ai_model',
@@ -78,6 +79,7 @@ class FortuneTellingSetting extends Model
      */
     protected $casts = [
         'is_enabled' => 'boolean',
+        'use_global_ai_settings' => 'boolean',
         'respond_in_comment' => 'boolean',
         'require_registration' => 'boolean',
         'max_free_readings' => 'integer',
@@ -93,6 +95,7 @@ class FortuneTellingSetting extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'use_global_ai_settings' => true,
         'ai_provider' => 'gemini',
         'ai_model' => 'gemini-2.0-flash-exp',
         'max_free_readings' => 3,
@@ -165,9 +168,114 @@ class FortuneTellingSetting extends Model
      */
     public function hasAIConfigured(): bool
     {
+        // ถ้าใช้ global settings ให้เช็คจาก AiContentSetting
+        if ($this->use_global_ai_settings) {
+            return $this->hasGlobalAIConfigured();
+        }
+
+        // ถ้าใช้ custom settings ให้เช็คจากตัวเอง
         return !empty($this->ai_provider)
             && !empty($this->ai_api_key)
             && !empty($this->ai_model);
+    }
+
+    /**
+     * ตรวจสอบว่าระบบหลักมีการตั้งค่า AI หรือไม่
+     *
+     * @return bool
+     */
+    protected function hasGlobalAIConfigured(): bool
+    {
+        // ตรวจสอบว่ามี Gemini API Key ในระบบหลัก
+        $geminiKey = AiContentSetting::getValue('gemini_api_key');
+        if (!empty($geminiKey)) {
+            return true;
+        }
+
+        // ตรวจสอบ Claude
+        $claudeKey = AiContentSetting::getValue('claude_api_key');
+        if (!empty($claudeKey)) {
+            return true;
+        }
+
+        // ตรวจสอบ OpenAI
+        $openaiKey = AiContentSetting::getValue('openai_api_key');
+        if (!empty($openaiKey)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * ดึง AI Provider ที่ใช้งานจริง
+     *
+     * @return string
+     */
+    public function getActualAIProvider(): string
+    {
+        if ($this->use_global_ai_settings) {
+            // ใช้ global settings - เช็คว่ามี provider ไหนพร้อมใช้งาน
+            $geminiKey = AiContentSetting::getValue('gemini_api_key');
+            if (!empty($geminiKey)) {
+                return 'gemini';
+            }
+
+            $claudeKey = AiContentSetting::getValue('claude_api_key');
+            if (!empty($claudeKey)) {
+                return 'openrouter'; // ใช้ OpenRouter เรียก Claude
+            }
+
+            $openaiKey = AiContentSetting::getValue('openai_api_key');
+            if (!empty($openaiKey)) {
+                return 'openrouter'; // ใช้ OpenRouter เรียก OpenAI
+            }
+
+            return 'gemini'; // default fallback
+        }
+
+        return $this->ai_provider;
+    }
+
+    /**
+     * ดึง AI Model ที่ใช้งานจริง
+     *
+     * @return string
+     */
+    public function getActualAIModel(): string
+    {
+        if ($this->use_global_ai_settings) {
+            $provider = $this->getActualAIProvider();
+
+            return match ($provider) {
+                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-1.5-flash'),
+                'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
+                default => 'gemini-1.5-flash',
+            };
+        }
+
+        return $this->ai_model;
+    }
+
+    /**
+     * ดึง AI API Key ที่ใช้งานจริง
+     *
+     * @return string|null
+     */
+    public function getActualAIApiKey(): ?string
+    {
+        if ($this->use_global_ai_settings) {
+            $provider = $this->getActualAIProvider();
+
+            return match ($provider) {
+                'gemini' => AiContentSetting::getValue('gemini_api_key'),
+                'openrouter' => AiContentSetting::getValue('claude_api_key')
+                    ?? AiContentSetting::getValue('openai_api_key'),
+                default => null,
+            };
+        }
+
+        return $this->ai_api_key;
     }
 
     /**
