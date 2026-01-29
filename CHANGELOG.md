@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.431.0] - 2026-01-29
+
+### ✨ Features
+- Merge pull request #2420 from xjanova/claude/add-fortune-telling-service-KvbRK (0df7d667)
+- feat: add controllers, routes and seeders for fortune telling system (f762fc5a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.430.0] - 2026-01-29
 
 ### ✨ Features
