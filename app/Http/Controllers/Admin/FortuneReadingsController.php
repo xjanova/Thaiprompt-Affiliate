@@ -22,7 +22,7 @@ class FortuneReadingsController extends Controller
             ->with('user')
             ->orderBy('created_at', 'desc');
 
-        // กรองตามสถานะ
+        // กรองตามสถานะชำระเงิน
         if ($request->filled('is_paid')) {
             $query->where('is_paid', $request->is_paid);
         }
@@ -30,6 +30,11 @@ class FortuneReadingsController extends Controller
         // กรองตาม AI provider
         if ($request->filled('ai_provider')) {
             $query->where('ai_provider', $request->ai_provider);
+        }
+
+        // กรองตามประเภทคำทำนาย (basic/deep)
+        if ($request->filled('reading_type')) {
+            $query->where('reading_type', $request->reading_type);
         }
 
         // กรองตามวันที่
@@ -47,6 +52,8 @@ class FortuneReadingsController extends Controller
         $stats = [
             'total' => FortuneReading::count(),
             'today' => FortuneReading::today()->count(),
+            'deep' => FortuneReading::deep()->count(),
+            'basic' => FortuneReading::basic()->count(),
             'paid' => FortuneReading::paid()->count(),
             'free' => FortuneReading::free()->count(),
         ];
@@ -90,6 +97,9 @@ class FortuneReadingsController extends Controller
     public function export(Request $request)
     {
         $readings = FortuneReading::with('user')
+            ->when($request->filled('ai_provider'), fn($q) => $q->where('ai_provider', $request->ai_provider))
+            ->when($request->filled('is_paid'), fn($q) => $q->where('is_paid', $request->is_paid))
+            ->when($request->filled('reading_type'), fn($q) => $q->where('reading_type', $request->reading_type))
             ->when($request->filled('date_from'), fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->filled('date_to'), fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->orderBy('created_at', 'desc')
@@ -109,7 +119,7 @@ class FortuneReadingsController extends Controller
             fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
             
             // Header
-            fputcsv($file, ['ID', 'วันที่', 'ชื่อผู้ใช้', 'Facebook ID', 'คำถาม', 'AI Provider', 'สถานะชำระเงิน', 'ราคา']);
+            fputcsv($file, ['ID', 'วันที่', 'ชื่อผู้ใช้', 'Facebook ID', 'คำถาม', 'ประเภทคำทำนาย', 'AI Provider', 'สถานะชำระเงิน', 'ราคา']);
 
             // Data
             foreach ($readings as $reading) {
@@ -119,6 +129,7 @@ class FortuneReadingsController extends Controller
                     $reading->facebook_user_name,
                     $reading->facebook_user_id,
                     implode(', ', $reading->questions),
+                    $reading->reading_type === 'deep' ? 'เชิงลึก' : 'พื้นฐาน',
                     $reading->ai_provider,
                     $reading->is_paid ? 'ชำระแล้ว' : 'ฟรี',
                     $reading->amount_paid,
