@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.438.1] - 2026-01-29
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve 10 fortune admin issues (2 critical, 5 warning, 3 minor) (55cef04b)
+- fix: add missing fortune admin sidebar menus and fix icon (14cf1705)
+### 🔧 Other Changes
+- Merge pull request #2429 from xjanova/claude/fortune-admin-icons-d93i4 (5b4830a4)
+
 ## [v3.438.0] - 2026-01-29
 
 ### ✨ Features
