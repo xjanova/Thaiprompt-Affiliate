@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.439.0] - 2026-01-29
+
+### ✨ Features
+- Merge pull request #2431 from xjanova/claude/fortune-admin-icons-d93i4 (27944472)
+- feat: improve fortune AI with decisive prompts and birth date support (dbde888e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.438.2] - 2026-01-29
 
 ### ✨ Features
