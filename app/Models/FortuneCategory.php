@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -104,13 +103,16 @@ class FortuneCategory extends Model
     }
 
     /**
-     * ความสัมพันธ์กับ FortuneReading
+     * ดึง FortuneReading ที่เกี่ยวข้องกับหมวดหมู่นี้
      *
-     * @return HasMany
+     * หมายเหตุ: ตาราง fortune_readings เก็บหมวดหมู่เป็น JSON array ในคอลัมน์ categories
+     * จึงใช้ whereJsonContains แทน hasMany
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function readings(): HasMany
+    public function readings()
     {
-        return $this->hasMany(FortuneReading::class, 'category_id');
+        return FortuneReading::whereJsonContains('categories', $this->id);
     }
 
     /**

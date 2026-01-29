@@ -3785,16 +3785,16 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
 
     // หมวดหมู่
-    Route::resource('categories', FortuneCategoriesController::class);
+    Route::resource('categories', FortuneCategoriesController::class)->except('show');
 
     // ประวัติการทำนาย
+    Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
     Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
-    Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
 
     // เทมเพลตตอบกลับ
-    Route::resource('response-templates', FortuneResponseTemplatesController::class);
+    Route::resource('response-templates', FortuneResponseTemplatesController::class)->except('show');
     Route::post('/response-templates/{response_template}/set-default', [FortuneResponseTemplatesController::class, 'setDefault'])
         ->name('response-templates.set-default');
     Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])

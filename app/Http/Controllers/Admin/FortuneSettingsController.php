@@ -44,9 +44,9 @@ class FortuneSettingsController extends Controller
             'ai_provider' => 'required|in:gemini,groq,qwen,openrouter',
             'ai_api_key' => 'nullable|string',
             'ai_model' => 'required|string|max:100',
-            'prompt_template' => 'nullable|string',
             'basic_prompt_template' => 'nullable|string',
             'deep_prompt_template' => 'nullable|string',
+            'use_global_ai_settings' => 'boolean',
             // การตั้งค่าพื้นฐาน
             'max_free_readings' => 'required|integer|min:0|max:100',
             'reading_price' => 'required|numeric|min:0',
