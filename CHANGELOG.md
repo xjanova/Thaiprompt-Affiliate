@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.437.0] - 2026-01-29
+
+### ✨ Features
+- feat: async job dispatch, AI basic/deep differentiation, and production hardening (4ddbdd57)
+### 🐛 Bug Fixes
+- fix: critical production bugs - missing import, invalid field, webhook verification (ae8337a4)
+### 🔧 Other Changes
+- Merge pull request #2426 from xjanova/claude/fortune-admin-icons-d93i4 (4c217b86)
+
 ## [v3.436.0] - 2026-01-29
 
 ### ✨ Features
