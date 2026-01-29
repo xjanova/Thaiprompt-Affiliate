@@ -685,6 +685,26 @@ return [
             ],
         ],
 
+        // =============================================
+        // 🔮 ระบบดูดวง Facebook - Fortune Telling
+        // =============================================
+        [
+            'id' => 'fortune-telling',
+            'label' => 'ดูดวง Facebook',
+            'icon' => '🔮',
+            'route' => null,
+            'order' => 24.3,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-purple-500 to-indigo-600',
+            'submenu' => [
+                ['label' => '🔮 ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
+                ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
+                ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด'],
+                ['label' => '📊 ส่งออกข้อมูล', 'route' => 'admin.fortune.readings.export', 'description' => 'Export CSV'],
+            ],
+        ],
+
         [
             'id' => 'content-media',
             'label' => 'คอนเทนต์ & มีเดีย',

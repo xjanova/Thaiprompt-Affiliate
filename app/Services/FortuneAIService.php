@@ -32,13 +32,19 @@ class FortuneAIService
 
     /**
      * สร้างคำทำนายจาก AI
+     *
+     * @param array $questions คำถามที่ต้องการทำนาย
+     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้
+     * @param array|null $userPosts โพสล่าสุดของผู้ใช้ (เฉพาะเชิงลึก)
+     * @param string|null $promptTemplate Prompt template ที่กำหนดเอง (ถ้าไม่ระบุจะใช้ค่าเริ่มต้น)
      */
     public function generateFortuneTelling(
         array $questions,
         ?array $userProfile = null,
-        ?array $userPosts = null
+        ?array $userPosts = null,
+        ?string $promptTemplate = null
     ): array {
-        $prompt = $this->buildPrompt($questions, $userProfile, $userPosts);
+        $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate);
 
         return match ($this->provider) {
             'gemini' => $this->callGemini($prompt),
@@ -49,9 +55,17 @@ class FortuneAIService
         };
     }
 
-    protected function buildPrompt(array $questions, ?array $userProfile, ?array $userPosts): string
+    /**
+     * สร้าง prompt สำหรับส่งให้ AI
+     *
+     * @param array $questions คำถาม
+     * @param array|null $userProfile โปรไฟล์ผู้ใช้
+     * @param array|null $userPosts โพสล่าสุด
+     * @param string|null $promptTemplate template ที่กำหนดเอง
+     */
+    protected function buildPrompt(array $questions, ?array $userProfile, ?array $userPosts, ?string $promptTemplate = null): string
     {
-        $template = $this->settings->getDefaultPromptTemplate();
+        $template = $promptTemplate ?? $this->settings->getDefaultPromptTemplate();
         $profileText = $this->formatUserProfile($userProfile);
         $postsText = $this->formatUserPosts($userPosts);
         $questionsText = implode("\n", array_map(fn($i, $q) => ($i+1).". $q", array_keys($questions), $questions));

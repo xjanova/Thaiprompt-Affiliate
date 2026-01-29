@@ -103,8 +103,21 @@ class FacebookWebhookService
     }
 
     /**
+     * ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือไม่
+     *
+     * รูปแบบ: "ดูดวงละเอียด", "ดูดวงเชิงลึก", "ดูดวงแบบละเอียด"
+     */
+    public function isDeepReadingRequest(string $message): bool
+    {
+        $trimmed = trim($message);
+
+        return (bool) preg_match('/^ดูดวง(ละเอียด|เชิงลึก|แบบละเอียด|deep)/u', $trimmed);
+    }
+
+    /**
      * แยกคำถามจากข้อความ
      * รูปแบบ: "ดูดวง เรื่องความรัก เรื่องการเงิน เรื่องสุขภาพ"
+     * หรือ: "ดูดวงละเอียด เรื่องความรัก เรื่องการเงิน"
      */
     public function parseQuestions(string $message): ?array
     {
@@ -113,12 +126,12 @@ class FacebookWebhookService
             return null;
         }
 
-        // ลบคำว่า "ดูดวง" ออก
-        $text = preg_replace('/^ดูดวง\s*/u', '', trim($message));
+        // ลบคำว่า "ดูดวง" พร้อมคำขยาย (ละเอียด, เชิงลึก, แบบละเอียด, deep)
+        $text = preg_replace('/^ดูดวง(ละเอียด|เชิงลึก|แบบละเอียด|deep)?\s*/u', '', trim($message));
 
         // แยกคำถามตามเครื่องหมาย หรือ ขึ้นบรรทัดใหม่
         $questions = preg_split('/[\n,]/', $text);
-        
+
         // กรองคำถามที่ว่าง
         $questions = array_filter(array_map('trim', $questions));
 
@@ -131,7 +144,7 @@ class FacebookWebhookService
     }
 
     /**
-     * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรีหรือยัง
+     * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (พื้นฐาน) หรือยัง
      */
     public function checkFreeLimit(string $facebookUserId): array
     {
@@ -148,23 +161,76 @@ class FacebookWebhookService
     }
 
     /**
-     * สร้างข้อความเมื่อครบจำนวนฟรี
+     * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (เชิงลึก) หรือยัง
+     */
+    public function checkDeepFreeLimit(string $facebookUserId): array
+    {
+        $maxFreeDeep = $this->settings->free_deep_per_day ?? 1;
+        // นับเฉพาะคำทำนายเชิงลึกที่ไม่ได้จ่ายเงิน (ฟรี)
+        $todayDeepCount = FortuneReading::byFacebookUser($facebookUserId)
+            ->today()
+            ->free()
+            ->where('tokens_used', '>', 500) // คำทำนายเชิงลึกใช้ tokens มากกว่า
+            ->count();
+
+        // ถ้าจำนวนรวมทั้งหมดวันนี้มากกว่า free_deep_per_day ถือว่าครบ
+        $remaining = max(0, $maxFreeDeep - $todayDeepCount);
+
+        return [
+            'has_reached_limit' => $todayDeepCount >= $maxFreeDeep,
+            'today_count' => $todayDeepCount,
+            'max_free' => $maxFreeDeep,
+            'remaining' => $remaining,
+        ];
+    }
+
+    /**
+     * สร้างข้อความเมื่อครบจำนวนฟรี (พื้นฐาน)
      */
     public function getLimitExceededMessage(): string
     {
-        $message = $this->settings->limit_exceeded_message ?? 
+        $message = $this->settings->limit_exceeded_message ??
             "คุณได้ใช้งานครบจำนวนฟรีวันนี้แล้ว ({$this->settings->max_free_readings} ครั้ง)\n\n";
 
         if ($this->settings->reading_price > 0) {
             $message .= "💰 ราคาการทำนายต่อครั้ง: {$this->settings->reading_price} บาท\n\n";
-            
+
             if ($this->settings->payment_qr_image) {
                 $message .= "📸 โอนเงินผ่าน QR Code:\n";
                 $message .= $this->settings->getPaymentQrUrl() . "\n\n";
             }
         }
 
-        $message .= "หรือสมัครสมาชิกเพื่อใช้งานไม่จำกัด: " . url('/register');
+        // แนะนำดูดวงเชิงลึก (ถ้าเปิดใช้งาน)
+        if ($this->settings->isDeepReadingEnabled()) {
+            $message .= "🌟 หรือลอง 'ดูดวงละเอียด' เพื่อรับคำทำนายเชิงลึก\n";
+        }
+
+        $message .= "📱 สมัครสมาชิกเพื่อใช้งานไม่จำกัด: " . url('/register');
+
+        return $message;
+    }
+
+    /**
+     * สร้างข้อความเมื่อครบจำนวนฟรีเชิงลึก
+     */
+    public function getDeepLimitExceededMessage(): string
+    {
+        $message = "🌟 คุณได้ใช้สิทธิ์ดูดวงเชิงลึกฟรีวันนี้ครบแล้ว ({$this->settings->free_deep_per_day} ครั้ง)\n\n";
+
+        if ($this->settings->deep_reading_price > 0) {
+            $message .= "💰 ดูดวงเชิงลึกเพิ่ม: {$this->settings->deep_reading_price} บาท/ครั้ง\n\n";
+        }
+
+        if ($this->settings->isSubscriptionEnabled()) {
+            $message .= $this->settings->getSubscriptionMessage();
+        } else {
+            if ($this->settings->payment_qr_image) {
+                $message .= "📸 โอนเงินผ่าน QR Code:\n";
+                $message .= $this->settings->getPaymentQrUrl() . "\n\n";
+            }
+            $message .= "📱 ชำระเงิน/สมัครสมาชิก: " . url('/register');
+        }
 
         return $message;
     }
