@@ -53,6 +53,9 @@ class FortuneCategoriesController extends Controller
             'order' => 'required|integer|min:0',
         ]);
 
+        // จัดการ checkbox (ถ้าไม่ส่งมา = false)
+        $validated['is_active'] = $request->boolean('is_active');
+
         FortuneCategory::create($validated);
 
         return redirect()
@@ -87,6 +90,9 @@ class FortuneCategoriesController extends Controller
             'is_active' => 'boolean',
             'order' => 'required|integer|min:0',
         ]);
+
+        // จัดการ checkbox (ถ้าไม่ส่งมา = false)
+        $validated['is_active'] = $request->boolean('is_active');
 
         $category->update($validated);
 

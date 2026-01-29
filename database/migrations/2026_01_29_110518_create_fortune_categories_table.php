@@ -42,10 +42,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
+            // Indexes (slug unique สร้างแล้วจาก ->unique() ที่บรรทัด name)
             $table->index('is_active', 'fortune_cat_active_idx');
             $table->index('order', 'fortune_cat_order_idx');
-            $table->unique('slug', 'fortune_cat_slug_unique');
         });
     }
 

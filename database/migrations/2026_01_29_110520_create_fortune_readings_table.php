@@ -70,12 +70,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
-            $table->index('user_id', 'fortune_read_user_idx');
-            $table->index('facebook_user_id', 'fortune_read_fb_user_idx');
-            $table->index('is_paid', 'fortune_read_paid_idx');
-            $table->index('created_at', 'fortune_read_created_idx');
-            $table->index(['facebook_user_id', 'created_at'], 'fortune_read_fb_date_idx');
+            // Indexes จัดการโดย migration: add_indexes_to_fortune_tables
         });
     }
 

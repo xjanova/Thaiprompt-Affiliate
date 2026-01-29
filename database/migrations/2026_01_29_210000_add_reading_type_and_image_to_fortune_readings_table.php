@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -43,15 +44,12 @@ return new class extends Migration
                 return;
             }
 
-            // ตรวจสอบว่ามี index อยู่แล้วหรือไม่
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('fortune_readings');
-
-            if (!isset($indexes['fortune_read_type_idx'])) {
+            // ตรวจสอบว่ามี index อยู่แล้วหรือไม่ (ใช้ information_schema แทน deprecated Doctrine)
+            if (!$this->indexExists('fortune_readings', 'fortune_read_type_idx')) {
                 $table->index('reading_type', 'fortune_read_type_idx');
             }
 
-            if (!isset($indexes['fortune_read_fb_type_date_idx'])) {
+            if (!$this->indexExists('fortune_readings', 'fortune_read_fb_type_date_idx')) {
                 $table->index(['facebook_user_id', 'reading_type', 'created_at'], 'fortune_read_fb_type_date_idx');
             }
         });
@@ -75,5 +73,29 @@ return new class extends Migration
                 $table->dropColumn('reading_type');
             }
         });
+    }
+
+    /**
+     * ตรวจสอบว่า index มีอยู่แล้วหรือไม่
+     *
+     * @param string $table
+     * @param string $index
+     * @return bool
+     */
+    protected function indexExists(string $table, string $index): bool
+    {
+        $connection = Schema::getConnection();
+        $database = $connection->getDatabaseName();
+
+        $result = DB::select(
+            "SELECT COUNT(*) as count
+             FROM information_schema.statistics
+             WHERE table_schema = ?
+             AND table_name = ?
+             AND index_name = ?",
+            [$database, $table, $index]
+        );
+
+        return $result[0]->count > 0;
     }
 };

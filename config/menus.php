@@ -700,8 +700,7 @@ return [
             'submenu' => [
                 ['label' => '🔮 ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
-                ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด'],
-                ['label' => '📊 ส่งออกข้อมูล', 'route' => 'admin.fortune.readings.export', 'description' => 'Export CSV'],
+                ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
             ],
         ],

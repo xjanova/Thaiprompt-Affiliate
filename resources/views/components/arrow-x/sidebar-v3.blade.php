@@ -517,16 +517,6 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติการทำนาย</span>
                 </a>
 
-                {{-- Export CSV 📊 --}}
-                <a href="{{ route('admin.fortune.readings.export') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.fortune.readings.export') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.readings.export') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-file-export w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ส่งออกข้อมูล</span>
-                </a>
-
                 {{-- Response Templates 📝 --}}
                 <a href="{{ route('admin.fortune.response-templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
