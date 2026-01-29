@@ -48,8 +48,8 @@ class VerifySmsCheckerDevice
             ], 403);
         }
 
-        // Attach device to request
-        $request->merge(['sms_checker_device' => $device]);
+        // Attach device to request (use attributes for object, not merge)
+        $request->attributes->set('sms_checker_device', $device);
 
         return $next($request);
     }

@@ -66,7 +66,7 @@ return new class extends Migration
             $table->timestamp('matched_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['base_amount', 'decimal_suffix', 'status']);
+            $table->index(['base_amount', 'decimal_suffix', 'status']);
             $table->index(['unique_amount', 'status']);
             $table->index('transaction_id');
             $table->index('expires_at');
