@@ -1071,3 +1071,23 @@ Route::middleware(['auth'])->prefix('software')->name('software.')->group(functi
 Route::get('/download/{token}', [SoftwareDownloadController::class, 'downloadByToken'])
     ->name('software.download.file')
     ->where('token', '[a-f0-9]{64}');
+
+/*
+|--------------------------------------------------------------------------
+| Facebook Webhook Routes (Fortune Telling)
+|--------------------------------------------------------------------------
+| Routes สำหรับรับ webhook events จาก Facebook Messenger
+| ใช้สำหรับระบบดูดวงผ่าน Facebook
+*/
+
+use App\Http\Controllers\FacebookWebhookController;
+
+Route::prefix('webhook')->name('webhook.')->group(function () {
+    // Webhook verification (GET) และรับ events (POST)
+    Route::match(['GET', 'POST'], '/facebook', [FacebookWebhookController::class, 'webhook'])
+        ->name('facebook');
+    
+    // Verify webhook (GET only - สำหรับ Facebook verification)
+    Route::get('/facebook/verify', [FacebookWebhookController::class, 'verify'])
+        ->name('facebook.verify');
+});
