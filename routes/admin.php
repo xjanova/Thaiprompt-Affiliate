@@ -3765,3 +3765,30 @@ Route::prefix('developers')->name('developers.')->group(function () {
     Route::delete('/{developer}', [\App\Http\Controllers\Admin\DeveloperApprovalController::class, 'destroy'])
         ->name('destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Fortune Telling Routes (ระบบดูดวง Facebook)
+|--------------------------------------------------------------------------
+| จัดการระบบดูดวงผ่าน Facebook Messenger
+*/
+
+use App\Http\Controllers\Admin\FortuneSettingsController;
+use App\Http\Controllers\Admin\FortuneCategoriesController;
+use App\Http\Controllers\Admin\FortuneReadingsController;
+
+Route::prefix('fortune')->name('fortune.')->group(function () {
+    // การตั้งค่า
+    Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
+
+    // หมวดหมู่
+    Route::resource('categories', FortuneCategoriesController::class);
+
+    // ประวัติการทำนาย
+    Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
+    Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
+    Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
+    Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
+});

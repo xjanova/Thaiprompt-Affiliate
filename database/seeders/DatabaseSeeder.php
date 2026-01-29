@@ -60,6 +60,8 @@ class DatabaseSeeder extends Seeder
             LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
             LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
             LineRecruitmentSeeder::class,       // 🆕 LINE Recruitment System (AI-powered recruitment with topic filtering)
+            FortuneTellingSettingSeeder::class,  // 🆕 ระบบดูดวง Facebook - การตั้งค่าเริ่มต้น
+            FortuneCategorySeeder::class,        // 🆕 ระบบดูดวง - หมวดหมู่การทำนาย (ความรัก, การเงิน, สุขภาพ)
 
             // 5. AI & Integrations
             CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)
