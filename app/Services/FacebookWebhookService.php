@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
+use App\Models\FortuneResponseTemplate;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -395,10 +396,26 @@ class FacebookWebhookService
     /**
      * สร้างข้อความเมื่อครบจำนวนฟรี (พื้นฐาน)
      *
+     * ใช้เทมเพลต limit_exceeded ถ้ามี มิฉะนั้นใช้ข้อความจาก settings
+     *
+     * @param string|null $userName ชื่อผู้ใช้
      * @return string
      */
-    public function getLimitExceededMessage(): string
+    public function getLimitExceededMessage(?string $userName = null): string
     {
+        // ลองใช้เทมเพลตก่อน
+        $template = FortuneResponseTemplate::getDefault('limit_exceeded');
+        if ($template) {
+            return $template->render([
+                'user_name' => $userName ?? 'ท่าน',
+                'max_free' => (string) ($this->settings->max_free_readings ?? 3),
+                'remaining_free' => '0',
+                'price' => (string) ($this->settings->reading_price ?? 0),
+                'register_url' => url('/register'),
+            ]);
+        }
+
+        // Fallback: ข้อความจาก settings
         $message = $this->settings->limit_exceeded_message ??
             "คุณได้ใช้งานครบจำนวนฟรีวันนี้แล้ว ({$this->settings->max_free_readings} ครั้ง)\n\n";
 
@@ -424,10 +441,26 @@ class FacebookWebhookService
     /**
      * สร้างข้อความเมื่อครบจำนวนฟรีเชิงลึก
      *
+     * ใช้เทมเพลต limit_exceeded ถ้ามี มิฉะนั้นใช้ข้อความ hardcoded
+     *
+     * @param string|null $userName ชื่อผู้ใช้
      * @return string
      */
-    public function getDeepLimitExceededMessage(): string
+    public function getDeepLimitExceededMessage(?string $userName = null): string
     {
+        // ลองใช้เทมเพลตก่อน
+        $template = FortuneResponseTemplate::getDefault('limit_exceeded');
+        if ($template) {
+            return $template->render([
+                'user_name' => $userName ?? 'ท่าน',
+                'max_free' => (string) ($this->settings->free_deep_per_day ?? 1),
+                'remaining_free' => '0',
+                'price' => (string) ($this->settings->deep_reading_price ?? 0),
+                'register_url' => url('/register'),
+            ]);
+        }
+
+        // Fallback: ข้อความ hardcoded
         $message = "🌟 คุณได้ใช้สิทธิ์ดูดวงเชิงลึกฟรีวันนี้ครบแล้ว ({$this->settings->free_deep_per_day} ครั้ง)\n\n";
 
         if ($this->settings->deep_reading_price > 0) {
@@ -447,12 +480,120 @@ class FacebookWebhookService
         return $message;
     }
 
+    /**
+     * ส่งข้อความต้อนรับจากเทมเพลต
+     *
+     * @param string $recipientId Facebook User ID
+     * @return bool
+     */
+    public function sendWelcomeMessage(string $recipientId): bool
+    {
+        $template = FortuneResponseTemplate::getDefault('welcome');
+        if ($template) {
+            $message = $template->render([
+                'max_free' => (string) ($this->settings->max_free_readings ?? 3),
+            ]);
+
+            // ส่งรูปส่วนหัว (ถ้ามี)
+            if ($template->hasHeaderImage()) {
+                $this->sendImage($recipientId, $template->header_image_url);
+            }
+
+            $result = $this->sendMessage($recipientId, $message);
+
+            // ส่งรูปส่วนท้าย (ถ้ามี)
+            if ($template->hasFooterImage()) {
+                $this->sendImage($recipientId, $template->footer_image_url);
+            }
+
+            return $result;
+        }
+
+        // Fallback: ข้อความต้อนรับเดิม
+        return $this->sendMessage($recipientId,
+            "🔮 สวัสดีค่ะ ยินดีต้อนรับสู่ระบบดูดวง!\n\n" .
+            "พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n" .
+            "🌟 พิมพ์: \"ดูดวงละเอียด\" เพื่อรับคำทำนายเชิงลึก"
+        );
+    }
+
+    /**
+     * ส่งข้อความแจ้งชำระเงินจากเทมเพลต (พร้อมรูป QR Code)
+     *
+     * @param string $recipientId Facebook User ID
+     * @param string|null $userName ชื่อผู้ใช้
+     * @return bool
+     */
+    public function sendPaymentMessage(string $recipientId, ?string $userName = null): bool
+    {
+        $template = FortuneResponseTemplate::getDefault('payment');
+        if ($template) {
+            $message = $template->render([
+                'user_name' => $userName ?? 'ท่าน',
+                'price' => (string) ($this->settings->reading_price ?? 0),
+                'register_url' => url('/register'),
+                'payment_url' => url('/payment'),
+            ]);
+
+            // ส่งรูปส่วนหัว (ถ้ามี)
+            if ($template->hasHeaderImage()) {
+                $this->sendImage($recipientId, $template->header_image_url);
+            }
+
+            $result = $this->sendMessage($recipientId, $message);
+
+            // ส่งรูปส่วนท้าย เช่น QR Code (ถ้ามี)
+            if ($template->hasFooterImage()) {
+                $this->sendImage($recipientId, $template->footer_image_url);
+            }
+
+            return $result;
+        }
+
+        // Fallback: ส่ง QR Code จาก settings
+        if ($this->settings->payment_qr_image) {
+            $this->sendImage($recipientId, $this->settings->getPaymentQrUrl());
+        }
+
+        return $this->sendMessage($recipientId,
+            "💰 กรุณาชำระเงินเพื่อใช้งานต่อ\n" .
+            "📱 สมัครสมาชิก: " . url('/register')
+        );
+    }
+
+    /**
+     * ส่งข้อความเมื่อเกิดข้อผิดพลาดจากเทมเพลต
+     *
+     * @param string $recipientId Facebook User ID
+     * @return bool
+     */
+    public function sendErrorMessage(string $recipientId): bool
+    {
+        $template = FortuneResponseTemplate::getDefault('error');
+        if ($template) {
+            return $this->sendMessage($recipientId, $template->render());
+        }
+
+        return $this->sendMessage($recipientId,
+            "😔 ขออภัยค่ะ ขณะนี้ระบบมีปัญหา\n" .
+            "กรุณาลองใหม่อีกครั้งในอีกสักครู่ค่ะ\n" .
+            "พิมพ์ \"ดูดวง\" เพื่อลองใหม่"
+        );
+    }
+
     // ============================================================
     // ส่งคำทำนายกลับไปยังผู้ใช้
     // ============================================================
 
     /**
-     * ส่งคำทำนายกลับไปยังผู้ใช้ (รองรับรูปภาพ)
+     * ส่งคำทำนายกลับไปยังผู้ใช้ (ใช้เทมเพลต + รูปภาพ)
+     *
+     * ลำดับการส่ง:
+     * 1. รูปส่วนหัว (header_image_url) ถ้ามี
+     * 2. รูปจากผู้ใช้ (user_image_url) ถ้ามี
+     * 3. ข้อความคำทำนาย (render จากเทมเพลต)
+     * 4. รูปคำทำนาย (reading_image_url) ถ้ามี
+     * 5. รูปส่วนท้าย (footer_image_url เช่น QR Code) ถ้ามี
      *
      * @param FortuneReading $reading
      * @param string $response คำทำนายจาก AI
@@ -460,26 +601,68 @@ class FacebookWebhookService
      */
     public function sendFortuneTelling(FortuneReading $reading, string $response): bool
     {
-        $readingTypeLabel = $reading->isDeep() ? '🌟 คำทำนายเชิงลึก' : '🔮 คำทำนาย';
-        $message = "{$readingTypeLabel}สำหรับคุณ\n\n{$response}\n\n";
-        $message .= "---\n";
-        $message .= "ให้คะแนนความพึงพอใจ: " . url("/fortune/{$reading->id}/rate");
+        $recipientId = $reading->facebook_user_id;
+        $readingType = $reading->reading_type ?? 'basic';
 
-        // ส่งรูปคำทำนาย (ถ้ามี)
-        if ($reading->hasReadingImage()) {
-            $this->sendImage(
-                $reading->facebook_user_id,
-                $reading->reading_image_url,
-                null
-            );
-        }
+        // ดึงเทมเพลตตามประเภทคำทำนาย (basic/deep)
+        $template = FortuneResponseTemplate::getDefault($readingType);
 
-        // ส่งข้อความคำทำนาย
-        if ($this->settings->respond_in_comment && $reading->facebook_comment_id) {
-            return $this->replyToComment($reading->facebook_comment_id, $message);
+        // เตรียมข้อมูลสำหรับ placeholders
+        $data = [
+            'response' => $response,
+            'user_name' => $reading->user_name ?? 'ท่าน',
+            'date' => now()->format('d/m/Y'),
+            'questions' => $reading->questions ?? '',
+            'reading_type' => $reading->getReadingTypeLabel(),
+            'reading_id' => (string) $reading->id,
+            'rate_url' => url("/fortune/{$reading->id}/rate"),
+            'register_url' => url('/register'),
+            'payment_url' => url('/payment'),
+            'remaining_free' => '0',
+            'max_free' => (string) ($this->settings->max_free_readings ?? 3),
+            'price' => (string) ($reading->isDeep()
+                ? ($this->settings->deep_reading_price ?? 0)
+                : ($this->settings->reading_price ?? 0)),
+        ];
+
+        // render ข้อความจากเทมเพลต (หรือ fallback ถ้าไม่มีเทมเพลต)
+        if ($template) {
+            $message = $template->render($data);
         } else {
-            return $this->sendMessage($reading->facebook_user_id, $message);
+            $readingTypeLabel = $reading->isDeep() ? '🌟 คำทำนายเชิงลึก' : '🔮 คำทำนาย';
+            $message = "{$readingTypeLabel}สำหรับคุณ\n\n{$response}\n\n";
+            $message .= "---\n";
+            $message .= "ให้คะแนนความพึงพอใจ: " . url("/fortune/{$reading->id}/rate");
         }
+
+        // 1. ส่งรูปส่วนหัว (header image) ถ้ามี
+        if ($template && $template->hasHeaderImage()) {
+            $this->sendImage($recipientId, $template->header_image_url);
+        }
+
+        // 2. ส่งรูปจากผู้ใช้ (user image) ถ้ามี
+        if ($reading->hasUserImage()) {
+            $this->sendImage($recipientId, $reading->user_image_url);
+        }
+
+        // 3. ส่งข้อความคำทำนาย
+        if ($this->settings->respond_in_comment && $reading->facebook_comment_id) {
+            $this->replyToComment($reading->facebook_comment_id, $message);
+        } else {
+            $this->sendMessage($recipientId, $message);
+        }
+
+        // 4. ส่งรูปคำทำนาย (reading image) ถ้ามี
+        if ($reading->hasReadingImage()) {
+            $this->sendImage($recipientId, $reading->reading_image_url);
+        }
+
+        // 5. ส่งรูปส่วนท้าย (footer image เช่น QR Code) ถ้ามี
+        if ($template && $template->hasFooterImage()) {
+            $this->sendImage($recipientId, $template->footer_image_url);
+        }
+
+        return true;
     }
 
     // ============================================================
