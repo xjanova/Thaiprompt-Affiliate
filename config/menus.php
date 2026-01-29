@@ -702,6 +702,7 @@ return [
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด'],
                 ['label' => '📊 ส่งออกข้อมูล', 'route' => 'admin.fortune.readings.export', 'description' => 'Export CSV'],
+                ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
             ],
         ],
 

@@ -62,6 +62,7 @@ class DatabaseSeeder extends Seeder
             LineRecruitmentSeeder::class,       // 🆕 LINE Recruitment System (AI-powered recruitment with topic filtering)
             FortuneTellingSettingSeeder::class,  // 🆕 ระบบดูดวง Facebook - การตั้งค่าเริ่มต้น
             FortuneCategorySeeder::class,        // 🆕 ระบบดูดวง - หมวดหมู่การทำนาย (ความรัก, การเงิน, สุขภาพ)
+            FortuneResponseTemplateSeeder::class, // 🆕 ระบบดูดวง - เทมเพลตตอบกลับคำทำนาย (basic, deep, welcome, payment, error)
 
             // 5. AI & Integrations
             CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)

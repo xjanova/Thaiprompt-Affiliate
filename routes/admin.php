@@ -3776,6 +3776,7 @@ Route::prefix('developers')->name('developers.')->group(function () {
 use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
+use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3791,4 +3792,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
     Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
+
+    // เทมเพลตตอบกลับ
+    Route::resource('response-templates', FortuneResponseTemplatesController::class);
+    Route::post('/response-templates/{response_template}/set-default', [FortuneResponseTemplatesController::class, 'setDefault'])
+        ->name('response-templates.set-default');
+    Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])
+        ->name('response-templates.preview');
 });
