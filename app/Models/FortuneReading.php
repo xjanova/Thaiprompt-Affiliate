@@ -33,6 +33,9 @@ use Carbon\Carbon;
  * @property string $response_type
  * @property \Carbon\Carbon|null $responded_at
  * @property int $view_count
+ * @property string $reading_type ประเภทคำทำนาย: basic = พื้นฐาน, deep = เชิงลึก
+ * @property string|null $reading_image_url URL รูปคำทำนายที่สร้างส่งให้ผู้ใช้
+ * @property string|null $user_image_url URL รูปที่ผู้ใช้ส่งมาผ่าน Messenger
  * @property int|null $rating
  * @property string|null $feedback
  * @property \Carbon\Carbon $created_at
@@ -74,6 +77,9 @@ class FortuneReading extends Model
         'paid_at',
         'response_type',
         'responded_at',
+        'reading_type',
+        'reading_image_url',
+        'user_image_url',
         'view_count',
         'rating',
         'feedback',
@@ -111,6 +117,7 @@ class FortuneReading extends Model
         'amount_paid' => 0,
         'view_count' => 0,
         'response_type' => 'private_message',
+        'reading_type' => 'basic',
     ];
 
     /**
@@ -177,6 +184,43 @@ class FortuneReading extends Model
     public function scopeResponded($query)
     {
         return $query->whereNotNull('responded_at');
+    }
+
+    /**
+     * Scope: เฉพาะการทำนายเชิงลึก
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeDeep($query)
+    {
+        return $query->where('reading_type', 'deep');
+    }
+
+    /**
+     * Scope: เฉพาะการทำนายพื้นฐาน
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeBasic($query)
+    {
+        return $query->where('reading_type', 'basic');
+    }
+
+    /**
+     * นับจำนวนการทำนายเชิงลึกฟรีของผู้ใช้ Facebook ในวันนี้
+     *
+     * @param string $facebookUserId
+     * @return int
+     */
+    public static function countTodayDeepReadings(string $facebookUserId): int
+    {
+        return self::byFacebookUser($facebookUserId)
+            ->today()
+            ->deep()
+            ->free()
+            ->count();
     }
 
     /**
@@ -288,5 +332,48 @@ class FortuneReading extends Model
         }
 
         return str_repeat('⭐', $this->rating);
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำทำนายเชิงลึกหรือไม่
+     *
+     * @return bool
+     */
+    public function isDeep(): bool
+    {
+        return $this->reading_type === 'deep';
+    }
+
+    /**
+     * ตรวจสอบว่ามีรูปคำทำนายหรือไม่
+     *
+     * @return bool
+     */
+    public function hasReadingImage(): bool
+    {
+        return !empty($this->reading_image_url);
+    }
+
+    /**
+     * ตรวจสอบว่าผู้ใช้ส่งรูปมาหรือไม่
+     *
+     * @return bool
+     */
+    public function hasUserImage(): bool
+    {
+        return !empty($this->user_image_url);
+    }
+
+    /**
+     * ดึงข้อความสรุปประเภทคำทำนาย (สำหรับแสดงผล)
+     *
+     * @return string
+     */
+    public function getReadingTypeLabel(): string
+    {
+        return match ($this->reading_type) {
+            'deep' => '🌟 เชิงลึก',
+            default => '🔮 พื้นฐาน',
+        };
     }
 }

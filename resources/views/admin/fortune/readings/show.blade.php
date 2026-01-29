@@ -32,11 +32,25 @@
                 <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->created_at->format('d/m/Y H:i:s') }}</span>
             </div>
             <div>
-                <span class="text-gray-600 dark:text-gray-400">ประเภท:</span>
+                <span class="text-gray-600 dark:text-gray-400">ช่องทาง:</span>
                 <span class="ml-2">
-                    <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $reading->response_type === 'comment' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $reading->response_type === 'comment' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }}">
                         {{ $reading->response_type === 'comment' ? 'Comment' : 'Private Message' }}
                     </span>
+                </span>
+            </div>
+            <div>
+                <span class="text-gray-600 dark:text-gray-400">ประเภทคำทำนาย:</span>
+                <span class="ml-2">
+                    @if($reading->reading_type === 'deep')
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                            เชิงลึก
+                        </span>
+                    @else
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
+                            พื้นฐาน
+                        </span>
+                    @endif
                 </span>
             </div>
         </div>
@@ -51,6 +65,18 @@
             @endforeach
         </ol>
     </div>
+
+    {{-- รูปภาพจากผู้ใช้ --}}
+    @if($reading->user_image_url)
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">รูปภาพจากผู้ใช้</h3>
+            <div class="max-w-md">
+                <img src="{{ $reading->user_image_url }}" alt="รูปจากผู้ใช้"
+                     class="rounded-lg shadow-md max-h-96 object-contain"
+                     loading="lazy">
+            </div>
+        </div>
+    @endif
 
     {{-- AI Response --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
@@ -70,6 +96,18 @@
         @endif
     </div>
 
+    {{-- รูปคำทำนายที่สร้างส่งให้ผู้ใช้ --}}
+    @if($reading->reading_image_url)
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">รูปคำทำนายที่ส่ง</h3>
+            <div class="max-w-md">
+                <img src="{{ $reading->reading_image_url }}" alt="รูปคำทำนาย"
+                     class="rounded-lg shadow-md max-h-96 object-contain"
+                     loading="lazy">
+            </div>
+        </div>
+    @endif
+
     {{-- Payment Info --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ข้อมูลการชำระเงิน</h3>
@@ -78,9 +116,9 @@
                 <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
                 <span class="ml-2">
                     @if($reading->is_paid)
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">ชำระแล้ว</span>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">ชำระแล้ว</span>
                     @else
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">ฟรี</span>
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">ฟรี</span>
                     @endif
                 </span>
             </div>

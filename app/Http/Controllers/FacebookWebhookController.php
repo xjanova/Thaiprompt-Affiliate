@@ -14,8 +14,16 @@ use Illuminate\Support\Facades\Log;
  * Facebook Webhook Controller
  *
  * จัดการ webhook events จาก Facebook Messenger
- * รองรับการรับคอมเมนต์และส่งคำทำนาย
+ * รองรับการรับคอมเมนต์, Messenger messages, รูปภาพ
  * รองรับระบบ Freemium: คำทำนายพื้นฐาน + เชิงลึก
+ *
+ * Production features:
+ * - Webhook signature verification (X-Hub-Signature-256)
+ * - Always return HTTP 200 (Facebook จะ disable webhook ถ้าได้ 500)
+ * - Typing indicator ขณะ AI กำลังประมวลผล
+ * - รองรับรับรูปภาพจากผู้ใช้และส่งรูปกลับ
+ * - Quick replies buttons สำหรับ UX ที่ดี
+ * - Message splitting สำหรับข้อความยาว
  */
 class FacebookWebhookController extends Controller
 {
@@ -32,6 +40,8 @@ class FacebookWebhookController extends Controller
 
     /**
      * Verify webhook (GET request จาก Facebook)
+     *
+     * Facebook จะส่ง GET request เพื่อ verify webhook URL
      */
     public function verify(Request $request)
     {
@@ -44,35 +54,59 @@ class FacebookWebhookController extends Controller
             return response($challenge, 200);
         }
 
+        Log::warning('Facebook Webhook Verification Failed', [
+            'mode' => $mode,
+            'token_match' => $token === $this->settings->facebook_verify_token,
+        ]);
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
     /**
      * รับ webhook events (POST request จาก Facebook)
+     *
+     * ⚠️ CRITICAL: ต้อง return 200 เสมอ
+     * Facebook จะ retry ถ้าได้ non-200 response และจะ disable webhook หลัง retry หลายครั้ง
      */
     public function webhook(Request $request): JsonResponse
     {
         try {
+            // ตรวจสอบ webhook signature (security)
+            $signature = $request->header('X-Hub-Signature-256', '');
+            if (!$this->facebookService->verifyWebhookSignature(
+                $request->getContent(),
+                $signature
+            )) {
+                Log::warning('Facebook Webhook: Invalid signature', [
+                    'ip' => $request->ip(),
+                ]);
+                return response()->json(['status' => 'ok']); // ยังคง return 200
+            }
+
             if (!$this->settings->isServiceEnabled()) {
                 return response()->json(['status' => 'ok']);
             }
 
             $data = $request->all();
-            Log::info('Received Facebook Webhook', ['data' => $data]);
+            Log::info('Received Facebook Webhook', [
+                'object' => $data['object'] ?? 'unknown',
+            ]);
 
-            if ($data['object'] !== 'page') {
+            if (($data['object'] ?? '') !== 'page') {
                 return response()->json(['status' => 'ok']);
             }
 
             foreach ($data['entry'] ?? [] as $entry) {
                 $this->processEntry($entry);
             }
-
-            return response()->json(['status' => 'ok']);
         } catch (\Exception $e) {
-            Log::error('Facebook Webhook Error: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 500);
+            // Log error แต่ยังคง return 200 เพื่อไม่ให้ Facebook retry
+            Log::error('Facebook Webhook Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
+
+        // ⚠️ ALWAYS return 200 OK
+        return response()->json(['status' => 'ok']);
     }
 
     /**
@@ -80,12 +114,15 @@ class FacebookWebhookController extends Controller
      */
     protected function processEntry(array $entry): void
     {
+        // ประมวลผลคอมเมนต์
         foreach ($entry['changes'] ?? [] as $change) {
-            if ($change['field'] === 'feed' && $change['value']['item'] === 'comment') {
+            if (($change['field'] ?? '') === 'feed'
+                && ($change['value']['item'] ?? '') === 'comment') {
                 $this->processComment($change['value']);
             }
         }
 
+        // ประมวลผล direct messages
         foreach ($entry['messaging'] ?? [] as $messaging) {
             if (isset($messaging['message'])) {
                 $this->processMessage($messaging);
@@ -101,6 +138,10 @@ class FacebookWebhookController extends Controller
         $message = $comment['message'] ?? '';
         $fromId = $comment['from']['id'] ?? null;
 
+        if (empty($fromId)) {
+            return;
+        }
+
         // ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือพื้นฐาน
         $isDeepRequest = $this->facebookService->isDeepReadingRequest($message);
         $questions = $this->facebookService->parseQuestions($message);
@@ -114,7 +155,6 @@ class FacebookWebhookController extends Controller
             $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($fromId);
 
             if ($deepLimitCheck['has_reached_limit']) {
-                // ครบจำนวนฟรีเชิงลึก - แนะนำจ่ายเงิน/สมัครสมาชิก
                 $this->sendDeepLimitMessage($comment);
                 return;
             }
@@ -133,14 +173,47 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * ประมวลผล direct message
+     * ประมวลผล direct message (Messenger)
+     *
+     * รองรับ:
+     * - ข้อความ text
+     * - รูปภาพ (image attachment)
+     * - Quick reply payloads
      */
     protected function processMessage(array $messaging): void
     {
-        $messageText = $messaging['message']['text'] ?? '';
-        $senderId = $messaging['sender']['id'];
+        $senderId = $messaging['sender']['id'] ?? null;
 
-        // ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือพื้นฐาน
+        if (empty($senderId)) {
+            return;
+        }
+
+        // ตรวจสอบ Quick Reply payload
+        $quickReplyPayload = $messaging['message']['quick_reply']['payload'] ?? null;
+        if ($quickReplyPayload) {
+            $this->handleQuickReply($senderId, $quickReplyPayload);
+            return;
+        }
+
+        $messageText = $messaging['message']['text'] ?? '';
+        $attachments = $messaging['message']['attachments'] ?? [];
+
+        // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
+        $userImageUrl = null;
+        if (!empty($attachments)) {
+            $userImageUrl = $this->facebookService->extractImageFromAttachments($attachments);
+
+            // ถ้าส่งมาเฉพาะรูป (ไม่มี text) ตอบกลับแนะนำวิธีใช้
+            if (empty($messageText) && $userImageUrl) {
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "📸 ได้รับรูปภาพแล้วค่ะ\n\nกรุณาพิมพ์ 'ดูดวง' หรือ 'ดูดวงละเอียด' ตามด้วยคำถาม เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวงละเอียด เรื่องความรัก"
+                );
+                return;
+            }
+        }
+
+        // ตรวจสอบคำถาม
         $isDeepRequest = $this->facebookService->isDeepReadingRequest($messageText);
         $questions = $this->facebookService->parseQuestions($messageText);
 
@@ -154,13 +227,12 @@ class FacebookWebhookController extends Controller
             $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($senderId);
 
             if ($deepLimitCheck['has_reached_limit']) {
-                // ครบจำนวนฟรีเชิงลึก - แนะนำจ่ายเงิน/สมัครสมาชิก
                 $limitMsg = $this->facebookService->getDeepLimitExceededMessage();
                 $this->facebookService->sendMessage($senderId, $limitMsg);
                 return;
             }
 
-            $this->processFortuneTelling($messaging, $questions, false, true);
+            $this->processFortuneTelling($messaging, $questions, false, true, $userImageUrl);
         } else {
             $limitCheck = $this->facebookService->checkFreeLimit($senderId);
 
@@ -172,7 +244,7 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            $this->processFortuneTelling($messaging, $questions, false, false);
+            $this->processFortuneTelling($messaging, $questions, false, false, $userImageUrl);
         }
     }
 
@@ -183,14 +255,29 @@ class FacebookWebhookController extends Controller
      * @param array $questions คำถามที่แยกแล้ว
      * @param bool $isComment เป็นคอมเมนต์หรือ direct message
      * @param bool $isDeep เป็นคำทำนายเชิงลึกหรือไม่
+     * @param string|null $userImageUrl URL รูปที่ผู้ใช้ส่งมา
      */
-    protected function processFortuneTelling(array $data, array $questions, bool $isComment, bool $isDeep = false): void
-    {
+    protected function processFortuneTelling(
+        array $data,
+        array $questions,
+        bool $isComment,
+        bool $isDeep = false,
+        ?string $userImageUrl = null
+    ): void {
         $fromId = $isComment ? ($data['from']['id'] ?? null) : ($data['sender']['id'] ?? null);
         $fromName = $isComment ? ($data['from']['name'] ?? null) : null;
 
+        if (empty($fromId)) {
+            return;
+        }
+
+        // ส่ง typing indicator ขณะ AI กำลังประมวลผล
+        if (!$isComment) {
+            $this->facebookService->sendTypingIndicator($fromId);
+        }
+
         $userProfile = $this->facebookService->getUserProfile($fromId);
-        // ดึงโพสล่าสุดเฉพาะคำทำนายเชิงลึก (เพื่อประหยัด API calls)
+        // ดึงโพสล่าสุดเฉพาะคำทำนายเชิงลึก
         $userPosts = $isDeep ? $this->facebookService->getUserPosts($fromId, 3) : null;
 
         try {
@@ -206,6 +293,7 @@ class FacebookWebhookController extends Controller
                 $promptTemplate
             );
 
+            // บันทึกผลลงฐานข้อมูล
             $reading = FortuneReading::create([
                 'facebook_user_id' => $fromId,
                 'facebook_user_name' => $fromName ?? $userProfile['name'] ?? null,
@@ -219,22 +307,81 @@ class FacebookWebhookController extends Controller
                 'ai_model' => $aiResponse['model'],
                 'tokens_used' => $aiResponse['tokens_used'],
                 'response_type' => ($isComment && $this->settings->respond_in_comment) ? 'comment' : 'private_message',
+                'reading_type' => $isDeep ? 'deep' : 'basic',
+                'user_image_url' => $userImageUrl,
                 'is_paid' => false,
             ]);
 
+            // ปิด typing indicator
+            if (!$isComment) {
+                $this->facebookService->sendTypingIndicator($fromId, false);
+            }
+
+            // ส่งคำทำนายกลับ
             if ($this->facebookService->sendFortuneTelling($reading, $aiResponse['response'])) {
                 $reading->markAsResponded();
             }
 
-            // หลังส่งคำทำนายเชิงลึกฟรี ส่งข้อความแนะนำจ่ายเงิน/สมัครสมาชิก
-            if ($isDeep && $this->settings->isTryBeforeBuyEnabled()) {
+            // หลังส่งคำทำนายเชิงลึกฟรี ส่ง quick replies แนะนำจ่ายเงิน/สมัครสมาชิก
+            if ($isDeep && $this->settings->isTryBeforeBuyEnabled() && !$isComment) {
                 $tryBeforeBuyMsg = $this->settings->getTryBeforeBuyMessage();
-                $this->facebookService->sendMessage($fromId, $tryBeforeBuyMsg);
+                $this->facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
+                    ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
+                    ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                    ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
+                ]);
             }
+
+            Log::info('ทำนายสำเร็จ', [
+                'reading_id' => $reading->id,
+                'type' => $isDeep ? 'deep' : 'basic',
+                'provider' => $aiResponse['provider'],
+                'tokens' => $aiResponse['tokens_used'],
+            ]);
         } catch (\Exception $e) {
-            Log::error('เกิดข้อผิดพลาดในการทำนาย: ' . $e->getMessage());
-            $this->facebookService->sendMessage($fromId, "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้ง");
+            Log::error('เกิดข้อผิดพลาดในการทำนาย: ' . $e->getMessage(), [
+                'from_id' => $fromId,
+                'is_deep' => $isDeep,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // ปิด typing indicator
+            if (!$isComment) {
+                $this->facebookService->sendTypingIndicator($fromId, false);
+            }
+
+            $this->facebookService->sendMessage(
+                $fromId,
+                "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้งในอีกสักครู่ 🙏"
+            );
         }
+    }
+
+    /**
+     * จัดการ Quick Reply payload
+     */
+    protected function handleQuickReply(string $senderId, string $payload): void
+    {
+        match ($payload) {
+            'FORTUNE_BASIC' => $this->processFortuneTelling(
+                ['sender' => ['id' => $senderId]],
+                ['ดูดวงทั่วไป ความรัก การเงิน การงาน สุขภาพ'],
+                false,
+                false
+            ),
+            'FORTUNE_DEEP' => $this->processFortuneTelling(
+                ['sender' => ['id' => $senderId]],
+                ['ดูดวงทั่วไป ความรัก การเงิน การงาน สุขภาพ'],
+                false,
+                true
+            ),
+            'SUBSCRIBE' => $this->facebookService->sendMessage(
+                $senderId,
+                $this->settings->getSubscriptionMessage()
+            ),
+            'HELP' => $this->sendHelpMessage($senderId),
+            default => $this->sendHelpMessage($senderId),
+        };
     }
 
     /**
@@ -245,9 +392,9 @@ class FacebookWebhookController extends Controller
         $message = $this->facebookService->getLimitExceededMessage();
 
         if ($this->settings->respond_in_comment) {
-            $this->facebookService->replyToComment($comment['comment_id'], $message);
+            $this->facebookService->replyToComment($comment['comment_id'] ?? '', $message);
         } else {
-            $this->facebookService->sendMessage($comment['from']['id'], $message);
+            $this->facebookService->sendMessage($comment['from']['id'] ?? '', $message);
         }
     }
 
@@ -259,29 +406,40 @@ class FacebookWebhookController extends Controller
         $message = $this->facebookService->getDeepLimitExceededMessage();
 
         if ($this->settings->respond_in_comment) {
-            $this->facebookService->replyToComment($comment['comment_id'], $message);
+            $this->facebookService->replyToComment($comment['comment_id'] ?? '', $message);
         } else {
-            $this->facebookService->sendMessage($comment['from']['id'], $message);
+            $this->facebookService->sendMessage($comment['from']['id'] ?? '', $message);
         }
     }
 
     /**
-     * ส่งคำแนะนำการใช้งาน
+     * ส่งคำแนะนำการใช้งานพร้อม Quick Reply buttons
      */
     protected function sendHelpMessage(string $userId): void
     {
-        $message = "🔮 วิธีใช้งานระบบดูดวง:\n\n";
+        $message = "🔮 ระบบดูดวง AI\n\n";
         $message .= "📌 ดูดวงพื้นฐาน (ฟรี):\n";
-        $message .= "พิมพ์: ดูดวง ตามด้วยคำถาม 1-3 ข้อ\n";
+        $message .= "พิมพ์: ดูดวง ตามด้วยคำถาม\n";
         $message .= "ตัวอย่าง: ดูดวง เรื่องความรัก, เรื่องการเงิน\n\n";
 
         if ($this->settings->isDeepReadingEnabled()) {
             $message .= "🌟 ดูดวงเชิงลึก (ละเอียด):\n";
             $message .= "พิมพ์: ดูดวงละเอียด ตามด้วยคำถาม\n";
-            $message .= "ตัวอย่าง: ดูดวงละเอียด เรื่องความรัก\n";
-            $message .= "(ฟรี {$this->settings->free_deep_per_day} ครั้ง/วัน)\n";
+            $message .= "(ฟรี {$this->settings->free_deep_per_day} ครั้ง/วัน)\n\n";
         }
 
-        $this->facebookService->sendMessage($userId, $message);
+        $message .= "📸 ส่งรูปภาพ:\n";
+        $message .= "ส่งรูปพร้อมข้อความ 'ดูดวง' หรือ 'ดูดวงละเอียด'\n";
+
+        // ส่งพร้อม quick reply buttons
+        $quickReplies = [
+            ['title' => 'ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+        ];
+
+        if ($this->settings->isDeepReadingEnabled()) {
+            $quickReplies[] = ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
+        }
+
+        $this->facebookService->sendQuickReplies($userId, $message, $quickReplies);
     }
 }

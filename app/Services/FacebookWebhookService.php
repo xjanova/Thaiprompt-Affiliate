@@ -11,13 +11,30 @@ use Exception;
 /**
  * Facebook Webhook Service
  *
- * จัดการ Facebook Messenger Platform API
- * รับ webhook events และส่ง messages
+ * จัดการ Facebook Messenger Platform API (Graph API v21.0)
+ * รับ webhook events, ส่ง messages, รูปภาพ, typing indicator
+ *
+ * รองรับ:
+ * - ส่งข้อความยาวแบบแบ่ง (message splitting)
+ * - ส่งรูปภาพผ่าน Messenger
+ * - Typing indicator ระหว่างประมวลผล
+ * - Webhook signature verification
+ * - Quick replies buttons
  */
 class FacebookWebhookService
 {
     protected $settings;
     protected $pageAccessToken;
+
+    /**
+     * ความยาวสูงสุดของข้อความ Messenger (Facebook กำหนด 2000 characters)
+     */
+    protected const MAX_MESSAGE_LENGTH = 2000;
+
+    /**
+     * Graph API version
+     */
+    protected const GRAPH_API_VERSION = 'v21.0';
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -25,35 +42,222 @@ class FacebookWebhookService
         $this->pageAccessToken = $this->settings->facebook_page_token;
     }
 
+    // ============================================================
+    // Facebook Graph API: การส่งข้อความ
+    // ============================================================
+
+    /**
+     * ส่งข้อความผ่าน Messenger API (รองรับข้อความยาว)
+     *
+     * ถ้าข้อความยาวเกิน 2000 ตัวอักษร จะแบ่งส่งหลาย messages อัตโนมัติ
+     *
+     * @param string $recipientId Facebook User ID
+     * @param string $message ข้อความที่ต้องการส่ง
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendMessage(string $recipientId, string $message): bool
+    {
+        try {
+            $chunks = $this->splitLongMessage($message);
+
+            foreach ($chunks as $chunk) {
+                Http::timeout(30)
+                    ->post($this->graphUrl('/me/messages'), [
+                        'recipient' => ['id' => $recipientId],
+                        'message' => ['text' => $chunk],
+                        'messaging_type' => 'RESPONSE',
+                        'access_token' => $this->pageAccessToken,
+                    ])->throw();
+            }
+
+            Log::info('ส่งข้อความสำเร็จ', [
+                'recipient' => $recipientId,
+                'chunks' => count($chunks),
+            ]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('ส่งข้อความไม่สำเร็จ: ' . $e->getMessage(), [
+                'recipient' => $recipientId,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * ส่งรูปภาพผ่าน Messenger API
+     *
+     * @param string $recipientId Facebook User ID
+     * @param string $imageUrl URL ของรูปภาพ (ต้องเป็น HTTPS public URL)
+     * @param string|null $caption ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendImage(string $recipientId, string $imageUrl, ?string $caption = null): bool
+    {
+        try {
+            // ส่งรูปภาพ
+            Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), [
+                    'recipient' => ['id' => $recipientId],
+                    'message' => [
+                        'attachment' => [
+                            'type' => 'image',
+                            'payload' => [
+                                'url' => $imageUrl,
+                                'is_reusable' => true,
+                            ],
+                        ],
+                    ],
+                    'messaging_type' => 'RESPONSE',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            // ส่งข้อความกำกับรูป (ถ้ามี)
+            if (!empty($caption)) {
+                $this->sendMessage($recipientId, $caption);
+            }
+
+            Log::info('ส่งรูปภาพสำเร็จ', [
+                'recipient' => $recipientId,
+                'image_url' => $imageUrl,
+            ]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('ส่งรูปภาพไม่สำเร็จ: ' . $e->getMessage(), [
+                'recipient' => $recipientId,
+                'image_url' => $imageUrl,
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * ส่ง typing indicator (แสดงจุดสามจุดว่ากำลังพิมพ์)
+     *
+     * @param string $recipientId Facebook User ID
+     * @param bool $on เปิด/ปิด typing indicator
+     * @return void
+     */
+    public function sendTypingIndicator(string $recipientId, bool $on = true): void
+    {
+        try {
+            Http::timeout(10)
+                ->post($this->graphUrl('/me/messages'), [
+                    'recipient' => ['id' => $recipientId],
+                    'sender_action' => $on ? 'typing_on' : 'typing_off',
+                    'access_token' => $this->pageAccessToken,
+                ]);
+        } catch (Exception $e) {
+            // ไม่ต้อง throw error ถ้า typing indicator ส่งไม่ได้
+            Log::debug('ส่ง typing indicator ไม่สำเร็จ: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งข้อความพร้อม Quick Reply buttons
+     *
+     * @param string $recipientId Facebook User ID
+     * @param string $message ข้อความหลัก
+     * @param array $quickReplies ปุ่ม quick reply [['title' => 'ข้อความ', 'payload' => 'DATA']]
+     * @return bool
+     */
+    public function sendQuickReplies(string $recipientId, string $message, array $quickReplies): bool
+    {
+        try {
+            $formattedReplies = array_map(function ($reply) {
+                return [
+                    'content_type' => 'text',
+                    'title' => mb_substr($reply['title'], 0, 20),
+                    'payload' => $reply['payload'] ?? $reply['title'],
+                ];
+            }, array_slice($quickReplies, 0, 13)); // Facebook จำกัด 13 quick replies
+
+            Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), [
+                    'recipient' => ['id' => $recipientId],
+                    'message' => [
+                        'text' => $message,
+                        'quick_replies' => $formattedReplies,
+                    ],
+                    'messaging_type' => 'RESPONSE',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('ส่ง quick replies ไม่สำเร็จ: ' . $e->getMessage());
+            // Fallback: ส่งข้อความธรรมดา
+            return $this->sendMessage($recipientId, $message);
+        }
+    }
+
+    /**
+     * ตอบกลับในคอมเมนต์
+     *
+     * @param string $commentId Comment ID
+     * @param string $message ข้อความตอบกลับ
+     * @return bool
+     */
+    public function replyToComment(string $commentId, string $message): bool
+    {
+        try {
+            Http::timeout(30)
+                ->post($this->graphUrl("/{$commentId}/comments"), [
+                    'message' => mb_substr($message, 0, 8000), // Facebook comment limit
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            Log::info('ตอบคอมเมนต์สำเร็จ', ['comment_id' => $commentId]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: ' . $e->getMessage(), [
+                'comment_id' => $commentId,
+            ]);
+            return false;
+        }
+    }
+
+    // ============================================================
+    // Facebook Graph API: การดึงข้อมูลผู้ใช้
+    // ============================================================
+
     /**
      * ดึงข้อมูลโปรไฟล์จาก Facebook Graph API
+     *
+     * @param string $facebookUserId
+     * @return array|null
      */
     public function getUserProfile(string $facebookUserId): ?array
     {
         try {
-            $response = Http::get("https://graph.facebook.com/v18.0/{$facebookUserId}", [
-                'fields' => 'id,name,first_name,last_name,profile_pic',
-                'access_token' => $this->pageAccessToken,
-            ])->throw();
+            $response = Http::timeout(15)
+                ->get($this->graphUrl("/{$facebookUserId}"), [
+                    'fields' => 'id,name,first_name,last_name,profile_pic',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
 
             return $response->json();
         } catch (Exception $e) {
-            Log::error('Facebook Graph API Error: ' . $e->getMessage());
+            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: ' . $e->getMessage());
             return null;
         }
     }
 
     /**
      * ดึงโพสล่าสุดของผู้ใช้ (ถ้ามี permission)
+     *
+     * @param string $facebookUserId
+     * @param int $limit จำนวนโพสที่ต้องการ
+     * @return array|null
      */
     public function getUserPosts(string $facebookUserId, int $limit = 3): ?array
     {
         try {
-            $response = Http::get("https://graph.facebook.com/v18.0/{$facebookUserId}/posts", [
-                'fields' => 'message,story,created_time',
-                'limit' => $limit,
-                'access_token' => $this->pageAccessToken,
-            ])->throw();
+            $response = Http::timeout(15)
+                ->get($this->graphUrl("/{$facebookUserId}/posts"), [
+                    'fields' => 'message,story,created_time',
+                    'limit' => $limit,
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
 
             $data = $response->json();
             return $data['data'] ?? [];
@@ -64,48 +268,33 @@ class FacebookWebhookService
     }
 
     /**
-     * ส่งข้อความผ่าน Messenger API
+     * ดึงรูปภาพจาก Messenger attachment
+     *
+     * @param array $attachments Facebook message attachments array
+     * @return string|null URL ของรูปภาพ
      */
-    public function sendMessage(string $recipientId, string $message): bool
+    public function extractImageFromAttachments(array $attachments): ?string
     {
-        try {
-            $response = Http::post('https://graph.facebook.com/v18.0/me/messages', [
-                'recipient' => ['id' => $recipientId],
-                'message' => ['text' => $message],
-                'access_token' => $this->pageAccessToken,
-            ])->throw();
-
-            Log::info('ส่งข้อความสำเร็จ', ['recipient' => $recipientId]);
-            return true;
-        } catch (Exception $e) {
-            Log::error('ส่งข้อความไม่สำเร็จ: ' . $e->getMessage());
-            return false;
+        foreach ($attachments as $attachment) {
+            if (($attachment['type'] ?? '') === 'image') {
+                return $attachment['payload']['url'] ?? null;
+            }
         }
+
+        return null;
     }
 
-    /**
-     * ตอบกลับในคอมเมนต์
-     */
-    public function replyToComment(string $commentId, string $message): bool
-    {
-        try {
-            $response = Http::post("https://graph.facebook.com/v18.0/{$commentId}/comments", [
-                'message' => $message,
-                'access_token' => $this->pageAccessToken,
-            ])->throw();
-
-            Log::info('ตอบคอมเมนต์สำเร็จ', ['comment_id' => $commentId]);
-            return true;
-        } catch (Exception $e) {
-            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: ' . $e->getMessage());
-            return false;
-        }
-    }
+    // ============================================================
+    // การแยกประเภทคำขอและข้อความ
+    // ============================================================
 
     /**
      * ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือไม่
      *
-     * รูปแบบ: "ดูดวงละเอียด", "ดูดวงเชิงลึก", "ดูดวงแบบละเอียด"
+     * รูปแบบ: "ดูดวงละเอียด", "ดูดวงเชิงลึก", "ดูดวงแบบละเอียด", "ดูดวงdeep"
+     *
+     * @param string $message
+     * @return bool
      */
     public function isDeepReadingRequest(string $message): bool
     {
@@ -116,8 +305,12 @@ class FacebookWebhookService
 
     /**
      * แยกคำถามจากข้อความ
+     *
      * รูปแบบ: "ดูดวง เรื่องความรัก เรื่องการเงิน เรื่องสุขภาพ"
-     * หรือ: "ดูดวงละเอียด เรื่องความรัก เรื่องการเงิน"
+     * หรือ: "ดูดวงละเอียด เรื่องความรัก, เรื่องการเงิน"
+     *
+     * @param string $message
+     * @return array|null
      */
     public function parseQuestions(string $message): ?array
     {
@@ -126,8 +319,14 @@ class FacebookWebhookService
             return null;
         }
 
-        // ลบคำว่า "ดูดวง" พร้อมคำขยาย (ละเอียด, เชิงลึก, แบบละเอียด, deep)
+        // ลบคำว่า "ดูดวง" พร้อมคำขยาย
         $text = preg_replace('/^ดูดวง(ละเอียด|เชิงลึก|แบบละเอียด|deep)?\s*/u', '', trim($message));
+
+        // ถ้าไม่มีคำถาม ใช้คำถามเริ่มต้น
+        $text = trim($text);
+        if (empty($text)) {
+            return ['ดูดวงทั่วไป ความรัก การเงิน การงาน สุขภาพ'];
+        }
 
         // แยกคำถามตามเครื่องหมาย หรือ ขึ้นบรรทัดใหม่
         $questions = preg_split('/[\n,]/', $text);
@@ -135,16 +334,23 @@ class FacebookWebhookService
         // กรองคำถามที่ว่าง
         $questions = array_filter(array_map('trim', $questions));
 
-        // ต้องมีอย่างน้อย 1 คำถาม ไม่เกิน 5 คำถาม
-        if (count($questions) < 1 || count($questions) > 5) {
-            return null;
+        // จำกัดไม่เกิน 5 คำถาม
+        if (count($questions) > 5) {
+            $questions = array_slice($questions, 0, 5);
         }
 
-        return array_values($questions);
+        return !empty($questions) ? array_values($questions) : null;
     }
+
+    // ============================================================
+    // ตรวจสอบ Free Limit (Freemium)
+    // ============================================================
 
     /**
      * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (พื้นฐาน) หรือยัง
+     *
+     * @param string $facebookUserId
+     * @return array
      */
     public function checkFreeLimit(string $facebookUserId): array
     {
@@ -162,18 +368,16 @@ class FacebookWebhookService
 
     /**
      * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (เชิงลึก) หรือยัง
+     *
+     * ใช้ reading_type = 'deep' แทนการเดาจาก tokens_used
+     *
+     * @param string $facebookUserId
+     * @return array
      */
     public function checkDeepFreeLimit(string $facebookUserId): array
     {
         $maxFreeDeep = $this->settings->free_deep_per_day ?? 1;
-        // นับเฉพาะคำทำนายเชิงลึกที่ไม่ได้จ่ายเงิน (ฟรี)
-        $todayDeepCount = FortuneReading::byFacebookUser($facebookUserId)
-            ->today()
-            ->free()
-            ->where('tokens_used', '>', 500) // คำทำนายเชิงลึกใช้ tokens มากกว่า
-            ->count();
-
-        // ถ้าจำนวนรวมทั้งหมดวันนี้มากกว่า free_deep_per_day ถือว่าครบ
+        $todayDeepCount = FortuneReading::countTodayDeepReadings($facebookUserId);
         $remaining = max(0, $maxFreeDeep - $todayDeepCount);
 
         return [
@@ -184,8 +388,14 @@ class FacebookWebhookService
         ];
     }
 
+    // ============================================================
+    // ข้อความอัตโนมัติ
+    // ============================================================
+
     /**
      * สร้างข้อความเมื่อครบจำนวนฟรี (พื้นฐาน)
+     *
+     * @return string
      */
     public function getLimitExceededMessage(): string
     {
@@ -194,11 +404,6 @@ class FacebookWebhookService
 
         if ($this->settings->reading_price > 0) {
             $message .= "💰 ราคาการทำนายต่อครั้ง: {$this->settings->reading_price} บาท\n\n";
-
-            if ($this->settings->payment_qr_image) {
-                $message .= "📸 โอนเงินผ่าน QR Code:\n";
-                $message .= $this->settings->getPaymentQrUrl() . "\n\n";
-            }
         }
 
         // แนะนำดูดวงเชิงลึก (ถ้าเปิดใช้งาน)
@@ -206,13 +411,20 @@ class FacebookWebhookService
             $message .= "🌟 หรือลอง 'ดูดวงละเอียด' เพื่อรับคำทำนายเชิงลึก\n";
         }
 
-        $message .= "📱 สมัครสมาชิกเพื่อใช้งานไม่จำกัด: " . url('/register');
+        if ($this->settings->payment_qr_image) {
+            $message .= "\n📸 โอนเงินผ่าน QR Code:\n";
+            $message .= $this->settings->getPaymentQrUrl() . "\n";
+        }
+
+        $message .= "\n📱 สมัครสมาชิกเพื่อใช้งานไม่จำกัด: " . url('/register');
 
         return $message;
     }
 
     /**
      * สร้างข้อความเมื่อครบจำนวนฟรีเชิงลึก
+     *
+     * @return string
      */
     public function getDeepLimitExceededMessage(): string
     {
@@ -235,21 +447,129 @@ class FacebookWebhookService
         return $message;
     }
 
+    // ============================================================
+    // ส่งคำทำนายกลับไปยังผู้ใช้
+    // ============================================================
+
     /**
-     * ส่งคำทำนายกลับไปยังผู้ใช้
+     * ส่งคำทำนายกลับไปยังผู้ใช้ (รองรับรูปภาพ)
+     *
+     * @param FortuneReading $reading
+     * @param string $response คำทำนายจาก AI
+     * @return bool
      */
-    public function sendFortuneTelling(
-        FortuneReading $reading,
-        string $response
-    ): bool {
-        $message = "🔮 คำทำนายสำหรับคุณ\n\n{$response}\n\n";
+    public function sendFortuneTelling(FortuneReading $reading, string $response): bool
+    {
+        $readingTypeLabel = $reading->isDeep() ? '🌟 คำทำนายเชิงลึก' : '🔮 คำทำนาย';
+        $message = "{$readingTypeLabel}สำหรับคุณ\n\n{$response}\n\n";
         $message .= "---\n";
         $message .= "ให้คะแนนความพึงพอใจ: " . url("/fortune/{$reading->id}/rate");
 
+        // ส่งรูปคำทำนาย (ถ้ามี)
+        if ($reading->hasReadingImage()) {
+            $this->sendImage(
+                $reading->facebook_user_id,
+                $reading->reading_image_url,
+                null
+            );
+        }
+
+        // ส่งข้อความคำทำนาย
         if ($this->settings->respond_in_comment && $reading->facebook_comment_id) {
             return $this->replyToComment($reading->facebook_comment_id, $message);
         } else {
             return $this->sendMessage($reading->facebook_user_id, $message);
         }
+    }
+
+    // ============================================================
+    // Webhook Security
+    // ============================================================
+
+    /**
+     * ตรวจสอบ webhook signature จาก Facebook
+     *
+     * Facebook ส่ง X-Hub-Signature-256 header สำหรับ verify payload
+     *
+     * @param string $payload Raw request body
+     * @param string $signature X-Hub-Signature-256 header value
+     * @return bool
+     */
+    public function verifyWebhookSignature(string $payload, string $signature): bool
+    {
+        $appSecret = $this->settings->facebook_app_secret;
+
+        if (empty($appSecret) || empty($signature)) {
+            Log::warning('Webhook signature verification skipped: missing app_secret or signature');
+            return true; // อนุญาตผ่านถ้าไม่ได้ตั้งค่า (dev mode)
+        }
+
+        // Facebook ส่ง format: "sha256=xxxxx"
+        if (!str_starts_with($signature, 'sha256=')) {
+            return false;
+        }
+
+        $expectedHash = hash_hmac('sha256', $payload, $appSecret);
+        $receivedHash = substr($signature, 7); // ตัด "sha256=" ออก
+
+        return hash_equals($expectedHash, $receivedHash);
+    }
+
+    // ============================================================
+    // Helper Methods
+    // ============================================================
+
+    /**
+     * แบ่งข้อความยาวเป็นหลาย chunks (Messenger จำกัด 2000 ตัวอักษร)
+     *
+     * แบ่งที่จุดสิ้นสุดบรรทัดใกล้สุดเพื่อไม่ให้ข้อความขาดกลาง
+     *
+     * @param string $message ข้อความทั้งหมด
+     * @return array chunks ของข้อความ
+     */
+    public function splitLongMessage(string $message): array
+    {
+        $maxLength = self::MAX_MESSAGE_LENGTH;
+
+        if (mb_strlen($message) <= $maxLength) {
+            return [$message];
+        }
+
+        $chunks = [];
+        $remaining = $message;
+
+        while (mb_strlen($remaining) > 0) {
+            if (mb_strlen($remaining) <= $maxLength) {
+                $chunks[] = $remaining;
+                break;
+            }
+
+            // หาตำแหน่งขึ้นบรรทัดใหม่ที่ใกล้ที่สุดก่อน limit
+            $cutPosition = $maxLength;
+            $segment = mb_substr($remaining, 0, $maxLength);
+
+            // หาตำแหน่ง newline สุดท้ายในส่วนที่จะตัด
+            $lastNewline = mb_strrpos($segment, "\n");
+            if ($lastNewline !== false && $lastNewline > ($maxLength * 0.5)) {
+                $cutPosition = $lastNewline + 1;
+            }
+
+            $chunks[] = trim(mb_substr($remaining, 0, $cutPosition));
+            $remaining = trim(mb_substr($remaining, $cutPosition));
+        }
+
+        return $chunks;
+    }
+
+    /**
+     * สร้าง Graph API URL
+     *
+     * @param string $path API path (เช่น /me/messages)
+     * @return string
+     */
+    protected function graphUrl(string $path): string
+    {
+        $version = self::GRAPH_API_VERSION;
+        return "https://graph.facebook.com/{$version}{$path}";
     }
 }

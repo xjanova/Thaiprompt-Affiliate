@@ -15,25 +15,35 @@
     </div>
 
     {{-- Stats Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl font-bold mb-2">{{ number_format($stats['total']) }}</div>
-            <div class="text-blue-100">ทั้งหมด</div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['total']) }}</div>
+            <div class="text-blue-100 text-sm">ทั้งหมด</div>
         </div>
 
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl font-bold mb-2">{{ number_format($stats['today']) }}</div>
-            <div class="text-green-100">วันนี้</div>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['today']) }}</div>
+            <div class="text-green-100 text-sm">วันนี้</div>
         </div>
 
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl font-bold mb-2">{{ number_format($stats['paid']) }}</div>
-            <div class="text-purple-100">ชำระเงินแล้ว</div>
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['deep'] ?? 0) }}</div>
+            <div class="text-indigo-100 text-sm">🌟 เชิงลึก</div>
         </div>
 
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl font-bold mb-2">{{ number_format($stats['free']) }}</div>
-            <div class="text-orange-100">ฟรี</div>
+        <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['basic'] ?? 0) }}</div>
+            <div class="text-cyan-100 text-sm">🔮 พื้นฐาน</div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['paid']) }}</div>
+            <div class="text-purple-100 text-sm">ชำระเงินแล้ว</div>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-5 text-white">
+            <div class="text-2xl font-bold mb-1">{{ number_format($stats['free']) }}</div>
+            <div class="text-orange-100 text-sm">ฟรี</div>
         </div>
     </div>
 
@@ -60,6 +70,17 @@
                     <option value="">ทั้งหมด</option>
                     <option value="1" {{ request('is_paid') === '1' ? 'selected' : '' }}>ชำระเงินแล้ว</option>
                     <option value="0" {{ request('is_paid') === '0' ? 'selected' : '' }}>ฟรี</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ประเภทคำทำนาย
+                </label>
+                <select name="reading_type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">ทั้งหมด</option>
+                    <option value="basic" {{ request('reading_type') === 'basic' ? 'selected' : '' }}>🔮 พื้นฐาน</option>
+                    <option value="deep" {{ request('reading_type') === 'deep' ? 'selected' : '' }}>🌟 เชิงลึก</option>
                 </select>
             </div>
 
@@ -111,6 +132,9 @@
                             คำถาม
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            ประเภท
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             AI
                         </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -133,6 +157,17 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                                 {{ Str::limit(implode(', ', $reading->questions), 60) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                @if($reading->reading_type === 'deep')
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                        เชิงลึก
+                                    </span>
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
+                                        พื้นฐาน
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -159,7 +194,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                 ไม่พบประวัติการทำนาย
                             </td>
                         </tr>
