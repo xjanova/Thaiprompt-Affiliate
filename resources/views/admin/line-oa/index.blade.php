@@ -89,6 +89,7 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Activate LINE Official Account integration</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" id="is_active" name="is_active" value="1" class="sr-only peer"
                                     {{ old('is_active', $settings->is_active) ? 'checked' : '' }}
                                     x-model="isActive">
@@ -330,6 +331,7 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Force users to login with LINE before registration (KYC Level 1)</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="require_line_registration" value="0">
                                 <input type="checkbox" name="require_line_registration" value="1" class="sr-only peer"
                                     {{ old('require_line_registration', $settings->require_line_registration) ? 'checked' : '' }}
                                     x-model="requireLineReg">
@@ -369,6 +371,7 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400">Allow sending messages through LINE Messaging API</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="enable_line_messaging" value="0">
                                 <input type="checkbox" name="enable_line_messaging" value="1" class="sr-only peer"
                                     {{ old('enable_line_messaging', $settings->enable_line_messaging) ? 'checked' : '' }}
                                     x-model="enableMessaging">
