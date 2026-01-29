@@ -479,7 +479,7 @@
             <button @click="fortuneOpen = !fortuneOpen"
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.fortune.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-crystal-ball w-5 text-center drop-shadow"></i>
+                <i class="fas fa-wand-magic-sparkles w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">ดูดวงออนไลน์</span>
                 <i x-show="$store.sidebar.shouldExpand && fortuneOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="$store.sidebar.shouldExpand && !fortuneOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
@@ -515,6 +515,26 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.readings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-history w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติการทำนาย</span>
+                </a>
+
+                {{-- Export CSV 📊 --}}
+                <a href="{{ route('admin.fortune.readings.export') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.readings.export') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.readings.export') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-export w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ส่งออกข้อมูล</span>
+                </a>
+
+                {{-- Response Templates 📝 --}}
+                <a href="{{ route('admin.fortune.response-templates.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.response-templates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.response-templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-file-lines w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เทมเพลตตอบกลับ</span>
                 </a>
             </div>
         </div>
