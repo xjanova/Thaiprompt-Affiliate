@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.429.1] - 2026-01-29
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2417 from xjanova/claude/add-standard-signup-3Ypdp (a544c3f1)
+- fix: แก้ไขปัญหา toggle switches ใน LINE OA Settings ไม่บันทึกค่า (722471a5)
+### 🔧 Other Changes
+
+
 ## [v3.429.0] - 2026-01-29
 
 ### ✨ Features
