@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.438.0] - 2026-01-29
+
+### ✨ Features
+- Merge pull request #2428 from xjanova/claude/fortune-admin-icons-d93i4 (f43442dc)
+- feat: add fortune response template system with image support and admin CRUD (c93237bc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.437.1] - 2026-01-29
 
 ### ✨ Features
