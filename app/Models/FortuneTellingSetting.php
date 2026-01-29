@@ -56,6 +56,7 @@ class FortuneTellingSetting extends Model
         'facebook_page_id',
         'facebook_page_token',
         'facebook_verify_token',
+        'use_global_ai_settings',
         'ai_provider',
         'ai_api_key',
         'ai_model',
