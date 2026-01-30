@@ -28,6 +28,20 @@ Route::prefix('v1/sms-payment')->group(function () {
 
         // ลงทะเบียน/อัพเดทข้อมูลอุปกรณ์
         Route::post('/register-device', [SmsPaymentController::class, 'registerDevice']);
+
+        // จัดการ Orders (สำหรับ Android App)
+        Route::get('/orders', [SmsPaymentController::class, 'orders']);
+        Route::post('/orders/{id}/approve', [SmsPaymentController::class, 'approveOrder']);
+        Route::post('/orders/{id}/reject', [SmsPaymentController::class, 'rejectOrder']);
+        Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
+        Route::get('/orders/sync', [SmsPaymentController::class, 'syncOrders']);
+
+        // ตั้งค่าอุปกรณ์ (สำหรับ Android App)
+        Route::get('/device-settings', [SmsPaymentController::class, 'getDeviceSettings']);
+        Route::put('/device-settings', [SmsPaymentController::class, 'updateDeviceSettings']);
+
+        // สถิติ dashboard (สำหรับ Android App)
+        Route::get('/dashboard-stats', [SmsPaymentController::class, 'dashboardStats']);
     });
 
     // เส้นทางที่ต้อง authenticate ด้วย Laravel Sanctum (web/admin)

@@ -131,14 +131,21 @@
                     </p>
                 </div>
 
-                <form method="POST" action="{{ route('admin.smschecker.device-regenerate', $device) }}"
-                      onsubmit="return confirm('ต้องการสร้าง API Key ใหม่หรือไม่? Key เก่าจะใช้งานไม่ได้อีก')">
-                    @csrf
-                    <button type="submit"
-                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm">
-                        🔄 สร้าง Key ใหม่
-                    </button>
-                </form>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('admin.smschecker.device-qr', $device) }}"
+                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm inline-block">
+                        📲 QR Code ตั้งค่า
+                    </a>
+
+                    <form method="POST" action="{{ route('admin.smschecker.device-regenerate', $device) }}"
+                          onsubmit="return confirm('ต้องการสร้าง API Key ใหม่หรือไม่? Key เก่าจะใช้งานไม่ได้อีก')">
+                        @csrf
+                        <button type="submit"
+                                class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm">
+                            🔄 สร้าง Key ใหม่
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

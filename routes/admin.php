@@ -418,6 +418,8 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::post('/devices/{device}/toggle-status', [SmsCheckerAdminController::class, 'toggleDeviceStatus'])->name('device-toggle');
     Route::post('/devices/{device}/regenerate-keys', [SmsCheckerAdminController::class, 'regenerateKeys'])->name('device-regenerate');
     Route::delete('/devices/{device}', [SmsCheckerAdminController::class, 'destroyDevice'])->name('device-destroy');
+    Route::get('/devices/{device}/qr', [SmsCheckerAdminController::class, 'qrCode'])->name('device-qr');
+    Route::get('/devices/{device}/qr.json', [SmsCheckerAdminController::class, 'qrCodeJson'])->name('device-qr-json');
     Route::get('/notifications', [SmsCheckerAdminController::class, 'notifications'])->name('notifications');
 });
 
