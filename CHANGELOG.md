@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.443.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2443 from xjanova/claude/test-smschecker-payment-CJNdO (b4a7a506)
+- fix: use PaymentService::completePayment() instead of markAsCompleted() (1bc2af53)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/test-smschecker-payment-CJNdO (471fb9b2)
+
 ## [v3.443.1] - 2026-01-30
 
 ### ✨ Features
