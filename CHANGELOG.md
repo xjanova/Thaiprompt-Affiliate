@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.446.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2449 from xjanova/claude/test-smschecker-payment-CJNdO (e85565bb)
+- fix: integrate unique decimal amount generation into checkout payment flow (aee8ec45)
+### 🔧 Other Changes
+
+
 ## [v3.446.0] - 2026-01-30
 
 ### ✨ Features
