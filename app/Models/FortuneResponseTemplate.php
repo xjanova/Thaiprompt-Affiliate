@@ -226,6 +226,8 @@ class FortuneResponseTemplate extends Model
             '{remaining_free}' => $data['remaining_free'] ?? '0',
             '{max_free}' => $data['max_free'] ?? '3',
             '{price}' => $data['price'] ?? '0',
+            '{zodiac}' => $data['zodiac'] ?? '',
+            '{birth_date}' => $data['birth_date'] ?? '',
         ];
 
         return str_replace(

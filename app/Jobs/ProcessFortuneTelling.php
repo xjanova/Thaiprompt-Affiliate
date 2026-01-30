@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Throwable;
 
 /**
  * Process Fortune Telling Job
@@ -66,6 +67,7 @@ class ProcessFortuneTelling implements ShouldQueue
      * - is_paid: bool
      * - amount_paid: float
      * - user_image_url: string|null
+     * - birth_date: string|null (รูปแบบ Y-m-d)
      */
     protected array $data;
 
@@ -139,7 +141,8 @@ class ProcessFortuneTelling implements ShouldQueue
                 $userProfile,
                 $userPosts,
                 $promptTemplate,
-                $readingType
+                $readingType,
+                $this->data['birth_date'] ?? null
             );
 
             // บันทึกลงฐานข้อมูล
@@ -230,6 +233,7 @@ class ProcessFortuneTelling implements ShouldQueue
             'user_image_url' => $this->data['user_image_url'] ?? null,
             'is_paid' => $this->data['is_paid'] ?? false,
             'amount_paid' => $this->data['amount_paid'] ?? 0,
+            'birth_date' => $this->data['birth_date'] ?? null,
         ]);
     }
 
@@ -282,10 +286,10 @@ class ProcessFortuneTelling implements ShouldQueue
     /**
      * จัดการเมื่อ job ล้มเหลว (หลัง retry หมดทุกครั้ง)
      *
-     * @param Exception $exception
+     * @param \Throwable $exception
      * @return void
      */
-    public function failed(Exception $exception): void
+    public function failed(Throwable $exception): void
     {
         Log::critical('🚨 Fortune telling job failed permanently', [
             'error' => $exception->getMessage(),
