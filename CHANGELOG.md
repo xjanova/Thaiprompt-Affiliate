@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.445.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2447 from xjanova/claude/fix-shipping-address-styling-1mALX (024a5436)
+- fix: restore broken <a> tag on shipping address index page (e1c0845c)
+### 🔧 Other Changes
+
+
 ## [v3.445.1] - 2026-01-30
 
 ### ✨ Features
