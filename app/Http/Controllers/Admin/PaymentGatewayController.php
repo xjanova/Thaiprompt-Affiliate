@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\PaymentBankAccount;
 use App\Models\PaymentGateway;
+use App\Models\SmsCheckerDevice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -55,7 +57,27 @@ class PaymentGatewayController extends Controller
                 'coming_soon' => PaymentGateway::where('is_coming_soon', true)->count(),
             ];
 
-            return view('admin.payment-gateways.index', compact('gateways', 'stats'));
+            // ดึงข้อมูลบัญชีธนาคารและ SMS Checker devices
+            $bankAccounts = PaymentBankAccount::orderByDesc('is_default')
+                ->orderBy('sort_order')
+                ->orderBy('bank_name')
+                ->get();
+
+            $smsDevices = SmsCheckerDevice::where('status', 'active')
+                ->orderByDesc('last_active_at')
+                ->get();
+
+            $bankStats = [
+                'total' => $bankAccounts->count(),
+                'active' => $bankAccounts->where('is_active', true)->count(),
+                'sms_enabled' => $bankAccounts->where('sms_checker_enabled', true)->count(),
+                'promptpay' => $bankAccounts->whereNotNull('promptpay_id')->count(),
+            ];
+
+            return view('admin.payment-gateways.index', compact(
+                'gateways', 'stats',
+                'bankAccounts', 'smsDevices', 'bankStats'
+            ));
         } catch (\Throwable $e) {
             \Log::error('Critical error in PaymentGatewayController::index', [
                 'error' => $e->getMessage(),
