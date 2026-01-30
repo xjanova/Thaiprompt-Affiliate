@@ -136,7 +136,12 @@ class MlmMemberController extends Controller
         $treeType = $request->get('type', 'unilevel');
         $maxDepth = $request->get('depth', 5);
 
-        $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
+        try {
+            $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
+        } catch (\Exception $e) {
+            \Log::error('Admin genealogy error', ['member_id' => $member->id, 'error' => $e->getMessage()]);
+            $treeData = null;
+        }
 
         return view('admin.mlm.members.genealogy', compact('member', 'treeData', 'treeType'));
     }
@@ -146,12 +151,22 @@ class MlmMemberController extends Controller
         $treeType = $request->get('type', 'unilevel');
         $maxDepth = $request->get('depth', 5);
 
-        $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
+        try {
+            $treeData = $this->genealogyService->getTreeData($member, $treeType, $maxDepth);
 
-        return response()->json([
-            'success' => true,
-            'data' => $treeData,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $treeData,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Admin getTreeData error', ['member_id' => $member->id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'เกิดข้อผิดพลาดในการโหลดข้อมูลผังสายงาน',
+            ], 500);
+        }
     }
 
     public function statistics(MlmMember $member)
