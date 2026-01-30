@@ -63,11 +63,26 @@
             </div>
 
             <!-- Status Badge -->
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="flex items-center gap-2 shrink-0 flex-wrap">
                 @if($node->status === 'active')
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                    <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-medium">
                         ✅ ใช้งาน
                     </span>
+                    {{-- สถานะรักษายอด --}}
+                    @php
+                        $nodeRetention = \App\Helpers\MlmRetentionHelper::getRetentionStatus($node);
+                    @endphp
+                    @if(($nodeRetention['retention_enabled'] ?? false) && ($nodeRetention['status'] ?? 'active') !== 'active')
+                        @if($nodeRetention['status'] === 'grace_period')
+                            <span class="px-2 py-0.5 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-full text-xs font-medium">
+                                ⏳ ผ่อนผัน
+                            </span>
+                        @else
+                            <span class="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-medium">
+                                PV ไม่ถึง
+                            </span>
+                        @endif
+                    @endif
                 @else
                     <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-xs font-medium">
                         ⏸️ ไม่ใช้งาน
