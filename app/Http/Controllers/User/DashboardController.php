@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\MarketplaceCommission;
 use App\Models\MlmCommission;
@@ -276,6 +277,14 @@ class DashboardController extends Controller
         $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
 
         // ===============================================
+        // 12. สถานะรักษายอด (Volume Retention)
+        // ===============================================
+
+        $retentionStatus = $mlmMember
+            ? MlmRetentionHelper::getRetentionStatus($mlmMember)
+            : null;
+
+        // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
         // ===============================================
 
@@ -316,7 +325,10 @@ class DashboardController extends Controller
 
             // KYC
             'kycStatus',
-            'showKycAlert'
+            'showKycAlert',
+
+            // Retention
+            'retentionStatus'
         ));
     }
 
