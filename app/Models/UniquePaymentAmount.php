@@ -43,6 +43,16 @@ class UniquePaymentAmount extends Model
         'matched_at' => 'datetime',
     ];
 
+    // ความสัมพันธ์
+
+    /**
+     * Payment Transaction ที่เชื่อมโยง
+     */
+    public function transaction()
+    {
+        return $this->belongsTo(PaymentTransaction::class, 'transaction_id');
+    }
+
     // Scopes
 
     /**

@@ -80,6 +80,14 @@ class SmsPaymentNotification extends Model
     // ความสัมพันธ์
 
     /**
+     * อุปกรณ์ที่ส่ง notification นี้
+     */
+    public function device()
+    {
+        return $this->belongsTo(SmsCheckerDevice::class, 'device_id', 'device_id');
+    }
+
+    /**
      * Transaction ที่จับคู่ได้
      */
     public function matchedTransaction()
