@@ -272,4 +272,45 @@ class SmsCheckerAdminController extends Controller
 
         return view('admin.smschecker.notifications', compact('notifications', 'banks'));
     }
+
+    /**
+     * แสดงหน้า QR Code สำหรับ provisioning อุปกรณ์
+     *
+     * Android App จะสแกน QR Code นี้เพื่อรับค่า API Key, Secret Key
+     * และ URL ของ server
+     *
+     * @param SmsCheckerDevice $device
+     * @return \Illuminate\View\View
+     */
+    public function qrCode(SmsCheckerDevice $device)
+    {
+        $qrData = [
+            'type' => 'smschecker_config',
+            'version' => 1,
+            'url' => config('app.url'),
+            'apiKey' => $device->api_key,
+            'secretKey' => $device->secret_key,
+            'deviceName' => $device->device_name ?? $device->device_id,
+        ];
+
+        return view('admin.smschecker.qr-code', compact('device', 'qrData'));
+    }
+
+    /**
+     * ส่งข้อมูล QR Code เป็น JSON สำหรับ API
+     *
+     * @param SmsCheckerDevice $device
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function qrCodeJson(SmsCheckerDevice $device)
+    {
+        return response()->json([
+            'type' => 'smschecker_config',
+            'version' => 1,
+            'url' => config('app.url'),
+            'apiKey' => $device->api_key,
+            'secretKey' => $device->secret_key,
+            'deviceName' => $device->device_name ?? $device->device_id,
+        ]);
+    }
 }
