@@ -154,9 +154,6 @@ class CleanupUserData extends Command
         'forum_comments',
         'forum_user_trophies',
 
-        // Membership
-        'membership_retention_status',
-
         // Cookie & Privacy
         'cookie_consents',
 

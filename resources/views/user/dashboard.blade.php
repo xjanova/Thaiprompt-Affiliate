@@ -52,16 +52,6 @@
     @endif
 
     {{-- ======================================
-        1.5 Retention Status Bar (แถบเตือนสถานะรักษายอด)
-    ====================================== --}}
-    @if($retentionStatus && $retentionStatistics)
-        <x-retention-status-bar
-            :retentionStatus="$retentionStatus"
-            :statistics="$retentionStatistics"
-        />
-    @endif
-
-    {{-- ======================================
         2. Welcome Section - Rank-based Header 🆕
     ====================================== --}}
     @include('user.partials.dashboard-rank-header', [
@@ -197,8 +187,95 @@
             </x-arrow-x.card-v3>
         </div>
 
-        {{-- Right Column (1 col) - Rank Progress & Activities --}}
+        {{-- Right Column (1 col) - Retention, Rank Progress & Activities --}}
         <div class="space-y-6">
+
+            {{-- สถานะรักษายอด (Volume Retention) --}}
+            @if($retentionStatus && $mlmMember)
+            <x-arrow-x.card-v3 class="p-6" :glow="false" :hover="false">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span class="text-2xl">💓</span>
+                    <span>สถานะรักษายอด</span>
+                </h2>
+
+                @if(!($retentionStatus['retention_enabled'] ?? true))
+                    {{-- ระบบรักษายอดปิดอยู่ --}}
+                    <div class="p-4 glass-neu rounded-xl text-center">
+                        <div class="text-gray-400 dark:text-gray-500 text-sm">ระบบรักษายอดปิดอยู่</div>
+                        <div class="text-green-600 dark:text-green-400 font-bold mt-1">Active ทุกคน</div>
+                    </div>
+                @else
+                    @php
+                        $statusColor = $retentionStatus['color'] ?? 'gray';
+                        $statusText = match($retentionStatus['status'] ?? 'inactive') {
+                            'active' => 'รักษายอดสำเร็จ',
+                            'grace_period' => 'อยู่ในช่วงผ่อนผัน',
+                            default => 'ยังไม่ถึงเกณฑ์',
+                        };
+                        $statusEmoji = match($retentionStatus['status'] ?? 'inactive') {
+                            'active' => '✅',
+                            'grace_period' => '⏳',
+                            default => '⚠️',
+                        };
+                        $pvPercentage = $retentionStatus['pv_percentage'] ?? 0;
+                    @endphp
+
+                    {{-- สถานะ Badge --}}
+                    <div class="text-center mb-4">
+                        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold
+                            {{ $statusColor === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
+                            {{ $statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : '' }}
+                            {{ $statusColor === 'red' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}
+                        ">
+                            {{ $statusEmoji }} {{ $statusText }}
+                        </span>
+                    </div>
+
+                    {{-- PV Progress --}}
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">PV เดือนนี้</span>
+                            <span class="font-bold {{ $pvPercentage >= 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white' }}">
+                                {{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div class="h-full rounded-full transition-all duration-500
+                                {{ $pvPercentage >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : ($pvPercentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-rose-500') }}"
+                                style="width: {{ min($pvPercentage, 100) }}%">
+                            </div>
+                        </div>
+
+                        @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">ต้องการเพิ่ม</span>
+                            <span class="font-bold text-orange-600 dark:text-orange-400">{{ number_format($retentionStatus['remaining_pv'], 0) }} PV</span>
+                        </div>
+                        @endif
+                    </div>
+
+                    {{-- Grace Period Warning --}}
+                    @if($retentionStatus['in_grace_period'] ?? false)
+                    <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl">
+                        <div class="flex items-center text-yellow-700 dark:text-yellow-400 text-xs">
+                            <i class="fas fa-clock mr-2"></i>
+                            <span>ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน</span>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Inactive Warning --}}
+                    @if(($retentionStatus['status'] ?? '') === 'inactive')
+                    <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+                        <div class="text-red-700 dark:text-red-400 text-xs">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
+                        </div>
+                    </div>
+                    @endif
+                @endif
+            </x-arrow-x.card-v3>
+            @endif
 
             {{-- Rank Progress - ใช้ Arrow X Card --}}
             @if($currentRank || $nextRank)

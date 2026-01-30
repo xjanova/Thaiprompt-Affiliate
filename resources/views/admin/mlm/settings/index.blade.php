@@ -614,6 +614,91 @@
                 </div>
             </div>
 
+            {{-- Volume Retention System --}}
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div class="bg-gradient-to-r from-rose-600 to-pink-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-3">
+                        <i class="fas fa-heartbeat"></i>
+                        ระบบรักษายอด (Volume Retention)
+                    </h2>
+                    <p class="text-sm text-white/80 mt-1">กำหนดเงื่อนไข PV รายเดือนที่สมาชิกต้องทำเพื่อรับคอมมิชชั่น</p>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    {{-- Retention Enabled Toggle --}}
+                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-900 dark:text-white">เปิดใช้งานระบบรักษายอด</label>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">เมื่อเปิด สมาชิกต้องมียอด PV ตามเกณฑ์จึงจะรับคอมมิชชั่นได้</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" x-model="settings.volume_retention_enabled" class="sr-only peer">
+                            <div class="w-14 h-7 bg-gray-300 peer-focus:ring-4 peer-focus:ring-rose-300 dark:peer-focus:ring-rose-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-rose-600 peer-checked:to-pink-600"></div>
+                        </label>
+                    </div>
+
+                    {{-- Monthly PV Requirement --}}
+                    <div x-show="settings.volume_retention_enabled" x-transition>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-chart-bar text-rose-500 mr-2"></i>
+                            PV ขั้นต่ำต่อเดือน
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <div class="flex-1 relative">
+                                <input type="number"
+                                       x-model.number="settings.volume_retention_monthly_pv"
+                                       min="0" max="10000" step="10"
+                                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl pr-12">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">PV</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            สมาชิกต้องซื้อสินค้ารวม PV อย่างน้อยเท่านี้ภายในเดือนปัจจุบัน
+                        </p>
+                    </div>
+
+                    {{-- Grace Period --}}
+                    <div x-show="settings.volume_retention_enabled" x-transition>
+                        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-clock text-rose-500 mr-2"></i>
+                            ระยะเวลาผ่อนผัน (Grace Period)
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <input type="range"
+                                   x-model.number="settings.volume_retention_grace_days"
+                                   min="0" max="30" step="1"
+                                   class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+                            <div class="w-20 px-3 py-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-lg text-center font-bold">
+                                <span x-text="settings.volume_retention_grace_days + ' วัน'"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            หลังจากซื้อครั้งสุดท้าย สมาชิกจะยังมีสิทธิ์รับคอมมิชชั่นอีกกี่วัน (0 = ไม่มีผ่อนผัน)
+                        </p>
+                    </div>
+
+                    {{-- How It Works --}}
+                    <div x-show="settings.volume_retention_enabled" x-transition class="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-200 dark:border-rose-800">
+                        <h4 class="text-sm font-semibold text-rose-800 dark:text-rose-300 mb-3 flex items-center gap-2">
+                            <i class="fas fa-lightbulb"></i>
+                            วิธีการทำงาน
+                        </h4>
+                        <ul class="text-xs text-rose-700 dark:text-rose-400 space-y-2 list-disc list-inside">
+                            <li>ทุกเดือนระบบจะตรวจสอบ PV จากการซื้อส่วนตัวของสมาชิก</li>
+                            <li>
+                                ถ้า PV ≥ <strong x-text="settings.volume_retention_monthly_pv || 100"></strong> PV → <span class="text-green-700 dark:text-green-400 font-semibold">Active</span> (รับคอมมิชชั่นได้)
+                            </li>
+                            <li>
+                                ถ้า PV ไม่ถึง แต่ซื้อล่าสุดไม่เกิน <strong x-text="settings.volume_retention_grace_days || 7"></strong> วัน → <span class="text-yellow-700 dark:text-yellow-400 font-semibold">Grace Period</span> (ยังรับได้ชั่วคราว)
+                            </li>
+                            <li>ถ้าเกินทั้ง 2 เงื่อนไข → <span class="text-red-700 dark:text-red-400 font-semibold">Inactive</span> (คอมมิชชั่นจะ Rollup ให้ Upline ที่ Active)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             {{-- Other Settings --}}
             <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-gray-600 to-slate-600 px-6 py-4">
@@ -774,6 +859,9 @@ function mlmSettings() {
             direct_referral_commission: 5,
             min_pv_for_commission: 100,
             commission_per_pv: 1,
+            volume_retention_enabled: true,
+            volume_retention_monthly_pv: 100,
+            volume_retention_grace_days: 7,
         },
         unilevelPercentages: [5, 3, 2, 1, 1],
         saving: false,
@@ -809,6 +897,9 @@ function mlmSettings() {
                             direct_referral_commission: parseFloat(data.settings.direct_referral_commission) || 5,
                             min_pv_for_commission: parseFloat(data.settings.min_pv_for_commission) || 100,
                             commission_per_pv: parseFloat(data.settings.commission_per_pv) || 1,
+                            volume_retention_enabled: data.settings.volume_retention_enabled ?? true,
+                            volume_retention_monthly_pv: parseFloat(data.settings.volume_retention_monthly_pv) || 100,
+                            volume_retention_grace_days: parseInt(data.settings.volume_retention_grace_days) || 7,
                         };
 
                         // Load unilevel percentages
@@ -885,6 +976,9 @@ function mlmSettings() {
                         direct_referral_commission: this.settings.direct_referral_commission,
                         min_pv_for_commission: this.settings.min_pv_for_commission,
                         commission_per_pv: this.settings.commission_per_pv,
+                        volume_retention_enabled: this.settings.volume_retention_enabled,
+                        volume_retention_monthly_pv: this.settings.volume_retention_monthly_pv,
+                        volume_retention_grace_days: this.settings.volume_retention_grace_days,
                     }),
                 });
 

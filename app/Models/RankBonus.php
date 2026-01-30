@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class RankBonus extends Model
 {
@@ -130,6 +131,7 @@ class RankBonus extends Model
 
     /**
      * Apply one-time bonus
+     * แก้ Bug #17: ใช้ atomic increment แทน manual balance update + ครอบ DB::transaction
      */
     private function applyOneTimeBonus(User $user): bool
     {
@@ -137,21 +139,23 @@ class RankBonus extends Model
             return false;
         }
 
-        // Add to wallet
-        $user->wallet->balance += $this->amount;
-        $user->wallet->save();
+        return DB::transaction(function () use ($user) {
+            // Log transaction ก่อน เพื่อบันทึก balance_before ที่ถูกต้อง
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'wallet_id' => $user->wallet->id,
+                'type' => 'credit',
+                'amount' => $this->amount,
+                'balance_after' => $user->wallet->balance + $this->amount,
+                'description' => "Rank bonus: {$this->display_name}",
+                'status' => 'completed',
+            ]);
 
-        // Log transaction
-        WalletTransaction::create([
-            'user_id' => $user->id,
-            'wallet_id' => $user->wallet->id,
-            'type' => 'credit',
-            'amount' => $this->amount,
-            'description' => "Rank bonus: {$this->display_name}",
-            'status' => 'completed',
-        ]);
+            // ใช้ atomic increment แทน manual assignment เพื่อป้องกัน race condition
+            $user->wallet->increment('balance', $this->amount);
 
-        return true;
+            return true;
+        });
     }
 
     /**
@@ -165,21 +169,37 @@ class RankBonus extends Model
 
     /**
      * Apply commission bonus
+     *
+     * ถ้ามี amount > 0: จ่ายเงินเข้ากระเป๋าเป็นโบนัสคอมมิชชัน (เหมือน one_time)
+     * ถ้ามีเฉพาะ percentage: เป็น passive bonus ที่ใช้ผ่าน Rank.bonus_multiplier
      */
     private function applyCommissionBonus(User $user): bool
     {
-        // This would be applied automatically when calculating commissions
-        // Just return true to indicate it's set up
+        // ถ้ามี amount ให้จ่ายเป็นเงินโบนัสเข้ากระเป๋า
+        if ($this->amount > 0) {
+            return $this->applyOneTimeBonus($user);
+        }
+
+        // percentage-only: เป็น passive bonus (ใช้ผ่าน Rank.bonus_multiplier ในการคำนวณ commission)
         return true;
     }
 
     /**
      * Apply multiplier bonus
+     *
+     * Multiplier bonus เป็น passive bonus ที่ทำงานผ่าน Rank.bonus_multiplier
+     * ซึ่งจะถูกใช้อัตโนมัติใน MlmUnilevelService และ InvestmentService
+     *
+     * ถ้ามี amount > 0: จ่ายเงินเข้ากระเป๋าเพิ่มเติมด้วย
      */
     private function applyMultiplierBonus(User $user): bool
     {
-        // This would be applied automatically when calculating earnings
-        // Just return true to indicate it's set up
+        // ถ้ามี amount ให้จ่ายเป็นเงินโบนัสเข้ากระเป๋าด้วย
+        if ($this->amount > 0) {
+            return $this->applyOneTimeBonus($user);
+        }
+
+        // passive: bonus_multiplier จะถูกใช้ใน commission calculations อัตโนมัติ
         return true;
     }
 }

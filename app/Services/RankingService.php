@@ -25,7 +25,13 @@ class RankingService
         }
 
         $promoted = [];
-        $users = User::whereNotNull('current_rank_id')->get();
+        // แก้ Bug #18: รวม users ที่ยังไม่มี rank (unranked) ด้วย เพื่อให้เลื่อนขั้นได้เป็น rank แรก
+        $users = User::where(function ($q) {
+            $q->whereNotNull('current_rank_id')
+              ->orWhereHas('mlmMembers', function ($mq) {
+                  $mq->where('status', 'active');
+              });
+        })->get();
 
         foreach ($users as $user) {
             $result = $this->checkAndPromoteUser($user);
@@ -48,11 +54,17 @@ class RankingService
     {
         $settings = RankSetting::get();
 
+        // แก้ Bug #18: ถ้า user ไม่มี rank → ใช้ default rank (rank แรก) เป็นเป้าหมาย
         if (!$user->currentRank) {
-            return ['promoted' => false, 'reason' => 'User has no current rank'];
-        }
+            $nextRank = Rank::where('is_default', true)->first()
+                ?? Rank::orderBy('level')->first();
 
-        $nextRank = $user->currentRank->next_rank;
+            if (!$nextRank) {
+                return ['promoted' => false, 'reason' => 'No ranks configured in system'];
+            }
+        } else {
+            $nextRank = $user->currentRank->next_rank;
+        }
         if (!$nextRank) {
             return ['promoted' => false, 'reason' => 'User is at highest rank'];
         }
@@ -76,6 +88,7 @@ class RankingService
             'requirements_snapshot' => $eligibility['requirements'],
         ]);
 
+        // แก้ Bug #16: ครอบ promotion flow ด้วย DB::transaction เพื่อ atomicity
         if ($settings->enable_manual_approval) {
             $promotion->status = 'pending';
             $promotion->save();
@@ -89,22 +102,24 @@ class RankingService
                 'promotion' => $promotion
             ];
         } else {
-            $promotion->status = 'approved';
-            $promotion->approved_at = now();
-            $promotion->save();
-            $promotion->activate();
+            return DB::transaction(function () use ($promotion, $user, $nextRank) {
+                $promotion->status = 'approved';
+                $promotion->approved_at = now();
+                $promotion->save();
+                $promotion->activate();
 
-            // Apply bonuses
-            $this->applyRankBonuses($user, $nextRank);
+                // Apply bonuses
+                $this->applyRankBonuses($user, $nextRank);
 
-            // Notify user
-            $this->notifyUserPromotion($user, $nextRank);
+                // Notify user
+                $this->notifyUserPromotion($user, $nextRank);
 
-            return [
-                'promoted' => true,
-                'promotion' => $promotion,
-                'rank' => $nextRank
-            ];
+                return [
+                    'promoted' => true,
+                    'promotion' => $promotion,
+                    'rank' => $nextRank
+                ];
+            });
         }
     }
 

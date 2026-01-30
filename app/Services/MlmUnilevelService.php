@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -146,6 +147,9 @@ class MlmUnilevelService
         $compressionEnabled = MlmGlobalSetting::get('unilevel_compression_enabled', true);
         $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
 
+        // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
         if (empty($levels)) {
             return;
         }
@@ -176,18 +180,20 @@ class MlmUnilevelService
             $percentage = $levelConfig['percentage'] ?? 0;
 
             if ($percentage > 0) {
-                $commissionAmount = ($pvData['total_pv'] * $percentage) / 100;
+                // คำนวณคอมมิชชั่น: PV × เปอร์เซ็นต์ × อัตราแปลง PV→บาท
+                $commissionAmount = ($pvData['total_pv'] * $percentage) / 100 * $commissionPerPv;
 
-                // Check rank multiplier if user has rank
+                // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
                 if ($sponsor->user->current_rank_id) {
-                    $rank = $sponsor->user->rank;
+                    $rank = $sponsor->user->currentRank;
                     if ($rank && $rank->bonus_multiplier) {
                         $commissionAmount *= $rank->bonus_multiplier;
                     }
                 }
 
                 // Apply max per level constraint
-                if ($maxPerLevel && $commissionAmount > $maxPerLevel) {
+                // แก้ Bug #24: ใช้ !== null เพื่อให้ค่า 0 ทำงานถูกต้อง
+                if ($maxPerLevel !== null && $commissionAmount > $maxPerLevel) {
                     $commissionAmount = $maxPerLevel;
                 }
 
@@ -219,20 +225,15 @@ class MlmUnilevelService
     }
 
     /**
-     * Check if member is qualified for commission at a level
-     * ใช้ค่าจาก Global Settings แทน per-plan settings
+     * ตรวจสอบว่าสมาชิกมีสิทธิ์รับคอมมิชชั่นหรือไม่
+     *
+     * แก้ RET-2: ใช้ MlmRetentionHelper ตรวจสอบ PV รักษายอดจริง
+     * แทน static field (is_qualified/status) ที่ไม่สะท้อน PV เดือนปัจจุบัน
+     * ใช้เกณฑ์เดียวกันกับ MlmCommissionService และ MlmBinaryService
      */
     protected function isQualifiedForCommission(MlmMember $member, int $level)
     {
-        // Check basic qualification
-        if (!$member->is_qualified || $member->status !== 'active') {
-            return false;
-        }
-
-        // Note: rank requirements ไม่ใช้ per-plan settings แล้ว
-        // ถ้าต้องการ rank requirements ให้ใช้ Global Settings แทน
-
-        return true;
+        return MlmRetentionHelper::isMemberActive($member);
     }
 
     /**
@@ -347,9 +348,14 @@ class MlmUnilevelService
         $stats = [];
 
         for ($level = 1; $level <= $maxDepth; $level++) {
+            // แก้ Bug #31: path query ต้องรองรับ member ID ที่อาจอยู่ตำแหน่งใดก็ได้ในเส้นทาง
+            // ป้องกัน substring match เช่น id=1 match กับ id=10
             $members = MlmMember::where('mlm_plan_id', $plan->id)
                 ->where('unilevel_level', $level)
-                ->where('unilevel_path', 'like', $member->id . '/%')
+                ->where(function ($q) use ($member) {
+                    $q->where('unilevel_path', 'like', $member->id . '/%')
+                      ->orWhere('unilevel_path', 'like', '%/' . $member->id . '/%');
+                })
                 ->get();
 
             $stats[$level] = [
@@ -377,9 +383,9 @@ class MlmUnilevelService
         $percentage = $levels[0]['percentage'] ?? 0;
         $commission = ($pvAmount * $percentage) / 100;
 
-        // Apply rank multiplier if user has rank
+        // แก้ Bug #9: ใช้ currentRank แทน rank
         if ($member->user->current_rank_id) {
-            $rank = $member->user->rank;
+            $rank = $member->user->currentRank;
             if ($rank && $rank->bonus_multiplier) {
                 $commission *= $rank->bonus_multiplier;
             }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -66,6 +67,11 @@ class MlmBinaryService
     /**
      * Calculate binary pair commissions
      * ใช้ค่าจาก Global Settings แทน per-plan settings
+     *
+     * แก้ไข Bug #1: Reset left_leg_pv/right_leg_pv หลัง pair matching (ป้องกัน double-counting)
+     * แก้ไข Bug #2: Carry forward PV ของขาแข็ง (stronger leg) ไม่ใช่ขาอ่อน
+     * แก้ไข Bug #3: แก้สูตร pair ratio สำหรับ 2:1 pairing
+     * แก้ไข Bug #22: เพิ่ม depth limit ป้องกัน infinite loop
      */
     protected function calculateBinaryPairCommissions(MlmMember $member, Order $order, array $pvData)
     {
@@ -76,31 +82,47 @@ class MlmBinaryService
         $commissionPerPair = MlmGlobalSetting::get('binary_pair_commission', 100);
         $maxCommissionPerDay = MlmGlobalSetting::get('binary_max_commission_per_day', null);
         $flushPercentage = MlmGlobalSetting::get('binary_flush_percentage', 100) / 100;
+        $pairingType = MlmGlobalSetting::get('binary_pairing_type', '1:1');
 
         // Traverse up the binary tree
         $currentMember = $member;
+        $traverseDepth = 0;
+        $maxTraverseDepth = 100; // Safety limit ป้องกัน infinite loop
+        $visited = []; // ป้องกัน circular reference
 
-        while ($currentMember->binaryParent) {
+        while ($currentMember->binaryParent && $traverseDepth < $maxTraverseDepth) {
             $parent = $currentMember->binaryParent;
 
-            // แก้ Bug #3: ตรวจสอบและลบ carried PV ที่หมดอายุก่อนคำนวณ
+            // ป้องกัน circular reference
+            if (isset($visited[$parent->id])) {
+                Log::warning('Circular reference detected in binary tree', [
+                    'member_id' => $member->id,
+                    'parent_id' => $parent->id,
+                ]);
+                break;
+            }
+            $visited[$parent->id] = true;
+            $traverseDepth++;
+
+            // ตรวจสอบและลบ carried PV ที่หมดอายุก่อนคำนวณ
             $parent->expireCarriedPv();
 
-            // Check if parent is qualified
-            if (!$parent->is_qualified || $parent->status !== 'active') {
+            // แก้ RET-1: ใช้ MlmRetentionHelper ตรวจสอบ PV รักษายอดจริง
+            // แทน static field (is_qualified/status) ที่ไม่สะท้อน PV เดือนปัจจุบัน
+            if (!MlmRetentionHelper::isMemberActive($parent)) {
                 $currentMember = $parent;
                 continue;
             }
 
-            // Calculate pairs
+            // Calculate pairs - รวม leg PV + carried PV
             $leftPv = $parent->left_leg_pv + $parent->carried_left_pv;
             $rightPv = $parent->right_leg_pv + $parent->carried_right_pv;
 
             $weakerLeg = min($leftPv, $rightPv);
             $strongerLeg = max($leftPv, $rightPv);
 
-            // Calculate how many pairs can be formed
-            $pairsAvailable = floor($weakerLeg / $this->getPairRatio());
+            // แก้ Bug #3: คำนวณ pairs ตาม pairing type ที่ถูกต้อง
+            $pairsAvailable = $this->calculatePairsAvailable($weakerLeg, $strongerLeg, $pairingType);
 
             if ($pairsAvailable > 0) {
                 // Check daily limits
@@ -128,8 +150,10 @@ class MlmBinaryService
                 }
 
                 if ($pairsToProcess > 0 && $totalCommission > 0) {
+                    // คำนวณ PV ที่ใช้ไปจากแต่ละขา
+                    $pvConsumed = $this->calculatePvConsumed($pairsToProcess, $pairingType, $leftPv, $rightPv);
+
                     // Create commission record
-                    // ⚠️ แก้ไข: ใช้ total_amount แทน total (Order model มี field total_amount)
                     MlmCommission::create([
                         'mlm_member_id' => $parent->id,
                         'mlm_plan_id' => $plan->id,
@@ -141,35 +165,117 @@ class MlmBinaryService
                         'left_leg_pv' => $leftPv,
                         'right_leg_pv' => $rightPv,
                         'pairs_count' => $pairsToProcess,
-                        'pv_amount' => $pairsToProcess * $this->getPairRatio(),
+                        'pv_amount' => $pvConsumed['weak_consumed'] + $pvConsumed['strong_consumed'],
                         'sales_amount' => $order->total_amount,
                         'commission_amount' => $totalCommission,
                         'status' => 'pending',
                     ]);
 
-                    // Flush PV based on flush percentage
-                    $pvFlushed = $pairsToProcess * $this->getPairRatio() * $flushPercentage;
+                    // แก้ Bug #1: Reset/flush PV ที่ถูกใช้ไปจากทั้งสองขา
+                    $leftConsumed = ($leftPv <= $rightPv)
+                        ? $pvConsumed['weak_consumed']
+                        : $pvConsumed['strong_consumed'];
+                    $rightConsumed = ($rightPv <= $leftPv)
+                        ? $pvConsumed['weak_consumed']
+                        : $pvConsumed['strong_consumed'];
 
-                    // Update carried PV
-                    if ($leftPv <= $rightPv) {
-                        // Left is weaker
-                        $parent->decrement('carried_left_pv', min($parent->carried_left_pv, $pvFlushed));
-                    } else {
-                        // Right is weaker
-                        $parent->decrement('carried_right_pv', min($parent->carried_right_pv, $pvFlushed));
-                    }
+                    // Apply flush percentage
+                    $leftFlushed = $leftConsumed * $flushPercentage;
+                    $rightFlushed = $rightConsumed * $flushPercentage;
 
-                    // แก้ Bug #3: Carry forward remaining PV พร้อม set expiry date
-                    $remainingWeakPv = $weakerLeg - ($pairsToProcess * $this->getPairRatio());
+                    // ลด leg PV ก่อน แล้วค่อยลด carried PV
+                    $this->flushLegPv($parent, 'left', $leftFlushed);
+                    $this->flushLegPv($parent, 'right', $rightFlushed);
 
-                    if ($remainingWeakPv > 0) {
-                        $leg = ($leftPv <= $rightPv) ? 'left' : 'right';
-                        $parent->setCarriedPvExpiry($leg, $remainingWeakPv);
+                    // แก้ Bug #2: Carry forward PV ที่เหลือของขาแข็ง (stronger leg)
+                    $strongerLegRemaining = $strongerLeg - $pvConsumed['strong_consumed'];
+                    if ($strongerLegRemaining > 0) {
+                        $strongLegSide = ($leftPv >= $rightPv) ? 'left' : 'right';
+                        $parent->setCarriedPvExpiry($strongLegSide, $strongerLegRemaining);
                     }
                 }
             }
 
             $currentMember = $parent;
+        }
+    }
+
+    /**
+     * คำนวณจำนวน pairs ที่สามารถจับคู่ได้ตาม pairing type
+     *
+     * สำหรับ 1:1: pairs = weakerLeg (1 PV จากแต่ละขา = 1 pair)
+     * สำหรับ 2:1: pairs = min(weakerLeg, floor(strongerLeg / 2))
+     *            (1 PV จากขาอ่อน + 2 PV จากขาแข็ง = 1 pair)
+     *
+     * @param float $weakerLeg PV ของขาอ่อน
+     * @param float $strongerLeg PV ของขาแข็ง
+     * @param string $pairingType ประเภท pairing ('1:1' หรือ '2:1')
+     * @return int จำนวน pairs
+     */
+    protected function calculatePairsAvailable(float $weakerLeg, float $strongerLeg, string $pairingType): int
+    {
+        if ($pairingType === '2:1') {
+            // 2:1 = ใช้ 2 PV จากขาแข็ง + 1 PV จากขาอ่อน ต่อ 1 pair
+            return (int) min($weakerLeg, floor($strongerLeg / 2));
+        }
+
+        // 1:1 = ใช้ 1 PV จากแต่ละขา ต่อ 1 pair
+        return (int) $weakerLeg;
+    }
+
+    /**
+     * คำนวณ PV ที่ถูกใช้ไปจากแต่ละขาหลังจาก pair matching
+     *
+     * @param int $pairs จำนวน pairs ที่จับคู่
+     * @param string $pairingType ประเภท pairing
+     * @param float $leftPv PV ขาซ้าย
+     * @param float $rightPv PV ขาขวา
+     * @return array ['weak_consumed' => float, 'strong_consumed' => float]
+     */
+    protected function calculatePvConsumed(int $pairs, string $pairingType, float $leftPv, float $rightPv): array
+    {
+        if ($pairingType === '2:1') {
+            // ขาอ่อนใช้ 1 PV ต่อ pair, ขาแข็งใช้ 2 PV ต่อ pair
+            return [
+                'weak_consumed' => $pairs * 1,
+                'strong_consumed' => $pairs * 2,
+            ];
+        }
+
+        // 1:1 - ทั้งสองขาใช้ 1 PV ต่อ pair
+        return [
+            'weak_consumed' => $pairs * 1,
+            'strong_consumed' => $pairs * 1,
+        ];
+    }
+
+    /**
+     * ลด PV จาก leg (ลด leg_pv ก่อน ถ้าไม่พอค่อยลด carried_pv)
+     *
+     * @param MlmMember $parent
+     * @param string $side 'left' หรือ 'right'
+     * @param float $amount จำนวน PV ที่ต้องลด
+     */
+    protected function flushLegPv(MlmMember $parent, string $side, float $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $legPvField = "{$side}_leg_pv";
+        $carriedPvField = "carried_{$side}_pv";
+
+        $legPv = (float) $parent->$legPvField;
+        $carriedPv = (float) $parent->$carriedPvField;
+
+        if ($legPv >= $amount) {
+            // ลดจาก leg PV พอทั้งหมด
+            $parent->decrement($legPvField, $amount);
+        } else {
+            // ลด leg PV ให้หมด แล้วลดส่วนที่เหลือจาก carried PV
+            $remaining = $amount - $legPv;
+            $parent->update([$legPvField => 0]);
+            $parent->decrement($carriedPvField, min($carriedPv, $remaining));
         }
     }
 
