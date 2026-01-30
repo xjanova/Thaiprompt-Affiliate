@@ -18,10 +18,14 @@
             <p class="text-white/80 text-lg mt-1">จัดการที่อยู่สำหรับจัดส่ง</p></div>
         </div></div>
     </div>
-               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
-                + เพิ่มที่อยู่ใหม่
-            </a>
-        </div>
+
+    <!-- ปุ่มเพิ่มที่อยู่ใหม่ -->
+    <div class="flex justify-end">
+        <a href="{{ route('shipping-addresses.create') }}"
+           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-transform hover:scale-[1.02] transition-all duration-200">
+            + เพิ่มที่อยู่ใหม่
+        </a>
+    </div>
 
         <!-- Success Message -->
         @if(session('success'))
