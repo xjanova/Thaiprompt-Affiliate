@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.440.0] - 2026-01-30
+
+### ✨ Features
+- feat: add SMS Checker admin UI, FK constraints, and model relationships (79984f75)
+### 🐛 Bug Fixes
+- fix: improve SMS Payment Checker - fix floor() bug, add artisan commands, config usage, rate limiting, tests (bdac116e)
+### 🔧 Other Changes
+- Merge pull request #2433 from xjanova/claude/test-smschecker-payment-CJNdO (cf043965)
+
 ## [v3.439.2] - 2026-01-30
 
 ### ✨ Features
