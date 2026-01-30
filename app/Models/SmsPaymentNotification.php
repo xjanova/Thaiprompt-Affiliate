@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Payment\PaymentService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -128,10 +129,11 @@ class SmsPaymentNotification extends Model
             $uniqueAmount->save();
 
             // ยืนยัน payment transaction อัตโนมัติ (ถ้าเปิดใช้งาน)
+            // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
             if ($autoConfirm && $uniqueAmount->transaction_id) {
                 $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
                 if ($transaction && $transaction->status === 'pending') {
-                    $transaction->markAsCompleted();
+                    app(PaymentService::class)->completePayment($transaction);
                 }
             }
 
@@ -150,7 +152,7 @@ class SmsPaymentNotification extends Model
                 $this->save();
 
                 if ($autoConfirm) {
-                    $transaction->markAsCompleted();
+                    app(PaymentService::class)->completePayment($transaction);
                 }
                 return true;
             }

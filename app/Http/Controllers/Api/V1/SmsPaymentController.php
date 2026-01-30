@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
+use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -385,7 +386,9 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        $transaction->markAsCompleted();
+        // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
+        // (MLM Commission, Cashback, Revenue Distribution, ลดสต็อก)
+        app(PaymentService::class)->completePayment($transaction);
 
         Log::info('SMS Payment: อนุมัติ order จากอุปกรณ์', [
             'transaction_id' => $transaction->id,
@@ -478,10 +481,12 @@ class SmsPaymentController extends Controller
         $approved = 0;
         $failed = 0;
 
+        $paymentService = app(PaymentService::class);
         foreach ($ids as $id) {
             $transaction = PaymentTransaction::find($id);
             if ($transaction && $transaction->status === 'pending') {
-                $transaction->markAsCompleted();
+                // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
+                $paymentService->completePayment($transaction);
                 $approved++;
             } else {
                 $failed++;
