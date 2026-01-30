@@ -343,6 +343,90 @@ class FacebookWebhookService
         return !empty($questions) ? array_values($questions) : null;
     }
 
+    /**
+     * แยกวันเกิดจากข้อความผู้ใช้
+     *
+     * รองรับรูปแบบ:
+     * - "เกิด 15 มกราคม 2540" / "เกิดวันที่ 15/01/2540"
+     * - "วันเกิด 15-01-1997" / "วันเกิด 15 ม.ค. 40"
+     * - "เกิด 15/1/40" / "เกิด 15/1/97"
+     *
+     * @param string $message ข้อความจากผู้ใช้
+     * @return string|null วันเกิดในรูปแบบ Y-m-d (ค.ศ.) หรือ null ถ้าไม่พบ
+     */
+    public function parseBirthDate(string $message): ?string
+    {
+        $thaiMonths = [
+            'มกราคม' => 1, 'ม.ค.' => 1, 'มค' => 1,
+            'กุมภาพันธ์' => 2, 'ก.พ.' => 2, 'กพ' => 2,
+            'มีนาคม' => 3, 'มี.ค.' => 3, 'มีค' => 3,
+            'เมษายน' => 4, 'เม.ย.' => 4, 'เมย' => 4,
+            'พฤษภาคม' => 5, 'พ.ค.' => 5, 'พค' => 5,
+            'มิถุนายน' => 6, 'มิ.ย.' => 6, 'มิย' => 6,
+            'กรกฎาคม' => 7, 'ก.ค.' => 7, 'กค' => 7,
+            'สิงหาคม' => 8, 'ส.ค.' => 8, 'สค' => 8,
+            'กันยายน' => 9, 'ก.ย.' => 9, 'กย' => 9,
+            'ตุลาคม' => 10, 'ต.ค.' => 10, 'ตค' => 10,
+            'พฤศจิกายน' => 11, 'พ.ย.' => 11, 'พย' => 11,
+            'ธันวาคม' => 12, 'ธ.ค.' => 12, 'ธค' => 12,
+        ];
+
+        // รูปแบบ: เกิด 15 มกราคม 2540
+        $monthNames = implode('|', array_keys($thaiMonths));
+        if (preg_match('/(?:เกิด|วันเกิด)(?:วันที่)?\s*(\d{1,2})\s*(' . $monthNames . ')\s*(\d{2,4})/u', $message, $matches)) {
+            $day = (int) $matches[1];
+            $month = $thaiMonths[$matches[2]] ?? null;
+            $year = (int) $matches[3];
+
+            if ($month) {
+                return $this->normalizeBirthDate($day, $month, $year);
+            }
+        }
+
+        // รูปแบบ: เกิด 15/01/2540 หรือ 15-01-2540
+        if (preg_match('/(?:เกิด|วันเกิด)(?:วันที่)?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/u', $message, $matches)) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) $matches[3];
+
+            return $this->normalizeBirthDate($day, $month, $year);
+        }
+
+        return null;
+    }
+
+    /**
+     * แปลงวัน/เดือน/ปี เป็นรูปแบบ Y-m-d (ค.ศ.)
+     *
+     * @param int $day วัน
+     * @param int $month เดือน (1-12)
+     * @param int $year ปี (พ.ศ. หรือ ค.ศ. แบบ 2 หรือ 4 หลัก)
+     * @return string|null
+     */
+    protected function normalizeBirthDate(int $day, int $month, int $year): ?string
+    {
+        // แปลงปี พ.ศ. เป็น ค.ศ.
+        if ($year > 2400) {
+            $year -= 543;
+        } elseif ($year < 100) {
+            // ปี 2 หลัก: ลองแปลงเป็น พ.ศ. ก่อน (เช่น 40 → 2540 → 1997 ค.ศ.)
+            $ceFromThai = $year + 2500 - 543;
+            if ($ceFromThai >= 1900 && $ceFromThai <= now()->year) {
+                $year = $ceFromThai;
+            } else {
+                // Fallback: ตีความเป็น ค.ศ. (เช่น 97 → 1997)
+                $year = ($year > 50) ? (1900 + $year) : (2000 + $year);
+            }
+        }
+
+        // ตรวจสอบความถูกต้อง
+        if ($month < 1 || $month > 12 || $day < 1 || $day > 31 || $year < 1900 || $year > now()->year) {
+            return null;
+        }
+
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
+    }
+
     // ============================================================
     // ตรวจสอบ Free Limit (Freemium)
     // ============================================================
@@ -610,9 +694,9 @@ class FacebookWebhookService
         // เตรียมข้อมูลสำหรับ placeholders
         $data = [
             'response' => $response,
-            'user_name' => $reading->user_name ?? 'ท่าน',
+            'user_name' => $reading->facebook_user_name ?? 'ท่าน',
             'date' => now()->format('d/m/Y'),
-            'questions' => $reading->questions ?? '',
+            'questions' => $reading->getQuestionsText(),
             'reading_type' => $reading->getReadingTypeLabel(),
             'reading_id' => (string) $reading->id,
             'rate_url' => url("/fortune/{$reading->id}/rate"),
@@ -623,6 +707,12 @@ class FacebookWebhookService
             'price' => (string) ($reading->isDeep()
                 ? ($this->settings->deep_reading_price ?? 0)
                 : ($this->settings->reading_price ?? 0)),
+            'zodiac' => $reading->birth_date
+                ? $this->getZodiacFromDate($reading->birth_date)
+                : '',
+            'birth_date' => $reading->birth_date
+                ? $reading->birth_date->format('d/m/Y')
+                : '',
         ];
 
         // render ข้อความจากเทมเพลต (หรือ fallback ถ้าไม่มีเทมเพลต)
@@ -742,6 +832,44 @@ class FacebookWebhookService
         }
 
         return $chunks;
+    }
+
+    /**
+     * คำนวณราศีจากวันเกิด
+     *
+     * @param \Carbon\Carbon $date
+     * @return string ชื่อราศี
+     */
+    protected function getZodiacFromDate($date): string
+    {
+        $month = $date->month;
+        $day = $date->day;
+
+        $signs = [
+            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 19],
+            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 18],
+            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 20],
+            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 19],
+            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 20],
+            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 20],
+            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 22],
+            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 22],
+            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 22],
+            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 22],
+            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 21],
+            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 21],
+        ];
+
+        foreach ($signs as $sign) {
+            if ($month === $sign['end_month'] && $day <= $sign['end_day']) {
+                return $sign['name'];
+            }
+            if ($month < $sign['end_month']) {
+                return $sign['name'];
+            }
+        }
+
+        return 'มังกร (Capricorn)';
     }
 
     /**

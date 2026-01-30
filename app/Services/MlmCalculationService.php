@@ -32,6 +32,16 @@ class MlmCalculationService
         DB::beginTransaction();
 
         try {
+            // แก้ Bug PV-5: ตรวจสอบว่า Order นี้ประมวลผล PV/Commission ไปแล้วหรือยัง
+            $existingPvTransaction = \App\Models\MlmPvTransaction::where('order_id', $order->id)->exists();
+            if ($existingPvTransaction) {
+                Log::info('Order PV already processed, skipping MlmCalculationService', [
+                    'order_id' => $order->id,
+                ]);
+                DB::commit();
+                return true;
+            }
+
             $user = $order->user;
             if (!$user) {
                 throw new \Exception('Order has no user');
@@ -116,6 +126,8 @@ class MlmCalculationService
 
     /**
      * Pay approved commissions
+     * แก้ Bug DIST-1: เพิ่มการหัก MLM Pool wallet เมื่อจ่ายคอมมิชชัน
+     * แก้ Bug DIST-2: ใช้ atomic read สำหรับ balance_after
      */
     public function payApprovedCommissions($commissionIds = null)
     {
@@ -123,7 +135,7 @@ class MlmCalculationService
 
         try {
             $query = MlmCommission::where('status', 'approved')
-                ->with(['user', 'user.wallet']);
+                ->with(['user', 'user.wallet', 'member']);
 
             if ($commissionIds) {
                 $query->whereIn('id', $commissionIds);
@@ -131,6 +143,7 @@ class MlmCalculationService
 
             $commissions = $query->get();
             $paidCount = 0;
+            $revenueService = new PlatformRevenueService();
 
             foreach ($commissions as $commission) {
                 $user = $commission->user;
@@ -139,13 +152,39 @@ class MlmCalculationService
                     continue;
                 }
 
-                // Create wallet transaction
+                // แก้ Bug DIST-1: หักเงินจาก MLM Pool wallet ก่อนจ่ายให้ user
+                try {
+                    $revenueService->payMlmCommission(
+                        $commission->commission_amount,
+                        $user->id,
+                        'MlmCommission',
+                        $commission->id,
+                        [
+                            'commission_type' => $commission->type,
+                            'from_member_id' => $commission->from_member_id,
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    // ถ้า MLM Pool ไม่พอจ่าย → ข้ามรายการนี้
+                    Log::warning('MLM Pool insufficient for commission payout', [
+                        'commission_id' => $commission->id,
+                        'amount' => $commission->commission_amount,
+                        'error' => $e->getMessage(),
+                    ]);
+                    continue;
+                }
+
+                // แก้ Bug DIST-2: ใช้ increment ก่อน แล้วค่อยอ่าน balance ที่ถูกต้อง
+                $user->wallet->increment('balance', $commission->commission_amount);
+                $user->wallet->refresh();
+
+                // Create wallet transaction (ใช้ balance หลัง increment เพื่อให้ balance_after ถูกต้อง)
                 $walletTransaction = WalletTransaction::create([
                     'wallet_id' => $user->wallet->id,
                     'user_id' => $user->id,
                     'type' => 'commission',
                     'amount' => $commission->commission_amount,
-                    'balance_after' => $user->wallet->balance + $commission->commission_amount,
+                    'balance_after' => $user->wallet->balance,
                     'description' => 'MLM Commission: ' . $commission->type,
                     'status' => 'completed',
                     'metadata' => json_encode([
@@ -154,14 +193,13 @@ class MlmCalculationService
                     ]),
                 ]);
 
-                // Update wallet balance
-                $user->wallet->increment('balance', $commission->commission_amount);
-
                 // Mark commission as paid
                 $commission->markAsPaid($walletTransaction->id);
 
                 // Update member earnings
-                $commission->member->increment('total_earnings', $commission->commission_amount);
+                if ($commission->member) {
+                    $commission->member->increment('total_earnings', $commission->commission_amount);
+                }
 
                 $paidCount++;
             }
@@ -208,16 +246,19 @@ class MlmCalculationService
         $levels = MlmGlobalSetting::get('unilevel_levels', []);
         $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
 
+        // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
         // Unilevel preview (direct level only)
         if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
             if (!empty($levels) && isset($levels[0])) {
-                $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100);
+                $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100) * $commissionPerPv;
             }
         }
 
         // Binary preview (estimated)
         if ($binaryEnabled && ($plan->type === 'binary' || $plan->type === 'hybrid')) {
-            $preview['binary_commission'] = $orderPv * ($binaryMatchPercentage / 100);
+            $preview['binary_commission'] = $orderPv * ($binaryMatchPercentage / 100) * $commissionPerPv;
         }
 
         $preview['total_commission'] = $preview['unilevel_commission'] + $preview['binary_commission'];
@@ -240,8 +281,10 @@ class MlmCalculationService
             'right_leg_pv' => $member->right_leg_pv,
             'pending_commissions' => $member->commissions()->pending()->sum('commission_amount'),
             'paid_commissions' => $member->commissions()->paid()->sum('commission_amount'),
+            // แก้ Bug #33: เพิ่ม whereYear เพื่อป้องกันการรวมข้อมูลข้ามปี
             'this_month_earnings' => $member->commissions()
                 ->paid()
+                ->whereYear('paid_at', now()->year)
                 ->whereMonth('paid_at', now()->month)
                 ->sum('commission_amount'),
         ];

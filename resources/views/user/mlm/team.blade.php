@@ -165,14 +165,28 @@
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $referral->created_at->diffForHumans() }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
+                                {{-- สถานะบัญชี --}}
                                 @if($referral->status === 'active')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">✅ ใช้งาน</span>
+                                    <span class="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full">✅ ใช้งาน</span>
                                 @elseif($referral->status === 'pending')
-                                    <span class="px-3 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">⏳ รออนุมัติ</span>
+                                    <span class="px-3 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full">⏳ รออนุมัติ</span>
                                 @elseif($referral->status === 'inactive')
                                     <span class="px-3 py-1 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full">❌ ไม่ใช้งาน</span>
                                 @else
-                                    <span class="px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">🚫 ระงับ</span>
+                                    <span class="px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full">🚫 ระงับ</span>
+                                @endif
+                                {{-- สถานะรักษายอด (volume retention) --}}
+                                @if($referral->status === 'active')
+                                    @php
+                                        $refRetention = \App\Helpers\MlmRetentionHelper::getRetentionStatus($referral);
+                                    @endphp
+                                    @if(($refRetention['retention_enabled'] ?? false) && ($refRetention['status'] ?? 'active') !== 'active')
+                                        @if($refRetention['status'] === 'grace_period')
+                                            <span class="ml-1 px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 rounded-full">⏳ ผ่อนผัน</span>
+                                        @else
+                                            <span class="ml-1 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full">PV ไม่ถึง</span>
+                                        @endif
+                                    @endif
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">

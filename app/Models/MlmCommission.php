@@ -137,36 +137,57 @@ class MlmCommission extends Model
 
     /**
      * Approve this commission
+     * แก้ Bug #32: เพิ่ม status guard ป้องกันการเปลี่ยนสถานะที่ไม่ถูกต้อง
      */
     public function approve()
     {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+
         $this->update([
             'status' => 'approved',
             'approved_at' => now(),
         ]);
+
+        return true;
     }
 
     /**
      * Reject this commission
+     * แก้ Bug #32: เพิ่ม status guard
      */
     public function reject($reason = null)
     {
+        if (!in_array($this->status, ['pending', 'approved'])) {
+            return false;
+        }
+
         $this->update([
             'status' => 'rejected',
             'rejected_at' => now(),
             'rejection_reason' => $reason,
         ]);
+
+        return true;
     }
 
     /**
      * Mark as paid
+     * แก้ Bug #32: เพิ่ม status guard
      */
     public function markAsPaid($walletTransactionId = null)
     {
+        if ($this->status !== 'approved') {
+            return false;
+        }
+
         $this->update([
             'status' => 'paid',
             'paid_at' => now(),
             'wallet_transaction_id' => $walletTransactionId,
         ]);
+
+        return true;
     }
 }

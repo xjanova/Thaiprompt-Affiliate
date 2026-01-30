@@ -208,6 +208,9 @@ class FortuneAIService
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
             $response = Http::timeout(60)->post($url, [
+                'system_instruction' => [
+                    'parts' => [['text' => self::SYSTEM_MESSAGE]],
+                ],
                 'contents' => [['parts' => [['text' => $prompt]]]],
                 'generationConfig' => [
                     'temperature' => $config['temperature'] ?? 0.7,
@@ -275,8 +278,14 @@ class FortuneAIService
 
             $data = $response->json();
 
+            // HuggingFace API คืน input prompt + generated text ดังนั้นต้องตัด prompt ออก
+            $generatedText = $data[0]['generated_text'] ?? '';
+            if (str_starts_with($generatedText, $prompt)) {
+                $generatedText = trim(mb_substr($generatedText, mb_strlen($prompt)));
+            }
+
             return [
-                'response' => $data[0]['generated_text'] ?? '',
+                'response' => $generatedText,
                 'tokens_used' => 0,
                 'provider' => 'qwen',
                 'model' => $this->model,

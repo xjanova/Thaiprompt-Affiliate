@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmGenealogy;
 use App\Models\MlmGlobalSetting;
@@ -29,9 +30,11 @@ class MlmGenealogyService
             $plan = $sponsor->plan;
 
             // Create member
+            // แก้ Bug #8: เพิ่ม original_sponsor_id เพื่อติดตามผู้แนะนำเดิม
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $planId,
+                'original_sponsor_id' => $unilevelSponsorId,
                 'unilevel_sponsor_id' => $unilevelSponsorId,
                 'unilevel_level' => $sponsor->unilevel_level + 1,
                 'unilevel_path' => $sponsor->unilevel_path . '/' . $sponsor->id,
@@ -347,6 +350,9 @@ class MlmGenealogyService
     {
         $user = $member->user;
 
+        // ดึง retention status จาก Helper (ไม่ใช้ $member->retention_status ซึ่งไม่ใช่ DB field)
+        $retentionData = MlmRetentionHelper::getRetentionStatus($member);
+
         return [
             'id' => $member->id,
             'name' => $user->name ?? 'Unknown',
@@ -354,12 +360,13 @@ class MlmGenealogyService
             'label' => $user->name ?? 'Unknown',
             'subtitle' => $member->member_code,
             'total_pv' => $member->total_pv ?? 0,
-            'monthly_pv' => $member->monthly_pv ?? 0,
+            'monthly_pv' => $retentionData['monthly_pv'] ?? ($member->monthly_pv ?? 0),
             'direct_referrals' => $member->total_direct_referrals ?? 0,
             'total_team_members' => $member->total_team_members ?? 0,
-            'retention_status' => $member->retention_status ?? 'active',
-            'status' => $member->retention_status ?? 'active',
-            'rank_name' => $member->rank->name ?? null,
+            'retention_status' => $retentionData['status'] ?? 'active',
+            'status' => $member->status ?? 'active',
+            // แก้ Bug #9: MlmMember ไม่มี rank relationship → ใช้ user->currentRank
+            'rank_name' => $member->user->currentRank->name ?? null,
             'left_pv' => $member->left_leg_pv ?? 0,
             'right_pv' => $member->right_leg_pv ?? 0,
             'is_target' => $isTarget, // สมาชิกที่ต้องการดูสายเลือด

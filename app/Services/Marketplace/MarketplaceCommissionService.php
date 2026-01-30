@@ -173,8 +173,10 @@ class MarketplaceCommissionService
                 break;
             }
 
-            // Get commission percentage for this level
-            $commissionPercentage = $levels["level_{$levelNumber}"] ?? 0;
+            // แก้ Bug #12: unilevel_levels เก็บเป็น array of objects [{percentage: X}]
+            // ไม่ใช่ string key format level_N → ใช้ array index ให้ตรงกับ MlmUnilevelService
+            $levelConfig = $levels[$level] ?? null;
+            $commissionPercentage = is_array($levelConfig) ? ($levelConfig['percentage'] ?? 0) : (is_numeric($levelConfig) ? $levelConfig : 0);
 
             if ($commissionPercentage <= 0) {
                 continue;
@@ -217,8 +219,8 @@ class MarketplaceCommissionService
         $depth = 0;
 
         while ($currentMember->unilevel_sponsor_id && $depth < $maxDepth) {
-            $sponsor = MlmMember::where('user_id', $currentMember->unilevel_sponsor_id)
-                ->where('mlm_plan_id', $currentMember->mlm_plan_id)
+            // แก้ Bug #13: unilevel_sponsor_id เป็น MlmMember ID ไม่ใช่ user_id
+            $sponsor = MlmMember::where('id', $currentMember->unilevel_sponsor_id)
                 ->where('status', 'active')
                 ->first();
 
