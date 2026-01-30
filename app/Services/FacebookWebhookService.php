@@ -409,8 +409,14 @@ class FacebookWebhookService
         if ($year > 2400) {
             $year -= 543;
         } elseif ($year < 100) {
-            // ปี 2 หลัก เช่น 40 = 2540 พ.ศ. = 1997 ค.ศ.
-            $year = ($year > 50) ? (1900 + $year) : (2000 + $year);
+            // ปี 2 หลัก: ลองแปลงเป็น พ.ศ. ก่อน (เช่น 40 → 2540 → 1997 ค.ศ.)
+            $ceFromThai = $year + 2500 - 543;
+            if ($ceFromThai >= 1900 && $ceFromThai <= now()->year) {
+                $year = $ceFromThai;
+            } else {
+                // Fallback: ตีความเป็น ค.ศ. (เช่น 97 → 1997)
+                $year = ($year > 50) ? (1900 + $year) : (2000 + $year);
+            }
         }
 
         // ตรวจสอบความถูกต้อง

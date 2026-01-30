@@ -204,6 +204,8 @@ class FortuneRateLimitMiddleware
     public static function clearRateLimit(string $identifier): void
     {
         Cache::forget('fortune_rate_limit:ip:' . $identifier);
+        Cache::forget('fortune_rate_limit:ip:' . $identifier . ':timer');
         Cache::forget('fortune_rate_limit:fb_user:' . $identifier);
+        Cache::forget('fortune_rate_limit:fb_user:' . $identifier . ':timer');
     }
 }
