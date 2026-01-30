@@ -310,6 +310,21 @@ class OrderDistributionService
                 ];
             }
 
+            // แก้ Bug PV-2: บันทึก PV Transaction + อัพเดท member PV
+            // (ย้ายมาจาก MlmCalculationService ที่เคยเรียกซ้ำ)
+            if ($pvData['total_pv'] > 0) {
+                $buyerMember = \App\Models\MlmMember::where('user_id', $order->user_id)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($buyerMember) {
+                    $pvService = new MlmPvService();
+                    $pvService->recordPvTransaction($buyerMember, $order, $pvData);
+                    $buyerMember->increment('total_pv', $pvData['total_pv']);
+                    $buyerMember->update(['last_purchase_at' => now()]);
+                }
+            }
+
             // เรียกใช้ MlmCommissionService เพื่อคำนวณ commission ทั้งหมด
             $result = $this->mlmCommissionService->processOrderCommissions($order, $pvData);
 

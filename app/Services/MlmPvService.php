@@ -227,10 +227,13 @@ class MlmPvService
         return [
             'current_pv' => $member->total_pv,
             'team_pv' => $member->total_team_pv,
+            // แก้ Bug PV-4: เพิ่ม whereYear ป้องกันการรวมข้อมูลข้ามปี
             'this_month_pv' => MlmPvTransaction::where('mlm_member_id', $member->id)
+                ->whereYear('created_at', now()->year)
                 ->whereMonth('created_at', now()->month)
                 ->sum('pv_amount'),
             'last_month_pv' => MlmPvTransaction::where('mlm_member_id', $member->id)
+                ->whereYear('created_at', now()->subMonth()->year)
                 ->whereMonth('created_at', now()->subMonth()->month)
                 ->sum('pv_amount'),
             'left_leg_pv' => $member->left_leg_pv,
