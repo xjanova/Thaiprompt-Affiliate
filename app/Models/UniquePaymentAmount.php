@@ -5,6 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Unique Payment Amount Model
+ *
+ * จัดการจำนวนเงินเฉพาะสำหรับจับคู่ SMS payment
+ * เพิ่มทศนิยม (0.01-0.99) เข้าไปในราคาเดิมเพื่อแยกแยะ transactions
+ *
+ * @property int $id
+ * @property float $base_amount ราคาเดิม (จำนวนเต็ม)
+ * @property float $unique_amount ราคาเฉพาะ (base + suffix/100)
+ * @property int $decimal_suffix ส่วนทศนิยม (01-99)
+ * @property int|null $transaction_id ID ของ transaction ที่เกี่ยวข้อง
+ * @property string|null $transaction_type ประเภท transaction (order, topup, ...)
+ * @property string $status สถานะ (reserved/used/expired/cancelled)
+ * @property \Carbon\Carbon $expires_at เวลาหมดอายุ
+ * @property \Carbon\Carbon|null $matched_at เวลาที่จับคู่สำเร็จ
+ */
 class UniquePaymentAmount extends Model
 {
     use HasFactory;
@@ -28,17 +44,27 @@ class UniquePaymentAmount extends Model
     ];
 
     // Scopes
+
+    /**
+     * กรองเฉพาะที่ reserved อยู่
+     */
     public function scopeReserved($query)
     {
         return $query->where('status', 'reserved');
     }
 
+    /**
+     * กรองเฉพาะที่ reserved และยังไม่หมดอายุ
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'reserved')
             ->where('expires_at', '>', now());
     }
 
+    /**
+     * กรองเฉพาะที่หมดอายุแล้ว
+     */
     public function scopeExpired($query)
     {
         return $query->where('status', 'reserved')
@@ -46,47 +72,56 @@ class UniquePaymentAmount extends Model
     }
 
     /**
-     * Generate a unique amount for a base price.
-     * Adds a unique decimal suffix (0.01 - 0.99) to differentiate transactions.
+     * สร้าง unique amount สำหรับราคาสินค้า
      *
-     * @param float $baseAmount The original price
-     * @param int|null $transactionId Related transaction ID
-     * @param string $transactionType Type of transaction
-     * @param int $expiryMinutes How long the amount is reserved
+     * เพิ่มส่วนทศนิยม (0.01 - 0.99) เพื่อแยกแยะ transactions ที่มีราคาเดียวกัน
+     * ⚠️ base_amount จะถูกปัดเศษเป็นจำนวนเต็มก่อนเพิ่ม suffix
+     * เช่น base_amount = 500 + suffix 37 = 500.37
+     *
+     * @param float $baseAmount ราคาสินค้าเดิม (จำนวนเต็ม)
+     * @param int|null $transactionId ID ของ transaction ที่เกี่ยวข้อง
+     * @param string $transactionType ประเภท transaction
+     * @param int $expiryMinutes เวลาหมดอายุของ reservation (นาที)
      * @return self|null
      */
     public static function generate(
         float $baseAmount,
         ?int $transactionId = null,
         string $transactionType = 'order',
-        int $expiryMinutes = 30
+        int $expiryMinutes = null
     ): ?self {
-        // Clean up expired reservations
+        $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
+        $maxPending = config('smschecker.max_pending_per_amount', 99);
+
+        // ทำความสะอาด reservations ที่หมดอายุ
         static::where('status', 'reserved')
             ->where('expires_at', '<=', now())
             ->update(['status' => 'expired']);
 
-        // Find available suffix (01-99)
-        $usedSuffixes = static::where('base_amount', $baseAmount)
+        // ปัดเศษ base_amount เป็นจำนวนเต็มเพื่อให้ทศนิยมใช้เป็น suffix เท่านั้น
+        $intBaseAmount = intval($baseAmount);
+
+        // ค้นหา suffix ที่ยังว่างอยู่ (01-99)
+        $usedSuffixes = static::where('base_amount', $intBaseAmount)
             ->where('status', 'reserved')
             ->where('expires_at', '>', now())
             ->pluck('decimal_suffix')
             ->toArray();
 
-        // Generate random suffix not in use
-        $availableSuffixes = array_diff(range(1, 99), $usedSuffixes);
+        // สร้างรายการ suffix ที่ยังไม่ถูกใช้
+        $availableSuffixes = array_diff(range(1, min($maxPending, 99)), $usedSuffixes);
 
         if (empty($availableSuffixes)) {
-            // All suffixes used for this amount - try extending to different base
+            // suffix เต็มหมดแล้วสำหรับราคานี้
             return null;
         }
 
-        // Pick random available suffix
+        // สุ่มเลือก suffix ที่ยังว่าง
         $suffix = $availableSuffixes[array_rand($availableSuffixes)];
-        $uniqueAmount = floor($baseAmount) + ($suffix / 100);
+        $uniqueAmount = $intBaseAmount + ($suffix / 100);
 
         return static::create([
-            'base_amount' => $baseAmount,
+            'base_amount' => $intBaseAmount,
             'unique_amount' => $uniqueAmount,
             'decimal_suffix' => $suffix,
             'transaction_id' => $transactionId,
@@ -97,7 +132,10 @@ class UniquePaymentAmount extends Model
     }
 
     /**
-     * Find the matching unique amount record for a received payment.
+     * ค้นหา unique amount ที่ตรงกับจำนวนเงินที่ได้รับ
+     *
+     * @param float $amount จำนวนเงินที่ได้รับ
+     * @return self|null
      */
     public static function findMatch(float $amount): ?self
     {

@@ -5,6 +5,27 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * SMS Payment Notification Model
+ *
+ * เก็บข้อมูล SMS notification ที่ได้รับจาก Android App
+ * ใช้ในการจับคู่กับ PaymentTransaction ที่ pending อยู่
+ *
+ * @property int $id
+ * @property string $bank รหัสธนาคาร (KBANK, SCB, KTB, ...)
+ * @property string $type ประเภท (credit/debit)
+ * @property float $amount จำนวนเงิน
+ * @property string|null $account_number หมายเลขบัญชี (masked)
+ * @property string|null $sender_or_receiver ชื่อผู้ส่ง/ผู้รับ
+ * @property string|null $reference_number หมายเลขอ้างอิง
+ * @property \Carbon\Carbon $sms_timestamp เวลาที่ได้รับ SMS
+ * @property string $device_id รหัสอุปกรณ์
+ * @property string $nonce nonce สำหรับป้องกัน replay attack
+ * @property string $status สถานะ (pending/matched/confirmed/rejected/expired)
+ * @property int|null $matched_transaction_id ID ของ transaction ที่จับคู่ได้
+ * @property string|null $raw_payload ข้อมูล payload ดิบ (JSON)
+ * @property string|null $ip_address IP address ของอุปกรณ์
+ */
 class SmsPaymentNotification extends Model
 {
     use HasFactory;
@@ -31,45 +52,65 @@ class SmsPaymentNotification extends Model
     ];
 
     // Scopes
+
+    /**
+     * กรองเฉพาะ notification ที่ยังรอจับคู่
+     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
+    /**
+     * กรองเฉพาะ notification ประเภทเงินเข้า
+     */
     public function scopeCredit($query)
     {
         return $query->where('type', 'credit');
     }
 
+    /**
+     * กรองเฉพาะ notification ประเภทเงินออก
+     */
     public function scopeDebit($query)
     {
         return $query->where('type', 'debit');
     }
 
-    // Relationships
+    // ความสัมพันธ์
+
+    /**
+     * Transaction ที่จับคู่ได้
+     */
     public function matchedTransaction()
     {
         return $this->belongsTo(PaymentTransaction::class, 'matched_transaction_id');
     }
 
     /**
-     * Try to match this notification with a pending payment transaction.
-     * Uses unique decimal amount matching.
+     * พยายามจับคู่ notification นี้กับ pending payment transaction
+     *
+     * ลำดับการจับคู่:
+     * 1. จับคู่ด้วย unique decimal amount
+     * 2. Fallback: จับคู่ด้วย reference_number + จำนวนเงินใกล้เคียง
+     *
+     * @param bool $autoConfirm ยืนยัน transaction อัตโนมัติเมื่อจับคู่ได้
+     * @return bool จับคู่สำเร็จหรือไม่
      */
-    public function attemptMatch(): bool
+    public function attemptMatch(bool $autoConfirm = true): bool
     {
         if ($this->type !== 'credit') {
             return false;
         }
 
-        // Find matching unique amount
+        // จับคู่ด้วย unique amount
         $uniqueAmount = UniquePaymentAmount::where('unique_amount', $this->amount)
             ->where('status', 'reserved')
             ->where('expires_at', '>', now())
             ->first();
 
         if ($uniqueAmount) {
-            // Match found
+            // จับคู่สำเร็จ
             $this->status = 'matched';
             $this->matched_transaction_id = $uniqueAmount->transaction_id;
             $this->save();
@@ -78,8 +119,8 @@ class SmsPaymentNotification extends Model
             $uniqueAmount->matched_at = now();
             $uniqueAmount->save();
 
-            // Auto-confirm the payment transaction
-            if ($uniqueAmount->transaction_id) {
+            // ยืนยัน payment transaction อัตโนมัติ (ถ้าเปิดใช้งาน)
+            if ($autoConfirm && $uniqueAmount->transaction_id) {
                 $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
                 if ($transaction && $transaction->status === 'pending') {
                     $transaction->markAsCompleted();
@@ -89,18 +130,20 @@ class SmsPaymentNotification extends Model
             return true;
         }
 
-        // Fallback: try to match by exact amount and reference
+        // Fallback: จับคู่ด้วย reference_number
         if ($this->reference_number) {
             $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
                 ->where('status', 'pending')
                 ->first();
 
-            if ($transaction && abs((float)$transaction->amount - (float)$this->amount) < 0.01) {
+            if ($transaction && abs((float) $transaction->amount - (float) $this->amount) < 0.01) {
                 $this->status = 'matched';
                 $this->matched_transaction_id = $transaction->id;
                 $this->save();
 
-                $transaction->markAsCompleted();
+                if ($autoConfirm) {
+                    $transaction->markAsCompleted();
+                }
                 return true;
             }
         }

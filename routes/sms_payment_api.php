@@ -3,39 +3,39 @@
 /**
  * SMS Payment Gateway API Routes
  *
- * Add these routes to your main routes/api.php file:
+ * เส้นทาง API สำหรับระบบชำระเงินผ่าน SMS Checker
+ * URL เต็ม: /api/v1/sms-payment/*
  *
+ * รวมอยู่ใน routes/api.php:
  * require __DIR__ . '/sms_payment_api.php';
- *
- * Or copy the contents into your existing api.php
  */
 
 use App\Http\Controllers\Api\V1\SmsPaymentController;
 use App\Http\Middleware\VerifySmsCheckerDevice;
 use Illuminate\Support\Facades\Route;
 
-// Note: When loaded from api.php, the /api prefix is already applied by Laravel.
-// So full URL will be: /api/v1/sms-payment/*
+// หมายเหตุ: เมื่อ load จาก api.php จะมี prefix /api อยู่แล้ว
+// URL เต็มจะเป็น: /api/v1/sms-payment/*
 Route::prefix('v1/sms-payment')->group(function () {
 
-    // Protected by device API key
+    // เส้นทางที่ต้อง authenticate ด้วย API Key ของอุปกรณ์
     Route::middleware([VerifySmsCheckerDevice::class])->group(function () {
-        // Receive SMS notification from Android app
+        // รับ SMS notification จาก Android App
         Route::post('/notify', [SmsPaymentController::class, 'notify']);
 
-        // Check device status
+        // ตรวจสอบสถานะอุปกรณ์
         Route::get('/status', [SmsPaymentController::class, 'status']);
 
-        // Register/update device info
+        // ลงทะเบียน/อัพเดทข้อมูลอุปกรณ์
         Route::post('/register-device', [SmsPaymentController::class, 'registerDevice']);
     });
 
-    // Protected by Laravel auth (web/admin)
+    // เส้นทางที่ต้อง authenticate ด้วย Laravel Sanctum (web/admin)
     Route::middleware(['auth:sanctum'])->group(function () {
-        // Generate unique payment amount (called during checkout)
+        // สร้าง unique payment amount (เรียกจาก checkout)
         Route::post('/generate-amount', [SmsPaymentController::class, 'generateAmount']);
 
-        // View notification history (admin)
+        // ดู notification history (admin)
         Route::get('/notifications', [SmsPaymentController::class, 'notifications']);
     });
 });

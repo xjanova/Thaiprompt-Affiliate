@@ -8,26 +8,32 @@ use App\Models\UniquePaymentAmount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * SMS Payment Service
+ *
+ * จัดการ business logic สำหรับระบบชำระเงินผ่าน SMS Checker
+ * รวม: ประมวลผล notification, ถอดรหัส, ตรวจสอบลายเซ็น, สร้าง unique amount, ทำความสะอาดข้อมูล
+ */
 class SmsPaymentService
 {
     /**
-     * Process an incoming SMS payment notification from the Android app.
+     * ประมวลผล SMS payment notification ที่ได้รับจาก Android App
      *
-     * @param array $payload Decrypted payload from the app
-     * @param SmsCheckerDevice $device The authenticated device
-     * @param string $ipAddress Client IP
-     * @return array Result with success/failure info
+     * @param array $payload ข้อมูล payload ที่ถอดรหัสแล้ว
+     * @param SmsCheckerDevice $device อุปกรณ์ที่ authenticate แล้ว
+     * @param string $ipAddress IP ของ client
+     * @return array ผลลัพธ์ success/failure
      */
     public function processNotification(array $payload, SmsCheckerDevice $device, string $ipAddress): array
     {
         return DB::transaction(function () use ($payload, $device, $ipAddress) {
-            // Check for duplicate nonce (replay attack prevention)
+            // ตรวจสอบ nonce ซ้ำ (ป้องกัน replay attack)
             $existingNonce = DB::table('sms_payment_nonces')
                 ->where('nonce', $payload['nonce'])
                 ->exists();
 
             if ($existingNonce) {
-                Log::warning('SMS Payment: Duplicate nonce detected', [
+                Log::warning('SMS Payment: พบ nonce ซ้ำ (replay attack)', [
                     'nonce' => $payload['nonce'],
                     'device_id' => $device->device_id,
                 ]);
@@ -37,7 +43,7 @@ class SmsPaymentService
                 ];
             }
 
-            // Record nonce
+            // บันทึก nonce
             DB::table('sms_payment_nonces')->insert([
                 'nonce' => $payload['nonce'],
                 'device_id' => $device->device_id,
@@ -46,7 +52,7 @@ class SmsPaymentService
                 'updated_at' => now(),
             ]);
 
-            // Create notification record
+            // สร้าง notification record
             $notification = SmsPaymentNotification::create([
                 'bank' => $payload['bank'],
                 'type' => $payload['type'],
@@ -62,19 +68,20 @@ class SmsPaymentService
                 'ip_address' => $ipAddress,
             ]);
 
-            // Update device activity
+            // อัพเดทกิจกรรมล่าสุดของอุปกรณ์
             $device->update([
                 'last_active_at' => now(),
                 'ip_address' => $ipAddress,
             ]);
 
-            // Attempt auto-match for credit transactions
+            // พยายามจับคู่อัตโนมัติสำหรับ credit transactions
             $matched = false;
             if ($notification->type === 'credit') {
-                $matched = $notification->attemptMatch();
+                $autoConfirm = config('smschecker.auto_confirm_matched', true);
+                $matched = $notification->attemptMatch($autoConfirm);
             }
 
-            Log::info('SMS Payment notification processed', [
+            Log::info('SMS Payment: ประมวลผล notification สำเร็จ', [
                 'notification_id' => $notification->id,
                 'bank' => $notification->bank,
                 'type' => $notification->type,
@@ -96,11 +103,13 @@ class SmsPaymentService
     }
 
     /**
-     * Decrypt the encrypted payload from the app.
+     * ถอดรหัส payload ที่เข้ารหัสด้วย AES-256-GCM จาก Android App
      *
-     * @param string $encryptedData Base64 encoded AES-256-GCM encrypted data
-     * @param string $secretKey The device's secret key
-     * @return array|null Decrypted payload or null on failure
+     * รูปแบบข้อมูล: Base64(IV[12 bytes] + Ciphertext + AuthTag[16 bytes])
+     *
+     * @param string $encryptedData ข้อมูลเข้ารหัส Base64
+     * @param string $secretKey secret key ของอุปกรณ์
+     * @return array|null payload ที่ถอดรหัสแล้ว หรือ null ถ้าล้มเหลว
      */
     public function decryptPayload(string $encryptedData, string $secretKey): ?array
     {
@@ -110,17 +119,17 @@ class SmsPaymentService
                 return null;
             }
 
-            $ivLength = 12; // GCM IV is 12 bytes
-            $tagLength = 16; // GCM tag is 16 bytes
+            $ivLength = 12;  // GCM IV = 12 bytes
+            $tagLength = 16; // GCM auth tag = 16 bytes
 
             $iv = substr($combined, 0, $ivLength);
             $cipherTextWithTag = substr($combined, $ivLength);
 
-            // Separate ciphertext and tag
+            // แยก ciphertext และ auth tag
             $tag = substr($cipherTextWithTag, -$tagLength);
             $cipherText = substr($cipherTextWithTag, 0, -$tagLength);
 
-            // Derive key (first 32 bytes of secret)
+            // สร้าง key (ใช้ 32 bytes แรกของ secret, เติม zero ถ้าสั้นกว่า)
             $key = str_pad(substr($secretKey, 0, 32), 32, "\0");
 
             $decrypted = openssl_decrypt(
@@ -133,25 +142,32 @@ class SmsPaymentService
             );
 
             if ($decrypted === false) {
-                Log::warning('SMS Payment: Decryption failed');
+                Log::warning('SMS Payment: ถอดรหัสล้มเหลว');
                 return null;
             }
 
             $payload = json_decode($decrypted, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::warning('SMS Payment: Invalid JSON in payload');
+                Log::warning('SMS Payment: JSON ใน payload ไม่ถูกต้อง');
                 return null;
             }
 
             return $payload;
         } catch (\Exception $e) {
-            Log::error('SMS Payment: Decryption error', ['error' => $e->getMessage()]);
+            Log::error('SMS Payment: เกิดข้อผิดพลาดขณะถอดรหัส', ['error' => $e->getMessage()]);
             return null;
         }
     }
 
     /**
-     * Verify HMAC signature.
+     * ตรวจสอบลายเซ็น HMAC-SHA256
+     *
+     * ลายเซ็น = HMAC-SHA256(encrypted_data + nonce + timestamp, secretKey)
+     *
+     * @param string $data ข้อมูลที่ต้องตรวจสอบ
+     * @param string $signature ลายเซ็นที่ได้รับจาก client (Base64)
+     * @param string $secretKey secret key ของอุปกรณ์
+     * @return bool ลายเซ็นถูกต้องหรือไม่
      */
     public function verifySignature(string $data, string $signature, string $secretKey): bool
     {
@@ -160,14 +176,22 @@ class SmsPaymentService
     }
 
     /**
-     * Generate a unique payment amount for a transaction.
+     * สร้าง unique payment amount สำหรับ transaction
+     *
+     * @param float $baseAmount ราคาสินค้าเดิม
+     * @param int|null $transactionId ID ของ transaction
+     * @param string $transactionType ประเภท transaction
+     * @param int $expiryMinutes เวลาหมดอายุ (นาที)
+     * @return UniquePaymentAmount|null
      */
     public function generateUniqueAmount(
         float $baseAmount,
         ?int $transactionId = null,
         string $transactionType = 'order',
-        int $expiryMinutes = 30
+        int $expiryMinutes = null
     ): ?UniquePaymentAmount {
+        $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
+
         return UniquePaymentAmount::generate(
             $baseAmount,
             $transactionId,
@@ -177,7 +201,10 @@ class SmsPaymentService
     }
 
     /**
-     * Get pending (unmatched) notifications.
+     * ดึง notifications ที่ยังไม่จับคู่
+     *
+     * @param int $limit จำนวนสูงสุด
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getPendingNotifications(int $limit = 50)
     {
@@ -188,23 +215,36 @@ class SmsPaymentService
     }
 
     /**
-     * Cleanup expired data.
+     * ทำความสะอาดข้อมูลที่หมดอายุ
+     *
+     * - ล้าง unique amounts ที่หมดอายุ → สถานะ 'expired'
+     * - ลบ nonces เก่า (ตามค่า config nonce_expiry_hours)
+     * - ล้าง pending notifications เก่า (> 7 วัน) → สถานะ 'expired'
+     *
+     * @return void
      */
     public function cleanup(): void
     {
-        // Expire old unique amounts
-        UniquePaymentAmount::where('status', 'reserved')
+        // ล้าง unique amounts ที่หมดอายุ
+        $expiredAmounts = UniquePaymentAmount::where('status', 'reserved')
             ->where('expires_at', '<=', now())
             ->update(['status' => 'expired']);
 
-        // Clean old nonces (older than 24 hours)
-        DB::table('sms_payment_nonces')
-            ->where('used_at', '<', now()->subDay())
+        // ลบ nonces เก่า (ตามค่า config)
+        $nonceExpiryHours = config('smschecker.nonce_expiry_hours', 24);
+        $deletedNonces = DB::table('sms_payment_nonces')
+            ->where('used_at', '<', now()->subHours($nonceExpiryHours))
             ->delete();
 
-        // Expire old pending notifications (older than 7 days)
-        SmsPaymentNotification::where('status', 'pending')
+        // ล้าง pending notifications เก่า (> 7 วัน)
+        $expiredNotifications = SmsPaymentNotification::where('status', 'pending')
             ->where('created_at', '<', now()->subDays(7))
             ->update(['status' => 'expired']);
+
+        Log::info('SMS Payment: ทำความสะอาดข้อมูลสำเร็จ', [
+            'expired_amounts' => $expiredAmounts,
+            'deleted_nonces' => $deletedNonces,
+            'expired_notifications' => $expiredNotifications,
+        ]);
     }
 }
