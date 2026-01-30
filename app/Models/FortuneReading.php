@@ -76,6 +76,10 @@ class FortuneReading extends Model
         'is_paid',
         'amount_paid',
         'paid_at',
+        'sms_notification_id',
+        'sender_info',
+        'sender_bank',
+        'is_floating',
         'response_type',
         'responded_at',
         'reading_type',
@@ -100,6 +104,7 @@ class FortuneReading extends Model
         'is_paid' => 'boolean',
         'amount_paid' => 'decimal:2',
         'paid_at' => 'datetime',
+        'is_floating' => 'boolean',
         'responded_at' => 'datetime',
         'view_count' => 'integer',
         'tokens_used' => 'integer',
@@ -130,6 +135,38 @@ class FortuneReading extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ความสัมพันธ์กับ SMS Payment Notification
+     *
+     * @return BelongsTo
+     */
+    public function smsNotification(): BelongsTo
+    {
+        return $this->belongsTo(SmsPaymentNotification::class, 'sms_notification_id');
+    }
+
+    /**
+     * Scope: เฉพาะบิลลอย (ยังไม่ระบุตัวตนลูกค้า)
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFloating($query)
+    {
+        return $query->where('is_floating', true);
+    }
+
+    /**
+     * Scope: เฉพาะที่ชำระผ่าน SMS
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeViaSms($query)
+    {
+        return $query->whereNotNull('sms_notification_id');
     }
 
     /**
