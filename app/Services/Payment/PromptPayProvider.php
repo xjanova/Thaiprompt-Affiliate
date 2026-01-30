@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Models\PaymentBankAccount;
 use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
 use Exception;
@@ -16,6 +17,9 @@ class PromptPayProvider implements PaymentProviderInterface
 {
     protected $gateway;
 
+    /** @var PaymentBankAccount|null บัญชีธนาคารหลักที่มี PromptPay */
+    protected $bankAccount;
+
     public function __construct()
     {
         try {
@@ -24,6 +28,17 @@ class PromptPayProvider implements PaymentProviderInterface
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
             Log::debug('PromptPayProvider: Cannot load gateway config - ' . $e->getMessage());
             $this->gateway = null;
+        }
+
+        // ดึงบัญชีธนาคารที่ตั้งเป็นหลัก + มี PromptPay
+        try {
+            $this->bankAccount = PaymentBankAccount::active()
+                ->hasPromptpay()
+                ->orderByDesc('is_default')
+                ->first();
+        } catch (\Exception $e) {
+            Log::debug('PromptPayProvider: Cannot load bank account - ' . $e->getMessage());
+            $this->bankAccount = null;
         }
     }
 
@@ -69,10 +84,16 @@ class PromptPayProvider implements PaymentProviderInterface
      */
     public function process(PaymentTransaction $transaction, array $data): array
     {
-        // ดึง PromptPay ID และชื่อจาก credentials
-        $promptPayId = $this->gateway?->getCredential('promptpay_id') ?? config('payment.promptpay.id', '');
-        $promptPayName = $this->gateway?->getCredential('promptpay_name') ?? config('app.name');
-        $promptPayType = $this->gateway?->getCredential('promptpay_type') ?? 'phone'; // phone, citizen_id, ewallet
+        // ดึง PromptPay ID - ใช้ PaymentBankAccount ก่อน ถ้าไม่มีจึง fallback ไป PaymentGateway
+        $promptPayId = $this->bankAccount?->promptpay_id
+            ?? $this->gateway?->getCredential('promptpay_id')
+            ?? config('payment.promptpay.id', '');
+        $promptPayName = $this->bankAccount?->account_name
+            ?? $this->gateway?->getCredential('promptpay_name')
+            ?? config('app.name');
+        $promptPayType = $this->bankAccount?->promptpay_type
+            ?? $this->gateway?->getCredential('promptpay_type')
+            ?? 'phone'; // phone, citizen_id, ewallet
 
         // สร้าง reference number
         $refNo = 'PP-' . strtoupper(substr($transaction->transaction_id, -8));
@@ -267,12 +288,25 @@ class PromptPayProvider implements PaymentProviderInterface
     }
 
     /**
-     * Get PromptPay account info for display
+     * ดึงข้อมูลบัญชี PromptPay สำหรับแสดงผล
+     *
+     * ใช้ PaymentBankAccount ก่อน ถ้าไม่มีจึง fallback ไป PaymentGateway
      *
      * @return array
      */
     public function getAccountInfo(): array
     {
+        // ลำดับ: PaymentBankAccount → PaymentGateway
+        if ($this->bankAccount && $this->bankAccount->hasPromptpay()) {
+            return [
+                'promptpay_id' => $this->maskPromptPayId($this->bankAccount->promptpay_id),
+                'promptpay_name' => $this->bankAccount->account_name,
+                'promptpay_type' => $this->bankAccount->promptpay_type ?? 'phone',
+                'sms_checker_enabled' => $this->bankAccount->isSmsCheckerEnabled(),
+                'bank_account_id' => $this->bankAccount->id,
+            ];
+        }
+
         if (!$this->gateway) {
             return [];
         }
@@ -283,6 +317,25 @@ class PromptPayProvider implements PaymentProviderInterface
             'promptpay_id' => $this->maskPromptPayId($id),
             'promptpay_name' => $this->gateway->getCredential('promptpay_name'),
             'promptpay_type' => $this->gateway->getCredential('promptpay_type') ?? 'phone',
+            'sms_checker_enabled' => false,
         ];
+    }
+
+    /**
+     * ดึงบัญชีธนาคารที่เปิดใช้ SMS Checker สำหรับ matching
+     *
+     * @return PaymentBankAccount|null
+     */
+    public function getSmsCheckerAccount(): ?PaymentBankAccount
+    {
+        if ($this->bankAccount && $this->bankAccount->isSmsCheckerEnabled()) {
+            return $this->bankAccount;
+        }
+
+        // หาจากบัญชีที่เปิด SMS Checker ตัวใดก็ได้
+        return PaymentBankAccount::active()
+            ->smsCheckerEnabled()
+            ->orderByDesc('is_default')
+            ->first();
     }
 }
