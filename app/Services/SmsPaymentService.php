@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
+use App\Services\FortunePaymentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -76,9 +77,17 @@ class SmsPaymentService
 
             // พยายามจับคู่อัตโนมัติสำหรับ credit transactions
             $matched = false;
+            $specialAmountHandled = false;
+
             if ($notification->type === 'credit') {
+                // ขั้นที่ 1: จับคู่กับ UniquePaymentAmount / PaymentTransaction
                 $autoConfirm = config('smschecker.auto_confirm_matched', true);
                 $matched = $notification->attemptMatch($autoConfirm);
+
+                // ขั้นที่ 2: ถ้าไม่ match → ตรวจว่าเป็นยอดพิเศษหรือไม่ (เช่น 29.99 = ดูดวง)
+                if (!$matched) {
+                    $specialAmountHandled = $this->handleSpecialAmount($notification);
+                }
             }
 
             Log::info('SMS Payment: ประมวลผล notification สำเร็จ', [
@@ -87,15 +96,21 @@ class SmsPaymentService
                 'type' => $notification->type,
                 'amount' => $notification->amount,
                 'matched' => $matched,
+                'special_amount' => $specialAmountHandled,
             ]);
+
+            $message = $matched
+                ? 'Payment matched and confirmed'
+                : ($specialAmountHandled ? 'Special amount detected and processed' : 'Notification recorded');
 
             return [
                 'success' => true,
-                'message' => $matched ? 'Payment matched and confirmed' : 'Notification recorded',
+                'message' => $message,
                 'data' => [
                     'notification_id' => $notification->id,
-                    'status' => $notification->status,
+                    'status' => $notification->fresh()->status,
                     'matched' => $matched,
+                    'special_amount' => $specialAmountHandled,
                     'matched_transaction_id' => $notification->matched_transaction_id,
                 ],
             ];
@@ -246,5 +261,45 @@ class SmsPaymentService
             'deleted_nonces' => $deletedNonces,
             'expired_notifications' => $expiredNotifications,
         ]);
+    }
+
+    /**
+     * ตรวจจับและจัดการยอดเงินพิเศษ (เช่น 29.99 = ดูดวง)
+     *
+     * ถ้ายอดตรงกับ config 'smschecker.special_amounts':
+     * - สร้าง FortuneReading อัตโนมัติ (พร้อมจ่ายแล้ว)
+     * - ถ้าจับคู่ User ได้ → เชื่อมกับ user_id
+     * - ถ้าจับคู่ไม่ได้ → สร้างเป็น "บิลลอย" รอ admin assign
+     *
+     * @param SmsPaymentNotification $notification
+     * @return bool มีการจัดการยอดพิเศษหรือไม่
+     */
+    protected function handleSpecialAmount(SmsPaymentNotification $notification): bool
+    {
+        $config = FortunePaymentService::findSpecialAmount((float) $notification->amount);
+
+        if ($config === null) {
+            return false;
+        }
+
+        Log::info('SMS Payment: ตรวจจับยอดพิเศษ', [
+            'amount' => $notification->amount,
+            'type' => $config['type'],
+            'name' => $config['name'],
+        ]);
+
+        // จัดการตามประเภท
+        if ($config['type'] === 'fortune_reading') {
+            $fortunePaymentService = app(FortunePaymentService::class);
+            $fortunePaymentService->createFromSmsNotification($notification, $config);
+            return true;
+        }
+
+        // รองรับประเภทอื่นในอนาคต
+        Log::warning('SMS Payment: ยอดพิเศษประเภทไม่รู้จัก', [
+            'type' => $config['type'],
+        ]);
+
+        return false;
     }
 }

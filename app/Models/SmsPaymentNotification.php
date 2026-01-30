@@ -97,6 +97,30 @@ class SmsPaymentNotification extends Model
     }
 
     /**
+     * ดึงบัญชีธนาคารที่ตรงกับ bank code ของ notification นี้
+     * ใช้ตรวจสอบว่า SMS มาจากบัญชีที่ลงทะเบียนไว้
+     *
+     * @return PaymentBankAccount|null
+     */
+    public function getMatchingBankAccount(): ?PaymentBankAccount
+    {
+        return PaymentBankAccount::active()
+            ->smsCheckerEnabled()
+            ->byBank($this->bank)
+            ->first();
+    }
+
+    /**
+     * ตรวจสอบว่า notification มาจากบัญชีที่ลงทะเบียนไว้หรือไม่
+     *
+     * @return bool
+     */
+    public function isFromRegisteredAccount(): bool
+    {
+        return $this->getMatchingBankAccount() !== null;
+    }
+
+    /**
      * พยายามจับคู่ notification นี้กับ pending payment transaction
      *
      * ลำดับการจับคู่:

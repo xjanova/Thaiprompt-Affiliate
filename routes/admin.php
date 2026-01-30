@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
 use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\PaymentBankAccountController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\Pos\PosLabelController;
@@ -421,6 +422,18 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::get('/devices/{device}/qr', [SmsCheckerAdminController::class, 'qrCode'])->name('device-qr');
     Route::get('/devices/{device}/qr.json', [SmsCheckerAdminController::class, 'qrCodeJson'])->name('device-qr-json');
     Route::get('/notifications', [SmsCheckerAdminController::class, 'notifications'])->name('notifications');
+});
+
+// Payment Bank Accounts Management (จัดการบัญชีธนาคารรับชำระเงิน)
+Route::prefix('payment-bank-accounts')->name('payment-bank-accounts.')->group(function () {
+    Route::get('/', [PaymentBankAccountController::class, 'index'])->name('index');
+    Route::get('/create', [PaymentBankAccountController::class, 'create'])->name('create');
+    Route::post('/', [PaymentBankAccountController::class, 'store'])->name('store');
+    Route::get('/{account}/edit', [PaymentBankAccountController::class, 'edit'])->name('edit');
+    Route::put('/{account}', [PaymentBankAccountController::class, 'update'])->name('update');
+    Route::delete('/{account}', [PaymentBankAccountController::class, 'destroy'])->name('destroy');
+    Route::post('/{account}/toggle', [PaymentBankAccountController::class, 'toggle'])->name('toggle');
+    Route::post('/{account}/set-default', [PaymentBankAccountController::class, 'setDefault'])->name('set-default');
 });
 
 // NFC Card Management

@@ -76,6 +76,15 @@ class SmsCheckerDevice extends Model
     }
 
     /**
+     * ดึงบัญชีธนาคารที่เปิดใช้ SMS Checker
+     * ใช้แสดงว่าอุปกรณ์นี้กำลังตรวจสอบบัญชีไหนบ้าง
+     */
+    public function monitoredBankAccounts()
+    {
+        return PaymentBankAccount::active()->smsCheckerEnabled()->get();
+    }
+
+    /**
      * ค้นหาอุปกรณ์จาก API Key
      *
      * @param string $apiKey
