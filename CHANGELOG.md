@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.443.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2442 from xjanova/claude/fix-mlm-commission-PIupk (d48eb74a)
+- fix: genealogy retention status display and Tailwind purge bug (df0e89cb)
+### 🔧 Other Changes
+
+
 ## [v3.443.0] - 2026-01-30
 
 ### ✨ Features
