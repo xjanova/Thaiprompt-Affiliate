@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.441.0] - 2026-01-30
+
+### ✨ Features
+- feat: add volume retention UI to admin settings, member detail, and user dashboard (144cf6fa)
+### 🐛 Bug Fixes
+- fix: unify volume retention check across all MLM commission services (5c853c1f)
+- fix: rollup system skips inactive members regardless of rollup setting (1d9f31d7)
+- fix: apply admin-configurable commission_per_pv rate to all commission calculations (fe08ba0a)
+- fix: commission payout now deducts from MLM Pool wallet + atomic balance (cd9556e2)
+### 🔧 Other Changes
+- Merge pull request #2436 from xjanova/claude/fix-mlm-commission-PIupk (6d5103cd)
+- refactor: remove unused MembershipRetention system entirely (9eec4cb9)
+
 ## [v3.440.1] - 2026-01-30
 
 ### ✨ Features
