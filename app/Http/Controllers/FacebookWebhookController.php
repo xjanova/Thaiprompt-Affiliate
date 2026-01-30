@@ -159,6 +159,9 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // แยกวันเกิดจากข้อความ (ถ้ามี)
+        $birthDate = $this->facebookService->parseBirthDate($message);
+
         // ตรวจสอบ limit ตามประเภทคำขอ
         if ($isDeepRequest && $this->settings->isDeepReadingEnabled()) {
             $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($fromId);
@@ -168,7 +171,7 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            $this->processFortuneTelling($comment, $questions, true, true);
+            $this->processFortuneTelling($comment, $questions, true, true, null, $birthDate);
         } else {
             $limitCheck = $this->facebookService->checkFreeLimit($fromId);
 
@@ -177,7 +180,7 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            $this->processFortuneTelling($comment, $questions, true, false);
+            $this->processFortuneTelling($comment, $questions, true, false, null, $birthDate);
         }
     }
 
@@ -231,6 +234,9 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // แยกวันเกิดจากข้อความ (ถ้ามี)
+        $birthDate = $this->facebookService->parseBirthDate($messageText);
+
         // ตรวจสอบ limit ตามประเภทคำขอ
         if ($isDeepRequest && $this->settings->isDeepReadingEnabled()) {
             $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($senderId);
@@ -241,7 +247,7 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            $this->processFortuneTelling($messaging, $questions, false, true, $userImageUrl);
+            $this->processFortuneTelling($messaging, $questions, false, true, $userImageUrl, $birthDate);
         } else {
             $limitCheck = $this->facebookService->checkFreeLimit($senderId);
 
@@ -253,7 +259,7 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            $this->processFortuneTelling($messaging, $questions, false, false, $userImageUrl);
+            $this->processFortuneTelling($messaging, $questions, false, false, $userImageUrl, $birthDate);
         }
     }
 
@@ -269,13 +275,15 @@ class FacebookWebhookController extends Controller
      * @param bool $isComment เป็นคอมเมนต์หรือ direct message
      * @param bool $isDeep เป็นคำทำนายเชิงลึกหรือไม่
      * @param string|null $userImageUrl URL รูปที่ผู้ใช้ส่งมา
+     * @param string|null $birthDate วันเกิดรูปแบบ Y-m-d
      */
     protected function processFortuneTelling(
         array $data,
         array $questions,
         bool $isComment,
         bool $isDeep = false,
-        ?string $userImageUrl = null
+        ?string $userImageUrl = null,
+        ?string $birthDate = null
     ): void {
         $fromId = $isComment ? ($data['from']['id'] ?? null) : ($data['sender']['id'] ?? null);
         $fromName = $isComment ? ($data['from']['name'] ?? null) : null;
@@ -294,6 +302,7 @@ class FacebookWebhookController extends Controller
             'is_paid' => false,
             'amount_paid' => 0,
             'user_image_url' => $userImageUrl,
+            'birth_date' => $birthDate,
             'comment_id' => $isComment ? ($data['comment_id'] ?? null) : null,
             'post_id' => $isComment ? ($data['post_id'] ?? null) : null,
             'reply_type' => $isComment ? 'comment' : 'message',
@@ -316,7 +325,7 @@ class FacebookWebhookController extends Controller
         }
 
         // Sync fallback: ประมวลผลทันที (สำหรับ dev หรือเมื่อไม่มี queue)
-        $this->processFortuneSync($data, $questions, $isComment, $isDeep, $userImageUrl, $fromId, $fromName);
+        $this->processFortuneSync($data, $questions, $isComment, $isDeep, $userImageUrl, $fromId, $fromName, $birthDate);
     }
 
     /**
@@ -329,6 +338,7 @@ class FacebookWebhookController extends Controller
      * @param string|null $userImageUrl รูปจากผู้ใช้
      * @param string $fromId Facebook User ID
      * @param string|null $fromName ชื่อผู้ใช้
+     * @param string|null $birthDate วันเกิดรูปแบบ Y-m-d
      */
     protected function processFortuneSync(
         array $data,
@@ -337,7 +347,8 @@ class FacebookWebhookController extends Controller
         bool $isDeep,
         ?string $userImageUrl,
         string $fromId,
-        ?string $fromName
+        ?string $fromName,
+        ?string $birthDate = null
     ): void {
         // ส่ง typing indicator ขณะ AI กำลังประมวลผล
         if (!$isComment) {
@@ -361,7 +372,8 @@ class FacebookWebhookController extends Controller
                 $userProfile,
                 $userPosts,
                 $promptTemplate,
-                $readingType
+                $readingType,
+                $birthDate
             );
 
             // บันทึกผลลงฐานข้อมูล
@@ -374,6 +386,7 @@ class FacebookWebhookController extends Controller
                 'ai_response' => $aiResponse['response'],
                 'user_profile' => $userProfile,
                 'user_posts_context' => $userPosts,
+                'birth_date' => $birthDate,
                 'ai_provider' => $aiResponse['provider'],
                 'ai_model' => $aiResponse['model'],
                 'tokens_used' => $aiResponse['tokens_used'],
