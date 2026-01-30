@@ -47,7 +47,7 @@ class MlmRetentionHelper
 
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->where('type', 'purchase')
+            ->where('transaction_type', 'purchase')
             ->sum('pv_amount');
 
         if ($monthlyPv >= $requiredMonthlyPv) {
@@ -59,7 +59,7 @@ class MlmRetentionHelper
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->where('type', 'purchase')
+                ->where('transaction_type', 'purchase')
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 
@@ -89,12 +89,12 @@ class MlmRetentionHelper
         $startOfMonth = Carbon::now()->startOfMonth();
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->where('type', 'purchase')
+            ->where('transaction_type', 'purchase')
             ->sum('pv_amount');
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->where('type', 'purchase')
+                ->where('transaction_type', 'purchase')
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 

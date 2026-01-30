@@ -596,12 +596,40 @@ class MlmGenealogyPremium {
 
         try {
             const response = await fetch(`${this.options.apiUrl}?type=${this.options.type}&depth=${this.options.maxDepth}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
+
+            if (!result.success || !result.data) {
+                throw new Error(result.message || 'ไม่สามารถโหลดข้อมูลผังสายงานได้');
+            }
+
             this.data = result.data;
             this.updateStats();
         } catch (error) {
             console.error('Error loading genealogy data:', error);
-            this.data = this.generateDemoData();
+
+            // แสดงข้อความ error แทน demo data
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'flex flex-col items-center justify-center p-8 text-center';
+            errorDiv.innerHTML = `
+                <div class="text-5xl mb-4">⚠️</div>
+                <div class="text-lg font-bold text-gray-800 dark:text-white mb-2">โหลดผังสายงานไม่สำเร็จ</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-4">${error.message}</div>
+                <button onclick="location.reload()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition">
+                    ลองใหม่
+                </button>
+            `;
+            const canvas = this.container.querySelector('#mlm-canvas') || this.container.querySelector('svg');
+            if (canvas) {
+                canvas.parentNode.insertBefore(errorDiv, canvas);
+                canvas.style.display = 'none';
+            }
+
+            this.data = null;
         } finally {
             loading.style.display = 'none';
         }
