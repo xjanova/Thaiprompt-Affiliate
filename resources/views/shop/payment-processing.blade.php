@@ -37,10 +37,15 @@
                         @endif
                     </div>
 
-                    <!-- Amount -->
+                    <!-- Amount (ใช้ transaction->amount ที่อาจมี unique decimal) -->
                     <div class="mb-6">
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ยอดชำระ</p>
-                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($order->total_amount, 2) }}</p>
+                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($transaction->amount, 2) }}</p>
+                        @if(($transaction->metadata['original_amount'] ?? null) && $transaction->metadata['original_amount'] != $transaction->amount)
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            (ราคาสินค้า ฿{{ number_format($transaction->metadata['original_amount'], 2) }} + ค่าทศนิยมยืนยันอัตโนมัติ)
+                        </p>
+                        @endif
                     </div>
 
                     <!-- Reference Number -->
@@ -91,10 +96,15 @@
                 </div>
 
                 <div class="p-8">
-                    <!-- Amount -->
+                    <!-- Amount (ใช้ transaction->amount ที่อาจมี unique decimal) -->
                     <div class="text-center mb-8">
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ยอดชำระ</p>
-                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($order->total_amount, 2) }}</p>
+                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($transaction->amount, 2) }}</p>
+                        @if(($transaction->metadata['original_amount'] ?? null) && $transaction->metadata['original_amount'] != $transaction->amount)
+                        <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                            (ราคาสินค้า ฿{{ number_format($transaction->metadata['original_amount'], 2) }} + ค่าทศนิยมยืนยันอัตโนมัติ)
+                        </p>
+                        @endif
                         <p class="text-xs text-red-600 dark:text-red-400 mt-2">⚠️ โปรดโอนตามยอดที่ระบุเท่านั้น (รวมจุดทศนิยม)</p>
                     </div>
 
