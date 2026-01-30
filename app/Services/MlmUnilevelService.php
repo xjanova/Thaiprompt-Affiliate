@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -224,20 +225,15 @@ class MlmUnilevelService
     }
 
     /**
-     * Check if member is qualified for commission at a level
-     * ใช้ค่าจาก Global Settings แทน per-plan settings
+     * ตรวจสอบว่าสมาชิกมีสิทธิ์รับคอมมิชชั่นหรือไม่
+     *
+     * แก้ RET-2: ใช้ MlmRetentionHelper ตรวจสอบ PV รักษายอดจริง
+     * แทน static field (is_qualified/status) ที่ไม่สะท้อน PV เดือนปัจจุบัน
+     * ใช้เกณฑ์เดียวกันกับ MlmCommissionService และ MlmBinaryService
      */
     protected function isQualifiedForCommission(MlmMember $member, int $level)
     {
-        // Check basic qualification
-        if (!$member->is_qualified || $member->status !== 'active') {
-            return false;
-        }
-
-        // Note: rank requirements ไม่ใช้ per-plan settings แล้ว
-        // ถ้าต้องการ rank requirements ให้ใช้ Global Settings แทน
-
-        return true;
+        return MlmRetentionHelper::isMemberActive($member);
     }
 
     /**

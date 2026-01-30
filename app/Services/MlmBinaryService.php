@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -106,8 +107,9 @@ class MlmBinaryService
             // ตรวจสอบและลบ carried PV ที่หมดอายุก่อนคำนวณ
             $parent->expireCarriedPv();
 
-            // Check if parent is qualified
-            if (!$parent->is_qualified || $parent->status !== 'active') {
+            // แก้ RET-1: ใช้ MlmRetentionHelper ตรวจสอบ PV รักษายอดจริง
+            // แทน static field (is_qualified/status) ที่ไม่สะท้อน PV เดือนปัจจุบัน
+            if (!MlmRetentionHelper::isMemberActive($parent)) {
                 $currentMember = $parent;
                 continue;
             }

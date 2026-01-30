@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -154,7 +155,7 @@ class MlmCommissionService
             }
 
             // Check if sponsor is active (maintaining volume)
-            $isActive = $this->isMemberActive($sponsor);
+            $isActive = MlmRetentionHelper::isMemberActive($sponsor);
 
             // Get level configuration
             $levelConfig = collect($unilevelLevels)->firstWhere('level', $currentLevel);
@@ -395,7 +396,7 @@ class MlmCommissionService
                 break;
             }
 
-            $isActive = $this->isMemberActive($sponsor);
+            $isActive = MlmRetentionHelper::isMemberActive($sponsor);
             $alreadyReceived = $preventDuplicate && isset($rollupTracker[$sponsor->id]);
 
             // ตรวจสอบว่าคนนี้ได้รับ rollup เกินกำหนดหรือยัง
@@ -511,45 +512,13 @@ class MlmCommissionService
     }
 
     /**
-     * Check if a member is active (maintaining monthly volume)
+     * ตรวจสอบว่าสมาชิก active หรือไม่ (delegate ไป MlmRetentionHelper)
      *
-     * แก้ Bug #11: ตรวจสอบ personal purchase PV (จาก pvTransactions)
-     * แทนที่จะตรวจจาก commission PV ที่ได้รับ
-     * เพราะ active status ต้องขึ้นกับยอดซื้อส่วนตัว ไม่ใช่ commission ที่ได้
+     * @deprecated ใช้ MlmRetentionHelper::isMemberActive() โดยตรงแทน
      */
     protected function isMemberActive(MlmMember $member): bool
     {
-        $requiredMonthlyPv = MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
-        $graceDays = MlmGlobalSetting::get('volume_retention_grace_days', 7);
-
-        // แก้ Bug #11: ตรวจสอบ PV จากการซื้อส่วนตัว (pvTransactions) แทน commissions
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $monthlyPv = $member->pvTransactions()
-            ->where('created_at', '>=', $startOfMonth)
-            ->where('type', 'purchase')
-            ->sum('pv_amount');
-
-        // Check if member meets monthly requirement
-        if ($monthlyPv >= $requiredMonthlyPv) {
-            return true;
-        }
-
-        // Check if member is in grace period - ใช้ last_purchase_at แทน last commission
-        $lastPurchaseDate = $member->last_purchase_at
-            ?? $member->pvTransactions()
-                ->where('type', 'purchase')
-                ->orderBy('created_at', 'desc')
-                ->value('created_at');
-
-        if ($lastPurchaseDate) {
-            $daysSinceLastPurchase = Carbon::parse($lastPurchaseDate)->diffInDays(now());
-
-            if ($daysSinceLastPurchase <= $graceDays) {
-                return true; // In grace period
-            }
-        }
-
-        return false;
+        return MlmRetentionHelper::isMemberActive($member);
     }
 
     /**
@@ -567,7 +536,7 @@ class MlmCommissionService
                 return null;
             }
 
-            if ($this->isMemberActive($sponsor)) {
+            if (MlmRetentionHelper::isMemberActive($sponsor)) {
                 return $sponsor;
             }
 
@@ -724,51 +693,13 @@ class MlmCommissionService
     }
 
     /**
-     * Get member's retention status
+     * ดึงสถานะรักษายอดของสมาชิก (delegate ไป MlmRetentionHelper)
+     *
+     * @param MlmMember $member
+     * @return array
      */
     public function getMemberRetentionStatus(MlmMember $member): array
     {
-        $requiredMonthlyPv = MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
-        $graceDays = MlmGlobalSetting::get('volume_retention_grace_days', 7);
-
-        // แก้ Bug #11: ใช้ pvTransactions แทน commissions สำหรับ retention status
-        $startOfMonth = Carbon::now()->startOfMonth();
-        $monthlyPv = $member->pvTransactions()
-            ->where('created_at', '>=', $startOfMonth)
-            ->where('type', 'purchase')
-            ->sum('pv_amount');
-
-        $lastPurchaseDate = $member->last_purchase_at
-            ?? $member->pvTransactions()
-                ->where('type', 'purchase')
-                ->orderBy('created_at', 'desc')
-                ->value('created_at');
-
-        $daysSinceLastPurchase = $lastPurchaseDate
-            ? Carbon::parse($lastPurchaseDate)->diffInDays(now())
-            : null;
-
-        $status = 'active';
-        $color = 'green';
-
-        if ($monthlyPv < $requiredMonthlyPv) {
-            if ($daysSinceLastPurchase && $daysSinceLastPurchase <= $graceDays) {
-                $status = 'grace_period';
-                $color = 'yellow';
-            } else {
-                $status = 'inactive';
-                $color = 'red';
-            }
-        }
-
-        return [
-            'status' => $status,
-            'color' => $color,
-            'monthly_pv' => $monthlyPv,
-            'required_pv' => $requiredMonthlyPv,
-            'days_since_last_purchase' => $daysSinceLastPurchase,
-            'grace_days' => $graceDays,
-            'is_active' => $this->isMemberActive($member),
-        ];
+        return MlmRetentionHelper::getRetentionStatus($member);
     }
 }
