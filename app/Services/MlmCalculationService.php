@@ -240,8 +240,10 @@ class MlmCalculationService
             'right_leg_pv' => $member->right_leg_pv,
             'pending_commissions' => $member->commissions()->pending()->sum('commission_amount'),
             'paid_commissions' => $member->commissions()->paid()->sum('commission_amount'),
+            // แก้ Bug #33: เพิ่ม whereYear เพื่อป้องกันการรวมข้อมูลข้ามปี
             'this_month_earnings' => $member->commissions()
                 ->paid()
+                ->whereYear('paid_at', now()->year)
                 ->whereMonth('paid_at', now()->month)
                 ->sum('commission_amount'),
         ];

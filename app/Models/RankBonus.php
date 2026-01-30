@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class RankBonus extends Model
 {
@@ -130,6 +131,7 @@ class RankBonus extends Model
 
     /**
      * Apply one-time bonus
+     * แก้ Bug #17: ใช้ atomic increment แทน manual balance update + ครอบ DB::transaction
      */
     private function applyOneTimeBonus(User $user): bool
     {
@@ -137,21 +139,23 @@ class RankBonus extends Model
             return false;
         }
 
-        // Add to wallet
-        $user->wallet->balance += $this->amount;
-        $user->wallet->save();
+        return DB::transaction(function () use ($user) {
+            // Log transaction ก่อน เพื่อบันทึก balance_before ที่ถูกต้อง
+            WalletTransaction::create([
+                'user_id' => $user->id,
+                'wallet_id' => $user->wallet->id,
+                'type' => 'credit',
+                'amount' => $this->amount,
+                'balance_after' => $user->wallet->balance + $this->amount,
+                'description' => "Rank bonus: {$this->display_name}",
+                'status' => 'completed',
+            ]);
 
-        // Log transaction
-        WalletTransaction::create([
-            'user_id' => $user->id,
-            'wallet_id' => $user->wallet->id,
-            'type' => 'credit',
-            'amount' => $this->amount,
-            'description' => "Rank bonus: {$this->display_name}",
-            'status' => 'completed',
-        ]);
+            // ใช้ atomic increment แทน manual assignment เพื่อป้องกัน race condition
+            $user->wallet->increment('balance', $this->amount);
 
-        return true;
+            return true;
+        });
     }
 
     /**

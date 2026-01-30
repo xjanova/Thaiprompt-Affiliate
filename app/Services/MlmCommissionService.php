@@ -77,7 +77,8 @@ class MlmCommissionService
             return [
                 'success' => true,
                 'commissions' => $commissions,
-                'total_amount' => array_sum(array_column($commissions, 'amount')),
+                // แก้ Bug #4: ใช้ key 'commission_amount' ที่ถูกต้อง (ไม่ใช่ 'amount')
+                'total_amount' => array_sum(array_column($commissions, 'commission_amount')),
             ];
 
         } catch (\Exception $e) {
@@ -141,7 +142,10 @@ class MlmCommissionService
             $levelConfig = collect($unilevelLevels)->firstWhere('level', $currentLevel);
 
             if (!$levelConfig) {
-                break;
+                // แก้ Bug #23: ใช้ continue แทน break เพื่อให้ level ถัดไปยังทำงานได้
+                $currentMember = $sponsor;
+                $currentLevel++;
+                continue;
             }
 
             $percentage = $levelConfig['percentage'] ?? 0;
@@ -155,9 +159,9 @@ class MlmCommissionService
             // Calculate commission amount
             $commissionAmount = ($pv * $percentage) / 100;
 
-            // Apply constraints
+            // แก้ Bug #24: ใช้ !== null แทน falsy check (ค่า 0 = ห้ามจ่าย ต้องไม่ถูกข้ามไป)
             $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
-            if ($maxPerLevel && $commissionAmount > $maxPerLevel) {
+            if ($maxPerLevel !== null && $commissionAmount > $maxPerLevel) {
                 $commissionAmount = $maxPerLevel;
             }
 
@@ -197,11 +201,15 @@ class MlmCommissionService
                     // ส่ง commission ไป Pool Bonus
                     $this->pooledRollupAmount += $commissionAmount;
 
+                    // แก้ Bug #5: ใช้ admin member แทน null (NOT NULL columns)
+                    $fallbackMemberId = $adminMember->id ?? $member->id;
+                    $fallbackUserId = $adminMember->user_id ?? $member->user_id;
+
                     // บันทึก commission ที่ส่งไป pool (สำหรับ tracking)
                     $commissions[] = [
-                        'mlm_member_id' => null, // ไม่มีผู้รับโดยตรง
+                        'mlm_member_id' => $fallbackMemberId,
                         'mlm_plan_id' => $member->mlm_plan_id,
-                        'user_id' => null, // ไป pool
+                        'user_id' => $fallbackUserId,
                         'from_member_id' => $member->id,
                         'type' => 'pool_bonus',
                         'level' => $currentLevel,
@@ -290,7 +298,8 @@ class MlmCommissionService
                     'mlm_plan_id' => $member->mlm_plan_id,
                     'user_id' => $sponsor->user_id,
                     'from_member_id' => $member->id,
-                    'type' => 'unilevel',
+                    // แก้ Bug #4: ใช้ type ที่ถูกต้องตาม level
+                    'type' => $currentLevel === 1 ? 'unilevel_direct' : 'unilevel_indirect',
                     'level' => $currentLevel,
                     'commission_amount' => $commissionAmount,
                     'pv_amount' => $pv,
@@ -472,16 +481,21 @@ class MlmCommissionService
 
     /**
      * Check if a member is active (maintaining monthly volume)
+     *
+     * แก้ Bug #11: ตรวจสอบ personal purchase PV (จาก pvTransactions)
+     * แทนที่จะตรวจจาก commission PV ที่ได้รับ
+     * เพราะ active status ต้องขึ้นกับยอดซื้อส่วนตัว ไม่ใช่ commission ที่ได้
      */
     protected function isMemberActive(MlmMember $member): bool
     {
         $requiredMonthlyPv = MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
         $graceDays = MlmGlobalSetting::get('volume_retention_grace_days', 7);
 
-        // Get member's PV for current month
+        // แก้ Bug #11: ตรวจสอบ PV จากการซื้อส่วนตัว (pvTransactions) แทน commissions
         $startOfMonth = Carbon::now()->startOfMonth();
-        $monthlyPv = $member->commissions()
+        $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
+            ->where('type', 'purchase')
             ->sum('pv_amount');
 
         // Check if member meets monthly requirement
@@ -489,15 +503,17 @@ class MlmCommissionService
             return true;
         }
 
-        // Check if member is in grace period
-        $lastCommissionDate = $member->commissions()
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
+        // Check if member is in grace period - ใช้ last_purchase_at แทน last commission
+        $lastPurchaseDate = $member->last_purchase_at
+            ?? $member->pvTransactions()
+                ->where('type', 'purchase')
+                ->orderBy('created_at', 'desc')
+                ->value('created_at');
 
-        if ($lastCommissionDate) {
-            $daysSinceLastCommission = Carbon::parse($lastCommissionDate)->diffInDays(now());
+        if ($lastPurchaseDate) {
+            $daysSinceLastPurchase = Carbon::parse($lastPurchaseDate)->diffInDays(now());
 
-            if ($daysSinceLastCommission <= $graceDays) {
+            if ($daysSinceLastPurchase <= $graceDays) {
                 return true; // In grace period
             }
         }
@@ -593,6 +609,10 @@ class MlmCommissionService
      * @param array $pvData ข้อมูล PV ['total_pv' => float]
      * @return array ['direct_referral' => ?MlmCommission, 'unilevel' => array, 'binary' => array]
      */
+    /**
+     * แก้ Bug #14: ลบ nested transaction (calculateCommissionsWithRollup มี transaction ภายในแล้ว)
+     * แก้ Bug #15: เพิ่ม duplicate commission guard ป้องกันการจ่ายซ้ำ
+     */
     public function processOrderCommissions(Order $order, array $pvData): array
     {
         $result = [
@@ -612,8 +632,23 @@ class MlmCommissionService
             return $result;
         }
 
+        // แก้ Bug #15: ตรวจสอบว่าออเดอร์นี้คำนวณ commission ไปแล้วหรือยัง
+        $existingCommission = MlmCommission::where('source_type', Order::class)
+            ->where('source_id', $order->id)
+            ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair'])
+            ->exists();
+
+        if ($existingCommission) {
+            Log::warning('Order commissions already calculated, skipping', [
+                'order_id' => $order->id,
+            ]);
+            return $result;
+        }
+
         try {
-            DB::beginTransaction();
+            // แก้ Bug #14: ใช้ single transaction ไม่ซ้อน
+            // calculateCommissionsWithRollup มี transaction ภายในแล้ว
+            // ดังนั้นเราไม่ wrap อีกชั้น
 
             // 1. คำนวณค่าแนะนำตรง (Direct Referral Bonus)
             $result['direct_referral'] = $this->calculateDirectReferralBonus($order);
@@ -631,7 +666,7 @@ class MlmCommissionService
                     // แยก commissions ตามประเภท
                     foreach ($pvCommissions['commissions'] as $commission) {
                         $type = $commission['type'] ?? 'unknown';
-                        if (str_starts_with($type, 'unilevel')) {
+                        if (str_starts_with($type, 'unilevel') || str_starts_with($type, 'pool')) {
                             $result['unilevel'][] = $commission;
                         } elseif (str_starts_with($type, 'binary')) {
                             $result['binary'][] = $commission;
@@ -639,8 +674,6 @@ class MlmCommissionService
                     }
                 }
             }
-
-            DB::commit();
 
             Log::info('Order commissions processed successfully', [
                 'order_id' => $order->id,
@@ -650,7 +683,6 @@ class MlmCommissionService
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Failed to process order commissions', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -668,24 +700,28 @@ class MlmCommissionService
         $requiredMonthlyPv = MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
         $graceDays = MlmGlobalSetting::get('volume_retention_grace_days', 7);
 
+        // แก้ Bug #11: ใช้ pvTransactions แทน commissions สำหรับ retention status
         $startOfMonth = Carbon::now()->startOfMonth();
-        $monthlyPv = $member->commissions()
+        $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
+            ->where('type', 'purchase')
             ->sum('pv_amount');
 
-        $lastCommissionDate = $member->commissions()
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
+        $lastPurchaseDate = $member->last_purchase_at
+            ?? $member->pvTransactions()
+                ->where('type', 'purchase')
+                ->orderBy('created_at', 'desc')
+                ->value('created_at');
 
-        $daysSinceLastCommission = $lastCommissionDate
-            ? Carbon::parse($lastCommissionDate)->diffInDays(now())
+        $daysSinceLastPurchase = $lastPurchaseDate
+            ? Carbon::parse($lastPurchaseDate)->diffInDays(now())
             : null;
 
         $status = 'active';
         $color = 'green';
 
         if ($monthlyPv < $requiredMonthlyPv) {
-            if ($daysSinceLastCommission && $daysSinceLastCommission <= $graceDays) {
+            if ($daysSinceLastPurchase && $daysSinceLastPurchase <= $graceDays) {
                 $status = 'grace_period';
                 $color = 'yellow';
             } else {
@@ -699,7 +735,7 @@ class MlmCommissionService
             'color' => $color,
             'monthly_pv' => $monthlyPv,
             'required_pv' => $requiredMonthlyPv,
-            'days_since_last_commission' => $daysSinceLastCommission,
+            'days_since_last_purchase' => $daysSinceLastPurchase,
             'grace_days' => $graceDays,
             'is_active' => $this->isMemberActive($member),
         ];
