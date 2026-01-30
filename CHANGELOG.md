@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.442.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2437 from xjanova/claude/fix-mlm-commission-PIupk (04f4c088)
+- feat: add volume retention status widget to main user dashboard (cc904437)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.441.0] - 2026-01-30
 
 ### ✨ Features
