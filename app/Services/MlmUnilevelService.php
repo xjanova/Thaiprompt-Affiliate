@@ -146,6 +146,9 @@ class MlmUnilevelService
         $compressionEnabled = MlmGlobalSetting::get('unilevel_compression_enabled', true);
         $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
 
+        // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
         if (empty($levels)) {
             return;
         }
@@ -176,7 +179,8 @@ class MlmUnilevelService
             $percentage = $levelConfig['percentage'] ?? 0;
 
             if ($percentage > 0) {
-                $commissionAmount = ($pvData['total_pv'] * $percentage) / 100;
+                // คำนวณคอมมิชชั่น: PV × เปอร์เซ็นต์ × อัตราแปลง PV→บาท
+                $commissionAmount = ($pvData['total_pv'] * $percentage) / 100 * $commissionPerPv;
 
                 // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
                 if ($sponsor->user->current_rank_id) {

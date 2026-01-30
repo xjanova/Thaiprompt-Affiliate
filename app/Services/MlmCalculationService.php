@@ -246,16 +246,19 @@ class MlmCalculationService
         $levels = MlmGlobalSetting::get('unilevel_levels', []);
         $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
 
+        // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
         // Unilevel preview (direct level only)
         if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
             if (!empty($levels) && isset($levels[0])) {
-                $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100);
+                $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100) * $commissionPerPv;
             }
         }
 
         // Binary preview (estimated)
         if ($binaryEnabled && ($plan->type === 'binary' || $plan->type === 'hybrid')) {
-            $preview['binary_commission'] = $orderPv * ($binaryMatchPercentage / 100);
+            $preview['binary_commission'] = $orderPv * ($binaryMatchPercentage / 100) * $commissionPerPv;
         }
 
         $preview['total_commission'] = $preview['unilevel_commission'] + $preview['binary_commission'];

@@ -121,6 +121,9 @@ class MlmCommissionService
             return $commissions;
         }
 
+        // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
         // ดึง Admin member (ID 1) สำหรับ final rollup
         $adminMember = MlmMember::find(1);
 
@@ -156,8 +159,8 @@ class MlmCommissionService
                 continue;
             }
 
-            // Calculate commission amount
-            $commissionAmount = ($pv * $percentage) / 100;
+            // คำนวณคอมมิชชั่น: PV × เปอร์เซ็นต์ × อัตราแปลง PV→บาท
+            $commissionAmount = ($pv * $percentage) / 100 * $commissionPerPv;
 
             // แก้ Bug #24: ใช้ !== null แทน falsy check (ค่า 0 = ห้ามจ่าย ต้องไม่ถูกข้ามไป)
             $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
