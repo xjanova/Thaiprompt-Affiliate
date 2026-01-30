@@ -509,7 +509,6 @@ return [
             'order' => 16,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'ระบบรักษายอด', 'route' => 'admin.retention.index'],
                 ['label' => 'จัดการระดับ Rank', 'route' => 'admin.ranks.index'],
                 ['label' => 'การเลื่อนระดับ', 'route' => 'admin.ranks.promotions.index'],
                 ['label' => 'Cashback', 'route' => 'admin.cashback.index'],
@@ -1330,18 +1329,6 @@ return [
                 ['label' => '📝 รับสมัครสมาชิก', 'route' => 'user.marketing.recruit.index', 'description' => 'ชวนเพื่อนสมัคร'],
                 ['label' => '🔄 โอนย้ายทีม', 'route' => 'user.team-transfer.index', 'description' => 'จัดการสายงาน'],
                 ['label' => '⭐ อัพเกรดดาว', 'route' => 'user.star-upgrade.index', 'description' => 'เลื่อนระดับ Star'],
-            ],
-        ],
-
-        [
-            'id' => 'retention',
-            'label' => 'รักษายอด',
-            'icon' => '💖',
-            'route' => null,
-            'order' => 12,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'สถานะพลังชีวิต', 'route' => 'user.retention.index'],
             ],
         ],
 

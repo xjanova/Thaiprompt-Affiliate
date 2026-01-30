@@ -7,7 +7,6 @@ use App\Http\Controllers\User\NFCCardController;
 use App\Http\Controllers\User\CryptoWalletController;
 use App\Http\Controllers\User\CryptoExchangeController;
 use App\Http\Controllers\User\RankController;
-use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\User\TicketController;
@@ -373,30 +372,6 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::put('/preferences', [EmailPreferenceController::class, 'update'])->name('preferences.update');
     Route::post('/preferences/disable-all', [EmailPreferenceController::class, 'disableAll'])->name('preferences.disable-all');
     Route::post('/preferences/enable-all', [EmailPreferenceController::class, 'enableAll'])->name('preferences.enable-all');
-});
-
-// Membership Retention
-Route::prefix('retention')->name('retention.')->group(function () {
-    Route::get('/', [MembershipRetentionController::class, 'index'])->name('index');
-    Route::get('/status', [MembershipRetentionController::class, 'getStatus'])->name('status');
-    Route::get('/history', [MembershipRetentionController::class, 'history'])->name('history');
-    Route::get('/widget-data', [MembershipRetentionController::class, 'getWidgetData'])->name('widget-data');
-    Route::get('/status-bar-data', [MembershipRetentionController::class, 'getStatusBarData'])->name('status-bar-data');
-    Route::get('/how-it-works', [MembershipRetentionController::class, 'howItWorks'])->name('how-it-works');
-
-    // Repair Routes
-    Route::get('/repair', [MembershipRetentionController::class, 'showRepair'])->name('repair');
-    Route::post('/repair', [MembershipRetentionController::class, 'processRepair'])->name('repair.process');
-
-    // Advance Renewal Routes
-    Route::get('/advance-renewal', [MembershipRetentionController::class, 'showAdvanceRenewal'])->name('advance-renewal');
-    Route::post('/advance-renewal', [MembershipRetentionController::class, 'processAdvanceRenewal'])->name('advance-renewal.process');
-
-    // Auto-Renewal Settings Routes (ระบบรักษายอดอัตโนมัติ)
-    Route::get('/auto-settings', [MembershipRetentionController::class, 'showAutoSettings'])->name('auto-settings');
-    Route::post('/auto-settings', [MembershipRetentionController::class, 'saveAutoSettings'])->name('auto-settings.save');
-    Route::post('/auto-settings/pause', [MembershipRetentionController::class, 'pauseAutoRenewal'])->name('auto-settings.pause');
-    Route::post('/auto-settings/resume', [MembershipRetentionController::class, 'resumeAutoRenewal'])->name('auto-settings.resume');
 });
 
 // MLM System (User)

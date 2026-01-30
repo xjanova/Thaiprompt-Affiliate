@@ -52,16 +52,6 @@
     @endif
 
     {{-- ======================================
-        1.5 Retention Status Bar (แถบเตือนสถานะรักษายอด)
-    ====================================== --}}
-    @if($retentionStatus && $retentionStatistics)
-        <x-retention-status-bar
-            :retentionStatus="$retentionStatus"
-            :statistics="$retentionStatistics"
-        />
-    @endif
-
-    {{-- ======================================
         2. Welcome Section - Rank-based Header 🆕
     ====================================== --}}
     @include('user.partials.dashboard-rank-header', [
