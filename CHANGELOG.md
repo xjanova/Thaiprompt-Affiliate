@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.443.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2441 from xjanova/claude/test-smschecker-payment-CJNdO (94ceee5b)
+- feat: add missing Android app API endpoints, QR provisioning, and order management (c85bdecc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.442.3] - 2026-01-30
 
 ### ✨ Features
