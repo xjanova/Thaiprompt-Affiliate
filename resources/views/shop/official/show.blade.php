@@ -322,7 +322,7 @@
                         @endif
 
                         {{-- Cashback Card --}}
-                        @if(isset($cashbackInfo) && $cashbackInfo['total_cashback'] > 0)
+                        @if(isset($cashbackInfo) && ($cashbackInfo['total_cashback'] ?? 0) > 0)
                         <div class="p-5 bg-gradient-to-br from-blue-50 to-cyan-50
                                    dark:from-blue-900/30 dark:to-cyan-900/30
                                    rounded-2xl border-2 border-blue-200 dark:border-blue-700">
