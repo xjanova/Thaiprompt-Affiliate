@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.445.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2446 from xjanova/claude/test-smschecker-payment-CJNdO (28713843)
+- fix: add QR code library for SMS Checker device provisioning (eb0b675b)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/test-smschecker-payment-CJNdO (7797ed3f)
+
 ## [v3.445.0] - 2026-01-30
 
 ### ✨ Features
