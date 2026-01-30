@@ -51,8 +51,13 @@
                     </div>
                     @endif
 
+                    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
+                    <div class="mt-4">
+                        @include('components.sms-payment-explanation', ['compact' => true])
+                    </div>
+
                     <!-- Instructions -->
-                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 text-left">
+                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 text-left mt-4">
                         <h3 class="font-semibold text-gray-900 dark:text-white mb-3">วิธีการชำระเงิน:</h3>
                         <ol class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                             <li class="flex items-start">
@@ -90,25 +95,39 @@
                     <div class="text-center mb-8">
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ยอดชำระ</p>
                         <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($order->total_amount, 2) }}</p>
-                        <p class="text-xs text-red-600 dark:text-red-400 mt-2">⚠️ โปรดโอนตามยอดที่ระบุเท่านั้น</p>
+                        <p class="text-xs text-red-600 dark:text-red-400 mt-2">⚠️ โปรดโอนตามยอดที่ระบุเท่านั้น (รวมจุดทศนิยม)</p>
                     </div>
 
-                    <!-- Bank Account Info -->
+                    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
+                    <div class="mb-6">
+                        @include('components.sms-payment-explanation', ['compact' => true])
+                    </div>
+
+                    <!-- Bank Account Info (ดึงจากฐานข้อมูลอัตโนมัติ) -->
+                    @php
+                        $bankAccounts = \App\Models\PaymentBankAccount::where('is_active', true)
+                            ->orderByDesc('is_default')
+                            ->orderBy('sort_order')
+                            ->get();
+                        $defaultAccount = $bankAccounts->firstWhere('is_default', true) ?? $bankAccounts->first();
+                    @endphp
+
+                    @if($defaultAccount)
                     <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-6">
                         <h3 class="font-semibold text-gray-900 dark:text-white mb-4">ข้อมูลบัญชีธนาคาร:</h3>
                         <div class="space-y-3">
                             <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
                                 <span class="text-sm text-gray-600 dark:text-gray-400">ธนาคาร:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">ธนาคารกสิกรไทย (KBANK)</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->bank_name }} ({{ $defaultAccount->bank_code }})</span>
                             </div>
                             <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
                                 <span class="text-sm text-gray-600 dark:text-gray-400">ชื่อบัญชี:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">บริษัท ไทยพรอมท์ จำกัด</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->account_name }}</span>
                             </div>
                             <div class="flex justify-between items-center py-2">
                                 <span class="text-sm text-gray-600 dark:text-gray-400">เลขที่บัญชี:</span>
                                 <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold text-lg text-gray-900 dark:text-white">123-4-56789-0</span>
+                                    <span class="font-mono font-bold text-lg text-gray-900 dark:text-white">{{ $defaultAccount->account_number }}</span>
                                     <button onclick="copyBankAccount()" class="text-indigo-600 hover:text-indigo-700">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
@@ -116,15 +135,53 @@
                                     </button>
                                 </div>
                             </div>
+                            @if($defaultAccount->branch)
+                            <div class="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">สาขา:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->branch }}</span>
+                            </div>
+                            @endif
                         </div>
                     </div>
+
+                    {{-- แสดงบัญชีธนาคารอื่นๆ (ถ้ามี) --}}
+                    @if($bankAccounts->count() > 1)
+                    <div class="mb-6">
+                        <button onclick="document.getElementById('other-accounts').classList.toggle('hidden')"
+                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-2">
+                            ดูบัญชีธนาคารอื่น ({{ $bankAccounts->count() - 1 }} บัญชี) ▼
+                        </button>
+                        <div id="other-accounts" class="hidden space-y-3 mt-2">
+                            @foreach($bankAccounts->where('id', '!=', $defaultAccount->id) as $account)
+                            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $account->bank_name }} ({{ $account->bank_code }})</span>
+                                    @if($account->sms_checker_enabled)
+                                        <span class="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">SMS ยืนยันอัตโนมัติ</span>
+                                    @endif
+                                </div>
+                                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ $account->account_name }} | {{ $account->account_number }}</p>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
+                    @else
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+                        <p class="text-sm text-yellow-800 dark:text-yellow-300">⚠️ ยังไม่มีบัญชีธนาคารที่ตั้งค่า กรุณาติดต่อแอดมิน</p>
+                    </div>
+                    @endif
 
                     <!-- Instructions -->
                     <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
                         <h4 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">📋 สิ่งที่ต้องทำหลังโอนเงิน:</h4>
                         <ol class="space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
                             <li>1. เก็บหลักฐานการโอนเงิน (Slip)</li>
+                            @if($defaultAccount && $defaultAccount->sms_checker_enabled)
+                            <li>2. ✅ ระบบจะยืนยันอัตโนมัติผ่าน SMS Checker (ไม่ต้องส่ง Slip)</li>
+                            @else
                             <li>2. ส่งหลักฐานผ่าน Line: @thaiprompt</li>
+                            @endif
                             <li>3. แจ้งเลขที่คำสั่งซื้อ: <span class="font-semibold">{{ $order->order_number }}</span></li>
                         </ol>
                     </div>
@@ -133,9 +190,13 @@
 
             <script>
             function copyBankAccount() {
-                const accountNumber = '123-4-56789-0';
+                const accountNumber = '{{ $defaultAccount->account_number ?? '' }}';
                 navigator.clipboard.writeText(accountNumber).then(() => {
-                    alert('คัดลอกเลขที่บัญชีแล้ว!');
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    toast.innerHTML = '✅ คัดลอกเลขที่บัญชีแล้ว!';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3000);
                 });
             }
             </script>
