@@ -7,10 +7,20 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * ตรวจสอบ SMS Checker Device
+ *
+ * Middleware สำหรับ authenticate อุปกรณ์ SMS Checker ผ่าน API Key
+ * ตรวจสอบ: API key → สถานะอุปกรณ์ → Device ID (ถ้ามี)
+ */
 class VerifySmsCheckerDevice
 {
     /**
-     * Verify the SMS Checker device API key and device status.
+     * ตรวจสอบ API key และสถานะอุปกรณ์
+     *
+     * @param Request $request
+     * @param Closure $next
+     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -23,6 +33,7 @@ class VerifySmsCheckerDevice
             ], 401);
         }
 
+        // ค้นหาอุปกรณ์จาก API key
         $device = SmsCheckerDevice::findByApiKey($apiKey);
 
         if (!$device) {
@@ -32,6 +43,7 @@ class VerifySmsCheckerDevice
             ], 401);
         }
 
+        // ตรวจสอบว่าอุปกรณ์ active หรือไม่
         if (!$device->isActive()) {
             return response()->json([
                 'success' => false,
@@ -39,7 +51,7 @@ class VerifySmsCheckerDevice
             ], 403);
         }
 
-        // Verify device ID if provided
+        // ตรวจสอบ Device ID (ถ้ามีการส่งมา)
         $deviceId = $request->header('X-Device-Id');
         if ($deviceId && $device->device_id !== $deviceId) {
             return response()->json([
@@ -48,7 +60,7 @@ class VerifySmsCheckerDevice
             ], 403);
         }
 
-        // Attach device to request (use attributes for object, not merge)
+        // แนบข้อมูลอุปกรณ์ไปกับ request
         $request->attributes->set('sms_checker_device', $device);
 
         return $next($request);

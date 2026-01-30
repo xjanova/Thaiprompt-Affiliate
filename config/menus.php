@@ -289,6 +289,7 @@ return [
                 ['label' => 'คำขอถอนเงิน', 'route' => 'admin.withdrawals.pending'],
                 ['label' => 'ประวัติการถอน', 'route' => 'admin.withdrawals.index'],
                 ['label' => 'ตั้งค่า Payment Gateway', 'route' => 'admin.payment-gateways.index'],
+                ['label' => '📱 SMS Payment Checker', 'route' => 'admin.smschecker.index', 'description' => 'ระบบตรวจสอบ SMS ชำระเงินอัตโนมัติ'],
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index'],
                 ['label' => '---', 'route' => null], // Divider

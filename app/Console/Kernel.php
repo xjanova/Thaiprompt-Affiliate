@@ -300,6 +300,22 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[E-Commerce] Scheduled payouts processing failed');
             });
+
+        // ========================================
+        // SMS Checker Payment - ทำความสะอาดข้อมูลหมดอายุ
+        // ========================================
+
+        // ทำความสะอาดทุกชั่วโมง: expired amounts, old nonces, old notifications
+        $schedule->command('smschecker:cleanup')
+            ->hourly()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[SMS Checker] Cleanup completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[SMS Checker] Cleanup failed');
+            });
     }
 
     /**

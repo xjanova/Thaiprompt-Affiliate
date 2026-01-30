@@ -57,6 +57,7 @@ use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
+use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\Pos\PosLabelController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
 use App\Http\Controllers\Admin\PosDashboardController;
@@ -406,6 +407,19 @@ Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () 
     Route::post('/{paymentGateway}/toggle', [PaymentGatewayController::class, 'toggle'])->name('toggle');
     Route::post('/{paymentGateway}/test', [PaymentGatewayController::class, 'testConnection'])->name('test');
     Route::post('/update-order', [PaymentGatewayController::class, 'updateOrder'])->name('update-order');
+});
+
+// SMS Payment Checker Management (ระบบตรวจสอบ SMS สำหรับชำระเงิน)
+Route::prefix('smschecker')->name('smschecker.')->group(function () {
+    Route::get('/', [SmsCheckerAdminController::class, 'index'])->name('index');
+    Route::get('/devices', [SmsCheckerAdminController::class, 'devices'])->name('devices');
+    Route::get('/devices/create', [SmsCheckerAdminController::class, 'createDevice'])->name('device-create');
+    Route::post('/devices', [SmsCheckerAdminController::class, 'storeDevice'])->name('device-store');
+    Route::get('/devices/{device}', [SmsCheckerAdminController::class, 'showDevice'])->name('device-show');
+    Route::post('/devices/{device}/toggle-status', [SmsCheckerAdminController::class, 'toggleDeviceStatus'])->name('device-toggle');
+    Route::post('/devices/{device}/regenerate-keys', [SmsCheckerAdminController::class, 'regenerateKeys'])->name('device-regenerate');
+    Route::delete('/devices/{device}', [SmsCheckerAdminController::class, 'destroyDevice'])->name('device-destroy');
+    Route::get('/notifications', [SmsCheckerAdminController::class, 'notifications'])->name('notifications');
 });
 
 // NFC Card Management
