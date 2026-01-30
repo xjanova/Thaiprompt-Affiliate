@@ -297,6 +297,120 @@
 
             <!-- Right Column: Additional Info -->
             <div class="space-y-8">
+                <!-- สถานะรักษายอด (Volume Retention) -->
+                <x-arrow-x.card-v3 class="p-8">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                        <span class="mr-3">💓</span>
+                        สถานะรักษายอด
+                    </h3>
+
+                    @if(!($retentionStatus['retention_enabled'] ?? true))
+                        {{-- ระบบรักษายอดปิดอยู่ --}}
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-center">
+                            <div class="text-gray-400 text-sm">ระบบรักษายอดปิดอยู่</div>
+                            <div class="text-green-600 font-bold mt-1">Active ทุกคน</div>
+                        </div>
+                    @else
+                        {{-- แสดงสถานะ --}}
+                        <div class="text-center mb-6">
+                            @php
+                                $statusColor = $retentionStatus['color'] ?? 'gray';
+                                $statusText = match($retentionStatus['status'] ?? 'inactive') {
+                                    'active' => 'รักษายอดสำเร็จ',
+                                    'grace_period' => 'อยู่ในช่วงผ่อนผัน',
+                                    default => 'ยังไม่ถึงเกณฑ์',
+                                };
+                                $statusEmoji = match($retentionStatus['status'] ?? 'inactive') {
+                                    'active' => '✅',
+                                    'grace_period' => '⏳',
+                                    default => '⚠️',
+                                };
+                                $pvPercentage = $retentionStatus['pv_percentage'] ?? 0;
+                            @endphp
+
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold
+                                {{ $statusColor === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : '' }}
+                                {{ $statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : '' }}
+                                {{ $statusColor === 'red' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : '' }}
+                            ">
+                                {{ $statusEmoji }} {{ $statusText }}
+                            </span>
+                        </div>
+
+                        {{-- PV Progress Ring --}}
+                        <div class="flex items-center justify-center mb-6">
+                            @php
+                                $circumference = 2 * 3.14159 * 55;
+                                $dashOffset = $circumference - ($circumference * min($pvPercentage, 100) / 100);
+                                $ringColor = $pvPercentage >= 100 ? '#22c55e' : ($pvPercentage >= 50 ? '#eab308' : '#ef4444');
+                            @endphp
+                            <svg width="140" height="140">
+                                <circle cx="70" cy="70" r="55" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                                <circle cx="70" cy="70" r="55" fill="none" stroke="{{ $ringColor }}" stroke-width="10"
+                                        stroke-dasharray="{{ $circumference }}" stroke-dashoffset="{{ $dashOffset }}"
+                                        stroke-linecap="round"
+                                        style="transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.5s;"/>
+                                <text x="70" y="62" text-anchor="middle" dominant-baseline="middle" class="text-2xl font-bold" fill="{{ $ringColor }}">{{ round($pvPercentage) }}%</text>
+                                <text x="70" y="82" text-anchor="middle" dominant-baseline="middle" class="text-xs" fill="#6b7280">PV เดือนนี้</text>
+                            </svg>
+                        </div>
+
+                        {{-- รายละเอียด PV --}}
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">PV เดือนนี้:</span>
+                                <span class="font-bold {{ ($retentionStatus['monthly_pv'] ?? 0) >= ($retentionStatus['required_pv'] ?? 100) ? 'text-green-600' : 'text-gray-800 dark:text-white' }}">
+                                    {{ number_format($retentionStatus['monthly_pv'] ?? 0, 0) }} / {{ number_format($retentionStatus['required_pv'] ?? 100, 0) }}
+                                </span>
+                            </div>
+
+                            @if(($retentionStatus['remaining_pv'] ?? 0) > 0)
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">PV ที่ต้องการเพิ่ม:</span>
+                                <span class="font-bold text-orange-600">{{ number_format($retentionStatus['remaining_pv'] ?? 0, 0) }} PV</span>
+                            </div>
+                            @endif
+
+                            @if($retentionStatus['days_since_last_purchase'] !== null)
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">ซื้อล่าสุดเมื่อ:</span>
+                                <span class="font-bold text-gray-800 dark:text-white">{{ $retentionStatus['days_since_last_purchase'] }} วันที่แล้ว</span>
+                            </div>
+                            @endif
+                        </div>
+
+                        {{-- Progress Bar --}}
+                        <div class="mt-4">
+                            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500
+                                    {{ $pvPercentage >= 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : ($pvPercentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-red-400 to-rose-500') }}"
+                                    style="width: {{ min($pvPercentage, 100) }}%">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Grace Period Warning --}}
+                        @if($retentionStatus['in_grace_period'] ?? false)
+                        <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl">
+                            <div class="flex items-center text-yellow-700 dark:text-yellow-400 text-xs">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span>ช่วงผ่อนผัน: เหลืออีก {{ max(0, ($retentionStatus['grace_days'] ?? 7) - ($retentionStatus['days_since_last_purchase'] ?? 0)) }} วัน</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- แนะนำเมื่อ PV ไม่ถึง --}}
+                        @if(($retentionStatus['status'] ?? '') === 'inactive')
+                        <div class="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+                            <div class="text-red-700 dark:text-red-400 text-xs">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                <strong>PV ไม่ถึงเกณฑ์!</strong> คอมมิชชันจะถูกระงับจนกว่าจะซื้อสินค้าเพิ่ม
+                            </div>
+                        </div>
+                        @endif
+                    @endif
+                </x-arrow-x.card-v3>
+
                 <!-- Rank Progress -->
                 <x-arrow-x.card-v3 class="p-8">
                     <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">

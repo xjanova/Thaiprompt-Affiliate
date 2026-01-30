@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\User;
+use App\Helpers\MlmRetentionHelper;
 use App\Services\MlmGenealogyService;
 use App\Services\MlmCalculationService;
 use Illuminate\Http\Request;
@@ -67,8 +68,9 @@ class MlmMemberController extends Controller
         ]);
 
         $statistics = $this->calculationService->getMemberStatistics($member);
+        $retentionStatus = MlmRetentionHelper::getRetentionStatus($member);
 
-        return view('admin.mlm.members.show', compact('member', 'statistics'));
+        return view('admin.mlm.members.show', compact('member', 'statistics', 'retentionStatus'));
     }
 
     public function create()

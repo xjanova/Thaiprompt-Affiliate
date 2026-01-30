@@ -127,6 +127,95 @@
         </div>
     </div>
 
+    <!-- Volume Retention Status -->
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-heartbeat text-rose-500"></i>
+            สถานะรักษายอด (Volume Retention)
+        </h3>
+
+        @if(!$retentionStatus['retention_enabled'])
+            <div class="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-xl text-center">
+                <i class="fas fa-pause-circle text-gray-400 text-2xl mb-2"></i>
+                <p class="text-sm text-gray-600 dark:text-gray-400">ระบบรักษายอดปิดอยู่ — สมาชิกทุกคนรับคอมมิชชั่นได้โดยไม่ต้องรักษายอด</p>
+            </div>
+        @else
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {{-- สถานะ --}}
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">สถานะ</div>
+                    <div class="flex items-center gap-2">
+                        @if($retentionStatus['status'] === 'active')
+                            <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                            <span class="font-semibold text-green-600 dark:text-green-400">Active</span>
+                        @elseif($retentionStatus['status'] === 'grace_period')
+                            <span class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></span>
+                            <span class="font-semibold text-yellow-600 dark:text-yellow-400">Grace Period</span>
+                        @else
+                            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                            <span class="font-semibold text-red-600 dark:text-red-400">Inactive</span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- PV เดือนนี้ --}}
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">PV เดือนนี้</div>
+                    <div class="text-xl font-bold text-purple-600 dark:text-purple-400">
+                        {{ number_format($retentionStatus['monthly_pv'], 1) }}
+                        <span class="text-xs font-normal text-gray-500">/ {{ number_format($retentionStatus['required_pv'], 0) }}</span>
+                    </div>
+                </div>
+
+                {{-- PV ที่เหลือ --}}
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">PV ที่ต้องทำเพิ่ม</div>
+                    <div class="text-xl font-bold {{ $retentionStatus['remaining_pv'] > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+                        @if($retentionStatus['remaining_pv'] > 0)
+                            {{ number_format($retentionStatus['remaining_pv'], 1) }} PV
+                        @else
+                            <i class="fas fa-check-circle"></i> ครบแล้ว
+                        @endif
+                    </div>
+                </div>
+
+                {{-- ซื้อล่าสุด --}}
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">ซื้อล่าสุดเมื่อ</div>
+                    <div class="text-xl font-bold text-gray-900 dark:text-white">
+                        @if($retentionStatus['days_since_last_purchase'] !== null)
+                            {{ $retentionStatus['days_since_last_purchase'] }}
+                            <span class="text-xs font-normal text-gray-500">วันที่แล้ว</span>
+                        @else
+                            <span class="text-sm text-gray-400">ไม่เคยซื้อ</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            {{-- Progress Bar --}}
+            <div>
+                <div class="flex items-center justify-between text-sm mb-1">
+                    <span class="text-gray-600 dark:text-gray-400">ความคืบหน้า PV</span>
+                    <span class="font-semibold {{ $retentionStatus['pv_percentage'] >= 100 ? 'text-green-600' : 'text-rose-600' }}">{{ $retentionStatus['pv_percentage'] }}%</span>
+                </div>
+                <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500 {{ $retentionStatus['pv_percentage'] >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : ($retentionStatus['pv_percentage'] >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-red-500 to-rose-500') }}"
+                         style="width: {{ min(100, $retentionStatus['pv_percentage']) }}%"></div>
+                </div>
+            </div>
+
+            @if($retentionStatus['in_grace_period'])
+                <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        สมาชิกอยู่ในช่วง Grace Period — ยังรับคอมมิชชั่นได้อีก {{ $retentionStatus['grace_days'] - ($retentionStatus['days_since_last_purchase'] ?? 0) }} วัน
+                    </p>
+                </div>
+            @endif
+        @endif
+    </div>
+
     <!-- Relationship Info -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Unilevel Structure -->
