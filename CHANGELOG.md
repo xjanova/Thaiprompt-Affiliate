@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.446.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: handle undefined 'total_cashback' key in cashback card (dc4729c0)
+- fix: add missing shop.official.category Blade view (7e7911eb)
+### 🔧 Other Changes
+- Merge pull request #2450 from xjanova/claude/fix-shop-category-view-WeRhS (5ebc9b4f)
+
 ## [v3.446.1] - 2026-01-30
 
 ### ✨ Features
