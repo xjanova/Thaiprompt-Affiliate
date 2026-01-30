@@ -4,6 +4,8 @@ namespace App\Services\Payment;
 
 use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentBankAccount;
+use App\Models\UniquePaymentAmount;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Wallet;
@@ -159,8 +161,13 @@ class PaymentService
     {
         try {
             // SECURITY: Validate transaction amount hasn't been tampered with
-            if (isset($paymentData['amount']) && $paymentData['amount'] != $transaction->amount) {
-                throw new Exception('Payment amount mismatch. Possible tampering detected.');
+            // ตรวจสอบทั้ง amount ปัจจุบัน และ original_amount (กรณี unique amount)
+            if (isset($paymentData['amount'])) {
+                $metadata = $transaction->metadata ?? [];
+                $originalAmount = $metadata['original_amount'] ?? $transaction->amount;
+                if ($paymentData['amount'] != $transaction->amount && $paymentData['amount'] != $originalAmount) {
+                    throw new Exception('Payment amount mismatch. Possible tampering detected.');
+                }
             }
 
             // SECURITY: Check transaction hasn't expired
@@ -174,6 +181,10 @@ class PaymentService
             }
 
             $provider = $this->getProvider($transaction->payment_method);
+
+            // สร้าง unique amount สำหรับ SMS Checker auto-matching
+            // เฉพาะ promptpay/bank_transfer ที่เปิดใช้ SMS Checker
+            $uniqueAmountRecord = $this->generateUniqueAmountIfNeeded($transaction);
 
             // Validate payment
             if (!$provider->validate($transaction, $paymentData)) {
@@ -273,10 +284,17 @@ class PaymentService
 
     /**
      * Complete wallet top-up
+     *
+     * ใช้ original_amount (ก่อนเพิ่มทศนิยม) เป็นยอดเติมเงินจริง
+     * เพราะ transaction->amount อาจเป็น unique amount (เช่น 500.37) แทนที่จะเป็น 500
      */
     protected function completeWalletTopup(PaymentTransaction $transaction)
     {
         $user = $transaction->user;
+
+        // ใช้ original_amount ถ้ามี (กรณี unique amount ถูกสร้าง) มิเช่นนั้นใช้ transaction amount
+        $metadata = $transaction->metadata ?? [];
+        $depositAmount = $metadata['original_amount'] ?? $transaction->amount;
 
         // Get or create wallet
         $wallet = Wallet::firstOrCreate(
@@ -288,8 +306,8 @@ class PaymentService
         $walletTransaction = WalletTransaction::create([
             'wallet_id' => $wallet->id,
             'type' => 'deposit',
-            'amount' => $transaction->amount,
-            'balance_after' => $wallet->balance + $transaction->amount,
+            'amount' => $depositAmount,
+            'balance_after' => $wallet->balance + $depositAmount,
             'description' => 'Wallet top-up via ' . $transaction->payment_method,
             'status' => 'approved',
             'metadata' => [
@@ -298,7 +316,7 @@ class PaymentService
         ]);
 
         // Update wallet balance
-        $wallet->increment('balance', $transaction->amount);
+        $wallet->increment('balance', $depositAmount);
 
         // Link wallet transaction
         $transaction->update(['wallet_transaction_id' => $walletTransaction->id]);
@@ -311,6 +329,85 @@ class PaymentService
     {
         // Implementation for withdrawal completion
         // This would handle the actual money transfer to user's bank account
+    }
+
+    /**
+     * สร้าง unique amount (เพิ่มทศนิยม) สำหรับ SMS Checker auto-matching
+     *
+     * ตรวจสอบว่า payment method เป็น promptpay/bank_transfer
+     * และมีบัญชีธนาคารที่เปิดใช้ SMS Checker หรือไม่
+     * ถ้ามี → สร้างยอดชำระที่มีทศนิยมเฉพาะ (เช่น 1000.37)
+     * แล้วอัพเดท PaymentTransaction.amount เป็นยอดใหม่
+     *
+     * @param PaymentTransaction $transaction
+     * @return UniquePaymentAmount|null
+     */
+    protected function generateUniqueAmountIfNeeded(PaymentTransaction $transaction): ?UniquePaymentAmount
+    {
+        // เฉพาะ promptpay และ bank_transfer เท่านั้น
+        if (!in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+            return null;
+        }
+
+        // ตรวจสอบว่ามีบัญชีธนาคารที่เปิด SMS Checker หรือไม่
+        try {
+            $hasSmsChecker = PaymentBankAccount::where('is_active', true)
+                ->where('sms_checker_enabled', true)
+                ->exists();
+
+            if (!$hasSmsChecker) {
+                return null;
+            }
+        } catch (\Exception $e) {
+            // ถ้าตารางยังไม่มี ให้ข้ามไป
+            Log::debug('SMS Checker check skipped: ' . $e->getMessage());
+            return null;
+        }
+
+        // สร้าง unique amount
+        try {
+            $transactionType = $transaction->type ?? 'order';
+            $uniqueAmount = UniquePaymentAmount::generate(
+                $transaction->amount,
+                $transaction->id,
+                $transactionType,
+                config('smschecker.unique_amount_expiry', 30)
+            );
+
+            if ($uniqueAmount) {
+                // เก็บยอดเดิมใน metadata แล้วอัพเดทยอดชำระเป็น unique amount
+                $metadata = $transaction->metadata ?? [];
+                $metadata['original_amount'] = $transaction->amount;
+                $metadata['unique_amount_id'] = $uniqueAmount->id;
+                $metadata['decimal_suffix'] = $uniqueAmount->decimal_suffix;
+
+                $transaction->update([
+                    'amount' => $uniqueAmount->unique_amount,
+                    'metadata' => $metadata,
+                ]);
+
+                Log::info('SMS Checker: สร้าง unique amount สำเร็จ', [
+                    'transaction_id' => $transaction->id,
+                    'original_amount' => $metadata['original_amount'],
+                    'unique_amount' => $uniqueAmount->unique_amount,
+                    'suffix' => $uniqueAmount->decimal_suffix,
+                ]);
+
+                return $uniqueAmount;
+            }
+
+            Log::warning('SMS Checker: ไม่สามารถสร้าง unique amount (suffix เต็ม)', [
+                'transaction_id' => $transaction->id,
+                'base_amount' => $transaction->amount,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('SMS Checker: เกิดข้อผิดพลาดในการสร้าง unique amount', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 
     /**
