@@ -116,6 +116,11 @@
         </div>
     </x-arrow-x.card-v3>
 
+    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
+    <x-arrow-x.card-v3 class="p-0 overflow-hidden">
+        @include('components.sms-payment-explanation')
+    </x-arrow-x.card-v3>
+
     <!-- Instructions -->
     <x-arrow-x.card-v3 class="p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">📋 วิธีการชำระเงิน</h3>

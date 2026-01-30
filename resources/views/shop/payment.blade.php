@@ -143,6 +143,9 @@
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">กดปุ่มด้านล่างเพื่อสร้าง QR Code</p>
                                 <p class="text-2xl font-bold text-indigo-600">฿{{ number_format($order->total_amount, 2) }}</p>
                             </div>
+
+                            {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
+                            @include('components.sms-payment-explanation', ['compact' => true])
                         </div>
 
                         <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">
@@ -179,6 +182,9 @@
                                     <p class="text-sm text-gray-600 dark:text-gray-400">โอนเงินไปยังบัญชีธนาคารของเรา</p>
                                 </div>
                             </div>
+
+                            {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
+                            @include('components.sms-payment-explanation', ['compact' => true])
                         </div>
 
                         <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 transition">
