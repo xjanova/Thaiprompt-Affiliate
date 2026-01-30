@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.446.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2448 from xjanova/claude/test-smschecker-payment-CJNdO (dcca8a49)
+- feat: integrate SMS payment explanation into customer-facing payment pages (c3d3cb7c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/test-smschecker-payment-CJNdO (d93275b5)
+
 ## [v3.445.2] - 2026-01-30
 
 ### ✨ Features
