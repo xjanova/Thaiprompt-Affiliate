@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.442.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2438 from xjanova/claude/fix-mlm-commission-PIupk (66893aca)
+- fix: pool bonus retention check, rounding precision, and RankBonus stubs (007f3fd0)
+### 🔧 Other Changes
+
+
 ## [v3.442.0] - 2026-01-30
 
 ### ✨ Features
