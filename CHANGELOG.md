@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.440.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2435 from xjanova/claude/fix-mlm-commission-PIupk (61f3ab43)
+- fix: resolve PV calculation inconsistencies and duplicate commission processing (a7785bd3)
+### 🔧 Other Changes
+
+
 ## [v3.440.0] - 2026-01-30
 
 ### ✨ Features
