@@ -48,13 +48,14 @@ class OrderObserver
     {
         // ประมวลผลเมื่อชำระเงินสำเร็จ (ไม่ใช่ COD)
         if ($order->wasChanged('payment_status') && $order->payment_status === 'paid') {
-            // 1. คำนวณ MLM Commission
-            $this->processMlmCommissions($order);
+            // แก้ Bug PV-1: ลบ processMlmCommissions() ออกเพราะ processOrderDistribution()
+            // มีการคำนวณ MLM Commission อยู่ภายในแล้ว (ผ่าน OrderDistributionService)
+            // การเรียกซ้ำ 2 ทาง ทำให้เกิด duplicate commission
 
-            // 2. จ่าย Cashback ให้ลูกค้า
+            // 1. จ่าย Cashback ให้ลูกค้า
             $this->processCashback($order);
 
-            // 3. แบ่งเงินให้ Seller + เก็บ Fee/VAT/MLM Pool
+            // 2. แบ่งเงินให้ Seller + เก็บ Fee/VAT/MLM Pool + คำนวณ MLM Commission
             $this->processOrderDistribution($order);
         }
 

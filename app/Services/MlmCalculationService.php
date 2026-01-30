@@ -32,6 +32,16 @@ class MlmCalculationService
         DB::beginTransaction();
 
         try {
+            // แก้ Bug PV-5: ตรวจสอบว่า Order นี้ประมวลผล PV/Commission ไปแล้วหรือยัง
+            $existingPvTransaction = \App\Models\MlmPvTransaction::where('order_id', $order->id)->exists();
+            if ($existingPvTransaction) {
+                Log::info('Order PV already processed, skipping MlmCalculationService', [
+                    'order_id' => $order->id,
+                ]);
+                DB::commit();
+                return true;
+            }
+
             $user = $order->user;
             if (!$user) {
                 throw new \Exception('Order has no user');
