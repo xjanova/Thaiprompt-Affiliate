@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
@@ -143,8 +144,13 @@ class MlmPoolBonusService
 
         $members = $query->get();
 
-        // Filter ตามเงื่อนไข
+        // Filter ตามเงื่อนไข (รวม volume retention check)
         return $members->filter(function ($member) use ($period, $minPersonalPv, $minTeamPv, $minRankLevel) {
+            // ตรวจสอบ volume retention ก่อน (ใช้ MlmRetentionHelper เดียวกับ commission services)
+            if (!MlmRetentionHelper::isMemberActive($member)) {
+                return false;
+            }
+
             // คำนวณ PV ส่วนตัวในรอบนี้
             $personalPv = $this->getMemberPersonalPv($member, $period);
 
@@ -160,8 +166,9 @@ class MlmPoolBonusService
             }
 
             // ตรวจสอบ rank
+            // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
             if ($minRankLevel > 0) {
-                $userRank = $member->user->rank ?? null;
+                $userRank = $member->user->currentRank ?? null;
                 if (!$userRank || $userRank->level < $minRankLevel) {
                     return false;
                 }
@@ -198,9 +205,12 @@ class MlmPoolBonusService
      */
     protected function getMemberTeamPv(MlmMember $member, MlmPoolBonusPeriod $period): float
     {
-        // ดึง downline ทั้งหมด
-        $downlineIds = MlmMember::where('unilevel_path', 'like', '%/' . $member->id . '/%')
-            ->orWhere('unilevel_sponsor_id', $member->id)
+        // ดึง downline ทั้งหมด (รองรับทั้ง path ที่ขึ้นต้นด้วย member id และที่อยู่กลางทาง)
+        $downlineIds = MlmMember::where(function ($q) use ($member) {
+                $q->where('unilevel_path', 'like', $member->id . '/%')
+                  ->orWhere('unilevel_path', 'like', '%/' . $member->id . '/%')
+                  ->orWhere('unilevel_sponsor_id', $member->id);
+            })
             ->pluck('id')
             ->toArray();
 
@@ -236,7 +246,8 @@ class MlmPoolBonusService
             case 'rank_based':
                 // ตาม rank (ใช้ pool_bonus_shares จาก setting หรือ rank level)
                 $rankShares = $this->getRankSharesConfig();
-                $userRank = $member->user->rank ?? null;
+                // แก้ Bug #9: ใช้ currentRank แทน rank
+                $userRank = $member->user->currentRank ?? null;
 
                 if ($userRank && isset($rankShares[$userRank->id])) {
                     return (int) $rankShares[$userRank->id];
@@ -338,8 +349,30 @@ class MlmPoolBonusService
                 ];
             }
 
-            // 4. คำนวณ amount per share
-            $amountPerShare = $totalShares > 0 ? $poolAmount / $totalShares : 0;
+            // Edge case: ถ้าทุกคนได้ 0 shares (เช่น rank_based mode แต่ไม่มี rank)
+            if ($totalShares === 0) {
+                $period->update([
+                    'total_sales' => $salesData['total_sales'],
+                    'total_pv' => $salesData['total_pv'],
+                    'pool_amount' => $poolAmount,
+                    'qualified_members_count' => $qualifiedCount,
+                    'total_shares' => 0,
+                    'status' => 'pending',
+                    'notes' => 'สมาชิก qualify แต่ total shares = 0',
+                ]);
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'message' => 'สมาชิก qualify แต่ total shares = 0',
+                    'qualified_count' => $qualifiedCount,
+                    'pool_amount' => $poolAmount,
+                ];
+            }
+
+            // 4. คำนวณ amount per share (ปัดเศษ 2 ตำแหน่ง)
+            $amountPerShare = round($poolAmount / $totalShares, 2);
 
             // 5. อัพเดท period
             $period->update([
@@ -351,12 +384,22 @@ class MlmPoolBonusService
                 'total_shares' => $totalShares,
             ]);
 
-            // 6. สร้าง shares สำหรับแต่ละสมาชิก
+            // 6. สร้าง shares สำหรับแต่ละสมาชิก (แก้ rounding: สมาชิกคนสุดท้ายรับส่วนต่าง)
             $createdShares = [];
-            foreach ($memberSharesData as $data) {
+            $totalDistributed = 0;
+            $memberCount = count($memberSharesData);
+
+            foreach ($memberSharesData as $index => $data) {
                 $member = $data['member'];
                 $shares = $data['shares'];
-                $totalAmount = $shares * $amountPerShare;
+                $totalAmount = round($shares * $amountPerShare, 2);
+
+                // สมาชิกคนสุดท้าย: ปรับส่วนต่างให้ยอดรวมตรงกับ poolAmount
+                if ($index === $memberCount - 1) {
+                    $totalAmount = round($poolAmount - $totalDistributed, 2);
+                }
+
+                $totalDistributed += $totalAmount;
 
                 $share = MlmPoolBonusShare::create([
                     'pool_period_id' => $period->id,

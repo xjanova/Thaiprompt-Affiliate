@@ -153,7 +153,7 @@
             </div>
         </div>
 
-        <div class="bg-{{ $isBalanced ? 'green' : 'yellow' }}-50 border border-{{ $isBalanced ? 'green' : 'yellow' }}-200 rounded-xl p-4">
+        <div class="@if($isBalanced) bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-700 @else bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700 @endif border rounded-xl p-4">
             <div class="flex items-center gap-3">
                 <span class="text-3xl">{{ $isBalanced ? '✅' : '⚠️' }}</span>
                 <div>

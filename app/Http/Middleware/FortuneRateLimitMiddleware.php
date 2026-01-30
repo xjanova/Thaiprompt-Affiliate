@@ -120,8 +120,15 @@ class FortuneRateLimitMiddleware
      */
     protected function hit(string $key): int
     {
+        $expiry = now()->addMinutes($this->decayMinutes);
         $attempts = Cache::get($key, 0) + 1;
-        Cache::put($key, $attempts, now()->addMinutes($this->decayMinutes));
+        Cache::put($key, $attempts, $expiry);
+
+        // เก็บเวลาหมดอายุสำหรับคำนวณ retry_after
+        if (!Cache::has($key . ':timer')) {
+            Cache::put($key . ':timer', $expiry, $expiry);
+        }
+
         return $attempts;
     }
 
@@ -144,8 +151,13 @@ class FortuneRateLimitMiddleware
      */
     protected function availableIn(string $key): int
     {
-        $expiresAt = Cache::get($key . ':timer', now()->addMinutes($this->decayMinutes));
-        return max(0, $expiresAt->diffInSeconds());
+        $expiresAt = Cache::get($key . ':timer');
+
+        if (!$expiresAt) {
+            return $this->decayMinutes * 60;
+        }
+
+        return max(0, now()->diffInSeconds($expiresAt, false));
     }
 
     /**
@@ -156,7 +168,11 @@ class FortuneRateLimitMiddleware
      */
     protected function availableAt(string $key): int
     {
-        return now()->addMinutes($this->decayMinutes)->timestamp;
+        $expiresAt = Cache::get($key . ':timer');
+
+        return $expiresAt
+            ? $expiresAt->timestamp
+            : now()->addMinutes($this->decayMinutes)->timestamp;
     }
 
     /**
@@ -188,6 +204,8 @@ class FortuneRateLimitMiddleware
     public static function clearRateLimit(string $identifier): void
     {
         Cache::forget('fortune_rate_limit:ip:' . $identifier);
+        Cache::forget('fortune_rate_limit:ip:' . $identifier . ':timer');
         Cache::forget('fortune_rate_limit:fb_user:' . $identifier);
+        Cache::forget('fortune_rate_limit:fb_user:' . $identifier . ':timer');
     }
 }

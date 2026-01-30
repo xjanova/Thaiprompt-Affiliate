@@ -236,18 +236,6 @@ class SystemResetController extends Controller
                             'software_quotation_selected_options']
             ],
 
-            // Membership
-            'membership' => [
-                'label' => '💳 การต่ออายุสมาชิก',
-                'description' => 'ลบประวัติการต่ออายุ, รายการ, สถานะ',
-                'count' => $this->getTableCount(['membership_retention_history', 'membership_retention_transactions']),
-                'icon' => 'id-card',
-                'danger_level' => 'medium',
-                'tables' => ['membership_retention_advance_renewals', 'membership_retention_history',
-                            'membership_retention_repairs', 'membership_retention_status',
-                            'membership_retention_transactions']
-            ],
-
             // Academy
             'academy' => [
                 'label' => '🎓 ใบประกาศนียบัตร',
@@ -515,9 +503,6 @@ class SystemResetController extends Controller
                             'vendor_subscriptions', 'vendor_marketing_campaigns'],
             'quotations' => ['software_quotations', 'software_quotation_items',
                             'software_quotation_selected_options'],
-            'membership' => ['membership_retention_advance_renewals', 'membership_retention_history',
-                            'membership_retention_repairs', 'membership_retention_status',
-                            'membership_retention_transactions'],
             'academy' => ['certificates', 'article_prerequisites'],
             'api_keys' => ['api_keys'], // User-specific API keys
         ];

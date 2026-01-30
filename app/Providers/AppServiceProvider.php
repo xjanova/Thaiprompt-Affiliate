@@ -17,9 +17,6 @@ class AppServiceProvider extends ServiceProvider
         // Register WalletService as singleton
         $this->app->singleton(\App\Services\WalletService::class);
 
-        // Register MembershipRetentionService as singleton
-        $this->app->singleton(\App\Services\MembershipRetentionService::class);
-
         // Register InvestmentService as singleton
         $this->app->singleton(\App\Services\InvestmentService::class);
 

@@ -388,6 +388,11 @@ class CheckoutController extends Controller
      * @param \Illuminate\Support\Collection $cartItems
      * @return array
      */
+    /**
+     * แก้ Bug PV-3: ใช้สูตรเดียวกับ OrderDistributionService.calculateTotalPvFromOrder()
+     * pv_value เป็น percentage (เช่น 10 = 10% ของราคาสินค้า)
+     * ไม่ fallback ใช้ price เพราะสินค้าที่ไม่มี PV = ไม่มี commission
+     */
     private function calculatePvPreview($cartItems): array
     {
         $totalPv = 0;
@@ -397,25 +402,29 @@ class CheckoutController extends Controller
             $product = $item->product;
             $quantity = $item->quantity;
 
-            // ดึง PV จาก product (ใช้ method จาก CalculatesEarnings trait)
-            $pvValue = $product->pv_value && $product->pv_value > 0
-                ? (float) $product->pv_value
-                : (float) $product->price; // ถ้าไม่มี PV ให้ใช้ราคาเป็น PV
+            // ดึง PV percentage จาก product (เช่น 10 หมายถึง 10%)
+            $pvPercentage = (float) ($product->pv_value ?? 0);
 
-            $itemPv = $pvValue * $quantity;
-            $totalPv += $itemPv;
+            if ($pvPercentage > 0) {
+                // คำนวณ PV = (ราคาสินค้า × จำนวน / 100) × PV%
+                // ตรงกับสูตร OrderDistributionService: ($item->total / 100) * $pvPercentage
+                $itemTotal = $product->price * $quantity;
+                $itemPv = ($itemTotal / 100) * $pvPercentage;
+                $totalPv += $itemPv;
 
-            $breakdown[] = [
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'pv_value' => $pvValue,
-                'quantity' => $quantity,
-                'total_pv' => $itemPv,
-            ];
+                $breakdown[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'pv_percentage' => $pvPercentage,
+                    'item_total' => $itemTotal,
+                    'quantity' => $quantity,
+                    'total_pv' => round($itemPv, 2),
+                ];
+            }
         }
 
         return [
-            'total_pv' => $totalPv,
+            'total_pv' => round($totalPv, 2),
             'breakdown' => $breakdown,
         ];
     }

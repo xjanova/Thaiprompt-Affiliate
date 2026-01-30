@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
 use App\Models\MarketplaceCommission;
 use App\Models\MlmCommission;
 use App\Services\ImageUploadService;
-use App\Services\MembershipRetentionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -277,20 +277,12 @@ class DashboardController extends Controller
         $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
 
         // ===============================================
-        // 12. ข้อมูลระบบรักษายอด (Retention Status)
+        // 12. สถานะรักษายอด (Volume Retention)
         // ===============================================
 
-        $retentionStatus = null;
-        $retentionStatistics = null;
-
-        try {
-            $retentionService = app(MembershipRetentionService::class);
-            $retentionStatus = $retentionService->getOrCreateStatus($user);
-            $retentionStatistics = $retentionService->getUserStatistics($user);
-        } catch (\Exception $e) {
-            // ถ้าเกิด error ก็ปล่อยเป็น null
-            \Log::warning('Failed to load retention data for user dashboard: ' . $e->getMessage());
-        }
+        $retentionStatus = $mlmMember
+            ? MlmRetentionHelper::getRetentionStatus($mlmMember)
+            : null;
 
         // ===============================================
         // Return View พร้อมข้อมูลทั้งหมด
@@ -335,9 +327,8 @@ class DashboardController extends Controller
             'kycStatus',
             'showKycAlert',
 
-            // Retention (ระบบรักษายอด)
-            'retentionStatus',
-            'retentionStatistics'
+            // Retention
+            'retentionStatus'
         ));
     }
 

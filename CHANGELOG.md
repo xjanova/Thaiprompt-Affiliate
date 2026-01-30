@@ -2,6 +2,108 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.443.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2442 from xjanova/claude/fix-mlm-commission-PIupk (d48eb74a)
+- fix: genealogy retention status display and Tailwind purge bug (df0e89cb)
+### 🔧 Other Changes
+
+
+## [v3.443.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2441 from xjanova/claude/test-smschecker-payment-CJNdO (94ceee5b)
+- feat: add missing Android app API endpoints, QR provisioning, and order management (c85bdecc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.442.3] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct 2-digit Thai year parsing and clear rate limit timer keys (57973b48)
+- fix: resolve 8 bugs in Messenger fortune-telling system and add birth date parsing (c40b84fa)
+### 🔧 Other Changes
+- Merge pull request #2440 from xjanova/claude/fix-messenger-fortune-bot-u8z3t (2c2da3f7)
+
+## [v3.442.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2439 from xjanova/claude/fix-mlm-commission-PIupk (f3b2aa97)
+- fix: genealogy retention status display and Tailwind purge bug (9a91b4fd)
+### 🔧 Other Changes
+
+
+## [v3.442.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2438 from xjanova/claude/fix-mlm-commission-PIupk (66893aca)
+- fix: pool bonus retention check, rounding precision, and RankBonus stubs (007f3fd0)
+### 🔧 Other Changes
+
+
+## [v3.442.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2437 from xjanova/claude/fix-mlm-commission-PIupk (04f4c088)
+- feat: add volume retention status widget to main user dashboard (cc904437)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.441.0] - 2026-01-30
+
+### ✨ Features
+- feat: add volume retention UI to admin settings, member detail, and user dashboard (144cf6fa)
+### 🐛 Bug Fixes
+- fix: unify volume retention check across all MLM commission services (5c853c1f)
+- fix: rollup system skips inactive members regardless of rollup setting (1d9f31d7)
+- fix: apply admin-configurable commission_per_pv rate to all commission calculations (fe08ba0a)
+- fix: commission payout now deducts from MLM Pool wallet + atomic balance (cd9556e2)
+### 🔧 Other Changes
+- Merge pull request #2436 from xjanova/claude/fix-mlm-commission-PIupk (6d5103cd)
+- refactor: remove unused MembershipRetention system entirely (9eec4cb9)
+
+## [v3.440.1] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2435 from xjanova/claude/fix-mlm-commission-PIupk (61f3ab43)
+- fix: resolve PV calculation inconsistencies and duplicate commission processing (a7785bd3)
+### 🔧 Other Changes
+
+
+## [v3.440.0] - 2026-01-30
+
+### ✨ Features
+- feat: add SMS Checker admin UI, FK constraints, and model relationships (79984f75)
+### 🐛 Bug Fixes
+- fix: improve SMS Payment Checker - fix floor() bug, add artisan commands, config usage, rate limiting, tests (bdac116e)
+### 🔧 Other Changes
+- Merge pull request #2433 from xjanova/claude/test-smschecker-payment-CJNdO (cf043965)
+
+## [v3.439.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2434 from xjanova/claude/fix-mlm-commission-PIupk (615f51d8)
+- fix: comprehensive MLM commission system bug fixes (33 bugs) (e61dbfa4)
+### 🔧 Other Changes
+
+
 ## [v3.439.1] - 2026-01-29
 
 ### ✨ Features
