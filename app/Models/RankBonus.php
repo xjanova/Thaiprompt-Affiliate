@@ -169,21 +169,37 @@ class RankBonus extends Model
 
     /**
      * Apply commission bonus
+     *
+     * ถ้ามี amount > 0: จ่ายเงินเข้ากระเป๋าเป็นโบนัสคอมมิชชัน (เหมือน one_time)
+     * ถ้ามีเฉพาะ percentage: เป็น passive bonus ที่ใช้ผ่าน Rank.bonus_multiplier
      */
     private function applyCommissionBonus(User $user): bool
     {
-        // This would be applied automatically when calculating commissions
-        // Just return true to indicate it's set up
+        // ถ้ามี amount ให้จ่ายเป็นเงินโบนัสเข้ากระเป๋า
+        if ($this->amount > 0) {
+            return $this->applyOneTimeBonus($user);
+        }
+
+        // percentage-only: เป็น passive bonus (ใช้ผ่าน Rank.bonus_multiplier ในการคำนวณ commission)
         return true;
     }
 
     /**
      * Apply multiplier bonus
+     *
+     * Multiplier bonus เป็น passive bonus ที่ทำงานผ่าน Rank.bonus_multiplier
+     * ซึ่งจะถูกใช้อัตโนมัติใน MlmUnilevelService และ InvestmentService
+     *
+     * ถ้ามี amount > 0: จ่ายเงินเข้ากระเป๋าเพิ่มเติมด้วย
      */
     private function applyMultiplierBonus(User $user): bool
     {
-        // This would be applied automatically when calculating earnings
-        // Just return true to indicate it's set up
+        // ถ้ามี amount ให้จ่ายเป็นเงินโบนัสเข้ากระเป๋าด้วย
+        if ($this->amount > 0) {
+            return $this->applyOneTimeBonus($user);
+        }
+
+        // passive: bonus_multiplier จะถูกใช้ใน commission calculations อัตโนมัติ
         return true;
     }
 }
