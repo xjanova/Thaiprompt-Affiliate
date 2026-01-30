@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.442.3] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct 2-digit Thai year parsing and clear rate limit timer keys (57973b48)
+- fix: resolve 8 bugs in Messenger fortune-telling system and add birth date parsing (c40b84fa)
+### 🔧 Other Changes
+- Merge pull request #2440 from xjanova/claude/fix-messenger-fortune-bot-u8z3t (2c2da3f7)
+
 ## [v3.442.2] - 2026-01-30
 
 ### ✨ Features
