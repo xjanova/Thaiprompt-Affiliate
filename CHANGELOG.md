@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.445.0] - 2026-01-30
+
+### ✨ Features
+- Merge pull request #2445 from xjanova/claude/test-smschecker-payment-CJNdO (af5152bb)
+- feat: integrate bank accounts & SMS Checker into payment-gateways page (01fcfc31)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.444.0] - 2026-01-30
 
 ### ✨ Features
