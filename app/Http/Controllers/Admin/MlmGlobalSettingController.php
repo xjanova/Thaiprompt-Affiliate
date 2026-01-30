@@ -232,8 +232,9 @@ class MlmGlobalSettingController extends Controller
      */
     public function updatePlacement(Request $request)
     {
+        // แก้ Bug #6-7: ใช้ค่าที่ตรงกับ MlmBinaryService match statement
         $validated = $request->validate([
-            'auto_placement_type' => 'required|in:left_to_right,balanced,weak_leg,fill_by_level',
+            'auto_placement_type' => 'required|in:left_first,right_first,balanced,weak_leg,strong_leg,fill_level,fill_by_level,manual',
             'auto_placement' => 'required|boolean',
             'binary_enabled' => 'required|boolean',
             'unilevel_enabled' => 'required|boolean',
@@ -248,8 +249,9 @@ class MlmGlobalSettingController extends Controller
         ]);
 
         // อัพเดทการตั้งค่า 3 ระบบหลัก
-        MlmGlobalSetting::set('auto_placement_type', $validated['auto_placement_type']);
-        MlmGlobalSetting::set('auto_placement', $validated['auto_placement']);
+        // แก้ Bug #6-7: ใช้ key ที่ตรงกับ MlmBinaryService ที่อ่านค่า auto_placement_strategy และ auto_placement_enabled
+        MlmGlobalSetting::set('auto_placement_strategy', $validated['auto_placement_type']);
+        MlmGlobalSetting::set('auto_placement_enabled', $validated['auto_placement']);
         MlmGlobalSetting::set('binary_enabled', $validated['binary_enabled']);
         MlmGlobalSetting::set('unilevel_enabled', $validated['unilevel_enabled']);
 

@@ -29,9 +29,11 @@ class MlmGenealogyService
             $plan = $sponsor->plan;
 
             // Create member
+            // แก้ Bug #8: เพิ่ม original_sponsor_id เพื่อติดตามผู้แนะนำเดิม
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $planId,
+                'original_sponsor_id' => $unilevelSponsorId,
                 'unilevel_sponsor_id' => $unilevelSponsorId,
                 'unilevel_level' => $sponsor->unilevel_level + 1,
                 'unilevel_path' => $sponsor->unilevel_path . '/' . $sponsor->id,
@@ -359,7 +361,8 @@ class MlmGenealogyService
             'total_team_members' => $member->total_team_members ?? 0,
             'retention_status' => $member->retention_status ?? 'active',
             'status' => $member->retention_status ?? 'active',
-            'rank_name' => $member->rank->name ?? null,
+            // แก้ Bug #9: MlmMember ไม่มี rank relationship → ใช้ user->currentRank
+            'rank_name' => $member->user->currentRank->name ?? null,
             'left_pv' => $member->left_leg_pv ?? 0,
             'right_pv' => $member->right_leg_pv ?? 0,
             'is_target' => $isTarget, // สมาชิกที่ต้องการดูสายเลือด

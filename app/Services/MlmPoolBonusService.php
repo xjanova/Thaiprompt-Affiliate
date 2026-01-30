@@ -160,8 +160,9 @@ class MlmPoolBonusService
             }
 
             // ตรวจสอบ rank
+            // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
             if ($minRankLevel > 0) {
-                $userRank = $member->user->rank ?? null;
+                $userRank = $member->user->currentRank ?? null;
                 if (!$userRank || $userRank->level < $minRankLevel) {
                     return false;
                 }
@@ -198,9 +199,12 @@ class MlmPoolBonusService
      */
     protected function getMemberTeamPv(MlmMember $member, MlmPoolBonusPeriod $period): float
     {
-        // ดึง downline ทั้งหมด
-        $downlineIds = MlmMember::where('unilevel_path', 'like', '%/' . $member->id . '/%')
-            ->orWhere('unilevel_sponsor_id', $member->id)
+        // ดึง downline ทั้งหมด (รองรับทั้ง path ที่ขึ้นต้นด้วย member id และที่อยู่กลางทาง)
+        $downlineIds = MlmMember::where(function ($q) use ($member) {
+                $q->where('unilevel_path', 'like', $member->id . '/%')
+                  ->orWhere('unilevel_path', 'like', '%/' . $member->id . '/%')
+                  ->orWhere('unilevel_sponsor_id', $member->id);
+            })
             ->pluck('id')
             ->toArray();
 
@@ -236,7 +240,8 @@ class MlmPoolBonusService
             case 'rank_based':
                 // ตาม rank (ใช้ pool_bonus_shares จาก setting หรือ rank level)
                 $rankShares = $this->getRankSharesConfig();
-                $userRank = $member->user->rank ?? null;
+                // แก้ Bug #9: ใช้ currentRank แทน rank
+                $userRank = $member->user->currentRank ?? null;
 
                 if ($userRank && isset($rankShares[$userRank->id])) {
                     return (int) $rankShares[$userRank->id];

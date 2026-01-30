@@ -178,16 +178,17 @@ class MlmUnilevelService
             if ($percentage > 0) {
                 $commissionAmount = ($pvData['total_pv'] * $percentage) / 100;
 
-                // Check rank multiplier if user has rank
+                // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
                 if ($sponsor->user->current_rank_id) {
-                    $rank = $sponsor->user->rank;
+                    $rank = $sponsor->user->currentRank;
                     if ($rank && $rank->bonus_multiplier) {
                         $commissionAmount *= $rank->bonus_multiplier;
                     }
                 }
 
                 // Apply max per level constraint
-                if ($maxPerLevel && $commissionAmount > $maxPerLevel) {
+                // แก้ Bug #24: ใช้ !== null เพื่อให้ค่า 0 ทำงานถูกต้อง
+                if ($maxPerLevel !== null && $commissionAmount > $maxPerLevel) {
                     $commissionAmount = $maxPerLevel;
                 }
 
@@ -347,9 +348,14 @@ class MlmUnilevelService
         $stats = [];
 
         for ($level = 1; $level <= $maxDepth; $level++) {
+            // แก้ Bug #31: path query ต้องรองรับ member ID ที่อาจอยู่ตำแหน่งใดก็ได้ในเส้นทาง
+            // ป้องกัน substring match เช่น id=1 match กับ id=10
             $members = MlmMember::where('mlm_plan_id', $plan->id)
                 ->where('unilevel_level', $level)
-                ->where('unilevel_path', 'like', $member->id . '/%')
+                ->where(function ($q) use ($member) {
+                    $q->where('unilevel_path', 'like', $member->id . '/%')
+                      ->orWhere('unilevel_path', 'like', '%/' . $member->id . '/%');
+                })
                 ->get();
 
             $stats[$level] = [
@@ -377,9 +383,9 @@ class MlmUnilevelService
         $percentage = $levels[0]['percentage'] ?? 0;
         $commission = ($pvAmount * $percentage) / 100;
 
-        // Apply rank multiplier if user has rank
+        // แก้ Bug #9: ใช้ currentRank แทน rank
         if ($member->user->current_rank_id) {
-            $rank = $member->user->rank;
+            $rank = $member->user->currentRank;
             if ($rank && $rank->bonus_multiplier) {
                 $commission *= $rank->bonus_multiplier;
             }
