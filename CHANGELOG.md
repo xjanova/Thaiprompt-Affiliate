@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.444.0] - 2026-01-30
+
+### ✨ Features
+- feat: add multi-bank payment accounts with PromptPay + SMS Checker integration (6062b3de)
+- feat: add fortune-telling SMS payment with floating bills and customer explanation (4a6c7db8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2444 from xjanova/claude/test-smschecker-payment-CJNdO (02d75ca8)
+
 ## [v3.443.2] - 2026-01-30
 
 ### ✨ Features
