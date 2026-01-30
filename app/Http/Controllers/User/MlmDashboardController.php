@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\MlmRetentionHelper;
 use App\Services\MlmCalculationService;
 use App\Services\MlmGenealogyService;
 use App\Services\MlmPvService;
@@ -39,7 +40,10 @@ class MlmDashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return view('user.mlm.dashboard', compact('member', 'recentCommissions'));
+        // ดึงสถานะรักษายอด (Volume Retention)
+        $retentionStatus = MlmRetentionHelper::getRetentionStatus($member);
+
+        return view('user.mlm.dashboard', compact('member', 'recentCommissions', 'retentionStatus'));
     }
 
     public function plan($memberCode)
