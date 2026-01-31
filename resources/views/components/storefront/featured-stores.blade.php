@@ -117,7 +117,7 @@
                 </div>
 
                 {{-- CTA --}}
-                <a href="{{ route('storefront.index', ['filter' => 'official']) }}"
+                <a href="{{ route('official-shop.index') }}"
                    class="block w-full py-3 text-center
                          bg-gradient-to-r from-orange-500 to-red-500
                          hover:from-orange-600 hover:to-red-600
@@ -139,7 +139,7 @@
 
     {{-- Mobile View All Button --}}
     <div class="mt-6 md:hidden text-center">
-        <a href="{{ route('storefront.index') }}"
+        <a href="{{ route('storefront.stores') }}"
            class="inline-flex items-center gap-2 px-8 py-3
                  bg-gradient-to-r from-orange-500 to-red-500
                  text-white font-bold rounded-xl shadow-lg">

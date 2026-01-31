@@ -94,7 +94,7 @@
 
                 {{-- Wishlist Button --}}
                 <button type="button"
-                        onclick="event.preventDefault(); toggleWishlistAli({{ $product->id }}, this)"
+                        onclick="event.preventDefault(); event.stopPropagation(); toggleWishlistAli({{ $product->id }}, this)"
                         class="absolute top-2 right-2 z-10
                               w-8 h-8 rounded-full
                               bg-white/80 hover:bg-white

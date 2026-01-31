@@ -95,7 +95,7 @@
                                border border-gray-100 dark:border-gray-700
                                overflow-hidden z-50">
                         <template x-for="suggestion in suggestions" :key="suggestion.id">
-                            <a :href="`{{ route('shop.show', '') }}/${suggestion.slug}`"
+                            <a :href="`{{ url('shop') }}/${suggestion.slug}`"
                                class="flex items-center gap-3 px-4 py-3
                                      hover:bg-gray-50 dark:hover:bg-gray-700
                                      transition-colors">

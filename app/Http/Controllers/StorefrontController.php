@@ -115,7 +115,7 @@ class StorefrontController extends Controller
                     'highlight' => 'สูงสุด 70%',
                     'highlight_label' => 'ส่วนลด',
                     'cta_text' => 'ช้อปเลย',
-                    'cta_url' => route('shop.index'),
+                    'cta_url' => route('storefront.index'),
                 ],
                 [
                     'image' => null,
@@ -126,7 +126,7 @@ class StorefrontController extends Controller
                     'highlight' => '500+',
                     'highlight_label' => 'รายการใหม่',
                     'cta_text' => 'ดูสินค้าใหม่',
-                    'cta_url' => route('shop.index', ['sort_by' => 'newest']),
+                    'cta_url' => route('storefront.index', ['sort_by' => 'newest']),
                 ],
                 [
                     'image' => null,
