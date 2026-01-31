@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.451.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2458 from xjanova/claude/fix-2fa-route-XilWf (3a4fe60d)
+- fix: use correct route names for 2FA and sessions in user settings (746e3aa3)
+### 🔧 Other Changes
+
+
 ## [v3.451.0] - 2026-01-31
 
 ### ✨ Features
