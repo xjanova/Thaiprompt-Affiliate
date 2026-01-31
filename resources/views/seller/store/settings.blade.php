@@ -205,56 +205,21 @@
                     @enderror
                 </div>
 
-                {{-- City --}}
-                <div>
-                    <label for="store_city" class="block text-sm font-semibold text-gray-700 mb-2">
-                        เมือง/จังหวัด
-                    </label>
-                    <input type="text" name="store_city" id="store_city"
-                           value="{{ old('store_city', $store->store_city) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_city') border-red-500 @enderror">
-                    @error('store_city')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- State --}}
-                <div>
-                    <label for="store_state" class="block text-sm font-semibold text-gray-700 mb-2">
-                        รัฐ/ภูมิภาค
-                    </label>
-                    <input type="text" name="store_state" id="store_state"
-                           value="{{ old('store_state', $store->store_state) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_state') border-red-500 @enderror">
-                    @error('store_state')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Postal Code --}}
-                <div>
-                    <label for="store_postal_code" class="block text-sm font-semibold text-gray-700 mb-2">
-                        รหัสไปรษณีย์
-                    </label>
-                    <input type="text" name="store_postal_code" id="store_postal_code"
-                           value="{{ old('store_postal_code', $store->store_postal_code) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_postal_code') border-red-500 @enderror">
-                    @error('store_postal_code')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Country --}}
-                <div>
-                    <label for="store_country" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ประเทศ
-                    </label>
-                    <input type="text" name="store_country" id="store_country"
-                           value="{{ old('store_country', $store->store_country ?? 'ประเทศไทย') }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_country') border-red-500 @enderror">
-                    @error('store_country')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                {{-- ระบบเลือกที่อยู่อัจฉริยะ พร้อมเลือกประเทศ (ถ้าไม่ใช่ไทย → กรอกมือ) --}}
+                <div class="md:col-span-2">
+                    <x-thai-address-picker
+                        province-field="store_state"
+                        district-field="store_city"
+                        sub-district-field=""
+                        postal-code-field="store_postal_code"
+                        country-field="store_country"
+                        :province-value="old('store_state', $store->store_state ?? '')"
+                        :district-value="old('store_city', $store->store_city ?? '')"
+                        :sub-district-value="''"
+                        :postal-code-value="old('store_postal_code', $store->store_postal_code ?? '')"
+                        :country-value="old('store_country', $store->store_country ?? 'TH')"
+                        :show-sub-district="false"
+                    />
                 </div>
             </div>
         </div>
