@@ -806,9 +806,10 @@ class CentralAiController extends Controller
      */
     protected function detectSystemResources(): array
     {
-        // ตรวจสอบว่า exec() สามารถใช้งานได้หรือไม่
+        // ตรวจสอบว่า exec() / shell_exec() สามารถใช้งานได้หรือไม่
         $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions') ?: ''));
         $canExec = function_exists('exec') && !in_array('exec', $disabledFunctions);
+        $canShellExec = function_exists('shell_exec') && !in_array('shell_exec', $disabledFunctions);
 
         $resources = [
             'cpu_cores' => null,
@@ -821,31 +822,37 @@ class CentralAiController extends Controller
 
         try {
             // ตรวจจับ CPU cores
-            if (function_exists('shell_exec')) {
+            if ($canShellExec) {
                 if (stripos(PHP_OS, 'WIN') === 0) {
-                    // Windows
-                    $cpuInfo = shell_exec('wmic cpu get NumberOfCores');
-                    preg_match('/\d+/', $cpuInfo, $matches);
+                    $cpuInfo = @shell_exec('wmic cpu get NumberOfCores');
+                    preg_match('/\d+/', $cpuInfo ?? '', $matches);
                     $resources['cpu_cores'] = isset($matches[0]) ? (int) $matches[0] : null;
                 } else {
-                    // Linux/Mac
-                    $cpuInfo = shell_exec('nproc');
+                    $cpuInfo = @shell_exec('nproc');
                     $resources['cpu_cores'] = $cpuInfo ? (int) trim($cpuInfo) : null;
                 }
             }
 
+            // Fallback: อ่าน /proc/cpuinfo โดยตรง (ไม่ต้องใช้ shell_exec)
+            if ($resources['cpu_cores'] === null && PHP_OS_FAMILY === 'Linux') {
+                if (is_readable('/proc/cpuinfo')) {
+                    $cpuContent = @file_get_contents('/proc/cpuinfo');
+                    if ($cpuContent !== false) {
+                        $resources['cpu_cores'] = substr_count($cpuContent, 'processor');
+                    }
+                }
+            }
+
             // ตรวจจับ RAM
-            if (function_exists('shell_exec')) {
+            if ($canShellExec) {
                 if (stripos(PHP_OS, 'WIN') === 0) {
-                    // Windows
-                    $ramInfo = shell_exec('wmic OS get TotalVisibleMemorySize /Value');
-                    preg_match('/TotalVisibleMemorySize=(\d+)/', $ramInfo, $matches);
+                    $ramInfo = @shell_exec('wmic OS get TotalVisibleMemorySize /Value');
+                    preg_match('/TotalVisibleMemorySize=(\d+)/', $ramInfo ?? '', $matches);
                     if (isset($matches[1])) {
                         $resources['ram_gb'] = round((int) $matches[1] / 1024 / 1024, 2);
                     }
                 } else {
-                    // Linux/Mac
-                    $ramInfo = shell_exec('free -b | grep Mem');
+                    $ramInfo = @shell_exec('free -b | grep Mem');
                     if ($ramInfo) {
                         $parts = preg_split('/\s+/', trim($ramInfo));
                         if (isset($parts[1])) {
@@ -855,9 +862,19 @@ class CentralAiController extends Controller
                 }
             }
 
-            // ตรวจจับพื้นที่ disk
-            $diskTotal = disk_total_space('/');
-            $diskFree = disk_free_space('/');
+            // Fallback: อ่าน /proc/meminfo โดยตรง (ไม่ต้องใช้ shell_exec)
+            if ($resources['ram_gb'] === null && PHP_OS_FAMILY === 'Linux') {
+                if (is_readable('/proc/meminfo')) {
+                    $memContent = @file_get_contents('/proc/meminfo');
+                    if ($memContent !== false && preg_match('/MemTotal:\s+(\d+)\s+kB/', $memContent, $matches)) {
+                        $resources['ram_gb'] = round((int) $matches[1] / 1024 / 1024, 2);
+                    }
+                }
+            }
+
+            // ตรวจจับพื้นที่ disk (ใช้ PHP built-in ไม่ต้องใช้ exec)
+            $diskTotal = @disk_total_space('/');
+            $diskFree = @disk_free_space('/');
 
             if ($diskTotal !== false) {
                 $resources['disk_gb'] = round($diskTotal / 1024 / 1024 / 1024, 2);
@@ -885,11 +902,25 @@ class CentralAiController extends Controller
      */
     protected function getRecommendedModels(array $resources): array
     {
-        $ramGb = $resources['ram_gb'] ?? 0;
+        $ramGb = $resources['ram_gb'];
         $models = [];
 
         // ดึงรายการโมเดลจาก config
         $configModels = config('central-ai.recommended_models', []);
+
+        // ถ้าตรวจจับ RAM ไม่ได้ ให้แสดงทุกโมเดลเพื่อให้ผู้ใช้เลือกเอง
+        if ($ramGb === null) {
+            foreach ($configModels as $index => $model) {
+                $models[] = [
+                    'name' => $model['name'],
+                    'size' => $model['size'],
+                    'description' => $model['description'] . ' (ไม่สามารถตรวจจับ RAM ได้ กรุณาเลือกเอง)',
+                    'recommended' => $index === 2, // แนะนำโมเดลขนาดกลาง (llama3:8b) เป็นค่าเริ่มต้น
+                ];
+            }
+
+            return $models;
+        }
 
         foreach ($configModels as $model) {
             $minRam = $model['min_ram'] ?? 0;

@@ -78,12 +78,13 @@
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">CPU Cores</p>
-                                    <p class="text-lg font-bold text-gray-900 dark:text-white" x-text="systemResources.cpu_cores || 'กำลังตรวจสอบ...'"></p>
+                                    <p class="text-lg font-bold text-gray-900 dark:text-white" x-text="systemResources.cpu_cores ? systemResources.cpu_cores + ' Cores' : 'ตรวจจับไม่ได้'"></p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                    พร้อมใช้งาน
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full"
+                                      :class="systemResources.cpu_cores ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'"
+                                      x-text="systemResources.cpu_cores ? 'พร้อมใช้งาน' : 'ไม่ทราบ'">
                                 </span>
                             </div>
                         </div>
@@ -98,14 +99,14 @@
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">RAM</p>
                                     <p class="text-lg font-bold text-gray-900 dark:text-white">
-                                        <span x-text="systemResources.ram_gb ? systemResources.ram_gb + ' GB' : 'กำลังตรวจสอบ...'"></span>
+                                        <span x-text="systemResources.ram_gb ? systemResources.ram_gb + ' GB' : 'ตรวจจับไม่ได้'"></span>
                                     </p>
                                 </div>
                             </div>
                             <div class="text-right">
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full"
-                                      :class="systemResources.ram_gb >= 8 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'"
-                                      x-text="systemResources.ram_gb >= 8 ? 'เพียงพอ' : 'จำกัด'">
+                                      :class="systemResources.ram_gb === null ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' : (systemResources.ram_gb >= 8 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400')"
+                                      x-text="systemResources.ram_gb === null ? 'ไม่ทราบ' : (systemResources.ram_gb >= 8 ? 'เพียงพอ' : 'จำกัด')">
                                 </span>
                             </div>
                         </div>
@@ -120,14 +121,14 @@
                                 <div>
                                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Disk Space Available</p>
                                     <p class="text-lg font-bold text-gray-900 dark:text-white">
-                                        <span x-text="systemResources.disk_available_gb ? systemResources.disk_available_gb + ' GB' : 'กำลังตรวจสอบ...'"></span>
+                                        <span x-text="systemResources.disk_available_gb ? systemResources.disk_available_gb + ' GB' : 'ตรวจจับไม่ได้'"></span>
                                     </p>
                                 </div>
                             </div>
                             <div class="text-right">
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full"
-                                      :class="systemResources.disk_available_gb >= 20 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'"
-                                      x-text="systemResources.disk_available_gb >= 20 ? 'เพียงพอ' : 'ไม่เพียงพอ'">
+                                      :class="systemResources.disk_available_gb === null ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' : (systemResources.disk_available_gb >= 20 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400')"
+                                      x-text="systemResources.disk_available_gb === null ? 'ไม่ทราบ' : (systemResources.disk_available_gb >= 20 ? 'เพียงพอ' : 'ไม่เพียงพอ')">
                                 </span>
                             </div>
                         </div>
