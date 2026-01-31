@@ -228,15 +228,22 @@ class CentralAiSetting extends Model
                 'models' => [],
             ];
         } catch (\Exception $e) {
-            $this->update([
-                'ollama_status' => 'error',
-                'is_ollama_installed' => false,
-            ]);
+            // หมายเหตุ: ถ้า Ollama ติดตั้งแล้วแต่หยุดอยู่ (connection refused)
+            // ไม่ควรเซ็ต is_ollama_installed = false
+            // เพราะจะทำให้เมนู/wizard คิดว่ายังไม่ได้ติดตั้ง
+            $updateData = ['ollama_status' => 'stopped'];
+
+            // ถ้ายังไม่เคยมาร์คว่าติดตั้งแล้ว ให้ลองเช็คผ่าน binary
+            if (!$this->is_ollama_installed) {
+                $updateData['is_ollama_installed'] = false;
+            }
+
+            $this->update($updateData);
 
             return [
-                'status' => 'error',
+                'status' => 'stopped',
                 'version' => null,
-                'models' => [],
+                'models' => $this->installed_models ?? [],
                 'error' => $e->getMessage(),
             ];
         }

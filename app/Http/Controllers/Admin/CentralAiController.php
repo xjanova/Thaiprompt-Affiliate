@@ -246,11 +246,15 @@ class CentralAiController extends Controller
                 ], 500);
             }
 
+            // เริ่ม Ollama Service หลังติดตั้ง (จำเป็นสำหรับ download model ในขั้นตอนถัดไป)
+            $startResult = $this->localAiManager->start();
+            $ollamaStatus = ($startResult['success'] ?? false) ? 'running' : 'stopped';
+
             // อัพเดทสถานะใน settings
             $setting = CentralAiSetting::getActive();
             $setting->update([
                 'is_ollama_installed' => true,
-                'ollama_status' => 'stopped',
+                'ollama_status' => $ollamaStatus,
             ]);
 
             // เคลียร์ cache สถานะการติดตั้งเพื่ออัพเดทเมนู sidebar
@@ -292,6 +296,20 @@ class CentralAiController extends Controller
 
         try {
             $modelName = $request->input('model');
+
+            // ตรวจสอบว่า Ollama service ทำงานอยู่ ถ้าไม่ ให้เริ่มก่อน
+            if (!$this->localAiManager->isRunning()) {
+                $startResult = $this->localAiManager->start();
+                if (!($startResult['success'] ?? false)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ไม่สามารถเริ่ม Ollama Service ได้',
+                        'error' => 'กรุณาเริ่ม Ollama Service ก่อนดาวน์โหลดโมเดล',
+                    ], 500);
+                }
+                // รอให้ service พร้อม
+                sleep(2);
+            }
 
             // ดาวน์โหลดโมเดล
             $result = $this->llamaInstaller->downloadModel($modelName);

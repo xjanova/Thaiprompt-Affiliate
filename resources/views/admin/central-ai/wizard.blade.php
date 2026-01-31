@@ -187,6 +187,15 @@
                         Ollama เป็น LLM Engine ที่ทำงานบนเครื่องของคุณโดยไม่ต้องใช้ internet
                     </p>
 
+                    {{-- แสดง error ถ้ามี --}}
+                    <div x-show="installationError" x-cloak
+                         class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <p class="text-sm text-red-700 dark:text-red-300" x-text="installationError"></p>
+                        </div>
+                    </div>
+
                     <div class="text-center py-12">
                         <template x-if="!installationStarted">
                             <div>
@@ -246,6 +255,15 @@
                     <p class="text-gray-600 dark:text-gray-400 mb-6">
                         โมเดลที่เลือก: <span class="font-semibold text-blue-600 dark:text-blue-400" x-text="selectedModel || 'ยังไม่ได้เลือก'"></span>
                     </p>
+
+                    {{-- แสดง error ถ้ามี --}}
+                    <div x-show="downloadError" x-cloak
+                         class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <p class="text-sm text-red-700 dark:text-red-300" x-text="downloadError"></p>
+                        </div>
+                    </div>
 
                     <div class="text-center py-12">
                         <template x-if="!downloadStarted">
@@ -329,8 +347,10 @@
                                 class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all duration-200">
                             ข้ามขั้นตอนนี้
                         </button>
-                        <button class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200">
-                            ตั้งค่า PostXAgent
+                        <button @click="skipPostXAgent()"
+                                class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200"
+                                title="สามารถตั้งค่าได้ภายหลังจาก Dashboard">
+                            ข้ามและตั้งค่าภายหลัง
                         </button>
                     </div>
                 </div>
@@ -370,11 +390,17 @@
                             </div>
                         </div>
 
+                        {{-- แสดง error ถ้ามี --}}
+                        <div x-show="completionError" x-cloak
+                             class="max-w-md mx-auto mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+                            <p class="text-sm text-red-700 dark:text-red-300" x-text="completionError"></p>
+                        </div>
+
                         <button @click="completeSetup()"
                                 :disabled="completing"
                                 class="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white text-lg font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50">
-                            <span x-show="!completing">ไปที่ Dashboard</span>
-                            <span x-show="completing">กำลังโหลด...</span>
+                            <span x-show="!completing">ไปที่ Control Panel</span>
+                            <span x-show="completing">กำลังบันทึก...</span>
                         </button>
                     </div>
                 </div>
@@ -418,16 +444,23 @@ function wizardManager() {
         installationComplete: false,
         installationProgress: 0,
         installationMessage: 'กำลังเตรียมการติดตั้ง...',
+        installationError: null,
         downloadStarted: false,
         downloadComplete: false,
         downloadProgress: 0,
+        downloadError: null,
         completing: false,
+        completionError: null,
 
         init() {
-            // Auto-select recommended model
+            // เลือกโมเดลที่แนะนำอัตโนมัติ
             const recommended = this.recommendedModels.find(m => m.recommended);
             if (recommended && !this.selectedModel) {
                 this.selectedModel = recommended.name;
+            }
+            // ถ้ายังไม่มีโมเดลที่เลือก เลือกตัวแรก
+            if (!this.selectedModel && this.recommendedModels.length > 0) {
+                this.selectedModel = this.recommendedModels[0].name;
             }
         },
 
@@ -446,7 +479,7 @@ function wizardManager() {
         canProceed() {
             switch (this.currentStep) {
                 case 1:
-                    return this.selectedModel !== null;
+                    return !!this.selectedModel;
                 case 2:
                     return this.installationComplete;
                 case 3:
@@ -462,9 +495,10 @@ function wizardManager() {
             this.installationStarted = true;
             this.installationProgress = 0;
             this.installationMessage = 'กำลังดาวน์โหลด Ollama...';
+            this.installationError = null;
 
             try {
-                // Simulate installation progress
+                // แสดง progress ระหว่างรอ API
                 const progressInterval = setInterval(() => {
                     if (this.installationProgress < 90) {
                         this.installationProgress += 10;
@@ -472,7 +506,7 @@ function wizardManager() {
                         if (this.installationProgress === 30) {
                             this.installationMessage = 'กำลังติดตั้ง Ollama...';
                         } else if (this.installationProgress === 60) {
-                            this.installationMessage = 'กำลังตั้งค่า Ollama...';
+                            this.installationMessage = 'กำลังตั้งค่าและเริ่ม Ollama Service...';
                         }
                     }
                 }, 500);
@@ -486,8 +520,18 @@ function wizardManager() {
                 });
 
                 const data = await response.json();
-
                 clearInterval(progressInterval);
+
+                // ตรวจสอบว่า API สำเร็จหรือไม่
+                if (!response.ok || !data.success) {
+                    const errorMsg = data.error || data.message || 'ไม่ทราบสาเหตุ';
+                    this.installationProgress = 0;
+                    this.installationMessage = '';
+                    this.installationError = 'การติดตั้ง Ollama ล้มเหลว: ' + errorMsg;
+                    this.installationStarted = false;
+                    return;
+                }
+
                 this.installationProgress = 100;
                 this.installationMessage = 'ติดตั้งเสร็จสมบูรณ์';
 
@@ -497,25 +541,25 @@ function wizardManager() {
 
             } catch (error) {
                 console.error('Installation failed:', error);
-                alert('การติดตั้ง Ollama ล้มเหลว กรุณาลองใหม่อีกครั้ง');
+                this.installationProgress = 0;
+                this.installationMessage = '';
+                this.installationError = 'การติดตั้ง Ollama ล้มเหลว: ไม่สามารถเชื่อมต่อกับ server ได้';
                 this.installationStarted = false;
             }
         },
 
         async downloadModel() {
-            if (!this.selectedModel) {
-                alert('กรุณาเลือกโมเดลก่อน');
-                return;
-            }
+            if (!this.selectedModel) return;
 
             this.downloadStarted = true;
             this.downloadProgress = 0;
+            this.downloadError = null;
 
             try {
-                // Simulate download progress
+                // แสดง progress ระหว่างรอ (โมเดลอาจใช้เวลานาน)
                 const progressInterval = setInterval(() => {
                     if (this.downloadProgress < 90) {
-                        this.downloadProgress += 5;
+                        this.downloadProgress += 2;
                     }
                 }, 1000);
 
@@ -531,8 +575,17 @@ function wizardManager() {
                 });
 
                 const data = await response.json();
-
                 clearInterval(progressInterval);
+
+                // ตรวจสอบว่า API สำเร็จหรือไม่
+                if (!response.ok || !data.success) {
+                    const errorMsg = data.error || data.message || 'ไม่ทราบสาเหตุ';
+                    this.downloadProgress = 0;
+                    this.downloadError = 'การดาวน์โหลดล้มเหลว: ' + errorMsg;
+                    this.downloadStarted = false;
+                    return;
+                }
+
                 this.downloadProgress = 100;
 
                 setTimeout(() => {
@@ -541,7 +594,8 @@ function wizardManager() {
 
             } catch (error) {
                 console.error('Download failed:', error);
-                alert('การดาวน์โหลดโมเดลล้มเหลว กรุณาลองใหม่อีกครั้ง');
+                this.downloadProgress = 0;
+                this.downloadError = 'การดาวน์โหลดล้มเหลว: ไม่สามารถเชื่อมต่อกับ server ได้';
                 this.downloadStarted = false;
             }
         },
@@ -564,15 +618,15 @@ function wizardManager() {
 
                 const data = await response.json();
 
-                if (data.success) {
-                    window.location.href = '{{ route('admin.central-ai.dashboard') }}';
+                if (response.ok && data.success) {
+                    window.location.href = '{{ route('admin.central-ai.ollama.index') }}';
                 } else {
-                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                    this.completionError = 'เกิดข้อผิดพลาด: ' + (data.error || data.message || 'ไม่ทราบสาเหตุ');
                     this.completing = false;
                 }
             } catch (error) {
                 console.error('Complete setup failed:', error);
-                alert('ไม่สามารถบันทึกการตั้งค่าได้ กรุณาลองใหม่อีกครั้ง');
+                this.completionError = 'ไม่สามารถบันทึกการตั้งค่าได้ กรุณาลองใหม่อีกครั้ง';
                 this.completing = false;
             }
         },
