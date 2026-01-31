@@ -75,6 +75,9 @@ class LocalAiManager
     public function stop(): array
     {
         try {
+            // เคลียร์ cache ก่อนเช็คสถานะ เพื่อให้ได้สถานะจริงจาก HTTP
+            Cache::forget('ollama_status');
+
             if (!$this->isRunning()) {
                 return [
                     'success' => true,
@@ -451,13 +454,20 @@ class LocalAiManager
         if (!$this->canExecuteCommands()) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถรันคำสั่งได้ (exec ถูก disable) กรุณาหยุด Ollama ด้วยตนเอง',
+                'message' => 'ไม่สามารถรันคำสั่งหยุด Ollama ได้เนื่องจาก PHP exec() ถูก disable กรุณาหยุดผ่าน SSH',
+                'manual_required' => true,
+                'manual_commands' => [
+                    'sudo systemctl stop ollama',
+                    'sudo systemctl disable ollama',
+                ],
             ];
         }
 
         // วิธีที่ 1: systemctl
         $this->runCommand('systemctl stop ollama 2>&1');
         sleep(1);
+        // ⚠️ ต้องเคลียร์ cache ก่อนเช็ค isRunning() ไม่งั้นจะได้ค่าเก่า
+        Cache::forget('ollama_status');
         if (!$this->isRunning()) {
             return ['success' => true, 'method' => 'systemctl'];
         }
@@ -465,6 +475,7 @@ class LocalAiManager
         // วิธีที่ 2: service command
         $this->runCommand('service ollama stop 2>&1');
         sleep(1);
+        Cache::forget('ollama_status');
         if (!$this->isRunning()) {
             return ['success' => true, 'method' => 'service'];
         }
@@ -475,15 +486,26 @@ class LocalAiManager
             foreach ($processInfo['processes'] as $process) {
                 $this->runCommand("kill {$process['pid']} 2>/dev/null");
             }
-            sleep(1);
+            sleep(2);
+            Cache::forget('ollama_status');
             if (!$this->isRunning()) {
                 return ['success' => true, 'method' => 'kill'];
+            }
+
+            // วิธีที่ 4: force kill ถ้า kill ปกติไม่ได้ผล
+            foreach ($processInfo['processes'] as $process) {
+                $this->runCommand("kill -9 {$process['pid']} 2>/dev/null");
+            }
+            sleep(1);
+            Cache::forget('ollama_status');
+            if (!$this->isRunning()) {
+                return ['success' => true, 'method' => 'kill-force'];
             }
         }
 
         return [
             'success' => false,
-            'message' => 'ไม่สามารถหยุด Ollama ได้',
+            'message' => 'ไม่สามารถหยุด Ollama ได้ กรุณาหยุดผ่าน SSH ด้วยคำสั่ง: sudo systemctl stop ollama',
         ];
     }
 

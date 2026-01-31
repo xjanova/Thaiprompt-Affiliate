@@ -45,6 +45,7 @@ use Illuminate\Support\Facades\Http;
  * @property int $response_max_tokens จำนวน tokens สูงสุด
  * @property float $default_temperature Temperature เริ่มต้น
  * @property string|null $fallback_message ข้อความสำรอง
+ * @property string|null $system_prompt System prompt สำหรับกำหนดขอบเขตการตอบของ AI
  * @property int $total_requests จำนวนคำขอทั้งหมด
  * @property int $successful_requests จำนวนคำขอที่สำเร็จ
  * @property int $failed_requests จำนวนคำขอที่ล้มเหลว
@@ -105,6 +106,7 @@ class CentralAiSetting extends Model
         'response_max_tokens',
         'default_temperature',
         'fallback_message',
+        'system_prompt',
         'total_requests',
         'successful_requests',
         'failed_requests',

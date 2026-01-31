@@ -441,8 +441,11 @@ function dashboardManager() {
                 if (data.success) {
                     this.ollamaStatus = 'stopped';
                     alert('หยุด Ollama สำเร็จ');
+                } else if (data.manual_required) {
+                    const commands = (data.manual_commands || []).join('\n');
+                    alert('ไม่สามารถหยุดอัตโนมัติได้ (exec ถูก disable)\n\nกรุณารันคำสั่งนี้ผ่าน SSH:\n\n' + commands);
                 } else {
-                    alert('ไม่สามารถหยุด Ollama ได้: ' + data.message);
+                    alert('ไม่สามารถหยุด Ollama ได้: ' + (data.message || 'ไม่ทราบสาเหตุ'));
                 }
             } catch (error) {
                 console.error('Stop Ollama failed:', error);
