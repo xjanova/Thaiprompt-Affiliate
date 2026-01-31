@@ -7,7 +7,9 @@ use App\Models\CentralAiSetting;
 use App\Services\AI\LocalAiManager;
 use App\Services\AI\LlamaInstallationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -69,11 +71,19 @@ class CentralAiController extends Controller
     /**
      * แสดงหน้า Setup Wizard
      *
-     * @return View
+     * ถ้า Ollama ติดตั้งแล้วจะ redirect ไปหน้า Control Panel
+     *
+     * @return View|RedirectResponse
      */
-    public function wizard(): View
+    public function wizard(): View|RedirectResponse
     {
         $setting = CentralAiSetting::getActive();
+
+        // ถ้าติดตั้งเสร็จแล้ว redirect ไปหน้า Control Panel
+        if ($setting->is_ollama_installed || $setting->setup_completed) {
+            return redirect()->route('admin.central-ai.ollama.index')
+                ->with('info', 'Ollama ติดตั้งเสร็จแล้ว สามารถใช้งาน Control Panel ได้เลย');
+        }
 
         // ตรวจสอบ system resources
         $systemResources = $this->detectSystemResources();
@@ -180,7 +190,14 @@ class CentralAiController extends Controller
     {
         try {
             $setting = CentralAiSetting::getActive();
+            $previousInstalled = $setting->is_ollama_installed;
             $status = $setting->checkOllamaStatus();
+
+            // เคลียร์ cache ถ้าสถานะการติดตั้งเปลี่ยนแปลง
+            $setting->refresh();
+            if ($previousInstalled !== $setting->is_ollama_installed) {
+                Cache::forget('ollama_is_installed');
+            }
 
             return response()->json([
                 'success' => true,
@@ -235,6 +252,9 @@ class CentralAiController extends Controller
                 'is_ollama_installed' => true,
                 'ollama_status' => 'stopped',
             ]);
+
+            // เคลียร์ cache สถานะการติดตั้งเพื่ออัพเดทเมนู sidebar
+            Cache::forget('ollama_is_installed');
 
             return response()->json([
                 'success' => true,
@@ -693,6 +713,9 @@ class CentralAiController extends Controller
 
             // ทำ health check
             $setting->performHealthCheck();
+
+            // เคลียร์ cache สถานะการติดตั้งเพื่ออัพเดทเมนู sidebar
+            Cache::forget('ollama_is_installed');
 
             return response()->json([
                 'success' => true,
