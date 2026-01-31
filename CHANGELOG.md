@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.448.2] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add deviceId to QR code data for SMS Checker provisioning (ac56ed30)
+
 ## [v3.448.1] - 2026-01-31
 
 ### ✨ Features
