@@ -48,6 +48,13 @@ Route::post('/webhook/line-membership-signup', [\App\Http\Controllers\LineMember
 Route::post('/webhooks/github/release', [\App\Http\Controllers\Api\WebhookController::class, 'handleGitHubRelease'])
     ->name('api.webhook.github.release');
 
+// Thai Address API (ข้อมูลที่อยู่ไทย - ไม่ต้องล็อกอิน)
+Route::prefix('thai-addresses')->name('api.thai-addresses.')->group(function () {
+    Route::get('/provinces', [\App\Http\Controllers\Api\ThaiAddressController::class, 'provinces'])->name('provinces');
+    Route::get('/districts/{provinceCode}', [\App\Http\Controllers\Api\ThaiAddressController::class, 'districts'])->name('districts');
+    Route::get('/sub-districts/{districtCode}', [\App\Http\Controllers\Api\ThaiAddressController::class, 'subDistricts'])->name('sub-districts');
+});
+
 // Cookie Consent API (no auth required)
 Route::post('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'store']);
 Route::get('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'getConsent']);

@@ -111,80 +111,17 @@
                         @enderror
                     </div>
 
-                    <!-- Grid: Sub-district and District -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Sub-district -->
-                        <div>
-                            <label for="sub_district" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                                ตำบล/แขวง <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text"
-                                   id="sub_district"
-                                   name="sub_district"
-                                   value="{{ old('sub_district') }}"
-                                   required
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('sub_district') border-red-500 @enderror"
-                                   placeholder="ตำบล/แขวง">
-                            @error('sub_district')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- District -->
-                        <div>
-                            <label for="district" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                                อำเภอ/เขต <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text"
-                                   id="district"
-                                   name="district"
-                                   value="{{ old('district') }}"
-                                   required
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('district') border-red-500 @enderror"
-                                   placeholder="อำเภอ/เขต">
-                            @error('district')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <!-- Grid: Province and Postal Code -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Province -->
-                        <div>
-                            <label for="province" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                                จังหวัด <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text"
-                                   id="province"
-                                   name="province"
-                                   value="{{ old('province') }}"
-                                   required
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('province') border-red-500 @enderror"
-                                   placeholder="จังหวัด">
-                            @error('province')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Postal Code -->
-                        <div>
-                            <label for="postal_code" class="block text-sm font-bold text-gray-900 dark:text-white mb-2">
-                                รหัสไปรษณีย์ <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text"
-                                   id="postal_code"
-                                   name="postal_code"
-                                   value="{{ old('postal_code') }}"
-                                   required
-                                   maxlength="5"
-                                   class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:border-indigo-600 focus:outline-none transition @error('postal_code') border-red-500 @enderror"
-                                   placeholder="10110">
-                            @error('postal_code')
-                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
+                    <!-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → ตำบล → รหัสไปรษณีย์) -->
+                    <x-thai-address-picker
+                        province-field="province"
+                        district-field="district"
+                        sub-district-field="sub_district"
+                        postal-code-field="postal_code"
+                        :province-value="old('province', '')"
+                        :district-value="old('district', '')"
+                        :sub-district-value="old('sub_district', '')"
+                        :postal-code-value="old('postal_code', '')"
+                    />
 
                     <!-- Country (Hidden, defaults to Thailand) -->
                     <input type="hidden" name="country" value="ประเทศไทย">

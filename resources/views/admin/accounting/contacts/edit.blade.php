@@ -251,23 +251,18 @@
                         @enderror
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2" data-translate>เขต/อำเภอ</label>
-                            <input type="text" name="district" value="{{ old('district', $contact->district) }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2" data-translate>จังหวัด</label>
-                            <input type="text" name="province" value="{{ old('province', $contact->province) }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 shadow-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2" data-translate>รหัสไปรษณีย์</label>
-                            <input type="text" name="postal_code" value="{{ old('postal_code', $contact->postal_code) }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 shadow-sm">
-                        </div>
-                    </div>
+                    {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
+                    <x-thai-address-picker
+                        province-field="province"
+                        district-field="district"
+                        sub-district-field=""
+                        postal-code-field="postal_code"
+                        :province-value="old('province', $contact->province ?? '')"
+                        :district-value="old('district', $contact->district ?? '')"
+                        :sub-district-value="''"
+                        :postal-code-value="old('postal_code', $contact->postal_code ?? '')"
+                        :show-sub-district="false"
+                    />
                 </div>
             </div>
 
