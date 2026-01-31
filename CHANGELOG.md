@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.450.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2456 from xjanova/claude/fix-shipping-address-styling-1mALX (38aefa1a)
+- feat: allow retry payment for unpaid orders and add cancel/pay buttons (f83113de)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.449.0] - 2026-01-31
 
 ### ✨ Features
