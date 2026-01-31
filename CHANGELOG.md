@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.448.4] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2455 from xjanova/claude/fix-shop-category-view-WeRhS (1d5b8187)
+- fix: handle null seller_id when creating order items (0a68cf53)
+### 🔧 Other Changes
+
+
 ## [v3.448.3] - 2026-01-31
 
 ### ✨ Features
