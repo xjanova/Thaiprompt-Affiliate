@@ -147,6 +147,20 @@
                         </div>
                     </div>
 
+                    {{-- exec() disabled warning --}}
+                    <div x-show="!canExec" x-cloak
+                         class="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            <div>
+                                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">PHP exec() ถูกปิดใช้งานบนเซิร์ฟเวอร์นี้</p>
+                                <p class="text-sm text-amber-700 dark:text-amber-400">
+                                    การติดตั้ง Ollama อัตโนมัติไม่สามารถทำได้ คุณจะต้องติดตั้ง Ollama ด้วยตนเองผ่าน SSH ในขั้นตอนถัดไป
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Recommended Models --}}
                     <div class="mt-8">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -196,7 +210,8 @@
                         </div>
                     </div>
 
-                    <div class="text-center py-12">
+                    {{-- โหมด Auto Install (exec() พร้อมใช้งาน) --}}
+                    <div x-show="canExec" class="text-center py-12">
                         <template x-if="!installationStarted">
                             <div>
                                 <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-6">
@@ -240,6 +255,118 @@
                                 </div>
                                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">ติดตั้งสำเร็จ!</h3>
                                 <p class="text-gray-600 dark:text-gray-400">Ollama พร้อมใช้งานแล้ว</p>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- โหมด Manual Install (exec() ถูก disable) --}}
+                    <div x-show="!canExec" x-cloak>
+                        {{-- สถานะยังไม่ได้ตรวจสอบ หรือ ตรวจสอบแล้วยังไม่พบ --}}
+                        <template x-if="!installationComplete">
+                            <div>
+                                {{-- คำแนะนำการติดตั้งด้วยตนเอง --}}
+                                <div class="mb-6 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl">
+                                    <div class="flex items-start gap-3 mb-4">
+                                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <div>
+                                            <p class="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                                                PHP exec() ถูกปิดใช้งาน - กรุณาติดตั้ง Ollama ด้วยตนเอง
+                                            </p>
+                                            <p class="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                                                เปิด SSH terminal เข้าสู่เซิร์ฟเวอร์ แล้วรันคำสั่งด้านล่าง จากนั้นกด "ตรวจสอบการติดตั้ง"
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {{-- ขั้นตอนที่ 1: ติดตั้ง Ollama --}}
+                                    <div class="mb-4">
+                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            1. ติดตั้ง Ollama:
+                                        </p>
+                                        <div class="relative">
+                                            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">curl -fsSL https://ollama.com/install.sh | sh</pre>
+                                            <button @click="copyCommand('curl -fsSL https://ollama.com/install.sh | sh')"
+                                                    class="absolute top-2 right-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition">
+                                                คัดลอก
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {{-- ขั้นตอนที่ 2: เริ่ม service --}}
+                                    <div class="mb-4">
+                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            2. เริ่ม Ollama Service:
+                                        </p>
+                                        <div class="relative">
+                                            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">ollama serve &</pre>
+                                            <button @click="copyCommand('ollama serve &')"
+                                                    class="absolute top-2 right-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition">
+                                                คัดลอก
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            หรือถ้าใช้ systemd: <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">sudo systemctl start ollama</code>
+                                        </p>
+                                    </div>
+
+                                    {{-- ขั้นตอนที่ 3: ตรวจสอบ --}}
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            3. ตรวจสอบว่าทำงานได้:
+                                        </p>
+                                        <div class="relative">
+                                            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">curl http://localhost:11434/api/version</pre>
+                                            <button @click="copyCommand('curl http://localhost:11434/api/version')"
+                                                    class="absolute top-2 right-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition">
+                                                คัดลอก
+                                            </button>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            ถ้าแสดงข้อมูล version แสดงว่า Ollama พร้อมใช้งาน
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {{-- ปุ่มตรวจสอบการติดตั้ง --}}
+                                <div class="text-center">
+                                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 mb-6">
+                                        <svg class="w-12 h-12 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">ติดตั้ง Ollama แล้ว?</h3>
+                                    <p class="text-gray-600 dark:text-gray-400 mb-6">
+                                        หลังจากติดตั้งและเริ่ม Ollama ผ่าน SSH แล้ว กดปุ่มด้านล่างเพื่อตรวจสอบ
+                                    </p>
+
+                                    {{-- แสดง spinner ขณะตรวจสอบ --}}
+                                    <div x-show="verifying" class="mb-4">
+                                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-400 animate-spin mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                        </svg>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">กำลังตรวจสอบ...</p>
+                                    </div>
+
+                                    <button @click="verifyOllamaInstallation()"
+                                            :disabled="verifying"
+                                            class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span x-show="!verifying">ตรวจสอบการติดตั้ง</span>
+                                        <span x-show="verifying">กำลังตรวจสอบ...</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        {{-- ตรวจสอบสำเร็จ --}}
+                        <template x-if="installationComplete">
+                            <div class="text-center py-12">
+                                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/30 dark:to-teal-900/30 mb-6">
+                                    <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">ตรวจพบ Ollama!</h3>
+                                <p class="text-gray-600 dark:text-gray-400">Ollama ติดตั้งและทำงานอยู่บนเซิร์ฟเวอร์แล้ว</p>
                             </div>
                         </template>
                     </div>
@@ -440,11 +567,13 @@ function wizardManager() {
         systemResources: @json($systemResources),
         recommendedModels: @json($recommendedModels),
         selectedModel: '{{ $setting->default_ollama_model }}',
+        canExec: @json($systemResources['can_exec'] ?? false),
         installationStarted: false,
         installationComplete: false,
         installationProgress: 0,
         installationMessage: 'กำลังเตรียมการติดตั้ง...',
         installationError: null,
+        verifying: false,
         downloadStarted: false,
         downloadComplete: false,
         downloadProgress: 0,
@@ -545,6 +674,61 @@ function wizardManager() {
                 this.installationMessage = '';
                 this.installationError = 'การติดตั้ง Ollama ล้มเหลว: ไม่สามารถเชื่อมต่อกับ server ได้';
                 this.installationStarted = false;
+            }
+        },
+
+        async verifyOllamaInstallation() {
+            this.verifying = true;
+            this.installationError = null;
+
+            try {
+                // เรียก install endpoint เดิม - ถ้า Ollama ติดตั้งแล้วจะตรวจพบผ่าน HTTP API
+                const response = await fetch('{{ route('admin.central-ai.ollama.install') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    this.installationComplete = true;
+                } else {
+                    const errorMsg = data.error || data.message || 'ไม่ทราบสาเหตุ';
+                    // ถ้า error เป็นเรื่อง exec ให้แสดงข้อความที่เหมาะสม
+                    if (errorMsg.includes('exec') || errorMsg.includes('disable')) {
+                        this.installationError = 'ไม่พบ Ollama บนเซิร์ฟเวอร์ กรุณาติดตั้งผ่าน SSH ก่อน แล้วลองตรวจสอบอีกครั้ง';
+                    } else {
+                        this.installationError = 'ไม่พบ Ollama: ' + errorMsg;
+                    }
+                }
+            } catch (error) {
+                console.error('Verification failed:', error);
+                this.installationError = 'ไม่สามารถเชื่อมต่อกับ server ได้ กรุณาลองใหม่';
+            } finally {
+                this.verifying = false;
+            }
+        },
+
+        copyCommand(command) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(command).then(() => {
+                    // แสดงผลว่าคัดลอกสำเร็จ (เปลี่ยนข้อความปุ่มชั่วคราว)
+                    const btn = event.target;
+                    const originalText = btn.textContent;
+                    btn.textContent = 'คัดลอกแล้ว!';
+                    setTimeout(() => { btn.textContent = originalText; }, 1500);
+                });
+            } else {
+                // fallback สำหรับ browser ที่ไม่รองรับ clipboard API
+                const textarea = document.createElement('textarea');
+                textarea.value = command;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
             }
         },
 
