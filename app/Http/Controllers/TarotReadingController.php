@@ -10,6 +10,9 @@ use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
 use App\Models\TarotCardBackImage;
 use App\Models\PaymentTransaction;
+use App\Models\UniquePaymentAmount;
+use App\Models\PaymentBankAccount;
+use App\Models\SmsCheckerDevice;
 use App\Services\TarotCommissionService;
 use App\Services\TarotInterpretationService;
 use Illuminate\Http\Request;
@@ -279,6 +282,11 @@ class TarotReadingController extends Controller
             ],
         ]);
 
+        // สร้าง unique amount สำหรับ SMS Checker auto-matching (promptpay/bank_transfer)
+        if (in_array($paymentMethod, ['promptpay', 'bank_transfer'])) {
+            $this->generateUniqueAmountForTransaction($transaction);
+        }
+
         // Create the reading
         $reading = $this->createReading($category, $spreadType, $request->question, false, $category->price);
 
@@ -510,5 +518,67 @@ class TarotReadingController extends Controller
         $images = TarotCardBackImage::active()->orderBy('sort_order')->get();
 
         return response()->json($images);
+    }
+
+    /**
+     * สร้าง unique amount (เพิ่มทศนิยม) สำหรับ SMS Checker auto-matching
+     *
+     * ใช้สำหรับ promptpay/bank_transfer เท่านั้น
+     * เก็บยอดเดิมใน metadata['original_amount']
+     *
+     * @param PaymentTransaction $transaction
+     * @return void
+     */
+    private function generateUniqueAmountForTransaction(PaymentTransaction $transaction): void
+    {
+        try {
+            $hasSmsChecker = false;
+
+            try {
+                $hasSmsChecker = PaymentBankAccount::where('is_active', true)
+                    ->where('sms_checker_enabled', true)
+                    ->exists();
+            } catch (\Exception $e) {
+                Log::debug('PaymentBankAccount check skipped: ' . $e->getMessage());
+            }
+
+            if (!$hasSmsChecker) {
+                $hasSmsChecker = SmsCheckerDevice::where('status', 'active')->exists();
+            }
+
+            if (!$hasSmsChecker) {
+                return;
+            }
+
+            $uniqueAmount = UniquePaymentAmount::generate(
+                $transaction->amount,
+                $transaction->id,
+                'tarot_reading',
+                config('smschecker.unique_amount_expiry', 30)
+            );
+
+            if ($uniqueAmount) {
+                $metadata = $transaction->metadata ?? [];
+                $metadata['original_amount'] = $transaction->amount;
+                $metadata['unique_amount_id'] = $uniqueAmount->id;
+                $metadata['decimal_suffix'] = $uniqueAmount->decimal_suffix;
+
+                $transaction->update([
+                    'amount' => $uniqueAmount->unique_amount,
+                    'metadata' => $metadata,
+                ]);
+
+                Log::info('SMS Checker: สร้าง unique amount สำเร็จ (tarot)', [
+                    'transaction_id' => $transaction->id,
+                    'original_amount' => $metadata['original_amount'],
+                    'unique_amount' => $uniqueAmount->unique_amount,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('SMS Checker: เกิดข้อผิดพลาดในการสร้าง unique amount (tarot)', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

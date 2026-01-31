@@ -391,4 +391,13 @@ class Order extends Model
     {
         return in_array($this->status, ['paid', 'processing', 'shipped']);
     }
+
+    /**
+     * ตรวจสอบว่าสามารถชำระเงินใหม่ได้หรือไม่
+     * ใช้สำหรับคำสั่งซื้อที่ยังไม่ได้ชำระเงิน (pending)
+     */
+    public function canRetryPayment(): bool
+    {
+        return $this->status === 'pending' && $this->payment_status === 'pending';
+    }
 }

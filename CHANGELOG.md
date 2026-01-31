@@ -2,6 +2,141 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.452.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2459 from xjanova/claude/ollama-admin-panel-NOMHt (b6ba52e5)
+- feat: hide installation menu when Ollama is already installed (528a19ad)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.451.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2458 from xjanova/claude/fix-2fa-route-XilWf (3a4fe60d)
+- fix: use correct route names for 2FA and sessions in user settings (746e3aa3)
+### 🔧 Other Changes
+
+
+## [v3.451.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2457 from xjanova/claude/fix-shipping-address-styling-1mALX (aa88f1b9)
+- feat: add "คำสั่งซื้อของฉัน" menu item to user shopping submenu (fa7c6311)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.450.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2456 from xjanova/claude/fix-shipping-address-styling-1mALX (38aefa1a)
+- feat: allow retry payment for unpaid orders and add cancel/pay buttons (f83113de)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.449.0] - 2026-01-31
+
+### ✨ Features
+- feat: Add unique decimal amount generation for Tarot payment flows (90aa302a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.448.5] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Fix unique decimal amount not generating for SMS Checker matching (47ddecb2)
+
+## [v3.448.4] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2455 from xjanova/claude/fix-shop-category-view-WeRhS (1d5b8187)
+- fix: handle null seller_id when creating order items (0a68cf53)
+### 🔧 Other Changes
+
+
+## [v3.448.3] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2454 from xjanova/claude/fix-shop-category-view-WeRhS (6c19231c)
+- fix: handle null shipping address on payment page for virtual products (00032083)
+### 🔧 Other Changes
+
+
+## [v3.448.2] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add deviceId to QR code data for SMS Checker provisioning (ac56ed30)
+
+## [v3.448.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: API response format to match Android SMS Checker app (9b44b421)
+### 🔧 Other Changes
+
+
+## [v3.448.0] - 2026-01-31
+
+### ✨ Features
+- feat: add smart cascading Thai address picker across all forms (9de9564e)
+### 🐛 Bug Fixes
+- fix: hide shipping address section for virtual products at checkout (d56f075e)
+### 🔧 Other Changes
+- Merge pull request #2453 from xjanova/claude/fix-shop-category-view-WeRhS (a4c7db5e)
+
+## [v3.447.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2452 from xjanova/claude/fix-shop-category-view-WeRhS (320a004e)
+- fix: validate shipping address ownership and soft-delete status at checkout (563f246e)
+### 🔧 Other Changes
+
+
+## [v3.447.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2451 from xjanova/claude/ollama-admin-panel-NOMHt (e40de5e0)
+- feat: upgrade Ollama admin panel to full Web Control Panel (ebe9e478)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.446.2] - 2026-01-30
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: handle undefined 'total_cashback' key in cashback card (dc4729c0)
+- fix: add missing shop.official.category Blade view (7e7911eb)
+### 🔧 Other Changes
+- Merge pull request #2450 from xjanova/claude/fix-shop-category-view-WeRhS (5ebc9b4f)
+
 ## [v3.446.1] - 2026-01-30
 
 ### ✨ Features

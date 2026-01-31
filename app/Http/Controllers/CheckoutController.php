@@ -275,15 +275,34 @@ class CheckoutController extends Controller
         // Get payment transaction
         $transaction = $order->paymentTransaction;
 
+        // ถ้าไม่มี transaction แต่ order ยังรอชำระอยู่ → สร้าง transaction ใหม่
         if (!$transaction) {
-            return redirect()->route('orders.show', $order->id)
-                ->with('error', 'ไม่พบรายการชำระเงิน');
+            if ($order->canRetryPayment()) {
+                $transaction = $this->paymentService->createOrderPayment(
+                    $order,
+                    $order->payment_method
+                );
+            } else {
+                return redirect()->route('orders.show', $order->id)
+                    ->with('error', 'ไม่พบรายการชำระเงิน');
+            }
         }
 
-        // Check if transaction expired
+        // ถ้า transaction หมดอายุ แต่ order ยังรอชำระอยู่ → สร้าง transaction ใหม่อัตโนมัติ
         if ($transaction->isExpired()) {
-            return redirect()->route('orders.show', $order->id)
-                ->with('error', 'รายการชำระเงินหมดอายุ กรุณาติดต่อเจ้าหน้าที่');
+            if ($order->canRetryPayment()) {
+                // ยกเลิก transaction เก่าที่หมดอายุ
+                $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+
+                // สร้าง transaction ใหม่
+                $transaction = $this->paymentService->createOrderPayment(
+                    $order,
+                    $order->payment_method
+                );
+            } else {
+                return redirect()->route('orders.show', $order->id)
+                    ->with('error', 'รายการชำระเงินหมดอายุ กรุณาติดต่อเจ้าหน้าที่');
+            }
         }
 
         // Get wallet balance if payment method is wallet

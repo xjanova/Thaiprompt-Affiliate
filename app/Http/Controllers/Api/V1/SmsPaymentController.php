@@ -27,6 +27,83 @@ class SmsPaymentController extends Controller
     ) {}
 
     /**
+     * แปลง PaymentTransaction → RemoteOrderApproval format สำหรับ Android app
+     *
+     * Android app คาดหวัง format: id, approval_status, confidence,
+     * order_details_json, notification, synced_version, etc.
+     */
+    private function transformToOrderApproval(PaymentTransaction $txn): array
+    {
+        // แปลง status ของ PaymentTransaction → approval_status ที่ Android เข้าใจ
+        $approvalStatus = match ($txn->status) {
+            'pending' => 'pending_review',
+            'processing' => 'pending_review',
+            'completed' => 'auto_approved',
+            'failed' => 'rejected',
+            'cancelled' => 'rejected',
+            default => 'pending_review',
+        };
+
+        // ดึง order details ถ้ามี
+        $orderDetails = null;
+        if ($txn->order_id) {
+            $order = $txn->order;
+            if ($order) {
+                $orderDetails = [
+                    'order_number' => $order->order_number ?? null,
+                    'product_name' => $order->items?->first()?->product?->name ?? null,
+                    'product_details' => null,
+                    'quantity' => $order->items?->count() ?? null,
+                    'website_name' => config('app.name'),
+                    'customer_name' => $order->user?->name ?? null,
+                ];
+            }
+        }
+
+        // ดึง matched notification ถ้ามี
+        $notification = null;
+        $matchedNotification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+        if ($matchedNotification) {
+            $notification = [
+                'id' => $matchedNotification->id,
+                'bank' => $matchedNotification->bank,
+                'type' => $matchedNotification->type,
+                'amount' => number_format((float) $matchedNotification->amount, 2, '.', ''),
+                'sms_timestamp' => $matchedNotification->sms_timestamp,
+                'sender_or_receiver' => $matchedNotification->sender_or_receiver,
+            ];
+        } else {
+            // ไม่มี notification match → สร้าง dummy notification จาก transaction data
+            $notification = [
+                'id' => $txn->id,
+                'bank' => $txn->payment_method === 'promptpay' ? 'PROMPTPAY' : strtoupper($txn->payment_method ?? 'UNKNOWN'),
+                'type' => 'credit',
+                'amount' => number_format((float) $txn->amount, 2, '.', ''),
+                'sms_timestamp' => $txn->created_at?->format('Y-m-d H:i:s'),
+                'sender_or_receiver' => $txn->user?->name ?? '',
+            ];
+        }
+
+        return [
+            'id' => $txn->id,
+            'notification_id' => $matchedNotification?->id,
+            'matched_transaction_id' => $txn->id,
+            'device_id' => $matchedNotification?->device_id,
+            'approval_status' => $approvalStatus,
+            'confidence' => $matchedNotification ? 'high' : 'medium',
+            'approved_by' => null,
+            'approved_at' => $txn->paid_at?->toIso8601String(),
+            'rejected_at' => $txn->status === 'failed' ? $txn->updated_at?->toIso8601String() : null,
+            'rejection_reason' => null,
+            'order_details_json' => $orderDetails,
+            'synced_version' => $txn->updated_at ? intval($txn->updated_at->timestamp * 1000) : 0,
+            'created_at' => $txn->created_at?->toIso8601String(),
+            'updated_at' => $txn->updated_at?->toIso8601String(),
+            'notification' => $notification,
+        ];
+    }
+
+    /**
      * รับ SMS payment notification จาก Android App
      *
      * POST /api/v1/sms-payment/notify
@@ -336,6 +413,14 @@ class SmsPaymentController extends Controller
             $query->where('status', $status);
         }
 
+        // กรองตามวันที่
+        if ($dateFrom = $request->input('date_from')) {
+            $query->where('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo = $request->input('date_to')) {
+            $query->where('created_at', '<=', $dateTo);
+        }
+
         // ค้นหา
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -344,12 +429,22 @@ class SmsPaymentController extends Controller
             });
         }
 
-        $orders = $query->orderBy('created_at', 'desc')
+        $paginated = $query->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 20));
+
+        // แปลง PaymentTransaction → RemoteOrderApproval format สำหรับ Android app
+        $orders = collect($paginated->items())->map(function ($txn) {
+            return $this->transformToOrderApproval($txn);
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $orders,
+            'data' => [
+                'data' => $orders,
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+            ],
         ]);
     }
 
@@ -521,25 +616,35 @@ class SmsPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $since = $request->input('since');
+        // รองรับทั้ง since_version (Android app) และ since (legacy)
+        $sinceVersion = $request->input('since_version') ?? $request->input('since') ?? 0;
         $query = PaymentTransaction::query();
 
-        if ($since) {
-            // ดึง orders ที่อัพเดทหลังจาก timestamp ที่กำหนด
-            $query->where('updated_at', '>', date('Y-m-d H:i:s', $since / 1000));
+        if ($sinceVersion > 0) {
+            // ดึง orders ที่อัพเดทหลังจาก timestamp ที่กำหนด (milliseconds)
+            $query->where('updated_at', '>', date('Y-m-d H:i:s', $sinceVersion / 1000));
         }
 
-        $orders = $query->orderBy('updated_at', 'desc')
+        $transactions = $query->orderBy('updated_at', 'desc')
             ->limit($request->input('limit', 100))
             ->get();
+
+        // แปลง PaymentTransaction → RemoteOrderApproval format สำหรับ Android app
+        $orders = $transactions->map(function ($txn) {
+            return $this->transformToOrderApproval($txn);
+        });
+
+        $latestVersion = intval(round(microtime(true) * 1000));
 
         // อัพเดท last_active_at ของอุปกรณ์
         $device->update(['last_active_at' => now()]);
 
         return response()->json([
             'success' => true,
-            'data' => $orders,
-            'sync_timestamp' => intval(round(microtime(true) * 1000)),
+            'data' => [
+                'orders' => $orders,
+                'latest_version' => $latestVersion,
+            ],
         ]);
     }
 
@@ -628,32 +733,64 @@ class SmsPaymentController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $deviceId = $device->device_id;
+        $days = (int) $request->input('days', 7);
+        $since = now()->subDays($days)->startOfDay();
 
-        // สถิติ notifications ของอุปกรณ์นี้
-        $totalNotifications = SmsPaymentNotification::where('device_id', $deviceId)->count();
-        $todayNotifications = SmsPaymentNotification::where('device_id', $deviceId)
-            ->whereDate('created_at', today())->count();
-        $matchedCount = SmsPaymentNotification::where('device_id', $deviceId)
-            ->where('status', 'matched')->count();
-        $pendingCount = SmsPaymentNotification::where('device_id', $deviceId)
-            ->where('status', 'pending')->count();
-
-        // สถิติ pending orders ในระบบ
+        // นับ orders ตามสถานะ (ใช้ PaymentTransaction เป็น base)
+        $totalOrders = PaymentTransaction::where('created_at', '>=', $since)->count();
+        $completedOrders = PaymentTransaction::where('created_at', '>=', $since)
+            ->where('status', 'completed')->count();
         $pendingOrders = PaymentTransaction::where('status', 'pending')->count();
+        $failedOrders = PaymentTransaction::where('created_at', '>=', $since)
+            ->where('status', 'failed')->count();
 
+        // แบ่ง auto approved (matched by SMS) vs manually approved
+        $autoApproved = SmsPaymentNotification::where('device_id', $device->device_id)
+            ->where('status', 'matched')
+            ->where('created_at', '>=', $since)
+            ->count();
+        $manuallyApproved = max(0, $completedOrders - $autoApproved);
+
+        // ยอดรวม
+        $totalAmount = (float) PaymentTransaction::where('created_at', '>=', $since)
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        // Daily breakdown
+        $dailyBreakdown = [];
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $dayStart = now()->subDays($i)->startOfDay();
+            $dayEnd = now()->subDays($i)->endOfDay();
+
+            $dayCount = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])->count();
+            $dayApproved = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+                ->where('status', 'completed')->count();
+            $dayRejected = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+                ->where('status', 'failed')->count();
+            $dayAmount = (float) PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+                ->where('status', 'completed')->sum('amount');
+
+            $dailyBreakdown[] = [
+                'date' => $date,
+                'count' => $dayCount,
+                'approved' => $dayApproved,
+                'rejected' => $dayRejected,
+                'amount' => $dayAmount,
+            ];
+        }
+
+        // Response format ตรงกับ Android app RemoteDashboardStats model
         return response()->json([
             'success' => true,
             'data' => [
-                'device' => [
-                    'total_sms' => $totalNotifications,
-                    'today_sms' => $todayNotifications,
-                    'matched' => $matchedCount,
-                    'pending' => $pendingCount,
-                ],
-                'orders' => [
-                    'pending' => $pendingOrders,
-                ],
+                'total_orders' => $totalOrders,
+                'auto_approved' => $autoApproved,
+                'manually_approved' => $manuallyApproved,
+                'pending_review' => $pendingOrders,
+                'rejected' => $failedOrders,
+                'total_amount' => $totalAmount,
+                'daily_breakdown' => $dailyBreakdown,
             ],
         ]);
     }

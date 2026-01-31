@@ -185,7 +185,7 @@ class CentralAiSetting extends Model
             if ($response->successful()) {
                 $version = $response->json('version');
 
-                // ดึงรายการ models
+                // ดึงรายการ models (เก็บข้อมูลครบทุกฟิลด์)
                 $modelsResponse = Http::timeout(5)->get(
                     "http://{$this->ollama_host}:{$this->ollama_port}/api/tags"
                 );
@@ -193,7 +193,15 @@ class CentralAiSetting extends Model
                 $models = [];
                 if ($modelsResponse->successful()) {
                     $models = collect($modelsResponse->json('models', []))
-                        ->pluck('name')
+                        ->map(function ($model) {
+                            return [
+                                'name' => $model['name'] ?? 'unknown',
+                                'size' => $model['size'] ?? 0,
+                                'digest' => $model['digest'] ?? null,
+                                'modified_at' => $model['modified_at'] ?? null,
+                                'details' => $model['details'] ?? [],
+                            ];
+                        })
                         ->toArray();
                 }
 

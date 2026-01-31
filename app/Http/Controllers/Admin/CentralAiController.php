@@ -7,7 +7,9 @@ use App\Models\CentralAiSetting;
 use App\Services\AI\LocalAiManager;
 use App\Services\AI\LlamaInstallationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
@@ -69,11 +71,19 @@ class CentralAiController extends Controller
     /**
      * แสดงหน้า Setup Wizard
      *
-     * @return View
+     * ถ้า Ollama ติดตั้งแล้วจะ redirect ไปหน้า Control Panel
+     *
+     * @return View|RedirectResponse
      */
-    public function wizard(): View
+    public function wizard(): View|RedirectResponse
     {
         $setting = CentralAiSetting::getActive();
+
+        // ถ้าติดตั้งเสร็จแล้ว redirect ไปหน้า Control Panel
+        if ($setting->is_ollama_installed || $setting->setup_completed) {
+            return redirect()->route('admin.central-ai.ollama.index')
+                ->with('info', 'Ollama ติดตั้งเสร็จแล้ว สามารถใช้งาน Control Panel ได้เลย');
+        }
 
         // ตรวจสอบ system resources
         $systemResources = $this->detectSystemResources();
@@ -167,6 +177,7 @@ class CentralAiController extends Controller
             'setting' => $setting,
             'systemResources' => $systemResources,
             'recommendedModels' => $this->getRecommendedModels($systemResources),
+            'additionalModels' => config('central-ai.additional_models', []),
         ]);
     }
 
@@ -179,7 +190,14 @@ class CentralAiController extends Controller
     {
         try {
             $setting = CentralAiSetting::getActive();
+            $previousInstalled = $setting->is_ollama_installed;
             $status = $setting->checkOllamaStatus();
+
+            // เคลียร์ cache ถ้าสถานะการติดตั้งเปลี่ยนแปลง
+            $setting->refresh();
+            if ($previousInstalled !== $setting->is_ollama_installed) {
+                Cache::forget('ollama_is_installed');
+            }
 
             return response()->json([
                 'success' => true,
@@ -234,6 +252,9 @@ class CentralAiController extends Controller
                 'is_ollama_installed' => true,
                 'ollama_status' => 'stopped',
             ]);
+
+            // เคลียร์ cache สถานะการติดตั้งเพื่ออัพเดทเมนู sidebar
+            Cache::forget('ollama_is_installed');
 
             return response()->json([
                 'success' => true,
@@ -506,6 +527,173 @@ class CentralAiController extends Controller
     }
 
     /**
+     * ลบโมเดล
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteModel(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z0-9][a-zA-Z0-9:.\-_\/]*$/'],
+        ], [
+            'model.regex' => 'ชื่อโมเดลไม่ถูกต้อง',
+        ]);
+
+        try {
+            $modelName = $request->input('model');
+            $result = $this->llamaInstaller->deleteModel($modelName);
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['message'] ?? 'ไม่สามารถลบโมเดลได้',
+                ], 500);
+            }
+
+            // อัพเดทรายการโมเดล
+            $setting = CentralAiSetting::getActive();
+            $status = $setting->checkOllamaStatus();
+
+            return response()->json([
+                'success' => true,
+                'message' => "ลบโมเดล {$modelName} สำเร็จ",
+                'data' => [
+                    'installed_models' => $status['models'] ?? [],
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete model', [
+                'model' => $request->input('model'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถลบโมเดลได้',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ทดสอบ Chat กับโมเดล
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function chatTest(Request $request): JsonResponse
+    {
+        $request->validate([
+            'model' => ['required', 'string', 'max:100'],
+            'prompt' => ['required', 'string', 'max:2000'],
+            'temperature' => ['nullable', 'numeric', 'min:0', 'max:2'],
+        ]);
+
+        try {
+            $setting = CentralAiSetting::getActive();
+            $url = "http://{$setting->ollama_host}:{$setting->ollama_port}/api/generate";
+
+            $response = \Illuminate\Support\Facades\Http::timeout(120)->post($url, [
+                'model' => $request->input('model'),
+                'prompt' => $request->input('prompt'),
+                'stream' => false,
+                'options' => [
+                    'temperature' => $request->input('temperature', 0.7),
+                ],
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                // นับคำขอที่สำเร็จ
+                $setting->incrementRequest(true);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'response' => $data['response'] ?? '',
+                        'model' => $data['model'] ?? $request->input('model'),
+                        'total_duration' => $data['total_duration'] ?? 0,
+                        'eval_count' => $data['eval_count'] ?? 0,
+                        'eval_duration' => $data['eval_duration'] ?? 0,
+                    ],
+                ]);
+            }
+
+            // นับคำขอที่ล้มเหลว
+            $setting->incrementRequest(false);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'โมเดลไม่ตอบกลับ: ' . $response->body(),
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('Chat test failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            $setting = CentralAiSetting::getActive();
+            $setting->incrementRequest(false);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงรายการโมเดลที่กำลังโหลดอยู่ใน memory
+     *
+     * @return JsonResponse
+     */
+    public function getRunningModels(): JsonResponse
+    {
+        try {
+            $loadedModels = $this->localAiManager->getLoadedModels();
+
+            return response()->json([
+                'success' => true,
+                'data' => $loadedModels,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลโมเดลได้',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงข้อมูลการใช้ทรัพยากร
+     *
+     * @return JsonResponse
+     */
+    public function getResourceUsage(): JsonResponse
+    {
+        try {
+            $resourceUsage = $this->localAiManager->getResourceUsage();
+            $systemResources = $this->detectSystemResources();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'ollama' => $resourceUsage,
+                    'system' => $systemResources,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถดึงข้อมูลทรัพยากรได้',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * เสร็จสิ้นการติดตั้ง (Wizard Step สุดท้าย)
      *
      * @param Request $request
@@ -525,6 +713,9 @@ class CentralAiController extends Controller
 
             // ทำ health check
             $setting->performHealthCheck();
+
+            // เคลียร์ cache สถานะการติดตั้งเพื่ออัพเดทเมนู sidebar
+            Cache::forget('ollama_is_installed');
 
             return response()->json([
                 'success' => true,

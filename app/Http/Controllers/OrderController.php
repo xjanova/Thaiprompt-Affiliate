@@ -96,6 +96,23 @@ class OrderController extends Controller
     }
 
     /**
+     * ชำระเงินใหม่สำหรับคำสั่งซื้อที่ยังไม่ได้ชำระ
+     * redirect ไปหน้า payment ซึ่งจะสร้าง transaction ใหม่อัตโนมัติ
+     */
+    public function retryPayment($id)
+    {
+        $order = Order::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if (!$order->canRetryPayment()) {
+            return back()->with('error', 'ไม่สามารถชำระเงินสำหรับคำสั่งซื้อนี้ได้');
+        }
+
+        return redirect()->route('checkout.payment', $order->id);
+    }
+
+    /**
      * Show review form for order item
      */
     public function showReviewForm($orderId, $itemId)
