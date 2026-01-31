@@ -1078,6 +1078,7 @@ return [
             'permissions' => [],
             'submenu' => [
                 ['label' => 'ช๊อปสินค้า', 'route' => 'shop.index'],
+                ['label' => 'คำสั่งซื้อของฉัน', 'route' => 'orders.index'],
             ],
         ],
 
