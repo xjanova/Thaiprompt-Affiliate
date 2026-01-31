@@ -490,7 +490,21 @@ class CentralAiController extends Controller
     }
 
     /**
-     * บันทึกการตั้งค่า
+     * แสดงหน้าตั้งค่า AI Settings
+     *
+     * @return View
+     */
+    public function settings(): View
+    {
+        $setting = CentralAiSetting::getActive();
+
+        return view('admin.central-ai.settings', [
+            'setting' => $setting,
+        ]);
+    }
+
+    /**
+     * บันทึกการตั้งค่า (API)
      *
      * @param Request $request
      * @return JsonResponse

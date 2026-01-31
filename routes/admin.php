@@ -1143,6 +1143,7 @@ Route::prefix('central-ai')->name('central-ai.')->group(function () {
     });
 
     // Settings
+    Route::get('/settings', [CentralAiController::class, 'settings'])->name('settings');
     Route::post('/settings', [CentralAiController::class, 'saveSettings'])->name('settings.save');
     Route::post('/setup/complete', [CentralAiController::class, 'completeSetup'])->name('setup.complete');
 
