@@ -1131,6 +1131,10 @@ Route::prefix('central-ai')->name('central-ai.')->group(function () {
         Route::post('/stop', [CentralAiController::class, 'stopOllama'])->name('stop');
         Route::post('/restart', [CentralAiController::class, 'restartOllama'])->name('restart');
         Route::post('/download-model', [CentralAiController::class, 'downloadModel'])->name('download-model');
+        Route::post('/delete-model', [CentralAiController::class, 'deleteModel'])->name('delete-model');
+        Route::post('/chat-test', [CentralAiController::class, 'chatTest'])->name('chat-test');
+        Route::get('/running-models', [CentralAiController::class, 'getRunningModels'])->name('running-models');
+        Route::get('/resource-usage', [CentralAiController::class, 'getResourceUsage'])->name('resource-usage');
     });
 
     // PostXAgent Management
