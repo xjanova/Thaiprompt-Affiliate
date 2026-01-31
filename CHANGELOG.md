@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.453.0] - 2026-01-31
+
+### ✨ Features
+- feat: add smart address picker to seller store settings (b3e06172)
+- feat: add country toggle to address picker and clean up shipping data (782a2641)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2460 from xjanova/claude/fix-shop-category-view-WeRhS (c468195f)
+- Merge branch 'claude/Main' into claude/fix-shop-category-view-WeRhS (9b739388)
+
 ## [v3.452.0] - 2026-01-31
 
 ### ✨ Features
