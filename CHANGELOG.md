@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.454.0] - 2026-01-31
+
+### ✨ Features
+- feat: add AI settings page with full configuration UI (84ad42a4)
+### 🐛 Bug Fixes
+- fix: detect CPU/RAM via /proc when shell_exec is disabled (c3b5e8cb)
+### 🔧 Other Changes
+- Merge pull request #2465 from xjanova/claude/ollama-admin-panel-NOMHt (dce1b297)
+
 ## [v3.453.3] - 2026-01-31
 
 ### ✨ Features
