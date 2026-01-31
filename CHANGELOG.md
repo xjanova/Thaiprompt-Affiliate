@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.455.0] - 2026-01-31
+
+### ✨ Features
+- feat: add system prompt for AI response scope control (497f4012)
+### 🐛 Bug Fixes
+- fix: Ollama stop not working — cache stale + exec disabled + status bug (459ecc86)
+### 🔧 Other Changes
+- Merge pull request #2466 from xjanova/claude/ollama-admin-panel-NOMHt (fe466b8e)
+
 ## [v3.454.1] - 2026-01-31
 
 ### ✨ Features
