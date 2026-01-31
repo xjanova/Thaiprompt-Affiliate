@@ -4080,6 +4080,7 @@ class MobileApiController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
+                    'seller_id' => $item->product->seller_id ?? \App\Models\Product::getOfficialSellerId(),
                     'quantity' => $item->quantity,
                     'price' => $price,
                     'subtotal' => $price * $item->quantity,

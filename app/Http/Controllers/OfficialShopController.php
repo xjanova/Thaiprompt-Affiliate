@@ -407,6 +407,7 @@ class OfficialShopController extends Controller
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
+                'seller_id' => $product->seller_id ?? Product::getOfficialSellerId(),
                 'product_name' => $product->name,
                 'product_sku' => $product->sku,
                 'price' => 0,
