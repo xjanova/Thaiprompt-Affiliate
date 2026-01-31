@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.448.0] - 2026-01-31
+
+### ✨ Features
+- feat: add smart cascading Thai address picker across all forms (9de9564e)
+### 🐛 Bug Fixes
+- fix: hide shipping address section for virtual products at checkout (d56f075e)
+### 🔧 Other Changes
+- Merge pull request #2453 from xjanova/claude/fix-shop-category-view-WeRhS (a4c7db5e)
+
 ## [v3.447.1] - 2026-01-31
 
 ### ✨ Features
