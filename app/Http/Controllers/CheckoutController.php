@@ -125,7 +125,12 @@ class CheckoutController extends Controller
         ];
 
         if ($hasPhysicalProducts) {
-            $validationRules['shipping_address_id'] = 'required|exists:shipping_addresses,id';
+            $validationRules['shipping_address_id'] = [
+                'required',
+                \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')
+                    ->where('user_id', auth()->id())
+                    ->whereNull('deleted_at'),
+            ];
         }
 
         $request->validate($validationRules);
@@ -140,9 +145,10 @@ class CheckoutController extends Controller
         DB::beginTransaction();
 
         try {
-            // ✅ Get shipping address (เฉพาะสินค้าที่ต้องส่ง)
+            // ✅ Get shipping address (เฉพาะสินค้าที่ต้องส่ง, ตรวจสอบ user_id ด้วย)
             $shippingAddress = $hasPhysicalProducts && $request->shipping_address_id
-                ? ShippingAddress::findOrFail($request->shipping_address_id)
+                ? ShippingAddress::where('user_id', auth()->id())
+                    ->findOrFail($request->shipping_address_id)
                 : null;
 
             // Calculate totals
