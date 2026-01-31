@@ -228,6 +228,16 @@ class CentralAiController extends Controller
             $status = $this->llamaInstaller->checkInstallationStatus();
 
             if ($status['is_installed']) {
+                // อัพเดทสถานะใน settings (กรณีติดตั้งด้วยตนเองผ่าน SSH)
+                $setting = CentralAiSetting::getActive();
+                if (!$setting->is_ollama_installed) {
+                    $setting->update([
+                        'is_ollama_installed' => true,
+                        'ollama_status' => 'running',
+                    ]);
+                    Cache::forget('ollama_is_installed');
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Ollama ติดตั้งแล้ว',
@@ -789,12 +799,17 @@ class CentralAiController extends Controller
      */
     protected function detectSystemResources(): array
     {
+        // ตรวจสอบว่า exec() สามารถใช้งานได้หรือไม่
+        $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions') ?: ''));
+        $canExec = function_exists('exec') && !in_array('exec', $disabledFunctions);
+
         $resources = [
             'cpu_cores' => null,
             'ram_gb' => null,
             'disk_gb' => null,
             'disk_available_gb' => null,
             'os_type' => PHP_OS_FAMILY,
+            'can_exec' => $canExec,
         ];
 
         try {
