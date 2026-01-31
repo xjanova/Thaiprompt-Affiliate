@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.448.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: API response format to match Android SMS Checker app (9b44b421)
+### 🔧 Other Changes
+
+
 ## [v3.448.0] - 2026-01-31
 
 ### ✨ Features
