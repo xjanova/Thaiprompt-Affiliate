@@ -549,6 +549,7 @@ Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () 
     Route::get('/', [\App\Http\Controllers\OrderController::class, 'index'])->name('index');
     Route::get('/{id}', [\App\Http\Controllers\OrderController::class, 'show'])->name('show');
     Route::post('/{id}/cancel', [\App\Http\Controllers\OrderController::class, 'cancel'])->name('cancel');
+    Route::post('/{id}/retry-payment', [\App\Http\Controllers\OrderController::class, 'retryPayment'])->name('retry-payment');
     Route::post('/{id}/confirm-received', [\App\Http\Controllers\OrderController::class, 'confirmReceived'])->name('confirm-received');
 
     // Reviews
