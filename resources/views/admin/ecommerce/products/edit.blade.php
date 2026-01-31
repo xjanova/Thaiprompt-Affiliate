@@ -161,7 +161,7 @@
     @endif
 
     {{-- Form --}}
-    <form action="{{ route('admin.ecommerce.products.update', $product) }}" method="POST" enctype="multipart/form-data">
+    <form id="product-edit-form" action="{{ route('admin.ecommerce.products.update', $product) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -624,6 +624,9 @@
                     </div>
                 </div>
 
+                {{-- ปิด form หลักก่อน เพราะ block/unblock section มี form ของตัวเอง (HTML ไม่อนุญาต nested forms) --}}
+                </form>
+
                 {{-- Block/Unblock Section --}}
                 <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -726,7 +729,7 @@
                 {{-- Actions --}}
                 <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                     <div class="p-6 space-y-3">
-                        <button type="submit" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                        <button type="submit" form="product-edit-form" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>
@@ -743,7 +746,6 @@
                 </div>
             </div>
         </div>
-    </form>
 </div>
 
 @push('scripts')

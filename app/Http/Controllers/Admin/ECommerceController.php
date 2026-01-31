@@ -568,7 +568,7 @@ class ECommerceController extends Controller
      */
     public function showOrder(Order $order)
     {
-        $order->load(['user', 'items.product', 'items.product.images']);
+        $order->load(['user', 'items.product', 'items.product.images', 'shippingAddress']);
 
         return view('admin.ecommerce.orders.show', compact('order'));
     }
