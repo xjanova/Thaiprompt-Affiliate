@@ -89,6 +89,7 @@ class CheckoutController extends Controller
         return view('shop.checkout', compact(
             'cartItems',
             'addresses',
+            'hasPhysicalProducts',
             'subtotal',
             'shippingFee',
             'total',

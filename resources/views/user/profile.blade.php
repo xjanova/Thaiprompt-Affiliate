@@ -359,47 +359,20 @@
                                       @input="formChanged = true">{{ old('address', $user->address) }}</textarea>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {{-- City --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-city mr-1 text-green-600"></i>เขต/อำเภอ
-                                </label>
-                                <input type="text"
-                                       name="city"
-                                       value="{{ old('city', $user->city) }}"
-                                       placeholder="เขต/อำเภอ"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
-                                       @input="formChanged = true">
-                            </div>
+                        {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
+                        <x-thai-address-picker
+                            province-field="state"
+                            district-field="city"
+                            sub-district-field=""
+                            postal-code-field="postal_code"
+                            :province-value="old('state', $user->state ?? '')"
+                            :district-value="old('city', $user->city ?? '')"
+                            :sub-district-value="''"
+                            :postal-code-value="old('postal_code', $user->postal_code ?? '')"
+                            :show-sub-district="false"
+                        />
 
-                            {{-- State --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-map mr-1 text-green-600"></i>จังหวัด
-                                </label>
-                                <input type="text"
-                                       name="state"
-                                       value="{{ old('state', $user->state) }}"
-                                       placeholder="จังหวัด"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
-                                       @input="formChanged = true">
-                            </div>
-
-                            {{-- Postal Code --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-mail-bulk mr-1 text-green-600"></i>รหัสไปรษณีย์
-                                </label>
-                                <input type="text"
-                                       name="postal_code"
-                                       value="{{ old('postal_code', $user->postal_code) }}"
-                                       placeholder="10100"
-                                       maxlength="5"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
-                                       @input="formChanged = true">
-                            </div>
-
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             {{-- Country --}}
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -449,50 +422,20 @@
                                       @input="formChanged = true">{{ old('shipping_address', $user->shipping_address) }}</textarea>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {{-- Shipping City --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-city mr-1 text-orange-600"></i>เขต/อำเภอ
-                                </label>
-                                <input type="text"
-                                       name="shipping_city"
-                                       value="{{ old('shipping_city', $user->shipping_city) }}"
-                                       placeholder="เขต/อำเภอ"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
-                                       x-ref="shippingCity"
-                                       @input="formChanged = true">
-                            </div>
+                        {{-- ระบบเลือกที่อยู่จัดส่งอัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
+                        <x-thai-address-picker
+                            province-field="shipping_state"
+                            district-field="shipping_city"
+                            sub-district-field=""
+                            postal-code-field="shipping_postal_code"
+                            :province-value="old('shipping_state', $user->shipping_state ?? '')"
+                            :district-value="old('shipping_city', $user->shipping_city ?? '')"
+                            :sub-district-value="''"
+                            :postal-code-value="old('shipping_postal_code', $user->shipping_postal_code ?? '')"
+                            :show-sub-district="false"
+                        />
 
-                            {{-- Shipping State --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-map mr-1 text-orange-600"></i>จังหวัด
-                                </label>
-                                <input type="text"
-                                       name="shipping_state"
-                                       value="{{ old('shipping_state', $user->shipping_state) }}"
-                                       placeholder="จังหวัด"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
-                                       x-ref="shippingState"
-                                       @input="formChanged = true">
-                            </div>
-
-                            {{-- Shipping Postal Code --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-mail-bulk mr-1 text-orange-600"></i>รหัสไปรษณีย์
-                                </label>
-                                <input type="text"
-                                       name="shipping_postal_code"
-                                       value="{{ old('shipping_postal_code', $user->shipping_postal_code) }}"
-                                       placeholder="10100"
-                                       maxlength="5"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
-                                       x-ref="shippingPostalCode"
-                                       @input="formChanged = true">
-                            </div>
-
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             {{-- Shipping Country --}}
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -509,7 +452,7 @@
                             </div>
 
                             {{-- Shipping Phone --}}
-                            <div class="md:col-span-2">
+                            <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-phone mr-1 text-orange-600"></i>เบอร์โทรติดต่อ (จัดส่ง)
                                 </label>

@@ -190,29 +190,18 @@
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ที่อยู่ตามถนน เลขที่อาคาร</p>
                                 </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-city text-blue-600 dark:text-blue-400 mr-1"></i>
-                                            เมือง/อำเภอ <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="text" name="city"
-                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                                               value="{{ old('city', $hotel->city) }}"
-                                               placeholder="เช่น กรุงเทพมหานคร" required>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-map text-blue-600 dark:text-blue-400 mr-1"></i>
-                                            จังหวัด/รัฐ
-                                        </label>
-                                        <input type="text" name="state"
-                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                                               value="{{ old('state', $hotel->state) }}"
-                                               placeholder="เช่น กรุงเทพมหานคร">
-                                    </div>
-                                </div>
+                                {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
+                                <x-thai-address-picker
+                                    province-field="state"
+                                    district-field="city"
+                                    sub-district-field=""
+                                    postal-code-field="postal_code"
+                                    :province-value="old('state', $hotel->state ?? '')"
+                                    :district-value="old('city', $hotel->city ?? '')"
+                                    :sub-district-value="''"
+                                    :postal-code-value="old('postal_code', $hotel->postal_code ?? '')"
+                                    :show-sub-district="false"
+                                />
 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
@@ -224,17 +213,6 @@
                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                                value="{{ old('country', $hotel->country) }}"
                                                placeholder="Thailand" required>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-mail-bulk text-gray-600 dark:text-gray-400 mr-1"></i>
-                                            รหัสไปรษณีย์
-                                        </label>
-                                        <input type="text" name="postal_code"
-                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                                               value="{{ old('postal_code', $hotel->postal_code) }}"
-                                               placeholder="เช่น 10110">
                                     </div>
                                 </div>
 

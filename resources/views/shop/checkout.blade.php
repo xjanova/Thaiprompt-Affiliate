@@ -57,7 +57,8 @@
                 <!-- Left Column - Shipping & Payment -->
                 <div class="lg:col-span-2 space-y-6">
 
-                    <!-- Shipping Address Section -->
+                    <!-- Shipping Address Section (แสดงเฉพาะสินค้าที่ต้องจัดส่ง) -->
+                    @if($hasPhysicalProducts)
                     <div class="bg-white rounded-2xl shadow-lg p-6">
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-xl font-bold text-gray-900">📍 ที่อยู่จัดส่ง</h2>
@@ -116,6 +117,22 @@
                             </div>
                         @endif
                     </div>
+                    @else
+                    {{-- สินค้าดิจิทัล / Virtual Products - ไม่ต้องใช้ที่อยู่จัดส่ง --}}
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <div class="flex items-center gap-3 text-green-700 dark:text-green-400">
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold">สินค้าดิจิทัล - ไม่ต้องใช้ที่อยู่จัดส่ง</h2>
+                                <p class="text-sm text-gray-500">สินค้าในตะกร้าเป็นสินค้าดิจิทัลทั้งหมด จะได้รับทันทีหลังชำระเงิน</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     <!-- Payment Method Section -->
                     <div class="bg-white rounded-2xl shadow-lg p-6">
@@ -409,13 +426,17 @@ input[type="radio"]:checked + label .w-5 svg {
 <script>
 // Form validation before submit
 document.getElementById('checkoutForm').addEventListener('submit', function(e) {
-    const shippingAddress = document.querySelector('input[name="shipping_address_id"]:checked');
+    const hasPhysicalProducts = {{ $hasPhysicalProducts ? 'true' : 'false' }};
     const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
 
-    if (!shippingAddress) {
-        e.preventDefault();
-        alert('กรุณาเลือกที่อยู่จัดส่ง');
-        return false;
+    // ตรวจสอบที่อยู่จัดส่งเฉพาะสินค้าที่ต้องจัดส่ง
+    if (hasPhysicalProducts) {
+        const shippingAddress = document.querySelector('input[name="shipping_address_id"]:checked');
+        if (!shippingAddress) {
+            e.preventDefault();
+            alert('กรุณาเลือกที่อยู่จัดส่ง');
+            return false;
+        }
     }
 
     if (!paymentMethod) {
