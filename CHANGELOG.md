@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.453.3] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2464 from xjanova/claude/ollama-admin-panel-NOMHt (ab97f46e)
+- fix: handle 'address already in use' when Ollama is already running (67bf31a5)
+### 🔧 Other Changes
+
+
 ## [v3.453.2] - 2026-01-31
 
 ### ✨ Features
