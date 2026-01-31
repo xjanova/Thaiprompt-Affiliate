@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.448.5] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Fix unique decimal amount not generating for SMS Checker matching (47ddecb2)
+
 ## [v3.448.4] - 2026-01-31
 
 ### ✨ Features
