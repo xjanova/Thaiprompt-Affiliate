@@ -395,7 +395,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <a href="{{ route('user.security.2fa') }}"
+                                <a href="{{ route('user.two-factor.setup') }}"
                                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition">
                                     ตั้งค่า
                                 </a>
@@ -412,7 +412,7 @@
                                         <p class="text-sm text-gray-600 dark:text-gray-400">จัดการอุปกรณ์ที่เข้าสู่ระบบ</p>
                                     </div>
                                 </div>
-                                <a href="{{ route('user.security.sessions') }}"
+                                <a href="{{ route('user.settings') }}"
                                    class="text-purple-600 dark:text-purple-400 hover:underline font-semibold">
                                     ดูทั้งหมด
                                 </a>
