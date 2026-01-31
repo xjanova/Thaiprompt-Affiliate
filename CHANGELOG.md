@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.449.0] - 2026-01-31
+
+### ✨ Features
+- feat: Add unique decimal amount generation for Tarot payment flows (90aa302a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.448.5] - 2026-01-31
 
 ### ✨ Features
