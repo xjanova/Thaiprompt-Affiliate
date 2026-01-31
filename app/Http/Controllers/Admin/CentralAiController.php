@@ -530,6 +530,7 @@ class CentralAiController extends Controller
             'response_max_tokens' => 'nullable|integer',
             'default_temperature' => 'nullable|numeric',
             'fallback_message' => 'nullable|string',
+            'system_prompt' => 'nullable|string|max:5000',
         ]);
 
         try {
@@ -555,6 +556,7 @@ class CentralAiController extends Controller
                 'response_max_tokens',
                 'default_temperature',
                 'fallback_message',
+                'system_prompt',
             ]));
 
             return response()->json([
@@ -643,14 +645,23 @@ class CentralAiController extends Controller
             $setting = CentralAiSetting::getActive();
             $url = "http://{$setting->ollama_host}:{$setting->ollama_port}/api/generate";
 
-            $response = \Illuminate\Support\Facades\Http::timeout(120)->post($url, [
+            // สร้าง payload สำหรับส่งไป Ollama
+            $payload = [
                 'model' => $request->input('model'),
                 'prompt' => $request->input('prompt'),
                 'stream' => false,
                 'options' => [
-                    'temperature' => $request->input('temperature', 0.7),
+                    'temperature' => $request->input('temperature', $setting->default_temperature ?? 0.7),
+                    'num_predict' => $setting->response_max_tokens ?? 2048,
                 ],
-            ]);
+            ];
+
+            // ใส่ system prompt ถ้ามีการตั้งค่าไว้ (กำหนดขอบเขตการตอบ)
+            if (!empty($setting->system_prompt)) {
+                $payload['system'] = $setting->system_prompt;
+            }
+
+            $response = \Illuminate\Support\Facades\Http::timeout(120)->post($url, $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
