@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.451.0] - 2026-01-31
+
+### ✨ Features
+- Merge pull request #2457 from xjanova/claude/fix-shipping-address-styling-1mALX (aa88f1b9)
+- feat: add "คำสั่งซื้อของฉัน" menu item to user shopping submenu (fa7c6311)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.450.0] - 2026-01-31
 
 ### ✨ Features
