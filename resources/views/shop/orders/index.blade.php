@@ -197,6 +197,20 @@
                             ดูรายละเอียด
                         </a>
 
+                        @if($order->canRetryPayment())
+                        <form action="{{ route('orders.retry-payment', $order->id) }}" method="POST" class="flex-1 min-w-[150px]">
+                            @csrf
+                            <button type="submit"
+                                    class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                                    <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                                </svg>
+                                ชำระเงิน
+                            </button>
+                        </form>
+                        @endif
+
                         @if($order->tracking_number)
                         <button onclick="alert('เลขพัสดุ: {{ $order->tracking_number }}')"
                                 class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
