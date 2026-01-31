@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.454.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- security: Fix critical payment security vulnerabilities (a2df32c8)
+
 ## [v3.454.0] - 2026-01-31
 
 ### ✨ Features
