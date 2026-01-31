@@ -365,32 +365,18 @@
                             district-field="city"
                             sub-district-field=""
                             postal-code-field="postal_code"
+                            country-field="country"
+                            :country-value="old('country', $user->country ?? 'TH')"
                             :province-value="old('state', $user->state ?? '')"
                             :district-value="old('city', $user->city ?? '')"
                             :sub-district-value="''"
                             :postal-code-value="old('postal_code', $user->postal_code ?? '')"
                             :show-sub-district="false"
                         />
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            {{-- Country --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-globe mr-1 text-green-600"></i>ประเทศ
-                                </label>
-                                <select name="country"
-                                        class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
-                                        @change="formChanged = true">
-                                    <option value="TH" {{ old('country', $user->country ?? 'TH') === 'TH' ? 'selected' : '' }}>ประเทศไทย</option>
-                                    <option value="US" {{ old('country', $user->country) === 'US' ? 'selected' : '' }}>United States</option>
-                                    <option value="GB" {{ old('country', $user->country) === 'GB' ? 'selected' : '' }}>United Kingdom</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
                 </x-arrow-x.card-v3>
 
-                {{-- Shipping Address --}}
+                {{-- Shipping Address - ลิ้งค์ไปหน้าจัดการที่อยู่จัดส่ง --}}
                 <x-arrow-x.card-v3 class="p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -399,70 +385,22 @@
                             </div>
                             ที่อยู่จัดส่ง
                         </h2>
-
-                        {{-- Copy from Billing Address --}}
-                        <button type="button"
-                                @click="copyBillingAddress()"
-                                class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transform  transition-all">
-                            <i class="fas fa-copy mr-2"></i>คัดลอกจากที่อยู่หลัก
-                        </button>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4">
-                        {{-- Shipping Address --}}
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <i class="fas fa-home mr-1 text-orange-600"></i>ที่อยู่จัดส่ง
-                            </label>
-                            <textarea name="shipping_address"
-                                      rows="2"
-                                      placeholder="บ้านเลขที่ ถนน"
-                                      class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition resize-none"
-                                      x-ref="shippingAddress"
-                                      @input="formChanged = true">{{ old('shipping_address', $user->shipping_address) }}</textarea>
-                        </div>
-
-                        {{-- ระบบเลือกที่อยู่จัดส่งอัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
-                        <x-thai-address-picker
-                            province-field="shipping_state"
-                            district-field="shipping_city"
-                            sub-district-field=""
-                            postal-code-field="shipping_postal_code"
-                            :province-value="old('shipping_state', $user->shipping_state ?? '')"
-                            :district-value="old('shipping_city', $user->shipping_city ?? '')"
-                            :sub-district-value="''"
-                            :postal-code-value="old('shipping_postal_code', $user->shipping_postal_code ?? '')"
-                            :show-sub-district="false"
-                        />
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            {{-- Shipping Country --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-globe mr-1 text-orange-600"></i>ประเทศ
-                                </label>
-                                <select name="shipping_country"
-                                        class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
-                                        x-ref="shippingCountry"
-                                        @change="formChanged = true">
-                                    <option value="TH" {{ old('shipping_country', $user->shipping_country ?? 'TH') === 'TH' ? 'selected' : '' }}>ประเทศไทย</option>
-                                    <option value="US" {{ old('shipping_country', $user->shipping_country) === 'US' ? 'selected' : '' }}>United States</option>
-                                    <option value="GB" {{ old('shipping_country', $user->shipping_country) === 'GB' ? 'selected' : '' }}>United Kingdom</option>
-                                </select>
+                    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-5">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center shadow-md">
+                                <i class="fas fa-map-marker-alt text-white text-lg"></i>
                             </div>
-
-                            {{-- Shipping Phone --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-phone mr-1 text-orange-600"></i>เบอร์โทรติดต่อ (จัดส่ง)
-                                </label>
-                                <input type="tel"
-                                       name="shipping_phone"
-                                       value="{{ old('shipping_phone', $user->shipping_phone) }}"
-                                       placeholder="0812345678"
-                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
-                                       x-ref="shippingPhone"
-                                       @input="formChanged = true">
+                            <div class="flex-1">
+                                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                                    จัดการที่อยู่จัดส่งทั้งหมดได้ที่หน้าที่อยู่จัดส่ง เพิ่ม แก้ไข ลบ และตั้งค่าที่อยู่เริ่มต้นได้ในที่เดียว
+                                </p>
+                                <a href="{{ route('shipping-addresses.index') }}"
+                                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transition-all">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    จัดการที่อยู่จัดส่ง
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -816,32 +754,6 @@ function profileManager() {
                 this.formChanged = true;
             };
             reader.readAsDataURL(file);
-        },
-
-        /**
-         * Copy Billing Address to Shipping Address
-         */
-        copyBillingAddress() {
-            // Get billing address values
-            const address = document.querySelector('textarea[name="address"]').value;
-            const city = document.querySelector('input[name="city"]').value;
-            const state = document.querySelector('input[name="state"]').value;
-            const postalCode = document.querySelector('input[name="postal_code"]').value;
-            const country = document.querySelector('select[name="country"]').value;
-            const phone = document.querySelector('input[name="phone"]').value;
-
-            // Set shipping address values
-            this.$refs.shippingAddress.value = address;
-            this.$refs.shippingCity.value = city;
-            this.$refs.shippingState.value = state;
-            this.$refs.shippingPostalCode.value = postalCode;
-            this.$refs.shippingCountry.value = country;
-            this.$refs.shippingPhone.value = phone;
-
-            this.formChanged = true;
-
-            // Show success message
-            this.showNotification('คัดลอกที่อยู่สำเร็จ!', 'success');
         },
 
         /**

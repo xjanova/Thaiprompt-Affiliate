@@ -554,14 +554,6 @@ class DashboardController extends Controller
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:2'],
 
-            // ที่อยู่จัดส่ง (Shipping Address) - NEW
-            'shipping_address' => ['nullable', 'string', 'max:500'],
-            'shipping_city' => ['nullable', 'string', 'max:100'],
-            'shipping_state' => ['nullable', 'string', 'max:100'],
-            'shipping_postal_code' => ['nullable', 'string', 'max:20'],
-            'shipping_country' => ['nullable', 'string', 'max:2'],
-            'shipping_phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
-
             // รูปโปรไฟล์ (จะแปลงเป็น WebP อัตโนมัติ)
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
 

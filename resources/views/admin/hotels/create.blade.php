@@ -182,31 +182,20 @@
                                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ที่อยู่ตามถนน เลขที่อาคาร</p>
                                 </div>
 
-                                {{-- ระบบเลือกที่อยู่อัจฉริยะ (จังหวัด → อำเภอ → รหัสไปรษณีย์) --}}
+                                {{-- ระบบเลือกที่อยู่อัจฉริยะ พร้อมเลือกประเทศ (ถ้าไม่ใช่ไทย → กรอกมือ) --}}
                                 <x-thai-address-picker
                                     province-field="state"
                                     district-field="city"
                                     sub-district-field=""
                                     postal-code-field="postal_code"
+                                    country-field="country"
                                     :province-value="old('state', '')"
                                     :district-value="old('city', '')"
                                     :sub-district-value="''"
                                     :postal-code-value="old('postal_code', '')"
+                                    :country-value="old('country', 'TH')"
                                     :show-sub-district="false"
                                 />
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                            <i class="fas fa-globe-asia text-green-600 dark:text-green-400 mr-1"></i>
-                                            ประเทศ <span class="text-red-500">*</span>
-                                        </label>
-                                        <input type="text" name="country"
-                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                                               value="{{ old('country', 'Thailand') }}"
-                                               placeholder="Thailand" required>
-                                    </div>
-                                </div>
 
                                 <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
                                     <h6 class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4">
