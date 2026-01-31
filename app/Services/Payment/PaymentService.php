@@ -349,17 +349,30 @@ class PaymentService
             return null;
         }
 
-        // ตรวจสอบว่ามีบัญชีธนาคารที่เปิด SMS Checker หรือไม่
+        // ตรวจสอบว่ามี SMS Checker เปิดใช้งานหรือไม่
+        // เช็ค 2 ทาง: (1) มีบัญชีธนาคารที่เปิด SMS Checker หรือ (2) มีอุปกรณ์ SMS Checker ที่ active
         try {
-            $hasSmsChecker = PaymentBankAccount::where('is_active', true)
-                ->where('sms_checker_enabled', true)
-                ->exists();
+            $hasSmsChecker = false;
+
+            // ทาง 1: ตรวจบัญชีธนาคารที่เปิด SMS Checker
+            try {
+                $hasSmsChecker = PaymentBankAccount::where('is_active', true)
+                    ->where('sms_checker_enabled', true)
+                    ->exists();
+            } catch (\Exception $e) {
+                // ตาราง payment_bank_accounts อาจยังไม่ถูกสร้าง
+                Log::debug('PaymentBankAccount check skipped: ' . $e->getMessage());
+            }
+
+            // ทาง 2: ถ้าไม่มีบัญชี ให้ตรวจว่ามีอุปกรณ์ SMS Checker ที่ active อยู่
+            if (!$hasSmsChecker) {
+                $hasSmsChecker = \App\Models\SmsCheckerDevice::where('status', 'active')->exists();
+            }
 
             if (!$hasSmsChecker) {
                 return null;
             }
         } catch (\Exception $e) {
-            // ถ้าตารางยังไม่มี ให้ข้ามไป
             Log::debug('SMS Checker check skipped: ' . $e->getMessage());
             return null;
         }
