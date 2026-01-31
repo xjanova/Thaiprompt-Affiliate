@@ -281,7 +281,7 @@
                                     {{-- ขั้นตอนที่ 1: ติดตั้ง Ollama --}}
                                     <div class="mb-4">
                                         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            1. ติดตั้ง Ollama:
+                                            1. ติดตั้ง Ollama (จะเริ่ม service อัตโนมัติ):
                                         </p>
                                         <div class="relative">
                                             <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">curl -fsSL https://ollama.com/install.sh | sh</pre>
@@ -290,29 +290,15 @@
                                                 คัดลอก
                                             </button>
                                         </div>
-                                    </div>
-
-                                    {{-- ขั้นตอนที่ 2: เริ่ม service --}}
-                                    <div class="mb-4">
-                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            2. เริ่ม Ollama Service:
-                                        </p>
-                                        <div class="relative">
-                                            <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">ollama serve &</pre>
-                                            <button @click="copyCommand('ollama serve &')"
-                                                    class="absolute top-2 right-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition">
-                                                คัดลอก
-                                            </button>
-                                        </div>
                                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            หรือถ้าใช้ systemd: <code class="bg-gray-200 dark:bg-gray-700 px-1 rounded">sudo systemctl start ollama</code>
+                                            คำสั่งนี้จะติดตั้งและเริ่ม Ollama Service อัตโนมัติผ่าน systemd
                                         </p>
                                     </div>
 
-                                    {{-- ขั้นตอนที่ 3: ตรวจสอบ --}}
+                                    {{-- ขั้นตอนที่ 2: ตรวจสอบ --}}
                                     <div>
                                         <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                            3. ตรวจสอบว่าทำงานได้:
+                                            2. ตรวจสอบว่า Ollama ทำงานได้:
                                         </p>
                                         <div class="relative">
                                             <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono overflow-x-auto">curl http://localhost:11434/api/version</pre>
@@ -324,6 +310,20 @@
                                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                             ถ้าแสดงข้อมูล version แสดงว่า Ollama พร้อมใช้งาน
                                         </p>
+                                    </div>
+
+                                    {{-- ถ้า service ไม่เริ่มอัตโนมัติ --}}
+                                    <div class="mt-4 pt-4 border-t border-blue-200 dark:border-blue-600">
+                                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                            ถ้า Ollama ไม่เริ่มอัตโนมัติ ให้รันคำสั่งนี้:
+                                        </p>
+                                        <div class="relative">
+                                            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs font-mono overflow-x-auto">sudo systemctl start ollama</pre>
+                                            <button @click="copyCommand('sudo systemctl start ollama')"
+                                                    class="absolute top-1 right-1 px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition">
+                                                คัดลอก
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

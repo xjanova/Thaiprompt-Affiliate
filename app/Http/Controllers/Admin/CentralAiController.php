@@ -257,8 +257,14 @@ class CentralAiController extends Controller
             }
 
             // เริ่ม Ollama Service หลังติดตั้ง (จำเป็นสำหรับ download model ในขั้นตอนถัดไป)
+            // หมายเหตุ: install script มักจะเริ่ม service อัตโนมัติผ่าน systemd
             $startResult = $this->localAiManager->start();
             $ollamaStatus = ($startResult['success'] ?? false) ? 'running' : 'stopped';
+
+            // ถ้า start() ล้มเหลว (เช่น "address already in use") แต่ Ollama ทำงานอยู่จริง ให้ถือว่าสำเร็จ
+            if ($ollamaStatus === 'stopped' && $this->localAiManager->isRunning()) {
+                $ollamaStatus = 'running';
+            }
 
             // อัพเดทสถานะใน settings
             $setting = CentralAiSetting::getActive();
@@ -310,7 +316,8 @@ class CentralAiController extends Controller
             // ตรวจสอบว่า Ollama service ทำงานอยู่ ถ้าไม่ ให้เริ่มก่อน
             if (!$this->localAiManager->isRunning()) {
                 $startResult = $this->localAiManager->start();
-                if (!($startResult['success'] ?? false)) {
+                // ถ้า start() ล้มเหลว ตรวจสอบอีกครั้งว่า Ollama อาจเริ่มจาก systemd แล้ว
+                if (!($startResult['success'] ?? false) && !$this->localAiManager->isRunning()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'ไม่สามารถเริ่ม Ollama Service ได้',
