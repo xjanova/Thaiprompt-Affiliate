@@ -302,11 +302,12 @@
                     </div>
 
                     <!-- Shipping Address -->
+                    @php
+                        $address = $order->shipping_address_snapshot ?? $order->shippingAddress;
+                    @endphp
+                    @if($address)
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
                         <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ที่อยู่จัดส่ง</h4>
-                        @php
-                            $address = $order->shipping_address_snapshot ?? $order->shippingAddress;
-                        @endphp
                         @if(is_array($address))
                         <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                             <p class="font-medium text-gray-900 dark:text-white">{{ $address['recipient_name'] ?? '' }}</p>
@@ -329,6 +330,15 @@
                         </div>
                         @endif
                     </div>
+                    @else
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ที่อยู่จัดส่ง</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-cloud-download-alt mr-1"></i>
+                            สินค้าดิจิทัล — ไม่ต้องจัดส่ง
+                        </p>
+                    </div>
+                    @endif
 
                     <!-- Transaction Info -->
                     @if($transaction)
