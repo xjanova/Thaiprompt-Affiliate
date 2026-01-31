@@ -61,13 +61,6 @@ class User extends Authenticatable
         'bank_name',
         'bank_account',
         'bank_account_name',
-        // Shipping address fields
-        'shipping_address',
-        'shipping_city',
-        'shipping_state',
-        'shipping_postal_code',
-        'shipping_country',
-        'shipping_phone',
         // Additional profile
         'date_of_birth',
         'gender',
