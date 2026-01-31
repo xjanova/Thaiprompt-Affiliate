@@ -103,42 +103,49 @@ class UniquePaymentAmount extends Model
         $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
         $maxPending = config('smschecker.max_pending_per_amount', 99);
 
-        // ทำความสะอาด reservations ที่หมดอายุ
-        static::where('status', 'reserved')
-            ->where('expires_at', '<=', now())
-            ->update(['status' => 'expired']);
+        // ใช้ DB transaction + pessimistic lock ป้องกัน race condition
+        return \Illuminate\Support\Facades\DB::transaction(function () use (
+            $baseAmount, $transactionId, $transactionType, $expiryMinutes, $maxPending
+        ) {
+            // ทำความสะอาด reservations ที่หมดอายุ
+            static::where('status', 'reserved')
+                ->where('expires_at', '<=', now())
+                ->update(['status' => 'expired']);
 
-        // ปัดเศษ base_amount เป็นจำนวนเต็มเพื่อให้ทศนิยมใช้เป็น suffix เท่านั้น
-        $intBaseAmount = intval($baseAmount);
+            // ปัดเศษ base_amount เป็นจำนวนเต็มเพื่อให้ทศนิยมใช้เป็น suffix เท่านั้น
+            $intBaseAmount = intval($baseAmount);
 
-        // ค้นหา suffix ที่ยังว่างอยู่ (01-99)
-        $usedSuffixes = static::where('base_amount', $intBaseAmount)
-            ->where('status', 'reserved')
-            ->where('expires_at', '>', now())
-            ->pluck('decimal_suffix')
-            ->toArray();
+            // ค้นหา suffix ที่ยังว่างอยู่ (01-99) พร้อม lockForUpdate ป้องกัน race condition
+            $usedSuffixes = static::where('base_amount', $intBaseAmount)
+                ->where('status', 'reserved')
+                ->where('expires_at', '>', now())
+                ->lockForUpdate()
+                ->pluck('decimal_suffix')
+                ->toArray();
 
-        // สร้างรายการ suffix ที่ยังไม่ถูกใช้
-        $availableSuffixes = array_diff(range(1, min($maxPending, 99)), $usedSuffixes);
+            // สร้างรายการ suffix ที่ยังไม่ถูกใช้
+            $availableSuffixes = array_diff(range(1, min($maxPending, 99)), $usedSuffixes);
 
-        if (empty($availableSuffixes)) {
-            // suffix เต็มหมดแล้วสำหรับราคานี้
-            return null;
-        }
+            if (empty($availableSuffixes)) {
+                // suffix เต็มหมดแล้วสำหรับราคานี้
+                return null;
+            }
 
-        // สุ่มเลือก suffix ที่ยังว่าง
-        $suffix = $availableSuffixes[array_rand($availableSuffixes)];
-        $uniqueAmount = $intBaseAmount + ($suffix / 100);
+            // สุ่มเลือก suffix ที่ยังว่าง (ใช้ cryptographic random)
+            $availableValues = array_values($availableSuffixes);
+            $suffix = $availableValues[random_int(0, count($availableValues) - 1)];
+            $uniqueAmount = $intBaseAmount + ($suffix / 100);
 
-        return static::create([
-            'base_amount' => $intBaseAmount,
-            'unique_amount' => $uniqueAmount,
-            'decimal_suffix' => $suffix,
-            'transaction_id' => $transactionId,
-            'transaction_type' => $transactionType,
-            'status' => 'reserved',
-            'expires_at' => now()->addMinutes($expiryMinutes),
-        ]);
+            return static::create([
+                'base_amount' => $intBaseAmount,
+                'unique_amount' => $uniqueAmount,
+                'decimal_suffix' => $suffix,
+                'transaction_id' => $transactionId,
+                'transaction_type' => $transactionType,
+                'status' => 'reserved',
+                'expires_at' => now()->addMinutes($expiryMinutes),
+            ]);
+        });
     }
 
     /**
@@ -152,6 +159,7 @@ class UniquePaymentAmount extends Model
         return static::where('unique_amount', $amount)
             ->where('status', 'reserved')
             ->where('expires_at', '>', now())
+            ->lockForUpdate()
             ->first();
     }
 }

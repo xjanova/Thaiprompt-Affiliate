@@ -232,6 +232,16 @@ class PaymentService
     public function completePayment(PaymentTransaction $transaction)
     {
         return DB::transaction(function () use ($transaction) {
+            // Pessimistic lock: ป้องกัน double-spend / race condition
+            // โหลด transaction ใหม่พร้อม lock เพื่อให้แน่ใจว่าไม่มี process อื่นทำพร้อมกัน
+            $transaction = PaymentTransaction::lockForUpdate()->find($transaction->id);
+            if (!$transaction) {
+                Log::warning('PaymentService: Transaction not found during completePayment', [
+                    'id' => $transaction->id ?? 'unknown',
+                ]);
+                return false;
+            }
+
             if ($transaction->isCompleted()) {
                 return true;
             }

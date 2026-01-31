@@ -144,8 +144,8 @@ class SmsPaymentService
             $tag = substr($cipherTextWithTag, -$tagLength);
             $cipherText = substr($cipherTextWithTag, 0, -$tagLength);
 
-            // สร้าง key (ใช้ 32 bytes แรกของ secret, เติม zero ถ้าสั้นกว่า)
-            $key = str_pad(substr($secretKey, 0, 32), 32, "\0");
+            // SECURITY: ใช้ PBKDF2 สร้าง encryption key (ตรงกับ Android CryptoManager)
+            $key = $this->deriveKey($secretKey, 'encryption');
 
             $decrypted = openssl_decrypt(
                 $cipherText,
@@ -157,7 +157,7 @@ class SmsPaymentService
             );
 
             if ($decrypted === false) {
-                Log::warning('SMS Payment: ถอดรหัสล้มเหลว');
+                Log::warning('SMS Payment: ถอดรหัสล้มเหลว (auth tag mismatch หรือ key ไม่ตรง)');
                 return null;
             }
 
@@ -177,7 +177,8 @@ class SmsPaymentService
     /**
      * ตรวจสอบลายเซ็น HMAC-SHA256
      *
-     * ลายเซ็น = HMAC-SHA256(encrypted_data + nonce + timestamp, secretKey)
+     * ลายเซ็น = HMAC-SHA256(encrypted_data + nonce + timestamp, hmacKey)
+     * hmacKey ถูก derive แยกจาก encryption key ผ่าน PBKDF2
      *
      * @param string $data ข้อมูลที่ต้องตรวจสอบ
      * @param string $signature ลายเซ็นที่ได้รับจาก client (Base64)
@@ -186,8 +187,29 @@ class SmsPaymentService
      */
     public function verifySignature(string $data, string $signature, string $secretKey): bool
     {
-        $expected = base64_encode(hash_hmac('sha256', $data, $secretKey, true));
+        // SECURITY: ใช้ dedicated HMAC key (แยกจาก encryption key)
+        $hmacKey = $this->deriveKey($secretKey, 'hmac-signing');
+        $expected = base64_encode(hash_hmac('sha256', $data, $hmacKey, true));
         return hash_equals($expected, $signature);
+    }
+
+    /**
+     * Derive a strong key from secret using PBKDF2-SHA256
+     *
+     * ต้องตรงกับ Android CryptoManager.deriveKey() ทุกประการ:
+     * - Algorithm: PBKDF2WithHmacSHA256
+     * - Iterations: 100,000
+     * - Key length: 256 bits (32 bytes)
+     * - Salt: "thaiprompt-smschecker-v1:{context}"
+     *
+     * @param string $secret Secret key string
+     * @param string $context Purpose context ('encryption' or 'hmac-signing')
+     * @return string 32-byte derived key (raw binary)
+     */
+    private function deriveKey(string $secret, string $context = 'encryption'): string
+    {
+        $salt = "thaiprompt-smschecker-v1:{$context}";
+        return hash_pbkdf2('sha256', $secret, $salt, 100000, 32, true);
     }
 
     /**

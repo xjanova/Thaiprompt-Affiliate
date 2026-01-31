@@ -136,52 +136,75 @@ class SmsPaymentNotification extends Model
             return false;
         }
 
-        // จับคู่ด้วย unique amount
-        $uniqueAmount = UniquePaymentAmount::where('unique_amount', $this->amount)
-            ->where('status', 'reserved')
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if ($uniqueAmount) {
-            // จับคู่สำเร็จ
-            $this->status = 'matched';
-            $this->matched_transaction_id = $uniqueAmount->transaction_id;
-            $this->save();
-
-            $uniqueAmount->status = 'used';
-            $uniqueAmount->matched_at = now();
-            $uniqueAmount->save();
-
-            // ยืนยัน payment transaction อัตโนมัติ (ถ้าเปิดใช้งาน)
-            // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
-            if ($autoConfirm && $uniqueAmount->transaction_id) {
-                $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
-                if ($transaction && $transaction->status === 'pending') {
-                    app(PaymentService::class)->completePayment($transaction);
-                }
+        // SECURITY: ตรวจสอบว่า notification มาจากบัญชีธนาคารที่ลงทะเบียนไว้
+        // ป้องกันคนร้ายส่ง SMS ปลอมจากบัญชีอื่นเพื่อ auto-approve
+        try {
+            if (!$this->isFromRegisteredAccount()) {
+                \Illuminate\Support\Facades\Log::warning('SMS Payment: notification จากบัญชีที่ไม่ได้ลงทะเบียน ไม่ auto-match', [
+                    'bank' => $this->bank,
+                    'account' => $this->account_number,
+                    'amount' => $this->amount,
+                ]);
+                // เก็บ notification ไว้ แต่ไม่ auto-match
+                // admin สามารถ approve ด้วยตนเองได้ในภายหลัง
+                return false;
             }
-
-            return true;
+        } catch (\Exception $e) {
+            // ถ้า PaymentBankAccount table ยังไม่พร้อม → ข้ามการตรวจสอบ (backward compatible)
+            \Illuminate\Support\Facades\Log::debug('SMS Payment: ข้ามการตรวจสอบบัญชี - ' . $e->getMessage());
         }
 
-        // Fallback: จับคู่ด้วย reference_number
-        if ($this->reference_number) {
-            $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
-                ->where('status', 'pending')
+        // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm) {
+            // จับคู่ด้วย unique amount (พร้อม lock)
+            $uniqueAmount = UniquePaymentAmount::where('unique_amount', $this->amount)
+                ->where('status', 'reserved')
+                ->where('expires_at', '>', now())
+                ->lockForUpdate()
                 ->first();
 
-            if ($transaction && abs((float) $transaction->amount - (float) $this->amount) < 0.01) {
+            if ($uniqueAmount) {
+                // จับคู่สำเร็จ
                 $this->status = 'matched';
-                $this->matched_transaction_id = $transaction->id;
+                $this->matched_transaction_id = $uniqueAmount->transaction_id;
                 $this->save();
 
-                if ($autoConfirm) {
-                    app(PaymentService::class)->completePayment($transaction);
+                $uniqueAmount->status = 'used';
+                $uniqueAmount->matched_at = now();
+                $uniqueAmount->save();
+
+                // ยืนยัน payment transaction อัตโนมัติ (ถ้าเปิดใช้งาน)
+                // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
+                if ($autoConfirm && $uniqueAmount->transaction_id) {
+                    $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
+                    if ($transaction && $transaction->status === 'pending') {
+                        app(PaymentService::class)->completePayment($transaction);
+                    }
                 }
+
                 return true;
             }
-        }
 
-        return false;
+            // Fallback: จับคู่ด้วย reference_number (พร้อม lock)
+            if ($this->reference_number) {
+                $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
+                    ->where('status', 'pending')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($transaction && abs((float) $transaction->amount - (float) $this->amount) < 0.01) {
+                    $this->status = 'matched';
+                    $this->matched_transaction_id = $transaction->id;
+                    $this->save();
+
+                    if ($autoConfirm) {
+                        app(PaymentService::class)->completePayment($transaction);
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        });
     }
 }
