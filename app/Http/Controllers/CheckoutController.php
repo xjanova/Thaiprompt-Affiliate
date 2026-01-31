@@ -193,7 +193,7 @@ class CheckoutController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
-                    'seller_id' => $product->seller_id,
+                    'seller_id' => $product->seller_id ?? \App\Models\Product::getOfficialSellerId(),
                     'product_name' => $product->name,
                     'product_sku' => $product->sku,
                     'product_image' => $product->main_image_url,

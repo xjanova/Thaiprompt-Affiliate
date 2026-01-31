@@ -144,6 +144,7 @@ class OrderApiController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item['product']->id,
+                    'seller_id' => $item['product']->seller_id ?? \App\Models\Product::getOfficialSellerId(),
                     'product_name' => $item['product']->name,
                     'product_sku' => $item['product']->sku,
                     'quantity' => $item['quantity'],
