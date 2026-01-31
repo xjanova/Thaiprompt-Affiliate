@@ -290,6 +290,7 @@ class SmsCheckerAdminController extends Controller
             'url' => config('app.url'),
             'apiKey' => $device->api_key,
             'secretKey' => $device->secret_key,
+            'deviceId' => $device->device_id,
             'deviceName' => $device->device_name ?? $device->device_id,
         ];
 
@@ -310,6 +311,7 @@ class SmsCheckerAdminController extends Controller
             'url' => config('app.url'),
             'apiKey' => $device->api_key,
             'secretKey' => $device->secret_key,
+            'deviceId' => $device->device_id,
             'deviceName' => $device->device_name ?? $device->device_id,
         ]);
     }
