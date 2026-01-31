@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.447.1] - 2026-01-31
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2452 from xjanova/claude/fix-shop-category-view-WeRhS (320a004e)
+- fix: validate shipping address ownership and soft-delete status at checkout (563f246e)
+### 🔧 Other Changes
+
+
 ## [v3.447.0] - 2026-01-31
 
 ### ✨ Features
