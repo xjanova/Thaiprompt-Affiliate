@@ -376,6 +376,248 @@ class LlamaInstallationService
     }
 
     /**
+     * ตรวจสอบสถานะการติดตั้ง Ollama
+     *
+     * @return array{is_installed: bool, version: string|null, message: string}
+     */
+    public function checkInstallationStatus(): array
+    {
+        // ตรวจสอบว่า Ollama ถูกติดตั้งหรือยัง
+        if (!$this->canExecuteCommands()) {
+            // ไม่สามารถรันคำสั่งได้ - ลองเช็คผ่าน HTTP แทน
+            try {
+                $response = Http::timeout(5)->get('http://localhost:11434/api/version');
+                if ($response->successful()) {
+                    return [
+                        'is_installed' => true,
+                        'version' => $response->json('version'),
+                        'message' => 'Ollama ติดตั้งแล้วและกำลังทำงาน',
+                    ];
+                }
+            } catch (\Exception $e) {
+                // ไม่สามารถเชื่อมต่อได้
+            }
+
+            return [
+                'is_installed' => false,
+                'version' => null,
+                'message' => 'ไม่สามารถตรวจสอบได้ (exec ถูก disable)',
+            ];
+        }
+
+        // ตรวจสอบว่ามี binary ollama หรือไม่
+        $output = [];
+        $returnCode = -1;
+        @exec('which ollama 2>/dev/null', $output, $returnCode);
+
+        if ($returnCode === 0 && !empty($output)) {
+            // ดึง version
+            $versionOutput = [];
+            @exec('ollama --version 2>/dev/null', $versionOutput);
+            $version = !empty($versionOutput) ? trim(implode('', $versionOutput)) : null;
+
+            // ลองดึง version ผ่าน regex
+            if ($version) {
+                preg_match('/(\d+\.\d+\.\d+)/', $version, $matches);
+                $version = $matches[1] ?? $version;
+            }
+
+            return [
+                'is_installed' => true,
+                'version' => $version,
+                'message' => 'Ollama ติดตั้งแล้ว',
+            ];
+        }
+
+        return [
+            'is_installed' => false,
+            'version' => null,
+            'message' => 'Ollama ยังไม่ได้ติดตั้ง',
+        ];
+    }
+
+    /**
+     * ติดตั้ง Ollama
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function installOllama(): array
+    {
+        // ตรวจสอบว่าติดตั้งแล้วหรือยัง
+        $status = $this->checkInstallationStatus();
+        if ($status['is_installed']) {
+            return [
+                'success' => true,
+                'message' => 'Ollama ติดตั้งแล้ว เวอร์ชัน: ' . ($status['version'] ?? 'N/A'),
+            ];
+        }
+
+        // ตรวจสอบว่าสามารถรันคำสั่งได้หรือไม่
+        $canInstall = $this->checkInstallCapability();
+        if (!$canInstall['can_install']) {
+            return [
+                'success' => false,
+                'message' => $canInstall['reason'],
+                'manual_instructions' => $this->getManualInstructions('ollama', 'llama3:8b'),
+            ];
+        }
+
+        // ติดตั้ง Ollama
+        $this->log('เริ่มติดตั้ง Ollama...');
+
+        $output = [];
+        $returnCode = -1;
+        @exec('curl -fsSL https://ollama.com/install.sh | sh 2>&1', $output, $returnCode);
+
+        $outputStr = implode("\n", $output);
+        $this->log("Install output: {$outputStr}");
+
+        if ($returnCode !== 0) {
+            $this->log("การติดตั้ง Ollama ล้มเหลว (exit code: {$returnCode})");
+
+            return [
+                'success' => false,
+                'message' => 'การติดตั้ง Ollama ล้มเหลว: ' . $outputStr,
+                'manual_instructions' => $this->getManualInstructions('ollama', 'llama3:8b'),
+            ];
+        }
+
+        $this->log('ติดตั้ง Ollama สำเร็จ');
+
+        return [
+            'success' => true,
+            'message' => 'ติดตั้ง Ollama สำเร็จ',
+        ];
+    }
+
+    /**
+     * ดาวน์โหลดโมเดล AI
+     *
+     * @param string $modelName ชื่อโมเดล เช่น llama3:8b, mistral:7b
+     * @return array{success: bool, message: string}
+     */
+    public function downloadModel(string $modelName): array
+    {
+        // ตรวจสอบว่า Ollama ติดตั้งแล้วหรือยัง
+        $status = $this->checkInstallationStatus();
+        if (!$status['is_installed']) {
+            return [
+                'success' => false,
+                'message' => 'กรุณาติดตั้ง Ollama ก่อน',
+            ];
+        }
+
+        $this->log("เริ่มดาวน์โหลดโมเดล: {$modelName}");
+
+        // ลองผ่าน API ก่อน (ไม่ต้องใช้ exec)
+        try {
+            $response = Http::timeout(600)->post('http://localhost:11434/api/pull', [
+                'name' => $modelName,
+                'stream' => false,
+            ]);
+
+            if ($response->successful()) {
+                $this->log("ดาวน์โหลดโมเดล {$modelName} สำเร็จ (ผ่าน API)");
+                return [
+                    'success' => true,
+                    'message' => "ดาวน์โหลดโมเดล {$modelName} สำเร็จ",
+                ];
+            }
+
+            $errorBody = $response->body();
+            $this->log("API pull ล้มเหลว: {$errorBody}");
+        } catch (\Exception $e) {
+            $this->log("API pull exception: {$e->getMessage()}");
+        }
+
+        // Fallback: ใช้ exec
+        if ($this->canExecuteCommands()) {
+            $output = [];
+            $returnCode = -1;
+            @exec("ollama pull " . escapeshellarg($modelName) . " 2>&1", $output, $returnCode);
+
+            $outputStr = implode("\n", $output);
+            $this->log("Exec pull output: {$outputStr}");
+
+            if ($returnCode === 0) {
+                $this->log("ดาวน์โหลดโมเดล {$modelName} สำเร็จ (ผ่าน exec)");
+                return [
+                    'success' => true,
+                    'message' => "ดาวน์โหลดโมเดล {$modelName} สำเร็จ",
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'message' => "ไม่สามารถดาวน์โหลดโมเดล {$modelName} ได้",
+        ];
+    }
+
+    /**
+     * ลบโมเดล AI
+     *
+     * @param string $modelName ชื่อโมเดลที่ต้องการลบ
+     * @return array{success: bool, message: string}
+     */
+    public function deleteModel(string $modelName): array
+    {
+        $this->log("เริ่มลบโมเดล: {$modelName}");
+
+        // ลองผ่าน API ก่อน
+        try {
+            $response = Http::timeout(30)->delete('http://localhost:11434/api/delete', [
+                'name' => $modelName,
+            ]);
+
+            if ($response->successful()) {
+                $this->log("ลบโมเดล {$modelName} สำเร็จ (ผ่าน API)");
+                return [
+                    'success' => true,
+                    'message' => "ลบโมเดล {$modelName} สำเร็จ",
+                ];
+            }
+        } catch (\Exception $e) {
+            $this->log("API delete exception: {$e->getMessage()}");
+        }
+
+        // Fallback: ใช้ exec
+        if ($this->canExecuteCommands()) {
+            $output = [];
+            $returnCode = -1;
+            @exec("ollama rm " . escapeshellarg($modelName) . " 2>&1", $output, $returnCode);
+
+            if ($returnCode === 0) {
+                $this->log("ลบโมเดล {$modelName} สำเร็จ (ผ่าน exec)");
+                return [
+                    'success' => true,
+                    'message' => "ลบโมเดล {$modelName} สำเร็จ",
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'message' => "ไม่สามารถลบโมเดล {$modelName} ได้",
+        ];
+    }
+
+    /**
+     * ตรวจสอบว่าสามารถรันคำสั่ง exec ได้หรือไม่
+     *
+     * @return bool
+     */
+    private function canExecuteCommands(): bool
+    {
+        if (!function_exists('exec')) {
+            return false;
+        }
+
+        $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions')));
+        return !in_array('exec', $disabledFunctions);
+    }
+
+    /**
      * ยกเลิกการติดตั้ง
      *
      * @return array
