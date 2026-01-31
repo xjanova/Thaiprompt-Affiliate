@@ -651,6 +651,47 @@
             </div>
         </div>
     </div>
+
+    {{-- SSH Manual Commands Modal --}}
+    <div x-show="showSshModal" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div class="fixed inset-0 bg-black/50" @click="showSshModal = false"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 z-10">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                ต้องหยุด Ollama ผ่าน SSH
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                เนื่องจาก PHP exec() ถูก disable ไม่สามารถหยุด Ollama จากเว็บได้ กรุณาเชื่อมต่อ SSH แล้วรันคำสั่งต่อไปนี้:
+            </p>
+            <div class="space-y-2 mb-6">
+                <template x-for="(cmd, idx) in sshCommands" :key="idx">
+                    <div class="flex items-center gap-2 bg-gray-900 dark:bg-gray-950 rounded-lg px-4 py-3">
+                        <code class="text-green-400 text-sm font-mono flex-1" x-text="cmd"></code>
+                        <button @click="navigator.clipboard.writeText(cmd); showNotification('คัดลอกแล้ว', 'success')"
+                                class="text-gray-400 hover:text-white transition p-1" title="คัดลอก">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </button>
+                    </div>
+                </template>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button @click="showSshModal = false; refreshStatus()"
+                        class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
+                    รันแล้ว ตรวจสอบใหม่
+                </button>
+                <button @click="showSshModal = false"
+                        class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                    ปิด
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -691,6 +732,10 @@ function ollamaControlPanel() {
         chatMessages: [],
         chatLoading: false,
         chatTemperature: 0.7,
+
+        // SSH manual commands modal
+        showSshModal: false,
+        sshCommands: [],
 
         // Toast
         toast: { show: false, message: '', type: 'info' },
@@ -793,6 +838,16 @@ function ollamaControlPanel() {
                     this.status = 'stopped';
                     this.runningModels = [];
                     this.showNotification('หยุด Ollama สำเร็จ', 'success');
+                } else if (data.manual_required) {
+                    // exec() ถูก disable — แสดงคำสั่ง SSH ให้ผู้ใช้
+                    const commands = (data.manual_commands || []).join('\n');
+                    this.showNotification(
+                        'ไม่สามารถหยุดอัตโนมัติได้ กรุณารันคำสั่งนี้ผ่าน SSH:\n' + commands,
+                        'error'
+                    );
+                    // แสดง modal คำสั่ง SSH
+                    this.sshCommands = data.manual_commands || [];
+                    this.showSshModal = true;
                 } else {
                     this.showNotification(data.message || 'ไม่สามารถหยุด Ollama ได้', 'error');
                 }

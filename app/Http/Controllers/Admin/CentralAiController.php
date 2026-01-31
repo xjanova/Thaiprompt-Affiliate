@@ -407,13 +407,29 @@ class CentralAiController extends Controller
         try {
             $result = $this->localAiManager->stop();
 
-            // อัพเดทสถานะ
             $setting = CentralAiSetting::getActive();
-            $setting->update(['ollama_status' => 'stopped']);
 
+            if ($result['success']) {
+                // อัพเดทสถานะเฉพาะเมื่อหยุดสำเร็จจริง
+                $setting->update(['ollama_status' => 'stopped']);
+                Cache::forget('ollama_is_installed');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'หยุด Ollama สำเร็จ',
+                    'data' => $result,
+                ]);
+            }
+
+            // หยุดไม่สำเร็จ — ส่งคำสั่ง SSH กลับไปให้ผู้ใช้
             return response()->json([
-                'success' => $result['success'],
-                'message' => $result['success'] ? 'หยุด Ollama สำเร็จ' : 'ไม่สามารถหยุด Ollama ได้',
+                'success' => false,
+                'message' => $result['message'] ?? 'ไม่สามารถหยุด Ollama ได้',
+                'manual_required' => $result['manual_required'] ?? false,
+                'manual_commands' => $result['manual_commands'] ?? [
+                    'sudo systemctl stop ollama',
+                    'sudo systemctl disable ollama',
+                ],
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
