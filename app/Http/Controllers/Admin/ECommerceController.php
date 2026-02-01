@@ -222,6 +222,11 @@ class ECommerceController extends Controller
             'track_inventory' => 'boolean',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
+            'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
+            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_weight_kg' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount_weight' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -243,6 +248,13 @@ class ECommerceController extends Controller
 
             // Set seller_id to first user or current user
             $validated['seller_id'] = auth()->id() ?? 1;
+
+            // ตั้งค่าการจัดส่ง
+            $validated['shipping_method'] = $request->shipping_method ?? 'store_default';
+            $validated['shipping_fee'] = $request->shipping_fee;
+            $validated['shipping_weight_kg'] = $request->shipping_weight_kg;
+            $validated['free_shipping_min_amount'] = $request->free_shipping_min_amount
+                ?? $request->free_shipping_min_amount_weight;
 
             // Set defaults
             $validated['is_active'] = $request->has('is_active');
@@ -361,6 +373,11 @@ class ECommerceController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
+            'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
+            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_weight_kg' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount_weight' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -419,6 +436,13 @@ class ECommerceController extends Controller
             // Set cashback defaults if not provided
             $validated['customer_cashback'] = $validated['customer_cashback'] ?? 0;
             $validated['cashback_percentage'] = $validated['cashback_percentage'] ?? 0;
+
+            // ตั้งค่าการจัดส่ง
+            $validated['shipping_method'] = $request->shipping_method ?? 'store_default';
+            $validated['shipping_fee'] = $request->shipping_fee;
+            $validated['shipping_weight_kg'] = $request->shipping_weight_kg;
+            $validated['free_shipping_min_amount'] = $request->free_shipping_min_amount
+                ?? $request->free_shipping_min_amount_weight;
 
             $product->update($validated);
 

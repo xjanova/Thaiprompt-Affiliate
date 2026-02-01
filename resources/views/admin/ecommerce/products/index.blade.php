@@ -539,6 +539,67 @@
                     </div>
                 </div>
 
+                {{-- การจัดส่ง (Shipping) --}}
+                <div x-data="{ shippingMethod: '{{ old('shipping_method', 'store_default') }}' }" class="space-y-3">
+                    <label class="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+                        <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a2 2 0 104 0m-4 0a2 2 0 11-4 0"/>
+                        </svg>
+                        <span data-translate>การจัดส่ง</span>
+                    </label>
+
+                    <div>
+                        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block" data-translate>วิธีการจัดส่ง</label>
+                        <select name="shipping_method" x-model="shippingMethod" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                            <option value="store_default" data-translate>ใช้ค่าเริ่มต้นของร้าน/ระบบ</option>
+                            <option value="free" data-translate>จัดส่งฟรี</option>
+                            <option value="flat_rate" data-translate>อัตราเหมาจ่าย (Flat Rate)</option>
+                            <option value="weight_based" data-translate>คำนวณตามน้ำหนัก (Weight Based)</option>
+                        </select>
+                    </div>
+
+                    {{-- Flat Rate --}}
+                    <div x-show="shippingMethod === 'flat_rate'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block" data-translate>ค่าจัดส่ง (บาท)</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                <input type="number" name="shipping_fee" value="{{ old('shipping_fee') }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block" data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                <input type="number" name="free_shipping_min_amount" value="{{ old('free_shipping_min_amount') }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Weight Based --}}
+                    <div x-show="shippingMethod === 'weight_based'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block" data-translate>น้ำหนักจัดส่ง (กก.)</label>
+                            <input type="number" name="shipping_weight_kg" value="{{ old('shipping_weight_kg') }}" step="0.001" min="0" placeholder="0.000" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block" data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                <input type="number" name="free_shipping_min_amount_weight" value="{{ old('free_shipping_min_amount_weight') }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Info messages --}}
+                    <div x-show="shippingMethod === 'free'" x-transition class="p-2.5 bg-green-50 dark:bg-green-900/20 rounded-lg text-xs text-green-700 dark:text-green-300" data-translate>
+                        สินค้านี้จัดส่งฟรีทุกออเดอร์
+                    </div>
+                    <div x-show="shippingMethod === 'store_default'" x-transition class="p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-300" data-translate>
+                        ใช้ค่าเริ่มต้นของระบบ (50 บาท / ส่งฟรีเมื่อยอดถึง 500 บาท)
+                    </div>
+                </div>
+
                 {{-- รูปภาพ - Advanced Upload UI with Alpine.js --}}
                 <div x-data="{
                     mainImage: null,
