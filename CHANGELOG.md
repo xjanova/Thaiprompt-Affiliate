@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.5] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Add preview response to testConnection for debugging (91adbe01)
+
 ## [v3.459.4] - 2026-02-01
 
 ### ✨ Features
