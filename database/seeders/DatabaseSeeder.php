@@ -79,6 +79,7 @@ class DatabaseSeeder extends Seeder
             WalletSettingSeeder::class,         // 🆕 ตั้งค่า Wallet (ค่าธรรมเนียม, ภาษี, ยอดถอน)
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
             SmsCheckerSeeder::class,            // 📱 SMS Checker Device สำหรับระบบชำระเงินผ่าน SMS
+            SmsGatewayPricingSeeder::class,     // 💰 แพ็กเกจราคา SMS Payment Gateway (Basic, Professional, Enterprise)
             PaySolutionsGatewaySeeder::class,   // PaySolutions Gateway Integration
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
             TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
