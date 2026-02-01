@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.456.0] - 2026-02-01
+
+### ✨ Features
+- Merge pull request #2468 from xjanova/claude/fix-storefront-navigation-Lpb07 (a21abfb0)
+- feat: เพิ่มระบบคิดค่าจัดส่งสินค้ารายชิ้น + ปรับปรุงระบบติดตามพัสดุ (60b24dd6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.455.1] - 2026-02-01
 
 ### ✨ Features
