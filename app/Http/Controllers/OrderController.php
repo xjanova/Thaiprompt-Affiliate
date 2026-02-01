@@ -50,7 +50,9 @@ class OrderController extends Controller
         $order = Order::with([
             'items.product',
             'items.reviews',
-            'shippingAddress'
+            'shippingAddress',
+            'shippingProviderRelation',
+            'trackingHistory',
         ])
             ->where('id', $id)
             ->where('user_id', auth()->id())
@@ -118,9 +120,10 @@ class OrderController extends Controller
      */
     public function showReviewForm($orderId, $itemId)
     {
+        // อนุญาตให้รีวิวได้เมื่อรับสินค้าแล้ว (delivered) หรือยืนยันรับสินค้าแล้ว (completed)
         $order = Order::where('id', $orderId)
             ->where('user_id', auth()->id())
-            ->where('status', 'completed')
+            ->whereIn('status', ['delivered', 'completed'])
             ->firstOrFail();
 
         $item = $order->items()->findOrFail($itemId);
@@ -147,9 +150,10 @@ class OrderController extends Controller
             'images.*' => 'image|max:2048',
         ]);
 
+        // อนุญาตให้รีวิวได้เมื่อรับสินค้าแล้ว (delivered) หรือยืนยันรับสินค้าแล้ว (completed)
         $order = Order::where('id', $orderId)
             ->where('user_id', auth()->id())
-            ->where('status', 'completed')
+            ->whereIn('status', ['delivered', 'completed'])
             ->firstOrFail();
 
         $item = $order->items()->findOrFail($itemId);
