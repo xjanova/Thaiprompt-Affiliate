@@ -56,6 +56,11 @@ class Product extends Model
         'is_featured',
         'is_hidden',
         'is_virtual',
+        // Shipping fields
+        'shipping_method',
+        'shipping_fee',
+        'shipping_weight_kg',
+        'free_shipping_min_amount',
         'is_public_approved',
         'public_approved_at',
         'public_approved_by',
@@ -98,6 +103,10 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_hidden' => 'boolean',
         'is_virtual' => 'boolean',
+        // Shipping casts
+        'shipping_fee' => 'decimal:2',
+        'shipping_weight_kg' => 'decimal:3',
+        'free_shipping_min_amount' => 'decimal:2',
         'is_public_approved' => 'boolean',
         'public_approved_at' => 'datetime',
         'published_at' => 'datetime',

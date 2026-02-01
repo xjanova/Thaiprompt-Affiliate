@@ -102,6 +102,7 @@ class DatabaseSeeder extends Seeder
             // 8. E-commerce & Products
             MarketplaceSettingSeeder::class,    // 🆕 ตั้งค่า Marketplace (ค่าธรรมเนียม, Commission, Shipping)
             ShippingProviderSeeder::class,      // 🚚 บริษัทขนส่งในประเทศไทย (ไปรษณีย์, Kerry, Flash, J&T, etc.)
+            ShippingRateSeeder::class,          // 🚚 อัตราค่าจัดส่งตามน้ำหนัก (ในประเทศ + ต่างประเทศ)
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
             ProductSeeder::class,               // สินค้าตัวอย่าง
             OfficialShopProductsSeeder::class,  // 🆕 สินค้าของระบบ (Official Shop) - seller_id = null, คอมมิชชั่นสูง 25-40%

@@ -485,6 +485,99 @@
                 </div>
             </x-modern-card>
 
+            <!-- Section 4.5: Shipping Settings -->
+            <x-modern-card
+                title="การจัดส่งสินค้า"
+                description="ตั้งค่าวิธีคิดค่าจัดส่งสำหรับสินค้านี้"
+                icon='<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17h8M8 17v-4m8 4v-4m-8 0h8m-8 0L6 9m10 4l2-4M6 9h12M6 9L4 5h16l-2 4"/></svg>'>
+
+                <div x-data="{ shippingMethod: '{{ old('shipping_method', $product->shipping_method ?? 'store_default') }}' }" class="space-y-5">
+                    {{-- วิธีคิดค่าจัดส่ง --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                            วิธีคิดค่าจัดส่ง
+                        </label>
+                        <select name="shipping_method"
+                                x-model="shippingMethod"
+                                class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                            <option value="store_default">ใช้ค่าเริ่มต้นของร้าน</option>
+                            <option value="free">ฟรีค่าจัดส่ง</option>
+                            <option value="flat_rate">คิดแบบเหมา (Flat Rate)</option>
+                            <option value="weight_based">คิดตามน้ำหนัก</option>
+                        </select>
+                    </div>
+
+                    {{-- ค่าจัดส่งแบบเหมา --}}
+                    <div x-show="shippingMethod === 'flat_rate'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <x-form-field
+                            label="ค่าจัดส่งต่อชิ้น (บาท)"
+                            name="shipping_fee"
+                            type="number"
+                            :value="old('shipping_fee', $product->shipping_fee ?? 50)"
+                            placeholder="50"
+                            step="0.01"
+                            min="0"
+                            helpText="ค่าจัดส่งคงที่ต่อชิ้นสินค้า"
+                        />
+                        <x-form-field
+                            label="ฟรีค่าส่งเมื่อซื้อขั้นต่ำ (บาท)"
+                            name="free_shipping_min_amount"
+                            type="number"
+                            :value="old('free_shipping_min_amount', $product->free_shipping_min_amount)"
+                            placeholder="เช่น 500"
+                            step="0.01"
+                            min="0"
+                            helpText="ยอดขั้นต่ำเพื่อรับฟรีค่าส่ง (ปล่อยว่าง = ไม่มี)"
+                        />
+                    </div>
+
+                    {{-- น้ำหนักสำหรับคำนวณ --}}
+                    <div x-show="shippingMethod === 'weight_based'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <x-form-field
+                            label="น้ำหนักจัดส่ง (กก.)"
+                            name="shipping_weight_kg"
+                            type="number"
+                            :value="old('shipping_weight_kg', $product->shipping_weight_kg)"
+                            placeholder="เช่น 0.5"
+                            step="0.001"
+                            min="0"
+                            helpText="น้ำหนักรวมบรรจุภัณฑ์สำหรับคำนวณค่าส่ง"
+                        />
+                        <x-form-field
+                            label="ฟรีค่าส่งเมื่อซื้อขั้นต่ำ (บาท)"
+                            name="free_shipping_min_amount_weight"
+                            type="number"
+                            :value="old('free_shipping_min_amount', $product->free_shipping_min_amount)"
+                            placeholder="เช่น 1000"
+                            step="0.01"
+                            min="0"
+                            helpText="ยอดขั้นต่ำเพื่อรับฟรีค่าส่ง (ปล่อยว่าง = ไม่มี)"
+                        />
+                    </div>
+
+                    {{-- ข้อมูลสรุป --}}
+                    <div class="p-4 rounded-xl border" :class="{
+                        'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800': shippingMethod === 'free',
+                        'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800': shippingMethod === 'flat_rate',
+                        'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800': shippingMethod === 'weight_based',
+                        'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700': shippingMethod === 'store_default'
+                    }">
+                        <p x-show="shippingMethod === 'store_default'" class="text-sm text-gray-600 dark:text-gray-400">
+                            ระบบจะใช้ค่าจัดส่งที่กำหนดไว้ในการตั้งค่าร้านค้า ฟรีค่าส่งเมื่อซื้อครบตามยอดที่ร้านกำหนด
+                        </p>
+                        <p x-show="shippingMethod === 'free'" class="text-sm text-green-600 dark:text-green-400">
+                            ลูกค้าไม่ต้องจ่ายค่าจัดส่งสำหรับสินค้าชิ้นนี้
+                        </p>
+                        <p x-show="shippingMethod === 'flat_rate'" class="text-sm text-blue-600 dark:text-blue-400">
+                            คิดค่าจัดส่งคงที่ต่อชิ้น ไม่ว่าน้ำหนักเท่าไหร่
+                        </p>
+                        <p x-show="shippingMethod === 'weight_based'" class="text-sm text-purple-600 dark:text-purple-400">
+                            ระบบจะคำนวณค่าจัดส่งจากน้ำหนักสินค้าตามอัตราที่กำหนดในระบบ (ตามมาตรฐานสากล)
+                        </p>
+                    </div>
+                </div>
+            </x-modern-card>
+
             <!-- Section 5: Product Images -->
             <x-modern-card
                 title="รูปภาพสินค้า"

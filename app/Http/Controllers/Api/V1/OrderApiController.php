@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\ShippingService;
 use Exception;
 
 /**
@@ -102,8 +103,12 @@ class OrderApiController extends Controller
                 $subtotal += $item['price'] * $item['quantity'];
             }
 
-            // ค่าจัดส่ง (สามารถคำนวณตามเงื่อนไขได้)
-            $shippingFee = $this->calculateShippingFee($subtotal, $items);
+            // ค่าจัดส่ง - ใช้ ShippingService คำนวณตามสินค้า
+            $shippingService = new ShippingService();
+            // แปลง array items เป็น objects เพื่อให้ ShippingService อ่าน ->product ได้
+            $cartItemObjects = collect($items)->map(fn($item) => (object) $item);
+            $shippingResult = $shippingService->calculateForCart($cartItemObjects);
+            $shippingFee = $shippingResult['total_shipping'];
 
             // ส่วนลด (ถ้ามี coupon)
             $discount = 0;
@@ -366,17 +371,20 @@ class OrderApiController extends Controller
     }
 
     /**
-     * คำนวณค่าจัดส่ง
+     * คำนวณค่าจัดส่ง (Fallback สำหรับกรณีที่ไม่มี cart items)
+     *
+     * @param float $subtotal ยอดรวมสินค้า
+     * @param array $items รายการสินค้า
+     * @return float ค่าจัดส่ง
      */
     protected function calculateShippingFee(float $subtotal, array $items): float
     {
-        // ฟรีค่าส่งเมื่อซื้อครบ 500 บาท
-        if ($subtotal >= 500) {
+        // ใช้ค่าเริ่มต้นจาก ShippingService
+        if ($subtotal >= ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD) {
             return 0;
         }
 
-        // ค่าส่งเริ่มต้น
-        return 50;
+        return ShippingService::DEFAULT_SHIPPING_FEE;
     }
 
     /**

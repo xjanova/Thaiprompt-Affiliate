@@ -147,11 +147,37 @@
                                             {{ $order->shipped_at->format('d/m/Y H:i') }}
                                         </div>
                                         @if($order->tracking_number)
-                                        <div class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-sm font-semibold">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                                            </svg>
-                                            เลขพัสดุ: {{ $order->tracking_number }}
+                                        <div class="mt-2 space-y-2">
+                                            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                                </svg>
+                                                เลขพัสดุ: {{ $order->tracking_number }}
+                                            </div>
+
+                                            {{-- ลิงก์ติดตามพัสดุจากบริษัทขนส่ง --}}
+                                            @if($order->shippingProviderRelation && $order->shippingProviderRelation->getTrackingLink($order->tracking_number))
+                                            <div>
+                                                <a href="{{ $order->shippingProviderRelation->getTrackingLink($order->tracking_number) }}"
+                                                   target="_blank"
+                                                   rel="noopener noreferrer"
+                                                   class="inline-flex items-center gap-2 px-4 py-2.5
+                                                          bg-gradient-to-r from-purple-600 to-pink-600
+                                                          hover:from-purple-700 hover:to-pink-700
+                                                          text-white font-bold rounded-xl
+                                                          shadow-lg hover:shadow-xl
+                                                          transform hover:scale-105
+                                                          transition-all text-sm">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                                    </svg>
+                                                    ติดตามพัสดุที่ {{ $order->shippingProviderRelation->name }}
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                    </svg>
+                                                </a>
+                                            </div>
+                                            @endif
                                         </div>
                                         @endif
                                     </div>
