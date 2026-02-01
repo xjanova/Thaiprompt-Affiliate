@@ -80,28 +80,63 @@
                     </div>
 
                     <div class="p-6">
+                        @php
+                            // รวม tracking history จากร้านค้า (เรียงตาม tracked_at จากเก่าไปใหม่)
+                            $trackingEntries = $order->trackingHistory
+                                ? $order->trackingHistory->sortBy('tracked_at')
+                                : collect();
+
+                            // กรอง tracking entries ที่เป็นสถานะระหว่างทาง (หลังจัดส่ง ก่อนถึง)
+                            $shippingUpdates = $trackingEntries->filter(function ($entry) {
+                                return in_array($entry->status, ['in_transit', 'at_sorting_center', 'out_for_delivery']);
+                            });
+
+                            // ตรวจสอบว่าอยู่ในขั้นตอน "กำลังเตรียมสินค้า"
+                            $isProcessing = in_array($order->status, ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'completed']);
+                            $processingEntry = $trackingEntries->firstWhere('status', 'processing');
+
+                            // ตรวจสอบว่ามีขั้นตอนถัดไปหรือยัง (สำหรับแสดงเส้น connector)
+                            $hasNextAfterCreated = $order->paid_at || $isProcessing || $order->shipped_at || $order->delivered_at;
+                            $hasNextAfterPaid = $isProcessing || $order->shipped_at || $order->delivered_at;
+                            $hasNextAfterProcessing = $order->shipped_at || $order->delivered_at;
+                            $hasNextAfterShipped = $shippingUpdates->count() > 0 || $order->delivered_at;
+
+                            // คำนวณ tracking URL
+                            $trackingUrl = null;
+                            if ($order->tracking_number) {
+                                if ($order->shippingProviderRelation) {
+                                    $trackingUrl = $order->shippingProviderRelation->getTrackingLink($order->tracking_number);
+                                } elseif ($order->tracking_url) {
+                                    $trackingUrl = $order->tracking_url;
+                                }
+                            }
+                        @endphp
+
                         <div class="relative">
                             <!-- Timeline -->
-                            <div class="space-y-6">
-                                <!-- Created -->
+                            <div class="space-y-0">
+
+                                {{-- 1. สร้างคำสั่งซื้อ (แสดงเสมอ) --}}
                                 <div class="flex gap-4">
                                     <div class="flex flex-col items-center">
                                         <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg">
                                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd"/>
                                             </svg>
                                         </div>
-                                        <div class="w-1 h-full bg-gradient-to-b from-green-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @if($hasNextAfterCreated)
+                                        <div class="w-1 flex-1 bg-gradient-to-b from-green-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @endif
                                     </div>
-                                    <div class="flex-1 pb-8">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">สั่งซื้อสำเร็จ</div>
+                                    <div class="flex-1 pb-6">
+                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">สร้างคำสั่งซื้อ</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $order->created_at->format('d/m/Y H:i') }}
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Paid -->
+                                {{-- 2. ชำระเงินแล้ว --}}
                                 @if($order->paid_at)
                                 <div class="flex gap-4">
                                     <div class="flex flex-col items-center">
@@ -111,9 +146,11 @@
                                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
                                             </svg>
                                         </div>
-                                        <div class="w-1 h-full bg-gradient-to-b from-blue-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @if($hasNextAfterPaid)
+                                        <div class="w-1 flex-1 bg-gradient-to-b from-blue-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @endif
                                     </div>
-                                    <div class="flex-1 pb-8">
+                                    <div class="flex-1 pb-6">
                                         <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">ชำระเงินแล้ว</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $order->paid_at->format('d/m/Y H:i') }}
@@ -127,51 +164,82 @@
                                 </div>
                                 @endif
 
-                                <!-- Shipped -->
+                                {{-- 3. กำลังเตรียมสินค้า --}}
+                                @if($isProcessing)
+                                <div class="flex gap-4">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd"/>
+                                                <path d="M9 11H3v5a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z"/>
+                                            </svg>
+                                        </div>
+                                        @if($hasNextAfterProcessing)
+                                        <div class="w-1 flex-1 bg-gradient-to-b from-violet-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 pb-6">
+                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">กำลังเตรียมสินค้า</div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            @if($processingEntry)
+                                                {{ $processingEntry->tracked_at->format('d/m/Y H:i') }}
+                                            @elseif($order->paid_at)
+                                                {{ $order->paid_at->format('d/m/Y H:i') }}
+                                            @else
+                                                {{ $order->created_at->format('d/m/Y H:i') }}
+                                            @endif
+                                        </div>
+                                        @if($processingEntry && $processingEntry->description)
+                                        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                            {{ $processingEntry->description }}
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
+
+                                {{-- 4. จัดส่งสินค้าแล้ว --}}
                                 @if($order->shipped_at)
                                 <div class="flex gap-4">
                                     <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
                                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                                                 <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
                                             </svg>
                                         </div>
-                                        @if($order->delivered_at)
-                                        <div class="w-1 h-full bg-gradient-to-b from-purple-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @if($hasNextAfterShipped)
+                                        <div class="w-1 flex-1 bg-gradient-to-b from-cyan-300 to-gray-200 dark:to-gray-600 mt-2"></div>
                                         @endif
                                     </div>
-                                    <div class="flex-1 pb-8">
+                                    <div class="flex-1 pb-6">
                                         <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">จัดส่งสินค้าแล้ว</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $order->shipped_at->format('d/m/Y H:i') }}
                                         </div>
                                         @if($order->tracking_number)
                                         <div class="mt-2 space-y-2">
-                                            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-lg text-sm font-semibold">
+                                            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 rounded-lg text-sm font-semibold">
                                                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                                                 </svg>
                                                 เลขพัสดุ: {{ $order->tracking_number }}
                                             </div>
 
-                                            {{-- ลิงก์ติดตามพัสดุจากบริษัทขนส่ง --}}
-                                            @php
-                                                $trackingUrl = null;
-                                                if ($order->shippingProviderRelation) {
-                                                    $trackingUrl = $order->shippingProviderRelation->getTrackingLink($order->tracking_number);
-                                                } elseif ($order->tracking_url) {
-                                                    $trackingUrl = $order->tracking_url;
-                                                }
-                                            @endphp
+                                            @if($order->shippingProviderRelation)
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                ขนส่ง: {{ $order->shippingProviderRelation->name }}
+                                            </div>
+                                            @endif
+
                                             @if($trackingUrl)
                                             <div>
                                                 <a href="{{ $trackingUrl }}"
                                                    target="_blank"
                                                    rel="noopener noreferrer"
                                                    class="inline-flex items-center gap-2 px-4 py-2.5
-                                                          bg-gradient-to-r from-purple-600 to-pink-600
-                                                          hover:from-purple-700 hover:to-pink-700
+                                                          bg-gradient-to-r from-cyan-600 to-blue-600
+                                                          hover:from-cyan-700 hover:to-blue-700
                                                           text-white font-bold rounded-xl
                                                           shadow-lg hover:shadow-xl
                                                           transform hover:scale-105
@@ -192,18 +260,77 @@
                                 </div>
                                 @endif
 
-                                <!-- Delivered -->
+                                {{-- 5. อัพเดทระหว่างจัดส่ง (จาก tracking history ของร้านค้า) --}}
+                                @foreach($shippingUpdates as $update)
+                                @php
+                                    $updateColors = [
+                                        'in_transit' => ['from-sky-500', 'to-blue-500', 'from-sky-300'],
+                                        'at_sorting_center' => ['from-teal-500', 'to-cyan-500', 'from-teal-300'],
+                                        'out_for_delivery' => ['from-emerald-500', 'to-green-500', 'from-emerald-300'],
+                                    ];
+                                    $colors = $updateColors[$update->status] ?? ['from-gray-500', 'to-gray-500', 'from-gray-300'];
+                                    $updateIcons = [
+                                        'in_transit' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0',
+                                        'at_sorting_center' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+                                        'out_for_delivery' => 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
+                                    ];
+                                    $iconPath = $updateIcons[$update->status] ?? 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7';
+                                    $statusLabels = [
+                                        'in_transit' => 'กำลังจัดส่ง',
+                                        'at_sorting_center' => 'ถึงศูนย์กระจายสินค้า',
+                                        'out_for_delivery' => 'กำลังนำส่ง',
+                                    ];
+                                    $isLastUpdate = $loop->last && !$order->delivered_at;
+                                @endphp
+                                <div class="flex gap-4">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-10 h-10 bg-gradient-to-br {{ $colors[0] }} {{ $colors[1] }} rounded-full flex items-center justify-center text-white shadow-md">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $iconPath }}"/>
+                                            </svg>
+                                        </div>
+                                        @if(!$isLastUpdate)
+                                        <div class="w-1 flex-1 bg-gradient-to-b {{ $colors[2] }} to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1 pb-5">
+                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1 text-sm">
+                                            {{ $update->title ?: ($statusLabels[$update->status] ?? $update->status) }}
+                                        </div>
+                                        @if($update->description)
+                                        <div class="text-xs text-gray-600 dark:text-gray-400">
+                                            {{ $update->description }}
+                                        </div>
+                                        @endif
+                                        @if($update->location)
+                                        <div class="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                            </svg>
+                                            {{ $update->location }}
+                                        </div>
+                                        @endif
+                                        <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                            {{ $update->tracked_at->format('d/m/Y H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+
+                                {{-- 6. จัดส่งสำเร็จ --}}
                                 @if($order->delivered_at)
                                 <div class="flex gap-4">
                                     <div class="flex flex-col items-center">
                                         <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white shadow-lg">
                                             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                                             </svg>
                                         </div>
+                                        @if($order->status === 'completed')
+                                        <div class="w-1 flex-1 bg-gradient-to-b from-orange-300 to-gray-200 dark:to-gray-600 mt-2"></div>
+                                        @endif
                                     </div>
-                                    <div class="flex-1">
+                                    <div class="flex-1 pb-6">
                                         <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">จัดส่งสำเร็จ</div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">
                                             {{ $order->delivered_at->format('d/m/Y H:i') }}
@@ -220,6 +347,44 @@
                                     </div>
                                 </div>
                                 @endif
+
+                                {{-- 7. สำเร็จ (ลูกค้ายืนยันรับสินค้าแล้ว) --}}
+                                @if($order->status === 'completed')
+                                <div class="flex gap-4">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg ring-4 ring-green-200 dark:ring-green-900/50">
+                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-bold text-green-700 dark:text-green-400 mb-1">สำเร็จ</div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            ยืนยันรับสินค้าเรียบร้อยแล้ว
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+
+                                {{-- สถานะถัดไปที่รอ (แสดงเป็นจุดจาง) --}}
+                                @if(!$order->paid_at && $order->status === 'pending')
+                                <div class="flex gap-4 opacity-40">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500">
+                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 pb-6">
+                                        <div class="font-bold text-gray-400 dark:text-gray-500 mb-1">รอชำระเงิน</div>
+                                        <div class="text-xs text-gray-400 dark:text-gray-500">รอดำเนินการ</div>
+                                    </div>
+                                </div>
+                                @endif
+
                             </div>
                         </div>
                     </div>

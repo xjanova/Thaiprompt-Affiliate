@@ -50,7 +50,9 @@ class OrderController extends Controller
         $order = Order::with([
             'items.product',
             'items.reviews',
-            'shippingAddress'
+            'shippingAddress',
+            'shippingProviderRelation',
+            'trackingHistory',
         ])
             ->where('id', $id)
             ->where('user_id', auth()->id())
