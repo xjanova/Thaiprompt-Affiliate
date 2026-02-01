@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.2] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add CSRF token exclusion for webhook routes in Laravel 11 (395fe7a9)
+### 🔧 Other Changes
+
+
 ## [v3.459.1] - 2026-02-01
 
 ### ✨ Features
