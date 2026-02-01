@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.455.1] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2467 from xjanova/claude/fix-storefront-navigation-Lpb07 (9fab1842)
+- fix: แก้ไขปัญหา navigation หน้าร้าน (storefront) หลายจุด (9cc125bf)
+### 🔧 Other Changes
+
+
 ## [v3.455.0] - 2026-01-31
 
 ### ✨ Features
