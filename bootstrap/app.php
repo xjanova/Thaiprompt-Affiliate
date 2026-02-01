@@ -35,6 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Request::HEADER_X_FORWARDED_AWS_ELB
         );
 
+        // Exclude webhook and API webhook routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'webhook/*',
+            '/webhook/*',
+            'api/webhook/*',
+            '/api/webhook/*',
+        ]);
+
         $middleware->web(append: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
