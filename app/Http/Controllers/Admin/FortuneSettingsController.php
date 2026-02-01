@@ -71,6 +71,12 @@ class FortuneSettingsController extends Controller
             'try_before_buy_message' => 'nullable|string',
             // QR Code
             'payment_qr_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            // Comment Engagement
+            'comment_engagement_enabled' => 'boolean',
+            'comment_engagement_mode' => 'nullable|in:ai,template',
+            'comment_reply_template' => 'nullable|string|max:500',
+            'comment_dm_template' => 'nullable|string|max:2000',
+            'comment_engagement_prompt' => 'nullable|string|max:3000',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -79,7 +85,7 @@ class FortuneSettingsController extends Controller
         $checkboxFields = [
             'is_enabled', 'respond_in_comment', 'require_registration',
             'enable_deep_reading', 'allow_try_before_buy', 'subscription_enabled',
-            'use_global_ai_settings',
+            'use_global_ai_settings', 'comment_engagement_enabled',
         ];
         foreach ($checkboxFields as $field) {
             if (!$request->has($field)) {

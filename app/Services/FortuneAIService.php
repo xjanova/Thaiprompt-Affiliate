@@ -347,6 +347,117 @@ class FortuneAIService
         }
     }
 
+    // ============================================================
+    // Comment Engagement: AI สร้างข้อความชวนดูดวง
+    // ============================================================
+
+    /**
+     * System message สำหรับ Comment Engagement
+     * AI จะพูดเฉพาะเรื่องดูดวงเท่านั้น ห้ามตอบเรื่องอื่น
+     */
+    protected const ENGAGEMENT_SYSTEM_MESSAGE = 'คุณเป็นหมอดูชื่อดังประจำเพจ เชี่ยวชาญโหราศาสตร์ไทย ไพ่ทาโรต์ คุณพูดเฉพาะเรื่องดูดวงเท่านั้น ห้ามตอบเรื่องอื่นทุกกรณี ห้ามเขียนโค้ด ห้ามตอบคำถามทั่วไป ห้ามให้ความรู้นอกเหนือจากเรื่องดวง คุณต้องตอบเป็น JSON เท่านั้น';
+
+    /**
+     * สร้างข้อความ engage จากคอมเม้นต์
+     *
+     * @param string $commentText ข้อความคอมเม้นต์
+     * @param array|null $userProfile โปรไฟล์ผู้ใช้ (name, gender, birthday ฯลฯ)
+     * @param string|null $engagementPrompt Prompt template (ถ้าไม่ระบุจะใช้ค่าเริ่มต้นจาก settings)
+     * @return array ['comment_reply' => '...', 'dm_message' => '...']
+     */
+    public function generateCommentEngagement(
+        string $commentText,
+        ?array $userProfile = null,
+        ?string $engagementPrompt = null
+    ): array {
+        $prompt = $engagementPrompt ?? $this->settings->getCommentEngagementPrompt();
+
+        // แทนที่ placeholders ใน prompt
+        $name = $userProfile['name'] ?? $userProfile['first_name'] ?? 'คุณ';
+        $profileInfo = $this->formatProfileForEngagement($userProfile);
+
+        $prompt = str_replace(
+            ['{comment}', '{name}', '{profile_info}'],
+            [$commentText, $name, $profileInfo],
+            $prompt
+        );
+
+        $config = [
+            'max_tokens' => 400,
+            'temperature' => 0.8,
+        ];
+
+        $result = match ($this->provider) {
+            'gemini' => $this->callGemini($prompt, $config),
+            'groq' => $this->callGroq($prompt, $config),
+            'qwen' => $this->callQwen($prompt, $config),
+            'openrouter' => $this->callOpenRouter($prompt, $config),
+            default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
+        };
+
+        // Parse JSON response จาก AI
+        return $this->parseEngagementResponse($result['response'] ?? '');
+    }
+
+    /**
+     * แปลงข้อมูลโปรไฟล์เป็นข้อความสำหรับ prompt
+     */
+    protected function formatProfileForEngagement(?array $userProfile): string
+    {
+        if (empty($userProfile)) {
+            return '(ไม่มีข้อมูลโปรไฟล์)';
+        }
+
+        $info = [];
+
+        if (!empty($userProfile['gender'])) {
+            $genderMap = ['male' => 'ชาย', 'female' => 'หญิง'];
+            $info[] = 'เพศ: ' . ($genderMap[$userProfile['gender']] ?? $userProfile['gender']);
+        }
+
+        if (!empty($userProfile['birthday'])) {
+            $info[] = 'วันเกิด: ' . $userProfile['birthday'];
+        }
+
+        if (!empty($userProfile['locale'])) {
+            $info[] = 'ภาษา: ' . $userProfile['locale'];
+        }
+
+        return empty($info) ? '(ไม่มีข้อมูลเพิ่มเติม)' : implode(', ', $info);
+    }
+
+    /**
+     * Parse JSON response จาก AI สำหรับ engagement
+     *
+     * @return array ['comment_reply' => '...', 'dm_message' => '...']
+     */
+    protected function parseEngagementResponse(string $response): array
+    {
+        // ลอง parse JSON โดยตรง
+        $data = json_decode($response, true);
+
+        // ถ้า parse ไม่ได้ ลองหา JSON ใน response
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            if (preg_match('/\{[^}]*"comment_reply"[^}]*\}/s', $response, $matches)) {
+                $data = json_decode($matches[0], true);
+            }
+        }
+
+        // ถ้ายังไม่ได้ ใช้ค่า default
+        if (empty($data) || !isset($data['comment_reply'])) {
+            Log::warning('AI engagement response ไม่ใช่ JSON ที่ถูกต้อง', ['response' => $response]);
+            return [
+                'comment_reply' => '🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨',
+                'dm_message' => $this->settings->getCommentDmTemplate(),
+            ];
+        }
+
+        return [
+            'comment_reply' => $data['comment_reply'] ?? '🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨',
+            'dm_message' => $data['dm_message'] ?? $this->settings->getCommentDmTemplate(),
+        ];
+    }
+
     public function testConnection(): array
     {
         // ตรวจสอบการตั้งค่าเบื้องต้น

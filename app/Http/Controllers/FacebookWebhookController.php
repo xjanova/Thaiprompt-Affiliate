@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessCommentEngagement;
 use App\Jobs\ProcessFortuneTelling;
+use App\Models\FortuneCommentEngagement;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
 use App\Services\FacebookWebhookService;
@@ -156,6 +158,8 @@ class FacebookWebhookController extends Controller
         $questions = $this->facebookService->parseQuestions($message);
 
         if (empty($questions)) {
+            // ไม่ใช่คำสั่งดูดวง → ลอง engage ชวนดูดวง
+            $this->handleCommentEngagement($comment);
             return;
         }
 
@@ -182,6 +186,124 @@ class FacebookWebhookController extends Controller
 
             $this->processFortuneTelling($comment, $questions, true, false, null, $birthDate);
         }
+    }
+
+    /**
+     * จัดการ Comment Engagement - ชวนดูดวงเมื่อมีคนคอมเม้นต์
+     *
+     * เมื่อมีคอมเม้นต์ที่ไม่ใช่คำสั่งดูดวง:
+     * 1. ตอบคอมเม้นต์สั้นๆ ชวนดูดวง
+     * 2. ทัก inbox ส่วนตัว + Quick Replies
+     */
+    protected function handleCommentEngagement(array $comment): void
+    {
+        try {
+            // ตรวจสอบว่าเปิดระบบ engagement หรือไม่
+            if (!$this->settings->isCommentEngagementEnabled()) {
+                return;
+            }
+
+            $fromId = $comment['from']['id'] ?? null;
+            $commentId = $comment['comment_id'] ?? null;
+            $postId = $comment['post_id'] ?? null;
+            $message = $comment['message'] ?? '';
+            $fromName = $comment['from']['name'] ?? null;
+
+            if (empty($fromId) || empty($commentId) || empty($postId)) {
+                return;
+            }
+
+            // ไม่ตอบคอมเม้นต์จากเพจเอง
+            if ($fromId === $this->settings->facebook_page_id) {
+                return;
+            }
+
+            // ตรวจสอบว่าเคย engage ในโพสต์นี้แล้วหรือไม่
+            if (FortuneCommentEngagement::hasEngaged($fromId, $postId)) {
+                Log::info('Comment Engagement: เคย engage แล้ว ข้าม', [
+                    'user_id' => $fromId,
+                    'post_id' => $postId,
+                ]);
+                return;
+            }
+
+            $mode = $this->settings->getCommentEngagementMode();
+
+            if ($mode === 'template') {
+                // โหมดเทมเพลต: ส่งเลยไม่ต้องรอ AI
+                $this->sendTemplateEngagement($comment);
+            } else {
+                // โหมด AI: dispatch job ให้ AI สร้างข้อความ
+                ProcessCommentEngagement::dispatch([
+                    'facebook_user_id' => $fromId,
+                    'facebook_post_id' => $postId,
+                    'facebook_comment_id' => $commentId,
+                    'comment_text' => $message,
+                    'user_name' => $fromName,
+                ]);
+            }
+
+            Log::info('Comment Engagement: dispatched', [
+                'mode' => $mode,
+                'user_id' => $fromId,
+                'post_id' => $postId,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Comment Engagement Error: ' . $e->getMessage(), [
+                'comment' => $comment,
+            ]);
+        }
+    }
+
+    /**
+     * ส่ง engagement แบบเทมเพลต (ไม่ใช้ AI)
+     */
+    protected function sendTemplateEngagement(array $comment): void
+    {
+        $fromId = $comment['from']['id'];
+        $commentId = $comment['comment_id'];
+        $postId = $comment['post_id'];
+        $commentText = $comment['message'] ?? '';
+        $fromName = $comment['from']['name'] ?? 'คุณ';
+
+        // ดึง user profile
+        $userProfile = $this->facebookService->getUserProfile($fromId);
+        $name = $userProfile['name'] ?? $fromName;
+
+        // แทนที่ placeholders
+        $commentReply = str_replace(
+            ['{name}', '{comment}'],
+            [$name, $commentText],
+            $this->settings->getCommentReplyTemplate()
+        );
+        $dmMessage = str_replace(
+            ['{name}', '{comment}'],
+            [$name, $commentText],
+            $this->settings->getCommentDmTemplate()
+        );
+
+        // 1. ตอบคอมเม้นต์
+        $this->facebookService->replyToComment($commentId, $commentReply);
+
+        // 2. ส่ง inbox + Quick Replies
+        $quickReplies = [
+            ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+            ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+        ];
+        $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies);
+
+        // 3. บันทึก engagement
+        FortuneCommentEngagement::create([
+            'facebook_user_id' => $fromId,
+            'facebook_post_id' => $postId,
+            'facebook_comment_id' => $commentId,
+            'comment_text' => $commentText,
+            'comment_reply' => $commentReply,
+            'dm_message' => $dmMessage,
+            'user_profile' => $userProfile,
+            'engaged_at' => now(),
+        ]);
     }
 
     /**

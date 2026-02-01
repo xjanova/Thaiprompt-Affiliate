@@ -205,6 +205,92 @@
             </div> {{-- End of custom settings grid --}}
         </div> {{-- End of AI Settings card --}}
 
+        {{-- Comment Engagement Settings --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    🗨️ ระบบตอบคอมเม้นต์อัตโนมัติ
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="comment_engagement_enabled" value="0">
+                    <input type="checkbox" name="comment_engagement_enabled" value="1"
+                           {{ old('comment_engagement_enabled', $settings->comment_engagement_enabled) ? 'checked' : '' }}
+                           class="sr-only peer"
+                           x-model="commentEngagementEnabled">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-green-600"></div>
+                </label>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                เมื่อเปิดใช้งาน ระบบจะตอบคอมเม้นต์ทุกโพสต์ในเพจ + ทักแชทส่วนตัวชวนดูดวง (เฉพาะคอมเม้นต์ที่ไม่ใช่คำสั่ง "ดูดวง")
+            </p>
+
+            <div x-show="commentEngagementEnabled" x-transition>
+                {{-- โหมดการทำงาน --}}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        โหมดสร้างข้อความ
+                    </label>
+                    <select name="comment_engagement_mode"
+                            x-model="commentEngagementMode"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        <option value="ai" {{ old('comment_engagement_mode', $settings->comment_engagement_mode) === 'ai' ? 'selected' : '' }}>
+                            🤖 AI สร้างข้อความ - AI อ่านคอมเม้นต์แล้วสร้างข้อความชวนที่เหมาะกับบริบท
+                        </option>
+                        <option value="template" {{ old('comment_engagement_mode', $settings->comment_engagement_mode) === 'template' ? 'selected' : '' }}>
+                            📝 เทมเพลตคงที่ - ส่งข้อความเดิมทุกครั้ง (เร็วกว่า)
+                        </option>
+                    </select>
+                </div>
+
+                {{-- AI Mode: Prompt --}}
+                <div x-show="commentEngagementMode === 'ai'" x-transition class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        AI Prompt (คำสั่งสำหรับ AI สร้างข้อความชวน)
+                    </label>
+                    <textarea name="comment_engagement_prompt" rows="8"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                              placeholder="ใช้ค่าเริ่มต้น (ถ้าว่าง)">{{ old('comment_engagement_prompt', $settings->comment_engagement_prompt) }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Placeholders: {comment} = ข้อความคอมเม้นต์, {name} = ชื่อผู้คอมเม้นต์, {profile_info} = ข้อมูลโปรไฟล์ (เพศ/วันเกิด) | เว้นว่างเพื่อใช้ค่าเริ่มต้น</p>
+                </div>
+
+                {{-- Template Mode: Comment Reply --}}
+                <div x-show="commentEngagementMode === 'template'" x-transition class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        เทมเพลตตอบคอมเม้นต์
+                    </label>
+                    <textarea name="comment_reply_template" rows="2"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                              placeholder="สวัสดีค่ะคุณ {name} 🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨">{{ old('comment_reply_template', $settings->comment_reply_template) }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Placeholders: {name} = ชื่อ, {comment} = ข้อความคอมเม้นต์ | เว้นว่างเพื่อใช้ค่าเริ่มต้น</p>
+                </div>
+
+                {{-- Template Mode: DM Message --}}
+                <div x-show="commentEngagementMode === 'template'" x-transition class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        เทมเพลตข้อความ inbox
+                    </label>
+                    <textarea name="comment_dm_template" rows="6"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                              placeholder="สวัสดีค่ะคุณ {name} 🔮✨ ลองพิมพ์ &quot;ดูดวง&quot; ได้เลยค่ะ!">{{ old('comment_dm_template', $settings->comment_dm_template) }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Placeholders: {name} = ชื่อ, {comment} = ข้อความคอมเม้นต์ | เว้นว่างเพื่อใช้ค่าเริ่มต้น</p>
+                </div>
+
+                {{-- Info Box --}}
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <p class="text-sm text-blue-700 dark:text-blue-300">
+                        💡 <strong>วิธีทำงาน:</strong> เมื่อมีคนคอมเม้นต์อะไรก็ได้ในโพสต์ของเพจ (ยกเว้นคำสั่ง "ดูดวง") ระบบจะ:
+                    </p>
+                    <ul class="text-sm text-blue-600 dark:text-blue-400 mt-2 ml-4 list-disc">
+                        <li>ตอบคอมเม้นต์สั้นๆ ชวนดูดวง</li>
+                        <li>ส่งข้อความส่วนตัว (inbox) พร้อมปุ่ม Quick Reply "ดูดวง" / "ดูดวงละเอียด"</li>
+                        <li>ดึงโปรไฟล์ผู้คอมเม้นต์ (ชื่อ/เพศ/วันเกิด) มาใช้ประกอบ</li>
+                        <li>ไม่ engage ซ้ำคนเดิมในโพสต์เดิม</li>
+                        <li>ไม่ตอบคอมเม้นต์ที่เพจเป็นคนโพสต์เอง</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         {{-- Usage Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -449,6 +535,8 @@
 <script>
 function fortuneSettings() {
     return {
+        commentEngagementEnabled: {{ $settings->comment_engagement_enabled ? 'true' : 'false' }},
+        commentEngagementMode: '{{ old('comment_engagement_mode', $settings->comment_engagement_mode ?? 'ai') }}',
         async testAI() {
             const btn = event.target.closest('button');
             const originalText = btn.innerHTML;

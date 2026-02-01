@@ -96,6 +96,12 @@ class FortuneTellingSetting extends Model
         'payment_message',
         'subscription_message',
         'try_before_buy_message',
+        // Comment Engagement
+        'comment_engagement_enabled',
+        'comment_engagement_mode',
+        'comment_reply_template',
+        'comment_dm_template',
+        'comment_engagement_prompt',
     ];
 
     /**
@@ -111,6 +117,7 @@ class FortuneTellingSetting extends Model
         'enable_deep_reading' => 'boolean',
         'allow_try_before_buy' => 'boolean',
         'subscription_enabled' => 'boolean',
+        'comment_engagement_enabled' => 'boolean',
         'max_free_readings' => 'integer',
         'free_deep_per_day' => 'integer',
         'reading_price' => 'decimal:2',
@@ -143,6 +150,8 @@ class FortuneTellingSetting extends Model
         'is_enabled' => true,
         'respond_in_comment' => false,
         'require_registration' => false,
+        'comment_engagement_enabled' => false,
+        'comment_engagement_mode' => 'ai',
     ];
 
     /**
@@ -548,5 +557,84 @@ EOT;
         }
 
         return $message;
+    }
+
+    // ============================================================
+    // Comment Engagement Settings
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเปิดระบบ engage คอมเม้นต์หรือไม่
+     */
+    public function isCommentEngagementEnabled(): bool
+    {
+        return (bool) ($this->comment_engagement_enabled ?? false);
+    }
+
+    /**
+     * โหมดการ engage: 'ai' หรือ 'template'
+     */
+    public function getCommentEngagementMode(): string
+    {
+        return $this->comment_engagement_mode ?? 'ai';
+    }
+
+    /**
+     * เทมเพลตตอบคอมเม้นต์ (มีค่า default)
+     */
+    public function getCommentReplyTemplate(): string
+    {
+        if (!empty($this->comment_reply_template)) {
+            return $this->comment_reply_template;
+        }
+
+        return "สวัสดีค่ะคุณ {name} 🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨";
+    }
+
+    /**
+     * เทมเพลตข้อความ inbox (มีค่า default)
+     */
+    public function getCommentDmTemplate(): string
+    {
+        if (!empty($this->comment_dm_template)) {
+            return $this->comment_dm_template;
+        }
+
+        $msg = "สวัสดีค่ะคุณ {name} 🔮✨\n\n";
+        $msg .= "เห็นคุณคอมเม้นต์ในโพสต์ของเพจเรา อยากเชิญชวนมาลองดูดวงค่ะ!\n\n";
+        $msg .= "🌟 วิธีใช้งาน:\n";
+        $msg .= "• พิมพ์ \"ดูดวง\" - ดูดวงทั่วไป (ความรัก การงาน การเงิน สุขภาพ)\n";
+        $msg .= "• พิมพ์ \"ดูดวง เรื่องความรัก\" - ระบุเรื่องที่อยากรู้\n";
+        $msg .= "• พิมพ์ \"ดูดวงละเอียด\" - ดูดวงเชิงลึก\n";
+        $msg .= "• ระบุวันเกิดด้วยจะแม่นยิ่งขึ้น เช่น \"ดูดวง เกิด 15 มกราคม 2540\"\n\n";
+        $msg .= "ลองพิมพ์ \"ดูดวง\" ได้เลยค่ะ 🙏✨";
+
+        return $msg;
+    }
+
+    /**
+     * AI prompt สำหรับสร้างข้อความชวนดูดวง (มีค่า default)
+     */
+    public function getCommentEngagementPrompt(): string
+    {
+        if (!empty($this->comment_engagement_prompt)) {
+            return $this->comment_engagement_prompt;
+        }
+
+        return <<<'PROMPT'
+คุณเป็นหมอดูประจำเพจ Metaverse Tarot ตอบเฉพาะเรื่องดูดวงเท่านั้น
+ห้ามตอบเรื่องอื่นทุกกรณี ห้ามเขียนโค้ด ห้ามให้ความรู้ทั่วไป ห้ามตอบคำถามที่ไม่เกี่ยวกับดูดวง
+
+มีคนคอมเม้นต์ในโพสต์ว่า: "{comment}"
+ชื่อ: {name}
+{profile_info}
+
+สร้างข้อความ 2 ชุด:
+1. COMMENT_REPLY: ข้อความสั้นตอบในคอมเม้นต์ (ไม่เกิน 100 ตัวอักษร) ชวนดูดวงอย่างเป็นกันเอง เชื่อมโยงกับสิ่งที่เขาคอมเม้นต์
+2. DM_MESSAGE: ข้อความทักใน inbox (200-400 ตัวอักษร) ทักทาย อ้างอิงคอมเม้นต์ ชวนดูดวง บอกวิธีใช้: พิมพ์ "ดูดวง" ตามด้วยคำถาม หรือระบุวันเกิดจะแม่นขึ้น
+
+ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอก JSON:
+{"comment_reply": "...", "dm_message": "..."}
+PROMPT;
     }
 }
