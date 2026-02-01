@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.0] - 2026-02-01
+
+### ✨ Features
+- feat: Enhance fortune telling with profile data, referrals & smarter AI (22dad19d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.460.0] - 2026-02-01
 
 ### ✨ Features
