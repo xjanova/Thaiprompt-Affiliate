@@ -313,6 +313,138 @@
             </div>
         </x-modern-card>
 
+        <!-- 4.5 Shipping Settings -->
+        <x-modern-card
+            title="การจัดส่งสินค้า"
+            description="ตั้งค่าวิธีคิดค่าจัดส่งสำหรับสินค้านี้"
+            :icon="'<svg class=\'w-6 h-6\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M8 17h8M8 17v-4m8 4v-4m-8 0h8m-8 0L6 9m10 4l2-4M6 9h12M6 9L4 5h16l-2 4\'/></svg>'"
+        >
+            <div x-data="{ shippingMethod: '{{ old('shipping_method', 'store_default') }}' }" class="space-y-5">
+                {{-- วิธีคิดค่าจัดส่ง --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        วิธีคิดค่าจัดส่ง
+                    </label>
+                    <select name="shipping_method"
+                            x-model="shippingMethod"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                        <option value="store_default">ใช้ค่าเริ่มต้นของร้าน</option>
+                        <option value="free">ฟรีค่าจัดส่ง</option>
+                        <option value="flat_rate">คิดแบบเหมา (Flat Rate)</option>
+                        <option value="weight_based">คิดตามน้ำหนัก</option>
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        เลือกวิธีคำนวณค่าจัดส่งสำหรับสินค้าชิ้นนี้
+                    </p>
+                </div>
+
+                {{-- ค่าจัดส่งแบบเหมา (แสดงเมื่อเลือก flat_rate) --}}
+                <div x-show="shippingMethod === 'flat_rate'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <x-form-field
+                        label="ค่าจัดส่งต่อชิ้น (บาท)"
+                        name="shipping_fee"
+                        type="number"
+                        :value="old('shipping_fee', 50)"
+                        placeholder="50"
+                        step="0.01"
+                        min="0"
+                        helpText="ค่าจัดส่งคงที่ต่อชิ้นสินค้า"
+                    />
+
+                    <x-form-field
+                        label="ฟรีค่าส่งเมื่อซื้อขั้นต่ำ (บาท)"
+                        name="free_shipping_min_amount"
+                        type="number"
+                        :value="old('free_shipping_min_amount')"
+                        placeholder="เช่น 500 (ปล่อยว่างถ้าไม่ต้องการ)"
+                        step="0.01"
+                        min="0"
+                        helpText="ยอดขั้นต่ำเพื่อรับฟรีค่าส่ง (ปล่อยว่าง = ไม่มี)"
+                    />
+                </div>
+
+                {{-- น้ำหนักสำหรับคำนวณ (แสดงเมื่อเลือก weight_based) --}}
+                <div x-show="shippingMethod === 'weight_based'" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <x-form-field
+                        label="น้ำหนักจัดส่ง (กก.)"
+                        name="shipping_weight_kg"
+                        type="number"
+                        :value="old('shipping_weight_kg')"
+                        placeholder="เช่น 0.5"
+                        step="0.001"
+                        min="0"
+                        :required="false"
+                        helpText="น้ำหนักรวมบรรจุภัณฑ์สำหรับคำนวณค่าส่ง"
+                    />
+
+                    <x-form-field
+                        label="ฟรีค่าส่งเมื่อซื้อขั้นต่ำ (บาท)"
+                        name="free_shipping_min_amount_weight"
+                        type="number"
+                        :value="old('free_shipping_min_amount')"
+                        placeholder="เช่น 1000 (ปล่อยว่างถ้าไม่ต้องการ)"
+                        step="0.01"
+                        min="0"
+                        helpText="ยอดขั้นต่ำเพื่อรับฟรีค่าส่ง (ปล่อยว่าง = ไม่มี)"
+                    />
+                </div>
+
+                {{-- ข้อมูลสรุปแต่ละวิธี --}}
+                <div class="p-4 rounded-xl border" :class="{
+                    'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800': shippingMethod === 'free',
+                    'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800': shippingMethod === 'flat_rate',
+                    'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800': shippingMethod === 'weight_based',
+                    'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700': shippingMethod === 'store_default'
+                }">
+                    <div x-show="shippingMethod === 'store_default'" class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-gray-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-gray-700 dark:text-gray-300">ค่าเริ่มต้นของร้าน</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                ระบบจะใช้ค่าจัดส่งที่กำหนดไว้ในการตั้งค่าร้านค้า ฟรีค่าส่งเมื่อซื้อครบตามยอดที่ร้านกำหนด
+                            </p>
+                        </div>
+                    </div>
+                    <div x-show="shippingMethod === 'free'" class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-green-700 dark:text-green-300">ฟรีค่าจัดส่ง</p>
+                            <p class="text-sm text-green-600 dark:text-green-400 mt-1">
+                                ลูกค้าไม่ต้องจ่ายค่าจัดส่งสำหรับสินค้าชิ้นนี้
+                            </p>
+                        </div>
+                    </div>
+                    <div x-show="shippingMethod === 'flat_rate'" class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-blue-700 dark:text-blue-300">ค่าจัดส่งแบบเหมา</p>
+                            <p class="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                                คิดค่าจัดส่งคงที่ต่อชิ้น ไม่ว่าน้ำหนักเท่าไหร่
+                            </p>
+                        </div>
+                    </div>
+                    <div x-show="shippingMethod === 'weight_based'" class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-purple-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="font-medium text-purple-700 dark:text-purple-300">คิดตามน้ำหนัก</p>
+                            <p class="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                                ระบบจะคำนวณค่าจัดส่งจากน้ำหนักสินค้าตามอัตราที่กำหนดในระบบ (ตามมาตรฐานสากล)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </x-modern-card>
+
         <!-- 5. Images -->
         <x-modern-card
             title="รูปภาพสินค้า"

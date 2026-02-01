@@ -104,6 +104,11 @@ class ProductController extends Controller
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
+            // Shipping validation
+            'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
+            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_weight_kg' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -143,6 +148,12 @@ class ProductController extends Controller
                 'customer_cashback' => $request->customer_cashback ?? 0,
                 'cashback_percentage' => $request->cashback_percentage ?? 0,
                 'main_image_url' => $mainImageUrl,
+                // Shipping fields
+                'shipping_method' => $request->shipping_method ?? 'store_default',
+                'shipping_fee' => $request->shipping_fee,
+                'shipping_weight_kg' => $request->shipping_weight_kg,
+                'free_shipping_min_amount' => $request->free_shipping_min_amount
+                    ?? $request->free_shipping_min_amount_weight,
                 'is_active' => true,
                 'published_at' => now(),
             ]);
@@ -237,6 +248,11 @@ class ProductController extends Controller
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
+            // Shipping validation
+            'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
+            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_weight_kg' => 'nullable|numeric|min:0',
+            'free_shipping_min_amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -277,6 +293,13 @@ class ProductController extends Controller
                 'commission_rate' => $request->commission_rate ?? $product->commission_rate,
                 'customer_cashback' => $request->customer_cashback ?? 0,
                 'cashback_percentage' => $request->cashback_percentage ?? 0,
+                // Shipping fields
+                'shipping_method' => $request->shipping_method ?? $product->shipping_method ?? 'store_default',
+                'shipping_fee' => $request->shipping_fee ?? $product->shipping_fee,
+                'shipping_weight_kg' => $request->shipping_weight_kg ?? $product->shipping_weight_kg,
+                'free_shipping_min_amount' => $request->free_shipping_min_amount
+                    ?? $request->free_shipping_min_amount_weight
+                    ?? $product->free_shipping_min_amount,
             ]);
 
             // Update or create PV for default MLM plan if specified

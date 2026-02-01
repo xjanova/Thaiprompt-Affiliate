@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\ShippingAddress;
 use App\Models\Wallet;
 use App\Services\CashbackService;
+use App\Services\ShippingService;
 use App\Services\WalletService;
 use App\Services\Payment\PaymentService;
 use App\Notifications\NewOrderNotification;
@@ -62,8 +63,13 @@ class CheckoutController extends Controller
 
         // Calculate totals
         $subtotal = $cartItems->sum('subtotal');
-        // ✅ Virtual products ไม่มีค่าส่ง
-        $shippingFee = $hasPhysicalProducts ? $this->calculateShippingFee($subtotal) : 0;
+        // ✅ Virtual products ไม่มีค่าส่ง - ใช้ ShippingService คำนวณตามสินค้า
+        $shippingFee = 0;
+        if ($hasPhysicalProducts) {
+            $shippingService = new ShippingService();
+            $shippingResult = $shippingService->calculateForCart($cartItems);
+            $shippingFee = $shippingResult['total_shipping'];
+        }
         $total = $subtotal + $shippingFee;
 
         // Calculate cashback preview
@@ -154,8 +160,13 @@ class CheckoutController extends Controller
 
             // Calculate totals
             $subtotal = $cartItems->sum('subtotal');
-            // ✅ Virtual products ไม่มีค่าส่ง
-            $shippingFee = $hasPhysicalProducts ? $this->calculateShippingFee($subtotal) : 0;
+            // ✅ Virtual products ไม่มีค่าส่ง - ใช้ ShippingService คำนวณตามสินค้า
+            $shippingFee = 0;
+            if ($hasPhysicalProducts) {
+                $shippingService = new ShippingService();
+                $shippingResult = $shippingService->calculateForCart($cartItems);
+                $shippingFee = $shippingResult['total_shipping'];
+            }
             $total = $subtotal + $shippingFee;
             $platformCommission = 0;
             $sellerEarning = 0;
@@ -456,17 +467,19 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Calculate shipping fee
+     * คำนวณค่าจัดส่ง (Fallback สำหรับกรณีที่ไม่มี cart items)
+     *
+     * @param float $subtotal ยอดรวมสินค้า
+     * @return float ค่าจัดส่ง
      */
     private function calculateShippingFee($subtotal)
     {
-        // Free shipping for orders over 1000 baht
-        if ($subtotal >= 1000) {
+        // ใช้ค่าเริ่มต้นจาก ShippingService
+        if ($subtotal >= ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD) {
             return 0;
         }
 
-        // Flat rate shipping
-        return 50;
+        return ShippingService::DEFAULT_SHIPPING_FEE;
     }
 
     /**
