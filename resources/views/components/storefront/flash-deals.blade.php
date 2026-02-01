@@ -198,7 +198,7 @@
 
                                 {{-- Quick Buy Button --}}
                                 <button type="button"
-                                        onclick="event.preventDefault(); addToCartFlash({{ $product->id }})"
+                                        onclick="event.preventDefault(); event.stopPropagation(); addToCartFlash({{ $product->id }})"
                                         class="w-full py-2 bg-gradient-to-r from-red-600 to-orange-500
                                               hover:from-red-700 hover:to-orange-600
                                               text-white text-sm font-bold rounded-xl
