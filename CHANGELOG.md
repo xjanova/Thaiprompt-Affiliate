@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.458.0] - 2026-02-01
+
+### ✨ Features
+- feat: Payment PRG pattern + FCM push notifications to SMS Checker (208ce39c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.457.1] - 2026-02-01
 
 ### ✨ Features
