@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.1] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2471 from xjanova/claude/seeder-verification-tool-dOHM6 (1cb741bb)
+- fix: add SmsGatewayPricingSeeder to DatabaseSeeder.php (d790a8ec)
+### 🔧 Other Changes
+
+
 ## [v3.459.0] - 2026-02-01
 
 ### ✨ Features
