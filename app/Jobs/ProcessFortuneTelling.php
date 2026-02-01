@@ -134,6 +134,13 @@ class ProcessFortuneTelling implements ShouldQueue
                 ? $settings->getDeepPromptTemplate()
                 : $settings->getBasicPromptTemplate();
 
+            // ใช้วันเกิดที่ผู้ใช้พิมพ์ หรือ fallback จาก Facebook profile
+            $birthDate = $this->data['birth_date'] ?? null;
+            if (empty($birthDate) && !empty($userProfile['birth_date_formatted'])) {
+                $birthDate = $userProfile['birth_date_formatted'];
+                Log::info('ใช้วันเกิดจาก Facebook profile', ['birth_date' => $birthDate]);
+            }
+
             // เรียก AI เพื่อทำนาย (ส่ง readingType เพื่อกำหนด maxTokens/temperature)
             $readingType = $isDeep ? 'deep' : 'basic';
             $aiResponse = $aiService->generateFortuneTelling(
@@ -142,7 +149,7 @@ class ProcessFortuneTelling implements ShouldQueue
                 $userPosts,
                 $promptTemplate,
                 $readingType,
-                $this->data['birth_date'] ?? null
+                $birthDate
             );
 
             // บันทึกลงฐานข้อมูล
@@ -163,6 +170,19 @@ class ProcessFortuneTelling implements ShouldQueue
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
                     ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
                     ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
+                ]);
+            }
+
+            // ส่งข้อความชวนเพื่อนมาดูดวง (ทุกประเภท, เฉพาะ Messenger)
+            if (!$isComment && $fromId) {
+                $userName = $this->data['facebook_user_name'] ?? $userProfile['name'] ?? '';
+                $referMsg = "✨ ชอบคำทำนายไหมคะ?\n";
+                $referMsg .= "📲 ส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันสิคะ! แค่แชร์เพจเราให้เพื่อน แล้วบอกให้พิมพ์ \"ดูดวง\" ได้เลย 🔮\n";
+                $referMsg .= "🌟 ยิ่งบอกวันเกิดด้วย ยิ่งแม่นค่ะ!";
+
+                $facebookService->sendQuickReplies($fromId, $referMsg, [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวงอีก', 'payload' => 'FORTUNE_BASIC'],
+                    ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
                 ]);
             }
 

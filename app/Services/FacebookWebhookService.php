@@ -230,13 +230,36 @@ class FacebookWebhookService
     public function getUserProfile(string $facebookUserId): ?array
     {
         try {
+            // ดึงข้อมูลพื้นฐาน + ลอง fields เพิ่มเติม (gender, birthday, locale)
+            // หมายเหตุ: gender/birthday/locale อาจไม่ได้รับจาก PSID เนื่องจาก Facebook API restrictions
+            // แต่ใส่ไว้เผื่อ App ได้รับ permission แล้ว
             $response = Http::timeout(15)
                 ->get($this->graphUrl("/{$facebookUserId}"), [
-                    'fields' => 'id,name,first_name,last_name,profile_pic',
+                    'fields' => 'id,name,first_name,last_name,profile_pic,gender,birthday,locale,timezone',
                     'access_token' => $this->pageAccessToken,
                 ])->throw();
 
-            return $response->json();
+            $profile = $response->json();
+
+            // ถ้าได้ birthday มา → คำนวณอายุ
+            if (!empty($profile['birthday'])) {
+                try {
+                    $birthDate = \Carbon\Carbon::parse($profile['birthday']);
+                    $profile['age'] = $birthDate->age;
+                    $profile['birth_date_formatted'] = $birthDate->format('Y-m-d');
+                } catch (\Exception $e) {
+                    // birthday format อาจเป็นแค่ MM/DD
+                }
+            }
+
+            Log::info('ดึงโปรไฟล์ผู้ใช้สำเร็จ', [
+                'user_id' => $facebookUserId,
+                'has_gender' => !empty($profile['gender']),
+                'has_birthday' => !empty($profile['birthday']),
+                'has_locale' => !empty($profile['locale']),
+            ]);
+
+            return $profile;
         } catch (Exception $e) {
             Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: ' . $e->getMessage());
             return null;
