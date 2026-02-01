@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * SMS Checker Device Model
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $status สถานะ (active/inactive/blocked)
  * @property \Carbon\Carbon|null $last_active_at เวลากิจกรรมล่าสุด
  * @property int|null $user_id เจ้าของอุปกรณ์
+ * @property int|null $store_id ร้านค้าที่อุปกรณ์นี้ผูกไว้ (null = admin/platform device)
  * @property string|null $ip_address IP address ล่าสุด
  */
 class SmsCheckerDevice extends Model
@@ -38,6 +40,7 @@ class SmsCheckerDevice extends Model
         'last_active_at',
         'user_id',
         'ip_address',
+        'store_id',
         'fcm_token',
         'fcm_token_updated_at',
     ];
@@ -65,9 +68,18 @@ class SmsCheckerDevice extends Model
     /**
      * ความสัมพันธ์กับ User (เจ้าของอุปกรณ์)
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ความสัมพันธ์กับร้านค้าที่อุปกรณ์นี้ผูกไว้
+     * store_id = null หมายถึงอุปกรณ์ของ admin/platform
+     */
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(VendorStore::class, 'store_id');
     }
 
     /**
@@ -116,5 +128,65 @@ class SmsCheckerDevice extends Model
     public static function generateSecretKey(): string
     {
         return bin2hex(random_bytes(32));
+    }
+
+    // ========================================
+    // SCOPES (Multi-Store)
+    // ========================================
+
+    /**
+     * Filter อุปกรณ์ตามร้านค้า
+     * storeId = null → ดึงเฉพาะอุปกรณ์ admin/platform
+     */
+    public function scopeForStore($query, ?int $storeId)
+    {
+        if ($storeId === null) {
+            return $query->whereNull('store_id');
+        }
+        return $query->where('store_id', $storeId);
+    }
+
+    /**
+     * ดึงเฉพาะอุปกรณ์ admin (store_id IS NULL)
+     */
+    public function scopeAdminDevices($query)
+    {
+        return $query->whereNull('store_id');
+    }
+
+    /**
+     * ดึงเฉพาะอุปกรณ์ที่ active
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * ดึงเฉพาะอุปกรณ์ที่มี FCM token
+     */
+    public function scopeWithFcmToken($query)
+    {
+        return $query->whereNotNull('fcm_token')->where('fcm_token', '!=', '');
+    }
+
+    // ========================================
+    // HELPERS (Multi-Store)
+    // ========================================
+
+    /**
+     * ตรวจสอบว่าเป็นอุปกรณ์ของ admin หรือไม่
+     */
+    public function isAdminDevice(): bool
+    {
+        return $this->store_id === null;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นอุปกรณ์ของร้านค้าที่ระบุหรือไม่
+     */
+    public function belongsToStore(int $storeId): bool
+    {
+        return $this->store_id === $storeId;
     }
 }

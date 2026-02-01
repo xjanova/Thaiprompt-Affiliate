@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\PaymentTransaction;
+use App\Models\Product;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Services\Payment\PaymentService;
@@ -416,6 +418,13 @@ class SmsPaymentController extends Controller
 
         $query = PaymentTransaction::query();
 
+        // === Multi-Store Filtering ===
+        // Admin devices (store_id = null) → เห็นทุก order
+        // Seller devices → เห็นเฉพาะ order ที่มี store_id ตรงกับร้านตัวเอง
+        if (!$device->isAdminDevice()) {
+            $query->where('store_id', $device->store_id);
+        }
+
         // กรองสถานะ (default: pending)
         $status = $request->input('status', 'pending');
         if ($status !== 'all') {
@@ -483,6 +492,14 @@ class SmsPaymentController extends Controller
             ], 404);
         }
 
+        // === Multi-Store: ตรวจสอบสิทธิ์ของ device ในการจัดการ transaction นี้ ===
+        if (!$device->isAdminDevice() && $transaction->store_id !== $device->store_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage this transaction',
+            ], 403);
+        }
+
         if ($transaction->status !== 'pending') {
             return response()->json([
                 'success' => false,
@@ -497,6 +514,7 @@ class SmsPaymentController extends Controller
         Log::info('SMS Payment: อนุมัติ order จากอุปกรณ์', [
             'transaction_id' => $transaction->id,
             'device_id' => $device->device_id,
+            'store_id' => $device->store_id,
         ]);
 
         return response()->json([
@@ -528,6 +546,14 @@ class SmsPaymentController extends Controller
                 'success' => false,
                 'message' => 'Transaction not found',
             ], 404);
+        }
+
+        // === Multi-Store: ตรวจสอบสิทธิ์ ===
+        if (!$device->isAdminDevice() && $transaction->store_id !== $device->store_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage this transaction',
+            ], 403);
         }
 
         if ($transaction->status !== 'pending') {
@@ -628,6 +654,11 @@ class SmsPaymentController extends Controller
         // รองรับทั้ง since_version (Android app) และ since (legacy)
         $sinceVersion = $request->input('since_version') ?? $request->input('since') ?? 0;
         $query = PaymentTransaction::query();
+
+        // === Multi-Store Filtering ===
+        if (!$device->isAdminDevice()) {
+            $query->where('store_id', $device->store_id);
+        }
 
         if ($sinceVersion > 0) {
             // ดึง orders ที่อัพเดทหลังจาก timestamp ที่กำหนด (milliseconds)
@@ -745,12 +776,22 @@ class SmsPaymentController extends Controller
         $days = (int) $request->input('days', 7);
         $since = now()->subDays($days)->startOfDay();
 
+        // === Multi-Store Filtering ===
+        // สร้าง base query ที่ filter ตาม store ของ device
+        $baseQuery = function () use ($device) {
+            $q = PaymentTransaction::query();
+            if (!$device->isAdminDevice()) {
+                $q->where('store_id', $device->store_id);
+            }
+            return $q;
+        };
+
         // นับ orders ตามสถานะ (ใช้ PaymentTransaction เป็น base)
-        $totalOrders = PaymentTransaction::where('created_at', '>=', $since)->count();
-        $completedOrders = PaymentTransaction::where('created_at', '>=', $since)
+        $totalOrders = $baseQuery()->where('created_at', '>=', $since)->count();
+        $completedOrders = $baseQuery()->where('created_at', '>=', $since)
             ->where('status', 'completed')->count();
-        $pendingOrders = PaymentTransaction::where('status', 'pending')->count();
-        $failedOrders = PaymentTransaction::where('created_at', '>=', $since)
+        $pendingOrders = $baseQuery()->where('status', 'pending')->count();
+        $failedOrders = $baseQuery()->where('created_at', '>=', $since)
             ->where('status', 'failed')->count();
 
         // แบ่ง auto approved (matched by SMS) vs manually approved
@@ -761,7 +802,7 @@ class SmsPaymentController extends Controller
         $manuallyApproved = max(0, $completedOrders - $autoApproved);
 
         // ยอดรวม
-        $totalAmount = (float) PaymentTransaction::where('created_at', '>=', $since)
+        $totalAmount = (float) $baseQuery()->where('created_at', '>=', $since)
             ->where('status', 'completed')
             ->sum('amount');
 
@@ -772,12 +813,12 @@ class SmsPaymentController extends Controller
             $dayStart = now()->subDays($i)->startOfDay();
             $dayEnd = now()->subDays($i)->endOfDay();
 
-            $dayCount = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])->count();
-            $dayApproved = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+            $dayCount = $baseQuery()->whereBetween('created_at', [$dayStart, $dayEnd])->count();
+            $dayApproved = $baseQuery()->whereBetween('created_at', [$dayStart, $dayEnd])
                 ->where('status', 'completed')->count();
-            $dayRejected = PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+            $dayRejected = $baseQuery()->whereBetween('created_at', [$dayStart, $dayEnd])
                 ->where('status', 'failed')->count();
-            $dayAmount = (float) PaymentTransaction::whereBetween('created_at', [$dayStart, $dayEnd])
+            $dayAmount = (float) $baseQuery()->whereBetween('created_at', [$dayStart, $dayEnd])
                 ->where('status', 'completed')->sum('amount');
 
             $dailyBreakdown[] = [

@@ -256,6 +256,47 @@ class VendorStore extends Model
     }
 
     // ========================================
+    // SMS GATEWAY RELATIONSHIPS
+    // ========================================
+
+    /**
+     * SMS Gateway Subscription ล่าสุดที่ active
+     */
+    public function smsGatewaySubscription(): HasOne
+    {
+        return $this->hasOne(SmsGatewaySubscription::class, 'store_id')
+            ->where(function ($q) {
+                $q->where('status', 'active')->orWhere('status', 'trial');
+            })
+            ->where('expires_at', '>', now())
+            ->latest();
+    }
+
+    /**
+     * SMS Gateway Subscriptions ทั้งหมด
+     */
+    public function smsGatewaySubscriptions(): HasMany
+    {
+        return $this->hasMany(SmsGatewaySubscription::class, 'store_id');
+    }
+
+    /**
+     * อุปกรณ์ SMS Checker ของร้าน
+     */
+    public function smsCheckerDevices(): HasMany
+    {
+        return $this->hasMany(SmsCheckerDevice::class, 'store_id');
+    }
+
+    /**
+     * บัญชีธนาคารสำหรับ SMS Gateway
+     */
+    public function smsGatewayBankAccounts(): HasMany
+    {
+        return $this->hasMany(SmsGatewayBankAccount::class, 'store_id');
+    }
+
+    // ========================================
     // ERP RELATIONSHIPS (ระบบ HR ฟรี)
     // ========================================
 
@@ -342,6 +383,15 @@ class VendorStore extends Model
     {
         return $this->subscription_status === 'expired' ||
                ($this->subscription_expires_at && $this->subscription_expires_at->isPast());
+    }
+
+    /**
+     * ตรวจสอบว่าร้านค้ามีสิทธิ์ใช้ SMS Payment Gateway หรือไม่
+     * เช็ค: 1) Official Shop 2) Premium Store 3) Active Subscription
+     */
+    public function hasSmsGatewayAccess(): bool
+    {
+        return SmsGatewaySubscription::storeHasAccess($this->id);
     }
 
     /**

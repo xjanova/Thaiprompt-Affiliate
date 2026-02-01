@@ -13,6 +13,7 @@ class PaymentTransaction extends Model
     protected $fillable = [
         'transaction_id',
         'user_id',
+        'store_id',
         'type',
         'payment_method',
         'status',

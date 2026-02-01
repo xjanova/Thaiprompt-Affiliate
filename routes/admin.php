@@ -3814,3 +3814,24 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])
         ->name('response-templates.preview');
 });
+
+// ========================================
+// SMS GATEWAY MANAGEMENT
+// ========================================
+Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
+    // แพ็กเกจราคา
+    Route::get('/pricing', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'pricing'])->name('pricing');
+    Route::post('/pricing', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'storePricing'])->name('pricing.store');
+    Route::put('/pricing/{id}', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'updatePricing'])->name('pricing.update');
+    Route::delete('/pricing/{id}', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'deletePricing'])->name('pricing.delete');
+
+    // Subscriptions
+    Route::get('/subscriptions', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'subscriptions'])->name('subscriptions');
+    Route::post('/subscriptions/{id}/toggle', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'toggleSubscription'])->name('subscriptions.toggle');
+
+    // ร้านค้าที่ใช้ระบบ
+    Route::get('/stores', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'stores'])->name('stores');
+
+    // สถิติรายได้
+    Route::get('/revenue', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'revenue'])->name('revenue');
+});

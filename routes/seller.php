@@ -416,4 +416,28 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         // ตอบกลับรีวิว
         Route::post('/{rating}/respond', [\App\Http\Controllers\Seller\StoreRatingController::class, 'respond'])->name('respond');
     });
+
+    // ========================================
+    // SMS GATEWAY - ระบบ SMS Payment Gateway
+    // ========================================
+    Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
+        // หน้าหลัก (สถานะ + pricing)
+        Route::get('/', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'index'])->name('index');
+
+        // สมัคร / ทดลองใช้ / ยกเลิก
+        Route::post('/subscribe', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'subscribe'])->name('subscribe');
+        Route::post('/trial', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'startTrial'])->name('trial');
+        Route::post('/cancel', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'cancel'])->name('cancel');
+
+        // จัดการอุปกรณ์
+        Route::get('/devices', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'devices'])->name('devices');
+        Route::post('/devices/create', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'createDevice'])->name('devices.create');
+        Route::delete('/devices/{id}', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'deleteDevice'])->name('devices.delete');
+
+        // จัดการบัญชีธนาคาร
+        Route::get('/bank-accounts', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'bankAccounts'])->name('bank-accounts');
+        Route::post('/bank-accounts/create', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'createBankAccount'])->name('bank-accounts.create');
+        Route::put('/bank-accounts/{id}', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'updateBankAccount'])->name('bank-accounts.update');
+        Route::delete('/bank-accounts/{id}', [\App\Http\Controllers\Seller\SmsGatewaySellerController::class, 'deleteBankAccount'])->name('bank-accounts.delete');
+    });
 });

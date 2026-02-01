@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
 use App\Models\PaymentBankAccount;
+use App\Models\Product;
 use App\Models\UniquePaymentAmount;
 use App\Models\Order;
 use App\Models\User;
@@ -117,8 +118,12 @@ class PaymentService
     public function createOrderPayment(Order $order, string $paymentMethod, array $options = []): PaymentTransaction
     {
         return DB::transaction(function () use ($order, $paymentMethod, $options) {
+            // หา store_id จาก order items (ถ้าทุก item เป็นร้านเดียวกัน)
+            $storeId = $this->resolveStoreIdForOrder($order);
+
             $transaction = PaymentTransaction::create([
                 'user_id' => $order->user_id,
+                'store_id' => $storeId,
                 'type' => 'order_payment',
                 'payment_method' => $paymentMethod,
                 'status' => 'pending',
@@ -131,6 +136,42 @@ class PaymentService
 
             return $transaction;
         });
+    }
+
+    /**
+     * หา store_id ของ order สำหรับ SMS Gateway routing
+     *
+     * Logic:
+     * - ถ้าทุก item มาจากร้านเดียวกัน (ไม่ใช่ Official Shop) → return store_id นั้น
+     * - ถ้าเป็น Official Shop หรือ mixed stores → return null (admin จัดการ)
+     */
+    private function resolveStoreIdForOrder(Order $order): ?int
+    {
+        $order->loadMissing('items.product');
+
+        $officialSellerId = Product::getOfficialSellerId();
+        $storeIds = collect();
+
+        foreach ($order->items as $item) {
+            // Skip Official Shop items
+            if ($item->seller_id === $officialSellerId) {
+                continue;
+            }
+
+            if ($item->product && $item->product->store_id) {
+                $storeIds->push($item->product->store_id);
+            }
+        }
+
+        $uniqueStoreIds = $storeIds->unique();
+
+        // ทุก item เป็นร้านเดียวกัน
+        if ($uniqueStoreIds->count() === 1) {
+            return $uniqueStoreIds->first();
+        }
+
+        // Mixed stores หรือ Official Shop only → null (admin)
+        return null;
     }
 
     /**
