@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.457.1] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: อนุญาตให้รีวิวสินค้าได้เมื่อรับสินค้าแล้ว (delivered/completed) (51b8ffb0)
+- fix: แก้ไข timeline หน้าคำสั่งซื้อลูกค้าให้สอดคล้องกับระบบ tracking ร้านค้า (32a2eb3c)
+### 🔧 Other Changes
+- Merge pull request #2470 from xjanova/claude/fix-storefront-navigation-Lpb07 (d55ad7ad)
+
 ## [v3.457.0] - 2026-02-01
 
 ### ✨ Features
