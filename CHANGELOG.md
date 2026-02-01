@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.460.0] - 2026-02-01
+
+### ✨ Features
+- feat: Add comment auto-engagement system (35a10e73)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.459.5] - 2026-02-01
 
 ### ✨ Features
