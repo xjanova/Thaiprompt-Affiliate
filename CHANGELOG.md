@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.0] - 2026-02-01
+
+### ✨ Features
+- feat: ระบบสมัครสมาชิก SMS Payment Gateway แบบ Multi-Store (1a2e1d2a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.458.0] - 2026-02-01
 
 ### ✨ Features
