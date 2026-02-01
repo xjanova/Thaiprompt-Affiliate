@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.457.0] - 2026-02-01
+
+### ✨ Features
+- feat: ปรับปรุงระบบ tracking, review, Turnstile ให้มีคุณภาพระดับ production (528d6763)
+- feat: แสดงข้อมูลค่าจัดส่งชัดเจนในทุกหน้าสินค้า (16eb671c)
+- feat: เพิ่มการตั้งค่าจัดส่งในฟอร์มสินค้าฝั่ง Admin (185f0ac0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2469 from xjanova/claude/fix-storefront-navigation-Lpb07 (799b52d4)
+
 ## [v3.456.0] - 2026-02-01
 
 ### ✨ Features
