@@ -248,7 +248,7 @@ class OrderApiController extends Controller
             $user = Auth::user();
 
             $order = Order::where('user_id', $user->id)
-                ->with(['items.product', 'paymentTransactions'])
+                ->with(['items.product', 'paymentTransaction'])
                 ->find($id);
 
             if (!$order) {
@@ -273,10 +273,11 @@ class OrderApiController extends Controller
     /**
      * ยกเลิกคำสั่งซื้อ
      *
+     * @param Request $request
      * @param int $id
      * @return JsonResponse
      */
-    public function cancel(int $id): JsonResponse
+    public function cancel(Request $request, int $id): JsonResponse
     {
         try {
             $user = Auth::user();
@@ -290,33 +291,25 @@ class OrderApiController extends Controller
                 ], 404);
             }
 
-            // ตรวจสอบสถานะที่ยกเลิกได้
-            if (!in_array($order->status, ['pending', 'confirmed'])) {
+            // ตรวจสอบสถานะที่ยกเลิกได้ (ใช้ canBeCancelled() ให้ตรงกับ Web Controller)
+            if (!$order->canBeCancelled()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้',
                 ], 400);
             }
 
-            // ตรวจสอบว่าชำระเงินแล้วหรือยัง
-            if ($order->payment_status === 'paid') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'คำสั่งซื้อที่ชำระเงินแล้วไม่สามารถยกเลิกได้ กรุณาติดต่อ support',
-                ], 400);
-            }
-
-            $order->update([
-                'status' => 'cancelled',
-                'cancelled_at' => now(),
-                'cancelled_reason' => 'ยกเลิกโดยลูกค้า',
-            ]);
+            // ใช้ cancel() method ของ Model เพื่อคืน stock อัตโนมัติ
+            $reason = $request->input('reason', 'ยกเลิกโดยลูกค้า');
+            $order->cancel($reason);
 
             return response()->json([
                 'success' => true,
                 'message' => 'ยกเลิกคำสั่งซื้อสำเร็จ',
             ]);
         } catch (Exception $e) {
+            Log::error('Failed to cancel order', ['order_id' => $id, 'error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อได้',
