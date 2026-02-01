@@ -87,4 +87,25 @@ return [
         'sandbox_url' => env('PAYSOLUTIONS_SANDBOX_URL', 'https://sandbox-api.paysolutions.asia'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tracking / Shipping Provider API Keys
+    |--------------------------------------------------------------------------
+    |
+    | API keys สำหรับเชื่อมต่อระบบติดตามพัสดุกับขนส่งชั้นนำของไทย
+    | ตั้งค่าใน .env เมื่อต้องการเปิดใช้งาน realtime tracking
+    |
+    */
+
+    'tracking' => [
+        'thaipost_token' => env('TRACKING_THAIPOST_TOKEN', ''),
+        'kerry_api_key' => env('TRACKING_KERRY_API_KEY', ''),
+        'flash_api_key' => env('TRACKING_FLASH_API_KEY', ''),
+        'jt_api_key' => env('TRACKING_JT_API_KEY', ''),
+        'ninjavan_key' => env('TRACKING_NINJAVAN_KEY', ''),
+        'scg_api_key' => env('TRACKING_SCG_API_KEY', ''),
+        'best_api_key' => env('TRACKING_BEST_API_KEY', ''),
+        'dhl_key' => env('TRACKING_DHL_KEY', ''),
+    ],
+
 ];

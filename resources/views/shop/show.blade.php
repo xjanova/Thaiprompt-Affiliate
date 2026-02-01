@@ -600,27 +600,77 @@
 
                 <!-- Reviews Tab -->
                 <div x-show="tab === 'reviews'" class="space-y-6">
+                    {{-- สรุปรีวิว (Rating Breakdown) --}}
+                    <x-ecommerce.review-summary :product="$product" />
+
                     @if($product->approvedReviews && $product->approvedReviews->count() > 0)
                         @foreach($product->approvedReviews as $review)
-                        <div class="border-b-2 border-gray-100 pb-6 last:border-0">
+                        <div class="border-b-2 border-gray-100 dark:border-gray-700 pb-6 last:border-0">
                             <div class="flex items-start gap-4">
                                 <div class="w-14 h-14 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
                                     {{ substr($review->user->name ?? 'U', 0, 1) }}
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center gap-3 mb-2 flex-wrap">
-                                        <span class="font-bold text-gray-900 text-lg">{{ $review->user->name ?? 'ผู้ใช้' }}</span>
+                                        <span class="font-bold text-gray-900 dark:text-gray-100 text-lg">{{ $review->user->name ?? 'ผู้ใช้' }}</span>
                                         <div class="flex">
                                             @for($i = 0; $i < 5; $i++)
-                                                <svg class="w-4 h-4 {{ $i < $review->rating ? 'text-amber-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                <svg class="w-4 h-4 {{ $i < $review->rating ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600' }}" fill="currentColor" viewBox="0 0 20 20">
                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                                 </svg>
                                             @endfor
                                         </div>
-                                        <span class="text-sm text-gray-500">{{ $review->created_at->diffForHumans() }}</span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ $review->created_at->diffForHumans() }}</span>
+                                        @if($review->is_verified_purchase)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                            </svg>
+                                            ซื้อจริง
+                                        </span>
+                                        @endif
                                     </div>
+                                    @if($review->title)
+                                    <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-1">{{ $review->title }}</h4>
+                                    @endif
                                     @if($review->comment)
-                                    <p class="text-gray-700 leading-relaxed">{{ $review->comment }}</p>
+                                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">{{ $review->comment }}</p>
+                                    @endif
+
+                                    {{-- รูปภาพรีวิว --}}
+                                    @if($review->images && count($review->images) > 0)
+                                    <div class="flex flex-wrap gap-2 mt-3">
+                                        @foreach($review->images as $image)
+                                        <img src="{{ asset('storage/' . $image) }}"
+                                             alt="รีวิว"
+                                             class="w-20 h-20 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity">
+                                        @endforeach
+                                    </div>
+                                    @endif
+
+                                    {{-- ปุ่ม Helpful --}}
+                                    <div class="flex items-center gap-4 mt-3 text-sm">
+                                        <span class="text-gray-500 dark:text-gray-400">
+                                            @if($review->helpful_count > 0)
+                                                {{ $review->helpful_count }} คนเห็นว่ามีประโยชน์
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    {{-- คำตอบจากร้านค้า --}}
+                                    @if($review->seller_response)
+                                    <div class="mt-3 ml-4 pl-4 border-l-2 border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 rounded-r-lg p-3">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span class="text-sm font-bold text-orange-700 dark:text-orange-400">ตอบกลับจากร้านค้า</span>
+                                            @if($review->seller_responded_at)
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $review->seller_responded_at->diffForHumans() }}</span>
+                                            @endif
+                                        </div>
+                                        <p class="text-sm text-gray-700 dark:text-gray-300">{{ $review->seller_response }}</p>
+                                    </div>
                                     @endif
                                 </div>
                             </div>
@@ -628,17 +678,12 @@
                         @endforeach
                     @else
                         <div class="text-center py-16">
-                            <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
-                                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                                <svg class="w-10 h-10 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
                                 </svg>
                             </div>
-                            <p class="text-gray-500 text-lg font-semibold">ยังไม่มีรีวิวสำหรับสินค้านี้</p>
-                            @if($hasPurchased)
-                            <button class="mt-6 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
-                                เขียนรีวิว
-                            </button>
-                            @endif
+                            <p class="text-gray-500 dark:text-gray-400 text-lg font-semibold">ยังไม่มีรีวิวสำหรับสินค้านี้</p>
                         </div>
                     @endif
                 </div>

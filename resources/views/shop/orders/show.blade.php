@@ -156,9 +156,17 @@
                                             </div>
 
                                             {{-- ลิงก์ติดตามพัสดุจากบริษัทขนส่ง --}}
-                                            @if($order->shippingProviderRelation && $order->shippingProviderRelation->getTrackingLink($order->tracking_number))
+                                            @php
+                                                $trackingUrl = null;
+                                                if ($order->shippingProviderRelation) {
+                                                    $trackingUrl = $order->shippingProviderRelation->getTrackingLink($order->tracking_number);
+                                                } elseif ($order->tracking_url) {
+                                                    $trackingUrl = $order->tracking_url;
+                                                }
+                                            @endphp
+                                            @if($trackingUrl)
                                             <div>
-                                                <a href="{{ $order->shippingProviderRelation->getTrackingLink($order->tracking_number) }}"
+                                                <a href="{{ $trackingUrl }}"
                                                    target="_blank"
                                                    rel="noopener noreferrer"
                                                    class="inline-flex items-center gap-2 px-4 py-2.5
@@ -171,7 +179,7 @@
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                                                     </svg>
-                                                    ติดตามพัสดุที่ {{ $order->shippingProviderRelation->name }}
+                                                    ติดตามพัสดุที่เว็บไซต์ขนส่ง
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                                     </svg>
@@ -216,6 +224,174 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Realtime Tracking Panel - แสดงเมื่อมีเลขพัสดุ --}}
+                @if($order->tracking_number && in_array($order->status, ['shipped', 'in_transit', 'out_for_delivery', 'delivered']))
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
+                     x-data="trackingPanel()"
+                     x-init="loadTracking()">
+                    <div class="bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-700 dark:to-blue-700 text-white px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                                </svg>
+                                ติดตามพัสดุ Realtime
+                            </h2>
+                            <button @click="loadTracking(true)"
+                                    :disabled="loading"
+                                    class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all disabled:opacity-50"
+                                    title="รีเฟรช">
+                                <svg class="w-5 h-5" :class="loading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        {{-- Loading state --}}
+                        <div x-show="loading && !trackingData" class="flex items-center justify-center py-8">
+                            <svg class="animate-spin w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="ml-3 text-gray-600 dark:text-gray-400">กำลังดึงข้อมูลจากขนส่ง...</span>
+                        </div>
+
+                        {{-- Tracking Data --}}
+                        <div x-show="trackingData" x-cloak>
+                            {{-- Provider Info --}}
+                            <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM3 4h1l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-900 dark:text-gray-100" x-text="trackingData?.provider?.name || 'ขนส่ง'"></div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400" x-text="trackingData?.provider?.hotline ? 'โทร: ' + trackingData.provider.hotline : ''"></div>
+                                    </div>
+                                </div>
+                                <div x-show="trackingData?.from_cache" class="text-xs text-gray-400 dark:text-gray-500">
+                                    จาก cache
+                                </div>
+                            </div>
+
+                            {{-- Status Badge --}}
+                            <div class="mb-4">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+                                      :class="getStatusBadgeClass(trackingData?.current_status)">
+                                    <span x-text="trackingData?.current_status_label || 'กำลังตรวจสอบ'"></span>
+                                </span>
+                            </div>
+
+                            {{-- Tracking URL --}}
+                            <div x-show="trackingData?.carrier_data?.tracking_url" class="mb-4">
+                                <a :href="trackingData?.carrier_data?.tracking_url"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                    </svg>
+                                    ดูรายละเอียดเพิ่มเติมที่เว็บขนส่ง
+                                </a>
+                            </div>
+
+                            {{-- Carrier Message --}}
+                            <div x-show="trackingData?.carrier_data?.message" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                <p class="text-sm text-amber-800 dark:text-amber-300" x-text="trackingData?.carrier_data?.message"></p>
+                            </div>
+
+                            {{-- Timeline from carrier --}}
+                            <div x-show="trackingData?.timeline && trackingData.timeline.length > 0" class="mt-4">
+                                <h4 class="font-bold text-gray-900 dark:text-gray-100 mb-3 text-sm">ประวัติการขนส่ง</h4>
+                                <div class="space-y-3 max-h-64 overflow-y-auto">
+                                    <template x-for="(event, index) in trackingData?.timeline || []" :key="index">
+                                        <div class="flex gap-3">
+                                            <div class="flex flex-col items-center">
+                                                <div class="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
+                                                     :style="'background-color: ' + (event.color || '#9CA3AF')"></div>
+                                                <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-600 mt-1"
+                                                     x-show="index < (trackingData?.timeline?.length || 0) - 1"></div>
+                                            </div>
+                                            <div class="flex-1 pb-3">
+                                                <div class="font-semibold text-sm text-gray-900 dark:text-gray-100" x-text="event.title"></div>
+                                                <div x-show="event.description" class="text-xs text-gray-600 dark:text-gray-400" x-text="event.description"></div>
+                                                <div x-show="event.location" class="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1 mt-0.5">
+                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    <span x-text="event.location"></span>
+                                                </div>
+                                                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+                                                     x-text="event.timestamp_display || event.timestamp"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            {{-- Error state --}}
+                            <div x-show="error" class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                                <p class="text-sm text-red-600 dark:text-red-400" x-text="error"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                function trackingPanel() {
+                    return {
+                        loading: false,
+                        trackingData: null,
+                        error: null,
+
+                        async loadTracking(forceRefresh = false) {
+                            this.loading = true;
+                            this.error = null;
+
+                            try {
+                                const url = '{{ route("orders.tracking.realtime", $order->id) }}' + (forceRefresh ? '?refresh=1' : '');
+                                const response = await fetch(url, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    }
+                                });
+                                const data = await response.json();
+
+                                if (data.success) {
+                                    this.trackingData = data;
+                                } else {
+                                    this.error = data.message || 'ไม่สามารถดึงข้อมูลติดตามได้';
+                                }
+                            } catch (e) {
+                                this.error = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
+                            } finally {
+                                this.loading = false;
+                            }
+                        },
+
+                        getStatusBadgeClass(status) {
+                            const classes = {
+                                'delivered': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
+                                'out_for_delivery': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+                                'in_transit': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
+                                'at_sorting_center': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
+                                'picked_up': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
+                                'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
+                                'failed_delivery': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
+                                'returned': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+                            };
+                            return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                        }
+                    }
+                }
+                </script>
+                @endif
 
                 <!-- Order Items -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">

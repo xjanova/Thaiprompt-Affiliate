@@ -57,6 +57,9 @@ return [
         'profile_update' => env('CLOUDFLARE_TURNSTILE_PROFILE_UPDATE', true),
         'withdrawal_request' => env('CLOUDFLARE_TURNSTILE_WITHDRAWAL', true),
         'affiliate_application' => env('CLOUDFLARE_TURNSTILE_AFFILIATE_APP', true),
+        'checkout' => env('CLOUDFLARE_TURNSTILE_CHECKOUT', true),
+        'review' => env('CLOUDFLARE_TURNSTILE_REVIEW', true),
+        'comment' => env('CLOUDFLARE_TURNSTILE_COMMENT', true),
     ],
 
     /*
