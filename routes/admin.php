@@ -3797,6 +3797,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
+    Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
 
     // หมวดหมู่
     Route::resource('categories', FortuneCategoriesController::class)->except('show');

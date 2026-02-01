@@ -124,4 +124,74 @@ class FortuneSettingsController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Debug endpoint - ตรวจสอบสถานะระบบ comment engagement
+     */
+    public function debugEngagement()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        $debug = [
+            'comment_engagement_enabled' => $settings->comment_engagement_enabled,
+            'comment_engagement_mode' => $settings->comment_engagement_mode ?? 'ai',
+            'queue_connection' => config('queue.default'),
+            'facebook_page_id' => $settings->facebook_page_id ? '***' . substr($settings->facebook_page_id, -4) : null,
+        ];
+
+        // ตรวจสอบตาราง fortune_comment_engagements
+        try {
+            $count = \DB::table('fortune_comment_engagements')->count();
+            $debug['table_exists'] = true;
+            $debug['engagements_count'] = $count;
+        } catch (\Exception $e) {
+            $debug['table_exists'] = false;
+            $debug['table_error'] = $e->getMessage();
+        }
+
+        // ตรวจสอบ columns ในตาราง fortune_telling_settings
+        try {
+            $hasColumn = \Schema::hasColumn('fortune_telling_settings', 'comment_engagement_enabled');
+            $debug['settings_column_exists'] = $hasColumn;
+        } catch (\Exception $e) {
+            $debug['settings_column_error'] = $e->getMessage();
+        }
+
+        // ดู failed jobs ล่าสุด
+        try {
+            $failedJobs = \DB::table('failed_jobs')
+                ->where('payload', 'like', '%CommentEngagement%')
+                ->orWhere('payload', 'like', '%FortuneTelling%')
+                ->orderBy('failed_at', 'desc')
+                ->limit(5)
+                ->get(['id', 'queue', 'failed_at', 'exception']);
+
+            $debug['failed_jobs'] = $failedJobs->map(function ($job) {
+                return [
+                    'id' => $job->id,
+                    'queue' => $job->queue,
+                    'failed_at' => $job->failed_at,
+                    'exception' => substr($job->exception, 0, 300),
+                ];
+            });
+        } catch (\Exception $e) {
+            $debug['failed_jobs_error'] = $e->getMessage();
+        }
+
+        // ดู recent logs จาก webhook
+        try {
+            $logFile = storage_path('logs/laravel.log');
+            if (file_exists($logFile)) {
+                $lines = array_slice(file($logFile), -100);
+                $webhookLogs = array_filter($lines, function ($line) {
+                    return str_contains($line, 'Webhook') || str_contains($line, 'Engagement') || str_contains($line, 'fortune');
+                });
+                $debug['recent_webhook_logs'] = array_values(array_map('trim', array_slice($webhookLogs, -20)));
+            }
+        } catch (\Exception $e) {
+            $debug['logs_error'] = $e->getMessage();
+        }
+
+        return response()->json($debug, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
 }
