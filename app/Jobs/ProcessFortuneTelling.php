@@ -79,7 +79,7 @@ class ProcessFortuneTelling implements ShouldQueue
     public function __construct(array $data)
     {
         $this->data = $data;
-        $this->onQueue('fortune-telling'); // ใช้ queue แยก
+        $this->onQueue('tpix-default'); // ใช้ queue ที่มี worker อยู่แล้ว
     }
 
     /**

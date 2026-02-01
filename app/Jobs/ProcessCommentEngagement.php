@@ -46,7 +46,7 @@ class ProcessCommentEngagement implements ShouldQueue
     public function __construct(array $data)
     {
         $this->data = $data;
-        $this->onQueue('fortune-telling');
+        $this->onQueue('tpix-default'); // ใช้ queue ที่มี worker อยู่แล้ว
     }
 
     public function handle(): void
