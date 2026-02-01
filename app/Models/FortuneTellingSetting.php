@@ -130,7 +130,7 @@ class FortuneTellingSetting extends Model
     protected $attributes = [
         'use_global_ai_settings' => true,
         'ai_provider' => 'gemini',
-        'ai_model' => 'gemini-2.0-flash-exp',
+        'ai_model' => 'gemini-2.0-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
         'enable_deep_reading' => true,
@@ -168,7 +168,7 @@ class FortuneTellingSetting extends Model
         if (!$settings) {
             $settings = self::create([
                 'ai_provider' => 'gemini',
-                'ai_model' => 'gemini-2.0-flash-exp',
+                'ai_model' => 'gemini-2.0-flash',
                 'max_free_readings' => 3,
                 'reading_price' => 0,
                 'is_enabled' => true,

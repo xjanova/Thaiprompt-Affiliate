@@ -218,19 +218,40 @@ class FortuneAIService
                     'topP' => 0.95,
                     'maxOutputTokens' => $config['max_tokens'] ?? 2048,
                 ],
-            ])->throw();
+            ]);
+
+            if (!$response->successful()) {
+                $errorBody = $response->json();
+                $errorMessage = $errorBody['error']['message'] ?? $response->body();
+                $errorCode = $errorBody['error']['code'] ?? $response->status();
+                Log::error('Gemini API Error', [
+                    'status' => $response->status(),
+                    'error' => $errorMessage,
+                    'model' => $this->model,
+                ]);
+                throw new Exception("Gemini API Error ({$errorCode}): {$errorMessage}");
+            }
 
             $data = $response->json();
 
+            if (empty($data['candidates'][0]['content']['parts'][0]['text'] ?? null)) {
+                Log::error('Gemini API: Empty response', ['data' => $data]);
+                $blockReason = $data['promptFeedback']['blockReason'] ?? null;
+                if ($blockReason) {
+                    throw new Exception("Gemini API: Prompt blocked - {$blockReason}");
+                }
+                throw new Exception('Gemini API: ไม่ได้รับคำตอบจาก AI (empty response)');
+            }
+
             return [
-                'response' => $data['candidates'][0]['content']['parts'][0]['text'] ?? '',
+                'response' => $data['candidates'][0]['content']['parts'][0]['text'],
                 'tokens_used' => $data['usageMetadata']['totalTokenCount'] ?? 0,
                 'provider' => 'gemini',
                 'model' => $this->model,
             ];
         } catch (Exception $e) {
             Log::error('Gemini API Error: ' . $e->getMessage());
-            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini AI');
+            throw $e;
         }
     }
 
@@ -328,11 +349,44 @@ class FortuneAIService
 
     public function testConnection(): array
     {
+        // ตรวจสอบการตั้งค่าเบื้องต้น
+        if (empty($this->apiKey)) {
+            return [
+                'success' => false,
+                'message' => "ไม่พบ API Key สำหรับ {$this->provider} - กรุณาตั้งค่า API Key ก่อน",
+                'debug' => [
+                    'provider' => $this->provider,
+                    'model' => $this->model,
+                    'has_api_key' => false,
+                    'use_global' => $this->settings->use_global_ai_settings ?? false,
+                ],
+            ];
+        }
+
         try {
             $result = $this->generateFortuneTelling(['ทดสอบการเชื่อมต่อ AI'], null, null);
-            return ['success' => true, 'message' => "เชื่อมต่อกับ {$this->provider} สำเร็จ"];
+            return [
+                'success' => true,
+                'message' => "เชื่อมต่อกับ {$this->provider} ({$this->model}) สำเร็จ",
+                'debug' => [
+                    'provider' => $this->provider,
+                    'model' => $this->model,
+                    'tokens_used' => $result['tokens_used'] ?? 0,
+                    'response_length' => mb_strlen($result['response'] ?? ''),
+                ],
+            ];
         } catch (Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'debug' => [
+                    'provider' => $this->provider,
+                    'model' => $this->model,
+                    'has_api_key' => !empty($this->apiKey),
+                    'api_key_prefix' => substr($this->apiKey ?? '', 0, 8) . '...',
+                    'use_global' => $this->settings->use_global_ai_settings ?? false,
+                ],
+            ];
         }
     }
 }

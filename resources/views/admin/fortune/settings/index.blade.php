@@ -450,6 +450,11 @@
 function fortuneSettings() {
     return {
         async testAI() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ กำลังทดสอบ...';
+            btn.disabled = true;
+
             try {
                 const response = await fetch('{{ route("admin.fortune.settings.test-ai") }}', {
                     method: 'POST',
@@ -461,13 +466,28 @@ function fortuneSettings() {
 
                 const result = await response.json();
 
+                let debugInfo = '';
+                if (result.debug) {
+                    debugInfo = '\n\nDebug Info:'
+                        + '\nProvider: ' + (result.debug.provider || '-')
+                        + '\nModel: ' + (result.debug.model || '-')
+                        + '\nHas API Key: ' + (result.debug.has_api_key !== undefined ? result.debug.has_api_key : '-')
+                        + (result.debug.tokens_used ? '\nTokens Used: ' + result.debug.tokens_used : '')
+                        + (result.debug.response_length ? '\nResponse Length: ' + result.debug.response_length + ' chars' : '')
+                        + (result.debug.api_key_prefix ? '\nAPI Key Prefix: ' + result.debug.api_key_prefix : '')
+                        + (result.debug.use_global !== undefined ? '\nUse Global: ' + result.debug.use_global : '');
+                }
+
                 if (result.success) {
-                    alert('✅ ' + result.message);
+                    alert('✅ ' + result.message + debugInfo);
                 } else {
-                    alert('❌ ' + result.message);
+                    alert('❌ ' + result.message + debugInfo);
                 }
             } catch (error) {
                 alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         }
     };
