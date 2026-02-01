@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.2] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- debug: Add temporary debug endpoint for comment engagement (4feb80aa)
+
 ## [v3.461.1] - 2026-02-01
 
 ### ✨ Features
