@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\ProductReview;
+use App\Services\TrackingService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -185,5 +186,32 @@ class OrderController extends Controller
 
         return redirect()->route('orders.show', $orderId)
             ->with('success', 'ขอบคุณสำหรับรีวิวของคุณ');
+    }
+
+    /**
+     * ดึงข้อมูลติดตามพัสดุแบบ realtime (AJAX)
+     *
+     * @param int $id Order ID
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function trackingRealtime($id)
+    {
+        $order = Order::with(['shippingProviderRelation', 'trackingHistory'])
+            ->where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        if (!$order->tracking_number) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คำสั่งซื้อนี้ยังไม่มีเลขพัสดุ',
+            ]);
+        }
+
+        $trackingService = new TrackingService();
+        $forceRefresh = request()->boolean('refresh', false);
+        $result = $trackingService->trackOrder($order, $forceRefresh);
+
+        return response()->json($result);
     }
 }

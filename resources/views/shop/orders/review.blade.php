@@ -236,6 +236,9 @@
                             </div>
                         </div>
 
+                        <!-- Cloudflare Turnstile -->
+                        <x-turnstile point="review" />
+
                         <!-- Submit Buttons -->
                         <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-gray-200 dark:border-gray-600">
                             <button type="submit"

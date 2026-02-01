@@ -334,6 +334,102 @@
                     </div>
                 </div>
 
+                {{-- การจัดส่ง (Shipping) --}}
+                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
+                     x-data="{ shippingMethod: '{{ old('shipping_method', $product->shipping_method ?? 'store_default') }}' }">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-teal-500 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a2 2 0 104 0m-4 0a2 2 0 11-4 0"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>การจัดส่ง</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        {{-- วิธีการจัดส่ง --}}
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                </svg>
+                                <span data-translate>วิธีการจัดส่ง</span>
+                            </label>
+                            <select name="shipping_method" x-model="shippingMethod" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                                <option value="store_default" data-translate>ใช้ค่าเริ่มต้นของร้าน/ระบบ</option>
+                                <option value="free" data-translate>จัดส่งฟรี</option>
+                                <option value="flat_rate" data-translate>อัตราเหมาจ่าย (Flat Rate)</option>
+                                <option value="weight_based" data-translate>คำนวณตามน้ำหนัก (Weight Based)</option>
+                            </select>
+                        </div>
+
+                        {{-- ค่าจัดส่งแบบเหมา (แสดงเมื่อเลือก flat_rate) --}}
+                        <div x-show="shippingMethod === 'flat_rate'" x-transition class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <span data-translate>ค่าจัดส่ง (บาท)</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                        <input type="number" name="shipping_fee" value="{{ old('shipping_fee', $product->shipping_fee) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <span data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                        <input type="number" name="free_shipping_min_amount" value="{{ old('free_shipping_min_amount', $product->free_shipping_min_amount) }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-700 dark:text-blue-300">
+                                <span data-translate>คิดค่าส่งคงที่ต่อออเดอร์ หากยอดถึงขั้นต่ำจะส่งฟรี</span>
+                            </div>
+                        </div>
+
+                        {{-- น้ำหนักจัดส่ง (แสดงเมื่อเลือก weight_based) --}}
+                        <div x-show="shippingMethod === 'weight_based'" x-transition class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <span data-translate>น้ำหนักจัดส่ง (กก.)</span>
+                                    </label>
+                                    <input type="number" name="shipping_weight_kg" value="{{ old('shipping_weight_kg', $product->shipping_weight_kg) }}" step="0.001" min="0" placeholder="0.000" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                                </div>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <span data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                        <input type="number" name="free_shipping_min_amount_weight" value="{{ old('free_shipping_min_amount_weight', $product->free_shipping_min_amount) }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-sm text-purple-700 dark:text-purple-300">
+                                <span data-translate>คำนวณค่าส่งจากน้ำหนักรวม ตามอัตราที่กำหนดในระบบ (ในประเทศ/ต่างประเทศ)</span>
+                            </div>
+                        </div>
+
+                        {{-- ข้อความแจ้งเมื่อเลือก free --}}
+                        <div x-show="shippingMethod === 'free'" x-transition>
+                            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm text-green-700 dark:text-green-300">
+                                <span data-translate>สินค้านี้จัดส่งฟรีทุกออเดอร์</span>
+                            </div>
+                        </div>
+
+                        {{-- ข้อความแจ้งเมื่อเลือก store_default --}}
+                        <div x-show="shippingMethod === 'store_default'" x-transition>
+                            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-sm text-gray-600 dark:text-gray-300">
+                                <span data-translate>ใช้การตั้งค่าค่าจัดส่งของร้านค้า หรือค่าเริ่มต้นของระบบ (50 บาท / ส่งฟรีเมื่อยอดถึง 500 บาท)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Images --}}
                 <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
                      x-data="imageUploadHandler()">

@@ -376,6 +376,9 @@
                             </div>
                         </div>
 
+                        <!-- Cloudflare Turnstile -->
+                        <x-turnstile point="checkout" />
+
                         <!-- Submit Button -->
                         <button type="submit"
                                 class="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">

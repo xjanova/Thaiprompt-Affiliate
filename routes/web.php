@@ -524,7 +524,7 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
 // Checkout Routes (Authenticated)
 Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
-    Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->name('process');
+    Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->middleware('turnstile:checkout')->name('process');
     Route::get('/payment/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('payment');
     Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
@@ -554,7 +554,10 @@ Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () 
 
     // Reviews
     Route::get('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'showReviewForm'])->name('review.form');
-    Route::post('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'submitReview'])->name('review.submit');
+    Route::post('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'submitReview'])->middleware('turnstile:review')->name('review.submit');
+
+    // Tracking (AJAX)
+    Route::get('/{id}/tracking/realtime', [\App\Http\Controllers\OrderController::class, 'trackingRealtime'])->name('tracking.realtime');
 });
 
 // ========================================

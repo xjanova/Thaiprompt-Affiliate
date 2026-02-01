@@ -241,6 +241,52 @@
                 @endif
             </div>
 
+            {{-- Shipping Info --}}
+            @php
+                $shippingMethod = $product->shipping_method ?? 'store_default';
+                $isFreeShipping = $shippingMethod === 'free' || ($shippingMethod === 'store_default' && $product->price >= 500);
+            @endphp
+            <div class="flex items-center gap-3 flex-wrap">
+                @if($isFreeShipping)
+                    <div class="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <span class="text-sm font-semibold">จัดส่งฟรี</span>
+                    </div>
+                @elseif($shippingMethod === 'flat_rate' && ($product->shipping_fee ?? 0) > 0)
+                    <div class="flex items-center gap-2 px-3 py-2 bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 rounded-lg border border-sky-200 dark:border-sky-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <div class="text-sm">
+                            <span class="font-semibold">ค่าส่ง ฿{{ number_format($product->shipping_fee, 0) }}</span>
+                            @if($product->free_shipping_min_amount > 0)
+                                <span class="text-xs text-emerald-600 dark:text-emerald-400 ml-1">ฟรีเมื่อครบ ฿{{ number_format($product->free_shipping_min_amount, 0) }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @elseif($shippingMethod === 'weight_based')
+                    <div class="flex items-center gap-2 px-3 py-2 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-lg border border-violet-200 dark:border-violet-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <span class="text-sm font-semibold">ค่าส่งตามน้ำหนัก ({{ number_format($product->shipping_weight_kg ?? 0, 1) }} กก.)</span>
+                    </div>
+                @else
+                    <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <span class="text-sm font-semibold">ค่าส่ง ฿50 | ฟรีเมื่อครบ ฿500</span>
+                    </div>
+                @endif
+            </div>
+
             {{-- Quantity Selector --}}
             @if($product->stock_quantity > 0)
             <div>

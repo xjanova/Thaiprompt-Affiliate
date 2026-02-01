@@ -562,7 +562,17 @@
                         <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
                                    border border-gray-200 dark:border-gray-700">
                             <i class="fas fa-truck-fast text-green-500 text-xl"></i>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">ส่งฟรีทั่วประเทศ</span>
+                            @php
+                                $shippingMethod = $product->shipping_method ?? 'store_default';
+                                $isFreeShipping = $shippingMethod === 'free' || ($shippingMethod === 'store_default' && $product->price >= 500);
+                            @endphp
+                            @if($isFreeShipping)
+                                <span class="text-sm text-gray-700 dark:text-gray-300">จัดส่งฟรี</span>
+                            @elseif($shippingMethod === 'flat_rate' && ($product->shipping_fee ?? 0) > 0)
+                                <span class="text-sm text-gray-700 dark:text-gray-300">ค่าส่ง ฿{{ number_format($product->shipping_fee, 0) }}</span>
+                            @else
+                                <span class="text-sm text-gray-700 dark:text-gray-300">ค่าส่ง ฿50 | ฟรีเมื่อครบ ฿500</span>
+                            @endif
                         </div>
                         <div class="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl
                                    border border-gray-200 dark:border-gray-700">

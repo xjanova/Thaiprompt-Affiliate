@@ -178,11 +178,16 @@ class ShopController extends Controller
         $cashbackService = new CashbackService(new WalletService());
         $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
 
+        // ข้อมูลค่าจัดส่งสำหรับแสดงผล
+        $shippingService = new \App\Services\ShippingService();
+        $shippingInfo = $shippingService->getShippingDisplayInfo($product);
+
         return view('shop.show', compact(
             'product',
             'relatedProducts',
             'hasPurchased',
-            'cashbackInfo'
+            'cashbackInfo',
+            'shippingInfo'
         ));
     }
 
