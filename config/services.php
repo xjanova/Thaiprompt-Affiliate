@@ -78,6 +78,17 @@ return [
         'webhook_secret' => env('PROMPTPAY_WEBHOOK_SECRET'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Firebase Cloud Messaging (FCM) - สำหรับ SMS Checker Push Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    'firebase' => [
+        'server_key' => env('FCM_SERVER_KEY'),
+        'project_id' => env('FCM_PROJECT_ID'),
+    ],
+
     'paysolutions' => [
         'merchant_id' => env('PAYSOLUTIONS_MERCHANT_ID'),
         'api_key' => env('PAYSOLUTIONS_API_KEY'),

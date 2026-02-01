@@ -271,6 +271,7 @@ class SmsPaymentController extends Controller
             'device_name' => 'required|string|max:100',
             'platform' => 'required|string|max:20',
             'app_version' => 'required|string|max:20',
+            'fcm_token' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -281,13 +282,21 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        $device->update([
+        $updateData = [
             'device_name' => $request->input('device_name'),
             'platform' => $request->input('platform'),
             'app_version' => $request->input('app_version'),
             'last_active_at' => now(),
             'ip_address' => $request->ip(),
-        ]);
+        ];
+
+        // บันทึก FCM token สำหรับ push notifications
+        if ($request->filled('fcm_token')) {
+            $updateData['fcm_token'] = $request->input('fcm_token');
+            $updateData['fcm_token_updated_at'] = now();
+        }
+
+        $device->update($updateData);
 
         return response()->json([
             'success' => true,

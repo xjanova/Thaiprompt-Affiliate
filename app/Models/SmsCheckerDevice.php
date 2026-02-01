@@ -38,6 +38,8 @@ class SmsCheckerDevice extends Model
         'last_active_at',
         'user_id',
         'ip_address',
+        'fcm_token',
+        'fcm_token_updated_at',
     ];
 
     protected $hidden = [
@@ -47,6 +49,7 @@ class SmsCheckerDevice extends Model
 
     protected $casts = [
         'last_active_at' => 'datetime',
+        'fcm_token_updated_at' => 'datetime',
     ];
 
     /**

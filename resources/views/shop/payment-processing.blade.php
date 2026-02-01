@@ -263,7 +263,7 @@
             <!-- Auto Refresh Info -->
             <div class="text-center">
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                    หน้านี้จะรีเฟรชอัตโนมัติทุก 30 วินาที เพื่อตรวจสอบสถานะการชำระเงิน
+                    ระบบตรวจสอบสถานะอัตโนมัติทุก 10 วินาที
                 </p>
             </div>
         </div>
@@ -272,10 +272,8 @@
 
 <!-- Auto Refresh Script -->
 <script>
-// Auto refresh every 30 seconds to check payment status
-setTimeout(() => {
-    window.location.reload();
-}, 30000);
+// ❌ ไม่ใช้ window.location.reload() เพราะจะทำให้ระบบสร้างทศนิยมใหม่ถ้า transaction หมดอายุ
+// ✅ ใช้ AJAX polling เท่านั้น — ยอดทศนิยมจะไม่เปลี่ยนระหว่างรอชำระ
 
 // Check payment status via AJAX every 10 seconds
 setInterval(async () => {
@@ -298,5 +296,11 @@ setInterval(async () => {
         console.error('Failed to check payment status:', error);
     }
 }, 10000);
+
+// Safety: hard refresh after 5 minutes only (ไม่ใช่ 30 วินาที)
+// กรณี AJAX ไม่ทำงาน ก็ยังมี fallback
+setTimeout(() => {
+    window.location.reload();
+}, 300000);
 </script>
 @endsection

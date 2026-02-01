@@ -11,6 +11,7 @@ use App\Services\CashbackService;
 use App\Services\ShippingService;
 use App\Services\WalletService;
 use App\Services\Payment\PaymentService;
+use App\Services\FcmNotificationService;
 use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -259,6 +260,15 @@ class CheckoutController extends Controller
 
             DB::commit();
 
+            // ส่ง push notification ไปยัง SMS Checker App ทันที
+            // เพื่อให้เห็นคำสั่งซื้อใหม่แบบ real-time
+            try {
+                $fcmService = new FcmNotificationService();
+                $fcmService->notifyNewOrder($order);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send FCM notification: ' . $e->getMessage());
+            }
+
             // Redirect to payment page
             return redirect()->route('checkout.payment', $order->id);
 
@@ -371,11 +381,9 @@ class CheckoutController extends Controller
                 }
 
                 // For async payments (PromptPay, Bank Transfer, etc.)
-                return view('shop.payment-processing', [
-                    'order' => $order,
-                    'transaction' => $result['transaction'],
-                    'paymentData' => $result['data'],
-                ]);
+                // ใช้ Post/Redirect/Get pattern เพื่อป้องกันการ POST ซ้ำเมื่อ refresh
+                // ทศนิยมจะไม่เปลี่ยนเมื่อ refresh เพราะไม่สร้าง transaction ใหม่
+                return redirect()->route('checkout.processing', $order->id);
             }
 
             return back()->with('error', $result['message'] ?? 'การชำระเงินล้มเหลว');
@@ -384,6 +392,63 @@ class CheckoutController extends Controller
             \Log::error('Payment processing failed: ' . $e->getMessage());
             return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Show payment processing page (GET - for PRG pattern)
+     * ใช้ข้อมูล transaction ที่สร้างไว้แล้ว ไม่สร้างทศนิยมใหม่
+     * เมื่อ refresh หน้า ยอดทศนิยมจะเหมือนเดิม
+     */
+    public function paymentProcessing($orderId)
+    {
+        $order = Order::with(['items.product', 'shippingAddress', 'paymentTransaction'])
+            ->where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        // ถ้าชำระแล้ว → redirect ไปหน้า success
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', $order->id);
+        }
+
+        $transaction = $order->paymentTransaction;
+
+        if (!$transaction) {
+            return redirect()->route('orders.show', $order->id)
+                ->with('error', 'ไม่พบรายการชำระเงิน');
+        }
+
+        // ถ้า transaction หมดอายุ → สร้างใหม่อัตโนมัติ (เหมือน payment() method)
+        if ($transaction->isExpired()) {
+            if ($order->canRetryPayment()) {
+                $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+                $transaction = $this->paymentService->createOrderPayment(
+                    $order,
+                    $order->payment_method
+                );
+                // Process payment ใหม่เพื่อสร้าง unique amount + QR Code
+                $result = $this->paymentService->processPayment($transaction, []);
+                $transaction = $result['transaction'];
+            } else {
+                return redirect()->route('orders.show', $order->id)
+                    ->with('error', 'รายการชำระเงินหมดอายุ กรุณาติดต่อเจ้าหน้าที่');
+            }
+        }
+
+        // สร้าง paymentData จาก transaction ที่มีอยู่แล้ว (ไม่สร้างใหม่)
+        $paymentData = [
+            'qr_code' => $transaction->promptpay_qr_code,
+            'qr_code_image' => $transaction->promptpay_qr_code,
+            'ref_no' => $transaction->promptpay_ref_no,
+            'gateway' => $transaction->gateway,
+            'gateway_transaction_id' => $transaction->gateway_transaction_id,
+        ];
+
+        return view('shop.payment-processing', [
+            'order' => $order,
+            'transaction' => $transaction,
+            'paymentData' => $paymentData,
+        ]);
     }
 
     /**

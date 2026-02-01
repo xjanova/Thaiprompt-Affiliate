@@ -527,6 +527,7 @@ Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function
     Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->middleware('turnstile:checkout')->name('process');
     Route::get('/payment/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('payment');
     Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
+    Route::get('/processing/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'paymentProcessing'])->name('processing');
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
 });
 
