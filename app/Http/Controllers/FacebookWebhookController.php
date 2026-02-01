@@ -81,6 +81,14 @@ class FacebookWebhookController extends Controller
         }
 
         try {
+            // 🔍 Debug: Log ทุก webhook request ที่เข้ามา
+            Log::info('📥 Facebook Webhook RAW', [
+                'method' => $request->method(),
+                'has_signature' => !empty($request->header('X-Hub-Signature-256')),
+                'content_length' => strlen($request->getContent()),
+                'ip' => $request->ip(),
+            ]);
+
             // ตรวจสอบ webhook signature (security)
             $signature = $request->header('X-Hub-Signature-256', '');
             if (!$this->facebookService->verifyWebhookSignature(
@@ -94,12 +102,14 @@ class FacebookWebhookController extends Controller
             }
 
             if (!$this->settings->isServiceEnabled()) {
+                Log::info('📥 Webhook: Service disabled, skipping');
                 return response()->json(['status' => 'ok']);
             }
 
             $data = $request->all();
             Log::info('Received Facebook Webhook', [
                 'object' => $data['object'] ?? 'unknown',
+                'entry_count' => count($data['entry'] ?? []),
             ]);
 
             if (($data['object'] ?? '') !== 'page') {
@@ -107,6 +117,26 @@ class FacebookWebhookController extends Controller
             }
 
             foreach ($data['entry'] ?? [] as $entry) {
+                // 🔍 Debug: Log entry details
+                $hasChanges = !empty($entry['changes']);
+                $hasMessaging = !empty($entry['messaging']);
+                if ($hasChanges) {
+                    foreach ($entry['changes'] as $change) {
+                        Log::info('📥 Webhook Entry Change', [
+                            'field' => $change['field'] ?? 'unknown',
+                            'item' => $change['value']['item'] ?? 'unknown',
+                            'verb' => $change['value']['verb'] ?? 'unknown',
+                            'from_id' => $change['value']['from']['id'] ?? null,
+                            'message' => substr($change['value']['message'] ?? '', 0, 100),
+                        ]);
+                    }
+                }
+                if ($hasMessaging) {
+                    Log::info('📥 Webhook Entry Messaging', [
+                        'count' => count($entry['messaging']),
+                    ]);
+                }
+
                 $this->processEntry($entry);
             }
         } catch (\Exception $e) {
@@ -198,8 +228,15 @@ class FacebookWebhookController extends Controller
     protected function handleCommentEngagement(array $comment): void
     {
         try {
+            Log::info('🗨️ handleCommentEngagement called', [
+                'from_id' => $comment['from']['id'] ?? null,
+                'comment_id' => $comment['comment_id'] ?? null,
+                'message' => substr($comment['message'] ?? '', 0, 100),
+            ]);
+
             // ตรวจสอบว่าเปิดระบบ engagement หรือไม่
             if (!$this->settings->isCommentEngagementEnabled()) {
+                Log::info('🗨️ Comment Engagement: DISABLED - skipping');
                 return;
             }
 
@@ -210,11 +247,17 @@ class FacebookWebhookController extends Controller
             $fromName = $comment['from']['name'] ?? null;
 
             if (empty($fromId) || empty($commentId) || empty($postId)) {
+                Log::warning('🗨️ Comment Engagement: Missing data', [
+                    'has_from_id' => !empty($fromId),
+                    'has_comment_id' => !empty($commentId),
+                    'has_post_id' => !empty($postId),
+                ]);
                 return;
             }
 
             // ไม่ตอบคอมเม้นต์จากเพจเอง
             if ($fromId === $this->settings->facebook_page_id) {
+                Log::info('🗨️ Comment Engagement: Own page comment - skipping');
                 return;
             }
 
