@@ -603,7 +603,7 @@
                                     </div>
 
                                     <!-- Review Button -->
-                                    @if($order->status === 'completed' && !$item->hasReview())
+                                    @if(in_array($order->status, ['delivered', 'completed']) && !$item->hasReview())
                                     <div class="mt-3">
                                         <a href="{{ route('orders.review', [$order->id, $item->id]) }}"
                                            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-bold rounded-lg shadow-lg transition-all text-sm">
