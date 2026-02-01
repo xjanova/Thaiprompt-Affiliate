@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.3] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขการยกเลิกคำสั่งซื้อผ่าน API ไม่ทำงาน (43929515)
+- fix: change promptpay_qr_code column from VARCHAR(255) to TEXT (1fcdd899)
+### 🔧 Other Changes
+- Merge pull request #2472 from xjanova/claude/seeder-verification-tool-dOHM6 (7fbac23b)
+
 ## [v3.459.2] - 2026-02-01
 
 ### ✨ Features
