@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.1] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Change queue name from fortune-telling to tpix-default (8c0c7d33)
+### 🔧 Other Changes
+
+
 ## [v3.461.0] - 2026-02-01
 
 ### ✨ Features
