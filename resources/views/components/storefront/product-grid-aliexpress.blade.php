@@ -109,8 +109,12 @@
                     </svg>
                 </button>
 
-                {{-- Free Shipping Badge --}}
-                @if($product->price >= 500)
+                {{-- Shipping Badge --}}
+                @php
+                    $shippingMethod = $product->shipping_method ?? 'store_default';
+                    $isFreeShipping = $shippingMethod === 'free' || ($shippingMethod === 'store_default' && $product->price >= 500);
+                @endphp
+                @if($isFreeShipping)
                 <div class="absolute bottom-0 left-0 right-0
                            bg-gradient-to-r from-green-500 to-emerald-500
                            text-white text-xs font-semibold
@@ -120,7 +124,20 @@
                             <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                             <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
                         </svg>
-                        ส่งฟรี
+                        จัดส่งฟรี
+                    </span>
+                </div>
+                @elseif($shippingMethod === 'flat_rate' && ($product->shipping_fee ?? 0) > 0)
+                <div class="absolute bottom-0 left-0 right-0
+                           bg-gradient-to-r from-sky-500 to-blue-500
+                           text-white text-xs font-semibold
+                           py-1 px-2 text-center">
+                    <span class="flex items-center justify-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        ค่าส่ง ฿{{ number_format($product->shipping_fee, 0) }}
                     </span>
                 </div>
                 @endif

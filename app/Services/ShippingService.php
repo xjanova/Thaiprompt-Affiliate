@@ -243,4 +243,76 @@ class ShippingService
 
         return false;
     }
+
+    /**
+     * ดึงข้อมูลค่าจัดส่งสำหรับแสดงผลในหน้าสินค้า
+     *
+     * @param Product $product สินค้า
+     * @return array ['is_free' => bool, 'label' => string, 'fee' => float|null, 'method' => string, 'badge_class' => string, 'details' => string]
+     */
+    public function getShippingDisplayInfo(Product $product): array
+    {
+        // สินค้าดิจิทัล
+        if ($product->is_virtual) {
+            return [
+                'is_free' => true,
+                'label' => 'สินค้าดิจิทัล - ไม่มีค่าจัดส่ง',
+                'fee' => 0,
+                'method' => 'virtual',
+                'badge_class' => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
+                'details' => 'ส่งมอบผ่านระบบอัตโนมัติ',
+            ];
+        }
+
+        $method = $product->shipping_method ?? 'store_default';
+
+        return match ($method) {
+            'free' => [
+                'is_free' => true,
+                'label' => 'จัดส่งฟรี',
+                'fee' => 0,
+                'method' => 'free',
+                'badge_class' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700',
+                'details' => 'สินค้านี้จัดส่งฟรีทุกออเดอร์',
+            ],
+            'flat_rate' => [
+                'is_free' => false,
+                'label' => 'ค่าจัดส่ง ฿' . number_format($product->shipping_fee ?? 0, 0),
+                'fee' => $product->shipping_fee ?? 0,
+                'method' => 'flat_rate',
+                'badge_class' => 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700',
+                'details' => $product->free_shipping_min_amount > 0
+                    ? 'ส่งฟรีเมื่อซื้อครบ ฿' . number_format($product->free_shipping_min_amount, 0)
+                    : 'ค่าจัดส่งคงที่ ฿' . number_format($product->shipping_fee ?? 0, 0) . ' ต่อออเดอร์',
+            ],
+            'weight_based' => [
+                'is_free' => false,
+                'label' => 'ค่าส่งตามน้ำหนัก',
+                'fee' => $this->calculateForProduct($product, 1),
+                'method' => 'weight_based',
+                'badge_class' => 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700',
+                'details' => 'น้ำหนัก ' . number_format($product->shipping_weight_kg ?? 0, 1) . ' กก. - ค่าส่งประมาณ ฿' . number_format($this->calculateForProduct($product, 1), 0)
+                    . ($product->free_shipping_min_amount > 0
+                        ? ' | ส่งฟรีเมื่อซื้อครบ ฿' . number_format($product->free_shipping_min_amount, 0)
+                        : ''),
+            ],
+            default => $product->price >= self::DEFAULT_FREE_SHIPPING_THRESHOLD
+                ? [
+                    'is_free' => true,
+                    'label' => 'จัดส่งฟรี',
+                    'fee' => 0,
+                    'method' => 'store_default',
+                    'badge_class' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700',
+                    'details' => 'ส่งฟรีสำหรับสินค้าราคา ฿' . number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0) . ' ขึ้นไป',
+                ]
+                : [
+                    'is_free' => false,
+                    'label' => 'ค่าจัดส่ง ฿' . number_format(self::DEFAULT_SHIPPING_FEE, 0),
+                    'fee' => self::DEFAULT_SHIPPING_FEE,
+                    'method' => 'store_default',
+                    'badge_class' => 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700',
+                    'details' => 'ส่งฟรีเมื่อยอดสั่งซื้อครบ ฿' . number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0),
+                ],
+        };
+    }
 }

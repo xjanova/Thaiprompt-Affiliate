@@ -262,13 +262,17 @@
                             </div>
                         @endif
 
-                        @if($product->price >= 500)
-                            <div class="mt-4 flex items-center gap-2 text-emerald-600 font-semibold bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        {{-- ข้อมูลค่าจัดส่ง --}}
+                        @if(isset($shippingInfo))
+                            <div class="mt-4 flex items-center gap-2 font-semibold px-4 py-2.5 rounded-xl border {{ $shippingInfo['badge_class'] }}">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                                     <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
                                 </svg>
-                                ส่งฟรี! คุณได้สิทธิ์ส่งฟรีสำหรับสินค้านี้
+                                <div>
+                                    <div class="text-sm">{{ $shippingInfo['label'] }}</div>
+                                    <div class="text-xs font-normal opacity-80">{{ $shippingInfo['details'] }}</div>
+                                </div>
                             </div>
                         @endif
 
@@ -331,6 +335,73 @@
                         </span>
                         @endif
                     </div>
+
+                    <!-- Shipping Info Card -->
+                    @if(isset($shippingInfo) && $shippingInfo['method'] !== 'virtual')
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 space-y-3">
+                        <h3 class="flex items-center gap-2 text-base font-bold text-gray-900 dark:text-white">
+                            <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a2 2 0 104 0m-4 0a2 2 0 11-4 0"/>
+                            </svg>
+                            ข้อมูลการจัดส่ง
+                        </h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {{-- ค่าจัดส่ง --}}
+                            <div class="flex items-start gap-3 bg-white dark:bg-gray-700 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
+                                <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center {{ $shippingInfo['is_free'] ? 'bg-emerald-100 dark:bg-emerald-900/50' : 'bg-sky-100 dark:bg-sky-900/50' }}">
+                                    @if($shippingInfo['is_free'])
+                                        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                        </svg>
+                                    @else
+                                        <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">
+                                        {{ $shippingInfo['label'] }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        {{ $shippingInfo['details'] }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- วิธีการจัดส่ง --}}
+                            <div class="flex items-start gap-3 bg-white dark:bg-gray-700 rounded-xl p-3 border border-gray-100 dark:border-gray-600">
+                                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">
+                                        @switch($shippingInfo['method'])
+                                            @case('free')
+                                                จัดส่งฟรีโดยผู้ขาย
+                                                @break
+                                            @case('flat_rate')
+                                                อัตราค่าส่งเหมาจ่าย
+                                                @break
+                                            @case('weight_based')
+                                                คำนวณตามน้ำหนัก
+                                                @break
+                                            @default
+                                                ค่าจัดส่งมาตรฐาน
+                                        @endswitch
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        จัดส่งภายใน 1-3 วันทำการ
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     <!-- Action Buttons -->
                     <div class="space-y-4 pt-6">
