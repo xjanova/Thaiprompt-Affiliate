@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.459.4] - 2026-02-01
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Improve Gemini AI test connection error handling and debug info (c38c767c)
+### 🔧 Other Changes
+
+
 ## [v3.459.3] - 2026-02-01
 
 ### ✨ Features
