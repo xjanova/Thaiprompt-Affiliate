@@ -368,6 +368,7 @@ class FortuneAIService
             return [
                 'success' => true,
                 'message' => "เชื่อมต่อกับ {$this->provider} ({$this->model}) สำเร็จ",
+                'preview' => $result['response'] ?? '',
                 'debug' => [
                     'provider' => $this->provider,
                     'model' => $this->model,
