@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.9] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- debug: Add order status and all transactions to debug endpoint (cc540b58)
+
 ## [v3.461.8] - 2026-02-02
 
 ### ✨ Features
