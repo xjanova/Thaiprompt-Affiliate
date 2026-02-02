@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.4] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add exact amount to order_details_json for Android matching (6672ae10)
+### 🔧 Other Changes
+
+
 ## [v3.461.3] - 2026-02-01
 
 ### ✨ Features
