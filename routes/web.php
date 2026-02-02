@@ -26,6 +26,56 @@ use Illuminate\Support\Facades\Route;
 // ใช้ Route::match() เพื่อรองรับทั้ง GET และ HEAD methods อย่างชัดเจน
 Route::match(['GET', 'HEAD'], '/', [HomeController::class, 'index'])->name('home');
 
+// 🔧 Temporary debug route - ลบหลังแก้ปัญหาเสร็จ
+Route::get('/debug/sms-checker-status', function () {
+    $data = [
+        'deploy_commit' => '313e2a61',
+        'code_version' => file_exists(base_path('VERSION')) ? trim(file_get_contents(base_path('VERSION'))) : 'unknown',
+        'smschecker_config_enabled' => config('smschecker.enabled', 'NOT_SET'),
+        'smschecker_config_full' => config('smschecker') ? 'loaded' : 'NOT_LOADED',
+        'unique_payment_amounts_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('unique_payment_amounts'),
+        'sms_checker_devices_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('sms_checker_devices'),
+    ];
+
+    // เช็ค transaction #15
+    try {
+        $transaction = \App\Models\PaymentTransaction::find(
+            \App\Models\Order::where('id', 15)->value('id')
+                ? \App\Models\PaymentTransaction::where('order_id', 15)->first()?->id
+                : null
+        );
+        if (!$transaction) {
+            $transaction = \App\Models\PaymentTransaction::where('order_id', 15)->first();
+        }
+
+        if ($transaction) {
+            $data['transaction_15'] = [
+                'id' => $transaction->id,
+                'amount' => $transaction->amount,
+                'payment_method' => $transaction->payment_method,
+                'status' => $transaction->status,
+                'metadata' => $transaction->metadata,
+                'has_unique_amount_id' => !empty(($transaction->metadata ?? [])['unique_amount_id']),
+            ];
+        } else {
+            $data['transaction_15'] = 'NOT_FOUND';
+        }
+    } catch (\Exception $e) {
+        $data['transaction_15_error'] = $e->getMessage();
+    }
+
+    // เช็คจำนวน unique amounts
+    try {
+        $data['unique_amounts_count'] = \App\Models\UniquePaymentAmount::count();
+        $data['unique_amounts_active'] = \App\Models\UniquePaymentAmount::where('status', 'reserved')
+            ->where('expires_at', '>', now())->count();
+    } catch (\Exception $e) {
+        $data['unique_amounts_error'] = $e->getMessage();
+    }
+
+    return response()->json($data, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+});
+
 // Demo Routes
 Route::get('/demo/loading', function () {
     return view('demo-loading');
