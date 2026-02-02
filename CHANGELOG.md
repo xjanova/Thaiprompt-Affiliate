@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.8] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Auto-renew failed transactions to generate unique amount (a4022169)
+### 🔧 Other Changes
+
+
 ## [v3.461.7] - 2026-02-02
 
 ### ✨ Features
