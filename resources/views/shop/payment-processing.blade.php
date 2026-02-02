@@ -2,6 +2,40 @@
 
 @section('title', 'รอการชำระเงิน')
 
+@php
+// ⚡ Emergency fix: สร้าง unique amount ถ้ายังไม่มี
+// ต้องทำใน blade เพราะ OPcache อาจ cache PHP class เก่า
+if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+    $meta = $transaction->metadata ?? [];
+    if (empty($meta['unique_amount_id'])) {
+        try {
+            $ua = \App\Models\UniquePaymentAmount::generate(
+                $transaction->amount,
+                $transaction->id,
+                $transaction->type ?? 'order',
+                config('smschecker.unique_amount_expiry', 60)
+            );
+            if ($ua) {
+                $meta['original_amount'] = $transaction->amount;
+                $meta['unique_amount_id'] = $ua->id;
+                $meta['decimal_suffix'] = $ua->decimal_suffix;
+                $transaction->update([
+                    'amount' => $ua->unique_amount,
+                    'metadata' => $meta,
+                ]);
+                $transaction = $transaction->fresh();
+                \Log::info('SMS Checker BLADE FIX: unique amount created', [
+                    'transaction_id' => $transaction->id,
+                    'unique_amount' => $ua->unique_amount,
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('SMS Checker BLADE FIX error: ' . $e->getMessage());
+        }
+    }
+}
+@endphp
+
 @section('content')
 <div class="py-6">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
