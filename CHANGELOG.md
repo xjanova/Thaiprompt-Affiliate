@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.6] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Ensure unique amount is generated for all promptpay/bank_transfer orders (313e2a61)
+### 🔧 Other Changes
+
+
 ## [v3.461.5] - 2026-02-02
 
 ### ✨ Features
