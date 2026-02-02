@@ -29,7 +29,7 @@ Route::match(['GET', 'HEAD'], '/', [HomeController::class, 'index'])->name('home
 // 🔧 Temporary debug route - ลบหลังแก้ปัญหาเสร็จ
 Route::get('/debug/sms-checker-status', function () {
     $data = [
-        'deploy_commit' => '313e2a61',
+        'deploy_commit' => 'fix_failed_transaction_renew',
         'code_version' => file_exists(base_path('VERSION')) ? trim(file_get_contents(base_path('VERSION'))) : 'unknown',
         'smschecker_config_enabled' => config('smschecker.enabled', 'NOT_SET'),
         'smschecker_config_full' => config('smschecker') ? 'loaded' : 'NOT_LOADED',

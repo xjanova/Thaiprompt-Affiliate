@@ -310,11 +310,12 @@ class CheckoutController extends Controller
             }
         }
 
-        // ถ้า transaction หมดอายุ แต่ order ยังรอชำระอยู่ → สร้าง transaction ใหม่อัตโนมัติ
-        if ($transaction->isExpired()) {
+        // ถ้า transaction หมดอายุ หรือ failed → สร้าง transaction ใหม่อัตโนมัติ
+        if ($transaction->isExpired() || $transaction->status === 'failed') {
             if ($order->canRetryPayment()) {
-                // ยกเลิก transaction เก่าที่หมดอายุ
-                $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+                if ($transaction->status !== 'failed') {
+                    $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+                }
 
                 // สร้าง transaction ใหม่
                 $transaction = $this->paymentService->createOrderPayment(
@@ -419,10 +420,12 @@ class CheckoutController extends Controller
                 ->with('error', 'ไม่พบรายการชำระเงิน');
         }
 
-        // ถ้า transaction หมดอายุ → สร้างใหม่อัตโนมัติ (เหมือน payment() method)
-        if ($transaction->isExpired()) {
+        // ถ้า transaction หมดอายุ หรือ failed → สร้างใหม่อัตโนมัติ
+        if ($transaction->isExpired() || $transaction->status === 'failed') {
             if ($order->canRetryPayment()) {
-                $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+                if ($transaction->status !== 'failed') {
+                    $transaction->markAsFailed('หมดอายุ - สร้างรายการใหม่อัตโนมัติ');
+                }
                 $transaction = $this->paymentService->createOrderPayment(
                     $order,
                     $order->payment_method
