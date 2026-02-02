@@ -12,6 +12,7 @@ use App\Services\ShippingService;
 use App\Services\WalletService;
 use App\Services\Payment\PaymentService;
 use App\Services\FcmNotificationService;
+use App\Models\UniquePaymentAmount;
 use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -432,6 +433,45 @@ class CheckoutController extends Controller
             } else {
                 return redirect()->route('orders.show', $order->id)
                     ->with('error', 'รายการชำระเงินหมดอายุ กรุณาติดต่อเจ้าหน้าที่');
+            }
+        }
+
+        // ⚡ Backward compatibility: ถ้า transaction ยังไม่มี unique amount (สร้างก่อน fix)
+        // ให้สร้าง unique amount ให้ทันที (เฉพาะ promptpay/bank_transfer)
+        if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+            $metadata = $transaction->metadata ?? [];
+            if (empty($metadata['unique_amount_id']) && config('smschecker.enabled', true)) {
+                \Log::info('SMS Checker: Transaction #' . $transaction->id . ' ยังไม่มี unique amount - กำลังสร้างให้');
+                try {
+                    $uniqueAmount = UniquePaymentAmount::generate(
+                        $transaction->amount,
+                        $transaction->id,
+                        $transaction->type ?? 'order',
+                        config('smschecker.unique_amount_expiry', 60)
+                    );
+
+                    if ($uniqueAmount) {
+                        $metadata['original_amount'] = $transaction->amount;
+                        $metadata['unique_amount_id'] = $uniqueAmount->id;
+                        $metadata['decimal_suffix'] = $uniqueAmount->decimal_suffix;
+
+                        $transaction->update([
+                            'amount' => $uniqueAmount->unique_amount,
+                            'metadata' => $metadata,
+                        ]);
+
+                        $transaction = $transaction->fresh();
+
+                        \Log::info('SMS Checker: สร้าง unique amount สำเร็จ (backward compat)', [
+                            'transaction_id' => $transaction->id,
+                            'original_amount' => $metadata['original_amount'],
+                            'unique_amount' => $uniqueAmount->unique_amount,
+                            'suffix' => $uniqueAmount->decimal_suffix,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('SMS Checker: backward compat unique amount failed: ' . $e->getMessage());
+                }
             }
         }
 

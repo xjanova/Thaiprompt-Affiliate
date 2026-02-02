@@ -395,15 +395,30 @@ class PaymentService
      */
     protected function generateUniqueAmountIfNeeded(PaymentTransaction $transaction): ?UniquePaymentAmount
     {
+        Log::info('SMS Checker: generateUniqueAmountIfNeeded() called', [
+            'transaction_id' => $transaction->id,
+            'payment_method' => $transaction->payment_method,
+            'amount' => $transaction->amount,
+        ]);
+
         // เฉพาะ promptpay และ bank_transfer เท่านั้น
         if (!in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+            Log::debug('SMS Checker: ข้าม - payment method ไม่ใช่ promptpay/bank_transfer', [
+                'method' => $transaction->payment_method,
+            ]);
             return null;
         }
 
         // ตรวจสอบว่าระบบ SMS Checker เปิดใช้งานหรือไม่
-        // ถ้า config เปิด → สร้าง unique amount เสมอ (ไม่ต้องเช็ค device/bank account)
-        // ถ้า config ไม่ได้ตั้งค่า → fallback เช็ค device/bank account แบบเดิม
-        if (!config('smschecker.enabled', false)) {
+        // ถ้า config เปิด (default = true) → สร้าง unique amount เสมอ
+        // ถ้า config ปิด → fallback เช็ค device/bank account แบบเดิม
+        //
+        // ⚠️ ใช้ default = true เพื่อให้ทำงานแม้ config ยังไม่ถูก cache
+        // (config file มี default = true อยู่แล้ว)
+        $smsCheckerEnabled = config('smschecker.enabled', true);
+        Log::info('SMS Checker: config enabled = ' . var_export($smsCheckerEnabled, true));
+
+        if (!$smsCheckerEnabled) {
             // config ปิด → ตรวจแบบเดิม (ต้องมี bank account หรือ device ที่ active)
             try {
                 $hasSmsChecker = false;
@@ -431,6 +446,8 @@ class PaymentService
                 return null;
             }
         }
+
+        Log::info('SMS Checker: กำลังสร้าง unique amount สำหรับ transaction #' . $transaction->id);
 
         // สร้าง unique amount
         try {
