@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.10] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Emergency blade-level unique amount generation to bypass OPcache (6316accf)
+### 🔧 Other Changes
+
+
 ## [v3.461.9] - 2026-02-02
 
 ### ✨ Features
