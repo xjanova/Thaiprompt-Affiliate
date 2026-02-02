@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.7] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- debug: Add temporary SMS checker status endpoint for production troubleshooting (f0011ccf)
+
 ## [v3.461.6] - 2026-02-02
 
 ### ✨ Features
