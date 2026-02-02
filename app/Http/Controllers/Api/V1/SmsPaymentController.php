@@ -58,6 +58,9 @@ class SmsPaymentController extends Controller
                     'quantity' => $order->items?->count() ?? null,
                     'website_name' => config('app.name'),
                     'customer_name' => $order->user?->name ?? null,
+                    // CRITICAL: ส่งยอดเงินที่ลูกค้าต้องจ่ายจริง (ตรงกับหน้าชำระเงิน)
+                    // ต้องเป็น Double ไม่ใช่ String เพื่อให้ Android แมทได้แบบ exact match
+                    'amount' => (float) $txn->amount,
                 ];
             }
         }
@@ -70,7 +73,8 @@ class SmsPaymentController extends Controller
                 'id' => $matchedNotification->id,
                 'bank' => $matchedNotification->bank,
                 'type' => $matchedNotification->type,
-                'amount' => number_format((float) $matchedNotification->amount, 2, '.', ''),
+                // ส่งเป็น String แต่ format ให้ได้ทศนิยม 2 ตำแหน่งเสมอ (เช่น "10.79")
+                'amount' => sprintf('%.2f', (float) $matchedNotification->amount),
                 'sms_timestamp' => $matchedNotification->sms_timestamp,
                 'sender_or_receiver' => $matchedNotification->sender_or_receiver,
             ];
@@ -80,7 +84,8 @@ class SmsPaymentController extends Controller
                 'id' => $txn->id,
                 'bank' => $txn->payment_method === 'promptpay' ? 'PROMPTPAY' : strtoupper($txn->payment_method ?? 'UNKNOWN'),
                 'type' => 'credit',
-                'amount' => number_format((float) $txn->amount, 2, '.', ''),
+                // ส่งเป็น String แต่ format ให้ได้ทศนิยม 2 ตำแหน่งเสมอ (เช่น "10.79")
+                'amount' => sprintf('%.2f', (float) $txn->amount),
                 'sms_timestamp' => $txn->created_at?->format('Y-m-d H:i:s'),
                 'sender_or_receiver' => $txn->user?->name ?? '',
             ];
