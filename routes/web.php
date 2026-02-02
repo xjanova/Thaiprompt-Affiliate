@@ -37,31 +37,57 @@ Route::get('/debug/sms-checker-status', function () {
         'sms_checker_devices_table_exists' => \Illuminate\Support\Facades\Schema::hasTable('sms_checker_devices'),
     ];
 
-    // เช็ค transaction #15
+    // เช็ค order #15
     try {
-        $transaction = \App\Models\PaymentTransaction::find(
-            \App\Models\Order::where('id', 15)->value('id')
-                ? \App\Models\PaymentTransaction::where('order_id', 15)->first()?->id
-                : null
-        );
-        if (!$transaction) {
-            $transaction = \App\Models\PaymentTransaction::where('order_id', 15)->first();
-        }
-
-        if ($transaction) {
-            $data['transaction_15'] = [
-                'id' => $transaction->id,
-                'amount' => $transaction->amount,
-                'payment_method' => $transaction->payment_method,
-                'status' => $transaction->status,
-                'metadata' => $transaction->metadata,
-                'has_unique_amount_id' => !empty(($transaction->metadata ?? [])['unique_amount_id']),
+        $order = \App\Models\Order::find(15);
+        if ($order) {
+            $data['order_15'] = [
+                'id' => $order->id,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'payment_method' => $order->payment_method,
+                'total_amount' => $order->total_amount,
+                'can_retry_payment' => $order->canRetryPayment(),
             ];
         } else {
-            $data['transaction_15'] = 'NOT_FOUND';
+            $data['order_15'] = 'NOT_FOUND';
         }
     } catch (\Exception $e) {
-        $data['transaction_15_error'] = $e->getMessage();
+        $data['order_15_error'] = $e->getMessage();
+    }
+
+    // เช็ค ALL transactions ของ order #15
+    try {
+        $transactions = \App\Models\PaymentTransaction::where('order_id', 15)
+            ->orderByDesc('id')->get();
+
+        $data['transactions_for_order_15'] = $transactions->map(function ($t) {
+            return [
+                'id' => $t->id,
+                'amount' => $t->amount,
+                'payment_method' => $t->payment_method,
+                'status' => $t->status,
+                'type' => $t->type,
+                'metadata' => $t->metadata,
+                'expired_at' => $t->expired_at,
+                'created_at' => $t->created_at,
+            ];
+        })->toArray();
+    } catch (\Exception $e) {
+        $data['transactions_error'] = $e->getMessage();
+    }
+
+    // เช็ค Laravel log ล่าสุดที่มี SMS Checker
+    try {
+        $logFile = storage_path('logs/laravel.log');
+        if (file_exists($logFile)) {
+            $logContent = file_get_contents($logFile);
+            $lines = explode("\n", $logContent);
+            $smsLines = array_filter($lines, fn($l) => str_contains($l, 'SMS Checker'));
+            $data['recent_sms_logs'] = array_values(array_slice($smsLines, -10));
+        }
+    } catch (\Exception $e) {
+        $data['log_error'] = $e->getMessage();
     }
 
     // เช็คจำนวน unique amounts
