@@ -11,6 +11,10 @@ return [
     |
     */
 
+    // เปิด/ปิดระบบ SMS Checker (unique amount + auto matching)
+    // ถ้าเปิด จะสร้าง unique amount สำหรับ promptpay/bank_transfer เสมอ
+    'enabled' => env('SMSCHECKER_ENABLED', true),
+
     // เวลาที่ยอมรับได้สำหรับ request timestamp (วินาที)
     // request ที่เก่ากว่านี้จะถูกปฏิเสธ
     'timestamp_tolerance' => env('SMSCHECKER_TIMESTAMP_TOLERANCE', 300),

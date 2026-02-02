@@ -400,32 +400,36 @@ class PaymentService
             return null;
         }
 
-        // ตรวจสอบว่ามี SMS Checker เปิดใช้งานหรือไม่
-        // เช็ค 2 ทาง: (1) มีบัญชีธนาคารที่เปิด SMS Checker หรือ (2) มีอุปกรณ์ SMS Checker ที่ active
-        try {
-            $hasSmsChecker = false;
-
-            // ทาง 1: ตรวจบัญชีธนาคารที่เปิด SMS Checker
+        // ตรวจสอบว่าระบบ SMS Checker เปิดใช้งานหรือไม่
+        // ถ้า config เปิด → สร้าง unique amount เสมอ (ไม่ต้องเช็ค device/bank account)
+        // ถ้า config ไม่ได้ตั้งค่า → fallback เช็ค device/bank account แบบเดิม
+        if (!config('smschecker.enabled', false)) {
+            // config ปิด → ตรวจแบบเดิม (ต้องมี bank account หรือ device ที่ active)
             try {
-                $hasSmsChecker = PaymentBankAccount::where('is_active', true)
-                    ->where('sms_checker_enabled', true)
-                    ->exists();
+                $hasSmsChecker = false;
+
+                // ทาง 1: ตรวจบัญชีธนาคารที่เปิด SMS Checker
+                try {
+                    $hasSmsChecker = PaymentBankAccount::where('is_active', true)
+                        ->where('sms_checker_enabled', true)
+                        ->exists();
+                } catch (\Exception $e) {
+                    Log::debug('PaymentBankAccount check skipped: ' . $e->getMessage());
+                }
+
+                // ทาง 2: ถ้าไม่มีบัญชี ให้ตรวจว่ามีอุปกรณ์ SMS Checker ที่ active อยู่
+                if (!$hasSmsChecker) {
+                    $hasSmsChecker = \App\Models\SmsCheckerDevice::where('status', 'active')->exists();
+                }
+
+                if (!$hasSmsChecker) {
+                    Log::debug('SMS Checker: ไม่พบ active device หรือ bank account ที่เปิด SMS Checker');
+                    return null;
+                }
             } catch (\Exception $e) {
-                // ตาราง payment_bank_accounts อาจยังไม่ถูกสร้าง
-                Log::debug('PaymentBankAccount check skipped: ' . $e->getMessage());
-            }
-
-            // ทาง 2: ถ้าไม่มีบัญชี ให้ตรวจว่ามีอุปกรณ์ SMS Checker ที่ active อยู่
-            if (!$hasSmsChecker) {
-                $hasSmsChecker = \App\Models\SmsCheckerDevice::where('status', 'active')->exists();
-            }
-
-            if (!$hasSmsChecker) {
+                Log::debug('SMS Checker check skipped: ' . $e->getMessage());
                 return null;
             }
-        } catch (\Exception $e) {
-            Log::debug('SMS Checker check skipped: ' . $e->getMessage());
-            return null;
         }
 
         // สร้าง unique amount
