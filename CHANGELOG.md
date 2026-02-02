@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.5] - 2026-02-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Always generate unique amount when SMS Checker is enabled via config (1c8de8c2)
+### 🔧 Other Changes
+
+
 ## [v3.461.4] - 2026-02-02
 
 ### ✨ Features
