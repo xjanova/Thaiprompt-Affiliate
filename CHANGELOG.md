@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.7] - 2026-02-05
+
+### ✨ Features
+- feat(navbar): add Video Coins balance badge to top navigation (e0f4a0ac)
+### 🐛 Bug Fixes
+- fix(menu): add missing icons to admin submenus and fix divider rendering (de1ee70b)
+### 🔧 Other Changes
+- Merge pull request #2477 from xjanova/claude/fix-missing-mlm-main-yN5FF (b5e89ce7)
+
 ## [v3.464.6] - 2026-02-05
 
 ### ✨ Features
