@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class PaymentTransaction extends Model
@@ -49,6 +50,86 @@ class PaymentTransaction extends Model
                 $model->transaction_id = 'TXN-' . strtoupper(Str::random(12));
             }
         });
+
+        // Auto-generate unique amount สำหรับ SMS Checker matching
+        // ทำงานหลังจาก transaction ถูกสร้างเสร็จ (มี ID แล้ว)
+        static::created(function ($model) {
+            $model->generateUniqueAmountIfNeeded();
+        });
+    }
+
+    /**
+     * สร้าง unique amount (เพิ่มทศนิยม) สำหรับ SMS Checker auto-matching
+     *
+     * เฉพาะ promptpay/bank_transfer ที่ status = pending
+     * และยังไม่มี unique amount (ไม่มี unique_amount_id ใน metadata)
+     */
+    public function generateUniqueAmountIfNeeded(): void
+    {
+        // เฉพาะ promptpay และ bank_transfer
+        if (!in_array($this->payment_method, ['promptpay', 'bank_transfer'])) {
+            return;
+        }
+
+        // เฉพาะ pending transactions
+        if ($this->status !== 'pending') {
+            return;
+        }
+
+        // ตรวจสอบว่ายังไม่มี unique amount
+        $metadata = $this->metadata ?? [];
+        if (!empty($metadata['unique_amount_id'])) {
+            return; // มี unique amount แล้ว
+        }
+
+        // ตรวจสอบว่า SMS Checker เปิดใช้งาน
+        if (!config('smschecker.enabled', true)) {
+            // ตรวจสอบแบบ fallback
+            try {
+                $hasDevice = SmsCheckerDevice::where('status', 'active')->exists();
+                if (!$hasDevice) {
+                    return;
+                }
+            } catch (\Exception $e) {
+                return;
+            }
+        }
+
+        try {
+            $uniqueAmount = UniquePaymentAmount::generate(
+                (float) $this->amount,
+                $this->id,
+                $this->type ?? 'order_payment',
+                config('smschecker.unique_amount_expiry', 30)
+            );
+
+            if ($uniqueAmount) {
+                // เก็บยอดเดิมใน metadata แล้วอัพเดทยอดชำระเป็น unique amount
+                $metadata['original_amount'] = (float) $this->amount;
+                $metadata['unique_amount_id'] = $uniqueAmount->id;
+                $metadata['decimal_suffix'] = $uniqueAmount->decimal_suffix;
+
+                // ใช้ update แบบ silent เพื่อไม่ trigger events ซ้ำ
+                static::withoutEvents(function () use ($uniqueAmount, $metadata) {
+                    $this->update([
+                        'amount' => $uniqueAmount->unique_amount,
+                        'metadata' => $metadata,
+                    ]);
+                });
+
+                Log::info('SMS Checker: Auto-generated unique amount on create', [
+                    'transaction_id' => $this->id,
+                    'original_amount' => $metadata['original_amount'],
+                    'unique_amount' => $uniqueAmount->unique_amount,
+                    'suffix' => $uniqueAmount->decimal_suffix,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('SMS Checker: Failed to generate unique amount on create', [
+                'transaction_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -409,6 +409,17 @@ class PaymentService
             return null;
         }
 
+        // ตรวจสอบว่ามี unique amount แล้วหรือยัง (จาก Model boot หรือการเรียกก่อนหน้า)
+        $metadata = $transaction->metadata ?? [];
+        if (!empty($metadata['unique_amount_id'])) {
+            Log::debug('SMS Checker: ข้าม - มี unique amount แล้ว', [
+                'transaction_id' => $transaction->id,
+                'unique_amount_id' => $metadata['unique_amount_id'],
+            ]);
+            // คืน UniquePaymentAmount record ที่มีอยู่
+            return UniquePaymentAmount::find($metadata['unique_amount_id']);
+        }
+
         // ตรวจสอบว่าระบบ SMS Checker เปิดใช้งานหรือไม่
         // ถ้า config เปิด (default = true) → สร้าง unique amount เสมอ
         // ถ้า config ปิด → fallback เช็ค device/bank account แบบเดิม
