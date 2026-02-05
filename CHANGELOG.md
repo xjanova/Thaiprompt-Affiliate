@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.15] - 2026-02-05
+
+### ✨ Features
+- feat(smschecker): Change sync interval to 5 seconds for faster order updates (a226fd0b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.461.14] - 2026-02-05
 
 ### ✨ Features
