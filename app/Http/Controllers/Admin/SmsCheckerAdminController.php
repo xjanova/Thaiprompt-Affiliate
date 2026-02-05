@@ -334,7 +334,7 @@ class SmsCheckerAdminController extends Controller
             'default_approval_mode' => config('smschecker.default_approval_mode', 'auto'),
             'nonce_expiry_hours' => config('smschecker.nonce_expiry_hours', 24),
             'auto_confirm_matched' => config('smschecker.auto_confirm_matched', true),
-            'sync_interval' => config('smschecker.sync.interval', 30),
+            'sync_interval' => config('smschecker.sync.interval', 5),
         ];
 
         $supportedBanks = config('smschecker.supported_banks', []);
