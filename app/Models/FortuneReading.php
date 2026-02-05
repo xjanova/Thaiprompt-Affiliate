@@ -54,11 +54,23 @@ class FortuneReading extends Model
     protected $table = 'fortune_readings';
 
     /**
+     * สถานะ conversation ที่เป็นไปได้
+     */
+    public const STATUS_NEW = 'new';
+    public const STATUS_BASIC_DONE = 'basic_done';
+    public const STATUS_COLLECTING_BIRTHDATE = 'collecting_birthdate';
+    public const STATUS_COLLECTING_QUESTIONS = 'collecting_questions';
+    public const STATUS_PENDING_PAYMENT = 'pending_payment';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_COMPLETED = 'completed';
+
+    /**
      * คอลัมน์ที่สามารถ mass assign ได้
      *
      * @var array<string>
      */
     protected $fillable = [
+        'bill_reference',
         'user_id',
         'facebook_user_id',
         'facebook_user_name',
@@ -67,6 +79,8 @@ class FortuneReading extends Model
         'questions',
         'categories',
         'ai_response',
+        'basic_response',
+        'deep_response',
         'user_profile',
         'user_posts_context',
         'birth_date',
@@ -77,12 +91,15 @@ class FortuneReading extends Model
         'amount_paid',
         'paid_at',
         'sms_notification_id',
+        'unique_payment_amount_id',
         'sender_info',
         'sender_bank',
         'is_floating',
         'response_type',
         'responded_at',
         'reading_type',
+        'conversation_status',
+        'conversation_state',
         'reading_image_url',
         'user_image_url',
         'view_count',
@@ -100,6 +117,7 @@ class FortuneReading extends Model
         'categories' => 'array',
         'user_profile' => 'array',
         'user_posts_context' => 'array',
+        'conversation_state' => 'array',
         'birth_date' => 'date',
         'is_paid' => 'boolean',
         'amount_paid' => 'decimal:2',
@@ -125,6 +143,7 @@ class FortuneReading extends Model
         'view_count' => 0,
         'response_type' => 'private_message',
         'reading_type' => 'basic',
+        'conversation_status' => 'new',
     ];
 
     /**
@@ -414,5 +433,318 @@ class FortuneReading extends Model
             'deep' => '🌟 เชิงลึก',
             default => '🔮 พื้นฐาน',
         };
+    }
+
+    // ============================================================
+    // Conversation State Management
+    // ============================================================
+
+    /**
+     * ความสัมพันธ์กับ UniquePaymentAmount
+     *
+     * @return BelongsTo
+     */
+    public function uniquePaymentAmount(): BelongsTo
+    {
+        return $this->belongsTo(UniquePaymentAmount::class, 'unique_payment_amount_id');
+    }
+
+    /**
+     * Scope: ค้นหา reading ที่รอชำระเงินของผู้ใช้
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $facebookUserId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopePendingPaymentByUser($query, string $facebookUserId)
+    {
+        return $query->where('facebook_user_id', $facebookUserId)
+            ->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->whereNotNull('unique_payment_amount_id');
+    }
+
+    /**
+     * Scope: ค้นหา reading ที่กำลัง conversation อยู่
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $facebookUserId
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActiveConversation($query, string $facebookUserId)
+    {
+        return $query->where('facebook_user_id', $facebookUserId)
+            ->whereIn('conversation_status', [
+                self::STATUS_BASIC_DONE,
+                self::STATUS_COLLECTING_BIRTHDATE,
+                self::STATUS_COLLECTING_QUESTIONS,
+                self::STATUS_PENDING_PAYMENT,
+            ])
+            ->latest();
+    }
+
+    /**
+     * ค้นหา reading ที่กำลัง conversation อยู่สำหรับผู้ใช้
+     *
+     * @param string $facebookUserId
+     * @return self|null
+     */
+    public static function findActiveConversation(string $facebookUserId): ?self
+    {
+        return self::activeConversation($facebookUserId)->first();
+    }
+
+    /**
+     * ค้นหา reading ที่รอชำระเงินโดย unique amount
+     *
+     * @param float $amount
+     * @return self|null
+     */
+    public static function findByUniqueAmount(float $amount): ?self
+    {
+        $uniquePayment = UniquePaymentAmount::findMatch($amount);
+
+        if (!$uniquePayment) {
+            return null;
+        }
+
+        return self::where('unique_payment_amount_id', $uniquePayment->id)
+            ->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->first();
+    }
+
+    /**
+     * อัพเดทสถานะ conversation
+     *
+     * @param string $status
+     * @return void
+     */
+    public function updateConversationStatus(string $status): void
+    {
+        $this->update(['conversation_status' => $status]);
+    }
+
+    /**
+     * เก็บข้อมูลใน conversation state
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    public function setConversationState(string $key, $value): void
+    {
+        $state = $this->conversation_state ?? [];
+        $state[$key] = $value;
+        $this->update(['conversation_state' => $state]);
+    }
+
+    /**
+     * ดึงข้อมูลจาก conversation state
+     *
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function getConversationState(string $key, $default = null)
+    {
+        return $this->conversation_state[$key] ?? $default;
+    }
+
+    /**
+     * เพิ่มคำถามเข้าไปใน state
+     *
+     * @param string $question
+     * @return int จำนวนคำถามปัจจุบัน
+     */
+    public function addQuestion(string $question): int
+    {
+        $questions = $this->getConversationState('collected_questions', []);
+        $questions[] = $question;
+        $this->setConversationState('collected_questions', $questions);
+
+        return count($questions);
+    }
+
+    /**
+     * ดึงคำถามที่เก็บไว้ทั้งหมด
+     *
+     * @return array
+     */
+    public function getCollectedQuestions(): array
+    {
+        return $this->getConversationState('collected_questions', []);
+    }
+
+    /**
+     * ตรวจสอบว่ารอชำระเงินอยู่หรือไม่
+     *
+     * @return bool
+     */
+    public function isPendingPayment(): bool
+    {
+        return $this->conversation_status === self::STATUS_PENDING_PAYMENT;
+    }
+
+    /**
+     * ตรวจสอบว่าเสร็จสิ้นขั้นตอนพื้นฐานแล้วหรือไม่
+     *
+     * @return bool
+     */
+    public function isBasicDone(): bool
+    {
+        return $this->conversation_status === self::STATUS_BASIC_DONE;
+    }
+
+    /**
+     * บันทึกคำทำนายพื้นฐานและเปลี่ยนสถานะ
+     *
+     * @param string $response
+     * @param string $provider
+     * @param string $model
+     * @param int $tokensUsed
+     * @return void
+     */
+    public function saveBasicReading(string $response, string $provider, string $model, int $tokensUsed): void
+    {
+        $this->update([
+            'basic_response' => $response,
+            'ai_response' => $response,
+            'ai_provider' => $provider,
+            'ai_model' => $model,
+            'tokens_used' => $tokensUsed,
+            'conversation_status' => self::STATUS_BASIC_DONE,
+            'responded_at' => now(),
+        ]);
+    }
+
+    /**
+     * บันทึกคำทำนายละเอียดหลังชำระเงิน
+     *
+     * @param string $response
+     * @param string $provider
+     * @param string $model
+     * @param int $tokensUsed
+     * @return void
+     */
+    public function saveDeepReading(string $response, string $provider, string $model, int $tokensUsed): void
+    {
+        $this->update([
+            'deep_response' => $response,
+            'ai_response' => $response,
+            'ai_provider' => $provider,
+            'ai_model' => $model,
+            'tokens_used' => ($this->tokens_used ?? 0) + $tokensUsed,
+            'conversation_status' => self::STATUS_COMPLETED,
+            'reading_type' => 'deep',
+        ]);
+    }
+
+    /**
+     * ตั้งค่า unique payment amount และเปลี่ยนสถานะเป็นรอชำระ
+     *
+     * @param UniquePaymentAmount $uniqueAmount
+     * @return void
+     */
+    public function setPendingPayment(UniquePaymentAmount $uniqueAmount): void
+    {
+        $this->update([
+            'unique_payment_amount_id' => $uniqueAmount->id,
+            'amount_paid' => $uniqueAmount->unique_amount,
+            'conversation_status' => self::STATUS_PENDING_PAYMENT,
+        ]);
+    }
+
+    /**
+     * ยืนยันการชำระเงินและเปลี่ยนสถานะ
+     *
+     * @param SmsPaymentNotification|null $notification
+     * @return void
+     */
+    public function confirmPayment(?SmsPaymentNotification $notification = null): void
+    {
+        $updateData = [
+            'is_paid' => true,
+            'paid_at' => now(),
+            'conversation_status' => self::STATUS_PAID,
+        ];
+
+        if ($notification) {
+            $updateData['sms_notification_id'] = $notification->id;
+            $updateData['sender_info'] = $notification->sender_or_receiver;
+            $updateData['sender_bank'] = $notification->bank;
+        }
+
+        $this->update($updateData);
+
+        // อัพเดท unique payment amount เป็น used
+        if ($this->unique_payment_amount_id) {
+            UniquePaymentAmount::where('id', $this->unique_payment_amount_id)
+                ->update([
+                    'status' => 'used',
+                    'matched_at' => now(),
+                ]);
+        }
+    }
+
+    // ============================================================
+    // Bill Reference Number
+    // ============================================================
+
+    /**
+     * Boot method สำหรับ auto-generate bill_reference
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($reading) {
+            if (empty($reading->bill_reference)) {
+                $reading->bill_reference = self::generateBillReference();
+            }
+        });
+    }
+
+    /**
+     * สร้างเลขที่บิลอ้างอิงที่ไม่ซ้ำกัน
+     *
+     * รูปแบบ: FR-YYMMDD-XXXXX
+     * - FR = Fortune Reading
+     * - YYMMDD = วันที่ (เช่น 260205)
+     * - XXXXX = ลำดับ random 5 หลัก
+     *
+     * @return string
+     */
+    public static function generateBillReference(): string
+    {
+        $prefix = 'FR';
+        $datePart = now()->format('ymd');
+        $maxAttempts = 10;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            // สร้าง random 5 หลัก
+            $randomPart = str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+            $reference = "{$prefix}-{$datePart}-{$randomPart}";
+
+            // ตรวจสอบว่าซ้ำหรือไม่
+            if (!self::where('bill_reference', $reference)->exists()) {
+                return $reference;
+            }
+        }
+
+        // Fallback: ใช้ microtime
+        $uniquePart = substr(md5(microtime()), 0, 5);
+        return "{$prefix}-{$datePart}-{$uniquePart}";
+    }
+
+    /**
+     * ค้นหา reading จากเลขที่บิล
+     *
+     * @param string $billReference
+     * @return self|null
+     */
+    public static function findByBillReference(string $billReference): ?self
+    {
+        return self::where('bill_reference', $billReference)->first();
     }
 }

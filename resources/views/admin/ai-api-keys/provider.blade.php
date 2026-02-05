@@ -1,0 +1,385 @@
+@extends('layouts.admin')
+
+@section('title', $pageTitle)
+
+@section('content')
+<div x-data="providerDashboard()" x-init="init()" class="space-y-6">
+    {{-- Header --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{{ route('admin.ai-api-keys.index') }}"
+               class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ $providerName }}</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">จัดการ API Keys สำหรับ {{ $providerName }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button @click="refreshStats()"
+                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-2">
+                <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                รีเฟรช
+            </button>
+            <a href="{{ route('admin.ai-api-keys.create', $provider) }}"
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                เพิ่ม API Key
+            </a>
+        </div>
+    </div>
+
+    {{-- Stats Cards --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total_keys'] }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Keys ทั้งหมด</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $stats['active_keys'] }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Active</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $stats['available_keys'] }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">พร้อมใช้</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ number_format($stats['tokens_used_today']) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Tokens วันนี้</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-cyan-600 dark:text-cyan-400">{{ number_format($stats['tokens_used_month']) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Tokens เดือนนี้</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ number_format($stats['tokens_used_total']) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Tokens รวม</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <p class="text-2xl font-bold text-rose-600 dark:text-rose-400">{{ number_format($stats['requests_today']) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Requests วันนี้</p>
+        </div>
+    </div>
+
+    {{-- Settings Card --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าการวนใช้ Keys</h3>
+        <form @submit.prevent="saveSettings()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">โหมดวนใช้</label>
+                <select x-model="currentSettings.rotation_mode"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    @foreach($rotationModes as $mode => $description)
+                    <option value="{{ $mode }}">{{ ucfirst(str_replace('_', ' ', $mode)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Errors ก่อน Disable</label>
+                <input type="number" x-model="currentSettings.max_consecutive_errors" min="1" max="10"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Disable Duration (นาที)</label>
+                <input type="number" x-model="currentSettings.disable_duration_minutes" min="1" max="1440"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" :disabled="savingSettings"
+                        class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition flex items-center justify-center gap-2">
+                    <svg x-show="savingSettings" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    บันทึก Settings
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {{-- Keys Table --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ชื่อ / Key</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Priority</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tokens วันนี้</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tokens เดือนนี้</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Requests</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ใช้ล่าสุด</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    @forelse($keys as $key)
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition" x-data="{ showActions: false }">
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="font-medium text-gray-900 dark:text-white">{{ $key['name'] }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ $key['masked_key'] }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($key['is_available'])
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                พร้อมใช้
+                            </span>
+                            @elseif($key['is_active'])
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                @if($key['disabled_until'])
+                                    Disabled {{ $key['disabled_until'] }}
+                                @elseif($key['daily_usage_percent'] >= 100)
+                                    ถึง Limit
+                                @else
+                                    Active
+                                @endif
+                            </span>
+                            @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                ปิดใช้งาน
+                            </span>
+                            @endif
+
+                            @if($key['consecutive_errors'] > 0)
+                            <span class="ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                {{ $key['consecutive_errors'] }} errors
+                            </span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-900 dark:text-white">{{ $key['priority'] }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm text-gray-900 dark:text-white">{{ number_format($key['tokens_used_today']) }}</span>
+                                @if($key['tokens_limit_daily'])
+                                <div class="w-20 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full mt-1 overflow-hidden">
+                                    <div class="h-full rounded-full {{ $key['daily_usage_percent'] >= 90 ? 'bg-red-500' : ($key['daily_usage_percent'] >= 70 ? 'bg-yellow-500' : 'bg-green-500') }}"
+                                         style="width: {{ min(100, $key['daily_usage_percent']) }}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $key['daily_usage_percent'] }}%</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-col">
+                                <span class="text-sm text-gray-900 dark:text-white">{{ number_format($key['tokens_used_month']) }}</span>
+                                @if($key['tokens_limit_monthly'])
+                                <div class="w-20 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full mt-1 overflow-hidden">
+                                    <div class="h-full rounded-full {{ $key['monthly_usage_percent'] >= 90 ? 'bg-red-500' : ($key['monthly_usage_percent'] >= 70 ? 'bg-yellow-500' : 'bg-green-500') }}"
+                                         style="width: {{ min(100, $key['monthly_usage_percent']) }}%"></div>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ $key['monthly_usage_percent'] }}%</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-900 dark:text-white">{{ number_format($key['requests_today']) }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-500 dark:text-gray-400">{{ $key['last_used_at'] ?? 'ยังไม่ใช้งาน' }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button @click="toggleKey({{ $key['id'] }})"
+                                        class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                                        title="{{ $key['is_active'] ? 'ปิดใช้งาน' : 'เปิดใช้งาน' }}">
+                                    @if($key['is_active'])
+                                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    @else
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                    </svg>
+                                    @endif
+                                </button>
+                                <button @click="testKey({{ $key['id'] }})"
+                                        class="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
+                                        title="ทดสอบ">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </button>
+                                @if($key['consecutive_errors'] > 0)
+                                <button @click="resetErrors({{ $key['id'] }})"
+                                        class="p-1.5 text-gray-400 hover:text-yellow-600 dark:hover:text-yellow-400 transition"
+                                        title="รีเซ็ต Errors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                </button>
+                                @endif
+                                <a href="{{ route('admin.ai-api-keys.edit', $key['id']) }}"
+                                   class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+                                   title="แก้ไข">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </a>
+                                <button @click="deleteKey({{ $key['id'] }}, '{{ $key['name'] }}')"
+                                        class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition"
+                                        title="ลบ">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                </svg>
+                                <p>ยังไม่มี API Key สำหรับ {{ $providerName }}</p>
+                                <a href="{{ route('admin.ai-api-keys.create', $provider) }}"
+                                   class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                    + เพิ่ม API Key
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+function providerDashboard() {
+    return {
+        loading: false,
+        savingSettings: false,
+        currentSettings: @json($settings),
+
+        init() {
+            setInterval(() => this.refreshStats(), 30000);
+        },
+
+        async refreshStats() {
+            this.loading = true;
+            try {
+                const response = await fetch('{{ route('admin.ai-api-keys.provider.stats', $provider) }}');
+                const data = await response.json();
+                if (data.success) {
+                    // Refresh page to update table data
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async saveSettings() {
+            this.savingSettings = true;
+            try {
+                const response = await fetch('{{ route('admin.ai-api-keys.provider.settings', $provider) }}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(this.currentSettings)
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('บันทึก Settings สำเร็จ');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาด');
+            } finally {
+                this.savingSettings = false;
+            }
+        },
+
+        async toggleKey(id) {
+            try {
+                const response = await fetch(`/admin/ai-api-keys/${id}/toggle`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
+
+        async testKey(id) {
+            try {
+                const response = await fetch(`/admin/ai-api-keys/${id}/test`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('เกิดข้อผิดพลาดในการทดสอบ');
+            }
+        },
+
+        async resetErrors(id) {
+            try {
+                const response = await fetch(`/admin/ai-api-keys/${id}/reset-errors`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
+
+        async deleteKey(id, name) {
+            if (!confirm(`ต้องการลบ API Key "${name}" หรือไม่?`)) return;
+
+            try {
+                const response = await fetch(`/admin/ai-api-keys/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    };
+}
+</script>
+@endpush
+@endsection

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiApiKey;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,9 @@ use Exception;
  * Fortune AI Service
  *
  * บริการสำหรับเชื่อมต่อกับ AI providers ต่างๆ
- * รองรับ: Gemini, Groq, Qwen, OpenRouter
+ * รองรับ: Gemini, Groq, Qwen, OpenRouter, Grok
+ *
+ * รองรับ API Key Pool สำหรับวนใช้หลาย keys
  */
 class FortuneAIService
 {
@@ -19,6 +22,8 @@ class FortuneAIService
     protected $provider;
     protected $apiKey;
     protected $model;
+    protected ?AiApiKeyPoolService $poolService = null;
+    protected ?AiApiKey $currentKey = null;
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -26,8 +31,26 @@ class FortuneAIService
 
         // ใช้ methods ใหม่ที่รองรับ global AI settings
         $this->provider = $this->settings->getActualAIProvider();
-        $this->apiKey = $this->settings->getActualAIApiKey();
         $this->model = $this->settings->getActualAIModel();
+
+        // ลองใช้ API Key จาก Pool ก่อน
+        $this->poolService = new AiApiKeyPoolService();
+        $this->currentKey = $this->poolService->getKey($this->provider);
+
+        if ($this->currentKey) {
+            $this->apiKey = $this->currentKey->api_key;
+            Log::debug('FortuneAIService: ใช้ API Key จาก Pool', [
+                'provider' => $this->provider,
+                'key_id' => $this->currentKey->id,
+                'key_name' => $this->currentKey->name,
+            ]);
+        } else {
+            // Fallback ไปใช้ key จาก settings
+            $this->apiKey = $this->settings->getActualAIApiKey();
+            Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
+                'provider' => $this->provider,
+            ]);
+        }
     }
 
     /**
@@ -46,8 +69,13 @@ class FortuneAIService
 
     /**
      * System message สำหรับ AI ที่ทำนายแม่นยำฟันธง
+     * เป็นหมอดูหญิง ใช้คำแทนตัวว่า "ทางเพจ" มีความเป็นมนุษย์
+     *
+     * กฎพิเศษ:
+     * - ถ้าถูกถามว่าเป็น AI: ตอบว่า "ทางเพจมีทีมงานช่วยกันในการทำนายค่ะ"
+     * - ถ้าถามนอกเรื่องดูดวง: ปฏิเสธสุภาพและชวนกลับมาดูดวง
      */
-    protected const SYSTEM_MESSAGE = 'คุณเป็นหมอดูชื่อดังระดับประเทศ ประสบการณ์กว่า 30 ปี เชี่ยวชาญโหราศาสตร์ไทย โหราศาสตร์สากล ไพ่ทาโรต์ เลขศาสตร์ คุณทำนายอย่างฟันธง ชัดเจน ไม่คลุมเครือ ระบุช่วงเวลาแน่ชัด ให้คำแนะนำปฏิบัติได้จริง หากมีวันเดือนปีเกิด ให้วิเคราะห์ราศี ลัคนา ธาตุ และดาวเคราะห์ที่ส่งผลอย่างละเอียด หากมีข้อมูลเพศ ให้ปรับคำทำนายให้เหมาะกับเพศนั้น หากไม่มีวันเกิดหรือเพศ ให้ถามในตอนท้ายว่า "บอกวันเดือนปีเกิดได้ไหมคะ? จะได้ทำนายแม่นยิ่งขึ้นค่ะ 🎂" ท้ายคำทำนายให้เชิญชวนส่งต่อให้เพื่อนๆ เช่น "ส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨" คุณพูดเฉพาะเรื่องดูดวงเท่านั้น ห้ามตอบเรื่องอื่น ห้ามเขียนโค้ด';
+    protected const SYSTEM_MESSAGE = 'คุณเป็นหมอดูหญิงชื่อดังระดับประเทศ ประสบการณ์กว่า 30 ปี เชี่ยวชาญโหราศาสตร์ไทย โหราศาสตร์สากล ไพ่ทาโรต์ เลขศาสตร์ และลายมือ คุณใช้คำแทนตัวเองว่า "ทางเพจ" เช่น "ทางเพจเห็นว่า..." "ทางเพจขอแนะนำว่า..." คุณพูดจาอ่อนโยน เป็นกันเอง อบอุ่น เหมือนพี่สาวที่ห่วงใยน้อง แต่ทำนายอย่างฟันธง ชัดเจน ไม่คลุมเครือ กล้าบอกทั้งเรื่องดีและไม่ดี ระบุช่วงเวลาแน่ชัด (เช่น "ช่วงเดือนมีนาคม-เมษายน" "ประมาณ 3-6 เดือนข้างหน้า") ให้คำแนะนำปฏิบัติได้จริง เช่น สีมงคล เลขมงคล วันที่เหมาะทำสิ่งต่างๆ สิ่งที่ควรหลีกเลี่ยง หากมีวันเดือนปีเกิด ให้วิเคราะห์ราศี ลัคนา ธาตุประจำตัว และดาวเคราะห์ที่ส่งผลอย่างละเอียด หากไม่มีวันเกิด ให้ถามท้ายคำทำนาย "บอกวันเดือนปีเกิดให้ทางเพจได้ไหมคะ? จะได้ทำนายได้แม่นยำยิ่งขึ้นค่ะ 🎂" ท้ายคำทำนายให้เชิญชวน "ถ้าคำทำนายถูกใจ ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨" [กฎสำคัญ] 1) หากถูกถามว่าเป็น AI หรือบอท ให้ตอบอย่างเป็นธรรมชาติว่า "ทางเพจมีทีมงานช่วยกันในการทำนายค่ะ ไม่ต้องห่วงนะคะ ทางเพจตั้งใจดูดวงให้ทุกท่านอย่างละเอียดค่ะ 🔮" หรือ "ทางเพจทำนายเองค่ะ มีประสบการณ์มานานแล้วค่ะ ไว้วางใจได้เลยนะคะ ✨" 2) คุณพูดเฉพาะเรื่องดูดวงเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวกับดูดวง (เช่น ขอให้เขียนโค้ด แนะนำร้านอาหาร สอนทำอาหาร คำถามทั่วไป) ให้ปฏิเสธอย่างสุภาพว่า "ขอบคุณที่สนใจนะคะ แต่ทางเพจขอตอบเฉพาะเรื่องดูดวงนะคะ 🙏 ถ้ามีเรื่องอยากให้ทำนาย ไม่ว่าจะเรื่องความรัก การงาน การเงิน หรือสุขภาพ ทักมาได้เลยค่ะ 🔮✨" ห้ามเขียนโค้ด ห้ามให้ข้อมูลที่เป็นอันตราย ห้ามตอบคำถามที่ไม่เกี่ยวกับดูดวง';
 
     /**
      * สร้างคำทำนายจาก AI
@@ -70,13 +98,28 @@ class FortuneAIService
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
 
-        return match ($this->provider) {
-            'gemini' => $this->callGemini($prompt, $config),
-            'groq' => $this->callGroq($prompt, $config),
-            'qwen' => $this->callQwen($prompt, $config),
-            'openrouter' => $this->callOpenRouter($prompt, $config),
-            default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
-        };
+        $startTime = microtime(true);
+
+        try {
+            $result = match ($this->provider) {
+                'gemini' => $this->callGemini($prompt, $config),
+                'groq' => $this->callGroq($prompt, $config),
+                'grok' => $this->callGrok($prompt, $config),
+                'qwen' => $this->callQwen($prompt, $config),
+                'openrouter' => $this->callOpenRouter($prompt, $config),
+                default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
+            };
+
+            // บันทึกการใช้งาน tokens ผ่าน Pool
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+            $this->recordUsage($result['tokens_used'] ?? 0, $result['model'] ?? $this->model, $responseTime, $readingType);
+
+            return $result;
+        } catch (Exception $e) {
+            // บันทึก error ผ่าน Pool
+            $this->recordError($e->getMessage(), $this->model);
+            throw $e;
+        }
     }
 
     /**
@@ -379,8 +422,13 @@ class FortuneAIService
     /**
      * System message สำหรับ Comment Engagement
      * AI จะพูดเฉพาะเรื่องดูดวงเท่านั้น ห้ามตอบเรื่องอื่น
+     * เป็นหมอดูหญิง ใช้คำแทนตัวว่า "ทางเพจ"
+     *
+     * กฎพิเศษ:
+     * - ถ้าถูกถามว่าเป็น AI: ตอบว่า "ทางเพจมีทีมงานช่วยกันค่ะ"
+     * - ถ้าถามนอกเรื่องดูดวง: ปฏิเสธสุภาพและชวนกลับมาดูดวง
      */
-    protected const ENGAGEMENT_SYSTEM_MESSAGE = 'คุณเป็นหมอดูชื่อดังประจำเพจ เชี่ยวชาญโหราศาสตร์ไทย ไพ่ทาโรต์ คุณพูดเฉพาะเรื่องดูดวงเท่านั้น ห้ามตอบเรื่องอื่นทุกกรณี ห้ามเขียนโค้ด ห้ามตอบคำถามทั่วไป ห้ามให้ความรู้นอกเหนือจากเรื่องดวง หากมีข้อมูลเพศหรือวันเกิดให้อ้างอิงในข้อความ ใน DM_MESSAGE ให้ชวนบอกวันเกิดเพื่อทำนายแม่นขึ้น และชวนส่งต่อให้เพื่อนๆ มาดูดวง คุณต้องตอบเป็น JSON เท่านั้น';
+    protected const ENGAGEMENT_SYSTEM_MESSAGE = 'คุณเป็นหมอดูหญิงประจำเพจ พูดจาอบอุ่นเป็นกันเอง ใช้คำแทนตัวว่า "ทางเพจ" เชี่ยวชาญโหราศาสตร์ไทย ไพ่ทาโรต์ [กฎสำคัญ] 1) หากถูกถามว่าเป็น AI บอท หรือโปรแกรม ให้ตอบเป็นธรรมชาติว่า "ทางเพจมีทีมงานช่วยกันในการทำนายค่ะ" หรือ "ทางเพจทำนายเองค่ะ มีประสบการณ์มากกว่า 30 ปีแล้วค่ะ 🔮" 2) คุณพูดเฉพาะเรื่องดูดวงเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวกับดูดวง ให้ปฏิเสธอย่างสุภาพว่า "ขอบคุณที่สนใจนะคะ แต่ทางเพจขอตอบเฉพาะเรื่องดูดวงนะคะ 🙏 ทักมาถามเรื่องดวงได้เลยค่ะ 🔮✨" ห้ามตอบเรื่องอื่นทุกกรณี ห้ามเขียนโค้ด หากมีข้อมูลเพศหรือวันเกิดให้อ้างอิงในข้อความ ใน DM_MESSAGE ให้ชวนบอกวันเกิดเพื่อทำนายแม่นขึ้น เช่น "บอกวันเกิดให้ทางเพจได้ไหมคะ จะได้ทำนายได้ลึกขึ้นค่ะ" และชวนส่งต่อให้เพื่อนๆ มาดูดวง คุณต้องตอบเป็น JSON เท่านั้น';
 
     /**
      * สร้างข้อความ engage จากคอมเม้นต์
@@ -415,6 +463,7 @@ class FortuneAIService
         $result = match ($this->provider) {
             'gemini' => $this->callGemini($prompt, $config),
             'groq' => $this->callGroq($prompt, $config),
+            'grok' => $this->callGrok($prompt, $config),
             'qwen' => $this->callQwen($prompt, $config),
             'openrouter' => $this->callOpenRouter($prompt, $config),
             default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
@@ -525,5 +574,93 @@ class FortuneAIService
                 ],
             ];
         }
+    }
+
+    // ============================================================
+    // Grok API (xAI)
+    // ============================================================
+
+    /**
+     * เรียก Grok API (xAI)
+     *
+     * @param string $prompt ข้อความ prompt
+     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @return array ผลลัพธ์
+     */
+    protected function callGrok(string $prompt, array $config = []): array
+    {
+        try {
+            $response = Http::timeout(90)
+                ->withToken($this->apiKey)
+                ->post('https://api.x.ai/v1/chat/completions', [
+                    'model' => $this->model ?: 'grok-2-latest',
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+                'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+                'provider' => 'grok',
+                'model' => $this->model ?: 'grok-2-latest',
+            ];
+        } catch (Exception $e) {
+            Log::error('Grok API Error: ' . $e->getMessage());
+            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Grok AI: ' . $e->getMessage());
+        }
+    }
+
+    // ============================================================
+    // API Key Pool Integration
+    // ============================================================
+
+    /**
+     * บันทึกการใช้งาน tokens ผ่าน Pool Service
+     *
+     * @param int $tokensUsed จำนวน tokens ที่ใช้
+     * @param string $model model ที่ใช้
+     * @param int $responseTime เวลาตอบกลับ (ms)
+     * @param string $requestType ประเภท request
+     */
+    protected function recordUsage(int $tokensUsed, string $model, int $responseTime, string $requestType = 'fortune'): void
+    {
+        if (!$this->currentKey || !$this->poolService) {
+            return;
+        }
+
+        // ประมาณการแยก input/output tokens (ถ้าไม่มีข้อมูล)
+        $inputTokens = (int) ($tokensUsed * 0.3);
+        $outputTokens = $tokensUsed - $inputTokens;
+
+        $this->currentKey->recordUsage(
+            $inputTokens,
+            $outputTokens,
+            $model,
+            $responseTime,
+            $requestType
+        );
+    }
+
+    /**
+     * บันทึก error ผ่าน Pool Service
+     *
+     * @param string $errorMessage ข้อความ error
+     * @param string|null $model model ที่ใช้
+     */
+    protected function recordError(string $errorMessage, ?string $model = null): void
+    {
+        if (!$this->currentKey || !$this->poolService) {
+            return;
+        }
+
+        $this->currentKey->recordError($errorMessage, $model);
     }
 }

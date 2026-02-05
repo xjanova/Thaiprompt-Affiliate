@@ -3796,6 +3796,7 @@ use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
+use App\Http\Controllers\Admin\FortuneBillingController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3819,6 +3820,49 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         ->name('response-templates.set-default');
     Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])
         ->name('response-templates.preview');
+
+    // จัดการบิลดูดวง
+    Route::prefix('billing')->name('billing.')->group(function () {
+        Route::get('/', [FortuneBillingController::class, 'index'])->name('index');
+        Route::get('/floating-bills', [FortuneBillingController::class, 'floatingBills'])->name('floating-bills');
+        Route::post('/{reading}/assign', [FortuneBillingController::class, 'assignToUser'])->name('assign');
+        Route::post('/{reading}/manual-confirm', [FortuneBillingController::class, 'manualConfirm'])->name('manual-confirm');
+        Route::post('/{reading}/void', [FortuneBillingController::class, 'void'])->name('void');
+        Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
+        Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
+    });
+});
+
+// ========================================
+// AI API KEYS MANAGEMENT
+// ========================================
+use App\Http\Controllers\Admin\AiApiKeyController;
+
+Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
+    // Dashboard
+    Route::get('/', [AiApiKeyController::class, 'index'])->name('index');
+    Route::get('/stats', [AiApiKeyController::class, 'stats'])->name('stats');
+    Route::get('/logs', [AiApiKeyController::class, 'logs'])->name('logs');
+
+    // Provider specific
+    Route::get('/provider/{provider}', [AiApiKeyController::class, 'provider'])->name('provider');
+    Route::get('/provider/{provider}/stats', [AiApiKeyController::class, 'stats'])->name('provider.stats');
+    Route::put('/provider/{provider}/settings', [AiApiKeyController::class, 'updateSettings'])->name('provider.settings');
+
+    // CRUD
+    Route::get('/create/{provider?}', [AiApiKeyController::class, 'create'])->name('create');
+    Route::post('/', [AiApiKeyController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [AiApiKeyController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [AiApiKeyController::class, 'update'])->name('update');
+    Route::delete('/{id}', [AiApiKeyController::class, 'destroy'])->name('destroy');
+
+    // Actions
+    Route::post('/{id}/toggle', [AiApiKeyController::class, 'toggle'])->name('toggle');
+    Route::post('/{id}/reset-errors', [AiApiKeyController::class, 'resetErrors'])->name('reset-errors');
+    Route::post('/{id}/test', [AiApiKeyController::class, 'test'])->name('test');
+
+    // Logs for specific key
+    Route::get('/{id}/logs', [AiApiKeyController::class, 'logs'])->name('key.logs');
 });
 
 // ========================================
