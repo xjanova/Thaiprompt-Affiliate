@@ -812,18 +812,35 @@ function addToCart() {
         })
     })
     .then(response => {
+        // Handle CSRF token mismatch (419) or unauthorized (401)
+        if (response.status === 419) {
+            alert('Session หมดอายุ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+            window.location.reload();
+            return;
+        }
+        if (response.status === 401) {
+            window.location.href = '{{ route("login") }}';
+            return;
+        }
         if (response.redirected) {
             window.location.href = response.url;
             return;
         }
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'เกิดข้อผิดพลาด');
+            });
+        }
         return response.json();
     })
     .then(data => {
-        window.location.href = '{{ route("cart.index") }}';
+        if (data) {
+            window.location.href = '{{ route("cart.index") }}';
+        }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า');
+        alert(error.message || 'เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า');
         button.disabled = false;
         button.innerHTML = originalText;
     });
@@ -858,18 +875,35 @@ function buyNow() {
         })
     })
     .then(response => {
+        // Handle CSRF token mismatch (419) or unauthorized (401)
+        if (response.status === 419) {
+            alert('Session หมดอายุ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+            window.location.reload();
+            return;
+        }
+        if (response.status === 401) {
+            window.location.href = '{{ route("login") }}';
+            return;
+        }
         if (response.redirected) {
             window.location.href = response.url;
             return;
         }
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'เกิดข้อผิดพลาด');
+            });
+        }
         return response.json();
     })
     .then(data => {
-        window.location.href = '{{ route("checkout.index") }}';
+        if (data) {
+            window.location.href = '{{ route("checkout.index") }}';
+        }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('เกิดข้อผิดพลาดในการทำรายการ');
+        alert(error.message || 'เกิดข้อผิดพลาดในการทำรายการ');
         button.disabled = false;
         button.innerHTML = originalText;
     });
