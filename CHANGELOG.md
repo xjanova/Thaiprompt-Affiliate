@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.4] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2475 from xjanova/claude/fix-missing-mlm-main-yN5FF (896428b9)
+- fix(menu): add missing MLM menu items to config/menus.php (6642207c)
+### 🔧 Other Changes
+
+
 ## [v3.464.3] - 2026-02-05
 
 ### ✨ Features
