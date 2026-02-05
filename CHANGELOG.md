@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.8] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2478 from xjanova/claude/fix-side-menu-active-MYDRc (f02742d7)
+- fix(sidebar): เพิ่ม data attributes สำหรับ active menu และ scroll-to-active ทุกเมนู (5d1a5814)
+### 🔧 Other Changes
+
+
 ## [v3.464.7] - 2026-02-05
 
 ### ✨ Features
