@@ -3822,6 +3822,38 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
 });
 
 // ========================================
+// AI API KEYS MANAGEMENT
+// ========================================
+use App\Http\Controllers\Admin\AiApiKeyController;
+
+Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
+    // Dashboard
+    Route::get('/', [AiApiKeyController::class, 'index'])->name('index');
+    Route::get('/stats', [AiApiKeyController::class, 'stats'])->name('stats');
+    Route::get('/logs', [AiApiKeyController::class, 'logs'])->name('logs');
+
+    // Provider specific
+    Route::get('/provider/{provider}', [AiApiKeyController::class, 'provider'])->name('provider');
+    Route::get('/provider/{provider}/stats', [AiApiKeyController::class, 'stats'])->name('provider.stats');
+    Route::put('/provider/{provider}/settings', [AiApiKeyController::class, 'updateSettings'])->name('provider.settings');
+
+    // CRUD
+    Route::get('/create/{provider?}', [AiApiKeyController::class, 'create'])->name('create');
+    Route::post('/', [AiApiKeyController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [AiApiKeyController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [AiApiKeyController::class, 'update'])->name('update');
+    Route::delete('/{id}', [AiApiKeyController::class, 'destroy'])->name('destroy');
+
+    // Actions
+    Route::post('/{id}/toggle', [AiApiKeyController::class, 'toggle'])->name('toggle');
+    Route::post('/{id}/reset-errors', [AiApiKeyController::class, 'resetErrors'])->name('reset-errors');
+    Route::post('/{id}/test', [AiApiKeyController::class, 'test'])->name('test');
+
+    // Logs for specific key
+    Route::get('/{id}/logs', [AiApiKeyController::class, 'logs'])->name('key.logs');
+});
+
+// ========================================
 // SMS GATEWAY MANAGEMENT
 // ========================================
 Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {

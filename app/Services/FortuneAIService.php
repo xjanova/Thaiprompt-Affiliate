@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AiApiKey;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +12,9 @@ use Exception;
  * Fortune AI Service
  *
  * บริการสำหรับเชื่อมต่อกับ AI providers ต่างๆ
- * รองรับ: Gemini, Groq, Qwen, OpenRouter
+ * รองรับ: Gemini, Groq, Qwen, OpenRouter, Grok
+ *
+ * รองรับ API Key Pool สำหรับวนใช้หลาย keys
  */
 class FortuneAIService
 {
@@ -19,6 +22,8 @@ class FortuneAIService
     protected $provider;
     protected $apiKey;
     protected $model;
+    protected ?AiApiKeyPoolService $poolService = null;
+    protected ?AiApiKey $currentKey = null;
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -26,8 +31,26 @@ class FortuneAIService
 
         // ใช้ methods ใหม่ที่รองรับ global AI settings
         $this->provider = $this->settings->getActualAIProvider();
-        $this->apiKey = $this->settings->getActualAIApiKey();
         $this->model = $this->settings->getActualAIModel();
+
+        // ลองใช้ API Key จาก Pool ก่อน
+        $this->poolService = new AiApiKeyPoolService();
+        $this->currentKey = $this->poolService->getKey($this->provider);
+
+        if ($this->currentKey) {
+            $this->apiKey = $this->currentKey->api_key;
+            Log::debug('FortuneAIService: ใช้ API Key จาก Pool', [
+                'provider' => $this->provider,
+                'key_id' => $this->currentKey->id,
+                'key_name' => $this->currentKey->name,
+            ]);
+        } else {
+            // Fallback ไปใช้ key จาก settings
+            $this->apiKey = $this->settings->getActualAIApiKey();
+            Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
+                'provider' => $this->provider,
+            ]);
+        }
     }
 
     /**
@@ -70,13 +93,28 @@ class FortuneAIService
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
 
-        return match ($this->provider) {
-            'gemini' => $this->callGemini($prompt, $config),
-            'groq' => $this->callGroq($prompt, $config),
-            'qwen' => $this->callQwen($prompt, $config),
-            'openrouter' => $this->callOpenRouter($prompt, $config),
-            default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
-        };
+        $startTime = microtime(true);
+
+        try {
+            $result = match ($this->provider) {
+                'gemini' => $this->callGemini($prompt, $config),
+                'groq' => $this->callGroq($prompt, $config),
+                'grok' => $this->callGrok($prompt, $config),
+                'qwen' => $this->callQwen($prompt, $config),
+                'openrouter' => $this->callOpenRouter($prompt, $config),
+                default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
+            };
+
+            // บันทึกการใช้งาน tokens ผ่าน Pool
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+            $this->recordUsage($result['tokens_used'] ?? 0, $result['model'] ?? $this->model, $responseTime, $readingType);
+
+            return $result;
+        } catch (Exception $e) {
+            // บันทึก error ผ่าน Pool
+            $this->recordError($e->getMessage(), $this->model);
+            throw $e;
+        }
     }
 
     /**
@@ -415,6 +453,7 @@ class FortuneAIService
         $result = match ($this->provider) {
             'gemini' => $this->callGemini($prompt, $config),
             'groq' => $this->callGroq($prompt, $config),
+            'grok' => $this->callGrok($prompt, $config),
             'qwen' => $this->callQwen($prompt, $config),
             'openrouter' => $this->callOpenRouter($prompt, $config),
             default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
@@ -525,5 +564,93 @@ class FortuneAIService
                 ],
             ];
         }
+    }
+
+    // ============================================================
+    // Grok API (xAI)
+    // ============================================================
+
+    /**
+     * เรียก Grok API (xAI)
+     *
+     * @param string $prompt ข้อความ prompt
+     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @return array ผลลัพธ์
+     */
+    protected function callGrok(string $prompt, array $config = []): array
+    {
+        try {
+            $response = Http::timeout(90)
+                ->withToken($this->apiKey)
+                ->post('https://api.x.ai/v1/chat/completions', [
+                    'model' => $this->model ?: 'grok-2-latest',
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+                'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+                'provider' => 'grok',
+                'model' => $this->model ?: 'grok-2-latest',
+            ];
+        } catch (Exception $e) {
+            Log::error('Grok API Error: ' . $e->getMessage());
+            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Grok AI: ' . $e->getMessage());
+        }
+    }
+
+    // ============================================================
+    // API Key Pool Integration
+    // ============================================================
+
+    /**
+     * บันทึกการใช้งาน tokens ผ่าน Pool Service
+     *
+     * @param int $tokensUsed จำนวน tokens ที่ใช้
+     * @param string $model model ที่ใช้
+     * @param int $responseTime เวลาตอบกลับ (ms)
+     * @param string $requestType ประเภท request
+     */
+    protected function recordUsage(int $tokensUsed, string $model, int $responseTime, string $requestType = 'fortune'): void
+    {
+        if (!$this->currentKey || !$this->poolService) {
+            return;
+        }
+
+        // ประมาณการแยก input/output tokens (ถ้าไม่มีข้อมูล)
+        $inputTokens = (int) ($tokensUsed * 0.3);
+        $outputTokens = $tokensUsed - $inputTokens;
+
+        $this->currentKey->recordUsage(
+            $inputTokens,
+            $outputTokens,
+            $model,
+            $responseTime,
+            $requestType
+        );
+    }
+
+    /**
+     * บันทึก error ผ่าน Pool Service
+     *
+     * @param string $errorMessage ข้อความ error
+     * @param string|null $model model ที่ใช้
+     */
+    protected function recordError(string $errorMessage, ?string $model = null): void
+    {
+        if (!$this->currentKey || !$this->poolService) {
+            return;
+        }
+
+        $this->currentKey->recordError($errorMessage, $model);
     }
 }
