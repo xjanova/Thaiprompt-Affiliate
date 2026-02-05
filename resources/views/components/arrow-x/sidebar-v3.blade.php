@@ -122,12 +122,21 @@
                     {{-- Menu with Submenu (Pinnable Group) --}}
                     @php
                         // ตรวจสอบว่า submenu item ใดตรงกับ URL ปัจจุบัน
+                        // ใช้ทั้ง path match และ route match เพื่อความแม่นยำ
                         $isSubmenuActive = false;
-                        $currentPath = request()->path();
+                        $currentPath = rtrim(request()->path(), '/');
                         $firstSubmenuUrl = $menu['submenu'][0]['url'] ?? '#';
                         foreach ($menu['submenu'] as $child) {
-                            $childPath = ltrim($child['url'] ?? '', '/');
-                            if ($currentPath === $childPath || str_starts_with($currentPath, $childPath . '/')) {
+                            // 1. Route name match (แม่นยำที่สุด)
+                            if (!empty($child['route'])) {
+                                if (request()->routeIs($child['route']) || request()->routeIs($child['route'] . '.*')) {
+                                    $isSubmenuActive = true;
+                                    break;
+                                }
+                            }
+                            // 2. Path match (fallback)
+                            $childPath = rtrim(ltrim(parse_url($child['url'] ?? '#', PHP_URL_PATH) ?? '', '/'), '/');
+                            if ($childPath !== '' && ($currentPath === $childPath || str_starts_with($currentPath, $childPath . '/'))) {
                                 $isSubmenuActive = true;
                                 break;
                             }
@@ -144,14 +153,31 @@
                     />
                 @else
                     {{-- Single Menu Item with Pin Support --}}
+                    @php
+                        // ตรวจสอบ active state ด้วย route name และ path match
+                        $menuRoute = $menu['route'] ?? null;
+                        $menuUrl = $menu['url'] ?? '#';
+                        $menuPath = rtrim(ltrim(parse_url($menuUrl, PHP_URL_PATH) ?? '', '/'), '/');
+                        $currentMenuPath = rtrim(request()->path(), '/');
+
+                        // 1. Route name match (แม่นยำที่สุด)
+                        $isSingleActive = false;
+                        if ($menuRoute) {
+                            $isSingleActive = request()->routeIs($menuRoute) || request()->routeIs($menuRoute . '.*');
+                        }
+                        // 2. Path exact match
+                        if (!$isSingleActive && $menuPath !== '') {
+                            $isSingleActive = $currentMenuPath === $menuPath;
+                        }
+                    @endphp
                     <x-menu.pinnable-menu-item
                         :menuKey="$menu['id'] ?? $menu['route'] ?? Str::slug($menu['label'])"
                         :label="$menu['label']"
                         :icon="$menu['icon'] ?? ''"
-                        :url="$menu['url']"
-                        :route="$menu['route'] ?? null"
+                        :url="$menuUrl"
+                        :route="$menuRoute"
                         :dashboardType="$type"
-                        :isActive="request()->is(ltrim($menu['url'] ?? '', '/'))"
+                        :isActive="$isSingleActive"
                         :badge="$menu['badge'] ?? null"
                     />
                 @endif
