@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.17] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(cart): Handle CSRF token mismatch with proper error messages (cca76610)
+### 🔧 Other Changes
+
+
 ## [v3.461.16] - 2026-02-05
 
 ### ✨ Features
