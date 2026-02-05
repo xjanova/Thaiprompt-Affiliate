@@ -290,6 +290,8 @@
                 {{-- Official Shop (Premium) --}}
                 <a href="{{ route('admin.official-shop.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.official-shop.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.official-shop.*') ? 'bg-gradient-to-r from-amber-400 to-purple-500 text-white font-bold shadow-lg' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-crown w-4 text-center text-amber-300"></i>
                     <span>Official Shop</span>
@@ -332,12 +334,13 @@
         <div class="space-y-1"
              data-menu-active="{{ request()->routeIs('admin.marketplace.*') ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="marketplace"
              x-data="{ marketplaceOpen: {{ request()->routeIs('admin.marketplace.*') ? 'true' : 'false' }} }">
             {{-- Marketplace Header Button --}}
             <button @click="marketplaceOpen = !marketplaceOpen"
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.marketplace.*') ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-store w-5 text-center drop-shadow"></i>
+                <i class="fas fa-shopping-basket w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Marketplace Affiliate</span>
                 <i x-show="$store.sidebar.shouldExpand && marketplaceOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="$store.sidebar.shouldExpand && !marketplaceOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
@@ -392,6 +395,7 @@
         <div class="space-y-1"
              data-menu-active="{{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="line-membership-signup"
              x-data="{ lineSignupOpen: {{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }} }">
             {{-- LINE Signup Header Button --}}
             <button @click="lineSignupOpen = !lineSignupOpen"
@@ -472,6 +476,7 @@
         <div class="space-y-1"
              data-menu-active="{{ request()->routeIs('admin.fortune.*') ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="fortune-telling"
              x-data="{ fortuneOpen: {{ request()->routeIs('admin.fortune.*') ? 'true' : 'false' }} }">
             {{-- Fortune Telling Header Button --}}
             <button @click="fortuneOpen = !fortuneOpen"
@@ -534,6 +539,7 @@
         <div class="space-y-1"
              data-menu-active="{{ $walletActive ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="wallet"
              x-data="{ walletOpen: {{ $walletActive ? 'true' : 'false' }} }">
             {{-- Wallet Header Button --}}
             <button @click="walletOpen = !walletOpen"
@@ -550,6 +556,8 @@
                 {{-- Wallet Dashboard --}}
                 <a href="{{ route('admin.wallet.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.wallet.index') || request()->routeIs('admin.wallet.transactions') || request()->routeIs('admin.wallet.logs') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.wallet.index') || request()->routeIs('admin.wallet.transactions') || request()->routeIs('admin.wallet.logs') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -558,6 +566,8 @@
                 {{-- Withdrawals ⭐ สำคัญมาก! --}}
                 <a href="{{ route('admin.withdrawals.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.withdrawals.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.withdrawals.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-money-bill-transfer w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การถอนเงิน</span>
@@ -569,6 +579,8 @@
                 {{-- Wallet Settings --}}
                 <a href="{{ route('admin.wallet-settings.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.wallet-settings.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า Wallet</span>
@@ -577,6 +589,8 @@
                 {{-- Payment Gateways --}}
                 <a href="{{ route('admin.payment-gateways.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.payment-gateways.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.payment-gateways.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-credit-card w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Payment Gateways</span>
@@ -585,6 +599,8 @@
                 {{-- Cashback --}}
                 <a href="{{ route('admin.cashback.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.cashback.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.cashback.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-gift w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cashback</span>
@@ -593,6 +609,8 @@
                 {{-- Investments --}}
                 <a href="{{ route('admin.investments.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.investments.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.investments.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ลงทุน (Staking)</span>
@@ -613,6 +631,8 @@
                     <div x-show="nfcOpen" x-collapse x-cloak class="ml-8 space-y-1">
                         <a href="{{ route('admin.nfc-cards.index') }}"
                            @click="$store.sidebar.closeOnMenuClick()"
+                           data-menu-active="{{ request()->routeIs('admin.nfc-cards.index') || request()->routeIs('admin.nfc-cards.show') || request()->routeIs('admin.nfc-cards.edit') ? 'true' : 'false' }}"
+                           data-menu-type="submenu"
                            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.index') || request()->routeIs('admin.nfc-cards.show') || request()->routeIs('admin.nfc-cards.edit') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
                             <i class="fas fa-id-card w-4 text-center"></i>
                             <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">บัตร NFC</span>
@@ -620,6 +640,8 @@
 
                         <a href="{{ route('admin.nfc-cards.writer') }}"
                            @click="$store.sidebar.closeOnMenuClick()"
+                           data-menu-active="{{ request()->routeIs('admin.nfc-cards.writer') ? 'true' : 'false' }}"
+                           data-menu-type="submenu"
                            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-cards.writer') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
                             <i class="fas fa-edit w-4 text-center"></i>
                             <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">NFC Writer</span>
@@ -628,6 +650,8 @@
 
                         <a href="{{ route('admin.nfc-readers.index') }}"
                            @click="$store.sidebar.closeOnMenuClick()"
+                           data-menu-active="{{ request()->routeIs('admin.nfc-readers.*') ? 'true' : 'false' }}"
+                           data-menu-type="submenu"
                            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-readers.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
                             <i class="fas fa-barcode w-4 text-center"></i>
                             <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">เครื่องอ่าน</span>
@@ -635,6 +659,8 @@
 
                         <a href="{{ route('admin.nfc-transactions.index') }}"
                            @click="$store.sidebar.closeOnMenuClick()"
+                           data-menu-active="{{ request()->routeIs('admin.nfc-transactions.*') ? 'true' : 'false' }}"
+                           data-menu-type="submenu"
                            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-xs {{ request()->routeIs('admin.nfc-transactions.*') ? 'bg-white/20 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
                             <i class="fas fa-exchange-alt w-4 text-center"></i>
                             <span x-show="$store.sidebar.shouldExpand" x-transition class="whitespace-nowrap">ธุรกรรม</span>
@@ -646,6 +672,9 @@
 
         {{-- Platform Finance (Collapsible Menu) 💼 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.platform-revenue.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="platform-finance"
              x-data="{ platformFinanceOpen: {{ request()->routeIs('admin.platform-revenue.*') ? 'true' : 'false' }} }">
             {{-- Platform Finance Header Button --}}
             <button @click="platformFinanceOpen = !platformFinanceOpen"
@@ -663,6 +692,8 @@
                 {{-- รายได้แพลตฟอร์ม Dashboard --}}
                 <a href="{{ route('admin.platform-revenue.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.platform-revenue.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📊 รายได้แพลตฟอร์ม</span>
@@ -671,6 +702,8 @@
                 {{-- กระเป๋าเงินแพลตฟอร์ม (Platform Wallets) --}}
                 <a href="{{ route('admin.platform-revenue.wallets.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.platform-revenue.wallets.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.wallets.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-vault w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">💰 กระเป๋าเงินแพลตฟอร์ม</span>
@@ -679,6 +712,8 @@
                 {{-- ธุรกรรมแพลตฟอร์ม --}}
                 <a href="{{ route('admin.platform-revenue.transactions') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.platform-revenue.transactions') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.transactions') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-list-check w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📝 ธุรกรรมแพลตฟอร์ม</span>
@@ -687,6 +722,8 @@
                 {{-- รายงานการเงิน --}}
                 <a href="{{ route('admin.platform-revenue.reports') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.platform-revenue.reports') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.platform-revenue.reports') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-file-invoice-dollar w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">📈 รายงานการเงิน</span>
@@ -740,6 +777,9 @@
 
         {{-- LINE System (Collapsible Menu) 🆕 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.line-*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="line-system"
              x-data="{ lineOpen: {{ request()->routeIs('admin.line-*') ? 'true' : 'false' }} }">
             {{-- LINE Header Button --}}
             <button @click="lineOpen = !lineOpen"
@@ -756,6 +796,8 @@
                 {{-- LINE OA Management --}}
                 <a href="{{ route('admin.line-oa.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-oa.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
@@ -764,6 +806,8 @@
                 {{-- LINE Bot AI --}}
                 <a href="{{ route('admin.line-bot.ai.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-bot.ai.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
@@ -772,6 +816,8 @@
                 {{-- Rich Menu --}}
                 <a href="{{ route('admin.line-bot.rich-menu.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-th-large w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
@@ -780,6 +826,8 @@
                 {{-- LINE Membership Signup 🆕 --}}
                 <a href="{{ route('admin.line-membership-signup.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-membership-signup.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
@@ -788,6 +836,8 @@
                 {{-- LINE Recruitment (AI Bot สำหรับรับสมัคร) 🆕 --}}
                 <a href="{{ route('admin.line-recruitment.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-recruitment.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-recruitment.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-tie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รับสมัคร (AI)</span>
@@ -796,6 +846,8 @@
                 {{-- Conversations --}}
                 <a href="{{ route('admin.line-bot.ai.conversations') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-bot.ai.conversations*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.conversations*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comments w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
@@ -804,6 +856,8 @@
                 {{-- Broadcast Messages --}}
                 <a href="{{ route('admin.line-bot.broadcast.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-bot.broadcast.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.broadcast.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullseye w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
@@ -812,6 +866,8 @@
                 {{-- Analytics --}}
                 <a href="{{ route('admin.line-bot.ai.analytics') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.line-bot.ai.analytics') || request()->routeIs('admin.line-analytics.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.analytics') || request()->routeIs('admin.line-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
@@ -834,6 +890,7 @@
         <div class="space-y-1"
              data-menu-active="{{ $centralAiActive ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="central-ai"
              x-data="{ centralAiOpen: {{ $centralAiActive ? 'true' : 'false' }} }">
             {{-- Central AI Header Button --}}
             <button @click="centralAiOpen = !centralAiOpen"
@@ -899,12 +956,13 @@
         <div class="space-y-1"
              data-menu-active="{{ $aiCoreActive ? 'true' : 'false' }}"
              data-menu-type="parent"
+             data-menu-key="ai-core"
              x-data="{ aiCoreOpen: {{ $aiCoreActive ? 'true' : 'false' }} }">
             {{-- AI Core Header Button --}}
             <button @click="aiCoreOpen = !aiCoreOpen"
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ $aiCoreActive ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-                <i class="fas fa-brain w-5 text-center drop-shadow"></i>
+                <i class="fas fa-microchip w-5 text-center drop-shadow"></i>
                 <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI Core</span>
                 <i x-show="$store.sidebar.shouldExpand && aiCoreOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="$store.sidebar.shouldExpand && !aiCoreOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
@@ -996,6 +1054,9 @@
 
         {{-- AI Rental with Cloud GPU 🚀🤖 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.ai-rental.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="ai-rental"
              x-data="{ aiRentalOpen: {{ request()->routeIs('admin.ai-rental.*') ? 'true' : 'false' }} }">
             {{-- AI Rental Header Button --}}
             <button @click="aiRentalOpen = !aiRentalOpen"
@@ -1012,6 +1073,8 @@
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.ai-rental.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1020,6 +1083,8 @@
                 {{-- Cloud GPU Providers 🆕 แนะนำ Cloud ฟรี + ราคาถูก --}}
                 <a href="{{ route('admin.ai-rental.cloud-providers.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.cloud-providers.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cloud-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cloud w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cloud Providers</span>
@@ -1029,6 +1094,8 @@
                 {{-- My Configurations --}}
                 <a href="{{ route('admin.ai-rental.configs.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.configs.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.configs.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">My Configurations</span>
@@ -1037,6 +1104,8 @@
                 {{-- Deployments --}}
                 <a href="{{ route('admin.ai-rental.deployments.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.deployments.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.deployments.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-rocket w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Deployments</span>
@@ -1045,6 +1114,8 @@
                 {{-- Hugging Face News 🆕 ข่าว models ที่น่าสนใจ --}}
                 <a href="{{ route('admin.ai-rental.news.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.news.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.news.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-newspaper w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">HF News</span>
@@ -1054,6 +1125,8 @@
                 {{-- Trending Models 🔥 Models ที่กำลังมาแรง --}}
                 <a href="{{ route('admin.ai-rental.trending-models.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.trending-models.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.trending-models.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-fire w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trending Models</span>
@@ -1062,6 +1135,8 @@
                 {{-- Setup Guide 📖 คู่มือการตั้งค่า Cloud --}}
                 <a href="{{ route('admin.ai-rental.setup-guide') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.setup-guide') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.setup-guide') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Setup Guide</span>
@@ -1070,6 +1145,8 @@
                 {{-- Cost Calculator 💰 คำนวณค่าใช้จ่าย --}}
                 <a href="{{ route('admin.ai-rental.cost-calculator') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-rental.cost-calculator') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rental.cost-calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Cost Calculator</span>
@@ -1079,6 +1156,9 @@
 
         {{-- Analytics & Reports 📊 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.analytics.*') || request()->routeIs('admin.page-views.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="analytics"
              x-data="{ analyticsOpen: {{ request()->routeIs('admin.analytics.*') || request()->routeIs('admin.page-views.*') ? 'true' : 'false' }} }">
             {{-- Analytics Header Button --}}
             <button @click="analyticsOpen = !analyticsOpen"
@@ -1095,6 +1175,8 @@
                 {{-- System Analytics Overview --}}
                 <a href="{{ route('admin.analytics.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ภาพรวมระบบ</span>
@@ -1103,6 +1185,8 @@
                 {{-- Page Views Analytics --}}
                 <a href="{{ route('admin.analytics.page-views.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.page-views.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.page-views.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-eye w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ผู้เข้าชมแต่ละหน้า</span>
@@ -1111,6 +1195,8 @@
                 {{-- Real-time Analytics --}}
                 <a href="{{ route('admin.analytics.realtime') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.realtime') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.realtime') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-stream w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Real-time</span>
@@ -1119,6 +1205,8 @@
                 {{-- Traffic Analytics --}}
                 <a href="{{ route('admin.analytics.traffic') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.traffic') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.traffic') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-users w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Traffic & Visitors</span>
@@ -1127,6 +1215,8 @@
                 {{-- Performance Analytics --}}
                 <a href="{{ route('admin.analytics.performance') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.performance') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.performance') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-rocket w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Performance</span>
@@ -1135,6 +1225,8 @@
                 {{-- Business Analytics --}}
                 <a href="{{ route('admin.analytics.business') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.business') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.business') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Business Analytics</span>
@@ -1143,6 +1235,8 @@
                 {{-- Database Analytics --}}
                 <a href="{{ route('admin.analytics.database') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.analytics.database') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.analytics.database') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-database w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Database Stats</span>
@@ -1151,6 +1245,8 @@
                 {{-- ศูนย์รายงานรวม --}}
                 <a href="{{ route('admin.unified-reports.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.unified-reports.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.unified-reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-bar w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์รายงานรวม</span>
@@ -1160,6 +1256,9 @@
 
         {{-- Security & Monitoring 🔒 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.security.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="security"
              x-data="{ securityOpen: {{ request()->routeIs('admin.security.*') ? 'true' : 'false' }} }">
             {{-- Security Header Button --}}
             <button @click="securityOpen = !securityOpen"
@@ -1176,6 +1275,8 @@
                 {{-- Security Dashboard --}}
                 <a href="{{ route('admin.security.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.security.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1184,6 +1285,8 @@
                 {{-- IP Blocking & Rate Limiting --}}
                 <a href="{{ route('admin.security.analytics') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.security.analytics') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-ban w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">IP & Rate Limit</span>
@@ -1192,6 +1295,8 @@
                 {{-- Threat Intelligence --}}
                 <a href="{{ route('admin.security.threat-intelligence') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.security.threat-intelligence') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.security.threat-intelligence') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-brain w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Threat Intelligence</span>
@@ -1201,6 +1306,9 @@
 
         {{-- Communication (Email & Notifications) 📧 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.email.*') || request()->routeIs('admin.notifications.*') || request()->routeIs('admin.notification-templates.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="communication"
              x-data="{ commOpen: {{ request()->routeIs('admin.email.*') || request()->routeIs('admin.notifications.*') || request()->routeIs('admin.notification-templates.*') ? 'true' : 'false' }} }">
             {{-- Communication Header Button --}}
             <button @click="commOpen = !commOpen"
@@ -1217,6 +1325,8 @@
                 {{-- Email Dashboard --}}
                 <a href="{{ route('admin.email.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.email.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Email Dashboard</span>
@@ -1225,6 +1335,8 @@
                 {{-- Email Providers --}}
                 <a href="{{ route('admin.email.providers') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.email.providers') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.providers') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-server w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Providers</span>
@@ -1233,6 +1345,8 @@
                 {{-- Email Templates --}}
                 <a href="{{ route('admin.email.templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.email.templates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-file-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
@@ -1241,6 +1355,8 @@
                 {{-- Email Logs --}}
                 <a href="{{ route('admin.email.logs') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.email.logs') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.email.logs') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-history w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Logs</span>
@@ -1249,6 +1365,8 @@
                 {{-- การแจ้งเตือน --}}
                 <a href="{{ route('admin.notifications.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.notifications.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notifications.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bell w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การแจ้งเตือน</span>
@@ -1257,6 +1375,8 @@
                 {{-- เทมเพลตการแจ้งเตือน --}}
                 <a href="{{ route('admin.notification-templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.notification-templates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.notification-templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clipboard-list w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เทมเพลตการแจ้งเตือน</span>
@@ -1266,6 +1386,9 @@
 
         {{-- AI & Automation (Extended) 🤖 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="ai-automation"
              x-data="{ aiAutoOpen: {{ request()->routeIs('admin.ai-providers.*') || request()->routeIs('admin.ai-installation.*') || request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }} }">
             {{-- AI Automation Header Button --}}
             <button @click="aiAutoOpen = !aiAutoOpen"
@@ -1282,6 +1405,8 @@
                 {{-- AI Providers (API Keys) ⭐ สำคัญ! --}}
                 <a href="{{ route('admin.ai-providers.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-providers.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-providers.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-key w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">API Providers</span>
@@ -1290,6 +1415,8 @@
                 {{-- AI Installation --}}
                 <a href="{{ route('admin.ai-installation.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-installation.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-download w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Installations</span>
@@ -1298,6 +1425,8 @@
                 {{-- AI Monitoring --}}
                 <a href="{{ route('admin.ai-monitoring.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.ai-monitoring.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-monitoring.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-area w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Monitoring</span>
@@ -1307,6 +1436,9 @@
 
         {{-- HRM (Human Resource Management) 👔 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.hrm.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="hrm"
              x-data="{ hrmOpen: {{ request()->routeIs('admin.hrm.*') ? 'true' : 'false' }} }">
             {{-- HRM Header Button --}}
             <button @click="hrmOpen = !hrmOpen"
@@ -1322,6 +1454,8 @@
             <div x-show="hrmOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.hrm.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hrm.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1329,6 +1463,8 @@
 
                 <a href="{{ route('admin.hrm.employees.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hrm.employees.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.employees.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-users w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">พนักงาน</span>
@@ -1336,6 +1472,8 @@
 
                 <a href="{{ route('admin.hrm.attendance.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hrm.attendance.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.attendance.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calendar-check w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เช็คชื่อ</span>
@@ -1343,6 +1481,8 @@
 
                 <a href="{{ route('admin.hrm.payroll.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hrm.payroll.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hrm.payroll.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-money-check-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เงินเดือน</span>
@@ -1352,6 +1492,9 @@
 
         {{-- Accounting 💼 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.accounting.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="accounting"
              x-data="{ accountingOpen: {{ request()->routeIs('admin.accounting.*') ? 'true' : 'false' }} }">
             {{-- Accounting Header Button --}}
             <button @click="accountingOpen = !accountingOpen"
@@ -1367,6 +1510,8 @@
             <div x-show="accountingOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.accounting.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.accounting.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1374,6 +1519,8 @@
 
                 <a href="{{ route('admin.accounting.invoices.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.accounting.invoices.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.invoices.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-file-invoice w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ใบแจ้งหนี้</span>
@@ -1381,6 +1528,8 @@
 
                 <a href="{{ route('admin.accounting.reports.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.accounting.reports.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.accounting.reports.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
@@ -1390,6 +1539,9 @@
 
         {{-- POS (Point of Sale) 🛍️ --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.pos.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="pos"
              x-data="{ posOpen: {{ request()->routeIs('admin.pos.*') ? 'true' : 'false' }} }">
             {{-- POS Header Button --}}
             <button @click="posOpen = !posOpen"
@@ -1405,6 +1557,8 @@
             <div x-show="posOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.pos.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.pos.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1412,6 +1566,8 @@
 
                 <a href="{{ route('admin.pos.devices.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.pos.devices.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.devices.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tablet-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เครื่อง POS</span>
@@ -1419,6 +1575,8 @@
 
                 <a href="{{ route('admin.pos.transactions.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.pos.transactions.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.transactions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-receipt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ธุรกรรม</span>
@@ -1426,6 +1584,8 @@
 
                 <a href="{{ route('admin.pos.labels.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.pos.labels.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pos.labels.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-barcode w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ฉลาก Barcode</span>
@@ -1435,6 +1595,9 @@
 
         {{-- Hotels 🏨 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.hotels.*') || request()->routeIs('admin.hotel-owners.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="hotels"
              x-data="{ hotelsOpen: {{ request()->routeIs('admin.hotels.*') || request()->routeIs('admin.hotel-owners.*') ? 'true' : 'false' }} }">
             {{-- Hotels Header Button --}}
             <button @click="hotelsOpen = !hotelsOpen"
@@ -1450,6 +1613,8 @@
             <div x-show="hotelsOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.hotels.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hotels.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hotels.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-building w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">โรงแรม</span>
@@ -1457,6 +1622,8 @@
 
                 <a href="{{ route('admin.hotel-owners.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.hotel-owners.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.hotel-owners.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-circle w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เจ้าของโรงแรม</span>
@@ -1466,6 +1633,9 @@
 
         {{-- Homepage Manager - จัดการหน้าแรก 🏠 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.homepage-manager.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="homepage-manager"
              x-data="{ homepageOpen: {{ request()->routeIs('admin.homepage-manager.*') ? 'true' : 'false' }} }">
             {{-- Homepage Header Button --}}
             <button @click="homepageOpen = !homepageOpen"
@@ -1483,6 +1653,8 @@
                 {{-- Visual Builder --}}
                 <a href="{{ route('admin.homepage-manager.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.homepage-manager.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-palette w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Visual Builder</span>
@@ -1491,6 +1663,8 @@
                 {{-- Preview --}}
                 <a href="{{ route('admin.homepage-manager.preview') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.homepage-manager.preview') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.preview') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-eye w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ดูตัวอย่าง</span>
@@ -1499,6 +1673,8 @@
                 {{-- Sections --}}
                 <a href="{{ route('admin.homepage-manager.sections.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.homepage-manager.sections.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.sections.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการ Sections</span>
@@ -1507,6 +1683,8 @@
                 {{-- Templates --}}
                 <a href="{{ route('admin.homepage-manager.templates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.homepage-manager.templates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.homepage-manager.templates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clone w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Templates</span>
@@ -1516,6 +1694,9 @@
 
         {{-- Content Management 📄 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.pages.*') || request()->routeIs('admin.articles.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="content"
              x-data="{ contentOpen: {{ request()->routeIs('admin.pages.*') || request()->routeIs('admin.articles.*') ? 'true' : 'false' }} }">
             {{-- Content Header Button --}}
             <button @click="contentOpen = !contentOpen"
@@ -1531,6 +1712,8 @@
             <div x-show="contentOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.pages.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.pages.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.pages.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-pager w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Pages (CMS)</span>
@@ -1538,6 +1721,8 @@
 
                 <a href="{{ route('admin.articles.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.articles.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-newspaper w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">บทความ</span>
@@ -1548,6 +1733,9 @@
         {{-- KYC Verification 🆕 --}}
         <a href="{{ route('admin.kyc.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.kyc.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="kyc"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.kyc.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-id-card w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
@@ -1555,6 +1743,9 @@
 
         {{-- Support Tickets (Collapsible Menu) 🆕 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.tickets.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="tickets"
              x-data="{ ticketsOpen: {{ request()->routeIs('admin.tickets.*') ? 'true' : 'false' }} }">
             {{-- Tickets Header Button --}}
             <button @click="ticketsOpen = !ticketsOpen"
@@ -1571,6 +1762,8 @@
                 {{-- All Tickets --}}
                 <a href="{{ route('admin.tickets.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-ticket w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
@@ -1579,6 +1772,8 @@
                 {{-- Analytics --}}
                 <a href="{{ route('admin.tickets.analytics') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.analytics') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
@@ -1587,6 +1782,8 @@
                 {{-- Ratings --}}
                 <a href="{{ route('admin.tickets.ratings') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.ratings') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.ratings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-star w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
@@ -1595,6 +1792,8 @@
                 {{-- Categories --}}
                 <a href="{{ route('admin.tickets.categories.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.categories.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-folder w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
@@ -1603,6 +1802,8 @@
                 {{-- Canned Responses --}}
                 <a href="{{ route('admin.tickets.canned-responses.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.canned-responses.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.canned-responses.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
@@ -1611,6 +1812,8 @@
                 {{-- SLA Policies --}}
                 <a href="{{ route('admin.tickets.sla-policies.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.sla-policies.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.sla-policies.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clock w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
@@ -1619,6 +1822,8 @@
                 {{-- Assignment Rules --}}
                 <a href="{{ route('admin.tickets.assignment-rules.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.assignment-rules.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.assignment-rules.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-check w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
@@ -1627,6 +1832,8 @@
                 {{-- KB Articles --}}
                 <a href="{{ route('admin.tickets.kb-articles.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.kb-articles.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.kb-articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
@@ -1635,6 +1842,8 @@
                 {{-- Settings --}}
                 <a href="{{ route('admin.tickets.settings') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tickets.settings') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
@@ -1644,13 +1853,19 @@
 
         {{-- AI Bot Profiles --}}
         <a href="{{ route('admin.ai-bots.index') }}"
+           data-menu-active="{{ request()->routeIs('admin.ai-bots.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="ai-bot-profiles"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-user-robot w-5 text-center drop-shadow"></i>
+            <i class="fas fa-robot w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
         </a>
 
         {{-- AI Installations --}}
         <a href="{{ route('admin.ai-installation.index') }}"
+           data-menu-active="{{ request()->routeIs('admin.ai-installation.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="ai-installations"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-installation.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-download w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Installations</span>
@@ -1660,6 +1875,9 @@
 
         {{-- Anti-Abuse Protection System (Collapsible Menu) 🛡️ --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.anti-abuse.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="anti-abuse"
              x-data="{ antiAbuseOpen: {{ request()->routeIs('admin.anti-abuse.*') ? 'true' : 'false' }} }">
             {{-- Anti-Abuse Header Button --}}
             <button @click="antiAbuseOpen = !antiAbuseOpen"
@@ -1676,6 +1894,8 @@
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.anti-abuse.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.dashboard') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1684,6 +1904,8 @@
                 {{-- Disputes --}}
                 <a href="{{ route('admin.anti-abuse.disputes') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.disputes*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.disputes*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-exclamation-triangle w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ข้อพิพาท</span>
@@ -1692,6 +1914,8 @@
                 {{-- Trust Scores --}}
                 <a href="{{ route('admin.anti-abuse.trust-scores') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.trust-scores*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.trust-scores*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-star w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trust Score</span>
@@ -1700,6 +1924,8 @@
                 {{-- Penalties --}}
                 <a href="{{ route('admin.anti-abuse.penalties') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.penalties*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.penalties*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-gavel w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ค่าปรับ</span>
@@ -1708,6 +1934,8 @@
                 {{-- Blocks --}}
                 <a href="{{ route('admin.anti-abuse.blocks') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.blocks*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.blocks*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-slash w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การ Block</span>
@@ -1716,6 +1944,8 @@
                 {{-- Location History --}}
                 <a href="{{ route('admin.anti-abuse.location-history') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.anti-abuse.location-history*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.anti-abuse.location-history*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-map-marked-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติ GPS</span>
@@ -1726,6 +1956,9 @@
         {{-- GPS Monitoring Center 📡 --}}
         <a href="{{ route('admin.gps-monitoring.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.gps-monitoring.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="gps-monitor"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.gps-monitoring.*') ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <div class="relative">
                 <i class="fas fa-satellite w-5 text-center drop-shadow"></i>
@@ -1739,6 +1972,9 @@
 
         {{-- Video Missions (ภารกิจดูคลิปรับรางวัล) 🎬 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.video-missions.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="video-missions"
              x-data="{ videoMissionsOpen: {{ request()->routeIs('admin.video-missions.*') ? 'true' : 'false' }} }">
             {{-- Video Missions Header Button --}}
             <button @click="videoMissionsOpen = !videoMissionsOpen"
@@ -1756,6 +1992,8 @@
                 {{-- Dashboard --}}
                 <a href="{{ route('admin.video-missions.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1764,6 +2002,8 @@
                 {{-- จัดการภารกิจ --}}
                 <a href="{{ route('admin.video-missions.missions') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.missions') || request()->routeIs('admin.video-missions.create') || request()->routeIs('admin.video-missions.edit') || request()->routeIs('admin.video-missions.show') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.missions') || request()->routeIs('admin.video-missions.create') || request()->routeIs('admin.video-missions.edit') || request()->routeIs('admin.video-missions.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tasks w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการภารกิจ</span>
@@ -1772,6 +2012,8 @@
                 {{-- การทำภารกิจ --}}
                 <a href="{{ route('admin.video-missions.completions') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.completions') || request()->routeIs('admin.video-missions.completion') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.completions') || request()->routeIs('admin.video-missions.completion') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clipboard-check w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การทำภารกิจ</span>
@@ -1780,6 +2022,8 @@
                 {{-- Rank Limits --}}
                 <a href="{{ route('admin.video-missions.rank-limits') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.rank-limits') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.rank-limits') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-medal w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rank Limits</span>
@@ -1788,6 +2032,8 @@
                 {{-- รายงาน --}}
                 <a href="{{ route('admin.video-missions.reports') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.reports') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.reports') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
@@ -1796,6 +2042,8 @@
                 {{-- ตั้งค่า --}}
                 <a href="{{ route('admin.video-missions.settings') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.settings') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
@@ -1804,6 +2052,8 @@
                 {{-- นำเข้าจาก YouTube --}}
                 <a href="{{ route('admin.video-missions.import-youtube') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.video-missions.import-youtube') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.video-missions.import-youtube') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fab fa-youtube w-4 text-center drop-shadow text-red-400"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">นำเข้า YouTube</span>
@@ -1813,6 +2063,9 @@
 
         {{-- Games & Entertainment 🎮 ไพ่ทาโร่ต์และเกม --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.tarot.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="games"
              x-data="{ gamesOpen: {{ request()->routeIs('admin.tarot.*') ? 'true' : 'false' }} }">
             {{-- Games Header Button --}}
             <button @click="gamesOpen = !gamesOpen"
@@ -1830,6 +2083,8 @@
                 {{-- Tarot Dashboard --}}
                 <a href="{{ route('admin.tarot.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
@@ -1838,6 +2093,8 @@
                 {{-- Tarot Cards --}}
                 <a href="{{ route('admin.tarot.cards.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.cards.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.cards.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-images w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ไพ่ทาโร่ต์</span>
@@ -1846,6 +2103,8 @@
                 {{-- Card Backs --}}
                 <a href="{{ route('admin.tarot.card-backs.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.card-backs.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.card-backs.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หลังไพ่</span>
@@ -1854,6 +2113,8 @@
                 {{-- Interpretations --}}
                 <a href="{{ route('admin.tarot.interpretations.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.interpretations.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.interpretations.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คำทำนาย</span>
@@ -1862,6 +2123,8 @@
                 {{-- Categories --}}
                 <a href="{{ route('admin.tarot.categories.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.categories.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tags w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
@@ -1870,6 +2133,8 @@
                 {{-- Readings History --}}
                 <a href="{{ route('admin.tarot.readings.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.readings.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.readings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-history w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ประวัติการดู</span>
@@ -1878,6 +2143,8 @@
                 {{-- Tarot Settings --}}
                 <a href="{{ route('admin.tarot.settings') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.tarot.settings*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tarot.settings*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
@@ -1887,6 +2154,9 @@
 
         {{-- Academy System (ระบบการเรียนรู้) 🎓 --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.academy.*') || request()->routeIs('admin.learning-center.*') || request()->routeIs('admin.quiz-management.*') || request()->routeIs('admin.certificates.*') || request()->routeIs('admin.instructor.*') || request()->routeIs('admin.articles.*') || request()->routeIs('admin.categories.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="academy"
              x-data="{ academyOpen: {{ request()->routeIs('admin.academy.*') || request()->routeIs('admin.learning-center.*') || request()->routeIs('admin.quiz-management.*') || request()->routeIs('admin.certificates.*') || request()->routeIs('admin.instructor.*') || request()->routeIs('admin.articles.*') || request()->routeIs('admin.categories.*') ? 'true' : 'false' }} }">
             {{-- Academy Header Button --}}
             <button @click="academyOpen = !academyOpen"
@@ -1904,6 +2174,8 @@
                 {{-- Learning Center Dashboard --}}
                 <a href="{{ route('admin.learning-center.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.learning-center.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.learning-center.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book-open w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ศูนย์เรียนรู้</span>
@@ -1912,6 +2184,8 @@
                 {{-- คอร์สเรียน/บทความ --}}
                 <a href="{{ route('admin.articles.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.articles.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chalkboard-teacher w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอร์สเรียน</span>
@@ -1920,6 +2194,8 @@
                 {{-- หมวดหมู่ --}}
                 <a href="{{ route('admin.categories.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.categories.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-folder-tree w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
@@ -1928,6 +2204,8 @@
                 {{-- จัดการแบบทดสอบ --}}
                 <a href="{{ route('admin.quiz-management.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.quiz-management.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.quiz-management.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clipboard-question w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แบบทดสอบ</span>
@@ -1937,6 +2215,8 @@
                 {{-- ใบประกาศนียบัตร (Student) --}}
                 <a href="{{ route('admin.certificates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.certificates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.certificates.*') && !request()->routeIs('admin.academy.certificates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-award w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ใบประกาศนักเรียน</span>
@@ -1945,6 +2225,8 @@
                 {{-- ใบประกาศนียบัตร (System Management) --}}
                 <a href="{{ route('admin.academy.certificates.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.academy.certificates.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.academy.certificates.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-certificate w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการใบประกาศ</span>
@@ -1953,6 +2235,8 @@
                 {{-- แดชบอร์ดอาจารย์ --}}
                 <a href="{{ route('admin.instructor.dashboard') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.instructor.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.instructor.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chalkboard w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แดชบอร์ดอาจารย์</span>
@@ -1961,6 +2245,8 @@
                 {{-- ตั้งค่า Academy --}}
                 <a href="{{ route('admin.academy.settings.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.academy.settings.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.academy.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า Academy</span>
@@ -1973,6 +2259,9 @@
 
         {{-- Settings --}}
         <a href="{{ route('admin.settings.index') }}"
+           data-menu-active="{{ request()->routeIs('admin.settings.index') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="settings"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cog w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
@@ -1981,6 +2270,9 @@
         {{-- Mobile App Management 📱 สำหรับควบคุม App มือถือ (Standalone) --}}
         {{-- Admin ควบคุมได้: Dashboard, Push Notifications, Banner โฆษณา, Device Analytics --}}
         <div class="space-y-1"
+             data-menu-active="{{ request()->routeIs('admin.mobile-app.*') ? 'true' : 'false' }}"
+             data-menu-type="parent"
+             data-menu-key="mobile-app"
              x-data="{ mobileAppOpen: {{ request()->routeIs('admin.mobile-app.*') ? 'true' : 'false' }} }">
             {{-- Mobile App Header Button --}}
             <button @click="mobileAppOpen = !mobileAppOpen"
@@ -1998,6 +2290,8 @@
                 {{-- Dashboard (ภาพรวม) --}}
                 <a href="{{ route('admin.mobile-app.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.mobile-app.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mobile-app.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tachometer-alt w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ภาพรวม</span>
@@ -2006,6 +2300,8 @@
                 {{-- Push Notifications (แจ้งเตือน) --}}
                 <a href="{{ route('admin.mobile-app.push.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.mobile-app.push.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mobile-app.push.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bell w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Push Notifications</span>
@@ -2014,6 +2310,8 @@
                 {{-- App Banners (แบนเนอร์โฆษณา) --}}
                 <a href="{{ route('admin.mobile-app.banners.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.mobile-app.banners.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mobile-app.banners.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-ad w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แบนเนอร์โฆษณา</span>
@@ -2022,6 +2320,8 @@
                 {{-- Device Analytics (สถิติอุปกรณ์) --}}
                 <a href="{{ route('admin.mobile-app.analytics.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.mobile-app.analytics.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mobile-app.analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สถิติอุปกรณ์</span>
@@ -2032,6 +2332,9 @@
         {{-- Site Settings (โลโก้, SEO, Social Media) --}}
         <a href="{{ route('admin.site-settings.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.site-settings.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="site-settings"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.site-settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-palette w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
@@ -2040,6 +2343,9 @@
         {{-- Google Maps Settings 🗺️ NEW --}}
         <a href="{{ route('admin.settings.google-maps') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.settings.google-maps*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="google-maps"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.google-maps*') ? 'bg-gradient-to-r from-green-500 to-teal-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-map-marked-alt w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Google Maps API</span>
@@ -2048,14 +2354,20 @@
         {{-- Cache Settings 🚀 NEW --}}
         <a href="{{ route('admin.cache.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.cache.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="cache"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.cache.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
-            <i class="fas fa-rocket w-5 text-center drop-shadow"></i>
+            <i class="fas fa-bolt w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ระบบแคช</span>
         </a>
 
         {{-- Cloudflare CDN Management ☁️ NEW --}}
         <a href="{{ route('admin.cloudflare.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.cloudflare.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="cloudflare"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.cloudflare.*') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cloud w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Cloudflare CDN</span>
@@ -2064,6 +2376,9 @@
         {{-- Arrow X Theme Customizer ⭐ NEW --}}
         <a href="{{ route('admin.arrow-x-theme.index') }}"
            @click="$store.sidebar.closeOnMenuClick()"
+           data-menu-active="{{ request()->routeIs('admin.arrow-x-theme.*') ? 'true' : 'false' }}"
+           data-menu-type="item"
+           data-menu-key="arrow-x-theme"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.arrow-x-theme.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-paint-brush w-5 text-center drop-shadow"></i>
             <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
