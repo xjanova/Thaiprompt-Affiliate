@@ -7,6 +7,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Models\UniquePaymentAmount;
 use App\Models\SmsPaymentNotification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\Log;
  * 2. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 3 คำถาม
  * 3. สร้างบิล + unique amount → แสดงบัญชีธนาคาร
  * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
+ *
+ * Anti-Spam Features:
+ * - Rate limiting per user
+ * - Prompt injection detection
+ * - Repetitive message detection
+ * - AI attack pattern detection
  */
 class FortuneConversationService
 {
@@ -50,6 +57,84 @@ class FortuneConversationService
      * ความยาวข้อความสูงสุดที่รับ (ป้องกัน spam)
      */
     public const MAX_MESSAGE_LENGTH = 1000;
+
+    /**
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที
+     */
+    public const MAX_MESSAGES_PER_MINUTE = 10;
+
+    /**
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อชั่วโมง
+     */
+    public const MAX_MESSAGES_PER_HOUR = 60;
+
+    /**
+     * Rate Limiting: จำนวน AI calls สูงสุดต่อวัน (ต่อ user)
+     */
+    public const MAX_AI_CALLS_PER_DAY = 20;
+
+    /**
+     * จำนวนข้อความซ้ำที่ยอมรับได้
+     */
+    public const MAX_REPETITIVE_MESSAGES = 3;
+
+    /**
+     * Prompt Injection Patterns - คำสั่งที่พยายาม manipulate AI
+     */
+    protected const PROMPT_INJECTION_PATTERNS = [
+        // System prompt manipulation
+        'ignore previous', 'ignore above', 'disregard previous', 'forget previous',
+        'ignore all instructions', 'ignore your instructions', 'new instructions',
+        'system prompt', 'system:', 'assistant:', 'user:', '[INST]', '[/INST]',
+        'you are now', 'pretend you are', 'act as', 'roleplay as',
+        'from now on', 'starting now', 'override', 'bypass',
+        // Thai variants
+        'ลืมคำสั่งก่อนหน้า', 'เพิกเฉยคำสั่ง', 'คำสั่งใหม่', 'เปลี่ยนบทบาท',
+        'แกล้งทำเป็น', 'สมมติว่าคุณ', 'ตั้งแต่ตอนนี้',
+        // Jailbreak attempts
+        'jailbreak', 'dan mode', 'developer mode', 'unrestricted mode',
+        'no restrictions', 'without restrictions', 'unlock', 'enable all',
+        // Output manipulation
+        'output:', 'print:', 'echo:', 'return:', 'respond with:',
+        'say exactly', 'repeat after me', 'copy this',
+        // API/prompt reveal attempts
+        'show prompt', 'reveal prompt', 'what is your prompt', 'show instructions',
+        'what are your instructions', 'display system', 'show system message',
+    ];
+
+    /**
+     * AI Attack Patterns - รูปแบบการโจมตีจาก AI อื่น
+     */
+    protected const AI_ATTACK_PATTERNS = [
+        // Structured prompts from other AIs
+        'as an ai', 'as a language model', 'as an assistant',
+        'i am an ai', 'i am a bot', 'i am chatgpt', 'i am claude',
+        'generate a response', 'create a prompt', 'write a prompt',
+        'test your capabilities', 'test your limits', 'stress test',
+        // Automated testing patterns
+        'benchmark', 'evaluation:', 'test case:', 'scenario:',
+        'input:', 'expected output:', 'actual output:',
+        // Mass generation requests
+        'generate 100', 'create 50', 'list all', 'enumerate all',
+        'give me every', 'tell me everything about',
+    ];
+
+    /**
+     * Meaningless/Random Chat Patterns - ถามเรื่อยเปื่อย
+     */
+    protected const MEANINGLESS_PATTERNS = [
+        // Single words/sounds
+        '/^(ฮัลโหล|hello|hi|hey|yo|อา|อ้า|เอ่อ|อืม|555+|หา|ว่าไง|จ้า|ค่ะ|ครับ|นะ|จ๊ะ|อิอิ|แฮ่|เฮ้|โว้ว|ว้าว)$/ui',
+        // Just greetings without questions
+        '/^(สวัสดี|หวัดดี|ดี|hello|hi)[\s]*[ค่ะครับจ้า]*$/ui',
+        // Random letters/numbers
+        '/^[a-z]{1,5}$/i',
+        '/^[ก-ฮ]{1,3}$/u',
+        // Just punctuation or emojis
+        '/^[\s\.\,\!\?\-\_\'\"\(\)]+$/',
+        // Testing messages
+        '/^(test|ทดสอบ|เทส|123|abc)$/ui',
+    ];
 
     /**
      * คำที่เกี่ยวข้องกับการดูดวง (ใช้ตรวจจับคำถามที่เกี่ยวข้อง)
@@ -139,9 +224,14 @@ class FortuneConversationService
      */
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
-        // Pre-filter: ตรวจจับข้อความที่ไม่เหมาะสมก่อน
-        $filterResult = $this->preFilterMessage($messageText);
+        // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam/attack ก่อนประมวลผล
+        $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
         if (!$filterResult['valid']) {
+            Log::info('Fortune Filter: Message blocked', [
+                'user_id' => $facebookUserId,
+                'reason' => $filterResult['reason'],
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
             return [
                 'action' => 'filtered',
                 'message' => $filterResult['message'],
@@ -159,6 +249,14 @@ class FortuneConversationService
 
         // ตรวจสอบว่าเป็นคำขอดูดวงหรือไม่
         if ($this->isFortuneRequest($messageText)) {
+            // ตรวจสอบ AI calls limit ก่อนเริ่ม conversation ใหม่
+            if (!$this->canMakeAICall($facebookUserId)) {
+                return [
+                    'action' => 'ai_limit',
+                    'message' => $this->getAILimitMessage(),
+                    'reading' => null,
+                ];
+            }
             return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
         }
 
@@ -206,6 +304,9 @@ class FortuneConversationService
                 $basicPrompt,
                 'basic'
             );
+
+            // บันทึก AI call สำหรับ rate limiting
+            $this->recordAICall($facebookUserId);
 
             // บันทึกคำทำนายพื้นฐาน
             $reading->saveBasicReading(
@@ -499,6 +600,11 @@ class FortuneConversationService
                 $birthDate
             );
 
+            // บันทึก AI call สำหรับ rate limiting (deep reading เป็นบริการชำระเงินแต่ยังนับด้วย)
+            if ($reading->facebook_user_id) {
+                $this->recordAICall($reading->facebook_user_id);
+            }
+
             // บันทึกคำทำนายละเอียด
             $reading->saveDeepReading(
                 $aiResult['response'],
@@ -772,13 +878,16 @@ class FortuneConversationService
     // ============================================================
 
     /**
-     * Pre-filter ข้อความก่อนประมวลผล
+     * Pre-filter ข้อความก่อนประมวลผล (ไม่ต้องระบุ userId)
      *
      * ตรวจจับ:
      * - ข้อความยาวเกินไป (spam/flood)
      * - ข้อความสั้นเกินไป (ไม่มีความหมาย)
      * - ตัวอักษรแปลกๆ/spam characters
      * - คำถามที่ไม่เกี่ยวกับดูดวง
+     * - Prompt injection attempts
+     * - AI attack patterns
+     * - Meaningless messages
      *
      * @param string $text ข้อความที่ต้องการตรวจสอบ
      * @return array ['valid' => bool, 'reason' => string, 'message' => string]
@@ -805,7 +914,40 @@ class FortuneConversationService
             ];
         }
 
-        // 2. ตรวจจับ spam/gibberish
+        // 2. ตรวจจับ Prompt Injection (สำคัญ! ตรวจก่อน)
+        if ($this->isPromptInjection($text)) {
+            Log::warning('Fortune Filter: Prompt injection detected', [
+                'text_preview' => mb_substr($text, 0, 100),
+            ]);
+            return [
+                'valid' => false,
+                'reason' => 'prompt_injection',
+                'message' => $this->getSecurityBlockMessage(),
+            ];
+        }
+
+        // 3. ตรวจจับ AI Attack Patterns
+        if ($this->isAIAttack($text)) {
+            Log::warning('Fortune Filter: AI attack pattern detected', [
+                'text_preview' => mb_substr($text, 0, 100),
+            ]);
+            return [
+                'valid' => false,
+                'reason' => 'ai_attack',
+                'message' => $this->getSecurityBlockMessage(),
+            ];
+        }
+
+        // 4. ตรวจจับข้อความไร้สาระ/เรื่อยเปื่อย
+        if ($this->isMeaninglessMessage($text)) {
+            return [
+                'valid' => false,
+                'reason' => 'meaningless',
+                'message' => $this->getMeaninglessMessage(),
+            ];
+        }
+
+        // 5. ตรวจจับ spam/gibberish
         if ($this->isSpamOrGibberish($text)) {
             return [
                 'valid' => false,
@@ -814,7 +956,7 @@ class FortuneConversationService
             ];
         }
 
-        // 3. ตรวจจับ off-topic keywords
+        // 6. ตรวจจับ off-topic keywords
         $offTopicResult = $this->detectOffTopic($text);
         if ($offTopicResult['is_off_topic']) {
             return [
@@ -824,7 +966,7 @@ class FortuneConversationService
             ];
         }
 
-        // 4. ตรวจจับคำถามว่าเป็น AI หรือไม่
+        // 7. ตรวจจับคำถามว่าเป็น AI หรือไม่
         if ($this->isAskingAboutAI($text)) {
             return [
                 'valid' => true, // ปล่อยผ่านไปให้ AI ตอบตาม system prompt
@@ -838,6 +980,45 @@ class FortuneConversationService
             'reason' => 'ok',
             'message' => '',
         ];
+    }
+
+    /**
+     * Pre-filter ข้อความพร้อม Rate Limiting (ต้องระบุ userId)
+     *
+     * @param string $userId Facebook User ID
+     * @param string $text ข้อความ
+     * @return array ['valid' => bool, 'reason' => string, 'message' => string]
+     */
+    public function preFilterWithRateLimit(string $userId, string $text): array
+    {
+        // 1. ตรวจสอบ Rate Limiting ก่อน
+        $rateLimitResult = $this->checkRateLimit($userId);
+        if (!$rateLimitResult['allowed']) {
+            Log::warning('Fortune Filter: Rate limit exceeded', [
+                'user_id' => $userId,
+                'type' => $rateLimitResult['type'],
+            ]);
+            return [
+                'valid' => false,
+                'reason' => 'rate_limit',
+                'message' => $this->getRateLimitMessage($rateLimitResult['type']),
+            ];
+        }
+
+        // 2. ตรวจสอบข้อความซ้ำ
+        if ($this->isRepetitiveMessage($userId, $text)) {
+            return [
+                'valid' => false,
+                'reason' => 'repetitive',
+                'message' => $this->getRepetitiveMessage(),
+            ];
+        }
+
+        // 3. บันทึกข้อความล่าสุด
+        $this->recordMessage($userId, $text);
+
+        // 4. ตรวจสอบด้วย pre-filter ปกติ
+        return $this->preFilterMessage($text);
     }
 
     /**
@@ -881,6 +1062,253 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * ตรวจจับ Prompt Injection Attempts
+     * ป้องกันการพยายาม manipulate AI ด้วยคำสั่งพิเศษ
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isPromptInjection(string $text): bool
+    {
+        $textLower = mb_strtolower($text);
+
+        foreach (self::PROMPT_INJECTION_PATTERNS as $pattern) {
+            if (str_contains($textLower, mb_strtolower($pattern))) {
+                return true;
+            }
+        }
+
+        // ตรวจจับ patterns พิเศษด้วย regex
+        $regexPatterns = [
+            // JSON/XML injection
+            '/\{["\']?system["\']?\s*:/i',
+            '/<system>/i',
+            '/<\/?prompt>/i',
+            // Markdown injection for prompts
+            '/```(system|prompt|instruction)/i',
+            // Base64 encoded commands
+            '/[a-zA-Z0-9+\/]{50,}={0,2}/',
+            // Multiple newlines (trying to separate from context)
+            '/\n{5,}/',
+        ];
+
+        foreach ($regexPatterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจจับรูปแบบการโจมตีจาก AI อื่น
+     * ป้องกันการใช้ AI ตัวอื่นมาโจมตี/ทดสอบระบบ
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isAIAttack(string $text): bool
+    {
+        $textLower = mb_strtolower($text);
+
+        foreach (self::AI_ATTACK_PATTERNS as $pattern) {
+            if (str_contains($textLower, mb_strtolower($pattern))) {
+                return true;
+            }
+        }
+
+        // ตรวจจับรูปแบบ structured prompts
+        $structuredPatterns = [
+            // Numbered instructions
+            '/^\s*(1\.|step\s*1|instruction\s*1)/im',
+            // JSON-like structures
+            '/\{\s*"(prompt|instruction|command|task)":/i',
+            // Markdown headers for prompts
+            '/^#{1,3}\s*(prompt|instruction|task|test)/im',
+            // Automated testing patterns
+            '/\[(input|output|expected|test)\]/i',
+        ];
+
+        foreach ($structuredPatterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจจับข้อความไร้สาระ/ถามเรื่อยเปื่อย
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isMeaninglessMessage(string $text): bool
+    {
+        $text = trim($text);
+
+        // ตรวจสอบด้วย regex patterns
+        foreach (self::MEANINGLESS_PATTERNS as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        // ตรวจสอบข้อความที่สั้นมากและไม่มี keywords เกี่ยวกับดูดวง
+        if (mb_strlen($text) <= 10) {
+            $textLower = mb_strtolower($text);
+            $hasFortuneKeyword = false;
+
+            foreach (self::FORTUNE_RELATED_KEYWORDS as $keyword) {
+                if (str_contains($textLower, mb_strtolower($keyword))) {
+                    $hasFortuneKeyword = true;
+                    break;
+                }
+            }
+
+            // ถ้าสั้นและไม่มี keyword ดูดวง และไม่ใช่คำสั่งพื้นฐาน
+            if (!$hasFortuneKeyword && !$this->isBasicCommand($text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ============================================================
+    // Rate Limiting Methods - ป้องกัน Spam/Attack
+    // ============================================================
+
+    /**
+     * ตรวจสอบ Rate Limit
+     *
+     * @param string $userId
+     * @return array ['allowed' => bool, 'type' => string|null]
+     */
+    protected function checkRateLimit(string $userId): array
+    {
+        $minuteKey = "fortune_rate:{$userId}:minute";
+        $hourKey = "fortune_rate:{$userId}:hour";
+        $dayKey = "fortune_ai_calls:{$userId}:day";
+
+        // ตรวจสอบต่อนาที
+        $minuteCount = (int) Cache::get($minuteKey, 0);
+        if ($minuteCount >= self::MAX_MESSAGES_PER_MINUTE) {
+            return ['allowed' => false, 'type' => 'minute'];
+        }
+
+        // ตรวจสอบต่อชั่วโมง
+        $hourCount = (int) Cache::get($hourKey, 0);
+        if ($hourCount >= self::MAX_MESSAGES_PER_HOUR) {
+            return ['allowed' => false, 'type' => 'hour'];
+        }
+
+        // เพิ่ม counter
+        Cache::put($minuteKey, $minuteCount + 1, now()->addMinute());
+        Cache::put($hourKey, $hourCount + 1, now()->addHour());
+
+        return ['allowed' => true, 'type' => null];
+    }
+
+    /**
+     * ตรวจสอบว่าเกิน AI calls limit ต่อวันหรือไม่
+     *
+     * @param string $userId
+     * @return bool true ถ้ายังเรียก AI ได้
+     */
+    public function canMakeAICall(string $userId): bool
+    {
+        $dayKey = "fortune_ai_calls:{$userId}:day";
+        $count = (int) Cache::get($dayKey, 0);
+
+        return $count < self::MAX_AI_CALLS_PER_DAY;
+    }
+
+    /**
+     * บันทึกการเรียก AI
+     *
+     * @param string $userId
+     */
+    public function recordAICall(string $userId): void
+    {
+        $dayKey = "fortune_ai_calls:{$userId}:day";
+        $count = (int) Cache::get($dayKey, 0);
+        Cache::put($dayKey, $count + 1, now()->endOfDay());
+    }
+
+    /**
+     * ตรวจสอบข้อความซ้ำ
+     *
+     * @param string $userId
+     * @param string $text
+     * @return bool
+     */
+    protected function isRepetitiveMessage(string $userId, string $text): bool
+    {
+        $historyKey = "fortune_history:{$userId}";
+        $history = Cache::get($historyKey, []);
+
+        // นับจำนวนข้อความที่ซ้ำกัน
+        $textHash = md5(mb_strtolower(trim($text)));
+        $count = 0;
+
+        foreach ($history as $item) {
+            if ($item['hash'] === $textHash) {
+                $count++;
+            }
+        }
+
+        return $count >= self::MAX_REPETITIVE_MESSAGES;
+    }
+
+    /**
+     * บันทึกข้อความล่าสุด
+     *
+     * @param string $userId
+     * @param string $text
+     */
+    protected function recordMessage(string $userId, string $text): void
+    {
+        $historyKey = "fortune_history:{$userId}";
+        $history = Cache::get($historyKey, []);
+
+        // เก็บ 10 ข้อความล่าสุด
+        $history[] = [
+            'hash' => md5(mb_strtolower(trim($text))),
+            'time' => now()->timestamp,
+        ];
+
+        // เก็บแค่ 10 รายการ
+        if (count($history) > 10) {
+            $history = array_slice($history, -10);
+        }
+
+        Cache::put($historyKey, $history, now()->addHours(2));
+    }
+
+    /**
+     * ดึงสถิติการใช้งานของ user
+     *
+     * @param string $userId
+     * @return array
+     */
+    public function getUserUsageStats(string $userId): array
+    {
+        return [
+            'messages_per_minute' => (int) Cache::get("fortune_rate:{$userId}:minute", 0),
+            'messages_per_hour' => (int) Cache::get("fortune_rate:{$userId}:hour", 0),
+            'ai_calls_today' => (int) Cache::get("fortune_ai_calls:{$userId}:day", 0),
+            'limits' => [
+                'max_per_minute' => self::MAX_MESSAGES_PER_MINUTE,
+                'max_per_hour' => self::MAX_MESSAGES_PER_HOUR,
+                'max_ai_calls_per_day' => self::MAX_AI_CALLS_PER_DAY,
+            ],
+        ];
     }
 
     /**
@@ -1007,6 +1435,80 @@ class FortuneConversationService
     // ============================================================
     // Pre-Filter Messages - ข้อความตอบกลับสำหรับ filter
     // ============================================================
+
+    /**
+     * ข้อความเมื่อตรวจจับ security threat (prompt injection, AI attack)
+     */
+    protected function getSecurityBlockMessage(): string
+    {
+        return "🙏 ขอบคุณที่ทักมานะคะ\n\n" .
+               "ทางเพจขอตอบเฉพาะเรื่องดูดวงเท่านั้นค่ะ\n\n" .
+               "💡 *ตัวอย่างคำถาม*:\n" .
+               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
+               "• การเงินจะดีขึ้นไหม\n" .
+               "• ควรเปลี่ยนงานไหม\n\n" .
+               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อโดน rate limit
+     *
+     * @param string $type minute, hour, หรือ day
+     */
+    protected function getRateLimitMessage(string $type): string
+    {
+        $messages = [
+            'minute' => "🙏 ทางเพจขอเวลาสักครู่นะคะ\n\nกรุณารอสักครู่แล้วทักมาใหม่ค่ะ 🔮",
+            'hour' => "🙏 ขอบคุณที่สนใจค่ะ\n\nทักมาเยอะมากเลยค่ะ กรุณารอสักพักแล้วค่อยทักมาใหม่นะคะ\n\nทางเพจพร้อมทำนายให้ค่ะ 🔮✨",
+            'day' => "🙏 ขอบคุณที่ใช้บริการค่ะ\n\nวันนี้ทักมาเยอะมากเลยค่ะ กรุณากลับมาใหม่พรุ่งนี้นะคะ\n\nขอให้โชคดีค่ะ 🔮✨",
+        ];
+
+        return $messages[$type] ?? $messages['minute'];
+    }
+
+    /**
+     * ข้อความเมื่อส่งข้อความซ้ำ
+     */
+    protected function getRepetitiveMessage(): string
+    {
+        return "🙏 ทางเพจเห็นข้อความนี้แล้วค่ะ\n\n" .
+               "กรุณาลองถามเรื่องอื่น หรือถามในมุมใหม่ได้นะคะ\n\n" .
+               "💡 *ตัวอย่าง*:\n" .
+               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
+               "• การเงินจะดีขึ้นไหม\n" .
+               "• ควรเปลี่ยนงานไหม\n\n" .
+               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อตรวจจับข้อความไร้สาระ
+     */
+    protected function getMeaninglessMessage(): string
+    {
+        return "🔮 *สวัสดีค่ะ ทางเพจยินดีต้อนรับค่ะ*\n\n" .
+               "ทางเพจรับดูดวงเรื่องต่างๆ นะคะ:\n\n" .
+               "💕 ความรัก - คู่ครอง, แฟน, แต่งงาน\n" .
+               "💼 การงาน - อาชีพ, เปลี่ยนงาน\n" .
+               "💰 การเงิน - รายได้, โชคลาภ\n" .
+               "🏥 สุขภาพ - สิ่งที่ควรระวัง\n\n" .
+               "💡 *ตัวอย่างคำถาม*:\n" .
+               "• ปีนี้จะมีคู่ครองไหม\n" .
+               "• ควรเปลี่ยนงานไหม\n" .
+               "• ดวงการเงินเป็นอย่างไร\n\n" .
+               "พิมพ์คำถามมาได้เลยค่ะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อเกิน AI calls ต่อวัน
+     */
+    protected function getAILimitMessage(): string
+    {
+        return "🙏 ขอบคุณที่ใช้บริการค่ะ\n\n" .
+               "วันนี้ทางเพจได้ทำนายให้หลายครั้งแล้วค่ะ\n" .
+               "กรุณากลับมาใหม่พรุ่งนี้นะคะ\n\n" .
+               "หากต้องการคำทำนายละเอียดเลย สามารถเลือก *ดูดวงละเอียด* ได้ค่ะ ✨\n\n" .
+               "ขอให้โชคดีค่ะ 🔮";
+    }
 
     /**
      * ข้อความเมื่อพิมพ์ยาวเกินไป
