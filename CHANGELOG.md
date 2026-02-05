@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.5] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add store_id to PaymentTransaction for SMS Checker multi-store support (cfc04635)
+### 🔧 Other Changes
+
+
 ## [v3.464.4] - 2026-02-05
 
 ### ✨ Features
