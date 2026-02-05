@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Services\FortunePaymentService;
+use App\Services\FortuneConversationService;
+use App\Services\FacebookWebhookService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -78,15 +82,21 @@ class SmsPaymentService
             // พยายามจับคู่อัตโนมัติสำหรับ credit transactions
             $matched = false;
             $specialAmountHandled = false;
+            $fortuneReadingHandled = false;
 
             if ($notification->type === 'credit') {
-                // ขั้นที่ 1: จับคู่กับ UniquePaymentAmount / PaymentTransaction
-                $autoConfirm = config('smschecker.auto_confirm_matched', true);
-                $matched = $notification->attemptMatch($autoConfirm);
+                // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
+                $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
 
-                // ขั้นที่ 2: ถ้าไม่ match → ตรวจว่าเป็นยอดพิเศษหรือไม่ (เช่น 29.99 = ดูดวง)
-                if (!$matched) {
-                    $specialAmountHandled = $this->handleSpecialAmount($notification);
+                if (!$fortuneReadingHandled) {
+                    // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction
+                    $autoConfirm = config('smschecker.auto_confirm_matched', true);
+                    $matched = $notification->attemptMatch($autoConfirm);
+
+                    // ขั้นที่ 3: ถ้าไม่ match → ตรวจว่าเป็นยอดพิเศษหรือไม่ (เช่น 29.99 = ดูดวง)
+                    if (!$matched) {
+                        $specialAmountHandled = $this->handleSpecialAmount($notification);
+                    }
                 }
             }
 
@@ -99,9 +109,11 @@ class SmsPaymentService
                 'special_amount' => $specialAmountHandled,
             ]);
 
-            $message = $matched
-                ? 'Payment matched and confirmed'
-                : ($specialAmountHandled ? 'Special amount detected and processed' : 'Notification recorded');
+            $message = $fortuneReadingHandled
+                ? 'Fortune reading payment matched and processed'
+                : ($matched
+                    ? 'Payment matched and confirmed'
+                    : ($specialAmountHandled ? 'Special amount detected and processed' : 'Notification recorded'));
 
             return [
                 'success' => true,
@@ -323,5 +335,123 @@ class SmsPaymentService
         ]);
 
         return false;
+    }
+
+    /**
+     * ตรวจจับและจัดการยอดเงินดูดวงจาก Conversational Flow
+     *
+     * ตรวจสอบว่ายอดเงินตรงกับ FortuneReading ที่รอชำระเงินหรือไม่
+     * ถ้าตรง → ยืนยันการชำระ → ทำนายละเอียด → ส่งผ่าน Messenger
+     *
+     * @param SmsPaymentNotification $notification
+     * @return bool มีการจัดการหรือไม่
+     */
+    protected function handleFortuneReadingPayment(SmsPaymentNotification $notification): bool
+    {
+        $amount = (float) $notification->amount;
+
+        // ค้นหา FortuneReading ที่รอชำระเงินด้วยยอดนี้
+        $reading = FortuneReading::findByUniqueAmount($amount);
+
+        if (!$reading) {
+            return false;
+        }
+
+        Log::info('SMS Payment: พบ Fortune Reading ที่รอชำระ', [
+            'notification_id' => $notification->id,
+            'reading_id' => $reading->id,
+            'amount' => $amount,
+            'facebook_user_id' => $reading->facebook_user_id,
+        ]);
+
+        try {
+            // ประมวลผลการชำระเงินและทำนายละเอียด
+            $settings = FortuneTellingSetting::getSettings();
+            $conversationService = new FortuneConversationService($settings);
+            $facebookService = new FacebookWebhookService($settings);
+
+            // ส่ง typing indicator
+            $facebookService->sendTypingIndicator($reading->facebook_user_id);
+
+            // ประมวลผลและทำนายละเอียด
+            $result = $conversationService->processPaymentConfirmed($reading, $notification);
+
+            // ปิด typing indicator
+            $facebookService->sendTypingIndicator($reading->facebook_user_id, false);
+
+            // ส่งคำทำนายไปยัง Messenger
+            if (!empty($result['message'])) {
+                $this->sendLongMessageToMessenger($facebookService, $reading->facebook_user_id, $result['message']);
+            }
+
+            // อัพเดท notification สถานะเป็น matched
+            $notification->update([
+                'status' => 'matched',
+                'matched_transaction_id' => $reading->id,
+            ]);
+
+            Log::info('SMS Payment: ส่งคำทำนายดูดวงสำเร็จ', [
+                'reading_id' => $reading->id,
+                'facebook_user_id' => $reading->facebook_user_id,
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('SMS Payment: ส่งคำทำนายดูดวงล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // ส่งข้อความแจ้ง error
+            try {
+                $settings = FortuneTellingSetting::getSettings();
+                $facebookService = new FacebookWebhookService($settings);
+                $facebookService->sendMessage(
+                    $reading->facebook_user_id,
+                    "✅ ได้รับการชำระเงินแล้วค่ะ!\n\nขออภัย เกิดข้อผิดพลาดในการทำนาย กรุณาติดต่อแอดมินเพื่อรับคำทำนาย 🙏"
+                );
+            } catch (\Exception $msgError) {
+                Log::error('SMS Payment: ส่งข้อความ error ล้มเหลว', ['error' => $msgError->getMessage()]);
+            }
+
+            return false;
+        }
+    }
+
+    /**
+     * ส่งข้อความยาวไปยัง Messenger โดยแบ่งเป็นหลายข้อความ
+     *
+     * @param FacebookWebhookService $facebookService
+     * @param string $recipientId
+     * @param string $message
+     * @return void
+     */
+    protected function sendLongMessageToMessenger(FacebookWebhookService $facebookService, string $recipientId, string $message): void
+    {
+        $maxLength = 1800;
+
+        if (mb_strlen($message) <= $maxLength) {
+            $facebookService->sendMessage($recipientId, $message);
+            return;
+        }
+
+        // แบ่งข้อความตาม paragraph หรือ ═══
+        $parts = preg_split('/(?=═══════════════════════)/', $message);
+
+        $currentMessage = '';
+        foreach ($parts as $part) {
+            if (mb_strlen($currentMessage . $part) > $maxLength && !empty($currentMessage)) {
+                $facebookService->sendMessage($recipientId, trim($currentMessage));
+                usleep(300000); // รอ 300ms ระหว่างข้อความ
+                $currentMessage = $part;
+            } else {
+                $currentMessage .= $part;
+            }
+        }
+
+        if (!empty($currentMessage)) {
+            $facebookService->sendMessage($recipientId, trim($currentMessage));
+        }
     }
 }

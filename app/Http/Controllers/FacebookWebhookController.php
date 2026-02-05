@@ -9,6 +9,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
+use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,7 @@ class FacebookWebhookController extends Controller
 {
     protected $facebookService;
     protected $aiService;
+    protected $conversationService;
     protected $settings;
 
     public function __construct()
@@ -39,6 +41,7 @@ class FacebookWebhookController extends Controller
         $this->settings = FortuneTellingSetting::getSettings();
         $this->facebookService = new FacebookWebhookService($this->settings);
         $this->aiService = new FortuneAIService($this->settings);
+        $this->conversationService = new FortuneConversationService($this->settings);
     }
 
     /**
@@ -356,6 +359,7 @@ class FacebookWebhookController extends Controller
      * - ข้อความ text
      * - รูปภาพ (image attachment)
      * - Quick reply payloads
+     * - Conversational fortune telling flow (ใหม่)
      */
     protected function processMessage(array $messaging): void
     {
@@ -384,47 +388,138 @@ class FacebookWebhookController extends Controller
             if (empty($messageText) && $userImageUrl) {
                 $this->facebookService->sendMessage(
                     $senderId,
-                    "📸 ได้รับรูปภาพแล้วค่ะ\n\nกรุณาพิมพ์ 'ดูดวง' หรือ 'ดูดวงละเอียด' ตามด้วยคำถาม เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวงละเอียด เรื่องความรัก"
+                    "📸 ได้รับรูปภาพแล้วค่ะ\n\nกรุณาพิมพ์ 'ดูดวง' เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวง เรื่องความรัก"
                 );
                 return;
             }
         }
 
-        // ตรวจสอบคำถาม
-        $isDeepRequest = $this->facebookService->isDeepReadingRequest($messageText);
-        $questions = $this->facebookService->parseQuestions($messageText);
+        // ใช้ Conversational Flow ใหม่
+        $this->processConversationalMessage($senderId, $messageText);
+    }
 
-        if (empty($questions)) {
-            $this->sendHelpMessage($senderId);
+    /**
+     * ประมวลผลข้อความแบบ Conversational (flow ใหม่)
+     *
+     * Flow:
+     * 1. ดูดวงพื้นฐานฟรี (ดึงโปรไฟล์ทำนายเบื้องต้น)
+     * 2. เสนอดูดวงละเอียด 49 บาท (ถามวันเกิด + 3 คำถาม)
+     * 3. สร้างบิล + unique amount + แสดงบัญชีธนาคาร
+     * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
+     *
+     * @param string $senderId Facebook User ID
+     * @param string $messageText ข้อความที่ส่งมา
+     * @return void
+     */
+    protected function processConversationalMessage(string $senderId, string $messageText): void
+    {
+        try {
+            // ส่ง typing indicator
+            $this->facebookService->sendTypingIndicator($senderId);
+
+            // ดึง user profile
+            $userProfile = $this->facebookService->getUserProfile($senderId);
+
+            // ประมวลผลข้อความ
+            $result = $this->conversationService->processMessage($senderId, $messageText, $userProfile);
+
+            // ปิด typing indicator
+            $this->facebookService->sendTypingIndicator($senderId, false);
+
+            // ส่งข้อความกลับ
+            $message = $result['message'] ?? '';
+            if (!empty($message)) {
+                // แยกข้อความยาวออกเป็นหลายๆ ข้อความ
+                $this->sendLongMessage($senderId, $message);
+            }
+
+            // ส่ง Quick Replies ถ้าต้องการ
+            if (!empty($result['show_quick_replies'])) {
+                $this->sendConversationQuickReplies($senderId, $result['action']);
+            }
+
+            Log::info('Conversational Fortune: ประมวลผลสำเร็จ', [
+                'facebook_user_id' => $senderId,
+                'action' => $result['action'],
+                'reading_id' => $result['reading']?->id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Conversational Fortune Error: ' . $e->getMessage(), [
+                'facebook_user_id' => $senderId,
+                'message' => $messageText,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $this->facebookService->sendTypingIndicator($senderId, false);
+            $this->facebookService->sendMessage(
+                $senderId,
+                "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มต้นใหม่"
+            );
+        }
+    }
+
+    /**
+     * ส่งข้อความยาวโดยแบ่งเป็นหลายข้อความ
+     *
+     * @param string $senderId
+     * @param string $message
+     * @return void
+     */
+    protected function sendLongMessage(string $senderId, string $message): void
+    {
+        // Facebook Messenger รองรับข้อความยาวสูงสุด 2000 ตัวอักษร
+        $maxLength = 1800;
+
+        if (mb_strlen($message) <= $maxLength) {
+            $this->facebookService->sendMessage($senderId, $message);
             return;
         }
 
-        // แยกวันเกิดจากข้อความ (ถ้ามี)
-        $birthDate = $this->facebookService->parseBirthDate($messageText);
+        // แบ่งข้อความตาม paragraph หรือ ═══
+        $parts = preg_split('/(?=═══════════════════════)/', $message);
 
-        // ตรวจสอบ limit ตามประเภทคำขอ
-        if ($isDeepRequest && $this->settings->isDeepReadingEnabled()) {
-            $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($senderId);
-
-            if ($deepLimitCheck['has_reached_limit']) {
-                $limitMsg = $this->facebookService->getDeepLimitExceededMessage();
-                $this->facebookService->sendMessage($senderId, $limitMsg);
-                return;
+        $currentMessage = '';
+        foreach ($parts as $part) {
+            if (mb_strlen($currentMessage . $part) > $maxLength && !empty($currentMessage)) {
+                $this->facebookService->sendMessage($senderId, trim($currentMessage));
+                usleep(300000); // รอ 300ms ระหว่างข้อความ
+                $currentMessage = $part;
+            } else {
+                $currentMessage .= $part;
             }
+        }
 
-            $this->processFortuneTelling($messaging, $questions, false, true, $userImageUrl, $birthDate);
-        } else {
-            $limitCheck = $this->facebookService->checkFreeLimit($senderId);
+        if (!empty($currentMessage)) {
+            $this->facebookService->sendMessage($senderId, trim($currentMessage));
+        }
+    }
 
-            if ($limitCheck['has_reached_limit']) {
-                $this->facebookService->sendMessage(
-                    $senderId,
-                    $this->facebookService->getLimitExceededMessage()
-                );
-                return;
-            }
+    /**
+     * ส่ง Quick Replies ตาม action
+     *
+     * @param string $senderId
+     * @param string $action
+     * @return void
+     */
+    protected function sendConversationQuickReplies(string $senderId, string $action): void
+    {
+        $quickReplies = match ($action) {
+            'basic_done' => [
+                ['content_type' => 'text', 'title' => '✨ ต้องการดูละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '❌ ไม่ต้องการ', 'payload' => 'DEEP_READING_DECLINE'],
+            ],
+            default => null,
+        };
 
-            $this->processFortuneTelling($messaging, $questions, false, false, $userImageUrl, $birthDate);
+        if ($quickReplies) {
+            // ส่ง Quick Replies แยก
+            usleep(500000); // รอ 500ms
+            $this->facebookService->sendQuickReplies(
+                $senderId,
+                "เลือกได้เลยค่ะ 👇",
+                $quickReplies
+            );
         }
     }
 
@@ -612,18 +707,13 @@ class FacebookWebhookController extends Controller
     protected function handleQuickReply(string $senderId, string $payload): void
     {
         match ($payload) {
-            'FORTUNE_BASIC' => $this->processFortuneTelling(
-                ['sender' => ['id' => $senderId]],
-                ['ดูดวงทั่วไป ความรัก การเงิน การงาน สุขภาพ'],
-                false,
-                false
-            ),
-            'FORTUNE_DEEP' => $this->processFortuneTelling(
-                ['sender' => ['id' => $senderId]],
-                ['ดูดวงทั่วไป ความรัก การเงิน การงาน สุขภาพ'],
-                false,
-                true
-            ),
+            // Quick Replies ใหม่สำหรับ conversational flow
+            'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'DEEP_READING_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+
+            // Quick Replies เดิม (backward compatibility)
+            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
                 $senderId,
                 $this->settings->getSubscriptionMessage()
