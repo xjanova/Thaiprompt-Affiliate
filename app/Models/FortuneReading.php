@@ -76,6 +76,8 @@ class FortuneReading extends Model
         'facebook_user_name',
         'facebook_comment_id',
         'facebook_post_id',
+        'platform',
+        'platform_user_id',
         'questions',
         'categories',
         'ai_response',
@@ -144,6 +146,7 @@ class FortuneReading extends Model
         'response_type' => 'private_message',
         'reading_type' => 'basic',
         'conversation_status' => 'new',
+        'platform' => 'facebook',
     ];
 
     /**

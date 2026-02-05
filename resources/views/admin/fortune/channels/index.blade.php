@@ -55,12 +55,18 @@
                     <div class="text-blue-100 text-xs">รายได้</div>
                 </div>
             </div>
-            <div class="mt-4 pt-4 border-t border-white/20">
+            <div class="mt-4 pt-4 border-t border-white/20 flex flex-wrap gap-3">
                 <a href="{{ route('admin.fortune.settings.index') }}"
                    class="inline-flex items-center gap-2 text-sm text-white hover:text-blue-200 transition">
                     <i class="fas fa-cog"></i>
                     ไปหน้าตั้งค่า Facebook
                 </a>
+                <button type="button" @click="setupFacebookMessenger()"
+                        :disabled="setupingFacebook"
+                        class="inline-flex items-center gap-2 text-sm text-white bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition disabled:opacity-50">
+                    <i class="fas" :class="setupingFacebook ? 'fa-spinner fa-spin' : 'fa-play-circle'"></i>
+                    <span x-text="setupingFacebook ? 'กำลังตั้งค่า...' : 'ตั้งค่าปุ่มเริ่มต้น'"></span>
+                </button>
             </div>
         </div>
 
@@ -359,6 +365,8 @@ function fortuneChannels() {
         primaryColor: '{{ $settings->line_flex_primary_color ?? '#6B46C1' }}',
         testingLine: false,
         testResult: null,
+        setupingFacebook: false,
+        facebookSetupResult: null,
 
         init() {
             // Watch color input
@@ -401,6 +409,39 @@ function fortuneChannels() {
                 };
             } finally {
                 this.testingLine = false;
+            }
+        },
+
+        async setupFacebookMessenger() {
+            this.setupingFacebook = true;
+            this.facebookSetupResult = null;
+
+            try {
+                const response = await fetch('{{ route('admin.fortune.channels.setup-facebook-messenger') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const data = await response.json();
+                this.facebookSetupResult = data;
+
+                if (data.success) {
+                    alert('✅ ' + data.message + '\n\nผู้ใช้จะเห็นปุ่ม "เริ่มต้นใช้งาน" และเมนูถาวรใน Messenger แล้ว');
+                } else {
+                    alert('❌ ' + data.message);
+                }
+
+            } catch (error) {
+                this.facebookSetupResult = {
+                    success: false,
+                    message: 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message
+                };
+                alert('❌ ' + this.facebookSetupResult.message);
+            } finally {
+                this.setupingFacebook = false;
             }
         }
     }

@@ -171,6 +171,11 @@ class FacebookWebhookController extends Controller
             if (isset($messaging['message'])) {
                 $this->processMessage($messaging);
             }
+
+            // ประมวลผล postback events (ปุ่ม Get Started, Quick Replies, etc.)
+            if (isset($messaging['postback'])) {
+                $this->processPostback($messaging);
+            }
         }
     }
 
@@ -396,6 +401,137 @@ class FacebookWebhookController extends Controller
 
         // ใช้ Conversational Flow ใหม่
         $this->processConversationalMessage($senderId, $messageText);
+    }
+
+    /**
+     * ประมวลผล postback events (ปุ่ม Get Started, Persistent Menu, etc.)
+     *
+     * Facebook จะส่ง postback เมื่อ:
+     * - ผู้ใช้กดปุ่ม "Get Started" (เริ่มต้นใช้งาน)
+     * - ผู้ใช้เลือกรายการจาก Persistent Menu
+     * - ผู้ใช้กดปุ่ม Template ที่เป็น postback
+     *
+     * @param array $messaging ข้อมูล messaging event จาก Facebook
+     * @return void
+     */
+    protected function processPostback(array $messaging): void
+    {
+        $senderId = $messaging['sender']['id'] ?? null;
+        $payload = $messaging['postback']['payload'] ?? null;
+
+        if (empty($senderId) || empty($payload)) {
+            Log::warning('Facebook Postback: Missing sender or payload', [
+                'messaging' => $messaging,
+            ]);
+            return;
+        }
+
+        Log::info('📬 Facebook Postback received', [
+            'sender_id' => $senderId,
+            'payload' => $payload,
+        ]);
+
+        // จัดการ postback ตาม payload
+        match ($payload) {
+            // ปุ่ม Get Started - ผู้ใช้เข้ามาใช้งานครั้งแรก
+            'GET_STARTED', 'get_started' => $this->handleGetStarted($senderId),
+
+            // Persistent Menu options
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'MENU_HELP' => $this->sendHelpMessage($senderId),
+
+            // ส่งไปจัดการตาม Quick Reply (backward compatibility)
+            default => $this->handleQuickReply($senderId, $payload),
+        };
+    }
+
+    /**
+     * จัดการเมื่อผู้ใช้กดปุ่ม "Get Started" (เริ่มต้นใช้งาน)
+     *
+     * ส่งข้อความต้อนรับและแนะนำวิธีใช้งาน
+     *
+     * @param string $senderId Facebook User ID
+     * @return void
+     */
+    protected function handleGetStarted(string $senderId): void
+    {
+        try {
+            // ส่ง typing indicator
+            $this->facebookService->sendTypingIndicator($senderId);
+
+            // ดึง user profile
+            $userProfile = $this->facebookService->getUserProfile($senderId);
+            $userName = $userProfile['name'] ?? 'คุณ';
+
+            Log::info('🎉 New user started conversation', [
+                'sender_id' => $senderId,
+                'user_name' => $userName,
+            ]);
+
+            // ข้อความต้อนรับ
+            $welcomeMessage = $this->buildWelcomeMessage($userName);
+
+            // ปิด typing indicator
+            $this->facebookService->sendTypingIndicator($senderId, false);
+
+            // ส่งข้อความต้อนรับพร้อม Quick Replies
+            $quickReplies = [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
+            ];
+
+            $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
+
+        } catch (\Exception $e) {
+            Log::error('Get Started Error: ' . $e->getMessage(), [
+                'sender_id' => $senderId,
+            ]);
+
+            $this->facebookService->sendTypingIndicator($senderId, false);
+            $this->facebookService->sendMessage(
+                $senderId,
+                "🔮 ยินดีต้อนรับค่ะ!\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มต้นดูดวงได้เลยนะคะ ✨"
+            );
+        }
+    }
+
+    /**
+     * สร้างข้อความต้อนรับสำหรับผู้ใช้ใหม่
+     *
+     * @param string $userName ชื่อผู้ใช้
+     * @return string
+     */
+    protected function buildWelcomeMessage(string $userName): string
+    {
+        $message = "✨ *สวัสดีค่ะ คุณ{$userName}!*\n\n";
+        $message .= "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n";
+        $message .= "ทางเพจพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n";
+
+        $message .= "═══════════════════════\n";
+        $message .= "📋 *บริการของเรา*\n";
+        $message .= "═══════════════════════\n\n";
+
+        $message .= "🆓 *ดูดวงพื้นฐาน (ฟรี)*\n";
+        $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
+
+        $message .= "💎 *ดูดวงละเอียด (49 บาท)*\n";
+        $message .= "ทำนายเชิงลึก 3 คำถาม พร้อมวันเกิด\n\n";
+
+        $message .= "═══════════════════════\n";
+        $message .= "💡 *วิธีเริ่มต้น*\n";
+        $message .= "═══════════════════════\n\n";
+
+        $message .= "พิมพ์ 'ดูดวง' หรือ บอกเรื่องที่อยากรู้\n\n";
+
+        $message .= "ตัวอย่าง:\n";
+        $message .= "• ดูดวงความรัก\n";
+        $message .= "• ปีนี้จะได้เลื่อนตำแหน่งไหม\n";
+        $message .= "• การเงินเดือนหน้าเป็นอย่างไร\n\n";
+
+        $message .= "กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇";
+
+        return $message;
     }
 
     /**
