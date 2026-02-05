@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.20] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(payment): Display actual amounts in SMS explanation box (23389b12)
+### 🔧 Other Changes
+
+
 ## [v3.461.19] - 2026-02-05
 
 ### ✨ Features
