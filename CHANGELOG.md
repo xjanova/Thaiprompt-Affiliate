@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.19] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(smschecker): Fix unique constraint violation when expiring amounts (034d7c8a)
+### 🔧 Other Changes
+
+
 ## [v3.461.18] - 2026-02-05
 
 ### ✨ Features
