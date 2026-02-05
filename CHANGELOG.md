@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.10] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2480 from xjanova/claude/fix-side-menu-active-MYDRc (bc39b68f)
+- fix(nfc): เพิ่ม card() relationship alias ใน NFCTransaction model (e2d5d1db)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-side-menu-active-MYDRc (db3deeeb)
+
 ## [v3.464.9] - 2026-02-05
 
 ### ✨ Features
