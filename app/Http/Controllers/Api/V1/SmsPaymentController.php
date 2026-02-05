@@ -46,23 +46,26 @@ class SmsPaymentController extends Controller
             default => 'pending_review',
         };
 
-        // ดึง order details ถ้ามี
-        $orderDetails = null;
-        if ($txn->order_id) {
+        // ดึง order details (ต้องมี amount เสมอ ไม่ว่าจะมี order หรือไม่)
+        $orderDetails = [
+            'order_number' => null,
+            'product_name' => null,
+            'product_details' => null,
+            'quantity' => null,
+            'website_name' => config('app.name'),
+            'customer_name' => $txn->user?->name ?? null,
+            // CRITICAL: ส่งยอดเงินที่ลูกค้าต้องจ่ายจริง (รวมทศนิยมที่ generate แล้ว)
+            // ต้องเป็น Double ไม่ใช่ String เพื่อให้ Android แมทได้แบบ exact match
+            'amount' => (float) $txn->amount,
+        ];
+
+        // ถ้ามี order เชื่อมโยง ให้เติมข้อมูลเพิ่ม
+        if ($txn->order_id && $txn->order) {
             $order = $txn->order;
-            if ($order) {
-                $orderDetails = [
-                    'order_number' => $order->order_number ?? null,
-                    'product_name' => $order->items?->first()?->product?->name ?? null,
-                    'product_details' => null,
-                    'quantity' => $order->items?->count() ?? null,
-                    'website_name' => config('app.name'),
-                    'customer_name' => $order->user?->name ?? null,
-                    // CRITICAL: ส่งยอดเงินที่ลูกค้าต้องจ่ายจริง (ตรงกับหน้าชำระเงิน)
-                    // ต้องเป็น Double ไม่ใช่ String เพื่อให้ Android แมทได้แบบ exact match
-                    'amount' => (float) $txn->amount,
-                ];
-            }
+            $orderDetails['order_number'] = $order->order_number ?? null;
+            $orderDetails['product_name'] = $order->items?->first()?->product?->name ?? null;
+            $orderDetails['quantity'] = $order->items?->count() ?? null;
+            $orderDetails['customer_name'] = $order->user?->name ?? $txn->user?->name ?? null;
         }
 
         // ดึง matched notification ถ้ามี
