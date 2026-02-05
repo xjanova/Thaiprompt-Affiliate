@@ -133,6 +133,14 @@ class NFCTransaction extends Model
     }
 
     /**
+     * Alias สำหรับ nfcCard() - ใช้ใน eager loading และ view
+     */
+    public function card(): BelongsTo
+    {
+        return $this->nfcCard();
+    }
+
+    /**
      * Get the user
      */
     public function user(): BelongsTo
