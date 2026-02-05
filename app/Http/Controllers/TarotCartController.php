@@ -226,8 +226,19 @@ class TarotCartController extends Controller
                     'transaction_id' => $transaction->id,
                 ]);
 
-                // TODO: Integrate with actual payment gateway here
-                // For now, mark as paid immediately (demo)
+                // Refresh transaction to get updated amount (with unique decimal suffix)
+                $transaction->refresh();
+
+                DB::commit();
+
+                // PromptPay / Bank Transfer: แสดงหน้ารอชำระเงิน (ให้ SMS Checker ตรวจจับ)
+                if (in_array($request->payment_method, ['promptpay', 'bank_transfer'])) {
+                    return redirect()->route('tarot.payment.waiting', $transaction->id)
+                        ->with('info', 'กรุณาชำระเงินตามยอดที่แสดง');
+                }
+
+                // สำหรับ payment methods อื่น (wallet, credit_card) - ต้อง implement แยก
+                // ตอนนี้ใช้ demo mode: mark as paid immediately
                 $transaction->update([
                     'status' => 'completed',
                     'paid_at' => now(),
@@ -237,16 +248,24 @@ class TarotCartController extends Controller
                     'payment_status' => 'paid',
                     'paid_at' => now(),
                 ]);
+
+                // Clear cart
+                TarotCartItem::clearCart($userId, $sessionId, $ipAddress);
+
+                // Redirect to first reading
+                return redirect()->route('tarot.reading.show', $readingIds[0])
+                    ->with('success', 'ชำระเงินสำเร็จ! ดูผลการทำนายของคุณได้เลย');
+            } else {
+                // Free items - no payment needed
+                DB::commit();
+
+                // Clear cart
+                TarotCartItem::clearCart($userId, $sessionId, $ipAddress);
+
+                // Redirect to first reading
+                return redirect()->route('tarot.reading.show', $readingIds[0])
+                    ->with('success', 'ดูผลการทำนายของคุณได้เลย');
             }
-
-            // Clear cart
-            TarotCartItem::clearCart($userId, $sessionId, $ipAddress);
-
-            DB::commit();
-
-            // Redirect to first reading
-            return redirect()->route('tarot.reading.show', $readingIds[0])
-                ->with('success', 'ชำระเงินสำเร็จ! ดูผลการทำนายของคุณได้เลย');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -277,5 +296,64 @@ class TarotCartController extends Controller
         }
 
         return $interpretation;
+    }
+
+    /**
+     * Payment waiting page - แสดงยอดเงินที่ต้องชำระและรอ SMS Checker ตรวจจับ
+     */
+    public function paymentWaiting(PaymentTransaction $transaction)
+    {
+        // ตรวจสอบว่า transaction เป็นของ user ปัจจุบันหรือไม่ (ถ้า logged in)
+        $userId = Auth::id();
+        if ($userId && $transaction->user_id && $transaction->user_id !== $userId) {
+            abort(403, 'ไม่มีสิทธิ์เข้าถึงรายการนี้');
+        }
+
+        // ตรวจสอบว่าเป็น pending transaction
+        if ($transaction->status === 'completed') {
+            // ถ้าชำระเงินแล้ว redirect ไปหน้าผลการทำนาย
+            $readingIds = $transaction->metadata['reading_ids'] ?? [];
+            if (!empty($readingIds)) {
+                return redirect()->route('tarot.reading.show', $readingIds[0])
+                    ->with('success', 'ชำระเงินสำเร็จแล้ว!');
+            }
+            return redirect()->route('tarot.cart.index')
+                ->with('info', 'รายการนี้ชำระเงินแล้ว');
+        }
+
+        // ดึงข้อมูลที่ต้องแสดง
+        $amount = (float) $transaction->amount;
+        $expiredAt = $transaction->expired_at;
+
+        return view('frontend.tarot.payment-waiting', compact('transaction', 'amount', 'expiredAt'));
+    }
+
+    /**
+     * Check payment status via AJAX
+     */
+    public function paymentStatus(PaymentTransaction $transaction)
+    {
+        // ตรวจสอบว่า transaction เป็นของ user ปัจจุบันหรือไม่
+        $userId = Auth::id();
+        if ($userId && $transaction->user_id && $transaction->user_id !== $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Refresh transaction from database
+        $transaction->refresh();
+
+        $completed = $transaction->status === 'completed';
+        $readingIds = $transaction->metadata['reading_ids'] ?? [];
+        $redirectUrl = null;
+
+        if ($completed && !empty($readingIds)) {
+            $redirectUrl = route('tarot.reading.show', $readingIds[0]);
+        }
+
+        return response()->json([
+            'status' => $transaction->status,
+            'completed' => $completed,
+            'redirect_url' => $redirectUrl,
+        ]);
     }
 }

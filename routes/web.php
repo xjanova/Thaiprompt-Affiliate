@@ -755,6 +755,8 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     // Payment routes
     Route::match(['GET', 'HEAD'], '/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
     Route::post('/payment/process', [\App\Http\Controllers\TarotReadingController::class, 'processPayment'])->name('payment.process');
+    Route::match(['GET', 'HEAD'], '/payment/waiting/{transaction}', [\App\Http\Controllers\TarotCartController::class, 'paymentWaiting'])->name('payment.waiting');
+    Route::match(['GET', 'HEAD'], '/payment/status/{transaction}', [\App\Http\Controllers\TarotCartController::class, 'paymentStatus'])->name('payment.status');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
