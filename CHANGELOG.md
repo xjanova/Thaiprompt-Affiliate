@@ -2,6 +2,22 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.463.2] - 2026-02-05
+
+### ✨ Features
+- feat(fortune): add anti-spam/attack protection system (b2bc9b72)
+- feat(fortune): add pre-filter system for message validation (b79de1c1)
+- feat(fortune): add AI identity handling and off-topic rejection (8a6d6601)
+- feat(fortune): improve AI personality as female fortune teller (55fd2218)
+- feat(fortune): add bill reference number for user tracking (a84cbb33)
+- feat(fortune): add billing management dashboard for fortune telling (826424c1)
+- feat(ai): add API Key Pool system with multiple rotation modes (c129d220)
+- feat(fortune): add conversational fortune telling chatbot for Facebook Messenger (d8d6cd92)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2473 from xjanova/claude/fortune-telling-chatbot-haL6D (8ff187f4)
+
 ## [v3.463.1] - 2026-02-05
 
 ### ✨ Features
