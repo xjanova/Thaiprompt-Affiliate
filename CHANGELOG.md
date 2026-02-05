@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.12] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2482 from xjanova/claude/fix-missing-controller-FACT8 (e02c5bb0)
+- fix: add missing use imports for Email controllers in admin routes (9426d3d0)
+### 🔧 Other Changes
+
+
 ## [v3.464.11] - 2026-02-05
 
 ### ✨ Features
