@@ -107,10 +107,15 @@ class UniquePaymentAmount extends Model
         return \Illuminate\Support\Facades\DB::transaction(function () use (
             $baseAmount, $transactionId, $transactionType, $expiryMinutes, $maxPending
         ) {
-            // ทำความสะอาด reservations ที่หมดอายุ
+            // ลบ reservations ที่หมดอายุ (ไม่ใช่ update เพราะจะ violate unique constraint)
             static::where('status', 'reserved')
                 ->where('expires_at', '<=', now())
-                ->update(['status' => 'expired']);
+                ->delete();
+
+            // ลบ expired records เก่าๆ ที่ไม่จำเป็นแล้ว (เก่ากว่า 24 ชั่วโมง)
+            static::where('status', 'expired')
+                ->where('updated_at', '<', now()->subDay())
+                ->delete();
 
             // ปัดเศษ base_amount เป็นจำนวนเต็มเพื่อให้ทศนิยมใช้เป็น suffix เท่านั้น
             $intBaseAmount = intval($baseAmount);
