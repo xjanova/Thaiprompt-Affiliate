@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.463.0] - 2026-02-05
+
+### ✨ Features
+- feat: auto-cancel expired orders after 30 minutes payment timeout (60130cd5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.462.0] - 2026-02-05
 
 ### ✨ Features
