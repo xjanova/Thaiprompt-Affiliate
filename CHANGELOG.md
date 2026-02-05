@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.3] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Multi-Store: Strict store filtering for SMS Checker (258b6e89)
+
 ## [v3.464.2] - 2026-02-05
 
 ### ✨ Features
