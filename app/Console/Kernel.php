@@ -302,12 +302,13 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
-        // SMS Checker Payment - ทำความสะอาดข้อมูลหมดอายุ
+        // SMS Checker Payment - ยกเลิก Orders หมดเวลาและทำความสะอาดข้อมูล
         // ========================================
 
-        // ทำความสะอาดทุกชั่วโมง: expired amounts, old nonces, old notifications
+        // รันทุก 5 นาที: ยกเลิก orders/transactions ที่หมดเวลาชำระ (30 นาที)
+        // และทำความสะอาด expired amounts, old nonces, old notifications
         $schedule->command('smschecker:cleanup')
-            ->hourly()
+            ->everyFiveMinutes()
             ->withoutOverlapping()
             ->runInBackground()
             ->onSuccess(function () {

@@ -254,35 +254,91 @@ class SmsPaymentService
     /**
      * ทำความสะอาดข้อมูลที่หมดอายุ
      *
+     * - ยกเลิก PaymentTransaction และ Order ที่ unique amount หมดอายุ (30 นาที)
      * - ล้าง unique amounts ที่หมดอายุ → สถานะ 'expired'
      * - ลบ nonces เก่า (ตามค่า config nonce_expiry_hours)
      * - ล้าง pending notifications เก่า (> 7 วัน) → สถานะ 'expired'
      *
-     * @return void
+     * @return array สถิติการทำความสะอาด
      */
-    public function cleanup(): void
+    public function cleanup(): array
     {
-        // ล้าง unique amounts ที่หมดอายุ
-        $expiredAmounts = UniquePaymentAmount::where('status', 'reserved')
-            ->where('expires_at', '<=', now())
-            ->update(['status' => 'expired']);
+        $stats = [
+            'cancelled_transactions' => 0,
+            'cancelled_orders' => 0,
+            'expired_amounts' => 0,
+            'deleted_nonces' => 0,
+            'expired_notifications' => 0,
+        ];
 
-        // ลบ nonces เก่า (ตามค่า config)
+        // ========================================
+        // ขั้นที่ 1: ยกเลิก PaymentTransaction และ Order ที่หมดเวลาชำระ (30 นาที)
+        // ========================================
+
+        // ดึง unique amounts ที่หมดอายุและยังเป็น 'reserved'
+        $expiredUniqueAmounts = UniquePaymentAmount::where('status', 'reserved')
+            ->where('expires_at', '<=', now())
+            ->with('transaction.order')
+            ->get();
+
+        foreach ($expiredUniqueAmounts as $uniqueAmount) {
+            // ยกเลิก PaymentTransaction ถ้ายังเป็น pending/processing
+            if ($uniqueAmount->transaction && in_array($uniqueAmount->transaction->status, ['pending', 'processing'])) {
+                $uniqueAmount->transaction->update([
+                    'status' => 'expired',
+                    'notes' => 'หมดเวลาชำระเงิน (30 นาที) - ยกเลิกโดยระบบอัตโนมัติ',
+                ]);
+                $stats['cancelled_transactions']++;
+
+                Log::info('SMS Payment: ยกเลิก PaymentTransaction หมดเวลา', [
+                    'transaction_id' => $uniqueAmount->transaction->id,
+                    'amount' => $uniqueAmount->unique_amount,
+                ]);
+
+                // ยกเลิก Order ถ้ายังเป็น pending และยังไม่ได้ชำระ
+                if ($uniqueAmount->transaction->order &&
+                    $uniqueAmount->transaction->order->status === 'pending' &&
+                    $uniqueAmount->transaction->order->payment_status !== 'paid') {
+
+                    $uniqueAmount->transaction->order->update([
+                        'status' => 'cancelled',
+                        'payment_status' => 'expired',
+                        'cancellation_reason' => 'หมดเวลาชำระเงิน (30 นาที) - ระบบยกเลิกอัตโนมัติ',
+                    ]);
+                    $stats['cancelled_orders']++;
+
+                    Log::info('SMS Payment: ยกเลิก Order หมดเวลา', [
+                        'order_id' => $uniqueAmount->transaction->order->id,
+                        'order_number' => $uniqueAmount->transaction->order->order_number,
+                    ]);
+                }
+            }
+
+            // อัปเดต unique amount เป็น expired
+            $uniqueAmount->update(['status' => 'expired']);
+            $stats['expired_amounts']++;
+        }
+
+        // ========================================
+        // ขั้นที่ 2: ลบ nonces เก่า
+        // ========================================
+
         $nonceExpiryHours = config('smschecker.nonce_expiry_hours', 24);
-        $deletedNonces = DB::table('sms_payment_nonces')
+        $stats['deleted_nonces'] = DB::table('sms_payment_nonces')
             ->where('used_at', '<', now()->subHours($nonceExpiryHours))
             ->delete();
 
-        // ล้าง pending notifications เก่า (> 7 วัน)
-        $expiredNotifications = SmsPaymentNotification::where('status', 'pending')
+        // ========================================
+        // ขั้นที่ 3: ล้าง pending notifications เก่า (> 7 วัน)
+        // ========================================
+
+        $stats['expired_notifications'] = SmsPaymentNotification::where('status', 'pending')
             ->where('created_at', '<', now()->subDays(7))
             ->update(['status' => 'expired']);
 
-        Log::info('SMS Payment: ทำความสะอาดข้อมูลสำเร็จ', [
-            'expired_amounts' => $expiredAmounts,
-            'deleted_nonces' => $deletedNonces,
-            'expired_notifications' => $expiredNotifications,
-        ]);
+        Log::info('SMS Payment: ทำความสะอาดข้อมูลสำเร็จ', $stats);
+
+        return $stats;
     }
 
     /**

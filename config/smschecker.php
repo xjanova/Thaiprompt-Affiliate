@@ -20,8 +20,8 @@ return [
     'timestamp_tolerance' => env('SMSCHECKER_TIMESTAMP_TOLERANCE', 300),
 
     // เวลาหมดอายุสำหรับ unique amounts (นาที)
-    // เพิ่มเป็น 60 นาที เพื่อให้ลูกค้ามีเวลาโอนเงินเพียงพอ
-    'unique_amount_expiry' => env('SMSCHECKER_AMOUNT_EXPIRY', 60),
+    // ตั้งเป็น 30 นาที - หลังจากหมดเวลาระบบจะยกเลิกบิลอัตโนมัติ
+    'unique_amount_expiry' => env('SMSCHECKER_AMOUNT_EXPIRY', 30),
 
     // จำนวนสูงสุดของ unique amounts ที่ pending ได้ต่อราคาเดียวกัน
     // ค่าสูงสุด 99 (suffix 01-99)
