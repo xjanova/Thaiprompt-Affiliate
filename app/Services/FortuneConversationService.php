@@ -36,6 +36,92 @@ class FortuneConversationService
      */
     public const REQUIRED_QUESTIONS = 3;
 
+    /**
+     * ความยาวคำถามขั้นต่ำ (ตัวอักษร)
+     */
+    public const MIN_QUESTION_LENGTH = 5;
+
+    /**
+     * ความยาวคำถามสูงสุด (ตัวอักษร)
+     */
+    public const MAX_QUESTION_LENGTH = 500;
+
+    /**
+     * ความยาวข้อความสูงสุดที่รับ (ป้องกัน spam)
+     */
+    public const MAX_MESSAGE_LENGTH = 1000;
+
+    /**
+     * คำที่เกี่ยวข้องกับการดูดวง (ใช้ตรวจจับคำถามที่เกี่ยวข้อง)
+     */
+    protected const FORTUNE_RELATED_KEYWORDS = [
+        // หัวข้อดูดวง
+        'ความรัก', 'แฟน', 'คู่ครอง', 'เนื้อคู่', 'คนรัก', 'สามี', 'ภรรยา', 'แต่งงาน', 'หย่า', 'เลิกกัน', 'รักซ้อน',
+        'การงาน', 'งาน', 'ทำงาน', 'อาชีพ', 'เปลี่ยนงาน', 'หางาน', 'เจ้านาย', 'ลูกน้อง', 'เลื่อนตำแหน่ง', 'ถูกไล่ออก',
+        'การเงิน', 'เงิน', 'รายได้', 'หนี้', 'รวย', 'จน', 'ลงทุน', 'หุ้น', 'ค้าขาย', 'ขายของ', 'กำไร', 'ขาดทุน',
+        'สุขภาพ', 'ป่วย', 'โรค', 'อุบัติเหตุ', 'เจ็บ', 'ตาย', 'อายุยืน',
+        'การเรียน', 'สอบ', 'เรียน', 'มหาวิทยาลัย', 'สอบติด', 'สอบตก',
+        'โชคลาภ', 'หวย', 'ลอตเตอรี่', 'เลขเด็ด', 'โชค', 'ลาภ', 'ถูกหวย',
+        'ครอบครัว', 'พ่อแม่', 'ลูก', 'พี่น้อง', 'ญาติ',
+        'ย้ายบ้าน', 'ซื้อบ้าน', 'ซื้อรถ', 'เดินทาง', 'ไปต่างประเทศ',
+        // คำเกี่ยวกับดวง
+        'ดวง', 'ดูดวง', 'ทำนาย', 'หมอดู', 'ราศี', 'ลัคนา', 'ไพ่', 'ทาโรต์', 'เลขศาสตร์', 'ลายมือ',
+        'ปีชง', 'ปีนักษัตร', 'ธาตุ', 'ดาว', 'เคราะห์', 'มงคล', 'อัปมงคล',
+        'วันเกิด', 'เดือนเกิด', 'ปีเกิด',
+        // คำถามทั่วไปเกี่ยวกับอนาคต
+        'อนาคต', 'จะเป็นยังไง', 'จะดีไหม', 'จะสำเร็จไหม', 'จะรวยไหม', 'จะมีแฟนไหม',
+        'เมื่อไหร่', 'ช่วงไหน', 'ปีนี้', 'ปีหน้า', 'เดือนนี้', 'เดือนหน้า',
+    ];
+
+    /**
+     * คำที่ไม่เกี่ยวกับดูดวง (off-topic)
+     */
+    protected const OFF_TOPIC_KEYWORDS = [
+        // เขียนโค้ด/โปรแกรม
+        'code', 'โค้ด', 'เขียนโปรแกรม', 'programming', 'javascript', 'python', 'php', 'html', 'css',
+        'function', 'class', 'variable', 'array', 'loop', 'if else', 'database', 'sql', 'api',
+        // คำถามทั่วไป
+        'สูตรอาหาร', 'ทำอาหาร', 'วิธีทำ', 'recipe',
+        'แนะนำร้าน', 'ร้านอาหาร', 'ร้านกาแฟ', 'โรงแรม',
+        'แปลภาษา', 'translate', 'แปลให้หน่อย',
+        'เล่าเรื่อง', 'นิทาน', 'เรื่องผี', 'เรื่องตลก', 'มุก', 'joke',
+        'คำนวณ', 'บวก', 'ลบ', 'คูณ', 'หาร', 'เปอร์เซ็นต์', 'calculate',
+        'ดาวน์โหลด', 'download', 'ลิงค์', 'link', 'url',
+        'hack', 'แฮก', 'crack', 'เจาะระบบ', 'password', 'รหัสผ่าน',
+        'เขียนบทความ', 'เขียนเรียงความ', 'รายงาน', 'การบ้าน', 'homework',
+    ];
+
+    /**
+     * ตัวอย่างคำถามดูดวง (แสดงให้ผู้ใช้ดู)
+     */
+    protected const EXAMPLE_QUESTIONS = [
+        'ความรัก' => [
+            'ปีนี้จะมีคู่ครองไหม',
+            'แฟนรักจริงหรือเปล่า',
+            'เมื่อไหร่จะได้แต่งงาน',
+        ],
+        'การงาน' => [
+            'ควรเปลี่ยนงานไหม',
+            'ปีนี้จะได้เลื่อนตำแหน่งไหม',
+            'ธุรกิจจะรุ่งหรือร่วง',
+        ],
+        'การเงิน' => [
+            'จะรวยเมื่อไหร่',
+            'ลงทุนตอนนี้ดีไหม',
+            'หนี้จะหมดเมื่อไหร่',
+        ],
+        'สุขภาพ' => [
+            'ปีนี้สุขภาพจะเป็นอย่างไร',
+            'ควรระวังเรื่องอะไร',
+            'จะอายุยืนไหม',
+        ],
+        'โชคลาภ' => [
+            'ดวงโชคลาภปีนี้เป็นอย่างไร',
+            'จะถูกหวยไหม',
+            'เลขมงคลของฉันคือเลขอะไร',
+        ],
+    ];
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
@@ -53,6 +139,17 @@ class FortuneConversationService
      */
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
+        // Pre-filter: ตรวจจับข้อความที่ไม่เหมาะสมก่อน
+        $filterResult = $this->preFilterMessage($messageText);
+        if (!$filterResult['valid']) {
+            return [
+                'action' => 'filtered',
+                'message' => $filterResult['message'],
+                'reading' => null,
+                'filter_reason' => $filterResult['reason'],
+            ];
+        }
+
         // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
         $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
@@ -65,10 +162,10 @@ class FortuneConversationService
             return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
         }
 
-        // ไม่ใช่คำขอดูดวง
+        // ไม่ใช่คำขอดูดวง → แสดง help พร้อมตัวอย่าง
         return [
             'action' => 'help',
-            'message' => $this->getHelpMessage(),
+            'message' => $this->getHelpMessageWithExamples(),
             'reading' => null,
         ];
     }
@@ -614,6 +711,44 @@ class FortuneConversationService
     }
 
     /**
+     * สร้างข้อความ help พร้อมตัวอย่างคำถาม
+     *
+     * @return string
+     */
+    protected function getHelpMessageWithExamples(): string
+    {
+        $message = "🔮 *ทางเพจยินดีต้อนรับค่ะ*\n\n";
+        $message .= "ทางเพจรับดูดวงเรื่องต่างๆ ดังนี้นะคะ:\n\n";
+
+        $message .= "💕 *ความรัก* - คู่ครอง, แฟน, แต่งงาน\n";
+        $message .= "💼 *การงาน* - อาชีพ, เปลี่ยนงาน, เลื่อนตำแหน่ง\n";
+        $message .= "💰 *การเงิน* - รายได้, หนี้สิน, ลงทุน\n";
+        $message .= "🏥 *สุขภาพ* - โรคภัย, สิ่งที่ควรระวัง\n";
+        $message .= "🍀 *โชคลาภ* - เลขมงคล, สีมงคล\n\n";
+
+        $message .= "═══════════════════════\n";
+        $message .= "📝 *ตัวอย่างคำถาม*\n";
+        $message .= "═══════════════════════\n\n";
+
+        $message .= "• ปีนี้จะมีคู่ครองไหม\n";
+        $message .= "• ควรเปลี่ยนงานไหม\n";
+        $message .= "• ดวงการเงินเป็นอย่างไร\n\n";
+
+        $message .= "💡 *วิธีถาม*:\n";
+        $message .= "พิมพ์ 'ดูดวง' แล้วบอกเรื่องที่อยากรู้\n";
+        $message .= "หรือพิมพ์คำถามมาเลยก็ได้ค่ะ\n\n";
+
+        $message .= "ตัวอย่าง:\n";
+        $message .= "「ดูดวงความรัก」\n";
+        $message .= "「ปีนี้จะได้เลื่อนตำแหน่งไหม」\n";
+        $message .= "「การเงินปีหน้าเป็นอย่างไร」\n\n";
+
+        $message .= "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+
+        return $message;
+    }
+
+    /**
      * สร้างข้อความเลขที่บิลอ้างอิง
      *
      * @param string|null $billReference
@@ -630,6 +765,319 @@ class FortuneConversationService
                "📌 {$billReference}\n" .
                "═══════════════════════\n" .
                "(เก็บไว้อ้างอิงหากมีปัญหาค่ะ)";
+    }
+
+    // ============================================================
+    // Pre-Filter Methods - ตรวจจับข้อความก่อนส่ง AI
+    // ============================================================
+
+    /**
+     * Pre-filter ข้อความก่อนประมวลผล
+     *
+     * ตรวจจับ:
+     * - ข้อความยาวเกินไป (spam/flood)
+     * - ข้อความสั้นเกินไป (ไม่มีความหมาย)
+     * - ตัวอักษรแปลกๆ/spam characters
+     * - คำถามที่ไม่เกี่ยวกับดูดวง
+     *
+     * @param string $text ข้อความที่ต้องการตรวจสอบ
+     * @return array ['valid' => bool, 'reason' => string, 'message' => string]
+     */
+    protected function preFilterMessage(string $text): array
+    {
+        $text = trim($text);
+        $length = mb_strlen($text);
+
+        // 1. ตรวจสอบความยาว
+        if ($length > self::MAX_MESSAGE_LENGTH) {
+            return [
+                'valid' => false,
+                'reason' => 'too_long',
+                'message' => $this->getTooLongMessage(),
+            ];
+        }
+
+        if ($length < self::MIN_QUESTION_LENGTH) {
+            return [
+                'valid' => false,
+                'reason' => 'too_short',
+                'message' => $this->getTooShortMessage(),
+            ];
+        }
+
+        // 2. ตรวจจับ spam/gibberish
+        if ($this->isSpamOrGibberish($text)) {
+            return [
+                'valid' => false,
+                'reason' => 'spam',
+                'message' => $this->getSpamMessage(),
+            ];
+        }
+
+        // 3. ตรวจจับ off-topic keywords
+        $offTopicResult = $this->detectOffTopic($text);
+        if ($offTopicResult['is_off_topic']) {
+            return [
+                'valid' => false,
+                'reason' => 'off_topic',
+                'message' => $this->getOffTopicMessage($offTopicResult['category']),
+            ];
+        }
+
+        // 4. ตรวจจับคำถามว่าเป็น AI หรือไม่
+        if ($this->isAskingAboutAI($text)) {
+            return [
+                'valid' => true, // ปล่อยผ่านไปให้ AI ตอบตาม system prompt
+                'reason' => 'ai_question',
+                'message' => '',
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'reason' => 'ok',
+            'message' => '',
+        ];
+    }
+
+    /**
+     * ตรวจจับข้อความ spam หรือพิมพ์ไม่รู้เรื่อง
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isSpamOrGibberish(string $text): bool
+    {
+        // 1. ตัวอักษรซ้ำๆ มากเกินไป (เช่น "aaaaaa", "5555555555")
+        if (preg_match('/(.)\1{9,}/', $text)) {
+            return true;
+        }
+
+        // 2. มี emoji มากเกินไป (มากกว่า 50% ของข้อความ)
+        $emojiCount = preg_match_all('/[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F1E0}-\x{1F1FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', $text);
+        $textLength = mb_strlen(preg_replace('/[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{1F1E0}-\x{1F1FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]/u', '', $text));
+        if ($textLength > 0 && $emojiCount / $textLength > 0.5) {
+            return true;
+        }
+
+        // 3. มีตัวเลขมากเกินไป (มากกว่า 80% ของข้อความ)
+        $digitCount = preg_match_all('/\d/', $text);
+        if (mb_strlen($text) > 10 && $digitCount / mb_strlen($text) > 0.8) {
+            return true;
+        }
+
+        // 4. มี special characters แปลกๆ มากเกินไป
+        $specialCount = preg_match_all('/[^\p{L}\p{N}\s\.,!?@#\-_\'\"()]/u', $text);
+        if (mb_strlen($text) > 10 && $specialCount / mb_strlen($text) > 0.4) {
+            return true;
+        }
+
+        // 5. ไม่มีตัวอักษรไทยหรืออังกฤษเลย (ยกเว้นสั้นมาก)
+        if (mb_strlen($text) > 10) {
+            $hasThaiOrEnglish = preg_match('/[\p{Thai}a-zA-Z]/u', $text);
+            if (!$hasThaiOrEnglish) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจจับคำถาม off-topic
+     *
+     * @param string $text
+     * @return array ['is_off_topic' => bool, 'category' => string|null]
+     */
+    protected function detectOffTopic(string $text): array
+    {
+        $textLower = mb_strtolower($text);
+
+        // ตรวจสอบ off-topic keywords
+        foreach (self::OFF_TOPIC_KEYWORDS as $keyword) {
+            if (str_contains($textLower, mb_strtolower($keyword))) {
+                // หา category
+                $category = $this->categorizeOffTopic($keyword);
+                return [
+                    'is_off_topic' => true,
+                    'category' => $category,
+                ];
+            }
+        }
+
+        // ถ้ายาวพอ แต่ไม่มีคำเกี่ยวกับดูดวงเลย อาจเป็น off-topic
+        if (mb_strlen($text) > 30) {
+            $hasFortuneKeyword = false;
+            foreach (self::FORTUNE_RELATED_KEYWORDS as $keyword) {
+                if (str_contains($textLower, mb_strtolower($keyword))) {
+                    $hasFortuneKeyword = true;
+                    break;
+                }
+            }
+
+            // ถ้าไม่มีคำเกี่ยวกับดูดวง และไม่ใช่คำสั่งพื้นฐาน
+            if (!$hasFortuneKeyword && !$this->isBasicCommand($text)) {
+                return [
+                    'is_off_topic' => true,
+                    'category' => 'unknown',
+                ];
+            }
+        }
+
+        return [
+            'is_off_topic' => false,
+            'category' => null,
+        ];
+    }
+
+    /**
+     * จัดหมวดหมู่ off-topic
+     *
+     * @param string $keyword
+     * @return string
+     */
+    protected function categorizeOffTopic(string $keyword): string
+    {
+        $keywordLower = mb_strtolower($keyword);
+
+        $categories = [
+            'code' => ['code', 'โค้ด', 'programming', 'javascript', 'python', 'php', 'html', 'css', 'function', 'class', 'database', 'sql', 'api'],
+            'food' => ['สูตรอาหาร', 'ทำอาหาร', 'วิธีทำ', 'recipe', 'แนะนำร้าน', 'ร้านอาหาร', 'ร้านกาแฟ'],
+            'translate' => ['แปลภาษา', 'translate', 'แปลให้หน่อย'],
+            'story' => ['เล่าเรื่อง', 'นิทาน', 'เรื่องผี', 'เรื่องตลก', 'มุก', 'joke'],
+            'math' => ['คำนวณ', 'บวก', 'ลบ', 'คูณ', 'หาร', 'เปอร์เซ็นต์', 'calculate'],
+            'hack' => ['hack', 'แฮก', 'crack', 'เจาะระบบ', 'password', 'รหัสผ่าน'],
+            'homework' => ['เขียนบทความ', 'เขียนเรียงความ', 'รายงาน', 'การบ้าน', 'homework'],
+        ];
+
+        foreach ($categories as $category => $keywords) {
+            if (in_array($keywordLower, array_map('mb_strtolower', $keywords))) {
+                return $category;
+            }
+        }
+
+        return 'other';
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำสั่งพื้นฐานหรือไม่
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isBasicCommand(string $text): bool
+    {
+        $textLower = mb_strtolower(trim($text));
+        $basicCommands = ['ดูดวง', 'ทำนาย', 'ต้องการ', 'เอา', 'ใช่', 'ไม่', 'ยกเลิก', 'บัญชี', 'ok', 'yes', 'no', 'cancel'];
+
+        foreach ($basicCommands as $cmd) {
+            if (str_contains($textLower, $cmd)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่าถามเกี่ยวกับ AI หรือไม่
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isAskingAboutAI(string $text): bool
+    {
+        $textLower = mb_strtolower($text);
+        $aiKeywords = [
+            'เป็นบอท', 'เป็นบอต', 'เป็น bot', 'เป็นโปรแกรม', 'เป็นหุ่นยนต์',
+            'เป็น ai', 'เป็นเอไอ', 'คือ ai', 'คือบอท', 'คือโปรแกรม',
+            'ใช้ ai', 'เป็นคนจริงไหม', 'คนจริงหรือเปล่า', 'ใช้ chatgpt',
+            'are you bot', 'are you ai', 'are you real',
+        ];
+
+        foreach ($aiKeywords as $keyword) {
+            if (str_contains($textLower, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ============================================================
+    // Pre-Filter Messages - ข้อความตอบกลับสำหรับ filter
+    // ============================================================
+
+    /**
+     * ข้อความเมื่อพิมพ์ยาวเกินไป
+     */
+    protected function getTooLongMessage(): string
+    {
+        return "🙏 ขอบคุณที่สนใจค่ะ\n\n" .
+               "ข้อความยาวเกินไปค่ะ กรุณาพิมพ์คำถามสั้นๆ กระชับ\n\n" .
+               "💡 *ตัวอย่าง*:\n" .
+               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
+               "• การเงินเดือนหน้าจะดีไหม\n" .
+               "• ควรเปลี่ยนงานไหม\n\n" .
+               "ทางเพจรอคำถามอยู่นะคะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อพิมพ์สั้นเกินไป
+     */
+    protected function getTooShortMessage(): string
+    {
+        return "🤔 ทางเพจไม่เข้าใจค่ะ\n\n" .
+               "กรุณาพิมพ์คำถามให้ชัดเจนกว่านี้นะคะ\n\n" .
+               "💡 *ตัวอย่าง*:\n" .
+               "• ดวงความรักปีนี้, ควรเปลี่ยนงานไหม, การเงินจะดีขึ้นไหม\n\n" .
+               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อตรวจจับ spam
+     */
+    protected function getSpamMessage(): string
+    {
+        return "🙏 ขอบคุณที่ทักมานะคะ\n\n" .
+               "ทางเพจไม่เข้าใจข้อความค่ะ กรุณาพิมพ์เป็นคำถามที่ชัดเจนนะคะ\n\n" .
+               "💡 *ตัวอย่างคำถาม*:\n" .
+               "• ความรัก: ปีนี้จะมีคู่ครองไหม\n" .
+               "• การงาน: ควรเปลี่ยนงานไหม\n" .
+               "• การเงิน: จะรวยเมื่อไหร่\n\n" .
+               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+    }
+
+    /**
+     * ข้อความเมื่อตรวจจับ off-topic
+     *
+     * @param string $category
+     * @return string
+     */
+    protected function getOffTopicMessage(string $category): string
+    {
+        $categoryMessages = [
+            'code' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับเขียนโค้ดหรือโปรแกรมนะคะ 🙏",
+            'food' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับแนะนำร้านอาหารหรือสูตรอาหารนะคะ 🙏",
+            'translate' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับแปลภาษานะคะ 🙏",
+            'story' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับเล่าเรื่องหรือมุกตลกนะคะ 🙏",
+            'math' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับคำนวณเลขนะคะ 🙏",
+            'hack' => "ขอโทษค่ะ ทางเพจไม่รับทำสิ่งที่ผิดกฎหมายหรือไม่เหมาะสมค่ะ 🙏",
+            'homework' => "ขอบคุณที่สนใจค่ะ แต่ทางเพจไม่รับทำการบ้านหรือเขียนรายงานนะคะ 🙏",
+        ];
+
+        $specificMessage = $categoryMessages[$category] ?? "ขอบคุณที่สนใจค่ะ 🙏";
+
+        return "{$specificMessage}\n\n" .
+               "═══════════════════════\n" .
+               "🔮 *ทางเพจรับดูดวงเท่านั้นค่ะ*\n" .
+               "═══════════════════════\n\n" .
+               "ถ้ามีเรื่องอยากให้ทำนาย ไม่ว่าจะเรื่อง:\n" .
+               "💕 ความรัก คู่ครอง\n" .
+               "💼 การงาน อาชีพ\n" .
+               "💰 การเงิน โชคลาภ\n" .
+               "🏥 สุขภาพ\n\n" .
+               "ทักมาได้เลยค่ะ ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
     }
 
     // ============================================================
