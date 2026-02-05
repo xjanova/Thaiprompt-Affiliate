@@ -697,6 +697,84 @@ class SmsPaymentController extends Controller
     }
 
     /**
+     * ค้นหา order ที่ตรงกับยอดเงินที่ได้รับจาก SMS
+     *
+     * Android app เรียก endpoint นี้เมื่อได้รับ SMS ยอดเงินเข้า
+     * แทนที่จะดึง orders ทั้งหมดมาแสดง จะดึงเฉพาะที่ยอดตรงกัน
+     *
+     * GET /api/v1/sms-payment/orders/match?amount=500.37
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function matchOrderByAmount(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (!$device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $amount = $request->input('amount');
+        if (!$amount || !is_numeric($amount)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amount is required and must be numeric',
+            ], 400);
+        }
+
+        $amount = (float) $amount;
+
+        // ค้นหา PaymentTransaction ที่:
+        // 1. status = pending หรือ processing
+        // 2. amount ตรงกับที่ได้รับ (exact match สำหรับ unique decimal)
+        // 3. payment_method = promptpay หรือ bank_transfer
+        $query = PaymentTransaction::query()
+            ->whereIn('status', ['pending', 'processing'])
+            ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+            ->where('amount', $amount);
+
+        // === Multi-Store Filtering ===
+        if (!$device->isAdminDevice()) {
+            $query->where('store_id', $device->store_id);
+        }
+
+        // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount)
+        $transaction = $query->orderBy('created_at', 'desc')->first();
+
+        if (!$transaction) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'matched' => false,
+                    'order' => null,
+                    'message' => 'No pending order found with amount ' . number_format($amount, 2),
+                ],
+            ]);
+        }
+
+        // แปลงเป็น format ที่ Android เข้าใจ
+        $orderData = $this->transformToOrderApproval($transaction);
+
+        // อัพเดท last_active_at ของอุปกรณ์
+        $device->update(['last_active_at' => now()]);
+
+        Log::info('SMS Payment: Order matched by amount', [
+            'device_id' => $device->device_id,
+            'amount' => $amount,
+            'transaction_id' => $transaction->id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'matched' => true,
+                'order' => $orderData,
+                'message' => 'Found matching order',
+            ],
+        ]);
+    }
+
+    /**
      * ดึงตั้งค่าอุปกรณ์
      *
      * GET /api/v1/sms-payment/device-settings

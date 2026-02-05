@@ -34,6 +34,7 @@ Route::prefix('v1/sms-payment')->group(function () {
         Route::middleware([VerifySmsGatewayAccess::class])->group(function () {
             // จัดการ Orders (สำหรับ Android App)
             Route::get('/orders', [SmsPaymentController::class, 'orders']);
+            Route::get('/orders/match', [SmsPaymentController::class, 'matchOrderByAmount']); // ค้นหา order ตามยอดเงิน
             Route::post('/orders/{id}/approve', [SmsPaymentController::class, 'approveOrder']);
             Route::post('/orders/{id}/reject', [SmsPaymentController::class, 'rejectOrder']);
             Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
