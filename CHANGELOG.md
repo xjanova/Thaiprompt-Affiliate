@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.12] - 2026-02-05
+
+### ✨ Features
+- feat(smschecker): Add SMS Payment as main menu with settings and pending orders (58e3a52a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.461.11] - 2026-02-05
 
 ### ✨ Features
