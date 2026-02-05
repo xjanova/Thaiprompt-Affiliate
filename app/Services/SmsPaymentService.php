@@ -9,6 +9,7 @@ use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Services\FortunePaymentService;
 use App\Services\FortuneConversationService;
+use App\Services\FortuneChannelManager;
 use App\Services\FacebookWebhookService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -341,7 +342,7 @@ class SmsPaymentService
      * ตรวจจับและจัดการยอดเงินดูดวงจาก Conversational Flow
      *
      * ตรวจสอบว่ายอดเงินตรงกับ FortuneReading ที่รอชำระเงินหรือไม่
-     * ถ้าตรง → ยืนยันการชำระ → ทำนายละเอียด → ส่งผ่าน Messenger
+     * ถ้าตรง → ยืนยันการชำระ → ทำนายละเอียด → ส่งผ่าน Platform ที่ใช้งาน (Facebook/LINE)
      *
      * @param SmsPaymentNotification $notification
      * @return bool มีการจัดการหรือไม่
@@ -357,31 +358,41 @@ class SmsPaymentService
             return false;
         }
 
+        // ระบุ platform และ user ID ที่จะส่งข้อความ
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
         Log::info('SMS Payment: พบ Fortune Reading ที่รอชำระ', [
             'notification_id' => $notification->id,
             'reading_id' => $reading->id,
             'amount' => $amount,
-            'facebook_user_id' => $reading->facebook_user_id,
+            'platform' => $platform,
+            'user_id' => $userId,
         ]);
 
         try {
             // ประมวลผลการชำระเงินและทำนายละเอียด
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
-            $facebookService = new FacebookWebhookService($settings);
+            $channelManager = new FortuneChannelManager($settings);
 
-            // ส่ง typing indicator
-            $facebookService->sendTypingIndicator($reading->facebook_user_id);
+            // ส่ง typing indicator (สำหรับ Facebook เท่านั้น)
+            if ($platform === 'facebook') {
+                $facebookService = new FacebookWebhookService($settings);
+                $facebookService->sendTypingIndicator($userId);
+            }
 
             // ประมวลผลและทำนายละเอียด
             $result = $conversationService->processPaymentConfirmed($reading, $notification);
 
-            // ปิด typing indicator
-            $facebookService->sendTypingIndicator($reading->facebook_user_id, false);
+            // ปิด typing indicator (สำหรับ Facebook เท่านั้น)
+            if ($platform === 'facebook') {
+                $facebookService->sendTypingIndicator($userId, false);
+            }
 
-            // ส่งคำทำนายไปยัง Messenger
+            // ส่งคำทำนายผ่าน Channel Manager (รองรับทุก platform)
             if (!empty($result['message'])) {
-                $this->sendLongMessageToMessenger($facebookService, $reading->facebook_user_id, $result['message']);
+                $channelManager->sendResponse($platform, $userId, $result);
             }
 
             // อัพเดท notification สถานะเป็น matched
@@ -392,7 +403,8 @@ class SmsPaymentService
 
             Log::info('SMS Payment: ส่งคำทำนายดูดวงสำเร็จ', [
                 'reading_id' => $reading->id,
-                'facebook_user_id' => $reading->facebook_user_id,
+                'platform' => $platform,
+                'user_id' => $userId,
             ]);
 
             return true;
@@ -400,17 +412,17 @@ class SmsPaymentService
         } catch (\Exception $e) {
             Log::error('SMS Payment: ส่งคำทำนายดูดวงล้มเหลว', [
                 'reading_id' => $reading->id,
+                'platform' => $platform,
                 'error' => $e->getMessage(),
             ]);
 
             // ส่งข้อความแจ้ง error
             try {
                 $settings = FortuneTellingSetting::getSettings();
-                $facebookService = new FacebookWebhookService($settings);
-                $facebookService->sendMessage(
-                    $reading->facebook_user_id,
-                    "✅ ได้รับการชำระเงินแล้วค่ะ!\n\nขออภัย เกิดข้อผิดพลาดในการทำนาย กรุณาติดต่อแอดมินเพื่อรับคำทำนาย 🙏"
-                );
+                $channelManager = new FortuneChannelManager($settings);
+                $channelManager->sendResponse($platform, $userId, [
+                    'message' => "✅ ได้รับการชำระเงินแล้วค่ะ!\n\nขออภัย เกิดข้อผิดพลาดในการทำนาย กรุณาติดต่อแอดมินเพื่อรับคำทำนาย 🙏",
+                ]);
             } catch (\Exception $msgError) {
                 Log::error('SMS Payment: ส่งข้อความ error ล้มเหลว', ['error' => $msgError->getMessage()]);
             }
