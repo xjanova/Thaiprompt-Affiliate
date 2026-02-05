@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.11] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- refactor(smschecker): Remove FCM notification service for closed system (b839a8b1)
+
 ## [v3.461.10] - 2026-02-02
 
 ### ✨ Features
