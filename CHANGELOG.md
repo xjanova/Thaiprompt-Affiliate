@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.463.1] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(api): Include 'processing' status in orders API for Android app (c1f85b3f)
+### 🔧 Other Changes
+
+
 ## [v3.463.0] - 2026-02-05
 
 ### ✨ Features
