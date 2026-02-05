@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
             // LINE Channel Settings
             if (!Schema::hasColumn('fortune_telling_settings', 'line_enabled')) {
-                $table->boolean('line_enabled')->default(false)->after('is_active');
+                $table->boolean('line_enabled')->default(false)->after('is_enabled');
             }
 
             if (!Schema::hasColumn('fortune_telling_settings', 'line_channel_id')) {

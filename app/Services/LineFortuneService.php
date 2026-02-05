@@ -733,4 +733,61 @@ class LineFortuneService implements MessagingPlatformInterface
         $hash = base64_encode(hash_hmac('sha256', $body, $this->channelSecret, true));
         return hash_equals($hash, $signature);
     }
+
+    /**
+     * ทดสอบการเชื่อมต่อ LINE API
+     *
+     * @return array ผลการทดสอบ ['success' => bool, 'message' => string, 'data' => array|null]
+     */
+    public function testConnection(): array
+    {
+        try {
+            // ตรวจสอบว่ามี token หรือไม่
+            if (empty($this->channelAccessToken)) {
+                return [
+                    'success' => false,
+                    'message' => 'ไม่พบ Channel Access Token กรุณาตั้งค่าก่อน',
+                ];
+            }
+
+            // เรียก API เพื่อดึงข้อมูล Bot
+            $response = Http::withToken($this->channelAccessToken)
+                ->get(self::API_ENDPOINT . '/info');
+
+            if ($response->successful()) {
+                $botInfo = $response->json();
+
+                return [
+                    'success' => true,
+                    'message' => 'เชื่อมต่อสำเร็จ! Bot: ' . ($botInfo['displayName'] ?? 'Unknown'),
+                    'data' => [
+                        'bot_info' => $botInfo,
+                    ],
+                ];
+            }
+
+            // กรณี API Error
+            $error = $response->json();
+            $errorMessage = $error['message'] ?? 'Unknown error';
+
+            return [
+                'success' => false,
+                'message' => "เชื่อมต่อไม่สำเร็จ: {$errorMessage}",
+                'data' => [
+                    'status' => $response->status(),
+                    'error' => $error,
+                ],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('LINE Test Connection Error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
 }
