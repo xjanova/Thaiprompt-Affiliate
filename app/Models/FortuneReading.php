@@ -70,6 +70,7 @@ class FortuneReading extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'bill_reference',
         'user_id',
         'facebook_user_id',
         'facebook_user_name',
@@ -682,5 +683,68 @@ class FortuneReading extends Model
                     'matched_at' => now(),
                 ]);
         }
+    }
+
+    // ============================================================
+    // Bill Reference Number
+    // ============================================================
+
+    /**
+     * Boot method สำหรับ auto-generate bill_reference
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($reading) {
+            if (empty($reading->bill_reference)) {
+                $reading->bill_reference = self::generateBillReference();
+            }
+        });
+    }
+
+    /**
+     * สร้างเลขที่บิลอ้างอิงที่ไม่ซ้ำกัน
+     *
+     * รูปแบบ: FR-YYMMDD-XXXXX
+     * - FR = Fortune Reading
+     * - YYMMDD = วันที่ (เช่น 260205)
+     * - XXXXX = ลำดับ random 5 หลัก
+     *
+     * @return string
+     */
+    public static function generateBillReference(): string
+    {
+        $prefix = 'FR';
+        $datePart = now()->format('ymd');
+        $maxAttempts = 10;
+
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            // สร้าง random 5 หลัก
+            $randomPart = str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+            $reference = "{$prefix}-{$datePart}-{$randomPart}";
+
+            // ตรวจสอบว่าซ้ำหรือไม่
+            if (!self::where('bill_reference', $reference)->exists()) {
+                return $reference;
+            }
+        }
+
+        // Fallback: ใช้ microtime
+        $uniquePart = substr(md5(microtime()), 0, 5);
+        return "{$prefix}-{$datePart}-{$uniquePart}";
+    }
+
+    /**
+     * ค้นหา reading จากเลขที่บิล
+     *
+     * @param string $billReference
+     * @return self|null
+     */
+    public static function findByBillReference(string $billReference): ?self
+    {
+        return self::where('bill_reference', $billReference)->first();
     }
 }

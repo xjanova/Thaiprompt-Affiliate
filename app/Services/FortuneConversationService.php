@@ -121,9 +121,12 @@ class FortuneConversationService
             // สร้างข้อความเชิญชวนดูดวงละเอียด
             $upsellMessage = $this->getUpsellMessage($userProfile['name'] ?? 'คุณ');
 
+            // เพิ่มเลขที่บิลอ้างอิงท้ายคำทำนาย
+            $billRefMessage = $this->getBillReferenceMessage($reading->bill_reference);
+
             return [
                 'action' => 'basic_done',
-                'message' => $aiResult['response'] . "\n\n" . $upsellMessage,
+                'message' => $aiResult['response'] . "\n\n" . $billRefMessage . "\n\n" . $upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
             ];
@@ -407,8 +410,11 @@ class FortuneConversationService
                 $aiResult['tokens_used']
             );
 
-            // สร้างข้อความขอบคุณ
-            $thankYouMessage = $this->getThankYouMessage($reading->facebook_user_name ?? 'คุณ');
+            // สร้างข้อความขอบคุณพร้อมเลขที่บิล
+            $thankYouMessage = $this->getThankYouMessage(
+                $reading->facebook_user_name ?? 'คุณ',
+                $reading->bill_reference
+            );
 
             Log::info('Fortune Conversation: ทำนายละเอียดสำเร็จ', [
                 'reading_id' => $reading->id,
@@ -499,9 +505,12 @@ class FortuneConversationService
         $amount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
 
+        $billRef = $reading->bill_reference;
+
         $message = "═══════════════════════\n";
         $message .= "📋 *สรุปคำถาม*\n";
         $message .= "═══════════════════════\n\n";
+        $message .= "🔖 เลขที่บิล: {$billRef}\n";
         $message .= "👤 ชื่อ: {$name}\n";
         $message .= "🎂 วันเกิด: {$birthDate}\n\n";
         $message .= "❓ คำถาม:\n";
@@ -577,12 +586,18 @@ class FortuneConversationService
 
     /**
      * สร้างข้อความขอบคุณหลังชำระเงิน
+     *
+     * @param string $name ชื่อผู้ใช้
+     * @param string|null $billReference เลขที่บิลอ้างอิง
      */
-    protected function getThankYouMessage(string $name): string
+    protected function getThankYouMessage(string $name, ?string $billReference = null): string
     {
+        $billInfo = $billReference ? "🔖 เลขที่บิล: {$billReference}\n\n" : "";
+
         return "═══════════════════════\n" .
                "🙏 *ขอบคุณที่ใช้บริการค่ะ*\n" .
                "═══════════════════════\n\n" .
+               $billInfo .
                "คุณ{$name} หวังว่าคำทำนายจะเป็นประโยชน์นะคะ ✨\n\n" .
                "📢 อย่าลืมส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ\n" .
                "พิมพ์ 'ดูดวง' เมื่อต้องการดูดวงอีกครั้ง 🔮";
@@ -596,6 +611,25 @@ class FortuneConversationService
         return "🔮 *ระบบดูดวง AI*\n\n" .
                "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n" .
                "หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ค่ะ ✨";
+    }
+
+    /**
+     * สร้างข้อความเลขที่บิลอ้างอิง
+     *
+     * @param string|null $billReference
+     * @return string
+     */
+    protected function getBillReferenceMessage(?string $billReference): string
+    {
+        if (empty($billReference)) {
+            return '';
+        }
+
+        return "═══════════════════════\n" .
+               "🔖 *เลขที่บิลอ้างอิง*\n" .
+               "📌 {$billReference}\n" .
+               "═══════════════════════\n" .
+               "(เก็บไว้อ้างอิงหากมีปัญหาค่ะ)";
     }
 
     // ============================================================
