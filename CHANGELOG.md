@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.462.0] - 2026-02-05
+
+### ✨ Features
+- feat: add matchOrderByAmount API for match-only mode (bb1ce49f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.461.20] - 2026-02-05
 
 ### ✨ Features
