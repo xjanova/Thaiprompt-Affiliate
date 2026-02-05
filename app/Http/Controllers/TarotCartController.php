@@ -11,6 +11,7 @@ use App\Models\TarotReadingCard;
 use App\Models\TarotUserLimit;
 use App\Models\TarotSetting;
 use App\Models\PaymentTransaction;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -206,13 +207,15 @@ class TarotCartController extends Controller
 
             // Process payment if total > 0
             if ($cartTotal > 0) {
-                // Create payment transaction
+                // Create payment transaction (ใช้ Platform Store ID สำหรับบริการ Tarot)
                 $transaction = PaymentTransaction::create([
                     'user_id' => $userId,
+                    'store_id' => VendorStore::getPlatformStoreId(),
                     'amount' => $cartTotal,
                     'payment_method' => $request->payment_method,
                     'status' => 'pending',
-                    'description' => 'ค่าทำนายไพ่ทาโร่ต์ ' . count($readingIds) . ' รายการ',
+                    'type' => 'tarot_reading',
+                    'notes' => 'ค่าทำนายไพ่ทาโร่ต์ ' . count($readingIds) . ' รายการ',
                     'metadata' => [
                         'reading_ids' => $readingIds,
                         'type' => 'tarot_reading',

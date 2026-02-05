@@ -14,6 +14,12 @@ class VendorStore extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Platform/Admin Store Slug
+     * ใช้สำหรับบริการของ Platform เอง (Tarot, Fortune, ฯลฯ)
+     */
+    public const PLATFORM_STORE_SLUG = 'thaiprompt-official';
+
     protected $fillable = [
         'user_id',
         'package_id',
@@ -106,6 +112,52 @@ class VendorStore extends Model
                 $store->store_slug = Str::slug($store->store_name);
             }
         });
+    }
+
+    // ========================================
+    // Platform Store (Admin/Official Store)
+    // ========================================
+
+    /**
+     * ดึง Platform Store (ร้านค้าของ Admin/Platform)
+     * ถ้ายังไม่มีจะสร้างใหม่อัตโนมัติ
+     *
+     * @return self
+     */
+    public static function getPlatformStore(): self
+    {
+        return static::firstOrCreate(
+            ['store_slug' => self::PLATFORM_STORE_SLUG],
+            [
+                'store_name' => config('app.name', 'Thaiprompt') . ' Official',
+                'store_description' => 'ร้านค้าอย่างเป็นทางการของ Platform',
+                'is_active' => true,
+                'is_verified' => true,
+                'verified_at' => now(),
+                'status' => 'active',
+            ]
+        );
+    }
+
+    /**
+     * ดึง Platform Store ID
+     * ถ้ายังไม่มี Platform Store จะสร้างใหม่
+     *
+     * @return int
+     */
+    public static function getPlatformStoreId(): int
+    {
+        return static::getPlatformStore()->id;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็น Platform Store หรือไม่
+     *
+     * @return bool
+     */
+    public function isPlatformStore(): bool
+    {
+        return $this->store_slug === self::PLATFORM_STORE_SLUG;
     }
 
     /**

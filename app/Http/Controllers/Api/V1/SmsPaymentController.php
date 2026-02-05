@@ -426,12 +426,11 @@ class SmsPaymentController extends Controller
 
         $query = PaymentTransaction::query();
 
-        // === Multi-Store Filtering ===
-        // Admin devices (store_id = null) → เห็นทุก order
-        // Seller devices → เห็นเฉพาะ order ที่มี store_id ตรงกับร้านตัวเอง
-        if (!$device->isAdminDevice()) {
-            $query->where('store_id', $device->store_id);
-        }
+        // === Multi-Store Filtering (Strict Mode) ===
+        // ทุก device ต้องมี store_id และเห็นเฉพาะ order ของร้านตัวเองเท่านั้น
+        // ไม่มี "admin device" ที่เห็นทุก order อีกต่อไป
+        // เพื่อป้องกันความสับสนของยอดเงินระหว่างร้านค้า
+        $query->where('store_id', $device->store_id);
 
         // กรองสถานะ (default: pending + processing = รอชำระเงิน)
         $status = $request->input('status', 'waiting');
@@ -503,8 +502,9 @@ class SmsPaymentController extends Controller
             ], 404);
         }
 
-        // === Multi-Store: ตรวจสอบสิทธิ์ของ device ในการจัดการ transaction นี้ ===
-        if (!$device->isAdminDevice() && $transaction->store_id !== $device->store_id) {
+        // === Multi-Store (Strict): ตรวจสอบสิทธิ์ของ device ===
+        // Device ต้องมี store_id ตรงกับ transaction เสมอ
+        if ($transaction->store_id !== $device->store_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
@@ -559,8 +559,8 @@ class SmsPaymentController extends Controller
             ], 404);
         }
 
-        // === Multi-Store: ตรวจสอบสิทธิ์ ===
-        if (!$device->isAdminDevice() && $transaction->store_id !== $device->store_id) {
+        // === Multi-Store (Strict): ตรวจสอบสิทธิ์ ===
+        if ($transaction->store_id !== $device->store_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
@@ -666,10 +666,8 @@ class SmsPaymentController extends Controller
         $sinceVersion = $request->input('since_version') ?? $request->input('since') ?? 0;
         $query = PaymentTransaction::query();
 
-        // === Multi-Store Filtering ===
-        if (!$device->isAdminDevice()) {
-            $query->where('store_id', $device->store_id);
-        }
+        // === Multi-Store Filtering (Strict Mode) ===
+        $query->where('store_id', $device->store_id);
 
         if ($sinceVersion > 0) {
             // ดึง orders ที่อัพเดทหลังจาก timestamp ที่กำหนด (milliseconds)
@@ -731,17 +729,14 @@ class SmsPaymentController extends Controller
         // 1. status = pending หรือ processing
         // 2. amount ตรงกับที่ได้รับ (exact match สำหรับ unique decimal)
         // 3. payment_method = promptpay หรือ bank_transfer
+        // 4. store_id ตรงกับ device (Strict Mode)
         $query = PaymentTransaction::query()
             ->whereIn('status', ['pending', 'processing'])
             ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
-            ->where('amount', $amount);
+            ->where('amount', $amount)
+            ->where('store_id', $device->store_id);
 
-        // === Multi-Store Filtering ===
-        if (!$device->isAdminDevice()) {
-            $query->where('store_id', $device->store_id);
-        }
-
-        // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount)
+        // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount + store)
         $transaction = $query->orderBy('created_at', 'desc')->first();
 
         if (!$transaction) {
@@ -865,14 +860,10 @@ class SmsPaymentController extends Controller
         $days = (int) $request->input('days', 7);
         $since = now()->subDays($days)->startOfDay();
 
-        // === Multi-Store Filtering ===
-        // สร้าง base query ที่ filter ตาม store ของ device
+        // === Multi-Store Filtering (Strict Mode) ===
+        // สร้าง base query ที่ filter ตาม store ของ device เสมอ
         $baseQuery = function () use ($device) {
-            $q = PaymentTransaction::query();
-            if (!$device->isAdminDevice()) {
-                $q->where('store_id', $device->store_id);
-            }
-            return $q;
+            return PaymentTransaction::query()->where('store_id', $device->store_id);
         };
 
         // นับ orders ตามสถานะ (ใช้ PaymentTransaction เป็น base)
