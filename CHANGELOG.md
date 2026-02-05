@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.0] - 2026-02-05
+
+### ✨ Features
+- feat: Auto-generate unique amount on PaymentTransaction create (b3644130)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.463.2] - 2026-02-05
 
 ### ✨ Features
