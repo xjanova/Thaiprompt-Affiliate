@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.6] - 2026-02-05
+
+### ✨ Features
+- feat(fortune): add Get Started button and welcome message for Messenger (bafcfdbb)
+### 🐛 Bug Fixes
+- fix(fortune): add multi-platform support for SMS payment handling (8b99484b)
+### 🔧 Other Changes
+- Merge pull request #2476 from xjanova/claude/fortune-telling-chatbot-haL6D (c59a2ded)
+
 ## [v3.464.5] - 2026-02-05
 
 ### ✨ Features
