@@ -147,6 +147,9 @@
         {{-- 💰 Wallet Balance Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
         <x-arrow-x.navbar.wallet-balance-badge-v3 />
 
+        {{-- 🪙 Video Coins Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
+        <x-arrow-x.navbar.coin-balance-badge-v3 />
+
         {{-- 🛒 Cart Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
         @auth
             <x-arrow-x.navbar.cart-badge-v3 />

@@ -191,62 +191,72 @@
     <div x-show="menuOpen" x-collapse x-cloak class="ml-8 space-y-1">
         @foreach($submenu as $child)
             @php
-                $childUrl = $child['url'] ?? '#';
-                // แยก path จาก URL (รองรับทั้ง full URL และ relative path)
-                $childPath = parse_url($childUrl, PHP_URL_PATH) ?? $childUrl;
-                $childPath = ltrim($childPath, '/');
-                $childPath = rtrim($childPath, '/'); // ลบ trailing slash
+                // ตรวจสอบว่าเป็น divider หรือไม่
+                $isDivider = ($child['label'] ?? '') === '---' || ($child['label'] ?? '') === '—';
+            @endphp
 
-                // ตรวจสอบ active - ใช้ exact match เป็นหลัก
-                $currentPath = rtrim(request()->path(), '/');
+            @if($isDivider)
+                {{-- Divider - เส้นแบ่งระหว่างกลุ่มเมนู --}}
+                <div class="my-2 border-t border-white/20" x-show="$store.sidebar.shouldExpand"></div>
+            @else
+                @php
+                    $childUrl = $child['url'] ?? '#';
+                    // แยก path จาก URL (รองรับทั้ง full URL และ relative path)
+                    $childPath = parse_url($childUrl, PHP_URL_PATH) ?? $childUrl;
+                    $childPath = ltrim($childPath, '/');
+                    $childPath = rtrim($childPath, '/'); // ลบ trailing slash
 
-                // ตรวจสอบ active:
-                // 1. Exact match (path ตรงกันเป๊ะ)
-                // 2. Route match (ถ้ามี route กำหนด)
-                // 3. Child path match (current path ต้องเป็น child ของ menu path และ menu path ต้องไม่ใช่ parent ของ path อื่นใน submenu)
-                $isExactMatch = $currentPath === $childPath;
-                $isRouteMatch = isset($child['route']) && (
-                    request()->routeIs($child['route']) ||
-                    request()->routeIs($child['route'] . '.*')
-                );
+                    // ตรวจสอบ active - ใช้ exact match เป็นหลัก
+                    $currentPath = rtrim(request()->path(), '/');
 
-                // สำหรับ child path match - ตรวจสอบว่า current path เริ่มต้นด้วย child path
-                // แต่ต้องไม่ให้ parent path active เมื่ออยู่ใน child path
-                $isChildPathMatch = false;
-                if (!$isExactMatch && !$isRouteMatch && $childPath !== '') {
-                    // ตรวจสอบว่า current path เป็น child ของ menu path
-                    if (str_starts_with($currentPath, $childPath . '/')) {
-                        // ตรวจสอบว่าไม่มี submenu item อื่นที่ match ดีกว่า
-                        $hasMoreSpecificMatch = false;
-                        foreach ($submenu as $otherChild) {
-                            $otherPath = parse_url($otherChild['url'] ?? '#', PHP_URL_PATH) ?? '';
-                            $otherPath = trim($otherPath, '/');
-                            if ($otherPath !== $childPath && str_starts_with($currentPath, $otherPath)) {
-                                // ถ้า otherPath ยาวกว่า childPath แสดงว่ามี match ที่เฉพาะเจาะจงกว่า
-                                if (strlen($otherPath) > strlen($childPath)) {
-                                    $hasMoreSpecificMatch = true;
-                                    break;
+                    // ตรวจสอบ active:
+                    // 1. Exact match (path ตรงกันเป๊ะ)
+                    // 2. Route match (ถ้ามี route กำหนด)
+                    // 3. Child path match (current path ต้องเป็น child ของ menu path และ menu path ต้องไม่ใช่ parent ของ path อื่นใน submenu)
+                    $isExactMatch = $currentPath === $childPath;
+                    $isRouteMatch = isset($child['route']) && (
+                        request()->routeIs($child['route']) ||
+                        request()->routeIs($child['route'] . '.*')
+                    );
+
+                    // สำหรับ child path match - ตรวจสอบว่า current path เริ่มต้นด้วย child path
+                    // แต่ต้องไม่ให้ parent path active เมื่ออยู่ใน child path
+                    $isChildPathMatch = false;
+                    if (!$isExactMatch && !$isRouteMatch && $childPath !== '') {
+                        // ตรวจสอบว่า current path เป็น child ของ menu path
+                        if (str_starts_with($currentPath, $childPath . '/')) {
+                            // ตรวจสอบว่าไม่มี submenu item อื่นที่ match ดีกว่า
+                            $hasMoreSpecificMatch = false;
+                            foreach ($submenu as $otherChild) {
+                                $otherPath = parse_url($otherChild['url'] ?? '#', PHP_URL_PATH) ?? '';
+                                $otherPath = trim($otherPath, '/');
+                                if ($otherPath !== $childPath && str_starts_with($currentPath, $otherPath)) {
+                                    // ถ้า otherPath ยาวกว่า childPath แสดงว่ามี match ที่เฉพาะเจาะจงกว่า
+                                    if (strlen($otherPath) > strlen($childPath)) {
+                                        $hasMoreSpecificMatch = true;
+                                        break;
+                                    }
                                 }
                             }
+                            $isChildPathMatch = !$hasMoreSpecificMatch;
                         }
-                        $isChildPathMatch = !$hasMoreSpecificMatch;
                     }
-                }
 
-                $isChildActive = $isExactMatch || $isRouteMatch || $isChildPathMatch;
-            @endphp
-            <a href="{{ $childUrl }}"
-               @click="$store.sidebar.closeOnMenuClick()"
-               data-menu-active="{{ $isChildActive ? 'true' : 'false' }}"
-               data-menu-type="submenu"
-               class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ $isChildActive ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                @if(isset($child['icon']))
-                    <i class="{{ $child['icon'] }} w-4 text-center drop-shadow"></i>
-                @else
-                    <div class="w-1.5 h-1.5 rounded-full {{ $isChildActive ? 'bg-white' : 'bg-white/50' }}"></div>
-                @endif
-                <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $child['label'] }}</span>
-            </a>
+                    $isChildActive = $isExactMatch || $isRouteMatch || $isChildPathMatch;
+                @endphp
+                <a href="{{ $childUrl }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ $isChildActive ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ $isChildActive ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    @if(isset($child['icon']))
+                        <i class="{{ $child['icon'] }} w-4 text-center drop-shadow"></i>
+                    @else
+                        <div class="w-1.5 h-1.5 rounded-full {{ $isChildActive ? 'bg-white' : 'bg-white/50' }}"></div>
+                    @endif
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">{{ $child['label'] }}</span>
+                </a>
+            @endif
         @endforeach
     </div>
 </div>

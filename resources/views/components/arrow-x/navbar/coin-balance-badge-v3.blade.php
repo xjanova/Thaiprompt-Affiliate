@@ -1,0 +1,353 @@
+{{--
+/**
+ * Coin Balance Badge V3 Component - แสดงยอด Video Coins ใน Navbar
+ *
+ * Component นี้แสดงยอด Video Coins แบบ modern พร้อม:
+ * - ✅ Glassmorphism effects
+ * - ✅ Real-time balance refresh
+ * - ✅ Offline mode support
+ * - ✅ Quick action buttons (แลกเหรียญ, ร้านค้า)
+ * - ✅ Animated number counter
+ * - ✅ Accessibility (ARIA labels)
+ * - ✅ Smooth animations
+ *
+ * @example
+ * <x-arrow-x.navbar.coin-balance-badge-v3 />
+ */
+--}}
+
+@auth
+@php
+    // ดึงข้อมูล Video Coins ของผู้ใช้ปัจจุบัน
+    $user = Auth::user();
+    $videoCoin = $user->videoCoin;
+    $balance = $videoCoin ? (float) $videoCoin->balance : 0;
+    $lifetimeEarned = $videoCoin?->lifetime_earned ?? 0;
+    $lifetimeSpent = $videoCoin?->lifetime_spent ?? 0;
+
+    // ตรวจสอบ route prefix ปัจจุบัน (user/seller/admin)
+    $routePrefix = '';
+    if (request()->is('user/*') || request()->is('user')) {
+        $routePrefix = 'user';
+    } elseif (request()->is('seller/*') || request()->is('seller')) {
+        $routePrefix = 'seller';
+    } elseif (request()->is('admin/*') || request()->is('admin')) {
+        $routePrefix = 'admin';
+    } else {
+        $routePrefix = 'user'; // default
+    }
+
+    // สร้าง route สำหรับ coins
+    $coinsRoute = route('user.video-coins.index');
+    $coinShopRoute = route('user.coin-shop.index');
+    $exchangeRoute = route('user.video-coins.exchange');
+@endphp
+
+<div x-data="{
+    open: false,
+    balance: {{ $balance }},
+    displayBalance: {{ $balance }},
+    loading: false,
+    routePrefix: '{{ $routePrefix }}',
+
+    // 📡 Offline Support
+    isOnline: navigator.onLine,
+    cacheKey: 'coin_balance_cache_{{ $user->id }}',
+    cacheExpiry: 2 * 60 * 1000, // 2 นาที
+
+    // 🪙 Format ตัวเลขเป็น coins
+    formatCoins(amount) {
+        return new Intl.NumberFormat('th-TH', {
+            style: 'decimal',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    },
+
+    // 📊 Animate counter
+    animateBalance(newBalance) {
+        const startBalance = this.displayBalance;
+        const diff = newBalance - startBalance;
+        const duration = 500; // ms
+        const startTime = performance.now();
+
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Easing function (ease-out)
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+
+            this.displayBalance = startBalance + (diff * easeOut);
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.displayBalance = newBalance;
+            }
+        };
+
+        requestAnimationFrame(animate);
+    },
+
+    // 🔄 โหลดยอดคงเหลือจาก API
+    async loadBalance() {
+        if (!this.isOnline) {
+            console.info('📴 Offline mode: Using cached coin balance');
+            this.loadFromCache();
+            return;
+        }
+
+        this.loading = true;
+
+        try {
+            const response = await fetch('/user/video-coins/balance-ajax', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const newBalance = parseFloat(data.balance) || 0;
+
+                if (newBalance !== this.balance) {
+                    this.animateBalance(newBalance);
+                    this.balance = newBalance;
+                }
+
+                // 💾 บันทึกลง cache
+                this.saveToCache(data);
+            } else {
+                this.loadFromCache();
+            }
+        } catch (error) {
+            console.error('Error loading coin balance:', error);
+            this.loadFromCache();
+        }
+
+        this.loading = false;
+    },
+
+    // 💾 บันทึกข้อมูลลง localStorage
+    saveToCache(data) {
+        try {
+            const cache = {
+                data: data,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.cacheKey, JSON.stringify(cache));
+        } catch (error) {
+            console.error('Failed to cache coin balance:', error);
+        }
+    },
+
+    // 📂 โหลดข้อมูลจาก localStorage
+    loadFromCache() {
+        try {
+            const cached = localStorage.getItem(this.cacheKey);
+            if (!cached) return;
+
+            const cache = JSON.parse(cached);
+
+            // ตรวจสอบว่า cache หมดอายุหรือยัง
+            if (Date.now() - cache.timestamp > this.cacheExpiry) {
+                localStorage.removeItem(this.cacheKey);
+                return;
+            }
+
+            const newBalance = parseFloat(cache.data.balance) || 0;
+            if (newBalance !== this.balance) {
+                this.animateBalance(newBalance);
+                this.balance = newBalance;
+            }
+        } catch (error) {
+            console.error('Failed to load from cache:', error);
+        }
+    },
+
+    closeDropdown() {
+        this.open = false;
+    }
+}"
+x-init="
+    // ฟัง online/offline events
+    window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.loadBalance();
+    });
+
+    window.addEventListener('offline', () => {
+        this.isOnline = false;
+    });
+
+    // รีเฟรชทุก 60 วินาที
+    setInterval(() => {
+        if (this.isOnline) {
+            this.loadBalance();
+        }
+    }, 60000);
+
+    // ฟัง custom event สำหรับ refresh balance (เช่น หลังแลก coins)
+    window.addEventListener('coins-updated', () => {
+        this.loadBalance();
+    });
+"
+@keydown.escape.window="if (open) closeDropdown()"
+class="relative">
+
+    {{-- Coin Button พร้อม Glassmorphism Style --}}
+    <button
+        id="coin-balance-button"
+        @click="open = !open"
+        :aria-expanded="open.toString()"
+        aria-haspopup="true"
+        :aria-label="`Video Coins ยอดคงเหลือ ${formatCoins(displayBalance)} เหรียญ`"
+        type="button"
+        class="relative flex items-center gap-2 px-3 py-2 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-105 active:scale-95 group"
+        title="Video Coins">
+
+        {{-- Coin Icon with gradient background --}}
+        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg group-hover:shadow-yellow-500/30 transition-all">
+            <span class="text-white text-sm font-black drop-shadow">C</span>
+        </div>
+
+        {{-- Balance Display --}}
+        <div class="hidden sm:flex flex-col items-start">
+            <span class="text-[10px] text-white/60 leading-none">Coins</span>
+            <span class="text-sm font-bold text-white drop-shadow leading-tight"
+                  :class="{ 'animate-pulse': loading }"
+                  x-text="formatCoins(displayBalance)"></span>
+        </div>
+
+        {{-- Mobile: แสดงเฉพาะตัวเลขสั้นๆ --}}
+        <span class="sm:hidden text-xs font-bold text-white drop-shadow"
+              x-text="balance >= 1000 ? (balance >= 1000000 ? (balance / 1000000).toFixed(1) + 'M' : (balance / 1000).toFixed(1) + 'K') : formatCoins(displayBalance)"></span>
+
+        {{-- Loading indicator --}}
+        <div x-show="loading" class="absolute -top-1 -right-1">
+            <svg class="animate-spin h-3 w-3 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        {{-- Offline Indicator --}}
+        <span
+            x-show="!isOnline"
+            title="ออฟไลน์"
+            class="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-400 border-2 border-white/50 rounded-full"
+        ></span>
+
+        {{-- Dropdown arrow --}}
+        <i class="fas fa-chevron-down text-white/60 text-[10px] hidden sm:block transition-transform duration-200"
+           :class="open ? 'rotate-180' : ''"></i>
+    </button>
+
+    {{-- Dropdown พร้อม Glassmorphism --}}
+    <div
+        x-show="open"
+        @click.away="closeDropdown()"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
+        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        role="menu"
+        aria-labelledby="coin-balance-button"
+        class="absolute right-0 z-50 w-80 mt-2 glass-dropdown rounded-2xl shadow-2xl border border-white/30 overflow-hidden"
+        style="display: none;">
+
+        {{-- Header with Balance --}}
+        <div class="px-5 py-4 bg-gradient-to-br from-yellow-500/40 to-orange-500/40 border-b border-white/20">
+            <div class="flex items-center gap-4">
+                {{-- Big Coin Icon --}}
+                <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-xl">
+                    <span class="text-white text-2xl font-black drop-shadow-lg">C</span>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-white/70 mb-1">Video Coins</p>
+                    <p class="text-2xl font-bold text-white drop-shadow-lg"
+                       :class="{ 'animate-pulse': loading }">
+                        <span x-text="formatCoins(displayBalance)"></span>
+                        <span class="text-sm font-normal text-white/80">VC</span>
+                    </p>
+                </div>
+            </div>
+
+            {{-- Offline Warning --}}
+            <div x-show="!isOnline" class="flex items-center gap-2 mt-3 px-3 py-2 glass-neu rounded-lg text-xs text-white/80">
+                <i class="fas fa-wifi-slash"></i>
+                <span>📴 ออฟไลน์ - แสดงข้อมูลจากแคช</span>
+            </div>
+        </div>
+
+        {{-- Quick Actions --}}
+        <div class="p-3 border-b border-white/10">
+            <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider mb-2">จัดการ Coins</p>
+
+            <div class="grid grid-cols-2 gap-2">
+                {{-- ร้านค้า Coins --}}
+                <a href="{{ $coinShopRoute }}"
+                   class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:shadow-purple-500/40 transition-all">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <span class="text-sm text-white font-medium">ร้านค้า</span>
+                </a>
+
+                {{-- แลกเป็นเงิน --}}
+                <a href="{{ $exchangeRoute }}"
+                   class="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/10 transition-all group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:shadow-green-500/40 transition-all">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <span class="text-sm text-white font-medium">แลกเงิน</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Coin Stats --}}
+        @if($videoCoin)
+        <div class="p-3 border-b border-white/10">
+            <p class="px-2 py-1 text-xs font-bold text-white/60 uppercase tracking-wider mb-2">สถิติ</p>
+
+            <div class="grid grid-cols-2 gap-3">
+                {{-- ได้รับรวม --}}
+                <div class="px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <p class="text-xs text-white/60 mb-0.5">
+                        <i class="fas fa-arrow-down text-green-400 mr-1"></i>ได้รับรวม
+                    </p>
+                    <p class="text-sm font-bold text-green-400">
+                        {{ number_format($lifetimeEarned, 0) }} VC
+                    </p>
+                </div>
+
+                {{-- ใช้ไปรวม --}}
+                <div class="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <p class="text-xs text-white/60 mb-0.5">
+                        <i class="fas fa-arrow-up text-red-400 mr-1"></i>ใช้ไปรวม
+                    </p>
+                    <p class="text-sm font-bold text-red-400">
+                        {{ number_format($lifetimeSpent, 0) }} VC
+                    </p>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Footer --}}
+        <div class="px-4 py-3 bg-black/20">
+            <a href="{{ $coinsRoute }}"
+               class="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium text-sm shadow-lg hover:shadow-yellow-500/30 transition-all">
+                <span class="font-black">C</span>
+                <span>จัดการ Video Coins</span>
+                <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+    </div>
+</div>
+@endauth
