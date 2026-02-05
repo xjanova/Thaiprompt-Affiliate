@@ -412,6 +412,8 @@ Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () 
 // SMS Payment Checker Management (ระบบตรวจสอบ SMS สำหรับชำระเงิน)
 Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::get('/', [SmsCheckerAdminController::class, 'index'])->name('index');
+    Route::get('/settings', [SmsCheckerAdminController::class, 'settings'])->name('settings');
+    Route::post('/settings', [SmsCheckerAdminController::class, 'updateSettings'])->name('settings-update');
     Route::get('/devices', [SmsCheckerAdminController::class, 'devices'])->name('devices');
     Route::get('/devices/create', [SmsCheckerAdminController::class, 'createDevice'])->name('device-create');
     Route::post('/devices', [SmsCheckerAdminController::class, 'storeDevice'])->name('device-store');
@@ -422,6 +424,9 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::get('/devices/{device}/qr', [SmsCheckerAdminController::class, 'qrCode'])->name('device-qr');
     Route::get('/devices/{device}/qr.json', [SmsCheckerAdminController::class, 'qrCodeJson'])->name('device-qr-json');
     Route::get('/notifications', [SmsCheckerAdminController::class, 'notifications'])->name('notifications');
+    Route::get('/pending-orders', [SmsCheckerAdminController::class, 'pendingOrders'])->name('pending-orders');
+    Route::post('/orders/{order}/confirm', [SmsCheckerAdminController::class, 'confirmPayment'])->name('order-confirm');
+    Route::post('/orders/{order}/reject', [SmsCheckerAdminController::class, 'rejectPayment'])->name('order-reject');
 });
 
 // Payment Bank Accounts Management (จัดการบัญชีธนาคารรับชำระเงิน)

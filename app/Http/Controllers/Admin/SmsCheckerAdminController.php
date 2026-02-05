@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * จัดการระบบ SMS Payment Checker ในหน้า Admin
@@ -314,5 +316,193 @@ class SmsCheckerAdminController extends Controller
             'deviceId' => $device->device_id,
             'deviceName' => $device->device_name ?? $device->device_id,
         ]);
+    }
+
+    /**
+     * แสดงหน้าตั้งค่าระบบ SMS Checker
+     *
+     * @return \Illuminate\View\View
+     */
+    public function settings()
+    {
+        $settings = [
+            'enabled' => config('smschecker.enabled', true),
+            'timestamp_tolerance' => config('smschecker.timestamp_tolerance', 300),
+            'unique_amount_expiry' => config('smschecker.unique_amount_expiry', 60),
+            'max_pending_per_amount' => config('smschecker.max_pending_per_amount', 99),
+            'rate_limit_per_minute' => config('smschecker.rate_limit_per_minute', 30),
+            'default_approval_mode' => config('smschecker.default_approval_mode', 'auto'),
+            'nonce_expiry_hours' => config('smschecker.nonce_expiry_hours', 24),
+            'auto_confirm_matched' => config('smschecker.auto_confirm_matched', true),
+            'sync_interval' => config('smschecker.sync.interval', 30),
+        ];
+
+        $supportedBanks = config('smschecker.supported_banks', []);
+
+        return view('admin.smschecker.settings', compact('settings', 'supportedBanks'));
+    }
+
+    /**
+     * บันทึกการตั้งค่าระบบ
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateSettings(Request $request)
+    {
+        // ในเวอร์ชันนี้การตั้งค่าเก็บใน config file
+        // สามารถเปลี่ยนเป็น database settings ได้ในอนาคต
+
+        return redirect()
+            ->back()
+            ->with('info', 'การตั้งค่าถูกจัดเก็บใน config/smschecker.php กรุณาแก้ไขไฟล์โดยตรง');
+    }
+
+    /**
+     * แสดงรายการคำสั่งซื้อที่รอการตรวจสอบชำระเงิน
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function pendingOrders(Request $request)
+    {
+        $query = Order::with(['user', 'paymentTransaction'])
+            ->where('payment_status', 'pending')
+            ->whereIn('payment_method', ['promptpay', 'bank_transfer']);
+
+        // ค้นหา
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('id', $search)
+                  ->orWhereHas('user', function ($q2) use ($search) {
+                      $q2->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->appends($request->query());
+
+        // รวม notifications ที่ยังไม่ได้จับคู่
+        $unmatchedNotifications = SmsPaymentNotification::where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        return view('admin.smschecker.pending-orders', compact('orders', 'unmatchedNotifications'));
+    }
+
+    /**
+     * ยืนยันการชำระเงินด้วยตนเอง
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function confirmPayment(Request $request, Order $order)
+    {
+        try {
+            DB::beginTransaction();
+
+            // อัปเดตสถานะ order
+            $order->update([
+                'payment_status' => 'paid',
+                'status' => 'processing',
+            ]);
+
+            // อัปเดต transaction ถ้ามี
+            if ($order->paymentTransaction) {
+                $order->paymentTransaction->update([
+                    'status' => 'completed',
+                    'paid_at' => now(),
+                    'metadata' => array_merge($order->paymentTransaction->metadata ?? [], [
+                        'manual_confirmed_at' => now()->toIso8601String(),
+                        'confirmed_by' => auth()->id(),
+                    ]),
+                ]);
+            }
+
+            // อัปเดต unique amount ถ้ามี
+            $uniqueAmountId = $order->paymentTransaction?->metadata['unique_amount_id'] ?? null;
+            if ($uniqueAmountId) {
+                UniquePaymentAmount::where('id', $uniqueAmountId)->update(['status' => 'used']);
+            }
+
+            DB::commit();
+
+            Log::info("[SMS Checker] Admin ยืนยันการชำระเงิน Order #{$order->id} โดย User #" . auth()->id());
+
+            return redirect()
+                ->back()
+                ->with('success', "ยืนยันการชำระเงินคำสั่งซื้อ #{$order->id} สำเร็จ!");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("[SMS Checker] ยืนยันการชำระเงินล้มเหลว: " . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ปฏิเสธการชำระเงิน
+     *
+     * @param Request $request
+     * @param Order $order
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function rejectPayment(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // อัปเดตสถานะ order
+            $order->update([
+                'payment_status' => 'failed',
+                'status' => 'cancelled',
+            ]);
+
+            // อัปเดต transaction ถ้ามี
+            if ($order->paymentTransaction) {
+                $order->paymentTransaction->update([
+                    'status' => 'failed',
+                    'metadata' => array_merge($order->paymentTransaction->metadata ?? [], [
+                        'rejected_at' => now()->toIso8601String(),
+                        'rejected_by' => auth()->id(),
+                        'rejection_reason' => $validated['reason'] ?? 'ยกเลิกโดยแอดมิน',
+                    ]),
+                ]);
+            }
+
+            // คืน unique amount ถ้ามี
+            $uniqueAmountId = $order->paymentTransaction?->metadata['unique_amount_id'] ?? null;
+            if ($uniqueAmountId) {
+                UniquePaymentAmount::where('id', $uniqueAmountId)->update(['status' => 'cancelled']);
+            }
+
+            DB::commit();
+
+            Log::info("[SMS Checker] Admin ปฏิเสธการชำระเงิน Order #{$order->id} โดย User #" . auth()->id());
+
+            return redirect()
+                ->back()
+                ->with('success', "ปฏิเสธการชำระเงินคำสั่งซื้อ #{$order->id} สำเร็จ");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("[SMS Checker] ปฏิเสธการชำระเงินล้มเหลว: " . $e->getMessage());
+
+            return redirect()
+                ->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 }

@@ -276,6 +276,27 @@ return [
             ],
         ],
 
+        // =============================================
+        // 📱 SMS Payment Checker - ระบบตรวจสอบ SMS ชำระเงินอัตโนมัติ
+        // =============================================
+        [
+            'id' => 'sms-payment',
+            'label' => 'SMS Payment',
+            'icon' => '📱',
+            'route' => null,
+            'order' => 7.5,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500',
+            'submenu' => [
+                ['label' => '📊 Dashboard', 'route' => 'admin.smschecker.index', 'description' => 'ภาพรวมระบบ SMS Payment'],
+                ['label' => '⚙️ ตั้งค่าการเชื่อมต่อ', 'route' => 'admin.smschecker.settings', 'description' => 'การตั้งค่าและคู่มือเชื่อมต่อ'],
+                ['label' => '📱 อุปกรณ์', 'route' => 'admin.smschecker.devices', 'description' => 'จัดการอุปกรณ์ Android'],
+                ['label' => '📨 SMS Notifications', 'route' => 'admin.smschecker.notifications', 'description' => 'ประวัติ SMS ที่ได้รับ'],
+                ['label' => '⏳ รอตรวจสอบ', 'route' => 'admin.smschecker.pending-orders', 'description' => 'คำสั่งซื้อรอยืนยันการชำระเงิน'],
+            ],
+        ],
+
         [
             'id' => 'wallet-thb',
             'label' => 'กระเป๋าเงิน THB',
@@ -289,7 +310,6 @@ return [
                 ['label' => 'คำขอถอนเงิน', 'route' => 'admin.withdrawals.pending'],
                 ['label' => 'ประวัติการถอน', 'route' => 'admin.withdrawals.index'],
                 ['label' => 'ตั้งค่า Payment Gateway', 'route' => 'admin.payment-gateways.index'],
-                ['label' => '📱 SMS Payment Checker', 'route' => 'admin.smschecker.index', 'description' => 'ระบบตรวจสอบ SMS ชำระเงินอัตโนมัติ'],
                 ['label' => '🏦 บัญชีธนาคาร', 'route' => 'admin.payment-bank-accounts.index', 'description' => 'จัดการบัญชีธนาคารรับชำระเงิน + PromptPay + SMS Checker'],
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index'],
