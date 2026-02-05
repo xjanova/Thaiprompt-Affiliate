@@ -707,11 +707,11 @@ return [
         ],
 
         // =============================================
-        // 🔮 ระบบดูดวง Facebook - Fortune Telling
+        // 🔮 ระบบดูดวง Multi-Channel - Fortune Telling
         // =============================================
         [
             'id' => 'fortune-telling',
-            'label' => 'ดูดวง Facebook',
+            'label' => 'ระบบดูดวง',
             'icon' => '🔮',
             'route' => null,
             'order' => 24.3,
@@ -720,6 +720,7 @@ return [
             'badge_color' => 'bg-gradient-to-r from-purple-500 to-indigo-600',
             'submenu' => [
                 ['label' => '🔮 ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
+                ['label' => '📱 ช่องทางรับข้อความ', 'route' => 'admin.fortune.channels.index', 'description' => 'Facebook Messenger, LINE Official Account'],
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],

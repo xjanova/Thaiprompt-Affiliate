@@ -102,6 +102,14 @@ class FortuneTellingSetting extends Model
         'comment_reply_template',
         'comment_dm_template',
         'comment_engagement_prompt',
+        // LINE Official Account Settings
+        'line_enabled',
+        'line_channel_id',
+        'line_channel_secret',
+        'line_channel_access_token',
+        'enabled_platforms',
+        'line_flex_primary_color',
+        'line_welcome_image_url',
     ];
 
     /**
@@ -118,6 +126,8 @@ class FortuneTellingSetting extends Model
         'allow_try_before_buy' => 'boolean',
         'subscription_enabled' => 'boolean',
         'comment_engagement_enabled' => 'boolean',
+        'line_enabled' => 'boolean',
+        'enabled_platforms' => 'array',
         'max_free_readings' => 'integer',
         'free_deep_per_day' => 'integer',
         'reading_price' => 'decimal:2',
@@ -152,6 +162,10 @@ class FortuneTellingSetting extends Model
         'require_registration' => false,
         'comment_engagement_enabled' => false,
         'comment_engagement_mode' => 'ai',
+        // LINE Settings
+        'line_enabled' => false,
+        'line_flex_primary_color' => '#6B46C1',
+        'enabled_platforms' => ['facebook'],
     ];
 
     /**
@@ -163,6 +177,8 @@ class FortuneTellingSetting extends Model
         'facebook_app_secret',
         'facebook_page_token',
         'ai_api_key',
+        'line_channel_secret',
+        'line_channel_access_token',
     ];
 
     /**
@@ -636,5 +652,74 @@ EOT;
 ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอก JSON:
 {"comment_reply": "...", "dm_message": "..."}
 PROMPT;
+    }
+
+    // ============================================================
+    // LINE Official Account Settings
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเปิดใช้งาน LINE หรือไม่
+     *
+     * @return bool
+     */
+    public function isLineEnabled(): bool
+    {
+        return (bool) ($this->line_enabled ?? false);
+    }
+
+    /**
+     * ตรวจสอบว่ามีการตั้งค่า LINE ครบถ้วนหรือไม่
+     *
+     * @return bool
+     */
+    public function hasLineConfigured(): bool
+    {
+        return !empty($this->line_channel_id)
+            && !empty($this->line_channel_secret)
+            && !empty($this->line_channel_access_token);
+    }
+
+    /**
+     * ดึงรายการ platform ที่เปิดใช้งาน
+     *
+     * @return array
+     */
+    public function getEnabledPlatforms(): array
+    {
+        $platforms = $this->enabled_platforms ?? ['facebook'];
+
+        // ตรวจสอบว่า platform แต่ละตัวพร้อมใช้งานจริงหรือไม่
+        $result = [];
+
+        if (in_array('facebook', $platforms) && $this->hasFacebookConfigured()) {
+            $result[] = 'facebook';
+        }
+
+        if (in_array('line', $platforms) && $this->hasLineConfigured()) {
+            $result[] = 'line';
+        }
+
+        return $result;
+    }
+
+    /**
+     * ดึงสีหลักสำหรับ LINE Flex Message
+     *
+     * @return string
+     */
+    public function getLineFlexPrimaryColor(): string
+    {
+        return $this->line_flex_primary_color ?? '#6B46C1';
+    }
+
+    /**
+     * ดึง URL รูปภาพ Welcome สำหรับ LINE
+     *
+     * @return string|null
+     */
+    public function getLineWelcomeImageUrl(): ?string
+    {
+        return $this->line_welcome_image_url;
     }
 }

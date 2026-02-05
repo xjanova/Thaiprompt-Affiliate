@@ -3787,9 +3787,9 @@ Route::prefix('developers')->name('developers.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Fortune Telling Routes (ระบบดูดวง Facebook)
+| Fortune Telling Routes (ระบบดูดวง Multi-Channel)
 |--------------------------------------------------------------------------
-| จัดการระบบดูดวงผ่าน Facebook Messenger
+| จัดการระบบดูดวงผ่าน Facebook Messenger และ LINE Official Account
 */
 
 use App\Http\Controllers\Admin\FortuneSettingsController;
@@ -3797,6 +3797,7 @@ use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 use App\Http\Controllers\Admin\FortuneBillingController;
+use App\Http\Controllers\Admin\FortuneChannelController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3804,6 +3805,12 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
     Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
+
+    // ช่องทางรับข้อความ (Facebook, LINE, etc.)
+    Route::get('/channels', [FortuneChannelController::class, 'index'])->name('channels.index');
+    Route::put('/channels', [FortuneChannelController::class, 'update'])->name('channels.update');
+    Route::post('/channels/test-line', [FortuneChannelController::class, 'testLine'])->name('channels.test-line');
+    Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');
 
     // หมวดหมู่
     Route::resource('categories', FortuneCategoriesController::class)->except('show');

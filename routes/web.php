@@ -1171,13 +1171,18 @@ Route::get('/download/{token}', [SoftwareDownloadController::class, 'downloadByT
 */
 
 use App\Http\Controllers\FacebookWebhookController;
+use App\Http\Controllers\LineFortuneWebhookController;
 
 Route::prefix('webhook')->name('webhook.')->group(function () {
-    // Webhook verification (GET) และรับ events (POST)
+    // Facebook Webhook verification (GET) และรับ events (POST)
     Route::match(['GET', 'POST'], '/facebook', [FacebookWebhookController::class, 'webhook'])
         ->name('facebook');
 
     // Verify webhook (GET only - สำหรับ Facebook verification)
     Route::get('/facebook/verify', [FacebookWebhookController::class, 'verify'])
         ->name('facebook.verify');
+
+    // LINE Fortune Webhook (สำหรับระบบดูดวงผ่าน LINE Official Account)
+    Route::post('/line/fortune', [LineFortuneWebhookController::class, 'handle'])
+        ->name('line.fortune');
 });
