@@ -5,11 +5,15 @@
     การใช้งาน:
     @include('components.sms-payment-explanation')
     @include('components.sms-payment-explanation', ['compact' => true])
+    @include('components.sms-payment-explanation', ['compact' => true, 'amount' => 500.37, 'originalAmount' => 500])
 --}}
 
 @php
     $explanation = config('smschecker.customer_explanation', []);
     $isCompact = $compact ?? false;
+    $displayAmount = $amount ?? null;
+    $displayOriginal = $originalAmount ?? null;
+    $hasDecimalDiff = $displayAmount && $displayOriginal && $displayAmount != $displayOriginal;
 @endphp
 
 @if($isCompact)
@@ -18,6 +22,12 @@
         <p class="font-medium text-blue-800 dark:text-blue-300 mb-1">
             💡 {{ $explanation['title'] ?? 'ทำไมยอดโอนมีจุดทศนิยม?' }}
         </p>
+        @if($hasDecimalDiff)
+        <p class="text-blue-700 dark:text-blue-400 mb-2">
+            ยอดสินค้า <span class="font-semibold">฿{{ number_format($displayOriginal, 2) }}</span>
+            → ยอดที่ต้องโอน <span class="font-bold text-blue-900 dark:text-blue-100 text-base">฿{{ number_format($displayAmount, 2) }}</span>
+        </p>
+        @endif
         <p class="text-blue-700 dark:text-blue-400">
             {{ $explanation['note'] ?? 'กรุณาโอนตามยอดที่แสดงทุกประการ (รวมจุดทศนิยม) เพื่อให้ระบบยืนยันอัตโนมัติ ไม่ต้องรอแอดมิน' }}
         </p>

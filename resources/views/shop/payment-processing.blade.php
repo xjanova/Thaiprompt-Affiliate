@@ -117,7 +117,11 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
 
                     {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
                     <div class="mt-4">
-                        @include('components.sms-payment-explanation', ['compact' => true])
+                        @include('components.sms-payment-explanation', [
+                            'compact' => true,
+                            'amount' => $transaction->amount,
+                            'originalAmount' => $transaction->metadata['original_amount'] ?? null
+                        ])
                     </div>
 
                     <!-- Instructions -->
@@ -169,7 +173,11 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
 
                     {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
                     <div class="mb-6">
-                        @include('components.sms-payment-explanation', ['compact' => true])
+                        @include('components.sms-payment-explanation', [
+                            'compact' => true,
+                            'amount' => $transaction->amount,
+                            'originalAmount' => $transaction->metadata['original_amount'] ?? null
+                        ])
                     </div>
 
                     <!-- Bank Account Info (ดึงจากฐานข้อมูลอัตโนมัติ) -->
