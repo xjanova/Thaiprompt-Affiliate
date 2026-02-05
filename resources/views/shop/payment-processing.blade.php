@@ -3,11 +3,21 @@
 @section('title', 'รอการชำระเงิน')
 
 @php
-// ⚡ Emergency fix: สร้าง unique amount ถ้ายังไม่มี
-// ต้องทำใน blade เพราะ OPcache อาจ cache PHP class เก่า
+// ⚡ สร้าง unique amount สำหรับ SMS Checker auto-matching
+// ทำงานเสมอสำหรับ promptpay/bank_transfer โดยไม่ต้องเช็ค config
+// เพราะ config cache อาจทำให้ไม่ทำงาน
+$smsDebug = ['method' => $transaction->payment_method];
+
 if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
     $meta = $transaction->metadata ?? [];
-    if (empty($meta['unique_amount_id'])) {
+    $smsDebug['has_unique_id'] = !empty($meta['unique_amount_id']);
+    $smsDebug['current_amount'] = $transaction->amount;
+
+    // ถ้ายังไม่มี unique_amount_id หรือยอดยังเป็นจำนวนเต็ม (ไม่มีทศนิยม)
+    $amountHasDecimal = ($transaction->amount != floor($transaction->amount));
+    $smsDebug['amount_has_decimal'] = $amountHasDecimal;
+
+    if (empty($meta['unique_amount_id']) && !$amountHasDecimal) {
         try {
             $ua = \App\Models\UniquePaymentAmount::generate(
                 $transaction->amount,
@@ -15,6 +25,7 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
                 $transaction->type ?? 'order',
                 config('smschecker.unique_amount_expiry', 60)
             );
+
             if ($ua) {
                 $meta['original_amount'] = $transaction->amount;
                 $meta['unique_amount_id'] = $ua->id;
@@ -24,17 +35,31 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
                     'metadata' => $meta,
                 ]);
                 $transaction = $transaction->fresh();
-                \Log::info('SMS Checker BLADE FIX: unique amount created', [
-                    'transaction_id' => $transaction->id,
-                    'unique_amount' => $ua->unique_amount,
+                $smsDebug['created'] = true;
+                $smsDebug['new_amount'] = $ua->unique_amount;
+                \Log::info('SMS Checker BLADE: unique amount created', [
+                    'txn' => $transaction->id,
+                    'orig' => $meta['original_amount'],
+                    'new' => $ua->unique_amount,
                 ]);
+            } else {
+                $smsDebug['error'] = 'generate_returned_null';
+                \Log::warning('SMS Checker BLADE: generate() returned null for txn #' . $transaction->id);
             }
         } catch (\Exception $e) {
-            \Log::error('SMS Checker BLADE FIX error: ' . $e->getMessage());
+            $smsDebug['error'] = $e->getMessage();
+            \Log::error('SMS Checker BLADE error: ' . $e->getMessage());
         }
     }
 }
 @endphp
+
+{{-- Debug info (แสดงเฉพาะ debug mode และมี error) --}}
+@if(config('app.debug') && isset($smsDebug['error']))
+<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4 text-sm">
+    <strong>⚠️ SMS Debug:</strong> {{ json_encode($smsDebug) }}
+</div>
+@endif
 
 @section('content')
 <div class="py-6">
