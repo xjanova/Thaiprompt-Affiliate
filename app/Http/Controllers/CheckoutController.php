@@ -11,7 +11,6 @@ use App\Services\CashbackService;
 use App\Services\ShippingService;
 use App\Services\WalletService;
 use App\Services\Payment\PaymentService;
-use App\Services\FcmNotificationService;
 use App\Models\UniquePaymentAmount;
 use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
@@ -260,15 +259,6 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
-
-            // ส่ง push notification ไปยัง SMS Checker App ทันที
-            // เพื่อให้เห็นคำสั่งซื้อใหม่แบบ real-time
-            try {
-                $fcmService = new FcmNotificationService();
-                $fcmService->notifyNewOrder($order);
-            } catch (\Exception $e) {
-                \Log::error('Failed to send FCM notification: ' . $e->getMessage());
-            }
 
             // Redirect to payment page
             return redirect()->route('checkout.payment', $order->id);
