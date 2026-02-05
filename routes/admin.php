@@ -3796,6 +3796,7 @@ use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
+use App\Http\Controllers\Admin\FortuneBillingController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3819,6 +3820,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         ->name('response-templates.set-default');
     Route::post('/response-templates-preview', [FortuneResponseTemplatesController::class, 'preview'])
         ->name('response-templates.preview');
+
+    // จัดการบิลดูดวง
+    Route::prefix('billing')->name('billing.')->group(function () {
+        Route::get('/', [FortuneBillingController::class, 'index'])->name('index');
+        Route::get('/floating-bills', [FortuneBillingController::class, 'floatingBills'])->name('floating-bills');
+        Route::post('/{reading}/assign', [FortuneBillingController::class, 'assignToUser'])->name('assign');
+        Route::post('/{reading}/manual-confirm', [FortuneBillingController::class, 'manualConfirm'])->name('manual-confirm');
+        Route::post('/{reading}/void', [FortuneBillingController::class, 'void'])->name('void');
+        Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
+        Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
+    });
 });
 
 // ========================================

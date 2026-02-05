@@ -723,6 +723,7 @@ return [
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
+                ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],
             ],
         ],
 
