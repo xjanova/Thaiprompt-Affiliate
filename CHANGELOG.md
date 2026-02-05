@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.13] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(sidebar): Use MenuService for all dashboard types including admin (e71ba9fc)
+### 🔧 Other Changes
+
+
 ## [v3.461.12] - 2026-02-05
 
 ### ✨ Features
