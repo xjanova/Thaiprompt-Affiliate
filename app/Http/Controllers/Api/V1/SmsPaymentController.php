@@ -433,9 +433,12 @@ class SmsPaymentController extends Controller
             $query->where('store_id', $device->store_id);
         }
 
-        // กรองสถานะ (default: pending)
-        $status = $request->input('status', 'pending');
-        if ($status !== 'all') {
+        // กรองสถานะ (default: pending + processing = รอชำระเงิน)
+        $status = $request->input('status', 'waiting');
+        if ($status === 'waiting') {
+            // 'waiting' = pending หรือ processing (รอชำระเงิน)
+            $query->whereIn('status', ['pending', 'processing']);
+        } elseif ($status !== 'all') {
             $query->where('status', $status);
         }
 
