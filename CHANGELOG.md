@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.461.16] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix(api): Always include amount in order_details_json for Android sync (cdf64106)
+### 🔧 Other Changes
+
+
 ## [v3.461.15] - 2026-02-05
 
 ### ✨ Features
