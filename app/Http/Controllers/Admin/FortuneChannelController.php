@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
+use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -204,5 +205,117 @@ class FortuneChannelController extends Controller
             'success' => true,
             'data' => $stats,
         ]);
+    }
+
+    /**
+     * ตั้งค่า Facebook Messenger Profile (Get Started button และ Persistent Menu)
+     *
+     * ตั้งค่าปุ่ม "เริ่มต้นใช้งาน" และเมนูถาวรใน Messenger
+     * ต้องเรียกครั้งเดียวหลังจากตั้งค่า Facebook Page เสร็จ
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function setupFacebookMessenger()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            if (empty($settings->facebook_page_access_token)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อนทดสอบ',
+                ]);
+            }
+
+            $facebookService = new FacebookWebhookService($settings);
+            $result = $facebookService->setupMessengerProfile();
+
+            Log::info('Facebook Messenger Profile setup result', $result);
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            Log::error('Facebook Messenger Profile setup failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ดึงค่า Facebook Messenger Profile ปัจจุบัน
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFacebookMessengerProfile()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            if (empty($settings->facebook_page_access_token)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อน',
+                ]);
+            }
+
+            $facebookService = new FacebookWebhookService($settings);
+            $result = $facebookService->getMessengerProfile();
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ Facebook
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testFacebook()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            if (empty($settings->facebook_page_access_token)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อน',
+                ]);
+            }
+
+            $facebookService = new FacebookWebhookService($settings);
+
+            // ทดสอบด้วยการดึง Page info
+            $result = $facebookService->getMessengerProfile();
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'เชื่อมต่อ Facebook สำเร็จ!',
+                    'data' => $result['data'] ?? null,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'เชื่อมต่อไม่สำเร็จ',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ]);
+        }
     }
 }

@@ -3810,6 +3810,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/channels', [FortuneChannelController::class, 'index'])->name('channels.index');
     Route::put('/channels', [FortuneChannelController::class, 'update'])->name('channels.update');
     Route::post('/channels/test-line', [FortuneChannelController::class, 'testLine'])->name('channels.test-line');
+    Route::post('/channels/test-facebook', [FortuneChannelController::class, 'testFacebook'])->name('channels.test-facebook');
+    Route::post('/channels/setup-facebook-messenger', [FortuneChannelController::class, 'setupFacebookMessenger'])->name('channels.setup-facebook-messenger');
+    Route::get('/channels/facebook-messenger-profile', [FortuneChannelController::class, 'getFacebookMessengerProfile'])->name('channels.facebook-messenger-profile');
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');
 
     // หมวดหมู่

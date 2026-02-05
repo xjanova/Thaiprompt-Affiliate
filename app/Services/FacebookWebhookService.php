@@ -906,4 +906,186 @@ class FacebookWebhookService
         $version = self::GRAPH_API_VERSION;
         return "https://graph.facebook.com/{$version}{$path}";
     }
+
+    // ============================================================
+    // Messenger Profile Setup
+    // ============================================================
+
+    /**
+     * ตั้งค่า Messenger Profile (Get Started button และ Persistent Menu)
+     *
+     * เรียกใช้ครั้งเดียวหลังจากตั้งค่า Facebook Page เสร็จ
+     * สามารถเรียกผ่าน admin panel หรือ artisan command
+     *
+     * @return array ผลลัพธ์การตั้งค่า ['success' => bool, 'message' => string]
+     */
+    public function setupMessengerProfile(): array
+    {
+        if (empty($this->pageAccessToken)) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบ Page Access Token',
+            ];
+        }
+
+        try {
+            // ตั้งค่า Get Started button และ Persistent Menu
+            $response = Http::post($this->graphUrl('/me/messenger_profile'), [
+                'access_token' => $this->pageAccessToken,
+
+                // Get Started button - ส่ง payload GET_STARTED เมื่อผู้ใช้กด
+                'get_started' => [
+                    'payload' => 'GET_STARTED',
+                ],
+
+                // Greeting text - แสดงก่อนผู้ใช้ส่งข้อความแรก
+                'greeting' => [
+                    [
+                        'locale' => 'default',
+                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨",
+                    ],
+                    [
+                        'locale' => 'th_TH',
+                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨",
+                    ],
+                ],
+
+                // Persistent Menu - เมนูถาวรที่แสดงตลอดเวลา
+                'persistent_menu' => [
+                    [
+                        'locale' => 'default',
+                        'composer_input_disabled' => false, // อนุญาตให้พิมพ์ข้อความได้
+                        'call_to_actions' => [
+                            [
+                                'type' => 'postback',
+                                'title' => '🔮 ดูดวงฟรี',
+                                'payload' => 'MENU_FORTUNE',
+                            ],
+                            [
+                                'type' => 'postback',
+                                'title' => '💎 ดูดวงละเอียด',
+                                'payload' => 'MENU_DEEP_FORTUNE',
+                            ],
+                            [
+                                'type' => 'postback',
+                                'title' => '❓ วิธีใช้งาน',
+                                'payload' => 'MENU_HELP',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+            if ($response->successful()) {
+                Log::info('✅ Messenger Profile setup successful', [
+                    'response' => $response->json(),
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'ตั้งค่า Messenger Profile สำเร็จ (Get Started button + Persistent Menu)',
+                    'data' => $response->json(),
+                ];
+            }
+
+            $error = $response->json('error', []);
+            Log::error('❌ Messenger Profile setup failed', [
+                'response' => $response->json(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'ตั้งค่าไม่สำเร็จ: ' . ($error['message'] ?? 'Unknown error'),
+                'data' => $response->json(),
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Messenger Profile setup error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ลบ Messenger Profile settings ทั้งหมด
+     *
+     * @return array ผลลัพธ์การลบ
+     */
+    public function deleteMessengerProfile(): array
+    {
+        if (empty($this->pageAccessToken)) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบ Page Access Token',
+            ];
+        }
+
+        try {
+            $response = Http::delete($this->graphUrl('/me/messenger_profile'), [
+                'access_token' => $this->pageAccessToken,
+                'fields' => ['get_started', 'greeting', 'persistent_menu'],
+            ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => 'ลบ Messenger Profile สำเร็จ',
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'ลบไม่สำเร็จ: ' . ($response->json('error.message') ?? 'Unknown error'),
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ดึงค่า Messenger Profile ปัจจุบัน
+     *
+     * @return array ค่า profile ปัจจุบัน
+     */
+    public function getMessengerProfile(): array
+    {
+        if (empty($this->pageAccessToken)) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบ Page Access Token',
+            ];
+        }
+
+        try {
+            $response = Http::get($this->graphUrl('/me/messenger_profile'), [
+                'access_token' => $this->pageAccessToken,
+                'fields' => 'get_started,greeting,persistent_menu',
+            ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'data' => $response->json('data', []),
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'ดึงข้อมูลไม่สำเร็จ: ' . ($response->json('error.message') ?? 'Unknown error'),
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ];
+        }
+    }
 }
