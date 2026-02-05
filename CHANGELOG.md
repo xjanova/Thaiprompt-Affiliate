@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.1] - 2026-02-05
+
+### ✨ Features
+- feat(fortune): add admin UI for channel management (cb544128)
+- feat(fortune): add multi-channel support with LINE integration (abce655e)
+### 🐛 Bug Fixes
+- fix(fortune): add missing testConnection method and fix migration column (58d73eff)
+### 🔧 Other Changes
+- Merge pull request #2474 from xjanova/claude/fortune-telling-chatbot-haL6D (e80d2a4e)
+- Merge branch 'claude/Main' into claude/fortune-telling-chatbot-haL6D (c63d93d4)
+
 ## [v3.464.0] - 2026-02-05
 
 ### ✨ Features
