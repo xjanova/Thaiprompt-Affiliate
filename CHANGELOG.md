@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.2] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Fix: PromptPay/Bank transfer now waits for SMS Checker (09cca075)
+
 ## [v3.464.1] - 2026-02-05
 
 ### ✨ Features
