@@ -66,7 +66,7 @@
                             @foreach($orders as $order)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                                 <td class="px-6 py-4">
-                                    <a href="{{ route('admin.orders.show', $order) }}"
+                                    <a href="{{ route('admin.ecommerce.orders.show', $order) }}"
                                        class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
                                         #{{ $order->id }}
                                     </a>
