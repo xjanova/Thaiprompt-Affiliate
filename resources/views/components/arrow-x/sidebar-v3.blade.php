@@ -36,12 +36,10 @@
         : $logo;
     $themeBrandName = $themeSetting->brand_name ?? $title;
 
-    // ถ้าเป็น user ให้โหลดเมนูจาก MenuService
-    $useMenuService = ($type === 'user' || $type === 'seller');
-    if ($useMenuService) {
-        $menuService = app(\App\Services\MenuService::class);
-        $menus = $menuService->getMenuForRole($type, auth()->user());
-    }
+    // โหลดเมนูจาก MenuService สำหรับทุก type (admin, user, seller)
+    $useMenuService = true;
+    $menuService = app(\App\Services\MenuService::class);
+    $menus = $menuService->getMenuForRole($type, auth()->user());
 @endphp
 
 {{-- Mobile Overlay (แสดงเมื่อเปิด sidebar บนมือถือ) --}}
