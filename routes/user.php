@@ -601,6 +601,24 @@ Route::prefix('video-missions')->name('video-missions.')->group(function () {
 });
 
 // ============================================
+// Video Coins Routes (ระบบ Video Coins)
+// ============================================
+Route::prefix('video-coins')->name('video-coins.')->group(function () {
+    // หน้าหลัก - แสดงยอด coins และสถิติ
+    Route::get('/', [\App\Http\Controllers\User\VideoCoinController::class, 'index'])->name('index');
+
+    // AJAX: ดึงยอด coins สำหรับ topbar
+    Route::get('/balance-ajax', [\App\Http\Controllers\User\VideoCoinController::class, 'getBalanceAjax'])->name('balance-ajax');
+
+    // ประวัติธุรกรรม
+    Route::get('/transactions', [\App\Http\Controllers\User\VideoCoinController::class, 'transactions'])->name('transactions');
+
+    // แลก coins เป็นเงิน
+    Route::get('/exchange', [\App\Http\Controllers\User\VideoCoinController::class, 'exchange'])->name('exchange');
+    Route::post('/exchange', [\App\Http\Controllers\User\VideoCoinController::class, 'submitExchange'])->name('exchange.submit');
+});
+
+// ============================================
 // Coin Shop Routes (ร้านค้า Coins)
 // ============================================
 Route::prefix('coin-shop')->name('coin-shop.')->group(function () {
