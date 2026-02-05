@@ -13,6 +13,7 @@ use App\Models\PaymentTransaction;
 use App\Models\UniquePaymentAmount;
 use App\Models\PaymentBankAccount;
 use App\Models\SmsCheckerDevice;
+use App\Models\VendorStore;
 use App\Services\TarotCommissionService;
 use App\Services\TarotInterpretationService;
 use Illuminate\Http\Request;
@@ -269,6 +270,7 @@ class TarotReadingController extends Controller
         $transaction = PaymentTransaction::create([
             'transaction_id' => 'TAROT-' . strtoupper(Str::random(12)),
             'user_id' => $userId,
+            'store_id' => VendorStore::getPlatformStoreId(),
             'type' => 'order_payment',
             'payment_method' => $paymentMethod,
             'status' => 'pending',

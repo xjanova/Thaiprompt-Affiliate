@@ -13,6 +13,7 @@ use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -182,6 +183,7 @@ class WalletController extends Controller
             // สร้าง PaymentTransaction สำหรับ wallet_topup โดยตรง
             $transaction = PaymentTransaction::create([
                 'user_id' => $user->id,
+                'store_id' => VendorStore::getPlatformStoreId(),
                 'type' => 'wallet_topup',
                 'payment_method' => 'pending', // รอเลือกวิธีชำระเงิน
                 'status' => 'pending',

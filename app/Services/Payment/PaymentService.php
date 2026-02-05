@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use App\Models\VendorStore;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -182,6 +183,7 @@ class PaymentService
         return DB::transaction(function () use ($user, $amount, $paymentMethod, $options) {
             $transaction = PaymentTransaction::create([
                 'user_id' => $user->id,
+                'store_id' => VendorStore::getPlatformStoreId(),
                 'type' => 'wallet_topup',
                 'payment_method' => $paymentMethod,
                 'status' => 'pending',
@@ -517,6 +519,7 @@ class PaymentService
             // Create refund transaction
             $refund = PaymentTransaction::create([
                 'user_id' => $transaction->user_id,
+                'store_id' => $transaction->store_id,  // Inherit from original transaction
                 'type' => 'refund',
                 'payment_method' => $transaction->payment_method,
                 'status' => 'completed',
