@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.466.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2491 from xjanova/claude/check-horoscope-facebook-CtSPS (c7d2346f)
+- feat: เพิ่มระบบ Admin Handover - บอทหยุดเมื่อแอดมินกำลังดูแลลูกค้า (0be254c6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.465.0] - 2026-02-06
 
 ### ✨ Features
