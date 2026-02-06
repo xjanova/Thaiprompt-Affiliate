@@ -110,6 +110,9 @@ class FortuneTellingSetting extends Model
         'enabled_platforms',
         'line_flex_primary_color',
         'line_welcome_image_url',
+        // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
+        'admin_handover_enabled',
+        'admin_handover_timeout',
     ];
 
     /**
@@ -126,6 +129,8 @@ class FortuneTellingSetting extends Model
         'allow_try_before_buy' => 'boolean',
         'subscription_enabled' => 'boolean',
         'comment_engagement_enabled' => 'boolean',
+        'admin_handover_enabled' => 'boolean',
+        'admin_handover_timeout' => 'integer',
         'line_enabled' => 'boolean',
         'enabled_platforms' => 'array',
         'max_free_readings' => 'integer',
