@@ -532,6 +532,7 @@ class FacebookWebhookController extends Controller
             // Persistent Menu options
             'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
@@ -571,6 +572,7 @@ class FacebookWebhookController extends Controller
             // ส่งข้อความต้อนรับพร้อม Quick Replies
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
                 ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ];
 
@@ -615,12 +617,14 @@ class FacebookWebhookController extends Controller
         $message .= "💡 *วิธีเริ่มต้น*\n";
         $message .= "═══════════════════════\n\n";
 
-        $message .= "พิมพ์ 'ดูดวง' หรือ บอกเรื่องที่อยากรู้\n\n";
+        $message .= "พิมพ์อะไรก็ได้มาคุยกับทางเพจได้เลยค่ะ!\n\n";
 
         $message .= "ตัวอย่าง:\n";
-        $message .= "• ดูดวงความรัก\n";
+        $message .= "• ดวงความรักปีนี้เป็นอย่างไร\n";
         $message .= "• ปีนี้จะได้เลื่อนตำแหน่งไหม\n";
         $message .= "• การเงินเดือนหน้าเป็นอย่างไร\n\n";
+
+        $message .= "📊 พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n\n";
 
         $message .= "กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇";
 
@@ -662,8 +666,9 @@ class FacebookWebhookController extends Controller
                 $this->sendLongMessage($senderId, $message);
             }
 
-            // ส่ง Quick Replies ถ้าต้องการ
-            if (!empty($result['show_quick_replies'])) {
+            // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
+            $actionsWithQuickReplies = ['basic_done', 'check_remaining'];
+            if (!empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
 
@@ -736,7 +741,13 @@ class FacebookWebhookController extends Controller
         $quickReplies = match ($action) {
             'basic_done' => [
                 ['content_type' => 'text', 'title' => '✨ ต้องการดูละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
                 ['content_type' => 'text', 'title' => '❌ ไม่ต้องการ', 'payload' => 'DEEP_READING_DECLINE'],
+            ],
+            'check_remaining' => [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ],
             default => null,
         };
@@ -943,12 +954,13 @@ class FacebookWebhookController extends Controller
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
                 $senderId,
                 $this->settings->getSubscriptionMessage()
             ),
             'HELP' => $this->sendHelpMessage($senderId),
-            default => $this->sendHelpMessage($senderId),
+            default => $this->processConversationalMessage($senderId, $payload),
         };
     }
 
@@ -1001,11 +1013,12 @@ class FacebookWebhookController extends Controller
 
         // ส่งพร้อม quick reply buttons
         $quickReplies = [
-            ['title' => 'ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+            ['title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+            ['title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
         ];
 
         if ($this->settings->isDeepReadingEnabled()) {
-            $quickReplies[] = ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
+            $quickReplies[] = ['title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
         }
 
         $this->facebookService->sendQuickReplies($userId, $message, $quickReplies);
