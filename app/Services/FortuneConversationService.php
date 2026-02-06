@@ -245,7 +245,14 @@ class FortuneConversationService
         $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
         if ($activeReading) {
-            return $this->continueConversation($activeReading, $messageText, $userProfile);
+            // ถ้าผู้ใช้พิมพ์ "ดูดวง" ขณะมี active conversation สถานะ basic_done
+            // ให้ปิด conversation เก่าและเริ่มต้นใหม่ แทนที่จะตีความว่าปฏิเสธ deep reading
+            if ($this->isFortuneRequest($messageText) && $activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
+                $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                // ไม่ return ให้ตกไปด้านล่างเพื่อเริ่ม conversation ใหม่
+            } else {
+                return $this->continueConversation($activeReading, $messageText, $userProfile);
+            }
         }
 
         // ตรวจสอบว่าเป็นคำขอดูดวงหรือไม่
@@ -336,10 +343,21 @@ class FortuneConversationService
                 'error' => $e->getMessage(),
             ]);
 
+            // ลบ reading ที่สร้างไว้เพื่อไม่ให้นับรวมใน daily limit
+            // เพราะการทำนายไม่สำเร็จ ไม่ควรหักสิทธิ์ฟรีของผู้ใช้
+            try {
+                $reading->forceDelete();
+            } catch (\Exception $deleteError) {
+                Log::warning('Fortune Conversation: ลบ reading ที่ล้มเหลวไม่สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'error' => $deleteError->getMessage(),
+                ]);
+            }
+
             return [
                 'action' => 'error',
                 'message' => "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้ง 🙏",
-                'reading' => $reading,
+                'reading' => null,
             ];
         }
     }
