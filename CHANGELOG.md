@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.16] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2486 from xjanova/claude/fix-forum-trophies-column-q1Mwu (9f07cca1)
+- fix: add missing forum_trophies columns and fix null-safety issues (de6d8220)
+### 🔧 Other Changes
+
+
 ## [v3.464.15] - 2026-02-06
 
 ### ✨ Features
