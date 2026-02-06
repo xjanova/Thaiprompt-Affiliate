@@ -975,7 +975,7 @@ class FacebookWebhookController extends Controller
             try {
                 $this->facebookService->sendMessage(
                     $fromId,
-                    "🔮 ขออภัยค่ะ ระบบทำนายขัดข้องชั่วคราว\n\nกรุณาลองใหม่อีกครั้งในอีกสักครู่นะคะ 🙏✨"
+                    "🔮 สวัสดีค่ะ\n\nตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\nกรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n💡 พิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\nหรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
                 );
             } catch (\Exception $sendError) {
                 Log::error('ส่งข้อความ error ไม่สำเร็จ: ' . $sendError->getMessage());

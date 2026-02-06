@@ -460,6 +460,14 @@ class FortuneAIService
         ?array $userProfile = null,
         ?string $engagementPrompt = null
     ): array {
+        // ตรวจสอบ API Key ก่อนเรียก AI
+        if (empty($this->apiKey)) {
+            Log::error('FortuneAIService: ไม่มี API Key สำหรับ comment engagement', [
+                'provider' => $this->provider,
+            ]);
+            throw new Exception("ไม่พบ API Key สำหรับ {$this->provider}");
+        }
+
         $prompt = $engagementPrompt ?? $this->settings->getCommentEngagementPrompt();
 
         // แทนที่ placeholders ใน prompt
@@ -653,17 +661,21 @@ class FortuneAIService
             return;
         }
 
-        // ประมาณการแยก input/output tokens (ถ้าไม่มีข้อมูล)
-        $inputTokens = (int) ($tokensUsed * 0.3);
-        $outputTokens = $tokensUsed - $inputTokens;
+        try {
+            // ประมาณการแยก input/output tokens (ถ้าไม่มีข้อมูล)
+            $inputTokens = (int) ($tokensUsed * 0.3);
+            $outputTokens = $tokensUsed - $inputTokens;
 
-        $this->currentKey->recordUsage(
-            $inputTokens,
-            $outputTokens,
-            $model,
-            $responseTime,
-            $requestType
-        );
+            $this->currentKey->recordUsage(
+                $inputTokens,
+                $outputTokens,
+                $model,
+                $responseTime,
+                $requestType
+            );
+        } catch (\Exception $e) {
+            Log::warning('FortuneAIService: บันทึก usage ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -678,6 +690,10 @@ class FortuneAIService
             return;
         }
 
-        $this->currentKey->recordError($errorMessage, $model);
+        try {
+            $this->currentKey->recordError($errorMessage, $model);
+        } catch (\Exception $e) {
+            Log::warning('FortuneAIService: บันทึก error ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
     }
 }
