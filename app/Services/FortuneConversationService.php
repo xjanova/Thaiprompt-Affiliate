@@ -69,9 +69,10 @@ class FortuneConversationService
     public const MAX_MESSAGES_PER_HOUR = 60;
 
     /**
-     * Rate Limiting: จำนวน AI calls สูงสุดต่อวัน (ต่อ user)
+     * Rate Limiting: จำนวน AI calls สูงสุดต่อวัน (ต่อ user) - fallback ถ้าไม่ได้ตั้งค่า
+     * ปกติใช้ค่าจาก settings.max_free_readings แทน
      */
-    public const MAX_AI_CALLS_PER_DAY = 20;
+    public const MAX_AI_CALLS_PER_DAY = 1;
 
     /**
      * จำนวนข้อความซ้ำที่ยอมรับได้
@@ -121,19 +122,19 @@ class FortuneConversationService
 
     /**
      * Meaningless/Random Chat Patterns - ถามเรื่อยเปื่อย
+     *
+     * ⚠️ ปรับให้ไม่เข้มงวดเกินไป - ให้ผ่านไปตอบเป็นข้อความช่วยเหลือแทน
+     * ไม่บล็อก แต่ให้ตอบเป็นข้อความแนะนำวิธีใช้
      */
     protected const MEANINGLESS_PATTERNS = [
-        // Single words/sounds
-        '/^(ฮัลโหล|hello|hi|hey|yo|อา|อ้า|เอ่อ|อืม|555+|หา|ว่าไง|จ้า|ค่ะ|ครับ|นะ|จ๊ะ|อิอิ|แฮ่|เฮ้|โว้ว|ว้าว)$/ui',
-        // Just greetings without questions
-        '/^(สวัสดี|หวัดดี|ดี|hello|hi)[\s]*[ค่ะครับจ้า]*$/ui',
-        // Random letters/numbers
-        '/^[a-z]{1,5}$/i',
-        '/^[ก-ฮ]{1,3}$/u',
-        // Just punctuation or emojis
-        '/^[\s\.\,\!\?\-\_\'\"\(\)]+$/',
+        // Random letters/numbers only
+        '/^[a-z]{1,3}$/i',
+        '/^[ก-ฮ]{1,2}$/u',
+        '/^[0-9]{1,3}$/u',
+        // Just punctuation
+        '/^[\s\.\,\!\?\-\_]+$/',
         // Testing messages
-        '/^(test|ทดสอบ|เทส|123|abc)$/ui',
+        '/^(test|เทส|123|abc)$/ui',
     ];
 
     /**
@@ -819,37 +820,40 @@ class FortuneConversationService
     /**
      * สร้างข้อความ help พร้อมตัวอย่างคำถาม
      *
+     * มีคาแรคเตอร์หมอดูที่อบอุ่น เป็นกันเอง แต่น่าเชื่อถือ
+     *
      * @return string
      */
     protected function getHelpMessageWithExamples(): string
     {
-        $message = "🔮 *ทางเพจยินดีต้อนรับค่ะ*\n\n";
-        $message .= "ทางเพจรับดูดวงเรื่องต่างๆ ดังนี้นะคะ:\n\n";
+        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
 
-        $message .= "💕 *ความรัก* - คู่ครอง, แฟน, แต่งงาน\n";
-        $message .= "💼 *การงาน* - อาชีพ, เปลี่ยนงาน, เลื่อนตำแหน่ง\n";
-        $message .= "💰 *การเงิน* - รายได้, หนี้สิน, ลงทุน\n";
-        $message .= "🏥 *สุขภาพ* - โรคภัย, สิ่งที่ควรระวัง\n";
-        $message .= "🍀 *โชคลาภ* - เลขมงคล, สีมงคล\n\n";
+        $message = "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n";
+        $message .= "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่องอะไร:\n\n";
+
+        $message .= "💕 *ความรัก* - เนื้อคู่ แฟน แต่งงาน\n";
+        $message .= "💼 *การงาน* - เปลี่ยนงาน เลื่อนขั้น\n";
+        $message .= "💰 *การเงิน* - โชคลาภ รายได้\n";
+        $message .= "🏥 *สุขภาพ* - สิ่งควรระวัง\n\n";
 
         $message .= "═══════════════════════\n";
-        $message .= "📝 *ตัวอย่างคำถาม*\n";
+        $message .= "🎁 *บริการของหมอ*\n";
         $message .= "═══════════════════════\n\n";
 
+        $message .= "🆓 *ดูดวงฟรี* - วันละ 1 คำถาม\n";
+        $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
+
+        $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+        $message .= "   ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+        $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+
+        $message .= "📝 *ตัวอย่างคำถาม*:\n";
         $message .= "• ปีนี้จะมีคู่ครองไหม\n";
-        $message .= "• ควรเปลี่ยนงานไหม\n";
-        $message .= "• ดวงการเงินเป็นอย่างไร\n\n";
+        $message .= "• ควรเปลี่ยนงานตอนนี้ไหม\n";
+        $message .= "• ดวงการเงินช่วงนี้เป็นอย่างไร\n\n";
 
-        $message .= "💡 *วิธีถาม*:\n";
-        $message .= "พิมพ์ 'ดูดวง' แล้วบอกเรื่องที่อยากรู้\n";
-        $message .= "หรือพิมพ์คำถามมาเลยก็ได้ค่ะ\n\n";
-
-        $message .= "ตัวอย่าง:\n";
-        $message .= "「ดูดวงความรัก」\n";
-        $message .= "「ปีนี้จะได้เลื่อนตำแหน่งไหม」\n";
-        $message .= "「การเงินปีหน้าเป็นอย่างไร」\n\n";
-
-        $message .= "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+        $message .= "💡 พิมพ์คำถามมาได้เลยนะคะ\n";
+        $message .= "หมอพร้อมทำนายให้ค่ะ ✨";
 
         return $message;
     }
@@ -938,16 +942,8 @@ class FortuneConversationService
             ];
         }
 
-        // 4. ตรวจจับข้อความไร้สาระ/เรื่อยเปื่อย
-        if ($this->isMeaninglessMessage($text)) {
-            return [
-                'valid' => false,
-                'reason' => 'meaningless',
-                'message' => $this->getMeaninglessMessage(),
-            ];
-        }
-
-        // 5. ตรวจจับ spam/gibberish
+        // 4. ตรวจจับ spam/gibberish รุนแรง (ตัวอักษรซ้ำ, random characters)
+        // ⚠️ ลดความเข้มงวด - ให้บล็อกเฉพาะ spam รุนแรงเท่านั้น
         if ($this->isSpamOrGibberish($text)) {
             return [
                 'valid' => false,
@@ -956,15 +952,9 @@ class FortuneConversationService
             ];
         }
 
-        // 6. ตรวจจับ off-topic keywords
-        $offTopicResult = $this->detectOffTopic($text);
-        if ($offTopicResult['is_off_topic']) {
-            return [
-                'valid' => false,
-                'reason' => 'off_topic',
-                'message' => $this->getOffTopicMessage($offTopicResult['category']),
-            ];
-        }
+        // 5. ข้อความไร้สาระ (สวัสดี, hi, etc.) → ให้ผ่านไป ตอบเป็น help message แทน
+        // ⚠️ ไม่บล็อก แต่ให้ main flow จัดการเป็น help message
+        // (ย้ายไปจัดการใน processMessage แทน)
 
         // 7. ตรวจจับคำถามว่าเป็น AI หรือไม่
         if ($this->isAskingAboutAI($text)) {
@@ -1216,17 +1206,35 @@ class FortuneConversationService
     }
 
     /**
-     * ตรวจสอบว่าเกิน AI calls limit ต่อวันหรือไม่
+     * ตรวจสอบว่าผู้ใช้ยังสามารถถามฟรีได้หรือไม่
      *
-     * @param string $userId
-     * @return bool true ถ้ายังเรียก AI ได้
+     * เช็คจากฐานข้อมูลว่าวันนี้ถามฟรีไปกี่ครั้งแล้ว
+     * เทียบกับ max_free_readings ที่ตั้งค่าไว้
+     *
+     * @param string $userId Facebook/LINE User ID
+     * @return bool true ถ้ายังถามฟรีได้
      */
     public function canMakeAICall(string $userId): bool
     {
-        $dayKey = "fortune_ai_calls:{$userId}:day";
-        $count = (int) Cache::get($dayKey, 0);
+        // ดึงค่า max_free_readings จาก settings (default = 1)
+        $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
 
-        return $count < self::MAX_AI_CALLS_PER_DAY;
+        // เช็คจากฐานข้อมูลว่าวันนี้ถามฟรีไปกี่ครั้งแล้ว
+        return !FortuneReading::hasReachedFreeLimit($userId, $maxFreeReadings);
+    }
+
+    /**
+     * ตรวจสอบจำนวนคำถามฟรีที่เหลือวันนี้
+     *
+     * @param string $userId
+     * @return int จำนวนครั้งที่เหลือ
+     */
+    public function getRemainingFreeQuestions(string $userId): int
+    {
+        $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
+        $usedToday = FortuneReading::countTodayReadings($userId);
+
+        return max(0, $maxFreeReadings - $usedToday);
     }
 
     /**
@@ -1482,15 +1490,17 @@ class FortuneConversationService
 
     /**
      * ข้อความเมื่อตรวจจับข้อความไร้สาระ
+     *
+     * ตอบด้วยความเป็นมิตร ไม่ดูถูกผู้ใช้
      */
     protected function getMeaninglessMessage(): string
     {
-        return "🔮 *สวัสดีค่ะ ทางเพจยินดีต้อนรับค่ะ*\n\n" .
-               "ทางเพจรับดูดวงเรื่องต่างๆ นะคะ:\n\n" .
-               "💕 ความรัก - คู่ครอง, แฟน, แต่งงาน\n" .
-               "💼 การงาน - อาชีพ, เปลี่ยนงาน\n" .
-               "💰 การเงิน - รายได้, โชคลาภ\n" .
-               "🏥 สุขภาพ - สิ่งที่ควรระวัง\n\n" .
+        return "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n" .
+               "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่อง:\n\n" .
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
+               "💼 การงาน - เปลี่ยนงาน เลื่อนขั้น\n" .
+               "💰 การเงิน - โชคลาภ รายได้\n" .
+               "🏥 สุขภาพ - สิ่งควรระวัง\n\n" .
                "💡 *ตัวอย่างคำถาม*:\n" .
                "• ปีนี้จะมีคู่ครองไหม\n" .
                "• ควรเปลี่ยนงานไหม\n" .
@@ -1499,15 +1509,38 @@ class FortuneConversationService
     }
 
     /**
-     * ข้อความเมื่อเกิน AI calls ต่อวัน
+     * ข้อความเมื่อใช้สิทธิ์ถามฟรีหมดแล้ว
+     *
+     * ชวนให้จ่ายเงินดูดวงละเอียดพร้อมบอกวิธีการชัดเจน
      */
     protected function getAILimitMessage(): string
     {
-        return "🙏 ขอบคุณที่ใช้บริการค่ะ\n\n" .
-               "วันนี้ทางเพจได้ทำนายให้หลายครั้งแล้วค่ะ\n" .
-               "กรุณากลับมาใหม่พรุ่งนี้นะคะ\n\n" .
-               "หากต้องการคำทำนายละเอียดเลย สามารถเลือก *ดูดวงละเอียด* ได้ค่ะ ✨\n\n" .
-               "ขอให้โชคดีค่ะ 🔮";
+        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+
+        $message = "🔮 *สวัสดีค่ะ ขอบคุณที่มาหาหมอนะคะ*\n\n";
+        $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";
+        $message .= "(ฟรีวันละ 1 คำถาม)\n\n";
+
+        $message .= "═══════════════════════\n";
+        $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+        $message .= "═══════════════════════\n\n";
+
+        $message .= "📌 ถามได้ถึง 3 คำถาม\n";
+        $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
+        $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
+        $message .= "📌 คำทำนายละเอียดคุ้มราคา\n\n";
+
+        $message .= "🎯 *วิธีใช้บริการ*\n";
+        $message .= "─────────────────────\n";
+        $message .= "1️⃣ โอนเงิน {$price} บาท\n";
+        $message .= $this->getBankAccountsListMessage();
+        $message .= "\n2️⃣ บอกวันเดือนปีเกิด\n";
+        $message .= "3️⃣ ถามคำถามได้เลย 3 ข้อ\n\n";
+
+        $message .= "💡 พิมพ์ \"*ต้องการดูละเอียด*\" หรือ \"*โอนแล้ว*\"\n";
+        $message .= "เพื่อเริ่มกระบวนการค่ะ ✨";
+
+        return $message;
     }
 
     /**
@@ -1515,13 +1548,14 @@ class FortuneConversationService
      */
     protected function getTooLongMessage(): string
     {
-        return "🙏 ขอบคุณที่สนใจค่ะ\n\n" .
-               "ข้อความยาวเกินไปค่ะ กรุณาพิมพ์คำถามสั้นๆ กระชับ\n\n" .
+        return "🔮 ข้อความยาวไปหน่อยค่ะ\n\n" .
+               "ลองย่อให้สั้นกว่านี้ได้ไหมคะ?\n" .
+               "หมอจะได้ตอบได้ตรงจุดค่ะ\n\n" .
                "💡 *ตัวอย่าง*:\n" .
                "• ดวงความรักปีนี้เป็นอย่างไร\n" .
-               "• การเงินเดือนหน้าจะดีไหม\n" .
-               "• ควรเปลี่ยนงานไหม\n\n" .
-               "ทางเพจรอคำถามอยู่นะคะ 🔮✨";
+               "• ควรเปลี่ยนงานตอนนี้ไหม\n" .
+               "• การเงินช่วงนี้จะดีไหม\n\n" .
+               "หมอรอคำถามอยู่นะคะ ✨";
     }
 
     /**
@@ -1529,25 +1563,30 @@ class FortuneConversationService
      */
     protected function getTooShortMessage(): string
     {
-        return "🤔 ทางเพจไม่เข้าใจค่ะ\n\n" .
-               "กรุณาพิมพ์คำถามให้ชัดเจนกว่านี้นะคะ\n\n" .
+        return "🔮 หมอไม่ค่อยเข้าใจค่ะ\n\n" .
+               "ลองพิมพ์คำถามให้ชัดกว่านี้หน่อยนะคะ\n\n" .
                "💡 *ตัวอย่าง*:\n" .
-               "• ดวงความรักปีนี้, ควรเปลี่ยนงานไหม, การเงินจะดีขึ้นไหม\n\n" .
-               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
+               "• ควรเปลี่ยนงานไหม\n" .
+               "• การเงินจะดีขึ้นไหม\n\n" .
+               "หมอพร้อมทำนายให้ค่ะ ✨";
     }
 
     /**
      * ข้อความเมื่อตรวจจับ spam
+     *
+     * ตอบด้วยความสุภาพ ไม่กล่าวโทษผู้ใช้
      */
     protected function getSpamMessage(): string
     {
-        return "🙏 ขอบคุณที่ทักมานะคะ\n\n" .
-               "ทางเพจไม่เข้าใจข้อความค่ะ กรุณาพิมพ์เป็นคำถามที่ชัดเจนนะคะ\n\n" .
-               "💡 *ตัวอย่างคำถาม*:\n" .
-               "• ความรัก: ปีนี้จะมีคู่ครองไหม\n" .
-               "• การงาน: ควรเปลี่ยนงานไหม\n" .
-               "• การเงิน: จะรวยเมื่อไหร่\n\n" .
-               "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+        return "🔮 *สวัสดีค่ะ*\n\n" .
+               "หมอไม่ค่อยเข้าใจข้อความค่ะ\n" .
+               "ลองพิมพ์คำถามชัดๆ ได้ไหมคะ?\n\n" .
+               "💡 *ตัวอย่าง*:\n" .
+               "• ปีนี้ดวงความรักเป็นอย่างไร\n" .
+               "• ควรเปลี่ยนงานไหม\n" .
+               "• ดวงการเงินช่วงนี้\n\n" .
+               "หมอพร้อมทำนายให้นะคะ ✨";
     }
 
     /**
