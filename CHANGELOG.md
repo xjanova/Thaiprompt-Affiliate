@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.18] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add approval_mode support to device-settings API endpoints (1a65fae4)
+### 🔧 Other Changes
+
+
 ## [v3.464.17] - 2026-02-06
 
 ### ✨ Features
