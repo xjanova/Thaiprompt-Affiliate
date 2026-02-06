@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.20] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- chore: update local Claude Code settings, remove unused Slide/readme.text (04c61448)
+
 ## [v3.464.19] - 2026-02-06
 
 ### ✨ Features
