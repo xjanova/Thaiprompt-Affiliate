@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.465.0] - 2026-02-06
+
+### ✨ Features
+- feat: add 7 new banks support (8→15 banks) (a9d2ab28)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.464.23] - 2026-02-06
 
 ### ✨ Features
