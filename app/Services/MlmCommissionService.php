@@ -73,6 +73,35 @@ class MlmCommissionService
                 $commissions = array_merge($commissions, $binaryCommissions);
             }
 
+            // แก้ Bug: Overpay Protection - ป้องกันจ่าย commission เกินสัดส่วนที่ตั้งค่าไว้
+            $overpayProtection = MlmGlobalSetting::get('overpay_protection_enabled', false);
+            if ($overpayProtection && !empty($commissions)) {
+                $maxCommissionPercentage = (float) MlmGlobalSetting::get('max_commission_percentage', 40);
+                $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+
+                // คำนวณมูลค่าสูงสุดที่จ่ายได้ = PV × commissionPerPv × (maxPercentage / 100)
+                $maxAllowedTotal = $pv * $commissionPerPv * ($maxCommissionPercentage / 100);
+                $totalCommission = array_sum(array_column($commissions, 'commission_amount'));
+
+                if ($totalCommission > $maxAllowedTotal && $maxAllowedTotal > 0) {
+                    // ลดสัดส่วนทุก commission ให้รวมแล้วไม่เกิน cap
+                    $ratio = $maxAllowedTotal / $totalCommission;
+
+                    foreach ($commissions as &$comm) {
+                        $comm['commission_amount'] = round($comm['commission_amount'] * $ratio, 2);
+                    }
+                    unset($comm);
+
+                    Log::warning('Overpay protection triggered - commissions scaled down', [
+                        'member_id' => $member->id,
+                        'pv' => $pv,
+                        'original_total' => $totalCommission,
+                        'max_allowed' => $maxAllowedTotal,
+                        'ratio' => $ratio,
+                    ]);
+                }
+            }
+
             // Save all commissions
             foreach ($commissions as $commission) {
                 MlmCommission::create($commission);
@@ -184,10 +213,13 @@ class MlmCommissionService
 
             // แก้ Bug: เพิ่ม rank bonus_multiplier (ถ้า sponsor มี rank ที่มี multiplier)
             // ตรงกับ logic ใน MlmUnilevelService ที่ใช้ currentRank->bonus_multiplier
+            // แก้ Warning: เพิ่ม cap สำหรับ bonus_multiplier ป้องกันค่าผิดปกติ
             if ($sponsor->user && $sponsor->user->current_rank_id) {
                 $rank = $sponsor->user->currentRank;
                 if ($rank && $rank->bonus_multiplier) {
-                    $commissionAmount *= $rank->bonus_multiplier;
+                    $maxMultiplier = (float) MlmGlobalSetting::get('max_rank_bonus_multiplier', 5.0);
+                    $multiplier = min($rank->bonus_multiplier, $maxMultiplier);
+                    $commissionAmount *= $multiplier;
                 }
             }
 
@@ -593,8 +625,8 @@ class MlmCommissionService
             return [];
         }
 
-        // ดึง Order จาก transactionId เพื่อส่งให้ MlmBinaryService
-        if ($transactionType === 'order' && $transactionId) {
+        // แก้ Warning: รองรับ transactionType ทั้ง 'order' และ 'purchase' (เป็น Order เหมือนกัน)
+        if (in_array($transactionType, ['order', 'purchase']) && $transactionId) {
             $order = Order::find($transactionId);
 
             if ($order) {
@@ -612,6 +644,14 @@ class MlmCommissionService
                     'pv' => $pv,
                 ]);
             }
+        } else {
+            // Log เมื่อ transactionType ไม่ใช่ order/purchase เพื่อให้ admin ทราบ
+            Log::info('Binary commission skipped - unsupported transaction type', [
+                'member_id' => $member->id,
+                'transaction_type' => $transactionType,
+                'transaction_id' => $transactionId,
+                'pv' => $pv,
+            ]);
         }
 
         // MlmBinaryService สร้าง MlmCommission records โดยตรงแล้ว

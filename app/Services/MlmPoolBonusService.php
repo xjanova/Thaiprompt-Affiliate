@@ -100,7 +100,8 @@ class MlmPoolBonusService
     public function calculatePeriodSales(MlmPoolBonusPeriod $period): array
     {
         // ดึงยอดขายจาก Orders ที่ paid ในช่วง period
-        $sales = Order::where('status', 'paid')
+        // แก้ Bug: ใช้ payment_status แทน status (Order model ใช้ payment_status สำหรับสถานะการชำระเงิน)
+        $sales = Order::where('payment_status', 'paid')
             ->whereBetween('paid_at', [$period->period_start, $period->period_end])
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total_sales')
             ->first();

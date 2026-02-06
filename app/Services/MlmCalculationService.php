@@ -26,6 +26,11 @@ class MlmCalculationService
 
     /**
      * Process commissions for an order
+     *
+     * ⚠️ WARNING: นี่คือ Legacy engine - ระบบหลักใช้ MlmCommissionService แทน
+     * method นี้มี guard ป้องกัน duplicate commission จาก production engine
+     *
+     * @deprecated ใช้ MlmCommissionService::processOrderCommissions() แทน
      */
     public function processOrderCommissions(Order $order)
     {
@@ -41,6 +46,24 @@ class MlmCalculationService
                 DB::commit();
                 return true;
             }
+
+            // แก้ Warning: Dual Engine Guard - ป้องกัน duplicate commission จาก production engine (MlmCommissionService)
+            $existingCommission = MlmCommission::where('source_type', Order::class)
+                ->where('source_id', $order->id)
+                ->whereIn('type', ['unilevel_direct', 'unilevel_indirect', 'unilevel_rollup', 'binary_pair'])
+                ->exists();
+
+            if ($existingCommission) {
+                Log::warning('Order commissions already processed by production engine, skipping legacy MlmCalculationService', [
+                    'order_id' => $order->id,
+                ]);
+                DB::commit();
+                return true;
+            }
+
+            Log::info('MlmCalculationService (legacy) processing order - consider using MlmCommissionService instead', [
+                'order_id' => $order->id,
+            ]);
 
             $user = $order->user;
             if (!$user) {
