@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.23] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct money flow - MLM and Fee are separate pools, both deducted from seller (83829414)
+- fix: MLM commission from platform fee, fix calculator formula, add overpay protection (79ab5807)
+### 🔧 Other Changes
+- Merge pull request #2490 from xjanova/claude/review-mlm-calculations-E3eMx (1cbae23d)
+- docs: add comprehensive MLM money flow documentation (972e8de0)
+
 ## [v3.464.22] - 2026-02-06
 
 ### ✨ Features
