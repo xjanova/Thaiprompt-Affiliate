@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.21] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ 3 bugs และ 3 warnings ในระบบ MLM commission calculation (8ca79e4b)
+### 🔧 Other Changes
+- Merge pull request #2488 from xjanova/claude/review-mlm-calculations-OO9Yp (27d2b321)
+
 ## [v3.464.20] - 2026-02-06
 
 ### ✨ Features
