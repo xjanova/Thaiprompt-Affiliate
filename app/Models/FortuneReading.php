@@ -285,7 +285,10 @@ class FortuneReading extends Model
     }
 
     /**
-     * นับจำนวนการทำนายของผู้ใช้ Facebook ในวันนี้
+     * นับจำนวนการทำนายที่สำเร็จของผู้ใช้ Facebook ในวันนี้
+     *
+     * นับเฉพาะ reading ที่มี AI ตอบกลับแล้ว (responded_at != null)
+     * ไม่นับ reading ที่ล้มเหลว (status = 'new') เพื่อไม่ให้หักสิทธิ์ฟรี
      *
      * @param string $facebookUserId
      * @return int
@@ -294,6 +297,7 @@ class FortuneReading extends Model
     {
         return self::byFacebookUser($facebookUserId)
             ->today()
+            ->whereNotNull('responded_at')
             ->count();
     }
 
@@ -467,7 +471,20 @@ class FortuneReading extends Model
     }
 
     /**
+     * ระยะเวลา timeout ของ conversation (นาที)
+     *
+     * conversation ที่เก่ากว่านี้จะถูกปิดอัตโนมัติ
+     * ยกเว้น pending_payment ให้รอนานกว่า (60 นาที)
+     */
+    public const CONVERSATION_TIMEOUT_MINUTES = 30;
+    public const PAYMENT_TIMEOUT_MINUTES = 60;
+
+    /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่
+     *
+     * เพิ่ม timeout เพื่อป้องกัน conversation ค้างบล็อก conversation ใหม่
+     * - conversation ทั่วไป: timeout 30 นาที
+     * - pending_payment: timeout 60 นาที
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param string $facebookUserId
@@ -482,18 +499,58 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_QUESTIONS,
                 self::STATUS_PENDING_PAYMENT,
             ])
+            ->where(function ($q) {
+                // conversation ทั่วไป: timeout 30 นาที
+                $q->where(function ($sub) {
+                    $sub->whereIn('conversation_status', [
+                        self::STATUS_BASIC_DONE,
+                        self::STATUS_COLLECTING_BIRTHDATE,
+                        self::STATUS_COLLECTING_QUESTIONS,
+                    ])
+                    ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
+                })
+                // pending_payment: timeout 60 นาที (รอโอนเงินนานกว่า)
+                ->orWhere(function ($sub) {
+                    $sub->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+                        ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                });
+            })
             ->latest();
     }
 
     /**
      * ค้นหา reading ที่กำลัง conversation อยู่สำหรับผู้ใช้
      *
+     * ถ้าพบ conversation ที่หมดเวลาแล้ว จะปิดอัตโนมัติ
+     *
      * @param string $facebookUserId
      * @return self|null
      */
     public static function findActiveConversation(string $facebookUserId): ?self
     {
+        // ปิด conversation ที่หมดเวลาอัตโนมัติ
+        self::expireOldConversations($facebookUserId);
+
         return self::activeConversation($facebookUserId)->first();
+    }
+
+    /**
+     * ปิด conversation ที่หมดเวลาอัตโนมัติ
+     *
+     * @param string $facebookUserId
+     * @return int จำนวน conversation ที่ถูกปิด
+     */
+    public static function expireOldConversations(string $facebookUserId): int
+    {
+        return self::where('facebook_user_id', $facebookUserId)
+            ->whereIn('conversation_status', [
+                self::STATUS_BASIC_DONE,
+                self::STATUS_COLLECTING_BIRTHDATE,
+                self::STATUS_COLLECTING_QUESTIONS,
+                self::STATUS_PENDING_PAYMENT,
+            ])
+            ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
+            ->update(['conversation_status' => self::STATUS_COMPLETED]);
     }
 
     /**
