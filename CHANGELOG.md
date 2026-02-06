@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.17] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2487 from xjanova/claude/review-mlm-calculations-Vq2bV (2b3d1e73)
+- fix: แก้ไข 6 ปัญหาสำคัญในระบบ MLM Commission/PV calculation (ea9448cd)
+### 🔧 Other Changes
+
+
 ## [v3.464.16] - 2026-02-06
 
 ### ✨ Features
