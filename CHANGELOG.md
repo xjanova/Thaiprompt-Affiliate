@@ -2,6 +2,66 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.13] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2483 from xjanova/claude/fortune-telling-chatbot-haL6D (83e5aa3e)
+- fix(fortune): improve conversation flow and reduce spam filter strictness (7dc4002c)
+### 🔧 Other Changes
+
+
+## [v3.464.12] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2482 from xjanova/claude/fix-missing-controller-FACT8 (e02c5bb0)
+- fix: add missing use imports for Email controllers in admin routes (9426d3d0)
+### 🔧 Other Changes
+
+
+## [v3.464.11] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2481 from xjanova/claude/fortune-telling-chatbot-haL6D (0a4136e0)
+- docs: add Fortune Telling System user guide (21873887)
+
+## [v3.464.10] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2480 from xjanova/claude/fix-side-menu-active-MYDRc (bc39b68f)
+- fix(nfc): เพิ่ม card() relationship alias ใน NFCTransaction model (e2d5d1db)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-side-menu-active-MYDRc (db3deeeb)
+
+## [v3.464.9] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2479 from xjanova/claude/fix-side-menu-active-MYDRc (6f874aff)
+- fix(sidebar): ปรับปรุง active state detection ให้ใช้ route matching สำหรับ dynamic menus (21b4e021)
+### 🔧 Other Changes
+
+
+## [v3.464.8] - 2026-02-05
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2478 from xjanova/claude/fix-side-menu-active-MYDRc (f02742d7)
+- fix(sidebar): เพิ่ม data attributes สำหรับ active menu และ scroll-to-active ทุกเมนู (5d1a5814)
+### 🔧 Other Changes
+
+
 ## [v3.464.7] - 2026-02-05
 
 ### ✨ Features
