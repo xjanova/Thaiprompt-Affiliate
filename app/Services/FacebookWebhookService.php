@@ -58,30 +58,92 @@ class FacebookWebhookService
      */
     public function sendMessage(string $recipientId, string $message): bool
     {
-        try {
-            $chunks = $this->splitLongMessage($message);
-
-            foreach ($chunks as $chunk) {
-                Http::timeout(30)
-                    ->post($this->graphUrl('/me/messages'), [
-                        'recipient' => ['id' => $recipientId],
-                        'message' => ['text' => $chunk],
-                        'messaging_type' => 'RESPONSE',
-                        'access_token' => $this->pageAccessToken,
-                    ])->throw();
-            }
-
-            Log::info('ส่งข้อความสำเร็จ', [
-                'recipient' => $recipientId,
-                'chunks' => count($chunks),
-            ]);
-            return true;
-        } catch (Exception $e) {
-            Log::error('ส่งข้อความไม่สำเร็จ: ' . $e->getMessage(), [
+        // ตรวจสอบ Page Access Token ก่อนส่ง
+        if (empty($this->pageAccessToken)) {
+            Log::error('❌ ส่งข้อความไม่ได้: ไม่มี Page Access Token', [
                 'recipient' => $recipientId,
             ]);
             return false;
         }
+
+        $chunks = $this->splitLongMessage($message);
+        $maxRetries = 2;
+
+        foreach ($chunks as $chunkIndex => $chunk) {
+            $sent = false;
+
+            // ลองส่งแต่ละ chunk สูงสุด 2 ครั้ง
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+                try {
+                    $response = Http::timeout(30)
+                        ->post($this->graphUrl('/me/messages'), [
+                            'recipient' => ['id' => $recipientId],
+                            'message' => ['text' => $chunk],
+                            'messaging_type' => 'RESPONSE',
+                            'access_token' => $this->pageAccessToken,
+                        ]);
+
+                    // เช็ค HTTP status อย่างละเอียด
+                    if ($response->successful()) {
+                        $sent = true;
+                        break;
+                    }
+
+                    // Facebook API error - log รายละเอียด
+                    $errorBody = $response->json();
+                    $errorMsg = $errorBody['error']['message'] ?? $response->body();
+                    $errorCode = $errorBody['error']['code'] ?? $response->status();
+                    $errorSubcode = $errorBody['error']['error_subcode'] ?? 0;
+
+                    Log::error("❌ Facebook API Error (ครั้งที่ {$attempt})", [
+                        'recipient' => $recipientId,
+                        'http_status' => $response->status(),
+                        'error_code' => $errorCode,
+                        'error_subcode' => $errorSubcode,
+                        'error_message' => $errorMsg,
+                        'token_prefix' => substr($this->pageAccessToken, 0, 10) . '...',
+                        'chunk' => $chunkIndex + 1,
+                    ]);
+
+                    // ถ้าเป็น token error (190) หรือ permission error (10) ไม่ต้อง retry
+                    if (in_array($errorCode, [190, 10, 200])) {
+                        Log::error('❌ Facebook Token/Permission Error - หยุด retry', [
+                            'error_code' => $errorCode,
+                            'message' => $errorMsg,
+                        ]);
+                        return false;
+                    }
+
+                    if ($attempt < $maxRetries) {
+                        usleep(1000000); // รอ 1 วินาทีก่อน retry
+                    }
+
+                } catch (Exception $e) {
+                    Log::error("❌ ส่งข้อความไม่สำเร็จ (ครั้งที่ {$attempt}): " . $e->getMessage(), [
+                        'recipient' => $recipientId,
+                        'chunk' => $chunkIndex + 1,
+                    ]);
+
+                    if ($attempt < $maxRetries) {
+                        usleep(1000000); // รอ 1 วินาที
+                    }
+                }
+            }
+
+            if (!$sent) {
+                Log::error('❌ ส่งข้อความล้มเหลวหลังลอง ' . $maxRetries . ' ครั้ง', [
+                    'recipient' => $recipientId,
+                    'chunk_text_preview' => mb_substr($chunk, 0, 100),
+                ]);
+                return false;
+            }
+        }
+
+        Log::info('✅ ส่งข้อความสำเร็จ', [
+            'recipient' => $recipientId,
+            'chunks' => count($chunks),
+        ]);
+        return true;
     }
 
     /**

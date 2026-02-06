@@ -407,7 +407,8 @@ class FacebookWebhookController extends Controller
         }
 
         // ถ้าระบบ Admin Handover ถูกปิด → ข้ามไม่ต้องทำอะไร
-        if (!($this->settings->admin_handover_enabled ?? true)) {
+        // ⚠️ Default เป็น false เพื่อป้องกันบอทถูกบล็อกโดยไม่ตั้งใจ
+        if (!($this->settings->admin_handover_enabled ?? false)) {
             return;
         }
 
@@ -744,7 +745,13 @@ class FacebookWebhookController extends Controller
         $maxLength = 1800;
 
         if (mb_strlen($message) <= $maxLength) {
-            $this->facebookService->sendMessage($senderId, $message);
+            $result = $this->facebookService->sendMessage($senderId, $message);
+            if (!$result) {
+                Log::error('❌ sendLongMessage: ส่งข้อความล้มเหลว', [
+                    'recipient' => $senderId,
+                    'message_length' => mb_strlen($message),
+                ]);
+            }
             return;
         }
 
