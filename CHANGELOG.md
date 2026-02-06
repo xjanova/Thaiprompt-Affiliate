@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.14] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2484 from xjanova/claude/fix-side-menu-active-MYDRc (1a8857b6)
+- fix(menus): แก้ไข 40+ route names ที่ผิดใน config/menus.php ทำให้เกิด 404 (fcaef46a)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-side-menu-active-MYDRc (788d628d)
+
 ## [v3.464.13] - 2026-02-06
 
 ### ✨ Features
