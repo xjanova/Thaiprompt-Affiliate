@@ -40,6 +40,104 @@
             </div>
         </div>
 
+        {{-- 🔍 AI Diagnostic Panel --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="aiDiagnostic()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    🔍 ตรวจเช็คระบบ AI
+                </h3>
+                <button type="button" @click="runDiagnose()"
+                        :disabled="loading"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg transition flex items-center gap-2">
+                    <span x-show="loading" class="animate-spin">⏳</span>
+                    <span x-show="!loading">🔍</span>
+                    <span x-text="loading ? 'กำลังตรวจสอบ...' : 'ตรวจเช็คทั้งหมด'"></span>
+                </button>
+            </div>
+
+            {{-- สถานะรวม --}}
+            <div x-show="result" x-transition class="mb-4">
+                <div class="p-4 rounded-lg border-2"
+                     :class="{
+                        'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700': result?.overall === 'ok',
+                        'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700': result?.overall === 'warning',
+                        'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700': result?.overall === 'error'
+                     }">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl" x-text="result?.overall === 'ok' ? '✅' : (result?.overall === 'warning' ? '⚠️' : '❌')"></span>
+                        <span class="text-lg font-bold"
+                              :class="{
+                                'text-green-800 dark:text-green-200': result?.overall === 'ok',
+                                'text-yellow-800 dark:text-yellow-200': result?.overall === 'warning',
+                                'text-red-800 dark:text-red-200': result?.overall === 'error'
+                              }"
+                              x-text="result?.overall === 'ok' ? 'ระบบพร้อมใช้งาน' : (result?.overall === 'warning' ? 'มีคำเตือน' : 'มีปัญหา - ต้องแก้ไข')">
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'ตรวจเมื่อ: ' + (result?.timestamp || '')"></p>
+                </div>
+            </div>
+
+            {{-- รายการตรวจเช็ค --}}
+            <div x-show="result?.checks" x-transition class="space-y-3">
+                <template x-for="(check, key) in result?.checks" :key="key">
+                    <div class="flex items-start gap-3 p-3 rounded-lg"
+                         :class="{
+                            'bg-green-50 dark:bg-green-900/10': check.status === 'ok',
+                            'bg-yellow-50 dark:bg-yellow-900/10': check.status === 'warning',
+                            'bg-red-50 dark:bg-red-900/10': check.status === 'error'
+                         }">
+                        <span class="text-lg flex-shrink-0 mt-0.5"
+                              x-text="check.status === 'ok' ? '✅' : (check.status === 'warning' ? '⚠️' : '❌')"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm text-gray-900 dark:text-white" x-text="check.label"></span>
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      :class="{
+                                        'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200': check.status === 'ok',
+                                        'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200': check.status === 'warning',
+                                        'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200': check.status === 'error'
+                                      }"
+                                      x-text="check.status === 'ok' ? 'ผ่าน' : (check.status === 'warning' ? 'คำเตือน' : 'ไม่ผ่าน')">
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="check.message"></p>
+
+                            {{-- แสดง preview ถ้ามี (ตัวอย่างคำตอบ AI) --}}
+                            <div x-show="check.preview" class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 max-h-20 overflow-y-auto">
+                                <span class="font-medium">ตัวอย่างคำตอบ:</span>
+                                <span x-text="check.preview"></span>
+                            </div>
+
+                            {{-- แสดง details ถ้ามี --}}
+                            <div x-show="check.details && Object.keys(check.details).length > 0"
+                                 class="mt-2">
+                                <button type="button" @click="check._showDetails = !check._showDetails"
+                                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                    <span x-text="check._showDetails ? '🔼 ซ่อนรายละเอียด' : '🔽 ดูรายละเอียด'"></span>
+                                </button>
+                                <div x-show="check._showDetails" x-transition
+                                     class="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-700 dark:text-gray-300">
+                                    <template x-for="(val, dKey) in check.details" :key="dKey">
+                                        <div class="flex gap-2">
+                                            <span class="text-gray-500" x-text="dKey + ':'"></span>
+                                            <span x-text="typeof val === 'object' ? JSON.stringify(val) : String(val)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            {{-- ข้อความเริ่มต้น --}}
+            <div x-show="!result && !loading" class="text-center py-8 text-gray-400 dark:text-gray-500">
+                <span class="text-4xl mb-2 block">🔍</span>
+                <p>กดปุ่ม "ตรวจเช็คทั้งหมด" เพื่อตรวจสอบสถานะการเชื่อมต่อ AI, Facebook และฐานข้อมูล</p>
+            </div>
+        </div>
+
         {{-- Facebook Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -533,6 +631,42 @@
 
 @push('scripts')
 <script>
+function aiDiagnostic() {
+    return {
+        loading: false,
+        result: null,
+        async runDiagnose() {
+            this.loading = true;
+            this.result = null;
+
+            try {
+                const response = await fetch('{{ route("admin.fortune.settings.diagnose") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                this.result = await response.json();
+            } catch (error) {
+                this.result = {
+                    overall: 'error',
+                    checks: {
+                        connection: {
+                            label: 'การเชื่อมต่อ',
+                            status: 'error',
+                            message: 'ไม่สามารถเรียก API ตรวจสอบได้: ' + error.message,
+                        }
+                    },
+                    timestamp: new Date().toLocaleString('th-TH'),
+                };
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+
 function fortuneSettings() {
     return {
         commentEngagementEnabled: {{ $settings->comment_engagement_enabled ? 'true' : 'false' }},

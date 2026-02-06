@@ -126,6 +126,123 @@ class FortuneSettingsController extends Controller
     }
 
     /**
+     * ตรวจสอบสถานะระบบทั้งหมด (AI + Facebook + DB)
+     * แสดงผลแบบ JSON สำหรับ diagnostic panel
+     */
+    public function diagnose()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $checks = [];
+
+        // 1. ตรวจสอบ AI Configuration
+        $aiProvider = $settings->getActualAIProvider();
+        $aiModel = $settings->getActualAIModel();
+        $aiApiKey = $settings->getActualAIApiKey();
+        $useGlobal = $settings->use_global_ai_settings ?? false;
+
+        $checks['ai_config'] = [
+            'label' => 'การตั้งค่า AI',
+            'status' => !empty($aiApiKey) ? 'ok' : 'error',
+            'details' => [
+                'provider' => $aiProvider,
+                'model' => $aiModel,
+                'has_api_key' => !empty($aiApiKey),
+                'api_key_prefix' => $aiApiKey ? mb_substr($aiApiKey, 0, 8) . '...' : 'ไม่มี',
+                'use_global' => $useGlobal,
+            ],
+            'message' => !empty($aiApiKey)
+                ? "ใช้ {$aiProvider} / {$aiModel}" . ($useGlobal ? ' (จากระบบหลัก)' : '')
+                : "❌ ไม่พบ API Key สำหรับ {$aiProvider} - กรุณาตั้งค่า",
+        ];
+
+        // 2. ตรวจสอบ API Key Pool
+        try {
+            $poolService = new \App\Services\AiApiKeyPoolService();
+            $poolKey = $poolService->getKey($aiProvider);
+            $checks['api_pool'] = [
+                'label' => 'API Key Pool',
+                'status' => $poolKey ? 'ok' : 'warning',
+                'message' => $poolKey
+                    ? "พบ key ในpool: {$poolKey->name} (ID: {$poolKey->id})"
+                    : 'ไม่มี key ใน pool - ใช้ key จาก settings',
+            ];
+        } catch (\Exception $e) {
+            $checks['api_pool'] = [
+                'label' => 'API Key Pool',
+                'status' => 'warning',
+                'message' => 'Pool ไม่พร้อม: ' . mb_substr($e->getMessage(), 0, 100),
+            ];
+        }
+
+        // 3. ทดสอบเรียก AI จริง
+        try {
+            $aiService = new FortuneAIService($settings);
+            $testResult = $aiService->testConnection();
+            $checks['ai_connection'] = [
+                'label' => 'การเชื่อมต่อ AI',
+                'status' => $testResult['success'] ? 'ok' : 'error',
+                'message' => $testResult['message'],
+                'details' => $testResult['debug'] ?? [],
+                'preview' => isset($testResult['preview']) ? mb_substr($testResult['preview'], 0, 200) : null,
+            ];
+        } catch (\Exception $e) {
+            $checks['ai_connection'] = [
+                'label' => 'การเชื่อมต่อ AI',
+                'status' => 'error',
+                'message' => 'เชื่อมต่อ AI ไม่ได้: ' . mb_substr($e->getMessage(), 0, 200),
+            ];
+        }
+
+        // 4. ตรวจสอบ Facebook Configuration
+        $hasFacebook = $settings->hasFacebookConfigured();
+        $checks['facebook'] = [
+            'label' => 'Facebook Messenger',
+            'status' => $hasFacebook ? 'ok' : 'error',
+            'message' => $hasFacebook
+                ? 'ตั้งค่า Facebook ครบถ้วน (Page ID: ***' . mb_substr($settings->facebook_page_id ?? '', -4) . ')'
+                : 'ยังตั้งค่า Facebook ไม่ครบ',
+            'details' => [
+                'has_app_id' => !empty($settings->facebook_app_id),
+                'has_app_secret' => !empty($settings->facebook_app_secret),
+                'has_page_id' => !empty($settings->facebook_page_id),
+                'has_page_token' => !empty($settings->facebook_page_token),
+                'has_verify_token' => !empty($settings->facebook_verify_token),
+            ],
+        ];
+
+        // 5. ตรวจสอบ Database Tables
+        $tables = ['fortune_readings', 'fortune_telling_settings', 'fortune_comment_engagements'];
+        $dbChecks = [];
+        foreach ($tables as $table) {
+            try {
+                $exists = \Schema::hasTable($table);
+                $count = $exists ? \DB::table($table)->count() : 0;
+                $dbChecks[$table] = ['exists' => $exists, 'count' => $count];
+            } catch (\Exception $e) {
+                $dbChecks[$table] = ['exists' => false, 'error' => $e->getMessage()];
+            }
+        }
+
+        $allTablesOk = collect($dbChecks)->every(fn($t) => $t['exists'] ?? false);
+        $checks['database'] = [
+            'label' => 'ฐานข้อมูล',
+            'status' => $allTablesOk ? 'ok' : 'error',
+            'message' => $allTablesOk ? 'ตาราง DB ครบถ้วน' : 'มีตารางที่หายไป',
+            'details' => $dbChecks,
+        ];
+
+        // 6. สรุปสถานะรวม
+        $hasError = collect($checks)->contains(fn($c) => $c['status'] === 'error');
+        $hasWarning = collect($checks)->contains(fn($c) => $c['status'] === 'warning');
+
+        return response()->json([
+            'overall' => $hasError ? 'error' : ($hasWarning ? 'warning' : 'ok'),
+            'checks' => $checks,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+    }
+
+    /**
      * Debug endpoint - ตรวจสอบสถานะระบบ comment engagement
      */
     public function debugEngagement()
