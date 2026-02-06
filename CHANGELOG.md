@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.466.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- refactor: remove bank account verification for SMS matching (c50fcdf4)
+
 ## [v3.466.0] - 2026-02-06
 
 ### ✨ Features
