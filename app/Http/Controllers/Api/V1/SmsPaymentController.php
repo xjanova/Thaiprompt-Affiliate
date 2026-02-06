@@ -790,6 +790,7 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
+                'approval_mode' => $device->approval_mode ?? config('smschecker.default_approval_mode', 'auto'),
                 'device_id' => $device->device_id,
                 'device_name' => $device->device_name,
                 'status' => $device->status,
@@ -817,6 +818,7 @@ class SmsPaymentController extends Controller
 
         $validator = Validator::make($request->all(), [
             'device_name' => 'sometimes|string|max:255',
+            'approval_mode' => 'sometimes|in:auto,manual,smart',
         ]);
 
         if ($validator->fails()) {
@@ -830,6 +832,9 @@ class SmsPaymentController extends Controller
         $updateData = [];
         if ($request->has('device_name')) {
             $updateData['device_name'] = $request->input('device_name');
+        }
+        if ($request->has('approval_mode')) {
+            $updateData['approval_mode'] = $request->input('approval_mode');
         }
 
         if (!empty($updateData)) {
