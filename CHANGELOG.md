@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.13] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2483 from xjanova/claude/fortune-telling-chatbot-haL6D (83e5aa3e)
+- fix(fortune): improve conversation flow and reduce spam filter strictness (7dc4002c)
+### 🔧 Other Changes
+
+
 ## [v3.464.12] - 2026-02-05
 
 ### ✨ Features
