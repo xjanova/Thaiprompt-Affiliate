@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.471.0] - 2026-02-06
+
+### ✨ Features
+- feat: เพิ่มไฟล์ SQL สำหรับสร้างตารางที่ค้างอยู่โดยตรง (3fed4068)
+### 🐛 Bug Fixes
+- fix: แก้ไข error messages ที่เหลือ + เพิ่มความปลอดภัย AI Service (5bb146ba)
+### 🔧 Other Changes
+- Merge pull request #2497 from xjanova/claude/check-horoscope-facebook-CtSPS (b377d365)
+
 ## [v3.470.0] - 2026-02-06
 
 ### ✨ Features
