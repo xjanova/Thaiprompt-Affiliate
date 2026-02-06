@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.19] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: admin menu cleanup, route fixes, and duplicate icon resolution (6533b5a3)
+### 🔧 Other Changes
+
+
 ## [v3.464.18] - 2026-02-06
 
 ### ✨ Features
