@@ -287,7 +287,78 @@ class FortuneSettingsController extends Controller
             'has_pending_migrations' => $hasPendingMigrations,
         ];
 
-        // 6. สรุปสถานะรวม
+        // 6. ตรวจสอบสถานะบริการ (is_enabled)
+        $isEnabled = $settings->isServiceEnabled();
+        $checks['service_status'] = [
+            'label' => 'สถานะบริการ',
+            'status' => $isEnabled ? 'ok' : 'error',
+            'message' => $isEnabled
+                ? 'บริการเปิดอยู่ - บอทพร้อมตอบข้อความ'
+                : '⚠️ บริการปิดอยู่! บอทจะไม่ตอบข้อความใดๆ',
+            'fix' => !$isEnabled
+                ? 'เปิดสวิตช์ "เปิดใช้งาน" ในการตั้งค่าด้านบน'
+                : null,
+        ];
+
+        // 7. ตรวจสอบ Admin Handover
+        $handoverEnabled = $settings->admin_handover_enabled ?? false;
+        $handoverTimeout = $settings->admin_handover_timeout ?? 15;
+        $checks['admin_handover'] = [
+            'label' => 'Admin Handover',
+            'status' => $handoverEnabled ? 'warning' : 'ok',
+            'message' => $handoverEnabled
+                ? "เปิดอยู่ (timeout: {$handoverTimeout} นาที) - ถ้าแอดมินตอบข้อความในเพจ บอทจะหยุดทำงาน {$handoverTimeout} นาที"
+                : 'ปิดอยู่ - บอทตอบทุกข้อความ ไม่ถูกบล็อกจาก Admin',
+            'details' => [
+                'enabled' => $handoverEnabled,
+                'timeout_minutes' => $handoverTimeout,
+            ],
+        ];
+
+        // 8. ทดสอบส่งข้อความ Facebook จริง (ดูว่า token ใช้ได้ไหม)
+        if ($hasFacebook) {
+            try {
+                $fbService = new \App\Services\FacebookWebhookService($settings);
+                // ทดสอบ API ด้วย Messaging Feature Review (ไม่ส่งข้อความจริง)
+                $testResponse = \Illuminate\Support\Facades\Http::timeout(15)
+                    ->get("https://graph.facebook.com/v21.0/me", [
+                        'fields' => 'id,name',
+                        'access_token' => $settings->facebook_page_token,
+                    ]);
+
+                if ($testResponse->successful()) {
+                    $pageData = $testResponse->json();
+                    $checks['facebook_token'] = [
+                        'label' => 'Facebook Token',
+                        'status' => 'ok',
+                        'message' => "Token ใช้ได้ - เพจ: {$pageData['name']} (ID: {$pageData['id']})",
+                        'details' => [
+                            'page_name' => $pageData['name'] ?? '',
+                            'page_id' => $pageData['id'] ?? '',
+                        ],
+                    ];
+                } else {
+                    $errorBody = $testResponse->json();
+                    $errorMsg = $errorBody['error']['message'] ?? $testResponse->body();
+                    $errorCode = $errorBody['error']['code'] ?? $testResponse->status();
+                    $checks['facebook_token'] = [
+                        'label' => 'Facebook Token',
+                        'status' => 'error',
+                        'message' => "❌ Token ใช้ไม่ได้ (Error {$errorCode}): {$errorMsg}",
+                        'fix' => 'สร้าง Page Access Token ใหม่จาก Facebook Developer Console แล้วอัพเดทในการตั้งค่า',
+                    ];
+                }
+            } catch (\Exception $e) {
+                $checks['facebook_token'] = [
+                    'label' => 'Facebook Token',
+                    'status' => 'error',
+                    'message' => 'ทดสอบ Facebook Token ไม่ได้: ' . mb_substr($e->getMessage(), 0, 200),
+                    'fix' => 'ตรวจสอบ Page Access Token และ internet connection',
+                ];
+            }
+        }
+
+        // 9. สรุปสถานะรวม
         $hasError = collect($checks)->contains(fn($c) => $c['status'] === 'error');
         $hasWarning = collect($checks)->contains(fn($c) => $c['status'] === 'warning');
 
