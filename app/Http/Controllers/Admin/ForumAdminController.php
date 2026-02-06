@@ -461,6 +461,8 @@ class ForumAdminController extends Controller
      */
     public function editTrophy(ForumTrophy $trophy)
     {
+        $trophy->loadCount('users');
+
         return view('admin.forum.trophies.edit', compact('trophy'));
     }
 
