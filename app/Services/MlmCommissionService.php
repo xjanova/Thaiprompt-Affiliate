@@ -140,6 +140,10 @@ class MlmCommissionService
         // ดึงอัตราแปลง PV → บาท (แอดมินตั้งค่าได้)
         $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
 
+        // แก้ Bug: แปลง transactionType เป็น source_type/source_id สำหรับ duplicate guard
+        $sourceType = $this->resolveSourceType($transactionType);
+        $sourceId = $transactionId;
+
         // ดึง Admin member (ID 1) สำหรับ final rollup
         $adminMember = MlmMember::find(1);
 
@@ -177,6 +181,15 @@ class MlmCommissionService
 
             // คำนวณคอมมิชชั่น: PV × เปอร์เซ็นต์ × อัตราแปลง PV→บาท
             $commissionAmount = ($pv * $percentage) / 100 * $commissionPerPv;
+
+            // แก้ Bug: เพิ่ม rank bonus_multiplier (ถ้า sponsor มี rank ที่มี multiplier)
+            // ตรงกับ logic ใน MlmUnilevelService ที่ใช้ currentRank->bonus_multiplier
+            if ($sponsor->user && $sponsor->user->current_rank_id) {
+                $rank = $sponsor->user->currentRank;
+                if ($rank && $rank->bonus_multiplier) {
+                    $commissionAmount *= $rank->bonus_multiplier;
+                }
+            }
 
             // แก้ Bug #24: ใช้ !== null แทน falsy check (ค่า 0 = ห้ามจ่าย ต้องไม่ถูกข้ามไป)
             $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
@@ -233,6 +246,9 @@ class MlmCommissionService
                             'mlm_plan_id' => $member->mlm_plan_id,
                             'user_id' => $fallbackUserId,
                             'from_member_id' => $member->id,
+                            // แก้ Bug: เพิ่ม source_type/source_id สำหรับ duplicate guard
+                            'source_type' => $sourceType,
+                            'source_id' => $sourceId,
                             'type' => 'pool_bonus',
                             'level' => $currentLevel,
                             'commission_amount' => $commissionAmount,
@@ -277,6 +293,9 @@ class MlmCommissionService
                             'mlm_plan_id' => $member->mlm_plan_id,
                             'user_id' => $rollupSponsor->user_id,
                             'from_member_id' => $member->id,
+                            // แก้ Bug: เพิ่ม source_type/source_id สำหรับ duplicate guard
+                            'source_type' => $sourceType,
+                            'source_id' => $sourceId,
                             'type' => 'unilevel_rollup',
                             'level' => $currentLevel,
                             'commission_amount' => $commissionAmount,
@@ -330,6 +349,9 @@ class MlmCommissionService
                     'mlm_plan_id' => $member->mlm_plan_id,
                     'user_id' => $sponsor->user_id,
                     'from_member_id' => $member->id,
+                    // แก้ Bug: เพิ่ม source_type/source_id สำหรับ duplicate guard
+                    'source_type' => $sourceType,
+                    'source_id' => $sourceId,
                     // แก้ Bug #4: ใช้ type ที่ถูกต้องตาม level
                     'type' => $currentLevel === 1 ? 'unilevel_direct' : 'unilevel_indirect',
                     'level' => $currentLevel,
@@ -549,23 +571,52 @@ class MlmCommissionService
 
     /**
      * Calculate Binary commissions (no roll-up for binary)
+     *
+     * เชื่อมต่อกับ MlmBinaryService เพื่อคำนวณ pair matching จริง:
+     * 1. attributePvToBinaryLeg - อัพเดท left_leg_pv / right_leg_pv ขึ้นไปตาม binary tree
+     * 2. calculateBinaryPairCommissions - จับคู่ขาซ้าย/ขวา แล้วสร้าง commission
+     *
+     * หมายเหตุ: MlmBinaryService สร้าง MlmCommission records โดยตรง (ไม่ return array)
+     * ดังนั้น method นี้ return array ว่าง เพราะ commissions ถูก save แล้ว
+     *
+     * @param MlmMember $member สมาชิกผู้ซื้อ
+     * @param float $pv จำนวน PV
+     * @param string $transactionType ประเภทธุรกรรม ('order', 'purchase', etc.)
+     * @param mixed $transactionId ID ของธุรกรรม (order_id)
+     * @return array Commission records (ว่าง เพราะ MlmBinaryService save โดยตรง)
      */
     protected function calculateBinaryCommissions(MlmMember $member, float $pv, string $transactionType, $transactionId)
     {
-        // Binary commission calculation logic
-        // This is simplified - implement your full binary logic here
-        $commissions = [];
-
         $binaryEnabled = MlmGlobalSetting::get('binary_enabled', false);
 
         if (!$binaryEnabled) {
-            return $commissions;
+            return [];
         }
 
-        // Add binary logic here (matching, pairing, etc.)
-        // This is a placeholder
+        // ดึง Order จาก transactionId เพื่อส่งให้ MlmBinaryService
+        if ($transactionType === 'order' && $transactionId) {
+            $order = Order::find($transactionId);
 
-        return $commissions;
+            if ($order) {
+                $binaryService = new MlmBinaryService();
+                $pvData = ['total_pv' => $pv];
+
+                // MlmBinaryService จะ:
+                // 1. attributePvToBinaryLeg() - อัพเดท left_leg_pv/right_leg_pv ขึ้นไปตาม tree
+                // 2. calculateBinaryPairCommissions() - จับคู่ pair matching + สร้าง commission
+                $binaryService->calculateBinaryCommissions($member, $order, $pvData);
+
+                Log::info('Binary commissions calculated via MlmBinaryService', [
+                    'member_id' => $member->id,
+                    'order_id' => $order->id,
+                    'pv' => $pv,
+                ]);
+            }
+        }
+
+        // MlmBinaryService สร้าง MlmCommission records โดยตรงแล้ว
+        // ไม่ต้อง return ใน array เพราะจะถูก save ซ้ำใน calculateCommissionsWithRollup()
+        return [];
     }
 
     /**
@@ -690,6 +741,22 @@ class MlmCommissionService
         }
 
         return $result;
+    }
+
+    /**
+     * แปลง transactionType เป็น source_type (fully qualified class name)
+     *
+     * ใช้สำหรับบันทึกใน commission records เพื่อให้ duplicate guard ทำงานได้ถูกต้อง
+     *
+     * @param string $transactionType ประเภทธุรกรรม ('order', 'purchase', etc.)
+     * @return string|null Fully qualified class name หรือ null
+     */
+    protected function resolveSourceType(string $transactionType): ?string
+    {
+        return match ($transactionType) {
+            'order', 'purchase' => Order::class,
+            default => null,
+        };
     }
 
     /**

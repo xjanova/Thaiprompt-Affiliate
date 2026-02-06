@@ -10,6 +10,7 @@ use App\Models\EarningsLedger;
 use App\Models\PayoutSetting;
 use App\Models\WalletDebt;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmProductPv;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -243,32 +244,49 @@ class OrderDistributionService
     }
 
     /**
-     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า
+     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า - หักจาก Seller
      *
-     * PV (Point Value) คือค่าการตลาดที่ร้านค้าจ่ายเอง เป็น % ของราคาสินค้า
-     * - PV สูง = สินค้าถูกแนะนำมากขึ้น, Affiliate ได้ค่าคอมฯ มากขึ้น
-     * - PV ต่ำ = สินค้าถูกแนะนำน้อยลง, Affiliate ได้ค่าคอมฯ น้อย
+     * แก้ Bug: ใช้ค่าจากแอดมิน (MlmProductPv / MlmGlobalSetting) เป็นหลัก
+     * แทนการใช้ item.pv_value เป็น percentage ตรงๆ
+     *
+     * สูตรคำนวณ: PV points × commission_per_pv = จำนวนเงิน THB ที่หัก
+     * - PV จาก MlmProductPv (absolute) หรือ price × global_pv_rate
+     * - commission_per_pv จาก MlmGlobalSetting (อัตราแปลง PV→บาท)
      *
      * @param \Illuminate\Support\Collection $items
      * @return float จำนวนเงิน (THB) ที่หักเป็นค่าการตลาด PV
      */
     protected function calculateMlmCommissionFromItems($items): float
     {
+        // ดึงค่าจาก Global Settings (แอดมินตั้งค่า)
+        $globalPvRate = (float) MlmGlobalSetting::get('global_pv_rate', 1);
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+        $defaultPlanId = (int) MlmGlobalSetting::get('default_mlm_plan_id', 1);
+
         $totalPvAmount = 0;
 
         foreach ($items as $item) {
-            // ดึง PV percentage จาก item หรือ product (เช่น 10 หมายถึง 10%)
-            $pvPercentage = $item->pv_value ?? $item->product?->pv_value ?? 0;
+            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (แอดมินกำหนดต่อสินค้า)
+            $productPv = MlmProductPv::where('product_id', $item->product_id)
+                ->where('mlm_plan_id', $defaultPlanId)
+                ->first();
 
-            if ($pvPercentage > 0) {
-                // คำนวณค่า PV เป็นจำนวนเงิน = ราคาสินค้า × PV%
-                // ใช้ $item->total ซึ่งรวม quantity แล้ว
-                $itemPvAmount = $item->total * ($pvPercentage / 100);
-                $totalPvAmount += $itemPvAmount;
+            $itemPv = 0;
+
+            if ($productPv && $productPv->pv_value > 0) {
+                // ใช้ค่าจากแอดมิน: PV absolute × จำนวน
+                $itemPv = $productPv->pv_value * ($item->quantity ?? 1);
+            } elseif ($globalPvRate > 0) {
+                // ลำดับ 2: ใช้ global_pv_rate × ราคาสินค้า
+                $itemPv = $item->total * $globalPvRate;
+            }
+
+            // คำนวณจำนวนเงิน THB ที่หัก: PV × commission_per_pv
+            if ($itemPv > 0) {
+                $totalPvAmount += $itemPv * $commissionPerPv;
             }
         }
 
-        // ไม่มี PV = ไม่มี MLM Commission
         if ($totalPvAmount <= 0) {
             return 0;
         }
@@ -368,37 +386,63 @@ class OrderDistributionService
     /**
      * คำนวณ PV รวมจาก Order items
      *
-     * PV (Point Value) คือค่าการตลาดที่ร้านค้าจ่ายเอง เป็น % ของราคาสินค้า
-     * ใช้เป็นฐานในการคำนวณ Unilevel และ Binary Commission
+     * แก้ Bug: ใช้ค่าจากแอดมิน (MlmProductPv / MlmGlobalSetting) เป็นหลัก
+     * แทนการใช้ item.pv_value เป็น percentage ตรงๆ
+     *
+     * ลำดับการดึงค่า PV:
+     * 1. MlmProductPv (แอดมินกำหนดต่อสินค้า) → ค่า absolute PV (เช่น 50 PV)
+     * 2. MlmGlobalSetting.global_pv_rate (อัตราส่วนกลาง) → เช่น 0.1 = 10% ของราคา
+     *
+     * สูตรคำนวณ:
+     * - PV points: จาก MlmProductPv.pv_value × quantity, หรือ item.total × global_pv_rate
+     * - PV amount THB: PV points × commission_per_pv (อัตราแปลง PV→บาท)
      *
      * @param Order $order
      * @return array ['total_pv' => float, 'pv_amount_thb' => float, 'items' => array]
      */
     protected function calculateTotalPvFromOrder(Order $order): array
     {
+        // ดึงค่าจาก Global Settings (แอดมินตั้งค่า)
+        $globalPvRate = (float) MlmGlobalSetting::get('global_pv_rate', 1);
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+        $defaultPlanId = (int) MlmGlobalSetting::get('default_mlm_plan_id', 1);
+
         $totalPv = 0;
         $pvAmountThb = 0;
         $itemsDetail = [];
 
         foreach ($order->items as $item) {
-            // ดึง PV percentage จาก item หรือ product
-            $pvPercentage = $item->pv_value ?? $item->product?->pv_value ?? 0;
+            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (แอดมินกำหนดต่อสินค้า)
+            $productPv = MlmProductPv::where('product_id', $item->product_id)
+                ->where('mlm_plan_id', $defaultPlanId)
+                ->first();
 
-            if ($pvPercentage > 0) {
-                // คำนวณ PV points (อาจเท่ากับ pvPercentage หรือคำนวณตามสูตรอื่น)
-                // ในที่นี้ใช้ PV = ราคาสินค้า / 100 × PV%
-                $itemPv = ($item->total / 100) * $pvPercentage;
+            $pvSource = 'none';
+            $itemPv = 0;
+
+            if ($productPv && $productPv->pv_value > 0) {
+                // ใช้ค่าจากแอดมิน: PV absolute × จำนวน
+                $itemPv = $productPv->pv_value * ($item->quantity ?? 1);
+                $pvSource = 'admin_product_pv';
+            } elseif ($globalPvRate > 0) {
+                // ลำดับ 2: ใช้ global_pv_rate × ราคาสินค้า
+                $itemPv = $item->total * $globalPvRate;
+                $pvSource = 'global_pv_rate';
+            }
+
+            if ($itemPv > 0) {
                 $totalPv += $itemPv;
 
-                // คำนวณค่า PV เป็นจำนวนเงิน THB
-                $itemPvThb = $item->total * ($pvPercentage / 100);
+                // คำนวณค่า PV เป็นจำนวนเงิน THB (ใช้ commission_per_pv จาก Global Settings)
+                $itemPvThb = $itemPv * $commissionPerPv;
                 $pvAmountThb += $itemPvThb;
 
                 $itemsDetail[] = [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product_name,
+                    'quantity' => $item->quantity,
                     'total' => $item->total,
-                    'pv_percentage' => $pvPercentage,
+                    'pv_source' => $pvSource,
                     'pv_points' => round($itemPv, 2),
                     'pv_amount_thb' => round($itemPvThb, 2),
                 ];

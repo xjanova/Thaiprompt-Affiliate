@@ -172,6 +172,10 @@ class MlmPvService
     /**
      * Calculate commission preview for product
      * ใช้ค่าจาก Global Settings แทน per-plan settings
+     *
+     * แก้ Bug: เพิ่ม commission_per_pv ในสูตรคำนวณ
+     * สูตรจริง: PV × level_percentage% × commission_per_pv
+     * ตรงกับ MlmCommissionService::calculateUnilevelWithRollup() line 179
      */
     public function calculateProductCommissionPreview(Product $product, MlmPlan $plan, $quantity = 1)
     {
@@ -183,9 +187,12 @@ class MlmPvService
         $binaryEnabled = MlmGlobalSetting::get('binary_enabled', true);
         $levels = MlmGlobalSetting::get('unilevel_levels', []);
         $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
+        // แก้ Bug: ดึง commission_per_pv สำหรับแปลง PV → บาท
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
 
         $preview = [
             'pv' => $totalPv,
+            'commission_per_pv' => $commissionPerPv,
             'commissions' => [],
         ];
 
@@ -193,7 +200,8 @@ class MlmPvService
         if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
             foreach ($levels as $index => $level) {
                 $percentage = $level['percentage'] ?? 0;
-                $commission = ($totalPv * $percentage) / 100;
+                // แก้ Bug: เพิ่ม × commission_per_pv ให้ตรงกับสูตรจริง
+                $commission = ($totalPv * $percentage) / 100 * $commissionPerPv;
 
                 $preview['commissions'][] = [
                     'level' => $index + 1,
@@ -206,7 +214,8 @@ class MlmPvService
 
         // Binary preview
         if ($binaryEnabled && ($plan->type === 'binary' || $plan->type === 'hybrid')) {
-            $binaryCommission = $totalPv * ($binaryMatchPercentage / 100);
+            // แก้ Bug: เพิ่ม × commission_per_pv ให้ตรงกับสูตรจริง
+            $binaryCommission = $totalPv * ($binaryMatchPercentage / 100) * $commissionPerPv;
 
             $preview['commissions'][] = [
                 'type' => 'binary',
