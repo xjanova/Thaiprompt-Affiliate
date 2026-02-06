@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.468.0] - 2026-02-06
+
+### ✨ Features
+- feat: เพิ่มแผงตรวจเช็คระบบ AI ในหน้า Admin ดูดวง (c30913da)
+- feat: เพิ่ม fallback responses เมื่อ AI ล่ม - บอทยังคุยได้ไม่หยุดชะงัก (46271a0f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2494 from xjanova/claude/check-horoscope-facebook-CtSPS (825fb267)
+
 ## [v3.467.1] - 2026-02-06
 
 ### ✨ Features
