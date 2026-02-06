@@ -411,7 +411,7 @@ class ForumAdminController extends Controller
     public function trophies()
     {
         $trophies = ForumTrophy::withCount('users')
-            ->orderBy('points', 'desc')
+            ->orderBy('display_order', 'asc')
             ->get();
 
         return view('admin.forum.trophies.index', compact('trophies'));

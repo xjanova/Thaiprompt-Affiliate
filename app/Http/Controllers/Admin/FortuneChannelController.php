@@ -143,9 +143,9 @@ class FortuneChannelController extends Controller
         $facebookStats = FortuneReading::where('platform', 'facebook')
             ->selectRaw('
                 COUNT(*) as total,
-                COUNT(CASE WHEN response_type = "deep" THEN 1 END) as deep_count,
-                COUNT(CASE WHEN payment_status = "paid" THEN 1 END) as paid_count,
-                SUM(CASE WHEN payment_status = "paid" THEN amount_paid ELSE 0 END) as total_revenue,
+                COUNT(CASE WHEN reading_type = "deep" THEN 1 END) as deep_count,
+                COUNT(CASE WHEN is_paid = 1 THEN 1 END) as paid_count,
+                SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as total_revenue,
                 COUNT(DISTINCT platform_user_id) as unique_users
             ')
             ->first();
@@ -154,9 +154,9 @@ class FortuneChannelController extends Controller
         $lineStats = FortuneReading::where('platform', 'line')
             ->selectRaw('
                 COUNT(*) as total,
-                COUNT(CASE WHEN response_type = "deep" THEN 1 END) as deep_count,
-                COUNT(CASE WHEN payment_status = "paid" THEN 1 END) as paid_count,
-                SUM(CASE WHEN payment_status = "paid" THEN amount_paid ELSE 0 END) as total_revenue,
+                COUNT(CASE WHEN reading_type = "deep" THEN 1 END) as deep_count,
+                COUNT(CASE WHEN is_paid = 1 THEN 1 END) as paid_count,
+                SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as total_revenue,
                 COUNT(DISTINCT platform_user_id) as unique_users
             ')
             ->first();
