@@ -1,5 +1,11 @@
 # ระบบ MLM ครบวงจร - Multi-Level Marketing System
 
+> **📌 เอกสาร Money Flow ฉบับสมบูรณ์:** ดูรายละเอียด Flow การเงิน, สูตรคำนวณ, และ Business Logic ที่ถูกต้องได้ที่
+> **[MLM_MONEY_FLOW.md](./MLM_MONEY_FLOW.md)** - เป็นเอกสารอ้างอิงหลักสำหรับ การคำนวณคอมมิชชัน, การแบ่งเงิน, และ Overpay Protection
+>
+> ⚠️ **หมายเหตุ**: เอกสารนี้ (MLM_SYSTEM_DOCUMENTATION.md) อาจมีข้อมูลบางส่วนที่ล้าสมัย
+> ระบบปัจจุบันใช้ `MlmGlobalSetting` แทน per-plan settings (`mlm_plans`)
+
 ## 📋 ภาพรวมระบบ
 
 ระบบ MLM (Multi-Level Marketing) ที่สมบูรณ์แบบ รองรับทั้งแบบ **Unilevel** และ **Binary** พร้อม **PV System** (Point Value) และ UI ที่สวยงาม
