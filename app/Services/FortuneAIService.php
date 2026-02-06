@@ -33,9 +33,17 @@ class FortuneAIService
         $this->provider = $this->settings->getActualAIProvider();
         $this->model = $this->settings->getActualAIModel();
 
-        // ลองใช้ API Key จาก Pool ก่อน
-        $this->poolService = new AiApiKeyPoolService();
-        $this->currentKey = $this->poolService->getKey($this->provider);
+        // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
+        try {
+            $this->poolService = new AiApiKeyPoolService();
+            $this->currentKey = $this->poolService->getKey($this->provider);
+        } catch (\Exception $e) {
+            Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
+                'error' => $e->getMessage(),
+            ]);
+            $this->poolService = null;
+            $this->currentKey = null;
+        }
 
         if ($this->currentKey) {
             $this->apiKey = $this->currentKey->api_key;
@@ -95,6 +103,15 @@ class FortuneAIService
         string $readingType = 'basic',
         ?string $birthDate = null
     ): array {
+        // ตรวจสอบว่ามี API Key ก่อนเรียก AI
+        if (empty($this->apiKey)) {
+            Log::error('FortuneAIService: ไม่มี API Key สำหรับ provider', [
+                'provider' => $this->provider,
+                'model' => $this->model,
+            ]);
+            throw new Exception("ไม่พบ API Key สำหรับ {$this->provider} - กรุณาตั้งค่า API Key ในระบบ Admin");
+        }
+
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
 

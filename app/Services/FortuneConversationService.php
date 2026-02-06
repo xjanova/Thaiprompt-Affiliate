@@ -252,11 +252,15 @@ class FortuneConversationService
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
             if ($activeReading) {
-                // ถ้าผู้ใช้พิมพ์ "ดูดวง" ขณะมี active conversation สถานะ basic_done
-                // ให้ปิด conversation เก่าและเริ่มต้นใหม่ แทนที่จะตีความว่าปฏิเสธ deep reading
-                if ($this->isFortuneRequest($messageText) && $activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
+                // ถ้าอยู่ในสถานะ basic_done: เช็คว่ารับ deep reading หรือไม่
+                // ถ้าไม่ใช่ → ปิด conversation เก่าแล้วส่งข้อความใหม่ไปให้ AI ตอบ
+                // ไม่บอก "ไม่เป็นไร" เพราะผู้ใช้อาจจะถามคำถามใหม่
+                if ($activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
+                    if ($this->isDeepReadingAccepted($messageText)) {
+                        return $this->continueConversation($activeReading, $messageText, $userProfile);
+                    }
+                    // ปิด conversation เก่าแล้วปล่อยให้ตกไปเริ่ม conversation ใหม่
                     $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-                    // ไม่ return ให้ตกไปด้านล่างเพื่อเริ่ม conversation ใหม่
                 } else {
                     return $this->continueConversation($activeReading, $messageText, $userProfile);
                 }
@@ -683,7 +687,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏",
+                'message' => "ขออภัยค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nกรุณาลองใหม่อีกครั้งนะคะ หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨",
                 'reading' => $reading,
             ];
         }

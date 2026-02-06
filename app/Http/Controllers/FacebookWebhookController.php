@@ -39,10 +39,25 @@ class FacebookWebhookController extends Controller
 
     public function __construct()
     {
-        $this->settings = FortuneTellingSetting::getSettings();
-        $this->facebookService = new FacebookWebhookService($this->settings);
-        $this->aiService = new FortuneAIService($this->settings);
-        $this->conversationService = new FortuneConversationService($this->settings);
+        try {
+            $this->settings = FortuneTellingSetting::getSettings();
+            $this->facebookService = new FacebookWebhookService($this->settings);
+            $this->aiService = new FortuneAIService($this->settings);
+            $this->conversationService = new FortuneConversationService($this->settings);
+        } catch (\Exception $e) {
+            // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
+            Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+            ]);
+            // สร้าง settings เปล่าเพื่อให้ verify webhook ยังทำงานได้
+            if (!$this->settings) {
+                $this->settings = new FortuneTellingSetting();
+            }
+            if (!$this->facebookService) {
+                $this->facebookService = new FacebookWebhookService($this->settings);
+            }
+        }
     }
 
     /**
@@ -647,6 +662,16 @@ class FacebookWebhookController extends Controller
     protected function processConversationalMessage(string $senderId, string $messageText): void
     {
         try {
+            // ตรวจสอบว่า service พร้อมใช้งาน
+            if (!$this->conversationService) {
+                Log::error('ConversationService ไม่พร้อม - อาจเกิดจากการตั้งค่าระบบไม่ครบ');
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "🔮 สวัสดีค่ะ\n\nระบบกำลังเตรียมพร้อมอยู่ค่ะ กรุณาลองพิมพ์มาใหม่ในอีกสักครู่นะคะ 🙏✨"
+                );
+                return;
+            }
+
             // ส่ง typing indicator
             $this->facebookService->sendTypingIndicator($senderId);
 
@@ -947,10 +972,14 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendTypingIndicator($fromId, false);
             }
 
-            $this->facebookService->sendMessage(
-                $fromId,
-                "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้งในอีกสักครู่ 🙏"
-            );
+            try {
+                $this->facebookService->sendMessage(
+                    $fromId,
+                    "🔮 ขออภัยค่ะ ระบบทำนายขัดข้องชั่วคราว\n\nกรุณาลองใหม่อีกครั้งในอีกสักครู่นะคะ 🙏✨"
+                );
+            } catch (\Exception $sendError) {
+                Log::error('ส่งข้อความ error ไม่สำเร็จ: ' . $sendError->getMessage());
+            }
         }
     }
 
