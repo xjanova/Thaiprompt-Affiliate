@@ -184,10 +184,13 @@ class MlmUnilevelService
                 $commissionAmount = ($pvData['total_pv'] * $percentage) / 100 * $commissionPerPv;
 
                 // แก้ Bug #9: ใช้ currentRank แทน rank (User model ไม่มี rank relationship)
+                // แก้ Warning: เพิ่ม cap สำหรับ bonus_multiplier ป้องกันค่าผิดปกติ
                 if ($sponsor->user->current_rank_id) {
                     $rank = $sponsor->user->currentRank;
                     if ($rank && $rank->bonus_multiplier) {
-                        $commissionAmount *= $rank->bonus_multiplier;
+                        $maxMultiplier = (float) MlmGlobalSetting::get('max_rank_bonus_multiplier', 5.0);
+                        $multiplier = min($rank->bonus_multiplier, $maxMultiplier);
+                        $commissionAmount *= $multiplier;
                     }
                 }
 
@@ -380,14 +383,20 @@ class MlmUnilevelService
             return 0;
         }
 
+        // แก้ Bug: เพิ่ม commissionPerPv ให้ตรงกับสูตรจริงใน calculateUnilevelCommissions()
+        // สูตร: PV × percentage / 100 × commissionPerPv
+        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
         $percentage = $levels[0]['percentage'] ?? 0;
-        $commission = ($pvAmount * $percentage) / 100;
+        $commission = ($pvAmount * $percentage) / 100 * $commissionPerPv;
 
         // แก้ Bug #9: ใช้ currentRank แทน rank
+        // แก้ Warning: เพิ่ม cap สำหรับ bonus_multiplier ป้องกันค่าผิดปกติ
         if ($member->user->current_rank_id) {
             $rank = $member->user->currentRank;
             if ($rank && $rank->bonus_multiplier) {
-                $commission *= $rank->bonus_multiplier;
+                $maxMultiplier = (float) MlmGlobalSetting::get('max_rank_bonus_multiplier', 5.0);
+                $multiplier = min($rank->bonus_multiplier, $maxMultiplier);
+                $commission *= $multiplier;
             }
         }
 
