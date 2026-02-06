@@ -682,14 +682,27 @@ class FacebookWebhookController extends Controller
             Log::error('Conversational Fortune Error: ' . $e->getMessage(), [
                 'facebook_user_id' => $senderId,
                 'message' => $messageText,
-                'trace' => $e->getTraceAsString(),
+                'error_class' => get_class($e),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 1000),
             ]);
 
-            $this->facebookService->sendTypingIndicator($senderId, false);
-            $this->facebookService->sendMessage(
-                $senderId,
-                "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มต้นใหม่"
-            );
+            try {
+                $this->facebookService->sendTypingIndicator($senderId, false);
+            } catch (\Exception $ignored) {}
+
+            // ส่งข้อความที่เป็นมิตรกับผู้ใช้ แทนที่จะบอกว่า "ผิดพลาด"
+            try {
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "🔮 สวัสดีค่ะ\n\n" .
+                    "ตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\n" .
+                    "กรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n" .
+                    "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n" .
+                    "หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
+                );
+            } catch (\Exception $sendError) {
+                Log::error('ส่งข้อความ error response ไม่สำเร็จ: ' . $sendError->getMessage());
+            }
         }
     }
 
