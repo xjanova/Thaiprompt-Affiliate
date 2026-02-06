@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.467.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่มความทนทานของระบบดูดวง - ป้องกัน crash + ปรับ UX flow (af95237e)
+- fix: ปรับปรุง error handling ให้ครอบคลุม + ข้อความ error ที่เป็นมิตร (ef48dea3)
+### 🔧 Other Changes
+- Merge pull request #2493 from xjanova/claude/check-horoscope-facebook-CtSPS (41bf5cb5)
+
 ## [v3.467.0] - 2026-02-06
 
 ### ✨ Features
