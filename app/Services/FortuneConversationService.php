@@ -226,53 +226,90 @@ class FortuneConversationService
      */
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
-        // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
-        $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
-        if (!$filterResult['valid']) {
-            Log::info('Fortune Filter: Message blocked', [
-                'user_id' => $facebookUserId,
-                'reason' => $filterResult['reason'],
+        try {
+            // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
+            $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
+            if (!$filterResult['valid']) {
+                Log::info('Fortune Filter: Message blocked', [
+                    'user_id' => $facebookUserId,
+                    'reason' => $filterResult['reason'],
+                    'text_preview' => mb_substr($messageText, 0, 50),
+                ]);
+                return [
+                    'action' => 'filtered',
+                    'message' => $filterResult['message'],
+                    'reading' => null,
+                    'filter_reason' => $filterResult['reason'],
+                ];
+            }
+
+            // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
+            if ($this->isCheckRemainingRequest($messageText)) {
+                return $this->handleCheckRemaining($facebookUserId);
+            }
+
+            // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
+            $activeReading = FortuneReading::findActiveConversation($facebookUserId);
+
+            if ($activeReading) {
+                // ถ้าอยู่ในสถานะ basic_done: เช็คว่ารับ deep reading หรือไม่
+                // ถ้าไม่ใช่ → ปิด conversation เก่าแล้วส่งข้อความใหม่ไปให้ AI ตอบ
+                // ไม่บอก "ไม่เป็นไร" เพราะผู้ใช้อาจจะถามคำถามใหม่
+                if ($activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
+                    if ($this->isDeepReadingAccepted($messageText)) {
+                        return $this->continueConversation($activeReading, $messageText, $userProfile);
+                    }
+                    // ปิด conversation เก่าแล้วปล่อยให้ตกไปเริ่ม conversation ใหม่
+                    $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                } else {
+                    return $this->continueConversation($activeReading, $messageText, $userProfile);
+                }
+            }
+
+            // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
+            if (!$this->canMakeAICall($facebookUserId)) {
+                return [
+                    'action' => 'ai_limit',
+                    'message' => $this->getAILimitMessage(),
+                    'reading' => null,
+                ];
+            }
+
+            // ✅ ส่งทุกข้อความไปให้ AI ตอบ ไม่ว่าจะเป็นเรื่องดูดวงหรือไม่
+            // AI system prompt จะจัดการเองว่าจะตอบแบบไหน
+            return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+
+        } catch (\Exception $e) {
+            // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
+            Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
+
             return [
-                'action' => 'filtered',
-                'message' => $filterResult['message'],
-                'reading' => null,
-                'filter_reason' => $filterResult['reason'],
-            ];
-        }
-
-        // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
-        if ($this->isCheckRemainingRequest($messageText)) {
-            return $this->handleCheckRemaining($facebookUserId);
-        }
-
-        // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
-        $activeReading = FortuneReading::findActiveConversation($facebookUserId);
-
-        if ($activeReading) {
-            // ถ้าผู้ใช้พิมพ์ "ดูดวง" ขณะมี active conversation สถานะ basic_done
-            // ให้ปิด conversation เก่าและเริ่มต้นใหม่ แทนที่จะตีความว่าปฏิเสธ deep reading
-            if ($this->isFortuneRequest($messageText) && $activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
-                $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-                // ไม่ return ให้ตกไปด้านล่างเพื่อเริ่ม conversation ใหม่
-            } else {
-                return $this->continueConversation($activeReading, $messageText, $userProfile);
-            }
-        }
-
-        // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
-        if (!$this->canMakeAICall($facebookUserId)) {
-            return [
-                'action' => 'ai_limit',
-                'message' => $this->getAILimitMessage(),
+                'action' => 'error',
+                'message' => $this->getFallbackMessage($userProfile['name'] ?? 'คุณ'),
                 'reading' => null,
             ];
         }
+    }
 
-        // ✅ ส่งทุกข้อความไปให้ AI ตอบ ไม่ว่าจะเป็นเรื่องดูดวงหรือไม่
-        // AI system prompt จะจัดการเองว่าจะตอบแบบไหน
-        return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+    /**
+     * ข้อความ fallback เมื่อระบบมีปัญหา - ยังคงเป็นมิตรกับผู้ใช้
+     *
+     * @param string $name ชื่อผู้ใช้
+     * @return string
+     */
+    protected function getFallbackMessage(string $name): string
+    {
+        return "🔮 สวัสดีค่ะ คุณ{$name}\n\n" .
+               "ตอนนี้ทางเพจขอเวลาสักครู่นะคะ ระบบกำลังปรับปรุงอยู่ค่ะ\n\n" .
+               "💡 ลองทำสิ่งเหล่านี้:\n" .
+               "• พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n" .
+               "• ลองพิมพ์คำถามใหม่อีกครั้ง\n" .
+               "• หรือรอสักครู่แล้วลองใหม่\n\n" .
+               "ทางเพจขออภัยในความไม่สะดวกค่ะ 🙏✨";
     }
 
     /**
@@ -348,18 +385,20 @@ class FortuneConversationService
             $userProfile = $this->facebookService->getUserProfile($facebookUserId);
         }
 
-        // สร้าง FortuneReading ใหม่
-        $reading = FortuneReading::create([
-            'facebook_user_id' => $facebookUserId,
-            'facebook_user_name' => $userProfile['name'] ?? null,
-            'user_profile' => $userProfile,
-            'questions' => [$messageText],
-            'reading_type' => 'basic',
-            'conversation_status' => FortuneReading::STATUS_NEW,
-            'response_type' => 'private_message',
-        ]);
+        $reading = null;
 
         try {
+            // สร้าง FortuneReading ใหม่
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $facebookUserId,
+                'facebook_user_name' => $userProfile['name'] ?? null,
+                'user_profile' => $userProfile,
+                'questions' => [$messageText],
+                'reading_type' => 'basic',
+                'conversation_status' => FortuneReading::STATUS_NEW,
+                'response_type' => 'private_message',
+            ]);
+
             // ทำนายพื้นฐานฟรี
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText);
             $aiResult = $this->aiService->generateFortuneTelling(
@@ -398,22 +437,28 @@ class FortuneConversationService
             Log::error('Fortune Conversation: ทำนายพื้นฐานล้มเหลว', [
                 'facebook_user_id' => $facebookUserId,
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'trace_short' => mb_substr($e->getTraceAsString(), 0, 500),
             ]);
 
             // ลบ reading ที่สร้างไว้เพื่อไม่ให้นับรวมใน daily limit
             // เพราะการทำนายไม่สำเร็จ ไม่ควรหักสิทธิ์ฟรีของผู้ใช้
-            try {
-                $reading->forceDelete();
-            } catch (\Exception $deleteError) {
-                Log::warning('Fortune Conversation: ลบ reading ที่ล้มเหลวไม่สำเร็จ', [
-                    'reading_id' => $reading->id,
-                    'error' => $deleteError->getMessage(),
-                ]);
+            if ($reading) {
+                try {
+                    $reading->forceDelete();
+                } catch (\Exception $deleteError) {
+                    Log::warning('Fortune Conversation: ลบ reading ที่ล้มเหลวไม่สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'error' => $deleteError->getMessage(),
+                    ]);
+                }
             }
 
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้ง 🙏",
+                'message' => "ขออภัยค่ะ ระบบทำนายขัดข้องชั่วคราว 🙏\n\n" .
+                             "ทางเพจกำลังแก้ไขอยู่นะคะ กรุณาลองใหม่อีกครั้งในอีกสักครู่ค่ะ\n\n" .
+                             "💡 ระหว่างนี้ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรีของคุณค่ะ ✨",
                 'reading' => null,
             ];
         }
@@ -642,7 +687,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏",
+                'message' => "ขออภัยค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nกรุณาลองใหม่อีกครั้งนะคะ หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨",
                 'reading' => $reading,
             ];
         }

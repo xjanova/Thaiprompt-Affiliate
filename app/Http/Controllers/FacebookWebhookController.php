@@ -39,10 +39,25 @@ class FacebookWebhookController extends Controller
 
     public function __construct()
     {
-        $this->settings = FortuneTellingSetting::getSettings();
-        $this->facebookService = new FacebookWebhookService($this->settings);
-        $this->aiService = new FortuneAIService($this->settings);
-        $this->conversationService = new FortuneConversationService($this->settings);
+        try {
+            $this->settings = FortuneTellingSetting::getSettings();
+            $this->facebookService = new FacebookWebhookService($this->settings);
+            $this->aiService = new FortuneAIService($this->settings);
+            $this->conversationService = new FortuneConversationService($this->settings);
+        } catch (\Exception $e) {
+            // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
+            Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+            ]);
+            // สร้าง settings เปล่าเพื่อให้ verify webhook ยังทำงานได้
+            if (!$this->settings) {
+                $this->settings = new FortuneTellingSetting();
+            }
+            if (!$this->facebookService) {
+                $this->facebookService = new FacebookWebhookService($this->settings);
+            }
+        }
     }
 
     /**
@@ -647,6 +662,16 @@ class FacebookWebhookController extends Controller
     protected function processConversationalMessage(string $senderId, string $messageText): void
     {
         try {
+            // ตรวจสอบว่า service พร้อมใช้งาน
+            if (!$this->conversationService) {
+                Log::error('ConversationService ไม่พร้อม - อาจเกิดจากการตั้งค่าระบบไม่ครบ');
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "🔮 สวัสดีค่ะ\n\nระบบกำลังเตรียมพร้อมอยู่ค่ะ กรุณาลองพิมพ์มาใหม่ในอีกสักครู่นะคะ 🙏✨"
+                );
+                return;
+            }
+
             // ส่ง typing indicator
             $this->facebookService->sendTypingIndicator($senderId);
 
@@ -682,14 +707,27 @@ class FacebookWebhookController extends Controller
             Log::error('Conversational Fortune Error: ' . $e->getMessage(), [
                 'facebook_user_id' => $senderId,
                 'message' => $messageText,
-                'trace' => $e->getTraceAsString(),
+                'error_class' => get_class($e),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 1000),
             ]);
 
-            $this->facebookService->sendTypingIndicator($senderId, false);
-            $this->facebookService->sendMessage(
-                $senderId,
-                "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มต้นใหม่"
-            );
+            try {
+                $this->facebookService->sendTypingIndicator($senderId, false);
+            } catch (\Exception $ignored) {}
+
+            // ส่งข้อความที่เป็นมิตรกับผู้ใช้ แทนที่จะบอกว่า "ผิดพลาด"
+            try {
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "🔮 สวัสดีค่ะ\n\n" .
+                    "ตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\n" .
+                    "กรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n" .
+                    "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n" .
+                    "หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
+                );
+            } catch (\Exception $sendError) {
+                Log::error('ส่งข้อความ error response ไม่สำเร็จ: ' . $sendError->getMessage());
+            }
         }
     }
 
@@ -934,10 +972,14 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendTypingIndicator($fromId, false);
             }
 
-            $this->facebookService->sendMessage(
-                $fromId,
-                "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้งในอีกสักครู่ 🙏"
-            );
+            try {
+                $this->facebookService->sendMessage(
+                    $fromId,
+                    "🔮 ขออภัยค่ะ ระบบทำนายขัดข้องชั่วคราว\n\nกรุณาลองใหม่อีกครั้งในอีกสักครู่นะคะ 🙏✨"
+                );
+            } catch (\Exception $sendError) {
+                Log::error('ส่งข้อความ error ไม่สำเร็จ: ' . $sendError->getMessage());
+            }
         }
     }
 
