@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Usage Logs</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">ติดตามการใช้งาน API และค่าใช้จ่าย</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ Dashboard
         </a>
     </div>
@@ -108,7 +108,7 @@
                 <i class="fas fa-filter mr-2"></i> กรอง
             </button>
             @if(request()->hasAny(['provider', 'action', 'date']))
-            <a href="{{ route('admin.ai-content-writer.usage-logs') }}" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.usage-logs') }}" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <i class="fas fa-times mr-2"></i> ล้าง
             </a>
             @endif

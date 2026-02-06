@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">สร้างเทมเพลตใหม่</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">กำหนดรูปแบบสำหรับสร้าง Content</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.templates') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.templates') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ
         </a>
     </div>
@@ -208,7 +208,7 @@ function templateForm() {
             this.saving = true;
 
             try {
-                const response = await fetch('{{ route("admin.ai-content-writer.templates.store") }}', {
+                const response = await fetch('{{ route("admin.platform-revenue.ai-content-writer.templates.store") }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -221,7 +221,7 @@ function templateForm() {
                 const result = await response.json();
 
                 if (result.success) {
-                    window.location.href = result.redirect || '{{ route("admin.ai-content-writer.templates") }}';
+                    window.location.href = result.redirect || '{{ route("admin.platform-revenue.ai-content-writer.templates") }}';
                 } else {
                     alert(result.message || 'เกิดข้อผิดพลาด');
                 }

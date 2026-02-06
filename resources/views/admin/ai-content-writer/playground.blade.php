@@ -14,7 +14,7 @@
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">ทดสอบสร้าง Content ด้วย AI แบบ Real-time</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ
         </a>
     </div>
@@ -196,7 +196,7 @@ function playground() {
             this.usage = null;
 
             try {
-                const response = await fetch('{{ route("admin.ai-content-writer.playground.generate") }}', {
+                const response = await fetch('{{ route("admin.platform-revenue.ai-content-writer.playground.generate") }}', {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',

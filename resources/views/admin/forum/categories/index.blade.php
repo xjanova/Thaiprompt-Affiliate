@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold text-white">📁 จัดการหมวดหมู่ฟอรั่ม</h1>
             <p class="text-white/60 mt-1">จัดการหมวดหมู่และหมวดหมู่ย่อยสำหรับฟอรั่มชุมชน</p>
         </div>
-        <a href="{{ route('admin.forum.categories.create') }}"
+        <a href="{{ route('admin.platform-revenue.forum.categories.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition shadow-lg">
             <i class="fas fa-plus"></i>
             <span>สร้างหมวดหมู่ใหม่</span>
@@ -61,12 +61,12 @@
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('admin.forum.categories.edit', $category) }}"
+                                    <a href="{{ route('admin.platform-revenue.forum.categories.edit', $category) }}"
                                        class="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition"
                                        title="แก้ไข">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="{{ route('admin.forum.categories.delete', $category) }}" method="POST" class="inline"
+                                    <form action="{{ route('admin.platform-revenue.forum.categories.delete', $category) }}" method="POST" class="inline"
                                           onsubmit="return confirm('ต้องการลบหมวดหมู่นี้?')">
                                         @csrf
                                         @method('DELETE')
@@ -101,7 +101,7 @@
                                 </td>
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('admin.forum.categories.edit', $child) }}"
+                                        <a href="{{ route('admin.platform-revenue.forum.categories.edit', $child) }}"
                                            class="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition text-sm">
                                             <i class="fas fa-edit"></i>
                                         </a>
@@ -114,7 +114,7 @@
                             <td colspan="6" class="px-6 py-12 text-center text-white/60">
                                 <i class="fas fa-folder-open text-4xl mb-4 block"></i>
                                 <p>ยังไม่มีหมวดหมู่</p>
-                                <a href="{{ route('admin.forum.categories.create') }}" class="text-blue-400 hover:underline mt-2 inline-block">
+                                <a href="{{ route('admin.platform-revenue.forum.categories.create') }}" class="text-blue-400 hover:underline mt-2 inline-block">
                                     + สร้างหมวดหมู่แรก
                                 </a>
                             </td>

@@ -13,7 +13,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-sm text-white/60 mb-2">
-                <a href="{{ route('admin.forum.categories.index') }}" class="hover:text-white transition">
+                <a href="{{ route('admin.platform-revenue.forum.categories.index') }}" class="hover:text-white transition">
                     จัดการหมวดหมู่
                 </a>
                 <i class="fas fa-chevron-right text-xs"></i>
@@ -22,7 +22,7 @@
             <h1 class="text-2xl font-bold text-white">✏️ แก้ไขหมวดหมู่ฟอรั่ม</h1>
             <p class="text-white/60 mt-1">แก้ไขรายละเอียดหมวดหมู่ "{{ $category->name }}"</p>
         </div>
-        <a href="{{ route('admin.forum.categories.index') }}"
+        <a href="{{ route('admin.platform-revenue.forum.categories.index') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
             <i class="fas fa-arrow-left"></i>
             <span>กลับ</span>
@@ -31,7 +31,7 @@
 
     {{-- Form --}}
     <div class="glass-card rounded-xl p-6">
-        <form action="{{ route('admin.forum.categories.update', $category) }}" method="POST">
+        <form action="{{ route('admin.platform-revenue.forum.categories.update', $category) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -203,7 +203,7 @@
                     <i class="fas fa-save"></i>
                     <span>บันทึกการแก้ไข</span>
                 </button>
-                <a href="{{ route('admin.forum.categories.index') }}"
+                <a href="{{ route('admin.platform-revenue.forum.categories.index') }}"
                    class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition">
                     <i class="fas fa-times"></i>
                     <span>ยกเลิก</span>
@@ -222,7 +222,7 @@
         <p class="text-white/60 text-sm mb-4">
             การลบหมวดหมู่จะเป็นการถาวร ไม่สามารถกู้คืนได้
         </p>
-        <form action="{{ route('admin.forum.categories.delete', $category) }}" method="POST"
+        <form action="{{ route('admin.platform-revenue.forum.categories.delete', $category) }}" method="POST"
               onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบหมวดหมู่นี้?')">
             @csrf
             @method('DELETE')

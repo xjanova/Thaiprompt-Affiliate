@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการเทมเพลต</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">สร้างและจัดการเทมเพลตสำหรับสร้าง Content</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.templates.create') }}"
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.templates.create') }}"
            class="inline-flex items-center px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition">
             <i class="fas fa-plus mr-2"></i>
             สร้างเทมเพลตใหม่
@@ -81,7 +81,7 @@
             </div>
 
             <div class="px-5 py-3 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex justify-between">
-                <a href="{{ route('admin.ai-content-writer.templates.edit', $template->id) }}"
+                <a href="{{ route('admin.platform-revenue.ai-content-writer.templates.edit', $template->id) }}"
                    class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                     <i class="fas fa-edit mr-1"></i> แก้ไข
                 </a>
@@ -95,7 +95,7 @@
         <div class="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
             <i class="fas fa-file-alt text-4xl mb-4"></i>
             <p>ยังไม่มีเทมเพลต</p>
-            <a href="{{ route('admin.ai-content-writer.templates.create') }}" class="text-purple-600 hover:underline">สร้างเทมเพลตแรก</a>
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.templates.create') }}" class="text-purple-600 hover:underline">สร้างเทมเพลตแรก</a>
         </div>
         @endforelse
     </div>

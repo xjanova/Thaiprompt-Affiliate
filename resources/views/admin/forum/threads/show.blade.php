@@ -13,7 +13,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-sm text-white/60 mb-2">
-                <a href="{{ route('admin.forum.threads.index') }}" class="hover:text-white transition">
+                <a href="{{ route('admin.platform-revenue.forum.threads.index') }}" class="hover:text-white transition">
                     จัดการกระทู้
                 </a>
                 <i class="fas fa-chevron-right text-xs"></i>
@@ -27,7 +27,7 @@
                 <i class="fas fa-external-link-alt"></i>
                 <span>ดูหน้าจริง</span>
             </a>
-            <a href="{{ route('admin.forum.threads.index') }}"
+            <a href="{{ route('admin.platform-revenue.forum.threads.index') }}"
                class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
                 <i class="fas fa-arrow-left"></i>
                 <span>กลับ</span>
@@ -196,7 +196,7 @@
         <p class="text-white/60 text-sm mb-4">
             การลบกระทู้จะลบทุกความคิดเห็นด้วย และไม่สามารถกู้คืนได้
         </p>
-        <form action="{{ route('admin.forum.threads.delete', $thread) }}" method="POST"
+        <form action="{{ route('admin.platform-revenue.forum.threads.delete', $thread) }}" method="POST"
               onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบกระทู้นี้? การกระทำนี้ไม่สามารถยกเลิกได้')">
             @csrf
             @method('DELETE')
@@ -229,7 +229,7 @@ function threadAdmin() {
         async togglePin() {
             this.loading = true;
             try {
-                const response = await fetch('{{ route("admin.forum.threads.pin", $thread) }}', {
+                const response = await fetch('{{ route("admin.platform-revenue.forum.threads.pin", $thread) }}', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -249,7 +249,7 @@ function threadAdmin() {
         async toggleLock() {
             this.loading = true;
             try {
-                const response = await fetch('{{ route("admin.forum.threads.lock", $thread) }}', {
+                const response = await fetch('{{ route("admin.platform-revenue.forum.threads.lock", $thread) }}', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ function threadAdmin() {
         async toggleFeature() {
             this.loading = true;
             try {
-                const response = await fetch('{{ route("admin.forum.threads.feature", $thread) }}', {
+                const response = await fetch('{{ route("admin.platform-revenue.forum.threads.feature", $thread) }}', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

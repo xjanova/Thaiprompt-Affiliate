@@ -14,7 +14,7 @@
 
     {{-- Filters --}}
     <div class="glass-card rounded-xl p-4">
-        <form action="{{ route('admin.forum.threads.index') }}" method="GET" class="flex flex-wrap gap-4">
+        <form action="{{ route('admin.platform-revenue.forum.threads.index') }}" method="GET" class="flex flex-wrap gap-4">
             <div class="flex-1 min-w-[200px]">
                 <input type="text" name="search" value="{{ request('search') }}"
                        placeholder="ค้นหากระทู้..."
@@ -63,7 +63,7 @@
                     @forelse($threads as $thread)
                         <tr class="hover:bg-white/5 transition">
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.forum.threads.show', $thread) }}" class="font-medium text-white hover:text-blue-400 transition">
+                                <a href="{{ route('admin.platform-revenue.forum.threads.show', $thread) }}" class="font-medium text-white hover:text-blue-400 transition">
                                     {{ Str::limit($thread->title, 50) }}
                                 </a>
                                 <div class="text-sm text-white/60 mt-1">

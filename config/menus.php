@@ -86,9 +86,8 @@ return [
                 ['label' => '📈 Usage Analytics', 'route' => 'admin.ai-core.analytics.index', 'description' => 'วิเคราะห์การใช้งาน AI'],
                 ['label' => '⚙️ Global Settings', 'route' => 'admin.ai-core.settings.index', 'description' => 'ตั้งค่าทั่วไป'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => '🤖 AI Bot Marketplace', 'route' => 'admin.ai-bots.index', 'description' => 'ตลาด AI Bots'],
                 ['label' => '🎨 AI Generation', 'route' => 'admin.ai-gen.dashboard', 'description' => 'สร้างภาพและวิดีโอ'],
-                ['label' => '🔌 AI Providers', 'route' => 'admin.ai-providers.index', 'description' => 'จัดการผู้ให้บริการ AI'],
+                ['label' => '🔄 Bot Automation', 'route' => 'admin.bot-automation.index', 'description' => 'ระบบอัตโนมัติ'],
                 ['label' => '📈 Trading Bot', 'route' => 'admin.trading-bot.dashboard', 'description' => 'Bot เทรดด้วย AI'],
             ],
         ],
@@ -105,14 +104,14 @@ return [
                 ['label' => 'AI Providers', 'route' => 'admin.ai-providers.index', 'icon' => 'fas fa-plug'],
                 ['label' => 'ติดตั้ง AI', 'route' => 'admin.ai-installation.index', 'icon' => 'fas fa-download'],
                 ['label' => 'AI Monitoring', 'route' => 'admin.ai-monitoring.index', 'icon' => 'fas fa-heartbeat'],
-                ['label' => 'Knowledge Bases', 'route' => 'admin.knowledge-bases.index', 'icon' => 'fas fa-database'],
+                // Knowledge Bases - ต้องระบุ botId จึงไม่สามารถลิงก์ตรงได้ (removed)
             ],
         ],
 
         [
             'id' => 'central-ai',
             'label' => 'Central AI',
-            'icon' => '🧠',
+            'icon' => '🖥️',
             'route' => null,
             'order' => 4.2,
             'permissions' => [],
@@ -126,21 +125,7 @@ return [
             ],
         ],
 
-        [
-            'id' => 'chatbot',
-            'label' => 'ระบบบอทแชท',
-            'icon' => '💬',
-            'route' => null,
-            'order' => 4.3,
-            'permissions' => [],
-            'submenu' => [
-                ['label' => 'บอทของฉัน', 'route' => 'chatbot.index', 'icon' => 'fas fa-robot'],
-                ['label' => 'สร้างบอทใหม่', 'route' => 'chatbot.create', 'icon' => 'fas fa-plus-circle'],
-                ['label' => 'ตลาดบอท', 'route' => 'chatbot.marketplace.index', 'icon' => 'fas fa-store'],
-                ['label' => 'บอทที่เช่า', 'route' => 'chatbot.marketplace.my-rentals', 'icon' => 'fas fa-handshake'],
-                ['label' => 'รายได้ของฉัน', 'route' => 'chatbot.marketplace.my-earnings', 'icon' => 'fas fa-coins'],
-            ],
-        ],
+        // ระบบบอทแชท - ย้ายไปที่เมนู user แล้ว (ไม่ใช่ admin route)
 
         [
             'id' => 'ai-content-writer',
@@ -165,7 +150,7 @@ return [
         [
             'id' => 'smart-sliders',
             'label' => 'Smart Slider Pro',
-            'icon' => '🎨',
+            'icon' => '🖼️',
             'route' => null,
             'order' => 4.5,
             'permissions' => [],
@@ -407,7 +392,7 @@ return [
         [
             'id' => 'line-oa',
             'label' => 'LINE OA & AI',
-            'icon' => '📱',
+            'icon' => '💚',
             'route' => null,
             'order' => 12,
             'permissions' => [],
@@ -527,7 +512,7 @@ return [
         [
             'id' => 'marketing',
             'label' => 'ระบบการตลาด',
-            'icon' => '📈',
+            'icon' => '🏆',
             'route' => null,
             'order' => 16,
             'permissions' => [],
@@ -583,7 +568,7 @@ return [
         [
             'id' => 'accounting',
             'label' => 'บัญชี (Accounting)',
-            'icon' => '📊',
+            'icon' => '📒',
             'route' => null,
             'order' => 18,
             'permissions' => [],
@@ -659,7 +644,7 @@ return [
         [
             'id' => 'analytics',
             'label' => 'Analytics & SEO',
-            'icon' => '📊',
+            'icon' => '📉',
             'route' => null,
             'order' => 22,
             'permissions' => [],
@@ -731,7 +716,7 @@ return [
         [
             'id' => 'content-media',
             'label' => 'คอนเทนต์ & มีเดีย',
-            'icon' => '🎬',
+            'icon' => '📝',
             'route' => null,
             'order' => 24.5,
             'permissions' => [],
@@ -746,7 +731,7 @@ return [
         [
             'id' => 'ai-gen',
             'label' => 'AI Gen System',
-            'icon' => '🎨',
+            'icon' => '✨',
             'route' => null,
             'order' => 24.7,
             'permissions' => [],
@@ -764,7 +749,7 @@ return [
         [
             'id' => 'video-automation',
             'label' => 'Video Automation',
-            'icon' => '🎬',
+            'icon' => '🎥',
             'route' => null,
             'order' => 24.8,
             'permissions' => [],

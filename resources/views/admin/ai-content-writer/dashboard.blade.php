@@ -29,12 +29,12 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <a href="{{ route('admin.ai-content-writer.playground') }}"
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.playground') }}"
                class="inline-flex items-center px-5 py-2.5 acw-gradient-purple text-white font-semibold rounded-xl hover:opacity-90 transition shadow-lg shadow-purple-500/30">
                 <i class="fas fa-magic mr-2"></i>
                 สร้าง Content ใหม่
             </a>
-            <a href="{{ route('admin.ai-content-writer.settings') }}"
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.settings') }}"
                class="inline-flex items-center px-5 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition">
                 <i class="fas fa-cog mr-2"></i>
                 ตั้งค่า
@@ -118,25 +118,25 @@
 
     {{-- Quick Links --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="{{ route('admin.ai-content-writer.templates') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition group">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.templates') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition group">
             <i class="fas fa-layer-group text-3xl text-purple-500 mb-3"></i>
             <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-purple-500 transition">จัดการเทมเพลต</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ $stats['templates']['active'] }} เทมเพลตใช้งานอยู่</p>
         </a>
 
-        <a href="{{ route('admin.ai-content-writer.projects') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition group">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.projects') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition group">
             <i class="fas fa-folder-open text-3xl text-blue-500 mb-3"></i>
             <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-500 transition">โปรเจกต์ทั้งหมด</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ $stats['projects']['completed'] }} เสร็จสิ้น</p>
         </a>
 
-        <a href="{{ route('admin.ai-content-writer.generations') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 transition group">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.generations') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 transition group">
             <i class="fas fa-history text-3xl text-green-500 mb-3"></i>
             <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-green-500 transition">ประวัติการสร้าง</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ $stats['generations']['today'] }} วันนี้</p>
         </a>
 
-        <a href="{{ route('admin.ai-content-writer.usage-logs') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 transition group">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.usage-logs') }}" class="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 transition group">
             <i class="fas fa-chart-bar text-3xl text-orange-500 mb-3"></i>
             <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-orange-500 transition">Usage Logs</h3>
             <p class="text-sm text-gray-500 dark:text-gray-400">{{ number_format($stats['usage']['total_tokens']) }} tokens</p>

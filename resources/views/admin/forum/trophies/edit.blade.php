@@ -13,7 +13,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-sm text-white/60 mb-2">
-                <a href="{{ route('admin.forum.trophies.index') }}" class="hover:text-white transition">
+                <a href="{{ route('admin.platform-revenue.forum.trophies.index') }}" class="hover:text-white transition">
                     จัดการถ้วยรางวัล
                 </a>
                 <i class="fas fa-chevron-right text-xs"></i>
@@ -22,7 +22,7 @@
             <h1 class="text-2xl font-bold text-white">✏️ แก้ไขถ้วยรางวัล</h1>
             <p class="text-white/60 mt-1">แก้ไขรายละเอียดถ้วยรางวัล "{{ $trophy->name }}"</p>
         </div>
-        <a href="{{ route('admin.forum.trophies.index') }}"
+        <a href="{{ route('admin.platform-revenue.forum.trophies.index') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
             <i class="fas fa-arrow-left"></i>
             <span>กลับ</span>
@@ -31,7 +31,7 @@
 
     {{-- Form --}}
     <div class="glass-card rounded-xl p-6">
-        <form action="{{ route('admin.forum.trophies.update', $trophy) }}" method="POST">
+        <form action="{{ route('admin.platform-revenue.forum.trophies.update', $trophy) }}" method="POST">
             @csrf
             @method('PUT')
 
@@ -234,7 +234,7 @@
                     <i class="fas fa-save"></i>
                     <span>บันทึกการแก้ไข</span>
                 </button>
-                <a href="{{ route('admin.forum.trophies.index') }}"
+                <a href="{{ route('admin.platform-revenue.forum.trophies.index') }}"
                    class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition">
                     <i class="fas fa-times"></i>
                     <span>ยกเลิก</span>
@@ -252,7 +252,7 @@
         <p class="text-white/60 text-sm mb-4">
             การลบถ้วยรางวัลจะลบข้อมูลการมอบรางวัลทั้งหมดด้วย
         </p>
-        <form action="{{ route('admin.forum.trophies.delete', $trophy) }}" method="POST"
+        <form action="{{ route('admin.platform-revenue.forum.trophies.delete', $trophy) }}" method="POST"
               onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบถ้วยรางวัลนี้? การกระทำนี้ไม่สามารถยกเลิกได้')">
             @csrf
             @method('DELETE')

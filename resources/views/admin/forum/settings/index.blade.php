@@ -10,7 +10,7 @@
         <p class="text-white/60 mt-1">กำหนดค่าการทำงานของระบบฟอรั่มชุมชน</p>
     </div>
 
-    <form action="{{ route('admin.forum.settings.save') }}" method="POST">
+    <form action="{{ route('admin.platform-revenue.forum.settings.save') }}" method="POST">
         @csrf
 
         <div class="glass-card rounded-xl p-6 space-y-6">

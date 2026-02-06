@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ประวัติการสร้าง Content</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">ดูประวัติการสร้าง Content ทั้งหมด</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ Dashboard
         </a>
     </div>
@@ -132,7 +132,7 @@
                             {{ number_format(($generation->response_time_ms ?? 0) / 1000, 1) }}s
                         </span>
                     </div>
-                    <a href="{{ route('admin.ai-content-writer.generations.show', $generation->id) }}"
+                    <a href="{{ route('admin.platform-revenue.ai-content-writer.generations.show', $generation->id) }}"
                        class="text-blue-600 dark:text-blue-400 hover:underline">
                         ดูรายละเอียด <i class="fas fa-chevron-right ml-1"></i>
                     </a>
@@ -143,7 +143,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-xl p-12 border border-gray-200 dark:border-gray-700 text-center">
             <i class="fas fa-feather-alt text-5xl text-gray-300 dark:text-gray-600 mb-4"></i>
             <p class="text-gray-500 dark:text-gray-400">ยังไม่มีประวัติการสร้าง Content</p>
-            <a href="{{ route('admin.ai-content-writer.playground') }}" class="text-purple-600 hover:underline mt-2 inline-block">
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.playground') }}" class="text-purple-600 hover:underline mt-2 inline-block">
                 ไปที่ Playground <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>

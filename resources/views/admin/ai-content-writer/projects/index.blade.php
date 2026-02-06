@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการโปรเจกต์</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">รวบรวม Content ที่สร้างขึ้นในแต่ละโปรเจกต์</p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.dashboard') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ Dashboard
         </a>
     </div>
@@ -129,7 +129,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 text-right text-sm">
-                            <a href="{{ route('admin.ai-content-writer.projects.show', $project->id) }}"
+                            <a href="{{ route('admin.platform-revenue.ai-content-writer.projects.show', $project->id) }}"
                                class="text-blue-600 dark:text-blue-400 hover:underline mr-3">
                                 <i class="fas fa-eye mr-1"></i> ดู
                             </a>

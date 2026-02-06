@@ -34,13 +34,13 @@ class ForumAdminController extends Controller
     {
         $categories = ForumCategory::withCount(['threads', 'children'])
             ->whereNull('parent_id')
-            ->orderBy('order')
+            ->orderBy('display_order')
             ->with(['children' => function ($query) {
-                $query->withCount('threads')->orderBy('order');
+                $query->withCount('threads')->orderBy('display_order');
             }])
             ->get();
 
-        return view('admin.forum.categories.index', compact('categories'));
+        return view('admin.platform-revenue.forum.categories.index', compact('categories'));
     }
 
     /**
@@ -51,10 +51,10 @@ class ForumAdminController extends Controller
     public function createCategory()
     {
         $parentCategories = ForumCategory::whereNull('parent_id')
-            ->orderBy('order')
+            ->orderBy('display_order')
             ->get();
 
-        return view('admin.forum.categories.create', compact('parentCategories'));
+        return view('admin.platform-revenue.forum.categories.create', compact('parentCategories'));
     }
 
     /**
@@ -72,17 +72,17 @@ class ForumAdminController extends Controller
             'color' => 'nullable|string|max:50',
             'parent_id' => 'nullable|exists:forum_categories,id',
             'is_locked' => 'boolean',
-            'order' => 'nullable|integer',
+            'display_order' => 'nullable|integer',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_locked'] = $request->boolean('is_locked');
-        $validated['order'] = $validated['order'] ?? ForumCategory::max('order') + 1;
+        $validated['display_order'] = $validated['display_order'] ?? ForumCategory::max('display_order') + 1;
 
         ForumCategory::create($validated);
 
         return redirect()
-            ->route('admin.forum.categories.index')
+            ->route('admin.platform-revenue.forum.categories.index')
             ->with('success', 'สร้างหมวดหมู่สำเร็จ');
     }
 
@@ -96,10 +96,10 @@ class ForumAdminController extends Controller
     {
         $parentCategories = ForumCategory::whereNull('parent_id')
             ->where('id', '!=', $category->id)
-            ->orderBy('order')
+            ->orderBy('display_order')
             ->get();
 
-        return view('admin.forum.categories.edit', compact('category', 'parentCategories'));
+        return view('admin.platform-revenue.forum.categories.edit', compact('category', 'parentCategories'));
     }
 
     /**
@@ -118,7 +118,7 @@ class ForumAdminController extends Controller
             'color' => 'nullable|string|max:50',
             'parent_id' => 'nullable|exists:forum_categories,id',
             'is_locked' => 'boolean',
-            'order' => 'nullable|integer',
+            'display_order' => 'nullable|integer',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -127,7 +127,7 @@ class ForumAdminController extends Controller
         $category->update($validated);
 
         return redirect()
-            ->route('admin.forum.categories.index')
+            ->route('admin.platform-revenue.forum.categories.index')
             ->with('success', 'อัปเดตหมวดหมู่สำเร็จ');
     }
 
@@ -152,7 +152,7 @@ class ForumAdminController extends Controller
         $category->delete();
 
         return redirect()
-            ->route('admin.forum.categories.index')
+            ->route('admin.platform-revenue.forum.categories.index')
             ->with('success', 'ลบหมวดหมู่สำเร็จ');
     }
 
@@ -167,7 +167,7 @@ class ForumAdminController extends Controller
         $order = $request->input('order', []);
 
         foreach ($order as $index => $categoryId) {
-            ForumCategory::where('id', $categoryId)->update(['order' => $index]);
+            ForumCategory::where('id', $categoryId)->update(['display_order' => $index]);
         }
 
         return response()->json(['success' => true, 'message' => 'จัดเรียงลำดับสำเร็จ']);
@@ -218,9 +218,9 @@ class ForumAdminController extends Controller
         }
 
         $threads = $query->latest()->paginate(20);
-        $categories = ForumCategory::orderBy('order')->get();
+        $categories = ForumCategory::orderBy('display_order')->get();
 
-        return view('admin.forum.threads.index', compact('threads', 'categories'));
+        return view('admin.platform-revenue.forum.threads.index', compact('threads', 'categories'));
     }
 
     /**
@@ -233,7 +233,7 @@ class ForumAdminController extends Controller
     {
         $thread->load(['user', 'category', 'posts.user']);
 
-        return view('admin.forum.threads.show', compact('thread'));
+        return view('admin.platform-revenue.forum.threads.show', compact('thread'));
     }
 
     /**
@@ -298,7 +298,7 @@ class ForumAdminController extends Controller
         $thread->delete();
 
         return redirect()
-            ->route('admin.forum.threads.index')
+            ->route('admin.platform-revenue.forum.threads.index')
             ->with('success', 'ลบกระทู้สำเร็จ');
     }
 
@@ -330,7 +330,7 @@ class ForumAdminController extends Controller
         $pendingCount = ForumReport::where('status', 'pending')->count();
         $resolvedCount = ForumReport::where('status', 'resolved')->count();
 
-        return view('admin.forum.reports.index', compact('reports', 'pendingCount', 'resolvedCount'));
+        return view('admin.platform-revenue.forum.reports.index', compact('reports', 'pendingCount', 'resolvedCount'));
     }
 
     /**
@@ -343,7 +343,7 @@ class ForumAdminController extends Controller
     {
         $report->load(['user', 'reportable']);
 
-        return view('admin.forum.reports.show', compact('report'));
+        return view('admin.platform-revenue.forum.reports.show', compact('report'));
     }
 
     /**
@@ -414,7 +414,7 @@ class ForumAdminController extends Controller
             ->orderBy('display_order', 'asc')
             ->get();
 
-        return view('admin.forum.trophies.index', compact('trophies'));
+        return view('admin.platform-revenue.forum.trophies.index', compact('trophies'));
     }
 
     /**
@@ -424,7 +424,7 @@ class ForumAdminController extends Controller
      */
     public function createTrophy()
     {
-        return view('admin.forum.trophies.create');
+        return view('admin.platform-revenue.forum.trophies.create');
     }
 
     /**
@@ -449,7 +449,7 @@ class ForumAdminController extends Controller
         ForumTrophy::create($validated);
 
         return redirect()
-            ->route('admin.forum.trophies.index')
+            ->route('admin.platform-revenue.forum.trophies.index')
             ->with('success', 'สร้างถ้วยรางวัลสำเร็จ');
     }
 
@@ -463,7 +463,7 @@ class ForumAdminController extends Controller
     {
         $trophy->loadCount('users');
 
-        return view('admin.forum.trophies.edit', compact('trophy'));
+        return view('admin.platform-revenue.forum.trophies.edit', compact('trophy'));
     }
 
     /**
@@ -489,7 +489,7 @@ class ForumAdminController extends Controller
         $trophy->update($validated);
 
         return redirect()
-            ->route('admin.forum.trophies.index')
+            ->route('admin.platform-revenue.forum.trophies.index')
             ->with('success', 'อัปเดตถ้วยรางวัลสำเร็จ');
     }
 
@@ -504,7 +504,7 @@ class ForumAdminController extends Controller
         $trophy->delete();
 
         return redirect()
-            ->route('admin.forum.trophies.index')
+            ->route('admin.platform-revenue.forum.trophies.index')
             ->with('success', 'ลบถ้วยรางวัลสำเร็จ');
     }
 
@@ -569,7 +569,7 @@ class ForumAdminController extends Controller
         $weeklyThreads = ForumThread::where('created_at', '>=', now()->subWeek())->count();
         $weeklyPosts = ForumPost::where('created_at', '>=', now()->subWeek())->count();
 
-        return view('admin.forum.analytics.index', compact(
+        return view('admin.platform-revenue.forum.analytics.index', compact(
             'stats',
             'topThreads',
             'topContributors',
@@ -601,7 +601,7 @@ class ForumAdminController extends Controller
             'max_attachment_size' => config('forum.max_attachment_size', 5), // MB
         ];
 
-        return view('admin.forum.settings.index', compact('settings'));
+        return view('admin.platform-revenue.forum.settings.index', compact('settings'));
     }
 
     /**
@@ -628,7 +628,7 @@ class ForumAdminController extends Controller
         // สามารถปรับเปลี่ยนตามโครงสร้างของโปรเจกต์
 
         return redirect()
-            ->route('admin.forum.settings.index')
+            ->route('admin.platform-revenue.forum.settings.index')
             ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
     }
 }

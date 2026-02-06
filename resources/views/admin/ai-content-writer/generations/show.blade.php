@@ -16,7 +16,7 @@
                 <span class="ml-2">{{ $generation->created_at->format('d/m/Y H:i:s') }}</span>
             </p>
         </div>
-        <a href="{{ route('admin.ai-content-writer.generations') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <a href="{{ route('admin.platform-revenue.ai-content-writer.generations') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
             <i class="fas fa-arrow-left mr-2"></i> กลับ
         </a>
     </div>
@@ -156,7 +156,7 @@
                     @if($generation->project)
                     <div class="flex items-center justify-between">
                         <span class="text-gray-500 dark:text-gray-400">โปรเจกต์</span>
-                        <a href="{{ route('admin.ai-content-writer.projects.show', $generation->project_id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
+                        <a href="{{ route('admin.platform-revenue.ai-content-writer.projects.show', $generation->project_id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
                             {{ Str::limit($generation->project->name, 20) }}
                         </a>
                     </div>
@@ -164,7 +164,7 @@
                     @if($generation->template)
                     <div class="flex items-center justify-between">
                         <span class="text-gray-500 dark:text-gray-400">เทมเพลต</span>
-                        <a href="{{ route('admin.ai-content-writer.templates.edit', $generation->template_id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
+                        <a href="{{ route('admin.platform-revenue.ai-content-writer.templates.edit', $generation->template_id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
                             {{ Str::limit($generation->template->name, 20) }}
                         </a>
                     </div>
@@ -181,7 +181,7 @@
             {{-- Actions --}}
             <div class="space-y-3">
                 @if($generation->content)
-                <a href="{{ route('admin.ai-content-writer.playground') }}?regenerate={{ $generation->id }}"
+                <a href="{{ route('admin.platform-revenue.ai-content-writer.playground') }}?regenerate={{ $generation->id }}"
                    class="block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-center rounded-lg transition">
                     <i class="fas fa-redo mr-2"></i> สร้างใหม่ใน Playground
                 </a>
@@ -222,7 +222,7 @@ async function deleteGeneration(id) {
         const result = await response.json();
 
         if (result.success) {
-            window.location.href = '{{ route("admin.ai-content-writer.generations") }}';
+            window.location.href = '{{ route("admin.platform-revenue.ai-content-writer.generations") }}';
         } else {
             alert(result.message || 'เกิดข้อผิดพลาด');
         }

@@ -17,7 +17,7 @@
             </p>
         </div>
         <div class="flex gap-3">
-            <a href="{{ route('admin.ai-content-writer.projects') }}" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <a href="{{ route('admin.platform-revenue.ai-content-writer.projects') }}" class="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <i class="fas fa-arrow-left mr-2"></i> กลับ
             </a>
         </div>
@@ -97,7 +97,7 @@
                                 <i class="fas fa-chart-bar mr-1"></i>
                                 {{ number_format($generation->tokens_used ?? 0) }} tokens
                             </span>
-                            <a href="{{ route('admin.ai-content-writer.generations.show', $generation->id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
+                            <a href="{{ route('admin.platform-revenue.ai-content-writer.generations.show', $generation->id) }}" class="text-blue-600 dark:text-blue-400 hover:underline">
                                 ดูรายละเอียด <i class="fas fa-chevron-right ml-1"></i>
                             </a>
                         </div>
@@ -241,7 +241,7 @@ async function deleteProject(id) {
         const result = await response.json();
 
         if (result.success) {
-            window.location.href = '{{ route("admin.ai-content-writer.projects") }}';
+            window.location.href = '{{ route("admin.platform-revenue.ai-content-writer.projects") }}';
         } else {
             alert(result.message || 'เกิดข้อผิดพลาด');
         }
