@@ -17,17 +17,19 @@ use Illuminate\Support\Facades\Log;
 /**
  * OrderDistributionService
  *
- * จัดการการแบ่งเงินจาก Order - หักค่า Fee, VAT แล้วโอนให้ Seller
+ * จัดการการแบ่งเงินจาก Order - หักค่า Fee, VAT, MLM Commission แล้วโอนให้ Seller
  *
- * ⚠️ IMPORTANT: MLM Commission ถูกหักจาก Platform Fee ไม่ใช่จาก Seller
- * Seller ต้องได้รับเงินตามที่ตั้งราคาไว้ (หลังหัก Fee + VAT เท่านั้น)
+ * ⚠️ BUSINESS LOGIC:
+ * - Seller เห็นระบบจำลองคำนวณ PV/Commission ครบแล้ว → ตั้งราคาขายให้ครอบคลุม
+ * - MLM Commission คำนวณจาก PV เป็นหลัก (ค่าการตลาดที่ Seller รู้ล่วงหน้า)
+ * - Platform Fee เป็นของเว็บ 100% → ไปจ่าย Pool Bonus, All Sale Rank Bonus ภายหลัง
+ * - Fee กับ MLM เป็นคนละก้อน แยกจากกัน
  *
  * Flow การคำนวณ:
- * 1. หัก Platform Fee จาก Seller → platform_fee wallet
- * 2. หัก VAT จาก Seller → vat wallet
- * 3. Seller ได้รับ: grossAmount - platformFee - VAT (ไม่หัก MLM)
- * 4. แยก MLM Commission จาก Platform Fee → mlm_pool wallet
- *    (platformFeeNet = platformFee - mlmCommission)
+ * 1. หัก Platform Fee → platform_fee wallet (ของเว็บ ไปจ่าย pool/rank bonus)
+ * 2. หัก VAT → vat wallet
+ * 3. หัก MLM Commission (PV-based) → mlm_pool wallet (ไปจ่ายค่าแนะนำ/คอมมิชชั่น)
+ * 4. Seller ได้รับ: grossAmount - platformFee - VAT - mlmCommission
  * 5. คำนวณและสร้าง Commission ให้ uplines:
  *    - Direct Referral Bonus → original_sponsor (ผู้แนะนำตรงจริงๆ)
  *    - Unilevel Commission → unilevel_sponsor (สายงาน)
@@ -125,25 +127,26 @@ class OrderDistributionService
         $vatAmount = $this->calculateVat($items);
         $mlmCommission = $this->calculateMlmCommissionFromItems($items);
 
-        // ⚠️ CRITICAL: MLM Commission ต้องหักจาก Platform Fee เท่านั้น ไม่ใช่จาก Seller
-        // Seller ต้องได้เงินตามที่ตั้งราคาไว้ (หลังหัก Fee + VAT)
-        // ถ้า MLM > Platform Fee → cap ไว้ที่ Platform Fee (ป้องกัน overpay)
-        if ($mlmCommission > $platformFee) {
-            Log::warning('MLM Commission เกิน Platform Fee - cap ไว้ที่ Platform Fee', [
+        // ยอดสุทธิที่ Seller จะได้รับ
+        // Seller รู้ค่าเหล่านี้ล่วงหน้าจากระบบจำลอง → ตั้งราคาให้ครอบคลุม
+        // - Platform Fee: ค่าใช้แพลตฟอร์ม (ไปจ่าย pool/rank bonus ภายหลัง)
+        // - VAT: ภาษีมูลค่าเพิ่ม
+        // - MLM Commission: ค่าการตลาด PV (ไปจ่ายคอมมิชชั่น uplines)
+        $netAmount = $grossAmount - $platformFee - $vatAmount - $mlmCommission;
+
+        // ป้องกันยอดสุทธิติดลบ (ระบบจำลองควรแจ้ง Seller ก่อนตั้งราคา)
+        if ($netAmount < 0) {
+            Log::warning('Seller net amount ติดลบ - ราคาสินค้าอาจตั้งต่ำเกินไป', [
                 'order_id' => $order->id,
                 'seller_id' => $sellerId,
+                'gross_amount' => $grossAmount,
                 'platform_fee' => $platformFee,
-                'mlm_commission_original' => $mlmCommission,
-                'mlm_commission_capped' => $platformFee,
+                'vat_amount' => $vatAmount,
+                'mlm_commission' => $mlmCommission,
+                'net_amount' => $netAmount,
             ]);
-            $mlmCommission = $platformFee;
+            $netAmount = 0;
         }
-
-        // Platform Fee สุทธิ = Platform Fee - MLM Commission (ที่แยกไป MLM Pool)
-        $platformFeeNet = $platformFee - $mlmCommission;
-
-        // ยอดสุทธิที่ Seller จะได้รับ (ไม่หัก MLM Commission)
-        $netAmount = $grossAmount - $platformFee - $vatAmount;
 
         // ตรวจสอบหนี้
         $debtDeduction = 0;
@@ -154,10 +157,10 @@ class OrderDistributionService
             $netAmount = $debtResult['remaining'];
         }
 
-        // เก็บค่า Fee สุทธิเข้า Platform Wallet (หลังหัก MLM แล้ว)
-        if ($platformFeeNet > 0) {
+        // เก็บค่า Platform Fee เข้า Platform Wallet (ของเว็บ 100% - ไปจ่าย pool/rank bonus)
+        if ($platformFee > 0) {
             $this->revenueService->collectPlatformFee(
-                $platformFeeNet,
+                $platformFee,
                 'Order',
                 $order->id,
                 $sellerId,
@@ -165,8 +168,6 @@ class OrderDistributionService
                     'order_number' => $order->order_number,
                     'items_count' => $items->count(),
                     'gross_amount' => $grossAmount,
-                    'original_platform_fee' => $platformFee,
-                    'mlm_commission_deducted' => $mlmCommission,
                 ]
             );
         }
@@ -184,7 +185,7 @@ class OrderDistributionService
             );
         }
 
-        // เก็บ MLM Commission เข้า Pool (มาจาก Platform Fee ไม่ใช่จาก Seller)
+        // เก็บ MLM Commission เข้า MLM Pool (คนละก้อนกับ Platform Fee)
         if ($mlmCommission > 0) {
             $this->revenueService->collectMlmPool(
                 $mlmCommission,
@@ -193,9 +194,6 @@ class OrderDistributionService
                 [
                     'order_number' => $order->order_number,
                     'seller_id' => $sellerId,
-                    'funded_from' => 'platform_fee',
-                    'original_platform_fee' => $platformFee,
-                    'platform_fee_net' => $platformFeeNet,
                 ]
             );
         }
@@ -231,12 +229,10 @@ class OrderDistributionService
                 'calculations' => [
                     'gross_amount' => $grossAmount,
                     'platform_fee_rate' => $items->first()->commission_rate ?? 0,
-                    'platform_fee_original' => $platformFee,
-                    'platform_fee_net' => $platformFeeNet,
+                    'platform_fee' => $platformFee,
                     'vat_rate' => 7,
                     'vat_amount' => $vatAmount,
                     'mlm_commission' => $mlmCommission,
-                    'mlm_funded_from' => 'platform_fee',
                     'debt_deduction' => $debtDeduction,
                     'net_amount' => $netAmount,
                 ],
@@ -247,11 +243,9 @@ class OrderDistributionService
             'seller_id' => $sellerId,
             'seller_name' => $seller->name,
             'gross_amount' => $grossAmount,
-            'platform_fee_original' => $platformFee,
-            'platform_fee_net' => $platformFeeNet,
+            'platform_fee' => $platformFee,
             'vat_amount' => $vatAmount,
             'mlm_commission' => $mlmCommission,
-            'mlm_funded_from' => 'platform_fee',
             'debt_deduction' => $debtDeduction,
             'net_amount' => $netAmount,
             'earning_entry_id' => $earningEntry->id,
@@ -275,7 +269,7 @@ class OrderDistributionService
     }
 
     /**
-     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า - หักจาก Platform Fee (ไม่ใช่จาก Seller)
+     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า
      *
      * แก้ Bug: ใช้ค่าจากแอดมิน (MlmProductPv / MlmGlobalSetting) เป็นหลัก
      * แทนการใช้ item.pv_value เป็น percentage ตรงๆ

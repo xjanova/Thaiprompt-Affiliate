@@ -177,28 +177,44 @@ class OverpayProtectionService
     }
 
     /**
-     * คำนวณว่า Platform Fee เพียงพอสำหรับจ่าย MLM Commission หรือไม่
+     * ตรวจสอบว่า Seller ยังได้เงินสุทธิเป็นบวกหรือไม่
      *
+     * Seller จะถูกหัก: Platform Fee + VAT + MLM Commission
+     * ถ้าหักแล้วติดลบ = Seller ตั้งราคาต่ำเกินไป
+     *
+     * ⚠️ Business Logic:
+     * - Platform Fee = ค่าใช้แพลตฟอร์ม (ไปจ่าย pool/rank bonus)
+     * - MLM Commission = ค่าการตลาด PV (ไปจ่ายคอมมิชชั่น uplines)
+     * - Fee กับ MLM เป็นคนละก้อน แยกจากกัน
+     *
+     * @param float $grossAmount ยอดขาย
      * @param float $platformFee ค่า Platform Fee
-     * @param float $mlmCommission ค่า MLM Commission ที่คำนวณได้
-     * @return array ['sufficient' => bool, 'platform_fee' => float, 'mlm_commission' => float, 'shortfall' => float]
+     * @param float $vatAmount ภาษี VAT
+     * @param float $mlmCommission ค่า MLM Commission (PV-based)
+     * @return array ['sufficient' => bool, 'net_amount' => float, 'message' => string]
      */
-    public static function checkPlatformFeeCoversCommission(
+    public static function checkSellerNetAmount(
+        float $grossAmount,
         float $platformFee,
+        float $vatAmount,
         float $mlmCommission
     ): array {
-        $sufficient = $platformFee >= $mlmCommission;
-        $shortfall = max(0, $mlmCommission - $platformFee);
+        $totalDeductions = $platformFee + $vatAmount + $mlmCommission;
+        $netAmount = $grossAmount - $totalDeductions;
+        $sufficient = $netAmount >= 0;
 
         return [
             'sufficient' => $sufficient,
+            'gross_amount' => round($grossAmount, 2),
             'platform_fee' => round($platformFee, 2),
+            'vat_amount' => round($vatAmount, 2),
             'mlm_commission' => round($mlmCommission, 2),
-            'platform_fee_net' => round(max(0, $platformFee - $mlmCommission), 2),
-            'shortfall' => round($shortfall, 2),
+            'total_deductions' => round($totalDeductions, 2),
+            'net_amount' => round($netAmount, 2),
+            'deduction_percentage' => $grossAmount > 0 ? round(($totalDeductions / $grossAmount) * 100, 2) : 0,
             'message' => $sufficient
-                ? sprintf('Platform Fee เพียงพอ: Fee ฿%.2f >= MLM ฿%.2f', $platformFee, $mlmCommission)
-                : sprintf('Platform Fee ไม่พอ! ขาด ฿%.2f (Fee ฿%.2f < MLM ฿%.2f)', $shortfall, $platformFee, $mlmCommission),
+                ? sprintf('Seller ได้รับ ฿%.2f (หัก %.2f%% จากยอดขาย)', $netAmount, ($totalDeductions / max($grossAmount, 1)) * 100)
+                : sprintf('Seller ติดลบ ฿%.2f! ราคาสินค้าต่ำเกินไป ต้องตั้งราคาอย่างน้อย ฿%.2f', abs($netAmount), $totalDeductions),
         ];
     }
 
