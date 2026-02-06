@@ -12,6 +12,7 @@ use App\Services\FortuneAIService;
 use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -168,6 +169,14 @@ class FacebookWebhookController extends Controller
 
         // ประมวลผล direct messages
         foreach ($entry['messaging'] ?? [] as $messaging) {
+            // ตรวจจับ Echo Messages (ข้อความที่แอดมินส่งจากเพจ)
+            // เมื่อแอดมินตอบข้อความ user ผ่าน Page Inbox
+            // Facebook จะส่ง webhook พร้อม is_echo = true
+            if (!empty($messaging['message']['is_echo'])) {
+                $this->handleEchoMessage($messaging);
+                continue; // ไม่ต้องประมวลผลเป็น user message
+            }
+
             if (isset($messaging['message'])) {
                 $this->processMessage($messaging);
             }
@@ -358,6 +367,71 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * จัดการ Echo Message (ข้อความที่แอดมินส่งจากเพจ)
+     *
+     * เมื่อแอดมินตอบ user ผ่าน Facebook Page Inbox จะมี message.is_echo = true
+     * ใช้สำหรับ Admin Handover: บอทจะหยุดทำงานเมื่อแอดมินกำลังดูแลลูกค้า
+     *
+     * Facebook Echo Message structure:
+     * - sender.id = page_id (เพจเป็นผู้ส่ง)
+     * - recipient.id = user_id (user เป็นผู้รับ)
+     * - message.is_echo = true
+     * - message.app_id = app_id ของ bot (ถ้าส่งจาก bot จะมี app_id)
+     *
+     * @param array $messaging ข้อมูล messaging event จาก Facebook
+     * @return void
+     */
+    protected function handleEchoMessage(array $messaging): void
+    {
+        $recipientId = $messaging['recipient']['id'] ?? null;
+        $appId = $messaging['message']['app_id'] ?? null;
+        $messageText = $messaging['message']['text'] ?? '';
+
+        if (empty($recipientId)) {
+            return;
+        }
+
+        // ถ้าระบบ Admin Handover ถูกปิด → ข้ามไม่ต้องทำอะไร
+        if (!($this->settings->admin_handover_enabled ?? true)) {
+            return;
+        }
+
+        // ถ้า echo มี app_id แสดงว่าเป็นข้อความที่บอทส่งเอง → ข้าม
+        // เราสนใจเฉพาะข้อความที่แอดมิน (คน) พิมพ์ตอบเอง (ไม่มี app_id)
+        if (!empty($appId)) {
+            return;
+        }
+
+        // แอดมินกำลังตอบ user คนนี้ → ทำเครื่องหมายว่าแอดมินกำลังดูแล
+        $timeoutMinutes = $this->settings->admin_handover_timeout ?? 15;
+        Cache::put(
+            "fortune_admin_active:{$recipientId}",
+            [
+                'active_at' => now()->toIso8601String(),
+                'admin_message' => mb_substr($messageText, 0, 100),
+            ],
+            now()->addMinutes($timeoutMinutes)
+        );
+
+        Log::info('👨‍💼 Admin Handover: แอดมินกำลังดูแลลูกค้า', [
+            'user_id' => $recipientId,
+            'timeout_minutes' => $timeoutMinutes,
+            'message_preview' => mb_substr($messageText, 0, 50),
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าแอดมินกำลังดูแล user คนนี้อยู่หรือไม่
+     *
+     * @param string $userId Facebook User ID
+     * @return bool true = แอดมินกำลังดูแล, บอทควรหยุดทำงาน
+     */
+    protected function isAdminActive(string $userId): bool
+    {
+        return Cache::has("fortune_admin_active:{$userId}");
+    }
+
+    /**
      * ประมวลผล direct message (Messenger)
      *
      * รองรับ:
@@ -365,12 +439,22 @@ class FacebookWebhookController extends Controller
      * - รูปภาพ (image attachment)
      * - Quick reply payloads
      * - Conversational fortune telling flow (ใหม่)
+     * - Admin Handover: บอทหยุดทำงานเมื่อแอดมินกำลังดูแล
      */
     protected function processMessage(array $messaging): void
     {
         $senderId = $messaging['sender']['id'] ?? null;
 
         if (empty($senderId)) {
+            return;
+        }
+
+        // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ → บอทหยุดทำงาน
+        if ($this->isAdminActive($senderId)) {
+            Log::info('👨‍💼 Admin Handover: บอทข้ามข้อความ (แอดมินกำลังดูแล)', [
+                'user_id' => $senderId,
+                'message_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
+            ]);
             return;
         }
 
@@ -422,6 +506,15 @@ class FacebookWebhookController extends Controller
         if (empty($senderId) || empty($payload)) {
             Log::warning('Facebook Postback: Missing sender or payload', [
                 'messaging' => $messaging,
+            ]);
+            return;
+        }
+
+        // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล → บอทข้าม postback
+        if ($this->isAdminActive($senderId)) {
+            Log::info('👨‍💼 Admin Handover: บอทข้าม postback (แอดมินกำลังดูแล)', [
+                'user_id' => $senderId,
+                'payload' => $payload,
             ]);
             return;
         }
