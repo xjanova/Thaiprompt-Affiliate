@@ -950,7 +950,7 @@ class FacebookWebhookService
                     ],
                 ],
 
-                // Persistent Menu - เมนูถาวรที่แสดงตลอดเวลา
+                // Persistent Menu - เมนูถาวรที่แสดงตลอดเวลา (ปุ่มลัดในแชท)
                 'persistent_menu' => [
                     [
                         'locale' => 'default',
@@ -965,6 +965,11 @@ class FacebookWebhookService
                                 'type' => 'postback',
                                 'title' => '💎 ดูดวงละเอียด',
                                 'payload' => 'MENU_DEEP_FORTUNE',
+                            ],
+                            [
+                                'type' => 'postback',
+                                'title' => '📊 เช็คสิทธิ์ดูดวง',
+                                'payload' => 'MENU_CHECK_REMAINING',
                             ],
                             [
                                 'type' => 'postback',
