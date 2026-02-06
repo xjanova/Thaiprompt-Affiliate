@@ -3808,6 +3808,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
     Route::get('/settings/diagnose', [FortuneSettingsController::class, 'diagnose'])->name('settings.diagnose');
+    Route::post('/settings/run-migrations', [FortuneSettingsController::class, 'runMigrations'])->name('settings.run-migrations');
     Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
 
     // ช่องทางรับข้อความ (Facebook, LINE, etc.)

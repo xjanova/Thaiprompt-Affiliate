@@ -152,7 +152,10 @@ class FortuneSettingsController extends Controller
             ],
             'message' => !empty($aiApiKey)
                 ? "ใช้ {$aiProvider} / {$aiModel}" . ($useGlobal ? ' (จากระบบหลัก)' : '')
-                : "❌ ไม่พบ API Key สำหรับ {$aiProvider} - กรุณาตั้งค่า",
+                : "ไม่พบ API Key สำหรับ {$aiProvider}",
+            'fix' => empty($aiApiKey)
+                ? 'ตั้งค่า API Key ในส่วน "การตั้งค่า AI Provider" ด้านล่าง หรือเปิดใช้ "ใช้การตั้งค่า AI จากระบบหลัก"'
+                : null,
         ];
 
         // 2. ตรวจสอบ API Key Pool
@@ -163,7 +166,7 @@ class FortuneSettingsController extends Controller
                 'label' => 'API Key Pool',
                 'status' => $poolKey ? 'ok' : 'warning',
                 'message' => $poolKey
-                    ? "พบ key ในpool: {$poolKey->name} (ID: {$poolKey->id})"
+                    ? "พบ key ใน pool: {$poolKey->name} (ID: {$poolKey->id})"
                     : 'ไม่มี key ใน pool - ใช้ key จาก settings',
             ];
         } catch (\Exception $e) {
@@ -184,23 +187,34 @@ class FortuneSettingsController extends Controller
                 'message' => $testResult['message'],
                 'details' => $testResult['debug'] ?? [],
                 'preview' => isset($testResult['preview']) ? mb_substr($testResult['preview'], 0, 200) : null,
+                'fix' => !($testResult['success'] ?? false)
+                    ? 'ตรวจสอบ API Key ว่าถูกต้องและยังไม่หมดอายุ แล้วกด "ตรวจเช็คทั้งหมด" อีกครั้ง'
+                    : null,
             ];
         } catch (\Exception $e) {
             $checks['ai_connection'] = [
                 'label' => 'การเชื่อมต่อ AI',
                 'status' => 'error',
                 'message' => 'เชื่อมต่อ AI ไม่ได้: ' . mb_substr($e->getMessage(), 0, 200),
+                'fix' => 'ตรวจสอบ API Key และ Provider ว่าตั้งค่าถูกต้อง',
             ];
         }
 
         // 4. ตรวจสอบ Facebook Configuration
         $hasFacebook = $settings->hasFacebookConfigured();
+        $fbMissing = [];
+        if (empty($settings->facebook_app_id)) $fbMissing[] = 'App ID';
+        if (empty($settings->facebook_app_secret)) $fbMissing[] = 'App Secret';
+        if (empty($settings->facebook_page_id)) $fbMissing[] = 'Page ID';
+        if (empty($settings->facebook_page_token)) $fbMissing[] = 'Page Token';
+        if (empty($settings->facebook_verify_token)) $fbMissing[] = 'Verify Token';
+
         $checks['facebook'] = [
             'label' => 'Facebook Messenger',
             'status' => $hasFacebook ? 'ok' : 'error',
             'message' => $hasFacebook
                 ? 'ตั้งค่า Facebook ครบถ้วน (Page ID: ***' . mb_substr($settings->facebook_page_id ?? '', -4) . ')'
-                : 'ยังตั้งค่า Facebook ไม่ครบ',
+                : 'ยังตั้งค่า Facebook ไม่ครบ - ขาด: ' . implode(', ', $fbMissing),
             'details' => [
                 'has_app_id' => !empty($settings->facebook_app_id),
                 'has_app_secret' => !empty($settings->facebook_app_secret),
@@ -208,27 +222,69 @@ class FortuneSettingsController extends Controller
                 'has_page_token' => !empty($settings->facebook_page_token),
                 'has_verify_token' => !empty($settings->facebook_verify_token),
             ],
+            'fix' => !$hasFacebook
+                ? 'กรอกค่า ' . implode(', ', $fbMissing) . ' ในส่วน "การตั้งค่า Facebook" ด้านล่าง'
+                : null,
         ];
 
         // 5. ตรวจสอบ Database Tables
-        $tables = ['fortune_readings', 'fortune_telling_settings', 'fortune_comment_engagements'];
+        // แบ่งเป็นตารางหลัก (จำเป็น) และตารางเสริม (ไม่จำเป็นสำหรับระบบดูดวงหลัก)
+        $requiredTables = ['fortune_readings', 'fortune_telling_settings'];
+        $optionalTables = ['fortune_comment_engagements'];
+        $allTables = array_merge($requiredTables, $optionalTables);
+
         $dbChecks = [];
-        foreach ($tables as $table) {
+        $missingRequired = [];
+        $missingOptional = [];
+
+        foreach ($allTables as $table) {
             try {
                 $exists = \Schema::hasTable($table);
                 $count = $exists ? \DB::table($table)->count() : 0;
                 $dbChecks[$table] = ['exists' => $exists, 'count' => $count];
+
+                if (!$exists) {
+                    if (in_array($table, $requiredTables)) {
+                        $missingRequired[] = $table;
+                    } else {
+                        $missingOptional[] = $table;
+                    }
+                }
             } catch (\Exception $e) {
                 $dbChecks[$table] = ['exists' => false, 'error' => $e->getMessage()];
+                if (in_array($table, $requiredTables)) {
+                    $missingRequired[] = $table;
+                } else {
+                    $missingOptional[] = $table;
+                }
             }
         }
 
-        $allTablesOk = collect($dbChecks)->every(fn($t) => $t['exists'] ?? false);
+        // กำหนดสถานะ: ตารางหลักหาย = error, ตารางเสริมหาย = warning
+        $dbStatus = 'ok';
+        $dbMessage = 'ตาราง DB ครบถ้วน';
+        $dbFix = null;
+        $hasPendingMigrations = false;
+
+        if (!empty($missingRequired)) {
+            $dbStatus = 'error';
+            $dbMessage = 'ตารางหลักหาย: ' . implode(', ', $missingRequired);
+            $dbFix = 'กดปุ่ม "แก้ไขฐานข้อมูล" ด้านล่างเพื่อรัน migration อัตโนมัติ';
+            $hasPendingMigrations = true;
+        } elseif (!empty($missingOptional)) {
+            $dbStatus = 'warning';
+            $dbMessage = 'ตารางเสริมหาย: ' . implode(', ', $missingOptional) . ' (ระบบดูดวงหลักยังใช้ได้)';
+            $dbFix = 'กดปุ่ม "แก้ไขฐานข้อมูล" เพื่อสร้างตารางเสริมที่ขาดหายไป';
+            $hasPendingMigrations = true;
+        }
+
         $checks['database'] = [
             'label' => 'ฐานข้อมูล',
-            'status' => $allTablesOk ? 'ok' : 'error',
-            'message' => $allTablesOk ? 'ตาราง DB ครบถ้วน' : 'มีตารางที่หายไป',
+            'status' => $dbStatus,
+            'message' => $dbMessage,
             'details' => $dbChecks,
+            'fix' => $dbFix,
+            'has_pending_migrations' => $hasPendingMigrations,
         ];
 
         // 6. สรุปสถานะรวม
@@ -240,6 +296,36 @@ class FortuneSettingsController extends Controller
             'checks' => $checks,
             'timestamp' => now()->toDateTimeString(),
         ]);
+    }
+
+    /**
+     * รัน migration ที่ยังค้างอยู่
+     * สำหรับแก้ไขปัญหาตารางหายจากหน้า admin
+     */
+    public function runMigrations()
+    {
+        try {
+            // รัน pending migrations
+            \Artisan::call('migrate', ['--force' => true]);
+            $output = \Artisan::output();
+
+            // ตรวจสอบผลลัพธ์
+            $hasChanges = !str_contains($output, 'Nothing to migrate');
+
+            return response()->json([
+                'success' => true,
+                'message' => $hasChanges
+                    ? 'รัน migration สำเร็จ!'
+                    : 'ไม่มี migration ที่ต้องรัน (ฐานข้อมูลอัพเดทแล้ว)',
+                'output' => trim($output),
+                'has_changes' => $hasChanges,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รัน migration ไม่สำเร็จ: ' . mb_substr($e->getMessage(), 0, 300),
+            ], 500);
+        }
     }
 
     /**
