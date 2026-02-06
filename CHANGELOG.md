@@ -2,6 +2,94 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.468.0] - 2026-02-06
+
+### ✨ Features
+- feat: เพิ่มแผงตรวจเช็คระบบ AI ในหน้า Admin ดูดวง (c30913da)
+- feat: เพิ่ม fallback responses เมื่อ AI ล่ม - บอทยังคุยได้ไม่หยุดชะงัก (46271a0f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2494 from xjanova/claude/check-horoscope-facebook-CtSPS (825fb267)
+
+## [v3.467.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่มความทนทานของระบบดูดวง - ป้องกัน crash + ปรับ UX flow (af95237e)
+- fix: ปรับปรุง error handling ให้ครอบคลุม + ข้อความ error ที่เป็นมิตร (ef48dea3)
+### 🔧 Other Changes
+- Merge pull request #2493 from xjanova/claude/check-horoscope-facebook-CtSPS (41bf5cb5)
+
+## [v3.467.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2492 from xjanova/claude/check-horoscope-facebook-CtSPS (63ea0297)
+- feat: ปรับระบบดูดวงให้ตอบทุกข้อความผ่าน AI + เพิ่มปุ่มลัด + เช็คสิทธิ์ (f8adede4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.466.2] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Remove fixed special amount, use only unique amounts for fortune reading (9381c0fd)
+### 🔧 Other Changes
+
+
+## [v3.466.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- refactor: remove bank account verification for SMS matching (c50fcdf4)
+
+## [v3.466.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2491 from xjanova/claude/check-horoscope-facebook-CtSPS (c7d2346f)
+- feat: เพิ่มระบบ Admin Handover - บอทหยุดเมื่อแอดมินกำลังดูแลลูกค้า (0be254c6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.465.0] - 2026-02-06
+
+### ✨ Features
+- feat: add 7 new banks support (8→15 banks) (a9d2ab28)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.464.23] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct money flow - MLM and Fee are separate pools, both deducted from seller (83829414)
+- fix: MLM commission from platform fee, fix calculator formula, add overpay protection (79ab5807)
+### 🔧 Other Changes
+- Merge pull request #2490 from xjanova/claude/review-mlm-calculations-E3eMx (1cbae23d)
+- docs: add comprehensive MLM money flow documentation (972e8de0)
+
+## [v3.464.22] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2489 from xjanova/claude/check-horoscope-facebook-CtSPS (a355bcc6)
+- fix: แก้ไข 4 bugs ในระบบดูดวง Facebook ที่ทำให้บอทตอบว่าผิดพลาดซ้ำๆ (2df7e619)
+### 🔧 Other Changes
+
+
 ## [v3.464.21] - 2026-02-06
 
 ### ✨ Features

@@ -98,7 +98,10 @@ class SmsPaymentNotification extends Model
 
     /**
      * ดึงบัญชีธนาคารที่ตรงกับ bank code ของ notification นี้
-     * ใช้ตรวจสอบว่า SMS มาจากบัญชีที่ลงทะเบียนไว้
+     * ใช้ตรวจสอบว่า SMS มาจากธนาคารที่ลงทะเบียนไว้และเปิดใช้ SMS Checker
+     *
+     * หมายเหตุ: เช็คเฉพาะ bank code เท่านั้น (เช่น KBANK, SCB)
+     * ไม่เช็คเลขบัญชี เพราะ SMS ไม่ได้แสดงเลขบัญชีเต็ม
      *
      * @return PaymentBankAccount|null
      */
@@ -111,7 +114,12 @@ class SmsPaymentNotification extends Model
     }
 
     /**
-     * ตรวจสอบว่า notification มาจากบัญชีที่ลงทะเบียนไว้หรือไม่
+     * ตรวจสอบว่า notification มาจากธนาคารที่ลงทะเบียนไว้หรือไม่
+     *
+     * เช็คว่ามีบัญชีธนาคารที่:
+     * - ตรงกับ bank code (เช่น KBANK, SCB)
+     * - เปิดใช้งาน (is_active = true)
+     * - เปิด SMS Checker (sms_checker_enabled = true)
      *
      * @return bool
      */
@@ -134,24 +142,6 @@ class SmsPaymentNotification extends Model
     {
         if ($this->type !== 'credit') {
             return false;
-        }
-
-        // SECURITY: ตรวจสอบว่า notification มาจากบัญชีธนาคารที่ลงทะเบียนไว้
-        // ป้องกันคนร้ายส่ง SMS ปลอมจากบัญชีอื่นเพื่อ auto-approve
-        try {
-            if (!$this->isFromRegisteredAccount()) {
-                \Illuminate\Support\Facades\Log::warning('SMS Payment: notification จากบัญชีที่ไม่ได้ลงทะเบียน ไม่ auto-match', [
-                    'bank' => $this->bank,
-                    'account' => $this->account_number,
-                    'amount' => $this->amount,
-                ]);
-                // เก็บ notification ไว้ แต่ไม่ auto-match
-                // admin สามารถ approve ด้วยตนเองได้ในภายหลัง
-                return false;
-            }
-        } catch (\Exception $e) {
-            // ถ้า PaymentBankAccount table ยังไม่พร้อม → ข้ามการตรวจสอบ (backward compatible)
-            \Illuminate\Support\Facades\Log::debug('SMS Payment: ข้ามการตรวจสอบบัญชี - ' . $e->getMessage());
         }
 
         // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
