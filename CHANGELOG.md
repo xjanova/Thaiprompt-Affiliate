@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.464.15] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: use correct column names in fortune channel stats query (c2202ee3)
+- fix: use display_order instead of non-existent points column in forum trophies query (3a4ae235)
+### 🔧 Other Changes
+- Merge pull request #2485 from xjanova/claude/fix-forum-trophies-column-q1Mwu (60408757)
+
 ## [v3.464.14] - 2026-02-06
 
 ### ✨ Features
