@@ -73,9 +73,16 @@ class MlmGlobalSetting extends Model
 
     /**
      * Set a setting value
+     *
+     * ⚠️ ตรวจสอบ PV rate >= 0.01 และ commission_per_pv > 0 อัตโนมัติ
+     *
+     * @throws \InvalidArgumentException ถ้าค่าไม่ถูกต้อง
      */
     public static function set(string $key, $value): bool
     {
+        // ตรวจสอบค่าที่สำคัญก่อนบันทึก
+        static::validateCriticalValue($key, $value);
+
         $setting = static::where('key', $key)->first();
 
         if (!$setting) {
@@ -92,6 +99,36 @@ class MlmGlobalSetting extends Model
 
         Cache::forget("mlm_setting_{$key}");
         return true;
+    }
+
+    /**
+     * ตรวจสอบค่าที่สำคัญก่อนบันทึก
+     *
+     * ป้องกันการตั้งค่าที่อาจทำให้ระบบ MLM ทำงานผิดพลาด:
+     * - global_pv_rate: ต้อง >= 0.01 (ห้ามเป็น 0 หรือลบ)
+     * - commission_per_pv: ต้อง > 0
+     * - max_commission_percentage: ต้อง > 0 และ <= 100
+     *
+     * @param string $key ชื่อ setting
+     * @param mixed $value ค่าที่จะบันทึก
+     * @throws \InvalidArgumentException ถ้าค่าไม่ถูกต้อง
+     */
+    protected static function validateCriticalValue(string $key, $value): void
+    {
+        $numericValue = is_numeric($value) ? (float) $value : null;
+
+        match ($key) {
+            'global_pv_rate' => $numericValue !== null && $numericValue < 0.01
+                ? throw new \InvalidArgumentException("PV Rate ต้อง >= 0.01 (ได้รับ: {$value})")
+                : null,
+            'commission_per_pv' => $numericValue !== null && $numericValue <= 0
+                ? throw new \InvalidArgumentException("Commission Per PV ต้อง > 0 (ได้รับ: {$value})")
+                : null,
+            'max_commission_percentage' => $numericValue !== null && ($numericValue <= 0 || $numericValue > 100)
+                ? throw new \InvalidArgumentException("Max Commission Percentage ต้องอยู่ระหว่าง 0-100 (ได้รับ: {$value})")
+                : null,
+            default => null,
+        };
     }
 
     /**

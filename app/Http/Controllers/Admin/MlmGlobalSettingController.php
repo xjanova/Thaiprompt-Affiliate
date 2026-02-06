@@ -8,6 +8,7 @@ use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmRebuildTask;
 use App\Services\MlmTreeRebuildService;
+use App\Services\OverpayProtectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -33,6 +34,14 @@ class MlmGlobalSettingController extends Controller
             'settings' => 'required|array',
         ]);
 
+        // ⚠️ Smart Overpay Protection: ตรวจสอบก่อนบันทึก
+        $validation = OverpayProtectionService::validateAllSettings($validated['settings']);
+        if (!$validation['is_valid']) {
+            return redirect()
+                ->route('admin.mlm.settings.index')
+                ->with('error', 'ไม่สามารถบันทึกได้: ' . implode(', ', $validation['errors']));
+        }
+
         foreach ($validated['settings'] as $key => $value) {
             $setting = MlmGlobalSetting::where('key', $key)->first();
 
@@ -44,15 +53,25 @@ class MlmGlobalSettingController extends Controller
                     default => $value,
                 };
 
-                $setting->update(['value' => $finalValue]);
+                try {
+                    $setting->update(['value' => $finalValue]);
+                } catch (\InvalidArgumentException $e) {
+                    return redirect()
+                        ->route('admin.mlm.settings.index')
+                        ->with('error', $e->getMessage());
+                }
             }
         }
 
         MlmGlobalSetting::clearCache();
 
+        $warningMsg = !empty($validation['warnings'])
+            ? ' (คำเตือน: ' . implode(', ', $validation['warnings']) . ')'
+            : '';
+
         return redirect()
             ->route('admin.mlm.settings.index')
-            ->with('success', 'MLM Global Settings updated successfully');
+            ->with('success', 'MLM Global Settings updated successfully' . $warningMsg);
     }
 
     /**
@@ -102,7 +121,7 @@ class MlmGlobalSettingController extends Controller
     {
         $validated = $request->validate([
             'sales_amount' => 'required|numeric|min:0',
-            'pv_rate' => 'nullable|numeric|min:0',
+            'pv_rate' => 'nullable|numeric|min:0.01',
             'member_depth' => 'nullable|integer|min:1',
             'binary_pairs' => 'nullable|integer|min:0',
             'use_constraints' => 'nullable|boolean',
@@ -126,7 +145,8 @@ class MlmGlobalSettingController extends Controller
         $maxPerDay = MlmGlobalSetting::get('binary_max_commission_per_day', null);
         $maxPairsPerDay = MlmGlobalSetting::get('binary_max_pairs_per_day', null);
 
-        $pv = $salesAmount / $pvRate;
+        // PV = ยอดขาย × อัตรา PV (เช่น 10000 × 1 = 10000 PV)
+        $pv = $salesAmount * $pvRate;
 
         // Unilevel calculation with constraints
         $unilevelCommissions = [];
@@ -143,7 +163,8 @@ class MlmGlobalSettingController extends Controller
                 }
 
                 $percentage = $level['percentage'] ?? 0;
-                $commission = ($pv * $percentage) / 100;
+                // สูตร: (PV × เปอร์เซ็นต์ / 100) × commission_per_pv
+                $commission = ($pv * $percentage) / 100 * $commissionPerPv;
                 $originalCommission = $commission;
 
                 $constraintUsed = null;
@@ -206,17 +227,29 @@ class MlmGlobalSettingController extends Controller
         }
 
         $totalCommission = $unilevelTotal + $binaryCommission;
+        // คำนวณ % ของ commission เทียบกับ PV pool (PV × commission_per_pv)
+        $pvPool = $pv * $commissionPerPv;
+        $totalPercentageOfPv = $pvPool > 0 ? ($totalCommission / $pvPool) * 100 : 0;
+        // คำนวณ % ของ commission เทียบกับยอดขาย (สำหรับแสดงผล)
         $totalPercentage = $salesAmount > 0 ? ($totalCommission / $salesAmount) * 100 : 0;
+
+        // ใช้ max_commission_percentage จากการตั้งค่า (ค่าเริ่มต้น 40%)
+        $maxCommissionPercentage = (float) MlmGlobalSetting::get('max_commission_percentage', 40);
+        $warningThreshold = $maxCommissionPercentage * 0.8; // เตือนที่ 80% ของ max
 
         return response()->json([
             'success' => true,
             'total_pv' => $pv,
+            'commission_per_pv' => $commissionPerPv,
+            'pv_pool' => $pvPool,
             'unilevel_commission' => $unilevelTotal,
             'binary_commission' => $binaryCommission,
             'total_commission' => $totalCommission,
             'total_percentage' => $totalPercentage,
-            'is_overpay' => $checkOverpay && $totalPercentage > 50,
-            'warning_level' => $totalPercentage > 50 ? 'danger' : ($totalPercentage > 40 ? 'warning' : 'safe'),
+            'total_percentage_of_pv' => $totalPercentageOfPv,
+            'max_commission_percentage' => $maxCommissionPercentage,
+            'is_overpay' => $checkOverpay && $totalPercentageOfPv > $maxCommissionPercentage,
+            'warning_level' => $totalPercentageOfPv > $maxCommissionPercentage ? 'danger' : ($totalPercentageOfPv > $warningThreshold ? 'warning' : 'safe'),
             'constraints_applied' => $constraintsApplied,
             'breakdown' => $breakdown,
         ]);
@@ -258,6 +291,39 @@ class MlmGlobalSettingController extends Controller
         // อัพเดท Genealogy (ผังสายเลือด) enabled
         if (isset($validated['genealogy_enabled'])) {
             MlmGlobalSetting::set('genealogy_enabled', $validated['genealogy_enabled']);
+        }
+
+        // ⚠️ Smart Overpay Protection: ตรวจสอบ commission_per_pv ก่อนบันทึก
+        if (isset($validated['commission_per_pv'])) {
+            $cpvResult = OverpayProtectionService::validateCommissionPerPv((float) $validated['commission_per_pv']);
+            if (!$cpvResult['is_valid']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $cpvResult['message'],
+                ], 422);
+            }
+        }
+
+        // ⚠️ ตรวจสอบ unilevel_percentages ว่าจะ overpay หรือไม่
+        if (isset($validated['unilevel_percentages'])) {
+            $percentages = explode(',', $validated['unilevel_percentages']);
+            $levels = [];
+            foreach ($percentages as $i => $pct) {
+                $levels[] = ['level' => $i + 1, 'percentage' => (float) trim($pct)];
+            }
+
+            $levelResult = OverpayProtectionService::validateLevelConfiguration(
+                $levels,
+                isset($validated['commission_per_pv']) ? (float) $validated['commission_per_pv'] : null
+            );
+
+            if (!$levelResult['is_valid']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $levelResult['message'],
+                    'validation' => $levelResult,
+                ], 422);
+            }
         }
 
         // อัพเดทค่าคอมมิชชั่นเพิ่มเติม

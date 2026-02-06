@@ -7,6 +7,7 @@ use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
 use App\Models\Order;
+use App\Services\OverpayProtectionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -73,22 +74,31 @@ class MlmCommissionService
                 $commissions = array_merge($commissions, $binaryCommissions);
             }
 
-            // แก้ Bug: Overpay Protection - ป้องกันจ่าย commission เกินสัดส่วนที่ตั้งค่าไว้
-            $overpayProtection = MlmGlobalSetting::get('overpay_protection_enabled', false);
-            if ($overpayProtection && !empty($commissions)) {
-                $maxCommissionPercentage = (float) MlmGlobalSetting::get('max_commission_percentage', 40);
-                $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
-
-                // คำนวณมูลค่าสูงสุดที่จ่ายได้ = PV × commissionPerPv × (maxPercentage / 100)
-                $maxAllowedTotal = $pv * $commissionPerPv * ($maxCommissionPercentage / 100);
+            // ⚠️ Overpay Protection - ป้องกันจ่าย commission เกินสัดส่วนที่ตั้งค่าไว้
+            // ใช้ OverpayProtectionService สำหรับตรวจสอบ runtime
+            if (!empty($commissions)) {
                 $totalCommission = array_sum(array_column($commissions, 'commission_amount'));
 
-                if ($totalCommission > $maxAllowedTotal && $maxAllowedTotal > 0) {
+                $overpayCheck = OverpayProtectionService::checkRuntimeOverpay($pv, $totalCommission);
+
+                if (!$overpayCheck['allowed']) {
                     // ลดสัดส่วนทุก commission ให้รวมแล้วไม่เกิน cap
-                    $ratio = $maxAllowedTotal / $totalCommission;
+                    $ratio = $overpayCheck['ratio'];
 
                     foreach ($commissions as &$comm) {
-                        $comm['commission_amount'] = round($comm['commission_amount'] * $ratio, 2);
+                        $originalAmount = $comm['commission_amount'];
+                        $comm['commission_amount'] = round($originalAmount * $ratio, 2);
+                        $comm['calculation_details'] = json_encode(
+                            array_merge(
+                                json_decode($comm['calculation_details'] ?? '{}', true) ?? [],
+                                [
+                                    'overpay_protection' => true,
+                                    'original_amount' => $originalAmount,
+                                    'scale_ratio' => $ratio,
+                                    'max_allowed' => $overpayCheck['max_allowed'],
+                                ]
+                            )
+                        );
                     }
                     unset($comm);
 
@@ -96,8 +106,10 @@ class MlmCommissionService
                         'member_id' => $member->id,
                         'pv' => $pv,
                         'original_total' => $totalCommission,
-                        'max_allowed' => $maxAllowedTotal,
+                        'max_allowed' => $overpayCheck['max_allowed'],
+                        'excess' => $overpayCheck['excess'],
                         'ratio' => $ratio,
+                        'message' => $overpayCheck['message'],
                     ]);
                 }
             }
