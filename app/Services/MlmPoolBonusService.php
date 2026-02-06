@@ -185,19 +185,28 @@ class MlmPoolBonusService
     /**
      * ดึง PV ส่วนตัวของสมาชิกในรอบนี้
      *
+     * แก้ Bug: ใช้ MlmPvTransaction ที่ transaction_type = 'purchase' (PV จากการซื้อจริง)
+     * แทน MlmCommission.pv_amount (ซึ่งเป็น PV ที่ได้รับจากการเป็น upline ไม่ใช่ PV ส่วนตัว)
+     *
+     * ตรงกับ logic ใน MlmRetentionHelper::isMemberActive() ที่ใช้ MlmPvTransaction เช่นกัน
+     *
      * @param MlmMember $member
      * @param MlmPoolBonusPeriod $period
      * @return float
      */
     protected function getMemberPersonalPv(MlmMember $member, MlmPoolBonusPeriod $period): float
     {
-        return (float) MlmCommission::where('mlm_member_id', $member->id)
+        return (float) \App\Models\MlmPvTransaction::where('mlm_member_id', $member->id)
+            ->where('transaction_type', 'purchase')
             ->whereBetween('created_at', [$period->period_start, $period->period_end])
             ->sum('pv_amount');
     }
 
     /**
      * ดึง PV ทีมของสมาชิกในรอบนี้
+     *
+     * แก้ Bug: ใช้ MlmPvTransaction ที่ transaction_type = 'purchase' (PV จากการซื้อจริง)
+     * แทน MlmCommission.pv_amount เพื่อความถูกต้อง
      *
      * @param MlmMember $member
      * @param MlmPoolBonusPeriod $period
@@ -218,7 +227,8 @@ class MlmPoolBonusService
             return 0;
         }
 
-        return (float) MlmCommission::whereIn('mlm_member_id', $downlineIds)
+        return (float) \App\Models\MlmPvTransaction::whereIn('mlm_member_id', $downlineIds)
+            ->where('transaction_type', 'purchase')
             ->whereBetween('created_at', [$period->period_start, $period->period_end])
             ->sum('pv_amount');
     }
