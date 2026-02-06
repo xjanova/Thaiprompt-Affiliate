@@ -103,6 +103,23 @@
                             </div>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="check.message"></p>
 
+                            {{-- แสดงคำแนะนำการแก้ไข --}}
+                            <div x-show="check.fix" class="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-800 dark:text-amber-200">
+                                <span class="font-semibold">วิธีแก้ไข:</span>
+                                <span x-text="check.fix"></span>
+                            </div>
+
+                            {{-- ปุ่มแก้ไขฐานข้อมูล --}}
+                            <div x-show="check.has_pending_migrations" class="mt-2">
+                                <button type="button" @click="fixDatabase()"
+                                        :disabled="fixingDb"
+                                        class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white text-xs rounded-lg transition flex items-center gap-1.5">
+                                    <span x-show="fixingDb" class="animate-spin">⏳</span>
+                                    <span x-show="!fixingDb">🔧</span>
+                                    <span x-text="fixingDb ? 'กำลังแก้ไข...' : 'แก้ไขฐานข้อมูล (รัน Migration)'"></span>
+                                </button>
+                            </div>
+
                             {{-- แสดง preview ถ้ามี (ตัวอย่างคำตอบ AI) --}}
                             <div x-show="check.preview" class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 max-h-20 overflow-y-auto">
                                 <span class="font-medium">ตัวอย่างคำตอบ:</span>
@@ -129,6 +146,16 @@
                         </div>
                     </div>
                 </template>
+            </div>
+
+            {{-- ผลลัพธ์การแก้ไข DB --}}
+            <div x-show="dbFixResult" x-transition class="mt-4 p-3 rounded-lg border"
+                 :class="dbFixResult?.success ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'">
+                <div class="flex items-center gap-2 mb-1">
+                    <span x-text="dbFixResult?.success ? '✅' : '❌'"></span>
+                    <span class="font-semibold text-sm" x-text="dbFixResult?.message"></span>
+                </div>
+                <div x-show="dbFixResult?.output" class="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-700 dark:text-gray-300 max-h-32 overflow-y-auto whitespace-pre-wrap" x-text="dbFixResult?.output"></div>
             </div>
 
             {{-- ข้อความเริ่มต้น --}}
@@ -635,9 +662,12 @@ function aiDiagnostic() {
     return {
         loading: false,
         result: null,
+        fixingDb: false,
+        dbFixResult: null,
         async runDiagnose() {
             this.loading = true;
             this.result = null;
+            this.dbFixResult = null;
 
             try {
                 const response = await fetch('{{ route("admin.fortune.settings.diagnose") }}', {
@@ -662,6 +692,37 @@ function aiDiagnostic() {
                 };
             } finally {
                 this.loading = false;
+            }
+        },
+        async fixDatabase() {
+            if (!confirm('ต้องการรัน Migration เพื่อสร้างตารางที่ขาดหายไป?')) return;
+
+            this.fixingDb = true;
+            this.dbFixResult = null;
+
+            try {
+                const response = await fetch('{{ route("admin.fortune.settings.run-migrations") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                this.dbFixResult = await response.json();
+
+                // ถ้าสำเร็จ ให้ตรวจเช็คใหม่อัตโนมัติ
+                if (this.dbFixResult.success) {
+                    setTimeout(() => this.runDiagnose(), 1500);
+                }
+            } catch (error) {
+                this.dbFixResult = {
+                    success: false,
+                    message: 'เกิดข้อผิดพลาด: ' + error.message,
+                };
+            } finally {
+                this.fixingDb = false;
             }
         }
     };
