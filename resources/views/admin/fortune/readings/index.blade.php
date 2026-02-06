@@ -156,7 +156,7 @@
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ $reading->facebook_user_id }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ Str::limit(implode(', ', $reading->questions), 60) }}
+                                {{ Str::limit(implode(', ', $reading->questions ?? []), 60) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 @if($reading->reading_type === 'deep')

@@ -60,6 +60,9 @@ class ForumTrophy extends Model
         'requirement_value',
         'display_order',
         'is_active',
+        'points',
+        'is_automatic',
+        'requirements',
     ];
 
     /**
@@ -70,8 +73,11 @@ class ForumTrophy extends Model
     protected $casts = [
         'is_permanent' => 'boolean',
         'is_active' => 'boolean',
+        'is_automatic' => 'boolean',
         'requirement_value' => 'integer',
         'display_order' => 'integer',
+        'points' => 'integer',
+        'requirements' => 'array',
     ];
 
     /**
