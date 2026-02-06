@@ -41,7 +41,7 @@ class FortuneSettingsController extends Controller
             'facebook_page_token' => 'nullable|string',
             'facebook_verify_token' => 'nullable|string|max:100',
             // การตั้งค่า AI
-            'ai_provider' => 'required|in:gemini,groq,qwen,openrouter',
+            'ai_provider' => 'required|in:gemini,groq,grok,qwen,openrouter',
             'ai_api_key' => 'nullable|string',
             'ai_model' => 'required|string|max:100',
             'basic_prompt_template' => 'nullable|string',
