@@ -88,11 +88,8 @@ return [
                 ['label' => '---', 'route' => null], // Divider
                 ['label' => '🤖 AI Bot Marketplace', 'route' => 'admin.ai-bots.index', 'description' => 'ตลาด AI Bots'],
                 ['label' => '🎨 AI Generation', 'route' => 'admin.ai-gen.dashboard', 'description' => 'สร้างภาพและวิดีโอ'],
-                ['label' => '🔄 Bot Automation', 'route' => 'admin.bot-automation.index', 'description' => 'ระบบอัตโนมัติ'],
                 ['label' => '🔌 AI Providers', 'route' => 'admin.ai-providers.index', 'description' => 'จัดการผู้ให้บริการ AI'],
-                ['label' => '📊 AI Analytics', 'route' => 'admin.ai-analytics.index', 'description' => 'วิเคราะห์การใช้งาน'],
-                ['label' => '📈 Trading Bot', 'route' => 'admin.trading-bot.index', 'description' => 'Bot เทรดด้วย AI'],
-                ['label' => '💭 Chatbot Platform', 'route' => 'admin.chatbot-platform.index', 'description' => 'แพลตฟอร์ม Chatbot'],
+                ['label' => '📈 Trading Bot', 'route' => 'admin.trading-bot.dashboard', 'description' => 'Bot เทรดด้วย AI'],
             ],
         ],
 
@@ -155,13 +152,13 @@ return [
             'badge' => 'NEW',
             'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
             'submenu' => [
-                ['label' => '📊 Dashboard', 'route' => 'admin.ai-content-writer.dashboard'],
-                ['label' => '✨ Playground', 'route' => 'admin.ai-content-writer.playground', 'description' => 'ทดสอบสร้าง Content'],
-                ['label' => '📄 เทมเพลต', 'route' => 'admin.ai-content-writer.templates', 'description' => 'จัดการเทมเพลต'],
-                ['label' => '📁 โปรเจกต์', 'route' => 'admin.ai-content-writer.projects', 'description' => 'โปรเจกต์ Content'],
-                ['label' => '📜 ประวัติการสร้าง', 'route' => 'admin.ai-content-writer.generations', 'description' => 'ดูประวัติ'],
-                ['label' => '📈 Usage Logs', 'route' => 'admin.ai-content-writer.usage-logs', 'description' => 'ติดตามการใช้งาน'],
-                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.ai-content-writer.settings', 'description' => 'API Keys'],
+                ['label' => '📊 Dashboard', 'route' => 'admin.platform-revenue.ai-content-writer.dashboard'],
+                ['label' => '✨ Playground', 'route' => 'admin.platform-revenue.ai-content-writer.playground', 'description' => 'ทดสอบสร้าง Content'],
+                ['label' => '📄 เทมเพลต', 'route' => 'admin.platform-revenue.ai-content-writer.templates', 'description' => 'จัดการเทมเพลต'],
+                ['label' => '📁 โปรเจกต์', 'route' => 'admin.platform-revenue.ai-content-writer.projects', 'description' => 'โปรเจกต์ Content'],
+                ['label' => '📜 ประวัติการสร้าง', 'route' => 'admin.platform-revenue.ai-content-writer.generations', 'description' => 'ดูประวัติ'],
+                ['label' => '📈 Usage Logs', 'route' => 'admin.platform-revenue.ai-content-writer.usage-logs', 'description' => 'ติดตามการใช้งาน'],
+                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.platform-revenue.ai-content-writer.settings', 'description' => 'API Keys'],
             ],
         ],
 
@@ -314,10 +311,10 @@ return [
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index', 'icon' => 'fas fa-cog'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index', 'icon' => 'fas fa-percentage'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => 'จ่ายเงินออก', 'route' => 'admin.payouts.index', 'icon' => 'fas fa-hand-holding-usd', 'description' => 'จัดการการจ่ายเงิน'],
+                ['label' => 'จ่ายเงินออก', 'route' => 'admin.platform-revenue.payouts.index', 'icon' => 'fas fa-hand-holding-usd', 'description' => 'จัดการการจ่ายเงิน'],
                 ['label' => 'รายได้แพลตฟอร์ม', 'route' => 'admin.platform-revenue.index', 'icon' => 'fas fa-chart-line', 'description' => 'สถิติรายได้ระบบ'],
-                ['label' => 'จัดการหนี้สิน', 'route' => 'admin.debts.index', 'icon' => 'fas fa-file-invoice-dollar', 'description' => 'ติดตามหนี้สิน'],
-                ['label' => 'HD Wallets', 'route' => 'admin.hd-wallets.index', 'icon' => 'fas fa-key', 'description' => 'Hierarchical Deterministic'],
+                ['label' => 'จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'icon' => 'fas fa-file-invoice-dollar', 'description' => 'ติดตามหนี้สิน'],
+                ['label' => 'HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'icon' => 'fas fa-key', 'description' => 'Hierarchical Deterministic'],
             ],
         ],
 
@@ -357,9 +354,9 @@ return [
                 ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
                 ['label' => '📈 รายงานการเงิน', 'route' => 'admin.platform-revenue.reports', 'description' => 'รายงานรายได้รายวัน/เดือน'],
                 ['label' => '---', 'route' => null],
-                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
-                ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
-                ['label' => '🔑 HD Wallets', 'route' => 'admin.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
+                ['label' => '💸 จ่ายเงินออก (Payouts)', 'route' => 'admin.platform-revenue.payouts.index', 'description' => 'จัดการคำขอถอนเงิน Seller'],
+                ['label' => '📝 จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'description' => 'ติดตามหนี้ที่ต้องเรียกคืน'],
+                ['label' => '🔑 HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'description' => 'Hierarchical Deterministic'],
             ],
         ],
 
@@ -377,7 +374,6 @@ return [
                 ['label' => '➕ สร้างแผนใหม่', 'route' => 'admin.staking-plans.create', 'description' => 'สร้างแผนลงทุนใหม่'],
                 ['label' => '💰 Positions ทั้งหมด', 'route' => 'admin.staking-plans.positions', 'description' => 'ดูการลงทุนของ Users'],
                 ['label' => '🪙 ตั้งค่า Coin', 'route' => 'admin.staking-plans.coin-settings', 'description' => 'อัตราแลกเปลี่ยน Coin/THB', 'badge' => 'HOT', 'badge_color' => 'bg-gradient-to-r from-yellow-500 to-orange-500'],
-                ['label' => '📈 รายงาน ROI', 'route' => 'admin.staking-plans.reports', 'description' => 'สถิติผลตอบแทน'],
             ],
         ],
 
@@ -439,9 +435,9 @@ return [
                 ['label' => '   ├─ ⚙️ ตั้งค่าระบบ', 'route' => 'admin.line-membership-signup.settings', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500', 'description' => 'ตั้งค่า OTP, Validation, Rewards, Gamification'],
                 ['label' => '   ├─ 📊 Sessions', 'route' => 'admin.line-membership-signup.sessions', 'description' => 'ดู Session การสมัคร'],
                 ['label' => '   ├─ 🎨 Templates', 'route' => 'admin.line-membership-signup.templates', 'description' => 'Flex Message Templates'],
-                ['label' => '   ├─ 🎁 Rewards', 'route' => 'admin.line-membership-signup.rewards', 'description' => 'จัดการรางวัล'],
+                ['label' => '   ├─ 🎁 Rewards', 'route' => 'admin.line-membership-signup.rewards.index', 'description' => 'จัดการรางวัล'],
                 ['label' => '   ├─ 🔧 Signup Flows', 'route' => 'admin.line-bot.signup-flow.index', 'description' => 'ตั้งค่า Flow'],
-                ['label' => '   └─ 📈 Analytics', 'route' => 'admin.line-membership-signup.analytics', 'description' => 'วิเคราะห์ Funnel'],
+                ['label' => '   └─ 📈 Analytics', 'route' => 'admin.line-membership-signup.analytics.data', 'description' => 'วิเคราะห์ Funnel'],
                 ['label' => '---', 'route' => null], // Divider
 
                 // ═══════════════════════════════════════
@@ -579,8 +575,8 @@ return [
                 ['label' => 'การลา', 'route' => 'admin.hrm.leave.index', 'icon' => 'fas fa-calendar-minus'],
                 ['label' => 'เงินเดือน', 'route' => 'admin.hrm.payroll.index', 'icon' => 'fas fa-money-check-alt'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => 'ลงเวลา', 'route' => 'admin.attendance.index', 'icon' => 'fas fa-clock', 'description' => 'บันทึกเข้า-ออก'],
-                ['label' => 'อบรม', 'route' => 'admin.training.index', 'icon' => 'fas fa-chalkboard', 'description' => 'หลักสูตรฝึกอบรม'],
+                ['label' => 'ลงเวลา', 'route' => 'admin.hrm.attendance.index', 'icon' => 'fas fa-clock', 'description' => 'บันทึกเข้า-ออก'],
+                ['label' => 'อบรม', 'route' => 'admin.hrm.training.courses.index', 'icon' => 'fas fa-chalkboard', 'description' => 'หลักสูตรฝึกอบรม'],
             ],
         ],
 
@@ -631,7 +627,7 @@ return [
                 ['label' => 'ตั้งค่า OTP', 'route' => 'admin.otp.settings', 'icon' => 'fas fa-mobile-alt'],
                 ['label' => 'ตั้งค่า 2FA', 'route' => 'admin.two-factor.settings', 'icon' => 'fas fa-key'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => 'ป้องกันการละเมิด', 'route' => 'admin.anti-abuse.index', 'icon' => 'fas fa-user-shield', 'description' => 'Anti-Abuse System'],
+                ['label' => 'ป้องกันการละเมิด', 'route' => 'admin.anti-abuse.dashboard', 'icon' => 'fas fa-user-shield', 'description' => 'Anti-Abuse System'],
             ],
         ],
 
@@ -655,7 +651,7 @@ return [
             'badge_color' => 'bg-gradient-to-r from-green-500 to-teal-500',
             'submenu' => [
                 ['label' => '🪙 ร้านค้าเหรียญ', 'route' => 'admin.coin-shop.index', 'description' => 'ขายเหรียญในเกม'],
-                ['label' => '🐍 เกมงู', 'route' => 'admin.snake-io.index', 'description' => 'Snake.io Game'],
+                ['label' => '🐍 เกมงู', 'route' => 'admin.games.snake-io.monitor', 'description' => 'Snake.io Game'],
                 ['label' => '📍 ติดตาม GPS', 'route' => 'admin.gps-monitoring.index', 'description' => 'Location Tracking'],
             ],
         ],
@@ -706,7 +702,6 @@ return [
             'order' => 24,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'การแปล', 'route' => 'admin.translations.index', 'icon' => 'fas fa-language'],
                 ['label' => 'ตั้งค่าภาษา', 'route' => 'admin.settings.languages', 'icon' => 'fas fa-globe'],
             ],
         ],
@@ -759,13 +754,10 @@ return [
             'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
             'submenu' => [
                 ['label' => '📊 Dashboard', 'route' => 'admin.ai-gen.dashboard'],
-                ['label' => '🤖 AI Providers', 'route' => 'admin.ai-gen.providers'],
-                ['label' => '📦 Packages', 'route' => 'admin.ai-gen.packages'],
-                ['label' => '🎁 Free Quotas', 'route' => 'admin.ai-gen.quotas'],
-                ['label' => '👥 Subscriptions', 'route' => 'admin.ai-gen.subscriptions'],
+                ['label' => '🤖 AI Providers', 'route' => 'admin.ai-gen.providers.index'],
+                ['label' => '📦 Packages', 'route' => 'admin.ai-gen.packages.index'],
+                ['label' => '🎁 Free Quotas', 'route' => 'admin.ai-gen.quotas.index'],
                 ['label' => '📋 Usage Logs', 'route' => 'admin.ai-gen.usage-logs'],
-                ['label' => '🖼️ All Generations', 'route' => 'admin.ai-gen.generations'],
-                ['label' => '⚙️ Settings', 'route' => 'admin.ai-gen.settings'],
             ],
         ],
 
@@ -779,17 +771,17 @@ return [
             'badge' => 'NEW',
             'badge_color' => 'bg-gradient-to-r from-purple-600 to-pink-600',
             'submenu' => [
-                ['label' => '📊 Dashboard', 'route' => 'admin.video-automation.dashboard', 'description' => 'ภาพรวมระบบ Video Automation'],
-                ['label' => '🎨 เทมเพลต', 'route' => 'admin.video-automation.templates', 'description' => 'จัดการเทมเพลตวิดีโอ'],
-                ['label' => '📁 โปรเจกต์', 'route' => 'admin.video-automation.projects', 'description' => 'สร้างและจัดการโปรเจกต์'],
-                ['label' => '⏰ Jobs', 'route' => 'admin.video-automation.jobs', 'description' => 'ติดตามงานที่กำลังทำ'],
-                ['label' => '📅 Schedules', 'route' => 'admin.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
+                ['label' => '📊 Dashboard', 'route' => 'admin.platform-revenue.video-automation.dashboard', 'description' => 'ภาพรวมระบบ Video Automation'],
+                ['label' => '🎨 เทมเพลต', 'route' => 'admin.platform-revenue.video-automation.templates', 'description' => 'จัดการเทมเพลตวิดีโอ'],
+                ['label' => '📁 โปรเจกต์', 'route' => 'admin.platform-revenue.video-automation.projects', 'description' => 'สร้างและจัดการโปรเจกต์'],
+                ['label' => '⏰ Jobs', 'route' => 'admin.platform-revenue.video-automation.jobs', 'description' => 'ติดตามงานที่กำลังทำ'],
+                ['label' => '📅 Schedules', 'route' => 'admin.platform-revenue.video-automation.schedules', 'description' => 'ตั้งเวลาสร้างอัตโนมัติ'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => '🌐 Platforms', 'route' => 'admin.video-automation.platforms', 'description' => 'เชื่อมต่อ YouTube, Facebook, TikTok, Lemon8'],
-                ['label' => '📜 ประวัติการโพสต์', 'route' => 'admin.video-automation.publish-history', 'description' => 'ดูประวัติการเผยแพร่วิดีโอ'],
+                ['label' => '🌐 Platforms', 'route' => 'admin.platform-revenue.video-automation.platforms', 'description' => 'เชื่อมต่อ YouTube, Facebook, TikTok, Lemon8'],
+                ['label' => '📜 ประวัติการโพสต์', 'route' => 'admin.platform-revenue.video-automation.publish-history', 'description' => 'ดูประวัติการเผยแพร่วิดีโอ'],
                 ['label' => '---', 'route' => null], // Divider
-                ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
-                ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
+                ['label' => '⚙️ ตั้งค่า API', 'route' => 'admin.platform-revenue.video-automation.settings', 'description' => 'Suno AI, Freepik, YouTube'],
+                ['label' => '📖 คู่มือการใช้งาน', 'route' => 'admin.platform-revenue.video-automation.documentation', 'description' => 'วิธีใช้งานและขอ API Key'],
             ],
         ],
 
@@ -803,13 +795,12 @@ return [
             'badge' => 'NEW',
             'badge_color' => 'bg-gradient-to-r from-blue-500 to-purple-500',
             'submenu' => [
-                ['label' => '📊 Dashboard', 'route' => 'forum.index', 'description' => 'ภาพรวมฟอรั่ม'],
-                ['label' => '📁 หมวดหมู่', 'route' => 'admin.forum.categories.index', 'description' => 'จัดการหมวดหมู่'],
-                ['label' => '📝 กระทู้ทั้งหมด', 'route' => 'admin.forum.threads.index', 'description' => 'จัดการกระทู้'],
-                ['label' => '🚨 รายงาน', 'route' => 'admin.forum.reports.index', 'description' => 'รายงานเนื้อหาไม่เหมาะสม', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
-                ['label' => '🏆 ถ้วยรางวัล', 'route' => 'admin.forum.trophies.index', 'description' => 'จัดการ Trophies'],
-                ['label' => '📈 สถิติ', 'route' => 'admin.forum.analytics.index', 'description' => 'สถิติการใช้งาน'],
-                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.forum.settings.index', 'description' => 'ตั้งค่าฟอรั่ม'],
+                ['label' => '📁 หมวดหมู่', 'route' => 'admin.platform-revenue.forum.categories.index', 'description' => 'จัดการหมวดหมู่'],
+                ['label' => '📝 กระทู้ทั้งหมด', 'route' => 'admin.platform-revenue.forum.threads.index', 'description' => 'จัดการกระทู้'],
+                ['label' => '🚨 รายงาน', 'route' => 'admin.platform-revenue.forum.reports.index', 'description' => 'รายงานเนื้อหาไม่เหมาะสม', 'badge' => 'count', 'badge_color' => 'bg-red-500'],
+                ['label' => '🏆 ถ้วยรางวัล', 'route' => 'admin.platform-revenue.forum.trophies.index', 'description' => 'จัดการ Trophies'],
+                ['label' => '📈 สถิติ', 'route' => 'admin.platform-revenue.forum.analytics.index', 'description' => 'สถิติการใช้งาน'],
+                ['label' => '⚙️ ตั้งค่า', 'route' => 'admin.platform-revenue.forum.settings.index', 'description' => 'ตั้งค่าฟอรั่ม'],
             ],
         ],
 
