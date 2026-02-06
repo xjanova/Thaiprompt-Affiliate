@@ -574,9 +574,9 @@ class FortuneConversationService
                 'response_type' => 'private_message',
             ]);
 
-            // ทำนายพื้นฐานฟรี
+            // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText);
-            $aiResult = $this->aiService->generateFortuneTelling(
+            $aiResult = $this->aiService->generateWithRetryAndFallback(
                 [$messageText],
                 $userProfile,
                 null,
@@ -631,14 +631,14 @@ class FortuneConversationService
                 }
             }
 
-            // ✅ ใช้ fallback response แทนการบอก error - บอทยังคุยได้แม้ AI ล่ม
-            $fallbackResponse = $this->getFallbackFortuneResponse($messageText, $userProfile);
-
+            // แจ้งผู้ใช้สั้นๆ ว่าระบบมีปัญหาชั่วคราว (หลังจาก retry + สลับ provider หมดแล้ว)
+            $name = $userProfile['name'] ?? 'คุณ';
             return [
-                'action' => 'basic_done',
-                'message' => $fallbackResponse,
+                'action' => 'error',
+                'message' => "🔮 คุณ{$name} คะ ขออภัยนะคะ ระบบกำลังปรับปรุงชั่วคราวค่ะ 🙏\n\n" .
+                             "กรุณาลองพิมพ์มาใหม่อีกครั้งในอีก 1-2 นาทีนะคะ\n" .
+                             "ทางเพจพร้อมดูดวงให้ค่ะ ✨",
                 'reading' => null,
-                'show_quick_replies' => true,
             ];
         }
     }
@@ -891,7 +891,7 @@ class FortuneConversationService
             $birthDate = $reading->birth_date?->format('Y-m-d');
 
             $deepPrompt = $this->buildDeepPrompt($userProfile, $questions, $birthDate);
-            $aiResult = $this->aiService->generateFortuneTelling(
+            $aiResult = $this->aiService->generateWithRetryAndFallback(
                 $questions,
                 $userProfile,
                 null,

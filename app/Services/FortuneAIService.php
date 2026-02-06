@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AiApiKey;
+use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -66,11 +67,11 @@ class FortuneAIService
      */
     protected const READING_CONFIG = [
         'basic' => [
-            'max_tokens' => 512,
-            'temperature' => 0.7,
+            'max_tokens' => 1536,
+            'temperature' => 0.75,
         ],
         'deep' => [
-            'max_tokens' => 2048,
+            'max_tokens' => 3072,
             'temperature' => 0.8,
         ],
     ];
@@ -137,6 +138,241 @@ class FortuneAIService
             $this->recordError($e->getMessage(), $this->model);
             throw $e;
         }
+    }
+
+    /**
+     * สร้างคำทำนายพร้อม retry + สลับ provider อัตโนมัติ
+     *
+     * ลองต่อ AI หลายครั้ง ถ้า provider หลักล้มเหลว จะลองสลับไป provider อื่นอัตโนมัติ
+     * ไม่ใช้ fallback ข้อความเขียนไว้ล่วงหน้า - ต้องต่อ AI ให้ได้จริง
+     *
+     * ลำดับการลอง:
+     * 1. Provider หลัก - ลอง 2 ครั้ง (เว้น 2 วินาที)
+     * 2. Provider สำรองจาก API Key Pool
+     * 3. Provider สำรองจาก Global AI Settings
+     *
+     * @param array $questions คำถาม
+     * @param array|null $userProfile โปรไฟล์ผู้ใช้
+     * @param array|null $userPosts โพสล่าสุด
+     * @param string|null $promptTemplate Prompt template
+     * @param string $readingType ประเภทคำทำนาย: 'basic' หรือ 'deep'
+     * @param string|null $birthDate วันเดือนปีเกิด
+     * @return array ผลลัพธ์จาก AI
+     * @throws Exception เมื่อทุก provider ล้มเหลวหมด
+     */
+    public function generateWithRetryAndFallback(
+        array $questions,
+        ?array $userProfile = null,
+        ?array $userPosts = null,
+        ?string $promptTemplate = null,
+        string $readingType = 'basic',
+        ?string $birthDate = null
+    ): array {
+        $errors = [];
+        $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
+        $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
+        $startTime = microtime(true);
+
+        // ขั้นที่ 1: ลอง provider หลัก 2 ครั้ง
+        if (!empty($this->apiKey)) {
+            for ($attempt = 1; $attempt <= 2; $attempt++) {
+                try {
+                    Log::info("FortuneAI Retry: ลอง {$this->provider} ครั้งที่ {$attempt}");
+
+                    $result = $this->callProviderDirect(
+                        $this->provider, $this->apiKey, $this->model, $prompt, $config
+                    );
+
+                    // บันทึกการใช้งาน tokens
+                    $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+                    $this->recordUsage($result['tokens_used'] ?? 0, $result['model'] ?? $this->model, $responseTime, $readingType);
+
+                    return $result;
+                } catch (Exception $e) {
+                    $errors[] = "{$this->provider} (ครั้งที่ {$attempt}): {$e->getMessage()}";
+                    Log::warning("FortuneAI Retry: {$this->provider} ล้ม ครั้งที่ {$attempt}", [
+                        'error' => $e->getMessage(),
+                    ]);
+                    if ($attempt < 2) {
+                        usleep(2000000); // รอ 2 วินาทีก่อนลองใหม่
+                    }
+                }
+            }
+        } else {
+            $errors[] = "{$this->provider}: ไม่มี API Key";
+        }
+
+        // ขั้นที่ 2: ลองสลับไป provider อื่นอัตโนมัติ
+        $backupProviders = $this->getBackupProviders();
+
+        if (!empty($backupProviders)) {
+            Log::info('FortuneAI: สลับไป backup providers', [
+                'primary_failed' => $this->provider,
+                'backup_count' => count($backupProviders),
+                'backup_providers' => array_column($backupProviders, 'provider'),
+            ]);
+        }
+
+        foreach ($backupProviders as $backup) {
+            try {
+                Log::info("FortuneAI Backup: ลอง {$backup['provider']} ({$backup['model']})");
+
+                $result = $this->callProviderDirect(
+                    $backup['provider'], $backup['api_key'], $backup['model'], $prompt, $config
+                );
+
+                // สำเร็จ!
+                Log::info("FortuneAI Backup: {$backup['provider']} สำเร็จ!", [
+                    'tokens_used' => $result['tokens_used'] ?? 0,
+                ]);
+
+                return $result;
+            } catch (Exception $e) {
+                $errors[] = "{$backup['provider']}: {$e->getMessage()}";
+                Log::warning("FortuneAI Backup: {$backup['provider']} ล้มเช่นกัน", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // ทุก provider ล้มหมด
+        $errorSummary = implode(' | ', array_slice($errors, 0, 5));
+        Log::error('FortuneAI: ทุก provider ล้มหมด', ['errors' => $errors]);
+        throw new Exception("ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว " . count($errors) . " ครั้ง): {$errorSummary}");
+    }
+
+    /**
+     * เรียก AI provider โดยตรง พร้อม override api_key/model ชั่วคราว
+     *
+     * @param string $provider ชื่อ provider
+     * @param string $apiKey API Key ที่ใช้
+     * @param string $model ชื่อ model
+     * @param string $prompt ข้อความ prompt
+     * @param array $config การตั้งค่า
+     * @return array ผลลัพธ์
+     */
+    protected function callProviderDirect(string $provider, string $apiKey, string $model, string $prompt, array $config): array
+    {
+        // บันทึก original values
+        $origApiKey = $this->apiKey;
+        $origModel = $this->model;
+
+        // Override ชั่วคราว
+        $this->apiKey = $apiKey;
+        $this->model = $model;
+
+        try {
+            return match ($provider) {
+                'gemini' => $this->callGemini($prompt, $config),
+                'groq' => $this->callGroq($prompt, $config),
+                'grok' => $this->callGrok($prompt, $config),
+                'qwen' => $this->callQwen($prompt, $config),
+                'openrouter' => $this->callOpenRouter($prompt, $config),
+                default => throw new Exception("Provider '{$provider}' ไม่รองรับ"),
+            };
+        } finally {
+            // คืนค่า original เสมอ
+            $this->apiKey = $origApiKey;
+            $this->model = $origModel;
+        }
+    }
+
+    /**
+     * ดึง backup providers จาก Pool + Global Settings
+     * ข้ามตัวที่เป็น provider หลัก
+     *
+     * @return array [['provider' => '...', 'api_key' => '...', 'model' => '...'], ...]
+     */
+    protected function getBackupProviders(): array
+    {
+        $backups = [];
+        $currentProvider = $this->provider;
+        $addedProviders = [$currentProvider]; // เก็บ list provider ที่เพิ่มแล้ว ป้องกันซ้ำ
+
+        // 1) ดึงจาก API Key Pool
+        if ($this->poolService) {
+            try {
+                $providers = ['gemini', 'groq', 'grok', 'qwen', 'openrouter'];
+                foreach ($providers as $provider) {
+                    if (in_array($provider, $addedProviders)) {
+                        continue;
+                    }
+                    $key = $this->poolService->getKey($provider);
+                    if ($key && !empty($key->api_key)) {
+                        $backups[] = [
+                            'provider' => $provider,
+                            'api_key' => $key->api_key,
+                            'model' => $this->getDefaultModelForProvider($provider),
+                        ];
+                        $addedProviders[] = $provider;
+                    }
+                }
+            } catch (Exception $e) {
+                Log::debug('FortuneAI: Pool service ดึง backup ไม่ได้', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // 2) ดึงจาก Global AI Settings (Gemini key มักจะมีอยู่)
+        try {
+            if (!in_array('gemini', $addedProviders)) {
+                $geminiKey = AiContentSetting::getValue('gemini_api_key');
+                if (!empty($geminiKey)) {
+                    $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
+                    $backups[] = [
+                        'provider' => 'gemini',
+                        'api_key' => $geminiKey,
+                        'model' => $geminiModel,
+                    ];
+                    $addedProviders[] = 'gemini';
+                }
+            }
+
+            // OpenRouter จาก claude key
+            if (!in_array('openrouter', $addedProviders)) {
+                $claudeKey = AiContentSetting::getValue('claude_api_key');
+                if (!empty($claudeKey)) {
+                    $backups[] = [
+                        'provider' => 'openrouter',
+                        'api_key' => $claudeKey,
+                        'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-haiku'),
+                    ];
+                    $addedProviders[] = 'openrouter';
+                }
+            }
+        } catch (Exception $e) {
+            Log::debug('FortuneAI: Global settings ดึง backup ไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        // 3) ดึงจาก fortune settings เอง (กรณี use_global_ai_settings = false อาจมี key อื่นอยู่)
+        if (!empty($this->settings->ai_api_key) && !empty($this->settings->ai_provider)) {
+            if (!in_array($this->settings->ai_provider, $addedProviders)) {
+                $backups[] = [
+                    'provider' => $this->settings->ai_provider,
+                    'api_key' => $this->settings->ai_api_key,
+                    'model' => $this->settings->ai_model ?: $this->getDefaultModelForProvider($this->settings->ai_provider),
+                ];
+            }
+        }
+
+        return $backups;
+    }
+
+    /**
+     * ดึง default model สำหรับแต่ละ provider
+     *
+     * @param string $provider
+     * @return string
+     */
+    protected function getDefaultModelForProvider(string $provider): string
+    {
+        return match ($provider) {
+            'gemini' => 'gemini-2.0-flash',
+            'groq' => 'llama-3.3-70b-versatile',
+            'grok' => 'grok-2-latest',
+            'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
+            'openrouter' => 'anthropic/claude-3-haiku',
+            default => 'gemini-2.0-flash',
+        };
     }
 
     /**
@@ -364,8 +600,11 @@ class FortuneAIService
                 'model' => $this->model,
             ];
         } catch (Exception $e) {
-            Log::error('Groq API Error: ' . $e->getMessage());
-            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Groq AI');
+            Log::error('Groq API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+            ]);
+            throw new Exception("Groq API Error: {$e->getMessage()}");
         }
     }
 
@@ -397,8 +636,11 @@ class FortuneAIService
                 'model' => $this->model,
             ];
         } catch (Exception $e) {
-            Log::error('Qwen API Error: ' . $e->getMessage());
-            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Qwen AI');
+            Log::error('Qwen API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+            ]);
+            throw new Exception("Qwen API Error: {$e->getMessage()}");
         }
     }
 
@@ -427,8 +669,11 @@ class FortuneAIService
                 'model' => $this->model,
             ];
         } catch (Exception $e) {
-            Log::error('OpenRouter API Error: ' . $e->getMessage());
-            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ OpenRouter AI');
+            Log::error('OpenRouter API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+            ]);
+            throw new Exception("OpenRouter API Error: {$e->getMessage()}");
         }
     }
 
@@ -638,8 +883,14 @@ class FortuneAIService
                 'model' => $this->model ?: 'grok-2-latest',
             ];
         } catch (Exception $e) {
-            Log::error('Grok API Error: ' . $e->getMessage());
-            throw new Exception('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Grok AI: ' . $e->getMessage());
+            $errorMsg = $e->getMessage();
+            Log::error('Grok API Error', [
+                'error' => $errorMsg,
+                'model' => $this->model ?: 'grok-2-latest',
+                'has_api_key' => !empty($this->apiKey),
+                'api_key_prefix' => substr($this->apiKey ?? '', 0, 8) . '...',
+            ]);
+            throw new Exception("Grok API Error: {$errorMsg}");
         }
     }
 
