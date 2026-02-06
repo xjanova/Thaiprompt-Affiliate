@@ -82,7 +82,6 @@ class SmsPaymentService
 
             // พยายามจับคู่อัตโนมัติสำหรับ credit transactions
             $matched = false;
-            $specialAmountHandled = false;
             $fortuneReadingHandled = false;
 
             if ($notification->type === 'credit') {
@@ -93,11 +92,6 @@ class SmsPaymentService
                     // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction
                     $autoConfirm = config('smschecker.auto_confirm_matched', true);
                     $matched = $notification->attemptMatch($autoConfirm);
-
-                    // ขั้นที่ 3: ถ้าไม่ match → ตรวจว่าเป็นยอดพิเศษหรือไม่ (เช่น 29.99 = ดูดวง)
-                    if (!$matched) {
-                        $specialAmountHandled = $this->handleSpecialAmount($notification);
-                    }
                 }
             }
 
@@ -107,14 +101,12 @@ class SmsPaymentService
                 'type' => $notification->type,
                 'amount' => $notification->amount,
                 'matched' => $matched,
-                'special_amount' => $specialAmountHandled,
+                'fortune_reading' => $fortuneReadingHandled,
             ]);
 
             $message = $fortuneReadingHandled
                 ? 'Fortune reading payment matched and processed'
-                : ($matched
-                    ? 'Payment matched and confirmed'
-                    : ($specialAmountHandled ? 'Special amount detected and processed' : 'Notification recorded'));
+                : ($matched ? 'Payment matched and confirmed' : 'Notification recorded');
 
             return [
                 'success' => true,
@@ -123,7 +115,7 @@ class SmsPaymentService
                     'notification_id' => $notification->id,
                     'status' => $notification->fresh()->status,
                     'matched' => $matched,
-                    'special_amount' => $specialAmountHandled,
+                    'fortune_reading' => $fortuneReadingHandled,
                     'matched_transaction_id' => $notification->matched_transaction_id,
                 ],
             ];

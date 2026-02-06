@@ -87,16 +87,13 @@ return [
     | ยอดเงินที่ระบบจะตรวจจับและสร้าง order พิเศษอัตโนมัติ
     | เมื่อ SMS ตรวจพบยอดที่ตรงกัน จะสร้างรายการโดยไม่ต้องรอ admin
     |
-    | ถ้ายังไม่ใช่สมาชิก → สร้างเป็น "บิลลอย" (floating bill) รอ admin ยืนยัน
+    | หมายเหตุ: ระบบดูดวงใช้ UniquePaymentAmount (49 + unique decimal)
+    | ไม่ใช้ special_amounts แบบ fixed amount อีกต่อไป
     |
     */
     'special_amounts' => [
-        29.99 => [
-            'type' => 'fortune_reading',
-            'name' => 'ดูดวงเชิงลึก',
-            'description' => 'บริการดูดวงผ่าน Facebook Messenger',
-            'reading_type' => 'deep',
-        ],
+        // ไม่มีการใช้งาน special amounts แบบ fixed
+        // ทุกการชำระเงินใช้ unique decimal ผ่าน UniquePaymentAmount
     ],
 
     /*
