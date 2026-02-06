@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.466.2] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Remove fixed special amount, use only unique amounts for fortune reading (9381c0fd)
+### 🔧 Other Changes
+
+
 ## [v3.466.1] - 2026-02-06
 
 ### ✨ Features
