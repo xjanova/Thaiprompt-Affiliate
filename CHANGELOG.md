@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.7] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Payment amount showing 0.00 instead of 49+unique (f02e5453)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (7faab43e)
+
 ## [v3.473.6] - 2026-02-07
 
 ### ✨ Features
