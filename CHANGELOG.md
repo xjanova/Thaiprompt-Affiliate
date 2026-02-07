@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.481.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2512 from xjanova/claude/fix-payment-notification-TQHwy (a1d00c2c)
+- fix: ปรับ handlePendingPayment - พิมพ์อะไรก็แสดงบัญชี+ยอด, หมดเวลาออกแชทปกติ (9b08d586)
+### 🔧 Other Changes
+
+
 ## [v3.481.0] - 2026-02-07
 
 ### ✨ Features
