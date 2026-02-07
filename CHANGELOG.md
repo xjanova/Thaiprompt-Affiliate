@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.2] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- debug: Add webhook AI debug endpoint to diagnose fortune reading failure (17066a0c)
+
 ## [v3.473.1] - 2026-02-07
 
 ### ✨ Features
