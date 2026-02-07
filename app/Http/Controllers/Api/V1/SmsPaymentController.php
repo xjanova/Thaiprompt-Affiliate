@@ -809,8 +809,26 @@ class SmsPaymentController extends Controller
         // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount + store)
         $transaction = $query->orderBy('created_at', 'desc')->first();
 
+        // Fallback: ถ้า /notify → attemptMatch() ทำไปแล้ว (status=completed)
+        // → หา transaction ที่ match แล้วเพื่อ return ให้ Android รู้
+        $alreadyMatched = false;
+        if (! $transaction) {
+            $fallbackQuery = PaymentTransaction::query()
+                ->where('status', 'completed')
+                ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+                ->where('amount', $amount)
+                ->where('created_at', '>=', now()->subHours(1));
+
+            $this->applyStoreFilter($fallbackQuery, $device);
+            $transaction = $fallbackQuery->orderBy('updated_at', 'desc')->first();
+
+            if ($transaction) {
+                $alreadyMatched = true;
+            }
+        }
+
         // === Auto-approve: อนุมัติทันทีเมื่อจับคู่ได้ เพื่อ trigger ระบบปันผล/MLM ===
-        if ($transaction) {
+        if ($transaction && ! $alreadyMatched) {
             $autoConfirm = config('smschecker.auto_confirm_matched', true);
             if ($autoConfirm && in_array($transaction->status, ['pending', 'processing'])) {
                 try {
@@ -834,7 +852,7 @@ class SmsPaymentController extends Controller
             }
         }
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
                 'success' => true,
                 'data' => [
