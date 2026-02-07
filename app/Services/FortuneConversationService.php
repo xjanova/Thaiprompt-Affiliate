@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
 use App\Models\PaymentBankAccount;
 use App\Models\UniquePaymentAmount;
 use App\Models\SmsPaymentNotification;
@@ -523,10 +524,23 @@ class FortuneConversationService
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
         $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
+        // ดึงข้อมูลเครดิตพิเศษ
+        $userCredit = FortuneUserCredit::findByUser($facebookUserId);
+
         $message = "🔮 *สิทธิ์ดูดวงของคุณวันนี้*\n";
         $message .= "═══════════════════════\n\n";
         $message .= "📊 ใช้ไปแล้ว: {$usedToday} / {$maxFreeReadings} ครั้ง\n";
-        $message .= "✅ เหลือฟรี: {$remaining} ครั้ง\n\n";
+
+        // แสดงข้อมูลเครดิตพิเศษ
+        if ($userCredit && $userCredit->isCurrentlyUnlimited()) {
+            $message .= "🌟 ดูดวงฟรีไม่จำกัด!\n\n";
+        } elseif ($userCredit && $userCredit->getRemainingCredits() > 0) {
+            $bonusCredits = $userCredit->getRemainingCredits();
+            $message .= "🎁 เครดิตฟรีเพิ่มเติม: {$bonusCredits} ครั้ง\n";
+            $message .= "✅ เหลือฟรีรวม: {$remaining} ครั้ง\n\n";
+        } else {
+            $message .= "✅ เหลือฟรี: {$remaining} ครั้ง\n\n";
+        }
 
         if ($remaining > 0) {
             $message .= "💡 พิมพ์คำถามมาได้เลยนะคะ\n";
@@ -1547,10 +1561,15 @@ class FortuneConversationService
      */
     public function canMakeAICall(string $userId): bool
     {
-        // ดึงค่า max_free_readings จาก settings (default = 1)
+        // 1. เช็คเครดิตพิเศษรายคน (แอดมินให้เพิ่ม / ดูฟรีไม่จำกัด / รีเซ็ตวันนี้)
+        $userCredit = FortuneUserCredit::findByUser($userId);
+        if ($userCredit && $userCredit->hasExtraFreeAccess()) {
+            return true;
+        }
+
+        // 2. เช็คจากสิทธิ์ฟรีประจำวันปกติ
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
 
-        // เช็คจากฐานข้อมูลว่าวันนี้ถามฟรีไปกี่ครั้งแล้ว
         return !FortuneReading::hasReachedFreeLimit($userId, $maxFreeReadings);
     }
 
@@ -1564,8 +1583,24 @@ class FortuneConversationService
     {
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($userId);
+        $normalRemaining = max(0, $maxFreeReadings - $usedToday);
 
-        return max(0, $maxFreeReadings - $usedToday);
+        // เพิ่มเครดิตพิเศษรายคน (ถ้ามี)
+        $userCredit = FortuneUserCredit::findByUser($userId);
+        if ($userCredit) {
+            // ดูฟรีไม่จำกัด → แสดง 99
+            if ($userCredit->isCurrentlyUnlimited()) {
+                return 99;
+            }
+            // รีเซ็ตวันนี้ → คืนสิทธิ์เท่ากับ max
+            if ($userCredit->isDailyResetActive()) {
+                return max($normalRemaining, $maxFreeReadings);
+            }
+            // มีเครดิตเหลือ → บวกเพิ่ม
+            $normalRemaining += $userCredit->getRemainingCredits();
+        }
+
+        return $normalRemaining;
     }
 
     /**
@@ -1578,6 +1613,16 @@ class FortuneConversationService
         $dayKey = "fortune_ai_calls:{$userId}:day";
         $count = (int) Cache::get($dayKey, 0);
         Cache::put($dayKey, $count + 1, now()->endOfDay());
+
+        // หักเครดิตพิเศษ (ถ้าสิทธิ์ฟรีปกติหมดแล้ว ใช้เครดิตแทน)
+        $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
+        $usedToday = FortuneReading::countTodayReadings($userId);
+        if ($usedToday >= $maxFreeReadings) {
+            $userCredit = FortuneUserCredit::findByUser($userId);
+            if ($userCredit) {
+                $userCredit->useCredit();
+            }
+        }
     }
 
     /**
