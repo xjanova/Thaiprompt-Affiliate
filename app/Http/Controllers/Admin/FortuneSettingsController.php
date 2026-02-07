@@ -28,9 +28,13 @@ class FortuneSettingsController extends Controller
             ->ordered()
             ->get();
 
+        // ดึงรายชื่อธนาคารที่รองรับ
+        $supportedBanks = PaymentBankAccount::supportedBanks();
+
         return view('admin.fortune.settings.index', [
             'settings' => $settings,
             'bankAccounts' => $bankAccounts,
+            'supportedBanks' => $supportedBanks,
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
     }
@@ -589,5 +593,118 @@ class FortuneSettingsController extends Controller
         }
 
         return response()->json($debug, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * สร้างบัญชีธนาคารใหม่สำหรับระบบดูดวง (AJAX)
+     *
+     * สร้างใน payment_bank_accounts แล้ว auto-select ใน fortune settings
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function storeBankAccount(Request $request)
+    {
+        $validated = $request->validate([
+            'bank_code' => 'required|string|max:20',
+            'bank_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:50',
+            'account_name' => 'required|string|max:255',
+            'promptpay_id' => 'nullable|string|max:50',
+            'sms_checker_enabled' => 'boolean',
+        ]);
+
+        $validated['sms_checker_enabled'] = $request->boolean('sms_checker_enabled', true);
+        $validated['is_active'] = true;
+        $validated['sort_order'] = PaymentBankAccount::max('sort_order') + 1;
+
+        // สร้างบัญชีใหม่
+        $account = PaymentBankAccount::create($validated);
+
+        // Auto-select ใน fortune settings
+        $settings = FortuneTellingSetting::getSettings();
+        $currentIds = $settings->fortune_bank_account_ids ?? [];
+        $currentIds[] = $account->id;
+        $settings->update(['fortune_bank_account_ids' => $currentIds]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'เพิ่มบัญชี ' . $account->bank_name . ' สำเร็จ',
+            'account' => [
+                'id' => $account->id,
+                'bank_code' => $account->bank_code,
+                'bank_name' => $account->bank_name,
+                'account_number' => $account->account_number,
+                'account_name' => $account->account_name,
+                'promptpay_id' => $account->promptpay_id,
+                'sms_checker_enabled' => $account->sms_checker_enabled,
+            ],
+        ]);
+    }
+
+    /**
+     * แก้ไขบัญชีธนาคาร (AJAX)
+     *
+     * @param Request $request
+     * @param PaymentBankAccount $account
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateBankAccount(Request $request, PaymentBankAccount $account)
+    {
+        $validated = $request->validate([
+            'bank_code' => 'required|string|max:20',
+            'bank_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:50',
+            'account_name' => 'required|string|max:255',
+            'promptpay_id' => 'nullable|string|max:50',
+            'sms_checker_enabled' => 'boolean',
+        ]);
+
+        $validated['sms_checker_enabled'] = $request->boolean('sms_checker_enabled');
+
+        $account->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดทบัญชี ' . $account->bank_name . ' สำเร็จ',
+            'account' => [
+                'id' => $account->id,
+                'bank_code' => $account->bank_code,
+                'bank_name' => $account->bank_name,
+                'account_number' => $account->account_number,
+                'account_name' => $account->account_name,
+                'promptpay_id' => $account->promptpay_id,
+                'sms_checker_enabled' => $account->sms_checker_enabled,
+            ],
+        ]);
+    }
+
+    /**
+     * ลบบัญชีธนาคาร (AJAX)
+     *
+     * ลบจาก payment_bank_accounts และ remove จาก fortune_bank_account_ids
+     *
+     * @param PaymentBankAccount $account
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteBankAccount(PaymentBankAccount $account)
+    {
+        $bankName = $account->bank_name;
+
+        // Remove จาก fortune_bank_account_ids
+        $settings = FortuneTellingSetting::getSettings();
+        $currentIds = $settings->fortune_bank_account_ids ?? [];
+        $currentIds = array_values(array_filter($currentIds, fn($id) => $id != $account->id));
+        $settings->update([
+            'fortune_bank_account_ids' => !empty($currentIds) ? $currentIds : null,
+        ]);
+
+        // Soft delete บัญชี
+        $account->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบบัญชี ' . $bankName . ' สำเร็จ',
+        ]);
     }
 }

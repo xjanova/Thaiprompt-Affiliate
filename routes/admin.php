@@ -3812,6 +3812,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
     Route::get('/settings/debug-webhook-ai', [FortuneSettingsController::class, 'debugWebhookAI'])->name('settings.debug-webhook-ai');
 
+    // บัญชีธนาคารเฉพาะระบบดูดวง (AJAX)
+    Route::post('/settings/bank-accounts', [FortuneSettingsController::class, 'storeBankAccount'])->name('settings.bank-accounts.store');
+    Route::put('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'updateBankAccount'])->name('settings.bank-accounts.update');
+    Route::delete('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'deleteBankAccount'])->name('settings.bank-accounts.delete');
+
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');
     Route::post('/playground/chat', [FortuneSettingsController::class, 'playgroundChat'])->name('playground.chat');

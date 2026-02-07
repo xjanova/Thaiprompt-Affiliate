@@ -516,65 +516,376 @@
                 </div>
             </div>
 
-            {{-- บัญชีธนาคารสำหรับระบบดูดวง --}}
-            <div class="mt-6">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    🏦 บัญชีธนาคารสำหรับระบบดูดวง
-                </label>
+            {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
+            <div class="mt-6" x-data="fortuneBankAccounts()">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        🏦 บัญชีธนาคารสำหรับระบบดูดวง
+                    </label>
+                    <button type="button" @click="showAddForm = !showAddForm"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
+                        <span x-text="showAddForm ? '✕ ปิด' : '+ เพิ่มบัญชีใหม่'"></span>
+                    </button>
+                </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                    เลือกบัญชีที่จะแสดงให้ลูกค้าเมื่อต้องชำระเงินดูดวง (แยกจากอีคอมเมิร์ช) หากไม่เลือก จะใช้บัญชีทั้งหมดที่เปิด SMS Checker
+                    จัดการบัญชีธนาคารที่จะแสดงให้ลูกค้าเมื่อต้องชำระเงินดูดวง (แยกจากอีคอมเมิร์ช)
                 </p>
 
-                @if(isset($bankAccounts) && $bankAccounts->count() > 0)
-                    <div class="space-y-2">
-                        @foreach($bankAccounts as $account)
-                            @php
-                                $selectedIds = old('fortune_bank_account_ids', $settings->fortune_bank_account_ids ?? []);
-                                $isSelected = is_array($selectedIds) && in_array($account->id, $selectedIds);
-                            @endphp
-                            <label class="flex items-start gap-3 p-3 rounded-lg border transition cursor-pointer
-                                {{ $isSelected
-                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
-                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
+                {{-- ข้อความแจ้งเตือน --}}
+                <div x-show="alertMessage" x-cloak x-transition
+                     :class="alertType === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'"
+                     class="p-3 rounded-lg border text-sm mb-3">
+                    <span x-text="alertMessage"></span>
+                </div>
+
+                {{-- ฟอร์มเพิ่มบัญชีใหม่ --}}
+                <div x-show="showAddForm" x-cloak x-transition
+                     class="p-4 mb-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">เพิ่มบัญชีธนาคารใหม่</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ธนาคาร</label>
+                            <select x-model="newAccount.bank_code" @change="updateBankName()"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- เลือกธนาคาร --</option>
+                                @foreach($supportedBanks ?? [] as $code => $name)
+                                    <option value="{{ $code }}" data-name="{{ $name }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">เลขบัญชี</label>
+                            <input type="text" x-model="newAccount.account_number" placeholder="เช่น 123-4-56789-0"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อบัญชี</label>
+                            <input type="text" x-model="newAccount.account_name" placeholder="เช่น นายสมชาย ใจดี"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">พร้อมเพย์ (ถ้ามี)</label>
+                            <input type="text" x-model="newAccount.promptpay_id" placeholder="เช่น 0812345678"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" x-model="newAccount.sms_checker_enabled"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-xs text-gray-700 dark:text-gray-300">เปิด SMS Checker (ตรวจสอบยอดโอนอัตโนมัติ)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="showAddForm = false"
+                                    class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition">
+                                ยกเลิก
+                            </button>
+                            <button type="button" @click="addAccount()" :disabled="saving"
+                                    class="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50">
+                                <span x-show="!saving">💾 บันทึก</span>
+                                <span x-show="saving">กำลังบันทึก...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- รายการบัญชี --}}
+                <div class="space-y-2">
+                    <template x-for="account in accounts" :key="account.id">
+                        <div class="p-3 rounded-lg border transition"
+                             :class="account.selected
+                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                 : 'border-gray-200 dark:border-gray-600'">
+
+                            {{-- โหมดแสดงผล --}}
+                            <div x-show="editingId !== account.id" class="flex items-start gap-3">
                                 <input type="checkbox"
-                                       name="fortune_bank_account_ids[]"
-                                       value="{{ $account->id }}"
-                                       {{ $isSelected ? 'checked' : '' }}
+                                       :name="'fortune_bank_account_ids[]'"
+                                       :value="account.id"
+                                       x-model="account.selected"
                                        class="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ $account->bank_name }}
-                                        </span>
-                                        @if($account->sms_checker_enabled)
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="account.bank_name"></span>
+                                        <template x-if="account.sms_checker_enabled">
                                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                                 📱 SMS Checker
                                             </span>
-                                        @endif
-                                        @if($account->is_default)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                                ⭐ บัญชีหลัก
-                                            </span>
-                                        @endif
+                                        </template>
                                     </div>
                                     <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                        เลขบัญชี: {{ $account->account_number }} | ชื่อ: {{ $account->account_name }}
-                                        @if($account->promptpay_id)
-                                            | พร้อมเพย์: {{ $account->promptpay_id }}
-                                        @endif
+                                        เลขบัญชี: <span x-text="account.account_number"></span> |
+                                        ชื่อ: <span x-text="account.account_name"></span>
+                                        <template x-if="account.promptpay_id">
+                                            <span> | พร้อมเพย์: <span x-text="account.promptpay_id"></span></span>
+                                        </template>
                                     </div>
                                 </div>
-                            </label>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                        <p class="text-sm text-yellow-700 dark:text-yellow-400">
-                            ⚠️ ยังไม่มีบัญชีธนาคารในระบบ กรุณา<a href="{{ route('admin.payment-bank-accounts.index') }}" class="underline font-medium">เพิ่มบัญชีธนาคาร</a>ก่อน
+                                <div class="flex gap-1 shrink-0">
+                                    <button type="button" @click="startEdit(account)"
+                                            class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition"
+                                            title="แก้ไข">
+                                        ✏️
+                                    </button>
+                                    <button type="button" @click="deleteAccount(account)"
+                                            class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition"
+                                            title="ลบ">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- โหมดแก้ไข --}}
+                            <div x-show="editingId === account.id" x-cloak>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">แก้ไขบัญชี</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ธนาคาร</label>
+                                        <select x-model="editData.bank_code" @change="updateEditBankName()"
+                                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                            @foreach($supportedBanks ?? [] as $code => $name)
+                                                <option value="{{ $code }}">{{ $name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">เลขบัญชี</label>
+                                        <input type="text" x-model="editData.account_number"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อบัญชี</label>
+                                        <input type="text" x-model="editData.account_name"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">พร้อมเพย์</label>
+                                        <input type="text" x-model="editData.promptpay_id"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between mt-3">
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" x-model="editData.sms_checker_enabled"
+                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                        <span class="text-xs text-gray-700 dark:text-gray-300">เปิด SMS Checker</span>
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="editingId = null"
+                                                class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 transition">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="button" @click="saveEdit(account)" :disabled="saving"
+                                                class="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50">
+                                            <span x-show="!saving">💾 บันทึก</span>
+                                            <span x-show="saving">กำลังบันทึก...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    {{-- ข้อความเมื่อไม่มีบัญชี --}}
+                    <div x-show="accounts.length === 0" class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            ยังไม่มีบัญชีธนาคาร กด "+ เพิ่มบัญชีใหม่" เพื่อเพิ่ม
                         </p>
                     </div>
-                @endif
+                </div>
+
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    💡 ติ๊กเลือกบัญชีที่ต้องการใช้กับระบบดูดวง หากไม่เลือก จะใช้บัญชีทั้งหมดที่เปิด SMS Checker
+                </p>
             </div>
+
+            <script>
+                /**
+                 * Alpine.js component สำหรับจัดการบัญชีธนาคารระบบดูดวง
+                 */
+                function fortuneBankAccounts() {
+                    // รายชื่อธนาคารจาก supportedBanks
+                    const bankNames = @json($supportedBanks ?? []);
+                    // IDs ที่เลือกไว้
+                    const selectedIds = @json($settings->fortune_bank_account_ids ?? []);
+
+                    return {
+                        showAddForm: false,
+                        saving: false,
+                        editingId: null,
+                        alertMessage: '',
+                        alertType: 'success',
+                        // บัญชีทั้งหมด
+                        accounts: @json(
+                            ($bankAccounts ?? collect())->map(function($a) use ($settings) {
+                                $ids = $settings->fortune_bank_account_ids ?? [];
+                                return [
+                                    'id' => $a->id,
+                                    'bank_code' => $a->bank_code,
+                                    'bank_name' => $a->bank_name,
+                                    'account_number' => $a->account_number,
+                                    'account_name' => $a->account_name,
+                                    'promptpay_id' => $a->promptpay_id,
+                                    'sms_checker_enabled' => $a->sms_checker_enabled,
+                                    'selected' => is_array($ids) && in_array($a->id, $ids),
+                                ];
+                            })->values()
+                        ),
+                        // ฟอร์มเพิ่มบัญชีใหม่
+                        newAccount: {
+                            bank_code: '',
+                            bank_name: '',
+                            account_number: '',
+                            account_name: '',
+                            promptpay_id: '',
+                            sms_checker_enabled: true,
+                        },
+                        // ฟอร์มแก้ไข
+                        editData: {
+                            bank_code: '',
+                            bank_name: '',
+                            account_number: '',
+                            account_name: '',
+                            promptpay_id: '',
+                            sms_checker_enabled: true,
+                        },
+
+                        /**
+                         * อัพเดทชื่อธนาคารจาก bank_code (ฟอร์มเพิ่ม)
+                         */
+                        updateBankName() {
+                            this.newAccount.bank_name = bankNames[this.newAccount.bank_code] || '';
+                        },
+
+                        /**
+                         * อัพเดทชื่อธนาคารจาก bank_code (ฟอร์มแก้ไข)
+                         */
+                        updateEditBankName() {
+                            this.editData.bank_name = bankNames[this.editData.bank_code] || '';
+                        },
+
+                        /**
+                         * แสดงข้อความแจ้งเตือน
+                         */
+                        showAlert(message, type = 'success') {
+                            this.alertMessage = message;
+                            this.alertType = type;
+                            setTimeout(() => { this.alertMessage = ''; }, 4000);
+                        },
+
+                        /**
+                         * เพิ่มบัญชีใหม่ via AJAX
+                         */
+                        async addAccount() {
+                            if (!this.newAccount.bank_code || !this.newAccount.account_number || !this.newAccount.account_name) {
+                                this.showAlert('กรุณากรอกข้อมูลให้ครบ (ธนาคาร, เลขบัญชี, ชื่อบัญชี)', 'error');
+                                return;
+                            }
+                            this.saving = true;
+                            try {
+                                const res = await fetch('{{ route("admin.fortune.settings.bank-accounts.store") }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: JSON.stringify(this.newAccount),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    data.account.selected = true;
+                                    this.accounts.push(data.account);
+                                    // reset ฟอร์ม
+                                    this.newAccount = { bank_code: '', bank_name: '', account_number: '', account_name: '', promptpay_id: '', sms_checker_enabled: true };
+                                    this.showAddForm = false;
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                            this.saving = false;
+                        },
+
+                        /**
+                         * เริ่มแก้ไขบัญชี
+                         */
+                        startEdit(account) {
+                            this.editingId = account.id;
+                            this.editData = {
+                                bank_code: account.bank_code,
+                                bank_name: account.bank_name,
+                                account_number: account.account_number,
+                                account_name: account.account_name,
+                                promptpay_id: account.promptpay_id || '',
+                                sms_checker_enabled: account.sms_checker_enabled,
+                            };
+                        },
+
+                        /**
+                         * บันทึกการแก้ไขบัญชี via AJAX
+                         */
+                        async saveEdit(account) {
+                            this.saving = true;
+                            try {
+                                const url = '{{ route("admin.fortune.settings.bank-accounts.update", ":id") }}'.replace(':id', account.id);
+                                const res = await fetch(url, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: JSON.stringify(this.editData),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    // อัพเดทข้อมูลใน list
+                                    const idx = this.accounts.findIndex(a => a.id === account.id);
+                                    if (idx !== -1) {
+                                        this.accounts[idx] = { ...this.accounts[idx], ...data.account };
+                                    }
+                                    this.editingId = null;
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                            this.saving = false;
+                        },
+
+                        /**
+                         * ลบบัญชี via AJAX
+                         */
+                        async deleteAccount(account) {
+                            if (!confirm('ต้องการลบบัญชี ' + account.bank_name + ' (' + account.account_number + ') หรือไม่?')) return;
+                            try {
+                                const url = '{{ route("admin.fortune.settings.bank-accounts.delete", ":id") }}'.replace(':id', account.id);
+                                const res = await fetch(url, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    this.accounts = this.accounts.filter(a => a.id !== account.id);
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                        },
+                    };
+                }
+            </script>
 
             <div class="mt-4 space-y-3">
                 <label class="flex items-center">
