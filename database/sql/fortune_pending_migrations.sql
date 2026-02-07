@@ -84,7 +84,15 @@ EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
 -- ============================================================
--- 4. บันทึกใน migrations table ว่ารันแล้ว (ป้องกันรันซ้ำ)
+-- 4. แก้ไข fortune_readings - ai_response และ ai_provider ให้เป็น nullable
+-- ปัญหา: ระบบสร้าง record ก่อน แล้วค่อยอัพเดทหลัง AI ตอบ
+-- แต่คอลัมน์เป็น NOT NULL ทำให้ INSERT ล้มเหลว
+-- ============================================================
+ALTER TABLE `fortune_readings` MODIFY COLUMN `ai_response` longtext DEFAULT NULL COMMENT 'คำทำนายจาก AI';
+ALTER TABLE `fortune_readings` MODIFY COLUMN `ai_provider` varchar(50) DEFAULT NULL COMMENT 'AI Provider ที่ใช้ (gemini, groq, qwen)';
+
+-- ============================================================
+-- 5. บันทึกใน migrations table ว่ารันแล้ว (ป้องกันรันซ้ำ)
 -- ============================================================
 INSERT IGNORE INTO `migrations` (`migration`, `batch`)
 SELECT '2026_02_01_100000_add_comment_engagement_to_fortune_telling_settings_table', COALESCE(MAX(batch), 0) + 1 FROM `migrations`
@@ -93,6 +101,10 @@ WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_02_01_100
 INSERT IGNORE INTO `migrations` (`migration`, `batch`)
 SELECT '2026_02_06_100000_add_admin_handover_to_fortune_telling_settings_table', COALESCE(MAX(batch), 0) + 1 FROM `migrations`
 WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_02_06_100000_add_admin_handover_to_fortune_telling_settings_table');
+
+INSERT IGNORE INTO `migrations` (`migration`, `batch`)
+SELECT '2026_02_07_130000_fix_fortune_readings_nullable_columns', COALESCE(MAX(batch), 0) + 1 FROM `migrations`
+WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_02_07_130000_fix_fortune_readings_nullable_columns');
 
 -- ============================================================
 -- เสร็จสิ้น! ตรวจสอบผลลัพธ์:
