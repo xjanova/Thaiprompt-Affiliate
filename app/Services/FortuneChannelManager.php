@@ -200,7 +200,7 @@ class FortuneChannelManager
         // ส่ง Flex Message คำทำนาย
         $fortuneFlex = $lineService->buildFortuneFlexMessage($prediction, $userName, $billRef);
         $lineService->sendRichMessage($userId, [
-            'alt_text' => 'คำทำนายจากทางเพจ',
+            'alt_text' => 'คำทำนายจากแม่หมอจันทรา',
             'contents' => $fortuneFlex,
         ]);
 
@@ -247,11 +247,16 @@ class FortuneChannelManager
                 ->toArray();
         }
 
-        $amount = $reading->amount_paid ?? FortuneConversationService::DEEP_READING_PRICE;
-        $expiresAt = $reading->uniquePaymentAmount?->expires_at?->format('H:i') ?? '--:--';
+        // ดึงยอดจาก uniquePaymentAmount (unique amount สำหรับเช็คผ่าน SMS payment checker)
+        // ใช้ unique_amount เป็นหลัก เพราะมีทศนิยมเฉพาะสำหรับจับคู่ SMS
+        $uniquePayment = $reading->uniquePaymentAmount;
+        $amount = $uniquePayment
+            ? (float) $uniquePayment->unique_amount
+            : ((float) $reading->amount_paid ?: FortuneConversationService::DEEP_READING_PRICE);
+        $expiresAt = $uniquePayment?->expires_at?->format('H:i') ?? '--:--';
         $billRef = $reading->bill_reference;
 
-        // ส่ง Payment Flex
+        // ส่ง Payment Flex พร้อมยอด unique amount สำหรับเช็คผ่าน SMS payment checker
         $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
         return $lineService->sendRichMessage($userId, [
             'alt_text' => "ยอดชำระ ฿" . number_format($amount, 2),
@@ -266,7 +271,7 @@ class FortuneChannelManager
     {
         $welcomeFlex = $lineService->buildWelcomeFlexMessage();
         return $lineService->sendRichMessage($userId, [
-            'alt_text' => 'ทางเพจยินดีต้อนรับค่ะ',
+            'alt_text' => 'แม่หมอจันทรายินดีต้อนรับค่ะ',
             'contents' => $welcomeFlex,
         ]);
     }

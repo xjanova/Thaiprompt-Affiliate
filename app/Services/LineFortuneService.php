@@ -259,7 +259,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '✨ ทางเพจดูดวง ✨',
+                        'text' => '✨ จันทราดูดวง ✨',
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -553,7 +553,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '🔮 ทางเพจยินดีต้อนรับค่ะ 🔮',
+                        'text' => '🔮 จันทรายินดีต้อนรับค่ะ 🔮',
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -567,7 +567,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => 'ทางเพจรับดูดวงเรื่องต่างๆ',
+                        'text' => 'จันทรารับดูดวงเรื่องต่างๆ',
                         'wrap' => true,
                         'size' => 'md',
                     ],
