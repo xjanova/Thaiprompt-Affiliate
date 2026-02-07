@@ -578,7 +578,7 @@ class FortuneConversationService
         $name = $userProfile['name'] ?? 'คุณ';
 
         try {
-            // สร้าง FortuneReading ใหม่
+            // สร้าง FortuneReading ใหม่ (ใส่ค่าเริ่มต้นให้ ai_response/ai_provider ป้องกัน NOT NULL error)
             $reading = FortuneReading::create([
                 'facebook_user_id' => $facebookUserId,
                 'facebook_user_name' => $name,
@@ -587,6 +587,8 @@ class FortuneConversationService
                 'reading_type' => 'basic',
                 'conversation_status' => FortuneReading::STATUS_NEW,
                 'response_type' => 'private_message',
+                'ai_response' => '',
+                'ai_provider' => '',
             ]);
 
             // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
