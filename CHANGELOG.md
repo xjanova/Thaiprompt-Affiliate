@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.6] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add new migration for fortune_readings column types (deploy-ready) (12bc5b4d)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (87621750)
+
 ## [v3.473.5] - 2026-02-07
 
 ### ✨ Features
