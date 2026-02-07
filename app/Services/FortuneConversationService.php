@@ -287,9 +287,12 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
 
+            // ✅ ป้องกัน null userProfile - ใช้ is_array ก่อนเข้าถึง array key
+            $name = (is_array($userProfile) && isset($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+
             return [
                 'action' => 'error',
-                'message' => $this->getFallbackMessage($userProfile['name'] ?? 'คุณ'),
+                'message' => $this->getFallbackMessage($name),
                 'reading' => null,
             ];
         }
@@ -560,13 +563,25 @@ class FortuneConversationService
             $userProfile = $this->facebookService->getUserProfile($facebookUserId);
         }
 
+        // ✅ ป้องกัน null userProfile - สร้าง default profile
+        if (!is_array($userProfile)) {
+            $userProfile = [
+                'name' => 'คุณ',
+                'id' => $facebookUserId,
+            ];
+            Log::info('Fortune: ไม่สามารถดึงโปรไฟล์ได้ ใช้ค่าเริ่มต้น', [
+                'facebook_user_id' => $facebookUserId,
+            ]);
+        }
+
         $reading = null;
+        $name = $userProfile['name'] ?? 'คุณ';
 
         try {
             // สร้าง FortuneReading ใหม่
             $reading = FortuneReading::create([
                 'facebook_user_id' => $facebookUserId,
-                'facebook_user_name' => $userProfile['name'] ?? null,
+                'facebook_user_name' => $name,
                 'user_profile' => $userProfile,
                 'questions' => [$messageText],
                 'reading_type' => 'basic',
@@ -576,6 +591,14 @@ class FortuneConversationService
 
             // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText);
+
+            Log::info('Fortune: กำลังเรียก AI', [
+                'facebook_user_id' => $facebookUserId,
+                'provider' => $this->settings->getActualAIProvider(),
+                'has_api_key' => !empty($this->settings->getActualAIApiKey()),
+                'prompt_length' => mb_strlen($basicPrompt),
+            ]);
+
             $aiResult = $this->aiService->generateWithRetryAndFallback(
                 [$messageText],
                 $userProfile,
@@ -595,8 +618,15 @@ class FortuneConversationService
                 $aiResult['tokens_used']
             );
 
+            Log::info('Fortune: AI ตอบสำเร็จ', [
+                'facebook_user_id' => $facebookUserId,
+                'provider' => $aiResult['provider'],
+                'model' => $aiResult['model'],
+                'response_length' => mb_strlen($aiResult['response']),
+            ]);
+
             // สร้างข้อความเชิญชวนดูดวงละเอียด
-            $upsellMessage = $this->getUpsellMessage($userProfile['name'] ?? 'คุณ');
+            $upsellMessage = $this->getUpsellMessage($name);
 
             // เพิ่มเลขที่บิลอ้างอิงท้ายคำทำนาย
             $billRefMessage = $this->getBillReferenceMessage($reading->bill_reference);
@@ -614,7 +644,8 @@ class FortuneConversationService
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
                 'trace_short' => mb_substr($e->getTraceAsString(), 0, 500),
-                'ai_provider' => $this->aiService ? $this->settings->getActualAIProvider() : 'unknown',
+                'ai_provider' => $this->settings->getActualAIProvider(),
+                'ai_model' => $this->settings->getActualAIModel(),
                 'has_api_key' => !empty($this->settings->getActualAIApiKey()),
             ]);
 
@@ -632,7 +663,6 @@ class FortuneConversationService
             }
 
             // แจ้งผู้ใช้สั้นๆ ว่าระบบมีปัญหาชั่วคราว (หลังจาก retry + สลับ provider หมดแล้ว)
-            $name = $userProfile['name'] ?? 'คุณ';
             return [
                 'action' => 'error',
                 'message' => "🔮 คุณ{$name} คะ ขออภัยนะคะ ระบบกำลังปรับปรุงชั่วคราวค่ะ 🙏\n\n" .

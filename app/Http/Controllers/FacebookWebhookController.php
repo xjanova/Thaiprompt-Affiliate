@@ -50,12 +50,37 @@ class FacebookWebhookController extends Controller
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
             ]);
-            // สร้าง settings เปล่าเพื่อให้ verify webhook ยังทำงานได้
+            // สร้าง fallback services เพื่อให้ระบบยังทำงานได้
             if (!$this->settings) {
                 $this->settings = new FortuneTellingSetting();
             }
             if (!$this->facebookService) {
-                $this->facebookService = new FacebookWebhookService($this->settings);
+                try {
+                    $this->facebookService = new FacebookWebhookService($this->settings);
+                } catch (\Exception $fbError) {
+                    Log::error('FacebookWebhookController: สร้าง FacebookWebhookService ไม่ได้', [
+                        'error' => $fbError->getMessage(),
+                    ]);
+                }
+            }
+            // ✅ สร้าง fallback สำหรับ aiService และ conversationService ด้วย
+            if (!$this->aiService) {
+                try {
+                    $this->aiService = new FortuneAIService($this->settings);
+                } catch (\Exception $aiError) {
+                    Log::error('FacebookWebhookController: สร้าง FortuneAIService ไม่ได้', [
+                        'error' => $aiError->getMessage(),
+                    ]);
+                }
+            }
+            if (!$this->conversationService) {
+                try {
+                    $this->conversationService = new FortuneConversationService($this->settings);
+                } catch (\Exception $convError) {
+                    Log::error('FacebookWebhookController: สร้าง ConversationService ไม่ได้', [
+                        'error' => $convError->getMessage(),
+                    ]);
+                }
             }
         }
     }
@@ -342,8 +367,11 @@ class FacebookWebhookController extends Controller
         $commentText = $comment['message'] ?? '';
         $fromName = $comment['from']['name'] ?? 'คุณ';
 
-        // ดึง user profile
+        // ดึง user profile พร้อม fallback
         $userProfile = $this->facebookService->getUserProfile($fromId);
+        if (!is_array($userProfile)) {
+            $userProfile = ['name' => $fromName, 'id' => $fromId];
+        }
         $name = $userProfile['name'] ?? $fromName;
 
         // แทนที่ placeholders
@@ -570,9 +598,9 @@ class FacebookWebhookController extends Controller
             // ส่ง typing indicator
             $this->facebookService->sendTypingIndicator($senderId);
 
-            // ดึง user profile
+            // ดึง user profile พร้อม fallback
             $userProfile = $this->facebookService->getUserProfile($senderId);
-            $userName = $userProfile['name'] ?? 'คุณ';
+            $userName = (is_array($userProfile) && !empty($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
 
             Log::info('🎉 New user started conversation', [
                 'sender_id' => $senderId,
@@ -676,8 +704,17 @@ class FacebookWebhookController extends Controller
             // ส่ง typing indicator
             $this->facebookService->sendTypingIndicator($senderId);
 
-            // ดึง user profile
+            // ดึง user profile พร้อม fallback กรณี API ล้มเหลว
             $userProfile = $this->facebookService->getUserProfile($senderId);
+            if (!is_array($userProfile)) {
+                $userProfile = [
+                    'name' => 'คุณ',
+                    'id' => $senderId,
+                ];
+                Log::info('Facebook: ดึงโปรไฟล์ไม่สำเร็จ ใช้ค่าเริ่มต้น', [
+                    'sender_id' => $senderId,
+                ]);
+            }
 
             // ประมวลผลข้อความ
             $result = $this->conversationService->processMessage($senderId, $messageText, $userProfile);
@@ -759,9 +796,17 @@ class FacebookWebhookController extends Controller
         $parts = preg_split('/(?=═══════════════════════)/', $message);
 
         $currentMessage = '';
+        $chunkIndex = 0;
         foreach ($parts as $part) {
             if (mb_strlen($currentMessage . $part) > $maxLength && !empty($currentMessage)) {
-                $this->facebookService->sendMessage($senderId, trim($currentMessage));
+                $chunkResult = $this->facebookService->sendMessage($senderId, trim($currentMessage));
+                if (!$chunkResult) {
+                    Log::error('❌ sendLongMessage: ส่งข้อความส่วนที่ ' . ($chunkIndex + 1) . ' ล้มเหลว', [
+                        'recipient' => $senderId,
+                        'chunk_length' => mb_strlen($currentMessage),
+                    ]);
+                }
+                $chunkIndex++;
                 usleep(300000); // รอ 300ms ระหว่างข้อความ
                 $currentMessage = $part;
             } else {
@@ -770,7 +815,13 @@ class FacebookWebhookController extends Controller
         }
 
         if (!empty($currentMessage)) {
-            $this->facebookService->sendMessage($senderId, trim($currentMessage));
+            $chunkResult = $this->facebookService->sendMessage($senderId, trim($currentMessage));
+            if (!$chunkResult) {
+                Log::error('❌ sendLongMessage: ส่งข้อความส่วนสุดท้ายล้มเหลว', [
+                    'recipient' => $senderId,
+                    'chunk_length' => mb_strlen($currentMessage),
+                ]);
+            }
         }
     }
 
@@ -901,6 +952,13 @@ class FacebookWebhookController extends Controller
         }
 
         $userProfile = $this->facebookService->getUserProfile($fromId);
+        // ✅ ป้องกัน null userProfile
+        if (!is_array($userProfile)) {
+            $userProfile = [
+                'name' => $fromName ?? 'คุณ',
+                'id' => $fromId,
+            ];
+        }
         // ดึงโพสล่าสุดเฉพาะคำทำนายเชิงลึก
         $userPosts = $isDeep ? $this->facebookService->getUserPosts($fromId, 3) : null;
 
