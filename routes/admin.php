@@ -3811,6 +3811,10 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/settings/run-migrations', [FortuneSettingsController::class, 'runMigrations'])->name('settings.run-migrations');
     Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
 
+    // AI Playground - ทดสอบสนทนากับ AI
+    Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');
+    Route::post('/playground/chat', [FortuneSettingsController::class, 'playgroundChat'])->name('playground.chat');
+
     // ช่องทางรับข้อความ (Facebook, LINE, etc.)
     Route::get('/channels', [FortuneChannelController::class, 'index'])->name('channels.index');
     Route::put('/channels', [FortuneChannelController::class, 'update'])->name('channels.update');

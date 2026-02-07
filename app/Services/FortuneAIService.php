@@ -13,7 +13,7 @@ use Exception;
  * Fortune AI Service
  *
  * บริการสำหรับเชื่อมต่อกับ AI providers ต่างๆ
- * รองรับ: Gemini, Groq, Qwen, OpenRouter, Grok
+ * รองรับ: Gemini, Groq, Qwen, OpenRouter, Grok, DeepSeek, Typhoon
  *
  * รองรับ API Key Pool สำหรับวนใช้หลาย keys
  */
@@ -125,6 +125,8 @@ class FortuneAIService
                 'grok' => $this->callGrok($prompt, $config),
                 'qwen' => $this->callQwen($prompt, $config),
                 'openrouter' => $this->callOpenRouter($prompt, $config),
+                'deepseek' => $this->callDeepSeek($prompt, $config),
+                'typhoon' => $this->callTyphoon($prompt, $config),
                 default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
             };
 
@@ -268,6 +270,8 @@ class FortuneAIService
                 'grok' => $this->callGrok($prompt, $config),
                 'qwen' => $this->callQwen($prompt, $config),
                 'openrouter' => $this->callOpenRouter($prompt, $config),
+                'deepseek' => $this->callDeepSeek($prompt, $config),
+                'typhoon' => $this->callTyphoon($prompt, $config),
                 default => throw new Exception("Provider '{$provider}' ไม่รองรับ"),
             };
         } finally {
@@ -292,7 +296,7 @@ class FortuneAIService
         // 1) ดึงจาก API Key Pool
         if ($this->poolService) {
             try {
-                $providers = ['gemini', 'groq', 'grok', 'qwen', 'openrouter'];
+                $providers = ['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon'];
                 foreach ($providers as $provider) {
                     if (in_array($provider, $addedProviders)) {
                         continue;
@@ -371,6 +375,8 @@ class FortuneAIService
             'grok' => 'grok-2-latest',
             'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
             'openrouter' => 'anthropic/claude-3-haiku',
+            'deepseek' => 'deepseek-chat',
+            'typhoon' => 'typhoon-v2-70b-instruct',
             default => 'gemini-2.0-flash',
         };
     }
@@ -611,27 +617,25 @@ class FortuneAIService
     protected function callQwen(string $prompt, array $config = []): array
     {
         try {
+            // ใช้ HuggingFace Router API (OpenAI-compatible chat format)
+            // ให้คุณภาพคำทำนายดีกว่า text generation API เดิม
             $response = Http::timeout(120)
                 ->withToken($this->apiKey)
-                ->post("https://api-inference.huggingface.co/models/{$this->model}", [
-                    'inputs' => $prompt,
-                    'parameters' => [
-                        'max_new_tokens' => $config['max_tokens'] ?? 2048,
-                        'temperature' => $config['temperature'] ?? 0.7,
+                ->post('https://router.huggingface.co/v1/chat/completions', [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
                     ],
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                    'temperature' => $config['temperature'] ?? 0.7,
                 ])->throw();
 
             $data = $response->json();
 
-            // HuggingFace API คืน input prompt + generated text ดังนั้นต้องตัด prompt ออก
-            $generatedText = $data[0]['generated_text'] ?? '';
-            if (str_starts_with($generatedText, $prompt)) {
-                $generatedText = trim(mb_substr($generatedText, mb_strlen($prompt)));
-            }
-
             return [
-                'response' => $generatedText,
-                'tokens_used' => 0,
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
                 'provider' => 'qwen',
                 'model' => $this->model,
             ];
@@ -736,6 +740,8 @@ class FortuneAIService
             'grok' => $this->callGrok($prompt, $config),
             'qwen' => $this->callQwen($prompt, $config),
             'openrouter' => $this->callOpenRouter($prompt, $config),
+            'deepseek' => $this->callDeepSeek($prompt, $config),
+            'typhoon' => $this->callTyphoon($prompt, $config),
             default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
         };
 
@@ -892,6 +898,236 @@ class FortuneAIService
             ]);
             throw new Exception("Grok API Error: {$errorMsg}");
         }
+    }
+
+    // ============================================================
+    // DeepSeek API
+    // ============================================================
+
+    /**
+     * เรียก DeepSeek API
+     *
+     * DeepSeek ใช้ OpenAI-compatible API
+     * ราคาถูกมาก + มี sign-up credits 5M tokens ฟรี
+     *
+     * @param string $prompt ข้อความ prompt
+     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @return array ผลลัพธ์
+     */
+    protected function callDeepSeek(string $prompt, array $config = []): array
+    {
+        try {
+            $response = Http::timeout(90)
+                ->withToken($this->apiKey)
+                ->post('https://api.deepseek.com/chat/completions', [
+                    'model' => $this->model ?: 'deepseek-chat',
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+                'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+                'provider' => 'deepseek',
+                'model' => $this->model ?: 'deepseek-chat',
+            ];
+        } catch (Exception $e) {
+            Log::error('DeepSeek API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model ?: 'deepseek-chat',
+            ]);
+            throw new Exception("DeepSeek API Error: {$e->getMessage()}");
+        }
+    }
+
+    // ============================================================
+    // Typhoon API (SCB 10X - เชี่ยวชาญภาษาไทย)
+    // ============================================================
+
+    /**
+     * เรียก Typhoon API (SCB 10X)
+     *
+     * Typhoon เป็น LLM ที่ออกแบบมาเฉพาะสำหรับภาษาไทย
+     * ใช้ OpenAI-compatible API format
+     *
+     * @param string $prompt ข้อความ prompt
+     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @return array ผลลัพธ์
+     */
+    protected function callTyphoon(string $prompt, array $config = []): array
+    {
+        try {
+            $response = Http::timeout(90)
+                ->withToken($this->apiKey)
+                ->post('https://api.opentyphoon.ai/v1/chat/completions', [
+                    'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+                'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+                'provider' => 'typhoon',
+                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+            ];
+        } catch (Exception $e) {
+            Log::error('Typhoon API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model ?: 'typhoon-v2-70b-instruct',
+            ]);
+            throw new Exception("Typhoon API Error: {$e->getMessage()}");
+        }
+    }
+
+    // ============================================================
+    // Playground: ทดสอบสนทนากับ AI แบบอิสระ
+    // ============================================================
+
+    /**
+     * สนทนากับ AI สำหรับ Playground (Admin ทดสอบ)
+     *
+     * รับ messages array แบบ chat history เพื่อรองรับการสนทนาต่อเนื่อง
+     *
+     * @param array $messages ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     * @param string $readingType ประเภท: 'basic' หรือ 'deep'
+     * @return array ผลลัพธ์
+     */
+    public function playgroundChat(array $messages, string $readingType = 'basic'): array
+    {
+        if (empty($this->apiKey)) {
+            throw new Exception("ไม่พบ API Key สำหรับ {$this->provider} - กรุณาตั้งค่า API Key ก่อน");
+        }
+
+        $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
+        $startTime = microtime(true);
+
+        // สร้าง messages array พร้อม system message
+        $chatMessages = [
+            ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+        ];
+        foreach ($messages as $msg) {
+            $chatMessages[] = [
+                'role' => $msg['role'] ?? 'user',
+                'content' => $msg['content'] ?? '',
+            ];
+        }
+
+        // Gemini ใช้ API format ต่างจาก OpenAI-compatible
+        if ($this->provider === 'gemini') {
+            return $this->playgroundGemini($chatMessages, $config);
+        }
+
+        // สำหรับ provider ที่ใช้ OpenAI-compatible API
+        $url = match ($this->provider) {
+            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
+            'grok' => 'https://api.x.ai/v1/chat/completions',
+            'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
+            'deepseek' => 'https://api.deepseek.com/chat/completions',
+            'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
+            default => throw new Exception("Provider '{$this->provider}' ไม่รองรับ Playground"),
+        };
+
+        $headers = ['Authorization' => "Bearer {$this->apiKey}"];
+        if ($this->provider === 'openrouter') {
+            $headers['HTTP-Referer'] = config('app.url');
+        }
+
+        $response = Http::timeout(90)
+            ->withHeaders($headers)
+            ->post($url, [
+                'model' => $this->model,
+                'messages' => $chatMessages,
+                'temperature' => $config['temperature'] ?? 0.75,
+                'max_tokens' => $config['max_tokens'] ?? 2048,
+            ])->throw();
+
+        $data = $response->json();
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+        return [
+            'response' => $data['choices'][0]['message']['content'] ?? '',
+            'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+            'provider' => $this->provider,
+            'model' => $this->model,
+            'response_time_ms' => $responseTime,
+        ];
+    }
+
+    /**
+     * Playground สำหรับ Gemini (ใช้ API format ต่างจาก OpenAI)
+     *
+     * @param array $chatMessages messages array พร้อม system message
+     * @param array $config การตั้งค่า
+     * @return array ผลลัพธ์
+     */
+    protected function playgroundGemini(array $chatMessages, array $config): array
+    {
+        $startTime = microtime(true);
+        $systemMessage = '';
+        $contents = [];
+
+        foreach ($chatMessages as $msg) {
+            if ($msg['role'] === 'system') {
+                $systemMessage = $msg['content'];
+                continue;
+            }
+            $geminiRole = $msg['role'] === 'assistant' ? 'model' : 'user';
+            $contents[] = [
+                'role' => $geminiRole,
+                'parts' => [['text' => $msg['content']]],
+            ];
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+
+        $body = [
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature' => $config['temperature'] ?? 0.75,
+                'topK' => 40,
+                'topP' => 0.95,
+                'maxOutputTokens' => $config['max_tokens'] ?? 2048,
+            ],
+        ];
+
+        if (!empty($systemMessage)) {
+            $body['system_instruction'] = [
+                'parts' => [['text' => $systemMessage]],
+            ];
+        }
+
+        $response = Http::timeout(90)->post($url, $body)->throw();
+        $data = $response->json();
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+        if (empty($data['candidates'][0]['content']['parts'][0]['text'] ?? null)) {
+            throw new Exception('Gemini Playground: ไม่ได้รับคำตอบจาก AI');
+        }
+
+        return [
+            'response' => $data['candidates'][0]['content']['parts'][0]['text'],
+            'tokens_used' => $data['usageMetadata']['totalTokenCount'] ?? 0,
+            'provider' => 'gemini',
+            'model' => $this->model,
+            'response_time_ms' => $responseTime,
+        ];
     }
 
     // ============================================================

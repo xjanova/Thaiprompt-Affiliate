@@ -14,6 +14,40 @@
         </p>
     </div>
 
+    {{-- Quick Navigation Links --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+        <a href="{{ route('admin.fortune.playground') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow hover:shadow-lg transition transform hover:-translate-y-0.5">
+            <span class="text-xl">🎮</span>
+            <span class="text-sm font-semibold">AI Playground</span>
+        </a>
+        <a href="{{ route('admin.fortune.channels.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📡</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ช่องทาง</span>
+        </a>
+        <a href="{{ route('admin.fortune.categories.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📂</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">หมวดหมู่</span>
+        </a>
+        <a href="{{ route('admin.fortune.readings.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📊</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ประวัติ</span>
+        </a>
+        <a href="{{ route('admin.fortune.response-templates.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📝</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เทมเพลต</span>
+        </a>
+        <a href="{{ route('admin.fortune.billing.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">💳</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">การเงิน</span>
+        </a>
+    </div>
+
     <form action="{{ route('admin.fortune.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
@@ -282,9 +316,10 @@
                             ระบบจะอ่าน API Key จากการตั้งค่าระบบหลัก (AiContentSetting) โดยอัตโนมัติ
                         </p>
                         <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini</div>
+                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini (แนะนำ - ฟรี)</div>
                             <div>• หากมี <strong>Claude API Key</strong> จะใช้ Claude (via OpenRouter)</div>
                             <div>• หากมี <strong>OpenAI API Key</strong> จะใช้ GPT (via OpenRouter)</div>
+                            <div>• หากมี Key ใน <strong>API Key Pool</strong> จะใช้ Key จาก Pool (Gemini/Groq/DeepSeek/Typhoon)</div>
                         </div>
                         <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
                             💡 หากต้องการตั้งค่าแยกเฉพาะระบบดูดวง ให้ปิดตัวเลือกนี้
@@ -301,11 +336,13 @@
                     </label>
                     <select name="ai_provider" 
                             class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="gemini" {{ $settings->ai_provider === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ</option>
+                        <option value="gemini" {{ $settings->ai_provider === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ ฟรี</option>
+                        <option value="typhoon" {{ $settings->ai_provider === 'typhoon' ? 'selected' : '' }}>Typhoon (SCB 10X) - ภาษาไทยดีสุด ฟรี</option>
+                        <option value="groq" {{ $settings->ai_provider === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด ฟรี</option>
+                        <option value="deepseek" {{ $settings->ai_provider === 'deepseek' ? 'selected' : '' }}>DeepSeek - ราคาถูก มี credits ฟรี</option>
                         <option value="grok" {{ $settings->ai_provider === 'grok' ? 'selected' : '' }}>Grok (xAI) - ฟันธง</option>
-                        <option value="groq" {{ $settings->ai_provider === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด</option>
                         <option value="qwen" {{ $settings->ai_provider === 'qwen' ? 'selected' : '' }}>Qwen (Alibaba)</option>
-                        <option value="openrouter" {{ $settings->ai_provider === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+                        <option value="openrouter" {{ $settings->ai_provider === 'openrouter' ? 'selected' : '' }}>OpenRouter - รวมหลาย AI</option>
                     </select>
                 </div>
 
@@ -329,6 +366,29 @@
                            placeholder="AIz...">
                 </div>
             </div> {{-- End of custom settings grid --}}
+
+            {{-- ลิงก์ตั้งค่าที่เกี่ยวข้อง --}}
+            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">🔗 ตั้งค่าที่เกี่ยวข้อง</h4>
+                <div class="flex flex-wrap gap-2">
+                    @if(Route::has('admin.ai-api-keys.index'))
+                    <a href="{{ route('admin.ai-api-keys.index') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/50 transition">
+                        🔑 จัดการ API Key Pool
+                    </a>
+                    @endif
+                    @if(Route::has('admin.ai-content-writer.settings'))
+                    <a href="{{ route('admin.ai-content-writer.settings') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition">
+                        🤖 ตั้งค่า AI หลัก (Global)
+                    </a>
+                    @endif
+                    <a href="{{ route('admin.fortune.playground') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition">
+                        🎮 ทดสอบ AI Playground
+                    </a>
+                </div>
+            </div>
         </div> {{-- End of AI Settings card --}}
 
         {{-- Comment Engagement Settings --}}
