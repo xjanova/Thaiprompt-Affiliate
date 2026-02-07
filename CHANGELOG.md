@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.475.2] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix Blade syntax error and isolate SMS bill matching by transaction_type (ddb92739)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (3c86520c)
+
 ## [v3.475.1] - 2026-02-07
 
 ### ✨ Features
