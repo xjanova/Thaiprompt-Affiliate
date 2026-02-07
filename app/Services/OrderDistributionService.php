@@ -60,6 +60,23 @@ class OrderDistributionService
         }
 
         return DB::transaction(function () use ($order) {
+            // ⚠️ แก้ Race Condition: ตรวจสอบซ้ำภายใน transaction (atomic)
+            // ป้องกัน 2 request พร้อมกันผ่าน check ด้านนอก แล้วมา process ซ้ำ
+            if ($this->isOrderDistributed($order)) {
+                Log::info('Order already distributed (inside transaction), skipping', [
+                    'order_id' => $order->id,
+                ]);
+                return [
+                    'order_id' => $order->id,
+                    'total_amount' => $order->total_amount,
+                    'distributions' => [],
+                    'platform_collections' => [],
+                    'seller_earnings' => [],
+                    'mlm_commissions' => [],
+                    'skipped' => true,
+                ];
+            }
+
             $results = [
                 'order_id' => $order->id,
                 'total_amount' => $order->total_amount,
