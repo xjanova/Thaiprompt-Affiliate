@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.476.0] - 2026-02-07
+
+### ✨ Features
+- Merge pull request #2505 from xjanova/claude/fix-payment-notification-TQHwy (62e00d8d)
+- feat: ปรับคำทำนายฟรี (basic) ให้ละเอียดน่าอ่านมากขึ้น (ddc81151)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.475.4] - 2026-02-07
 
 ### ✨ Features
