@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2501 from xjanova/claude/fix-fortune-ai-integration-mWDAQ (4fe30646)
+- fix: แก้ Facebook Messenger ไม่เรียก AI - ป้องกัน null userProfile crash (444c04a1)
+### 🔧 Other Changes
+
+
 ## [v3.473.0] - 2026-02-07
 
 ### ✨ Features
