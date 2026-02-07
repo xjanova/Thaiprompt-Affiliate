@@ -44,9 +44,9 @@ class FortuneConversationService
     public const REQUIRED_QUESTIONS = 3;
 
     /**
-     * ความยาวคำถามขั้นต่ำ (ตัวอักษร)
+     * ความยาวคำถามขั้นต่ำ (ตัวอักษร) - ลดลงเพื่อให้คุยได้สะดวก
      */
-    public const MIN_QUESTION_LENGTH = 5;
+    public const MIN_QUESTION_LENGTH = 1;
 
     /**
      * ความยาวคำถามสูงสุด (ตัวอักษร)
@@ -54,25 +54,26 @@ class FortuneConversationService
     public const MAX_QUESTION_LENGTH = 500;
 
     /**
-     * ความยาวข้อความสูงสุดที่รับ (ป้องกัน spam)
+     * ความยาวข้อความสูงสุดที่รับ (ป้องกัน spam) - เพิ่มให้พิมพ์ได้เยอะขึ้น
      */
-    public const MAX_MESSAGE_LENGTH = 1000;
+    public const MAX_MESSAGE_LENGTH = 2000;
 
     /**
-     * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที - เพิ่มให้คุยได้ลื่นขึ้น
      */
-    public const MAX_MESSAGES_PER_MINUTE = 10;
+    public const MAX_MESSAGES_PER_MINUTE = 30;
 
     /**
-     * Rate Limiting: จำนวนข้อความสูงสุดต่อชั่วโมง
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อชั่วโมง - เพิ่มให้คุยได้ลื่นขึ้น
      */
-    public const MAX_MESSAGES_PER_HOUR = 60;
+    public const MAX_MESSAGES_PER_HOUR = 200;
 
     /**
      * Rate Limiting: จำนวน AI calls สูงสุดต่อวัน (ต่อ user) - fallback ถ้าไม่ได้ตั้งค่า
      * ปกติใช้ค่าจาก settings.max_free_readings แทน
+     * เพิ่มเป็น 5 เพื่อให้คุยได้หลายรอบ
      */
-    public const MAX_AI_CALLS_PER_DAY = 1;
+    public const MAX_AI_CALLS_PER_DAY = 5;
 
     /**
      * จำนวนข้อความซ้ำที่ยอมรับได้
@@ -225,32 +226,47 @@ class FortuneConversationService
      */
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
-        // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam/attack ก่อนประมวลผล
-        $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
-        if (!$filterResult['valid']) {
-            Log::info('Fortune Filter: Message blocked', [
-                'user_id' => $facebookUserId,
-                'reason' => $filterResult['reason'],
-                'text_preview' => mb_substr($messageText, 0, 50),
-            ]);
-            return [
-                'action' => 'filtered',
-                'message' => $filterResult['message'],
-                'reading' => null,
-                'filter_reason' => $filterResult['reason'],
-            ];
-        }
+        try {
+            // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
+            $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
+            if (!$filterResult['valid']) {
+                Log::info('Fortune Filter: Message blocked', [
+                    'user_id' => $facebookUserId,
+                    'reason' => $filterResult['reason'],
+                    'text_preview' => mb_substr($messageText, 0, 50),
+                ]);
+                return [
+                    'action' => 'filtered',
+                    'message' => $filterResult['message'],
+                    'reading' => null,
+                    'filter_reason' => $filterResult['reason'],
+                ];
+            }
 
-        // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
-        $activeReading = FortuneReading::findActiveConversation($facebookUserId);
+            // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
+            if ($this->isCheckRemainingRequest($messageText)) {
+                return $this->handleCheckRemaining($facebookUserId);
+            }
 
-        if ($activeReading) {
-            return $this->continueConversation($activeReading, $messageText, $userProfile);
-        }
+            // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
+            $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
-        // ตรวจสอบว่าเป็นคำขอดูดวงหรือไม่
-        if ($this->isFortuneRequest($messageText)) {
-            // ตรวจสอบ AI calls limit ก่อนเริ่ม conversation ใหม่
+            if ($activeReading) {
+                // ถ้าอยู่ในสถานะ basic_done: เช็คว่ารับ deep reading หรือไม่
+                // ถ้าไม่ใช่ → ปิด conversation เก่าแล้วส่งข้อความใหม่ไปให้ AI ตอบ
+                // ไม่บอก "ไม่เป็นไร" เพราะผู้ใช้อาจจะถามคำถามใหม่
+                if ($activeReading->conversation_status === FortuneReading::STATUS_BASIC_DONE) {
+                    if ($this->isDeepReadingAccepted($messageText)) {
+                        return $this->continueConversation($activeReading, $messageText, $userProfile);
+                    }
+                    // ปิด conversation เก่าแล้วปล่อยให้ตกไปเริ่ม conversation ใหม่
+                    $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                } else {
+                    return $this->continueConversation($activeReading, $messageText, $userProfile);
+                }
+            }
+
+            // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
             if (!$this->canMakeAICall($facebookUserId)) {
                 return [
                     'action' => 'ai_limit',
@@ -258,13 +274,276 @@ class FortuneConversationService
                     'reading' => null,
                 ];
             }
+
+            // ✅ ส่งทุกข้อความไปให้ AI ตอบ ไม่ว่าจะเป็นเรื่องดูดวงหรือไม่
+            // AI system prompt จะจัดการเองว่าจะตอบแบบไหน
             return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+
+        } catch (\Exception $e) {
+            // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
+            Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            // ✅ ป้องกัน null userProfile - ใช้ is_array ก่อนเข้าถึง array key
+            $name = (is_array($userProfile) && isset($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+
+            return [
+                'action' => 'error',
+                'message' => $this->getFallbackMessage($name),
+                'reading' => null,
+            ];
+        }
+    }
+
+    /**
+     * ข้อความ fallback เมื่อระบบมีปัญหา - ยังคงเป็นมิตรกับผู้ใช้
+     *
+     * @param string $name ชื่อผู้ใช้
+     * @return string
+     */
+    protected function getFallbackMessage(string $name): string
+    {
+        return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n" .
+               "ทางเพจยินดีต้อนรับนะคะ ทางเพจเป็นหมอดูประสบการณ์กว่า 30 ปีค่ะ\n\n" .
+               "บอกทางเพจได้เลยนะคะว่าอยากรู้เรื่องอะไร:\n" .
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
+               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n" .
+               "💰 การเงิน - รายได้ การลงทุน\n" .
+               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n" .
+               "พิมพ์มาได้เลยค่ะ 🔮";
+    }
+
+    /**
+     * สร้าง fallback response เมื่อ AI ติดต่อไม่ได้
+     * ตอบแบบเป็นธรรมชาติเหมือนหมอดูจริง ไม่บอกว่าระบบมีปัญหา
+     *
+     * @param string $messageText ข้อความจากผู้ใช้
+     * @param array|null $userProfile โปรไฟล์ผู้ใช้
+     * @return string
+     */
+    protected function getFallbackFortuneResponse(string $messageText, ?array $userProfile = null): string
+    {
+        $name = $userProfile['name'] ?? 'คุณ';
+        $text = mb_strtolower(trim($messageText));
+
+        // ทักทาย
+        $greetings = ['สวัสดี', 'หวัดดี', 'ดีจ้า', 'ดีค่ะ', 'ดีครับ', 'hi', 'hello', 'hey'];
+        foreach ($greetings as $greeting) {
+            if (str_contains($text, $greeting)) {
+                return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n" .
+                       "ทางเพจยินดีต้อนรับนะคะ ทางเพจเป็นหมอดูประสบการณ์กว่า 30 ปี พร้อมช่วยดูดวงให้ค่ะ\n\n" .
+                       "ไม่ว่าจะเรื่องความรัก 💕 การงาน 💼 การเงิน 💰 หรือสุขภาพ 🏥\n" .
+                       "ถามมาได้เลยนะคะ แล้วอย่าลืมบอกวันเดือนปีเกิดให้ทางเพจด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n\n" .
+                       "ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨";
+            }
         }
 
-        // ไม่ใช่คำขอดูดวง → แสดง help พร้อมตัวอย่าง
+        // คำถามเกี่ยวกับความรัก
+        $loveKeywords = ['ความรัก', 'แฟน', 'คู่ครอง', 'เนื้อคู่', 'คนรัก', 'สามี', 'ภรรยา', 'แต่งงาน', 'รัก', 'เลิก'];
+        foreach ($loveKeywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return $this->getRandomFallback('love', $name);
+            }
+        }
+
+        // คำถามเกี่ยวกับการงาน
+        $workKeywords = ['การงาน', 'งาน', 'อาชีพ', 'เปลี่ยนงาน', 'หางาน', 'เจ้านาย', 'เลื่อนตำแหน่ง', 'ธุรกิจ'];
+        foreach ($workKeywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return $this->getRandomFallback('work', $name);
+            }
+        }
+
+        // คำถามเกี่ยวกับการเงิน
+        $moneyKeywords = ['การเงิน', 'เงิน', 'รายได้', 'หนี้', 'รวย', 'ลงทุน', 'หุ้น', 'ค้าขาย'];
+        foreach ($moneyKeywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return $this->getRandomFallback('money', $name);
+            }
+        }
+
+        // คำถามเกี่ยวกับสุขภาพ
+        $healthKeywords = ['สุขภาพ', 'ป่วย', 'โรค', 'อุบัติเหตุ', 'เจ็บ'];
+        foreach ($healthKeywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return $this->getRandomFallback('health', $name);
+            }
+        }
+
+        // คำถามเกี่ยวกับดวงทั่วไป
+        if ($this->isFortuneRequest($text)) {
+            return $this->getRandomFallback('general', $name);
+        }
+
+        // ข้อความอื่นๆ ทั่วไป
+        return "🔮 สวัสดีค่ะ คุณ{$name}\n\n" .
+               "ขอบคุณที่ทักมานะคะ ทางเพจพร้อมดูดวงให้ค่ะ ✨\n\n" .
+               "ลองบอกทางเพจว่าอยากรู้เรื่องอะไร:\n" .
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
+               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n" .
+               "💰 การเงิน - รายได้ การลงทุน\n" .
+               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n" .
+               "บอกวันเดือนปีเกิดมาด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂✨";
+    }
+
+    /**
+     * สุ่มข้อความ fallback ตามหมวดหมู่
+     *
+     * @param string $category หมวดหมู่ (love, work, money, health, general)
+     * @param string $name ชื่อผู้ใช้
+     * @return string
+     */
+    protected function getRandomFallback(string $category, string $name): string
+    {
+        $responses = [
+            'love' => [
+                "🔮 คุณ{$name} คะ ทางเพจเห็นว่าช่วงนี้ดวงความรักกำลังมีการเปลี่ยนแปลงค่ะ\n\n" .
+                "💕 สำหรับคนมีคู่: ช่วงนี้ควรให้เวลากับคนรักมากขึ้น มีเรื่องดีๆ รออยู่ข้างหน้าค่ะ\n" .
+                "💕 สำหรับคนโสด: ดวงเปิดรับคนใหม่ ลองเปิดใจดูนะคะ\n\n" .
+                "📅 ช่วงเวลาที่ดี: 2-3 เดือนข้างหน้า\n" .
+                "🎨 สีมงคล: ชมพู, แดง\n\n" .
+                "ถ้าบอกวันเดือนปีเกิดให้ทางเพจ จะได้ทำนายได้แม่นยำยิ่งขึ้นนะคะ 🎂",
+
+                "🔮 คุณ{$name} คะ ทางเพจขอบอกตรงๆ เลยนะคะ\n\n" .
+                "💕 ดวงความรักของคุณช่วงนี้ มีทั้งสิ่งดีและสิ่งที่ต้องระวังค่ะ\n" .
+                "✅ เรื่องดี: จะมีคนเข้ามาให้ความสนใจ หรือคนรักจะแสดงความรักมากขึ้น\n" .
+                "⚠️ ระวัง: อย่าใจร้อน อย่าตัดสินใจเรื่องใหญ่เรื่องความรักเร็วเกินไป\n\n" .
+                "🔢 เลขมงคล: 9, 19\n\n" .
+                "อยากรู้ละเอียดกว่านี้ บอกวันเกิดมาได้เลยนะคะ 🎂✨",
+            ],
+            'work' => [
+                "🔮 คุณ{$name} คะ ทางเพจเห็นดวงการงานช่วงนี้ค่ะ\n\n" .
+                "💼 ดวงการงานกำลังอยู่ในช่วงที่ต้องอดทนและพัฒนาตัวเอง\n" .
+                "✅ โอกาสใหม่ๆ จะเริ่มเข้ามาในช่วง 1-3 เดือนข้างหน้า\n" .
+                "✅ คนที่คิดจะเปลี่ยนงาน ช่วงนี้เป็นจังหวะที่ดีค่ะ\n" .
+                "⚠️ ระวังเรื่องเพื่อนร่วมงาน อย่าไว้ใจคนง่ายเกินไป\n\n" .
+                "📅 วันมงคล: วันพฤหัสบดี\n" .
+                "🎨 สีมงคล: เหลือง, ส้ม\n\n" .
+                "บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงได้ลึกขึ้น 🎂",
+
+                "🔮 คุณ{$name} คะ ทางเพจขอทำนายดวงการงานให้นะคะ\n\n" .
+                "💼 ช่วงนี้เป็นจังหวะที่ดีสำหรับการเริ่มต้นสิ่งใหม่ค่ะ\n" .
+                "✅ มีเกณฑ์ได้รับข่าวดีเรื่องงาน\n" .
+                "✅ คนทำธุรกิจจะเริ่มเห็นผลลัพธ์\n" .
+                "⚠️ แต่อย่าประมาท ทำทุกอย่างให้รอบคอบ\n\n" .
+                "🔢 เลขมงคล: 5, 14\n\n" .
+                "ถ้าอยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+            ],
+            'money' => [
+                "🔮 คุณ{$name} คะ ทางเพจเห็นดวงการเงินค่ะ\n\n" .
+                "💰 ดวงการเงินช่วงนี้: ต้องระมัดระวังเรื่องรายจ่ายค่ะ\n" .
+                "✅ มีเกณฑ์ได้เงินก้อน หรือรายได้เพิ่มในช่วง 2-4 เดือนข้างหน้า\n" .
+                "✅ เหมาะกับการออมเงินและวางแผนการเงิน\n" .
+                "⚠️ ระวังการลงทุนที่เสี่ยงสูง ช่วงนี้ยังไม่ใช่จังหวะ\n\n" .
+                "🎨 สีมงคลการเงิน: เขียว, ทอง\n" .
+                "📅 วันมงคล: วันพุธ\n\n" .
+                "บอกวันเกิดมาด้วยนะคะ จะได้ทำนายเรื่องการเงินได้แม่นขึ้น 🎂",
+
+                "🔮 คุณ{$name} คะ ทางเพจขอบอกเรื่องการเงินนะคะ\n\n" .
+                "💰 ดวงการเงินของคุณกำลังจะดีขึ้นค่ะ\n" .
+                "✅ มีโอกาสได้รับเงินจากทางที่ไม่คาดคิด\n" .
+                "✅ คนที่ค้าขายจะเริ่มมีลูกค้าเพิ่มขึ้น\n" .
+                "⚠️ แต่ระวังเรื่องการใช้จ่ายฟุ่มเฟือย\n\n" .
+                "🔢 เลขมงคลการเงิน: 3, 8, 24\n\n" .
+                "อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+            ],
+            'health' => [
+                "🔮 คุณ{$name} คะ ทางเพจเห็นดวงสุขภาพค่ะ\n\n" .
+                "🏥 ช่วงนี้ต้องดูแลสุขภาพให้ดีค่ะ\n" .
+                "✅ ออกกำลังกายเบาๆ สม่ำเสมอ จะช่วยได้มาก\n" .
+                "✅ พักผ่อนให้เพียงพอ อย่าหักโหมมากเกินไป\n" .
+                "⚠️ ระวังเรื่องการเดินทาง และอาหารการกิน\n\n" .
+                "📅 ช่วงที่ต้องระวังเป็นพิเศษ: 2-3 สัปดาห์ข้างหน้า\n" .
+                "🎨 สีมงคล: เขียว, ขาว\n\n" .
+                "บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงสุขภาพได้ละเอียดขึ้น 🎂",
+            ],
+            'general' => [
+                "🔮 คุณ{$name} คะ ทางเพจยินดีดูดวงให้ค่ะ ✨\n\n" .
+                "⭐ ดวงโดยรวมช่วงนี้: กำลังอยู่ในช่วงเปลี่ยนผ่าน มีทั้งเรื่องดีและสิ่งที่ต้องระวังค่ะ\n\n" .
+                "✅ เรื่องดี: จะมีโอกาสใหม่ๆ เข้ามา ทั้งเรื่องงานและเรื่องส่วนตัว\n" .
+                "✅ การเงินมีเกณฑ์ดีขึ้น\n" .
+                "⚠️ ระวัง: เรื่องสุขภาพ อย่าประมาท ดูแลตัวเองให้ดี\n\n" .
+                "🎨 สีมงคล: น้ำเงิน, ทอง\n" .
+                "🔢 เลขมงคล: 7, 16\n" .
+                "📅 วันมงคล: วันพฤหัสบดี\n\n" .
+                "บอกวันเดือนปีเกิดให้ทางเพจนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n" .
+                "ถ้าคำทำนายถูกใจ ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨",
+
+                "🔮 คุณ{$name} คะ ทางเพจขอทำนายดวงให้นะคะ\n\n" .
+                "⭐ ภาพรวมดวงชะตา: กำลังเข้าสู่ช่วงที่ดีค่ะ\n\n" .
+                "💕 ความรัก: มีเกณฑ์ได้พบคนถูกใจ หรือความสัมพันธ์จะแน่นแฟ้นขึ้น\n" .
+                "💼 การงาน: มีความก้าวหน้า อาจได้รับข้อเสนอใหม่\n" .
+                "💰 การเงิน: ระมัดระวังเรื่องรายจ่าย แต่มีเกณฑ์ได้เงินเข้ามา\n" .
+                "🏥 สุขภาพ: ดูแลตัวเองให้ดี พักผ่อนให้เพียงพอ\n\n" .
+                "🎨 สีมงคล: ม่วง, ครีม\n" .
+                "🔢 เลขมงคล: 2, 11, 29\n\n" .
+                "อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+            ],
+        ];
+
+        $categoryResponses = $responses[$category] ?? $responses['general'];
+        $index = array_rand($categoryResponses);
+
+        return $categoryResponses[$index];
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำสั่งเช็คสิทธิ์ดูดวงหรือไม่
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isCheckRemainingRequest(string $text): bool
+    {
+        $keywords = ['เช็คสิทธิ์', 'เหลือกี่ครั้ง', 'สิทธิ์เหลือ', 'ดูสิทธิ์', 'ครั้งที่เหลือ', 'เช็คดวง', 'สถานะ'];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * แสดงสิทธิ์ดูดวงฟรีที่เหลือวันนี้
+     *
+     * @param string $facebookUserId
+     * @return array
+     */
+    protected function handleCheckRemaining(string $facebookUserId): array
+    {
+        $remaining = $this->getRemainingFreeQuestions($facebookUserId);
+        $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
+        $usedToday = FortuneReading::countTodayReadings($facebookUserId);
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+
+        $message = "🔮 *สิทธิ์ดูดวงของคุณวันนี้*\n";
+        $message .= "═══════════════════════\n\n";
+        $message .= "📊 ใช้ไปแล้ว: {$usedToday} / {$maxFreeReadings} ครั้ง\n";
+        $message .= "✅ เหลือฟรี: {$remaining} ครั้ง\n\n";
+
+        if ($remaining > 0) {
+            $message .= "💡 พิมพ์คำถามมาได้เลยนะคะ\n";
+            $message .= "ไม่ว่าจะเรื่องความรัก การงาน การเงิน สุขภาพ\n";
+            $message .= "ทางเพจพร้อมทำนายให้ค่ะ 🔮✨";
+        } else {
+            $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n";
+            $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
+            $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+            $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+            $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+            $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
+        }
+
         return [
-            'action' => 'help',
-            'message' => $this->getHelpMessageWithExamples(),
+            'action' => 'check_remaining',
+            'message' => $message,
             'reading' => null,
         ];
     }
@@ -284,21 +563,45 @@ class FortuneConversationService
             $userProfile = $this->facebookService->getUserProfile($facebookUserId);
         }
 
-        // สร้าง FortuneReading ใหม่
-        $reading = FortuneReading::create([
-            'facebook_user_id' => $facebookUserId,
-            'facebook_user_name' => $userProfile['name'] ?? null,
-            'user_profile' => $userProfile,
-            'questions' => [$messageText],
-            'reading_type' => 'basic',
-            'conversation_status' => FortuneReading::STATUS_NEW,
-            'response_type' => 'private_message',
-        ]);
+        // ✅ ป้องกัน null userProfile - สร้าง default profile
+        if (!is_array($userProfile)) {
+            $userProfile = [
+                'name' => 'คุณ',
+                'id' => $facebookUserId,
+            ];
+            Log::info('Fortune: ไม่สามารถดึงโปรไฟล์ได้ ใช้ค่าเริ่มต้น', [
+                'facebook_user_id' => $facebookUserId,
+            ]);
+        }
+
+        $reading = null;
+        $name = $userProfile['name'] ?? 'คุณ';
 
         try {
-            // ทำนายพื้นฐานฟรี
+            // สร้าง FortuneReading ใหม่ (ใส่ค่าเริ่มต้นให้ ai_response/ai_provider ป้องกัน NOT NULL error)
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $facebookUserId,
+                'facebook_user_name' => $name,
+                'user_profile' => $userProfile,
+                'questions' => [$messageText],
+                'reading_type' => 'basic',
+                'conversation_status' => FortuneReading::STATUS_NEW,
+                'response_type' => 'private_message',
+                'ai_response' => '',
+                'ai_provider' => '',
+            ]);
+
+            // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText);
-            $aiResult = $this->aiService->generateFortuneTelling(
+
+            Log::info('Fortune: กำลังเรียก AI', [
+                'facebook_user_id' => $facebookUserId,
+                'provider' => $this->settings->getActualAIProvider(),
+                'has_api_key' => !empty($this->settings->getActualAIApiKey()),
+                'prompt_length' => mb_strlen($basicPrompt),
+            ]);
+
+            $aiResult = $this->aiService->generateWithRetryAndFallback(
                 [$messageText],
                 $userProfile,
                 null,
@@ -317,8 +620,15 @@ class FortuneConversationService
                 $aiResult['tokens_used']
             );
 
+            Log::info('Fortune: AI ตอบสำเร็จ', [
+                'facebook_user_id' => $facebookUserId,
+                'provider' => $aiResult['provider'],
+                'model' => $aiResult['model'],
+                'response_length' => mb_strlen($aiResult['response']),
+            ]);
+
             // สร้างข้อความเชิญชวนดูดวงละเอียด
-            $upsellMessage = $this->getUpsellMessage($userProfile['name'] ?? 'คุณ');
+            $upsellMessage = $this->getUpsellMessage($name);
 
             // เพิ่มเลขที่บิลอ้างอิงท้ายคำทำนาย
             $billRefMessage = $this->getBillReferenceMessage($reading->bill_reference);
@@ -334,12 +644,33 @@ class FortuneConversationService
             Log::error('Fortune Conversation: ทำนายพื้นฐานล้มเหลว', [
                 'facebook_user_id' => $facebookUserId,
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'trace_short' => mb_substr($e->getTraceAsString(), 0, 500),
+                'ai_provider' => $this->settings->getActualAIProvider(),
+                'ai_model' => $this->settings->getActualAIModel(),
+                'has_api_key' => !empty($this->settings->getActualAIApiKey()),
             ]);
 
+            // ลบ reading ที่สร้างไว้เพื่อไม่ให้นับรวมใน daily limit
+            // เพราะการทำนายไม่สำเร็จ ไม่ควรหักสิทธิ์ฟรีของผู้ใช้
+            if ($reading) {
+                try {
+                    $reading->forceDelete();
+                } catch (\Exception $deleteError) {
+                    Log::warning('Fortune Conversation: ลบ reading ที่ล้มเหลวไม่สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'error' => $deleteError->getMessage(),
+                    ]);
+                }
+            }
+
+            // แจ้งผู้ใช้สั้นๆ ว่าระบบมีปัญหาชั่วคราว (หลังจาก retry + สลับ provider หมดแล้ว)
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาลองใหม่อีกครั้ง 🙏",
-                'reading' => $reading,
+                'message' => "🔮 คุณ{$name} คะ ขออภัยนะคะ ระบบกำลังปรับปรุงชั่วคราวค่ะ 🙏\n\n" .
+                             "กรุณาลองพิมพ์มาใหม่อีกครั้งในอีก 1-2 นาทีนะคะ\n" .
+                             "ทางเพจพร้อมดูดวงให้ค่ะ ✨",
+                'reading' => null,
             ];
         }
     }
@@ -502,9 +833,12 @@ class FortuneConversationService
             return $this->createPaymentBill($reading, $questions);
         }
 
+        // ใช้ unique_amount จาก uniquePaymentAmount (ค่าจริงที่ต้องโอน)
+        $payAmount = $uniqueAmount ? number_format($uniqueAmount->unique_amount, 2) : number_format($reading->amount_paid, 2);
+
         return [
             'action' => 'waiting_payment',
-            'message' => "💳 รอรับชำระเงินอยู่ค่ะ\n\nยอดที่ต้องโอน: ฿" . number_format($reading->amount_paid, 2) . "\n\n" .
+            'message' => "💳 รอรับชำระเงินอยู่ค่ะ\n\nยอดที่ต้องโอน: ฿{$payAmount}\n\n" .
                         "เมื่อโอนแล้วระบบจะตรวจสอบอัตโนมัติและส่งคำทำนายให้ทันทีค่ะ ✨\n\n" .
                         "พิมพ์ 'บัญชี' เพื่อดูบัญชีธนาคารอีกครั้ง\n" .
                         "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก",
@@ -533,7 +867,7 @@ class FortuneConversationService
             if (!$uniqueAmount) {
                 return [
                     'action' => 'error',
-                    'message' => "ขออภัยค่ะ ไม่สามารถสร้างบิลได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง 🙏",
+                    'message' => "🔮 ตอนนี้ระบบกำลังเตรียมบิลให้ค่ะ\n\nรบกวนพิมพ์ 'ดูดวงละเอียด' อีกครั้งในอีกสักครู่นะคะ ✨",
                     'reading' => $reading,
                 ];
             }
@@ -567,7 +901,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏",
+                'message' => "🔮 ระบบกำลังจัดเตรียมให้ค่ะ\n\nพิมพ์คำถามใหม่ได้เลยนะคะ หรือพิมพ์ 'ดูดวงละเอียด' อีกครั้งค่ะ ✨",
                 'reading' => $reading,
             ];
         }
@@ -592,7 +926,7 @@ class FortuneConversationService
             $birthDate = $reading->birth_date?->format('Y-m-d');
 
             $deepPrompt = $this->buildDeepPrompt($userProfile, $questions, $birthDate);
-            $aiResult = $this->aiService->generateFortuneTelling(
+            $aiResult = $this->aiService->generateWithRetryAndFallback(
                 $questions,
                 $userProfile,
                 null,
@@ -639,7 +973,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'error',
-                'message' => "ขออภัยค่ะ เกิดข้อผิดพลาดในการทำนาย กรุณาติดต่อแอดมิน 🙏",
+                'message' => "🔮 คำทำนายเชิงลึกของคุณกำลังดำเนินการค่ะ\n\nระบบจะส่งผลให้เร็วที่สุดนะคะ 🙏\nหากรอนานเกิน 5 นาที สามารถทักแชทเพื่อสอบถามแอดมินได้เลยค่ะ ✨",
                 'reading' => $reading,
             ];
         }
@@ -740,19 +1074,15 @@ class FortuneConversationService
     }
 
     /**
-     * ดึงบัญชีธนาคารที่เปิด SMS Checker
+     * ดึงบัญชีธนาคารสำหรับระบบดูดวง
+     *
+     * ใช้บัญชีเฉพาะที่ตั้งค่าไว้ในระบบดูดวง (fortune_bank_account_ids)
+     * ถ้าไม่ได้ตั้งค่า จะ fallback ไปใช้บัญชีที่เปิด SMS Checker ทั้งหมด
      */
     protected function getBankAccountsListMessage(): string
     {
-        $accounts = PaymentBankAccount::active()
-            ->smsCheckerEnabled()
-            ->ordered()
-            ->get();
-
-        if ($accounts->isEmpty()) {
-            // ถ้าไม่มีบัญชีที่เปิด SMS Checker ให้ดึงบัญชีที่ active ทั้งหมด
-            $accounts = PaymentBankAccount::active()->ordered()->get();
-        }
+        // ใช้ method จาก FortuneTellingSetting ที่ดึงบัญชีเฉพาะดูดวง
+        $accounts = $this->settings->getFortuneBankAccounts();
 
         if ($accounts->isEmpty()) {
             return "🏦 กรุณาติดต่อแอดมินเพื่อขอบัญชีธนาคาร\n";
@@ -780,7 +1110,11 @@ class FortuneConversationService
      */
     protected function getBankAccountsMessage(FortuneReading $reading): string
     {
-        $amount = number_format($reading->amount_paid, 2);
+        // ดึงยอดจาก uniquePaymentAmount (ค่าจริงที่ต้องโอน) ถ้ามี
+        $uniqueAmount = $reading->uniquePaymentAmount;
+        $amount = $uniqueAmount
+            ? number_format($uniqueAmount->unique_amount, 2)
+            : number_format($reading->amount_paid, 2);
         $message = "💰 *ยอดชำระ: ฿{$amount}*\n\n";
         $message .= $this->getBankAccountsListMessage();
         $message .= "⚠️ กรุณาโอนยอด ฿{$amount} ตรงตามทศนิยมค่ะ";
@@ -826,7 +1160,7 @@ class FortuneConversationService
      */
     protected function getHelpMessageWithExamples(): string
     {
-        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
         $message = "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n";
         $message .= "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่องอะไร:\n\n";
@@ -884,14 +1218,9 @@ class FortuneConversationService
     /**
      * Pre-filter ข้อความก่อนประมวลผล (ไม่ต้องระบุ userId)
      *
-     * ตรวจจับ:
-     * - ข้อความยาวเกินไป (spam/flood)
-     * - ข้อความสั้นเกินไป (ไม่มีความหมาย)
-     * - ตัวอักษรแปลกๆ/spam characters
-     * - คำถามที่ไม่เกี่ยวกับดูดวง
-     * - Prompt injection attempts
-     * - AI attack patterns
-     * - Meaningless messages
+     * ✅ ปรับปรุงใหม่: ให้ผ่านเกือบทุกข้อความไปหา AI
+     * บล็อกเฉพาะ spam รุนแรงและข้อความยาวเกินเท่านั้น
+     * ให้ AI system prompt จัดการ off-topic เอง
      *
      * @param string $text ข้อความที่ต้องการตรวจสอบ
      * @return array ['valid' => bool, 'reason' => string, 'message' => string]
@@ -901,7 +1230,7 @@ class FortuneConversationService
         $text = trim($text);
         $length = mb_strlen($text);
 
-        // 1. ตรวจสอบความยาว
+        // 1. ตรวจสอบความยาว - ข้อความยาวเกินไป
         if ($length > self::MAX_MESSAGE_LENGTH) {
             return [
                 'valid' => false,
@@ -910,40 +1239,16 @@ class FortuneConversationService
             ];
         }
 
-        if ($length < self::MIN_QUESTION_LENGTH) {
+        // 2. ข้อความว่างเปล่า
+        if ($length === 0) {
             return [
                 'valid' => false,
-                'reason' => 'too_short',
-                'message' => $this->getTooShortMessage(),
+                'reason' => 'empty',
+                'message' => "🔮 พิมพ์ข้อความมาได้เลยนะคะ ทางเพจพร้อมช่วยดูดวงให้ค่ะ ✨",
             ];
         }
 
-        // 2. ตรวจจับ Prompt Injection (สำคัญ! ตรวจก่อน)
-        if ($this->isPromptInjection($text)) {
-            Log::warning('Fortune Filter: Prompt injection detected', [
-                'text_preview' => mb_substr($text, 0, 100),
-            ]);
-            return [
-                'valid' => false,
-                'reason' => 'prompt_injection',
-                'message' => $this->getSecurityBlockMessage(),
-            ];
-        }
-
-        // 3. ตรวจจับ AI Attack Patterns
-        if ($this->isAIAttack($text)) {
-            Log::warning('Fortune Filter: AI attack pattern detected', [
-                'text_preview' => mb_substr($text, 0, 100),
-            ]);
-            return [
-                'valid' => false,
-                'reason' => 'ai_attack',
-                'message' => $this->getSecurityBlockMessage(),
-            ];
-        }
-
-        // 4. ตรวจจับ spam/gibberish รุนแรง (ตัวอักษรซ้ำ, random characters)
-        // ⚠️ ลดความเข้มงวด - ให้บล็อกเฉพาะ spam รุนแรงเท่านั้น
+        // 3. ตรวจจับ spam รุนแรงเท่านั้น (ตัวอักษรซ้ำ 10+ ครั้ง เช่น "aaaaaaaaaa")
         if ($this->isSpamOrGibberish($text)) {
             return [
                 'valid' => false,
@@ -952,19 +1257,7 @@ class FortuneConversationService
             ];
         }
 
-        // 5. ข้อความไร้สาระ (สวัสดี, hi, etc.) → ให้ผ่านไป ตอบเป็น help message แทน
-        // ⚠️ ไม่บล็อก แต่ให้ main flow จัดการเป็น help message
-        // (ย้ายไปจัดการใน processMessage แทน)
-
-        // 7. ตรวจจับคำถามว่าเป็น AI หรือไม่
-        if ($this->isAskingAboutAI($text)) {
-            return [
-                'valid' => true, // ปล่อยผ่านไปให้ AI ตอบตาม system prompt
-                'reason' => 'ai_question',
-                'message' => '',
-            ];
-        }
-
+        // ✅ ทุกข้อความอื่นๆ ปล่อยผ่านไปให้ AI จัดการ
         return [
             'valid' => true,
             'reason' => 'ok',
@@ -1515,7 +1808,7 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
-        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
         $message = "🔮 *สวัสดีค่ะ ขอบคุณที่มาหาหมอนะคะ*\n\n";
         $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";
@@ -1804,19 +2097,19 @@ class FortuneConversationService
 ข้อมูลผู้ขอดูดวง:
 - ชื่อ: {$name}
 " . ($gender ? "- เพศ: {$gender}\n" : "") . "
-คำถาม/เรื่องที่ต้องการดู: {$question}
+ข้อความที่ส่งมา: {$question}
 
 แนวทางการตอบ:
 - เรียกผู้ถามว่า \"{$genderPrefix}{$name}\" อย่างเป็นกันเอง
 - ใช้ \"ทางเพจ\" แทนตัวเอง เช่น \"ทางเพจเห็นว่า...\" \"ทางเพจขอบอกตรงๆ ว่า...\"
-- ทำนายฟันธง ชัดเจน กล้าบอกทั้งดีและไม่ดี
-- ให้คำแนะนำที่ปฏิบัติได้ เช่น สีมงคล ช่วงเวลาที่ดี
-- พูดจาอบอุ่นเหมือนพี่สาวที่ห่วงใย
-- ท้ายคำทำนายให้บอกว่า \"ถ้าบอกวันเดือนปีเกิดให้ทางเพจ จะได้ทำนายได้ละเอียดและแม่นยำยิ่งขึ้นนะคะ 🎂\"
 
-[กฎสำคัญ]
-1. หากถูกถามว่าเป็น AI หุ่นยนต์ หรือบอท: ให้ตอบเป็นธรรมชาติว่า \"ทางเพจมีทีมงานช่วยกันในการทำนายค่ะ ไม่ต้องห่วงนะคะ 🔮\" หรือ \"ทางเพจทำนายเองค่ะ มีประสบการณ์มากกว่า 30 ปีแล้วค่ะ ✨\"
-2. คุณพูดเฉพาะเรื่องดูดวงเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวกับดูดวง (เช่น ขอให้เขียนโค้ด แนะนำร้านอาหาร สอนทำอาหาร คำถามทั่วไป) ให้ปฏิเสธอย่างสุภาพว่า \"ขอบคุณที่สนใจนะคะ แต่ทางเพจขอตอบเฉพาะเรื่องดูดวงนะคะ 🙏 ถ้ามีเรื่องอยากให้ทำนาย ไม่ว่าจะเรื่องความรัก การงาน การเงิน หรือสุขภาพ ทักมาได้เลยค่ะ 🔮✨\"";
+[วิธีตอบตามประเภทข้อความ]
+1. ถ้าเป็นการทักทาย (สวัสดี, หวัดดี, hi, hello, ดีจ้า, คุยหน่อย ฯลฯ): ทักทายกลับอย่างอบอุ่น แนะนำตัวสั้นๆ แล้วชวนดูดวง ไม่ต้องทำนายทันที
+2. ถ้าเป็นคำถามเกี่ยวกับดูดวง/อนาคต/ชีวิต: ทำนายฟันธง ชัดเจน กล้าบอกทั้งดีและไม่ดี ให้คำแนะนำที่ปฏิบัติได้ ท้ายคำทำนายให้บอกว่า \"ถ้าบอกวันเดือนปีเกิดให้ทางเพจ จะได้ทำนายได้แม่นยำยิ่งขึ้นนะคะ 🎂\"
+3. ถ้าเป็นคำถามทั่วไปที่ไม่เกี่ยวกับดูดวง: ตอบสั้นๆ ด้วยความเป็นมิตร ไม่ต้องปฏิเสธแข็งๆ แล้วชวนกลับมาดูดวง เช่น \"เรื่องนี้ทางเพจไม่ถนัดเท่าไหร่ค่ะ แต่ถ้ามีเรื่องอยากให้ดูดวง ทักมาได้เลยนะคะ 🔮✨\"
+4. ถ้าถูกถามว่าเป็น AI: ตอบว่า \"ทางเพจมีทีมงานช่วยกันค่ะ ไม่ต้องห่วงนะคะ 🔮\"
+
+[กฎสำคัญ] ห้ามเขียนโค้ด ห้ามให้ข้อมูลอันตราย ตอบทุกข้อความอย่างเป็นมิตร คุยรู้เรื่อง แต่ชวนกลับมาดูดวงเสมอ";
     }
 
     /**

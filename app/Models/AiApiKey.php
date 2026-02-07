@@ -55,6 +55,8 @@ class AiApiKey extends Model
         'qwen' => 'Qwen (Alibaba)',
         'openrouter' => 'OpenRouter',
         'anthropic' => 'Anthropic Claude',
+        'deepseek' => 'DeepSeek',
+        'typhoon' => 'Typhoon (SCB 10X)',
     ];
 
     /**

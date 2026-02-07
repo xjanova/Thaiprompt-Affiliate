@@ -33,6 +33,9 @@ class AppServiceProvider extends ServiceProvider
         // แก้ปัญหา session storage error เมื่อ directory ไม่มีอยู่
         $this->ensureStorageDirectoriesExist();
 
+        // ✅ รัน pending migrations อัตโนมัติ (ตรวจสอบวันละครั้ง)
+        $this->autoRunPendingMigrations();
+
         // ⚠️ CRITICAL: Force HTTPS สำหรับ Production
         // แก้ปัญหา redirect loop เมื่อใช้ Cloudflare/Reverse Proxy
         if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
@@ -96,6 +99,48 @@ class AppServiceProvider extends ServiceProvider
         // Register AI Rental GPU System Observers
         \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
         \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
+    }
+
+    /**
+     * รัน pending migrations อัตโนมัติ
+     *
+     * ตรวจสอบวันละครั้งว่ามี migration ค้างหรือไม่
+     * ถ้ามี จะรันให้อัตโนมัติเพื่อให้ระบบพร้อมใช้งานเสมอ
+     * ใช้ cache file เพื่อไม่ให้ตรวจสอบทุก request
+     *
+     * @return void
+     */
+    protected function autoRunPendingMigrations(): void
+    {
+        try {
+            // ใช้ file cache เพื่อตรวจสอบวันละครั้ง (ไม่ใช้ DB cache เพราะ DB อาจยังไม่พร้อม)
+            $cacheFile = storage_path('framework/cache/migration_check.txt');
+            $today = date('Y-m-d');
+
+            // ถ้าเช็คแล้ววันนี้ ข้ามไป
+            if (file_exists($cacheFile) && trim(file_get_contents($cacheFile)) === $today) {
+                return;
+            }
+
+            // รัน migrate --force (จะไม่ทำอะไรถ้าไม่มี pending)
+            \Artisan::call('migrate', ['--force' => true]);
+            $output = \Artisan::output();
+
+            // บันทึกว่าเช็คแล้ววันนี้
+            file_put_contents($cacheFile, $today);
+
+            // Log ถ้ามี migration ที่รัน
+            if (!str_contains($output, 'Nothing to migrate')) {
+                \Log::info('Auto-migration: รัน pending migrations สำเร็จ', [
+                    'output' => trim($output),
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ไม่ให้ migration error ทำให้ทั้งระบบล่ม
+            \Log::warning('Auto-migration: ไม่สามารถรันได้', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
