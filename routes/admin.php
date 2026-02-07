@@ -3810,6 +3810,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/settings/diagnose', [FortuneSettingsController::class, 'diagnose'])->name('settings.diagnose');
     Route::post('/settings/run-migrations', [FortuneSettingsController::class, 'runMigrations'])->name('settings.run-migrations');
     Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
+    Route::get('/settings/debug-webhook-ai', [FortuneSettingsController::class, 'debugWebhookAI'])->name('settings.debug-webhook-ai');
 
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');

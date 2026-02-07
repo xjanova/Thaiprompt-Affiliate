@@ -457,6 +457,56 @@ class FortuneSettingsController extends Controller
     }
 
     /**
+     * Debug endpoint - ทดสอบ AI call แบบเดียวกับ webhook flow
+     * ใช้ generateWithRetryAndFallback เหมือนที่ Facebook webhook เรียก
+     */
+    public function debugWebhookAI(Request $request)
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $message = $request->input('message', 'ดูดวงความรัก');
+        $debug = [
+            'test_message' => $message,
+            'provider' => $settings->getActualAIProvider(),
+            'model' => $settings->getActualAIModel(),
+            'has_api_key' => !empty($settings->getActualAIApiKey()),
+            'use_global_ai_settings' => $settings->use_global_ai_settings,
+        ];
+
+        try {
+            // จำลอง flow เดียวกับ FortuneConversationService::startNewConversation
+            $aiService = new \App\Services\FortuneAIService($settings);
+
+            // สร้าง prompt แบบเดียวกับ ConversationService
+            $userProfile = ['name' => 'TestUser', 'id' => 'debug_test'];
+            $basicPrompt = "คุณเป็นหมอดูหญิงชื่อดัง พูดจาอบอุ่นเป็นกันเอง ใช้คำแทนตัวว่า \"ทางเพจ\" ทำนายแบบฟันธงแต่อ่อนโยน ไม่เกิน 250 คำ\n\nข้อมูลผู้ขอดูดวง:\n- ชื่อ: TestUser\n\nข้อความที่ส่งมา: {$message}\n\nตอบอย่างเป็นมิตร ทำนายฟันธง ชัดเจน";
+
+            $debug['prompt_length'] = mb_strlen($basicPrompt);
+
+            $result = $aiService->generateWithRetryAndFallback(
+                [$message],
+                $userProfile,
+                null,
+                $basicPrompt,
+                'basic'
+            );
+
+            $debug['success'] = true;
+            $debug['response_preview'] = mb_substr($result['response'], 0, 200);
+            $debug['result_provider'] = $result['provider'];
+            $debug['result_model'] = $result['model'];
+            $debug['tokens_used'] = $result['tokens_used'];
+
+        } catch (\Exception $e) {
+            $debug['success'] = false;
+            $debug['error'] = $e->getMessage();
+            $debug['error_class'] = get_class($e);
+            $debug['trace'] = mb_substr($e->getTraceAsString(), 0, 2000);
+        }
+
+        return response()->json($debug, $debug['success'] ?? false ? 200 : 500);
+    }
+
+    /**
      * Debug endpoint - ตรวจสอบสถานะระบบ comment engagement
      */
     public function debugEngagement()
