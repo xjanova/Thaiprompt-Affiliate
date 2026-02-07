@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
+use App\Contracts\MessagingPlatformInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -22,7 +23,7 @@ use Exception;
  * - Webhook signature verification
  * - Quick replies buttons
  */
-class FacebookWebhookService
+class FacebookWebhookService implements MessagingPlatformInterface
 {
     protected $settings;
     protected $pageAccessToken;
@@ -56,7 +57,7 @@ class FacebookWebhookService
      * @param string $message ข้อความที่ต้องการส่ง
      * @return bool สำเร็จหรือไม่
      */
-    public function sendMessage(string $recipientId, string $message): bool
+    public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
         // ตรวจสอบ Page Access Token ก่อนส่ง
         if (empty($this->pageAccessToken)) {
@@ -154,7 +155,7 @@ class FacebookWebhookService
      * @param string|null $caption ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
      * @return bool สำเร็จหรือไม่
      */
-    public function sendImage(string $recipientId, string $imageUrl, ?string $caption = null): bool
+    public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
         try {
             // ส่งรูปภาพ
@@ -174,9 +175,9 @@ class FacebookWebhookService
                     'access_token' => $this->pageAccessToken,
                 ])->throw();
 
-            // ส่งข้อความกำกับรูป (ถ้ามี)
-            if (!empty($caption)) {
-                $this->sendMessage($recipientId, $caption);
+            // ส่งข้อความกำกับรูป (ถ้ามี previewUrl ใช้เป็น caption)
+            if (!empty($previewUrl)) {
+                $this->sendMessage($recipientId, $previewUrl);
             }
 
             Log::info('ส่งรูปภาพสำเร็จ', [
@@ -1154,5 +1155,70 @@ class FacebookWebhookService
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
             ];
         }
+    }
+
+    // ============================================================
+    // MessagingPlatformInterface: methods เพิ่มเติม
+    // ============================================================
+
+    /**
+     * ส่งข้อความแบบ Rich (Facebook ใช้ Generic Template)
+     */
+    public function sendRichMessage(string $recipientId, array $richContent): bool
+    {
+        try {
+            Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), [
+                    'recipient' => ['id' => $recipientId],
+                    'message' => $richContent,
+                    'messaging_type' => 'RESPONSE',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('ส่ง Rich Message ไม่สำเร็จ: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่า webhook event เป็นข้อความหรือไม่
+     */
+    public function isMessageEvent(array $event): bool
+    {
+        return isset($event['message']['text']);
+    }
+
+    /**
+     * ดึงข้อความจาก webhook event
+     */
+    public function getMessageText(array $event): ?string
+    {
+        return $event['message']['text'] ?? null;
+    }
+
+    /**
+     * ดึง User ID จาก webhook event
+     */
+    public function getUserIdFromEvent(array $event): ?string
+    {
+        return $event['sender']['id'] ?? null;
+    }
+
+    /**
+     * ดึงชื่อ platform
+     */
+    public function getPlatformName(): string
+    {
+        return 'facebook';
+    }
+
+    /**
+     * Facebook Messenger รองรับ Rich Message (Generic Template, Button Template)
+     */
+    public function supportsRichMessage(): bool
+    {
+        return true;
     }
 }
