@@ -833,32 +833,51 @@ class FortuneConversationService
      */
     protected function handlePendingPayment(FortuneReading $reading, string $messageText): array
     {
-        // ตรวจสอบว่าต้องการดูบัญชีอีกครั้งหรือไม่
-        if ($this->isBankAccountRequest($messageText)) {
+        // ตรวจสอบยอดเงินว่าหมดอายุหรือยัง
+        $uniqueAmount = $reading->uniquePaymentAmount;
+
+        if (!$uniqueAmount || $uniqueAmount->expires_at < now()) {
+            // บิลหมดอายุ → ปิด conversation กลับไปแชทปกติ
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            Log::info('Fortune: บิลดูดวงละเอียดหมดอายุ กลับเป็นแชทปกติ', [
+                'reading_id' => $reading->id,
+                'facebook_user_id' => $reading->facebook_user_id,
+            ]);
+
             return [
-                'action' => 'show_bank_accounts',
-                'message' => $this->getBankAccountsMessage($reading),
+                'action' => 'payment_expired',
+                'message' => "⏰ บิลดูดวงละเอียดหมดอายุแล้วค่ะ\n\n" .
+                             "ถ้าต้องการดูดวงละเอียดอีกครั้ง พิมพ์ 'ดูดวงละเอียด' ได้เลยนะคะ\n" .
+                             "หรือพิมพ์คำถามใหม่มาได้เลยค่ะ จันทราพร้อมดูดวงให้ค่ะ 🔮✨",
                 'reading' => $reading,
             ];
         }
 
-        // ตรวจสอบยอดเงิน
-        $uniqueAmount = $reading->uniquePaymentAmount;
-        if ($uniqueAmount && $uniqueAmount->expires_at < now()) {
-            // หมดอายุแล้ว → สร้างใหม่
-            $questions = $reading->getCollectedQuestions();
-            return $this->createPaymentBill($reading, $questions);
-        }
+        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคารเสมอ
+        $payAmount = number_format($uniqueAmount->unique_amount, 2);
+        $expiresAt = $uniqueAmount->expires_at->format('H:i');
+        $billRef = $reading->bill_reference;
 
-        // ใช้ unique_amount จาก uniquePaymentAmount (ค่าจริงที่ต้องโอน)
-        $payAmount = $uniqueAmount ? number_format($uniqueAmount->unique_amount, 2) : number_format($reading->amount_paid, 2);
+        $message = "🔮 จันทรารอคำทำนายละเอียดให้อยู่ค่ะ\n\n";
+        $message .= "กรุณาโอนเงินเพื่อรับคำทำนายนะคะ 🙏\n\n";
+        $message .= "═══════════════════════\n";
+        $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
+        $message .= "🔖 เลขที่บิล: {$billRef}\n";
+        $message .= "⏰ โอนก่อน: {$expiresAt} น.\n";
+        $message .= "═══════════════════════\n\n";
+
+        // แสดงบัญชีธนาคารทุกครั้ง
+        $message .= $this->getBankAccountsListMessage();
+
+        $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
+        $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
+        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n\n";
+        $message .= "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก";
 
         return [
             'action' => 'waiting_payment',
-            'message' => "💳 รอรับชำระเงินอยู่ค่ะ\n\nยอดที่ต้องโอน: ฿{$payAmount}\n\n" .
-                        "เมื่อโอนแล้วระบบจะตรวจสอบอัตโนมัติและส่งคำทำนายให้ทันทีค่ะ ✨\n\n" .
-                        "พิมพ์ 'บัญชี' เพื่อดูบัญชีธนาคารอีกครั้ง\n" .
-                        "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก",
+            'message' => $message,
             'reading' => $reading,
         ];
     }
