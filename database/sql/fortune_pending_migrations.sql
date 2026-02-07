@@ -90,6 +90,8 @@ DEALLOCATE PREPARE stmt;
 -- ============================================================
 ALTER TABLE `fortune_readings` MODIFY COLUMN `ai_response` longtext DEFAULT NULL COMMENT 'คำทำนายจาก AI';
 ALTER TABLE `fortune_readings` MODIFY COLUMN `ai_provider` varchar(50) DEFAULT NULL COMMENT 'AI Provider ที่ใช้ (gemini, groq, qwen)';
+ALTER TABLE `fortune_readings` MODIFY COLUMN `basic_response` longtext DEFAULT NULL COMMENT 'คำทำนายพื้นฐาน';
+ALTER TABLE `fortune_readings` MODIFY COLUMN `deep_response` longtext DEFAULT NULL COMMENT 'คำทำนายเชิงลึก';
 
 -- ============================================================
 -- 5. บันทึกใน migrations table ว่ารันแล้ว (ป้องกันรันซ้ำ)

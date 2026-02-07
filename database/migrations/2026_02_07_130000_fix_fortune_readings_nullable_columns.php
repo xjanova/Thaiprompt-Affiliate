@@ -5,16 +5,15 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * แก้ไขคอลัมน์ ai_response และ ai_provider ให้เป็น nullable
+ * แก้ไขคอลัมน์ในตาราง fortune_readings
  *
- * ปัญหา: เมื่อสร้าง FortuneReading ใหม่ ยังไม่มีค่า ai_response และ ai_provider
- * เพราะต้องเรียก AI ก่อนแล้วค่อยอัพเดท แต่คอลัมน์เป็น NOT NULL
- * ทำให้ INSERT ล้มเหลว: "Field 'ai_response' doesn't have a default value"
+ * 1. ai_response, ai_provider → nullable (สร้าง record ก่อนเรียก AI)
+ * 2. basic_response, deep_response → longText (text จำกัด 65KB ไม่พอ)
  */
 return new class extends Migration
 {
     /**
-     * แก้ไขคอลัมน์ให้เป็น nullable
+     * แก้ไขคอลัมน์
      *
      * @return void
      */
@@ -26,11 +25,19 @@ return new class extends Migration
 
             // ai_provider - ยังไม่มีค่าตอนสร้าง record ใหม่
             $table->string('ai_provider', 50)->nullable()->comment('AI Provider ที่ใช้ (gemini, groq, qwen)')->change();
+
+            // basic_response, deep_response - เปลี่ยนจาก text เป็น longText (text จำกัด 65KB ไม่พอสำหรับคำทำนายยาว)
+            if (Schema::hasColumn('fortune_readings', 'basic_response')) {
+                $table->longText('basic_response')->nullable()->comment('คำทำนายพื้นฐาน')->change();
+            }
+            if (Schema::hasColumn('fortune_readings', 'deep_response')) {
+                $table->longText('deep_response')->nullable()->comment('คำทำนายเชิงลึก')->change();
+            }
         });
     }
 
     /**
-     * คืนค่าเดิม (NOT NULL)
+     * คืนค่าเดิม
      *
      * @return void
      */
@@ -39,6 +46,13 @@ return new class extends Migration
         Schema::table('fortune_readings', function (Blueprint $table) {
             $table->longText('ai_response')->nullable(false)->comment('คำทำนายจาก AI')->change();
             $table->string('ai_provider', 50)->nullable(false)->comment('AI Provider ที่ใช้ (gemini, groq, qwen)')->change();
+
+            if (Schema::hasColumn('fortune_readings', 'basic_response')) {
+                $table->text('basic_response')->nullable()->comment('คำทำนายพื้นฐาน')->change();
+            }
+            if (Schema::hasColumn('fortune_readings', 'deep_response')) {
+                $table->text('deep_response')->nullable()->comment('คำทำนายเชิงลึก')->change();
+            }
         });
     }
 };
