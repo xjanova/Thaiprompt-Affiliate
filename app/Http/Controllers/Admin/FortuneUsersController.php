@@ -1,0 +1,273 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
+use App\Models\FortuneUserCredit;
+use App\Models\FortuneTellingSetting;
+use App\Services\FortuneChannelManager;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Fortune Users Controller
+ *
+ * จัดการผู้ใช้ที่เคยดูดวง + ส่งข้อความไปหาผู้ใช้เก่า
+ */
+class FortuneUsersController extends Controller
+{
+    /**
+     * แสดงรายการผู้ใช้ที่เคยดูดวง (unique users)
+     */
+    public function index(Request $request)
+    {
+        // ดึง unique users จากตาราง fortune_readings
+        $query = FortuneReading::query()
+            ->select(
+                'facebook_user_id',
+                'platform',
+                DB::raw('MAX(facebook_user_name) as facebook_user_name'),
+                DB::raw('COUNT(*) as total_readings'),
+                DB::raw('SUM(CASE WHEN reading_type = "deep" THEN 1 ELSE 0 END) as deep_readings'),
+                DB::raw('SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END) as paid_readings'),
+                DB::raw('SUM(amount_paid) as total_spent'),
+                DB::raw('MAX(created_at) as last_reading_at'),
+                DB::raw('MIN(created_at) as first_reading_at'),
+            )
+            ->groupBy('facebook_user_id', 'platform');
+
+        // ค้นหา
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('facebook_user_id', 'like', "%{$search}%")
+                  ->orWhere('facebook_user_name', 'like', "%{$search}%");
+            });
+        }
+
+        // กรองตาม platform
+        if ($request->filled('platform')) {
+            $query->where('platform', $request->platform);
+        }
+
+        // กรองเฉพาะลูกค้าจ่ายเงิน
+        if ($request->boolean('paid_only')) {
+            $query->having('paid_readings', '>', 0);
+        }
+
+        // เรียงลำดับ
+        $sortBy = $request->input('sort', 'last_reading_at');
+        $sortDir = $request->input('dir', 'desc');
+        $allowedSorts = ['last_reading_at', 'total_readings', 'total_spent', 'first_reading_at'];
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDir);
+        }
+
+        $users = $query->paginate(20)->withQueryString();
+
+        // สถิติรวม
+        $stats = [
+            'total_users' => FortuneReading::select('facebook_user_id')->distinct()->count(),
+            'facebook_users' => FortuneReading::where('platform', 'facebook')->select('facebook_user_id')->distinct()->count(),
+            'line_users' => FortuneReading::where('platform', 'line')->select('facebook_user_id')->distinct()->count(),
+            'paying_users' => FortuneReading::where('is_paid', true)->select('facebook_user_id')->distinct()->count(),
+            'total_revenue' => FortuneReading::where('is_paid', true)->sum('amount_paid'),
+        ];
+
+        return view('admin.fortune.users.index', [
+            'users' => $users,
+            'stats' => $stats,
+            'pageTitle' => 'ผู้ใช้ดูดวง',
+        ]);
+    }
+
+    /**
+     * แสดงรายละเอียดผู้ใช้คนเดียว + ประวัติทั้งหมด
+     */
+    public function show(Request $request, string $platform, string $userId)
+    {
+        $readings = FortuneReading::where('facebook_user_id', $userId)
+            ->where('platform', $platform)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        if ($readings->isEmpty()) {
+            abort(404, 'ไม่พบผู้ใช้');
+        }
+
+        // ข้อมูลผู้ใช้จาก reading ล่าสุด
+        $latestReading = $readings->first();
+        $userInfo = [
+            'facebook_user_id' => $userId,
+            'facebook_user_name' => $latestReading->facebook_user_name ?? '-',
+            'platform' => $platform,
+            'total_readings' => FortuneReading::where('facebook_user_id', $userId)->where('platform', $platform)->count(),
+            'deep_readings' => FortuneReading::where('facebook_user_id', $userId)->where('platform', $platform)->where('reading_type', 'deep')->count(),
+            'total_spent' => FortuneReading::where('facebook_user_id', $userId)->where('platform', $platform)->sum('amount_paid'),
+            'first_reading' => FortuneReading::where('facebook_user_id', $userId)->where('platform', $platform)->min('created_at'),
+            'last_reading' => FortuneReading::where('facebook_user_id', $userId)->where('platform', $platform)->max('created_at'),
+        ];
+
+        // ดึง credit ถ้ามี
+        $credit = FortuneUserCredit::findByUser($userId);
+
+        return view('admin.fortune.users.show', [
+            'readings' => $readings,
+            'userInfo' => $userInfo,
+            'credit' => $credit,
+            'pageTitle' => "ผู้ใช้: {$userInfo['facebook_user_name']}",
+        ]);
+    }
+
+    /**
+     * ส่งข้อความไปหาผู้ใช้ (Facebook Messenger / LINE)
+     */
+    public function sendMessage(Request $request)
+    {
+        $validated = $request->validate([
+            'platform' => 'required|in:facebook,line',
+            'facebook_user_id' => 'required|string|max:255',
+            'message' => 'required|string|max:2000',
+        ]);
+
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $channelManager = new FortuneChannelManager($settings);
+            $platformService = $channelManager->getPlatform($validated['platform']);
+
+            if (!$platformService) {
+                return back()->with('error', "ไม่สามารถเชื่อมต่อ {$validated['platform']} ได้ กรุณาตั้งค่าช่องทางก่อน");
+            }
+
+            $success = $platformService->sendMessage(
+                $validated['facebook_user_id'],
+                $validated['message']
+            );
+
+            if ($success) {
+                Log::info('Admin sent fortune message', [
+                    'admin_id' => auth()->id(),
+                    'platform' => $validated['platform'],
+                    'user_id' => $validated['facebook_user_id'],
+                    'message_length' => mb_strlen($validated['message']),
+                ]);
+
+                return back()->with('success', 'ส่งข้อความสำเร็จ!');
+            }
+
+            return back()->with('error', 'ส่งข้อความไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+
+        } catch (\Exception $e) {
+            Log::error('Admin send fortune message failed', [
+                'error' => $e->getMessage(),
+                'platform' => $validated['platform'],
+                'user_id' => $validated['facebook_user_id'],
+            ]);
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งข้อความถึงผู้ใช้หลายคน (broadcast)
+     */
+    public function broadcastMessage(Request $request)
+    {
+        $validated = $request->validate([
+            'platform' => 'required|in:facebook,line,all',
+            'message' => 'required|string|max:2000',
+            'target' => 'required|in:all,paid,recent',
+        ]);
+
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $channelManager = new FortuneChannelManager($settings);
+
+            // ดึงรายชื่อผู้ใช้ที่จะส่ง
+            $query = FortuneReading::query()
+                ->select('facebook_user_id', 'platform')
+                ->groupBy('facebook_user_id', 'platform');
+
+            if ($validated['platform'] !== 'all') {
+                $query->where('platform', $validated['platform']);
+            }
+
+            if ($validated['target'] === 'paid') {
+                $query->having(DB::raw('SUM(CASE WHEN is_paid = 1 THEN 1 ELSE 0 END)'), '>', 0);
+            } elseif ($validated['target'] === 'recent') {
+                $query->having(DB::raw('MAX(created_at)'), '>=', now()->subDays(7));
+            }
+
+            $recipients = $query->get();
+
+            $sent = 0;
+            $failed = 0;
+
+            foreach ($recipients as $recipient) {
+                try {
+                    $platformService = $channelManager->getPlatform($recipient->platform);
+                    if ($platformService) {
+                        $success = $platformService->sendMessage(
+                            $recipient->facebook_user_id,
+                            $validated['message']
+                        );
+                        $success ? $sent++ : $failed++;
+                    } else {
+                        $failed++;
+                    }
+                    // หน่วงเวลาเล็กน้อยเพื่อไม่ให้โดน rate limit
+                    usleep(200000); // 0.2 วินาที
+                } catch (\Exception $e) {
+                    $failed++;
+                    Log::warning('Broadcast message failed for user', [
+                        'user_id' => $recipient->facebook_user_id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('Admin broadcast fortune message', [
+                'admin_id' => auth()->id(),
+                'platform' => $validated['platform'],
+                'target' => $validated['target'],
+                'sent' => $sent,
+                'failed' => $failed,
+            ]);
+
+            return back()->with('success', "ส่งข้อความสำเร็จ {$sent} คน (ล้มเหลว {$failed} คน)");
+
+        } catch (\Exception $e) {
+            Log::error('Admin broadcast message failed', ['error' => $e->getMessage()]);
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * เพิ่มเครดิตฟรีให้ผู้ใช้ (quick action จากหน้า users)
+     */
+    public function quickAddCredits(Request $request)
+    {
+        $validated = $request->validate([
+            'facebook_user_id' => 'required|string|max:255',
+            'platform' => 'required|string|max:50',
+            'facebook_user_name' => 'nullable|string|max:255',
+            'amount' => 'required|integer|min:1|max:999',
+        ]);
+
+        $credit = FortuneUserCredit::getOrCreate(
+            $validated['facebook_user_id'],
+            $validated['platform'],
+            $validated['facebook_user_name'] ?? null
+        );
+
+        $credit->addCredits(
+            $validated['amount'],
+            auth()->id(),
+            "เพิ่มเครดิต {$validated['amount']} ครั้งจากหน้าผู้ใช้ดูดวง"
+        );
+
+        return back()->with('success', "เพิ่มเครดิต {$validated['amount']} ครั้ง สำเร็จ");
+    }
+}
