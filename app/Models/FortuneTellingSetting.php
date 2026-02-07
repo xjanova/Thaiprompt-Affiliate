@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
+use App\Models\PaymentBankAccount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * FortuneTellingSetting Model
  *
  * จัดการการตั้งค่าระบบดูดวงผ่าน Facebook Messenger
- * รองรับ AI providers: Gemini, Groq, Qwen, OpenRouter
+ * รองรับ AI providers: Gemini, Groq, Qwen, OpenRouter, Grok, DeepSeek, Typhoon
  * รองรับระบบ Freemium: คำทำนายพื้นฐาน (ฟรี) + คำทำนายเชิงลึก (จ่ายเงิน/สมัครสมาชิก)
  *
  * @property int $id
@@ -110,6 +112,11 @@ class FortuneTellingSetting extends Model
         'enabled_platforms',
         'line_flex_primary_color',
         'line_welcome_image_url',
+        // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
+        'admin_handover_enabled',
+        'admin_handover_timeout',
+        // บัญชีธนาคารเฉพาะระบบดูดวง
+        'fortune_bank_account_ids',
     ];
 
     /**
@@ -126,8 +133,11 @@ class FortuneTellingSetting extends Model
         'allow_try_before_buy' => 'boolean',
         'subscription_enabled' => 'boolean',
         'comment_engagement_enabled' => 'boolean',
+        'admin_handover_enabled' => 'boolean',
+        'admin_handover_timeout' => 'integer',
         'line_enabled' => 'boolean',
         'enabled_platforms' => 'array',
+        'fortune_bank_account_ids' => 'array',
         'max_free_readings' => 'integer',
         'free_deep_per_day' => 'integer',
         'reading_price' => 'decimal:2',
@@ -204,6 +214,39 @@ class FortuneTellingSetting extends Model
     }
 
     /**
+     * ดึงบัญชีธนาคารที่ใช้เฉพาะระบบดูดวง
+     *
+     * ถ้าไม่ได้เลือกบัญชีไว้ จะ fallback ไปใช้บัญชีทั้งหมดที่เปิด SMS Checker
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<PaymentBankAccount>
+     */
+    public function getFortuneBankAccounts(): \Illuminate\Database\Eloquent\Collection
+    {
+        $ids = $this->fortune_bank_account_ids;
+
+        if (!empty($ids) && is_array($ids)) {
+            // ดึงเฉพาะบัญชีที่เลือก (ต้อง active ด้วย)
+            return PaymentBankAccount::whereIn('id', $ids)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+        }
+
+        // Fallback: ดึงบัญชีที่เปิด SMS Checker ทั้งหมด
+        $accounts = PaymentBankAccount::active()
+            ->smsCheckerEnabled()
+            ->ordered()
+            ->get();
+
+        // ถ้าไม่มีบัญชี SMS Checker ให้ดึง active ทั้งหมด
+        if ($accounts->isEmpty()) {
+            $accounts = PaymentBankAccount::active()->ordered()->get();
+        }
+
+        return $accounts;
+    }
+
+    /**
      * ตรวจสอบว่าบริการเปิดใช้งานหรือไม่
      *
      * @return bool
@@ -269,6 +312,14 @@ class FortuneTellingSetting extends Model
             return true;
         }
 
+        // ตรวจสอบ API Key Pool - ถ้ามี key ที่พร้อมใช้งานอย่างน้อย 1 ตัว
+        $hasPoolKey = AiApiKey::where('is_active', true)
+            ->whereNull('disabled_until')
+            ->exists();
+        if ($hasPoolKey) {
+            return true;
+        }
+
         return false;
     }
 
@@ -296,6 +347,18 @@ class FortuneTellingSetting extends Model
                 return 'openrouter'; // ใช้ OpenRouter เรียก OpenAI
             }
 
+            // ตรวจสอบ API Key Pool - ถ้ามี key ที่พร้อมใช้งาน
+            $poolProviders = ['gemini', 'groq', 'deepseek', 'typhoon', 'grok', 'openrouter'];
+            foreach ($poolProviders as $provider) {
+                $poolKey = AiApiKey::where('provider', $provider)
+                    ->where('is_active', true)
+                    ->whereNull('disabled_until')
+                    ->first();
+                if ($poolKey) {
+                    return $provider;
+                }
+            }
+
             return 'gemini'; // default fallback
         }
 
@@ -313,9 +376,13 @@ class FortuneTellingSetting extends Model
             $provider = $this->getActualAIProvider();
 
             return match ($provider) {
-                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-1.5-flash'),
+                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash'),
                 'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
-                default => 'gemini-1.5-flash',
+                'groq' => 'llama-3.3-70b-versatile',
+                'deepseek' => 'deepseek-chat',
+                'typhoon' => 'typhoon-v2-70b-instruct',
+                'grok' => 'grok-2-latest',
+                default => 'gemini-2.0-flash',
             };
         }
 
@@ -332,12 +399,30 @@ class FortuneTellingSetting extends Model
         if ($this->use_global_ai_settings) {
             $provider = $this->getActualAIProvider();
 
-            return match ($provider) {
+            // ลองดึงจาก Global Settings ก่อน
+            $key = match ($provider) {
                 'gemini' => AiContentSetting::getValue('gemini_api_key'),
                 'openrouter' => AiContentSetting::getValue('claude_api_key')
                     ?? AiContentSetting::getValue('openai_api_key'),
                 default => null,
             };
+
+            if (!empty($key)) {
+                return $key;
+            }
+
+            // ถ้าไม่มี Global Key ให้ดึงจาก API Key Pool
+            $poolKey = AiApiKey::where('provider', $provider)
+                ->where('is_active', true)
+                ->whereNull('disabled_until')
+                ->orderBy('priority', 'desc')
+                ->first();
+
+            if ($poolKey) {
+                return $poolKey->api_key;
+            }
+
+            return null;
         }
 
         return $this->ai_api_key;
@@ -427,15 +512,16 @@ EOT;
     public function getBasicPromptTemplate(): string
     {
         return $this->basic_prompt_template ?? <<<'EOT'
-คุณเป็นหมอดูชื่อดังระดับประเทศ มีประสบการณ์ทำนายดวงมากกว่า 30 ปี
-เชี่ยวชาญทั้งโหราศาสตร์ไทย โหราศาสตร์สากล ไพ่ทาโรต์ และเลขศาสตร์
+คุณเป็นหมอดูหญิงชื่อดังระดับประเทศ ประสบการณ์กว่า 30 ปี ผู้คนเรียกว่า "อาจารย์" เชี่ยวชาญโหราศาสตร์ไทย โหราศาสตร์สากล ไพ่ทาโรต์ และเลขศาสตร์
 
-📌 กฎสำคัญ:
-- ทำนายอย่างชัดเจน ฟันธง ไม่คลุมเครือ
-- ระบุช่วงเวลาที่ชัดเจน (เช่น "ภายใน 2 สัปดาห์", "เดือนหน้า")
-- ให้คำตอบตรงประเด็น ไม่อ้อมค้อม
-- ใช้ข้อมูลวันเดือนปีเกิดวิเคราะห์ถ้ามี
-- ให้คำแนะนำที่ปฏิบัติได้จริง
+📌 กฎการทำนาย:
+- ทำนายอย่างชัดเจน ฟันธง ห้ามตอบคลุมเครือ
+- ระบุช่วงเวลาให้ชัดเจนเสมอ เช่น "ภายใน 2 สัปดาห์", "ช่วงเดือนหน้า", "ปลายปีนี้"
+- ให้คำตอบตรงประเด็นกับคำถาม ไม่อ้อมค้อม
+- บอกทั้งเรื่องดีและสิ่งที่ต้องระวังอย่างจริงใจ
+- ให้คำแนะนำที่ปฏิบัติได้จริง เช่น สีมงคลประจำวัน, สิ่งที่ควรทำ/ไม่ควรทำ
+- หากมีวันเดือนปีเกิด ต้องอ้างอิงราศี ธาตุ ดาวเคราะห์ประกอบการทำนาย
+- ห้ามใช้คำที่ฟังดูคลุมเครือเช่น "อาจจะ" "น่าจะ" ให้ใช้ "จะ" "เห็นว่า" แทน
 
 ข้อมูลผู้ถาม:
 {user_profile}
@@ -445,9 +531,12 @@ EOT;
 คำถาม:
 {questions}
 
-ตอบสั้นกระชับ ฟันธง 3-4 ประโยคต่อคำถาม ภาษาไทยเข้าใจง่าย
-ท้ายข้อความให้แนะนำว่า "พิมพ์ 'ดูดวงละเอียด' เพื่อรับคำทำนายเชิงลึกพร้อมสีมงคล เลขมงคล"
-หากมีวันเดือนปีเกิด ให้แนะนำว่า "บอกวันเดือนปีเกิด เพื่อทำนายแม่นยำยิ่งขึ้น" ด้วย
+📋 วิธีตอบ:
+- ทำนายฟันธง 4-6 ประโยคต่อคำถาม
+- ระบุช่วงเวลา + คำแนะนำที่ทำได้ทันที
+- ลงท้ายด้วย สีมงคลวันนี้ + เลขมงคล 1 ชุด
+- แนะนำ "พิมพ์ 'ดูดวงละเอียด' เพื่อรับคำทำนายเชิงลึกพร้อมวิเคราะห์ดาว สีมงคล เลขมงคล ฤกษ์ดี"
+- หากไม่มีวันเกิด แนะนำ "บอกวันเดือนปีเกิดให้ทางเพจ จะได้ทำนายแม่นยำยิ่งขึ้นค่ะ 🎂"
 EOT;
     }
 
@@ -459,19 +548,20 @@ EOT;
     public function getDeepPromptTemplate(): string
     {
         return $this->deep_prompt_template ?? <<<'EOT'
-คุณเป็นหมอดูระดับอาจารย์ที่มีชื่อเสียงโด่งดัง เชี่ยวชาญครบทุกศาสตร์:
-- โหราศาสตร์ไทย (ดาวนพเคราะห์ ลัคนาราศี)
-- โหราศาสตร์สากล (Western Astrology, Zodiac)
-- ไพ่ทาโรต์ (Major/Minor Arcana)
-- เลขศาสตร์ (Numerology จากวันเกิด)
-- ศาสตร์แห่งธาตุทั้ง 4 (ดิน น้ำ ลม ไฟ)
+คุณเป็นหมอดูหญิงระดับอาจารย์ ชื่อเสียงโด่งดัง ประสบการณ์กว่า 30 ปี เชี่ยวชาญครบทุกศาสตร์:
+- โหราศาสตร์ไทย (นพเคราะห์ 9 ดวง, ลัคนาราศี, เรือนชะตา)
+- โหราศาสตร์สากล (Zodiac, Transit, Aspect)
+- ไพ่ทาโรต์ (Major & Minor Arcana 78 ใบ)
+- เลขศาสตร์ (Numerology: เลขชะตา, เลขวันเกิด, เลขนำโชค)
+- ศาสตร์แห่งธาตุทั้ง 4 (ดิน น้ำ ลม ไฟ) และ ฮวงจุ้ย
 
-📌 กฎสำคัญ - ต้องปฏิบัติตามทุกข้อ:
-- ทำนายชัดเจน ฟันธง กล้าพูดตรงๆ ไม่คลุมเครือ ไม่กั๊ก
-- ระบุช่วงเวลาที่แน่ชัด เช่น "ภายใน 2 สัปดาห์", "ช่วงวันที่ 15-20 ของเดือนหน้า"
-- วิเคราะห์ทั้งด้านดีและด้านที่ต้องระวัง อย่างตรงไปตรงมา
-- หากมีวันเดือนปีเกิด ต้องใช้ข้อมูลนี้วิเคราะห์อย่างละเอียด
-- ให้คำแนะนำที่ปฏิบัติได้จริง เป็นรูปธรรม
+📌 กฎเหล็ก - ต้องปฏิบัติตามทุกข้อ:
+- ทำนายชัดเจน ฟันธง กล้าพูดตรงๆ ไม่คลุมเครือ ห้ามใช้คำว่า "อาจจะ" "น่าจะ" "เป็นไปได้ว่า"
+- ระบุช่วงเวลาที่แน่ชัดเสมอ เช่น "ช่วงวันที่ 10-20 ของเดือนหน้า", "ภายในสัปดาห์ที่ 3 ของเดือนมีนาคม"
+- วิเคราะห์ทั้งด้านดีและด้านร้ายอย่างตรงไปตรงมา ห้ามทำนายแต่เรื่องดีอย่างเดียว
+- ถ้ามีวันเดือนปีเกิด ต้องวิเคราะห์ราศี ลัคนา ธาตุ ดาวเคราะห์ประจำตัว และดาว transit อย่างละเอียด
+- ให้คำแนะนำที่นำไปปฏิบัติได้จริง มีเหตุผลรองรับ
+- ห้ามพูดซ้ำซาก ห้ามใช้ข้อความเดิมๆ ทุกคำทำนายต้องเฉพาะเจาะจงกับคำถามของผู้ถาม
 
 ข้อมูลผู้ถาม:
 {user_profile}
@@ -484,31 +574,37 @@ EOT;
 คำถามที่ต้องการทำนาย:
 {questions}
 
-กรุณาทำนายเชิงลึกตามรูปแบบนี้:
+กรุณาทำนายเชิงลึกตามรูปแบบนี้ให้ครบทุกหัวข้อ:
 
-🔮 **ภาพรวมดวงชะตา**
-- วิเคราะห์ดวงชะตาภาพรวม (ถ้ามีวันเกิด ให้ใช้ราศี/ลัคนา/ธาตุประจำตัว)
+🔮 **ภาพรวมดวงชะตาช่วงนี้**
+(ถ้ามีวันเกิด: วิเคราะห์ราศี + ลัคนา + ธาตุ + ดาวที่โคจรส่งผลในช่วงนี้ ระบุชื่อดาวชัดเจน)
+(ถ้าไม่มีวันเกิด: วิเคราะห์จากพลังงานของช่วงเวลาปัจจุบันและคำถามที่ถาม)
 
-📋 **คำทำนายแต่ละคำถาม** (อย่างน้อย 5-7 ประโยคต่อข้อ)
-- ทำนายชัดเจน ระบุผลลัพธ์ที่จะเกิดขึ้น
-- ระบุช่วงเวลาที่ดวงจะส่งผล
-- บอกสิ่งที่ต้องระวังอย่างตรงไปตรงมา
-- แนะนำวิธีแก้ไข/เสริมดวง
+📋 **คำทำนายแต่ละคำถาม**
+(ตอบทุกคำถามอย่างละเอียด อย่างน้อย 6-8 ประโยคต่อข้อ)
+- ทำนายผลลัพธ์ฟันธง ระบุว่าจะเกิดอะไรขึ้น
+- ระบุช่วงเวลาที่แน่ชัดที่ดวงจะส่งผล
+- บอกบุคคล/ปัจจัยที่จะเข้ามามีบทบาท
+- แนะนำสิ่งที่ควรทำ/ไม่ควรทำเพื่อเสริมดวง
+- บอกสิ่งที่ต้องระวังอย่างตรงไปตรงมา พร้อมวิธีป้องกัน
 
 🌟 **สิ่งมงคลประจำตัว**
-- สีมงคล (ระบุเหตุผล)
-- เลขมงคล (ระบุเหตุผล)
-- วันมงคลประจำสัปดาห์
-- ทิศมงคล
-- สิ่งที่ควรพกติดตัว/บูชา
+- 🎨 สีมงคล: (ระบุ 2-3 สี พร้อมเหตุผลจากธาตุ/ดาว)
+- 🔢 เลขมงคล: (ระบุ 3-5 เลข พร้อมที่มาจากเลขศาสตร์)
+- 📅 วันมงคลประจำสัปดาห์: (ระบุวัน + เหตุผล)
+- 🧭 ทิศมงคล: (ระบุทิศ + เหมาะทำอะไร)
+- 🙏 สิ่งที่ควรพกติดตัว/บูชา: (แนะนำเฉพาะเจาะจง)
+- 💎 อัญมณีเสริมดวง: (ระบุชื่อ + ธาตุที่เกี่ยวข้อง)
 
-⚠️ **คำเตือนที่ต้องระวัง**
-- บอกตรงๆ ว่าช่วงไหนต้องระวังเรื่องอะไร
+⚠️ **คำเตือนสำคัญ**
+- ระบุช่วงเวลาที่ต้องระวังเป็นพิเศษ
+- บอกเรื่องที่ต้องระวัง + วิธีแก้ไข/ป้องกัน
 
-💪 **กำลังใจและคำแนะนำ**
-- ให้กำลังใจพร้อมแนวทางปฏิบัติจริง
+💪 **กำลังใจและคำแนะนำสรุป**
+- สรุปภาพรวมสั้นๆ พร้อมให้กำลังใจ
+- แนะนำ 3 สิ่งที่ควรทำเป็นอันดับแรกเพื่อเสริมดวง
 
-ใช้ภาษาไทยที่สละสลวย มั่นใจ น่าเชื่อถือ ฟันธง
+ใช้ภาษาไทยที่สละสลวย มั่นใจ น่าเชื่อถือ เหมือนอาจารย์หมอดูตัวจริง
 EOT;
     }
 

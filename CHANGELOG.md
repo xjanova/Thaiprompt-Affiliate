@@ -2,6 +2,254 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.475.2] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix Blade syntax error and isolate SMS bill matching by transaction_type (ddb92739)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (3c86520c)
+
+## [v3.475.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2502 from xjanova/claude/review-mlm-calculations-E3eMx (46315e1b)
+- fix: E2E audit - edit page formula, overpay+referral, race condition (eb4fed3f)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-mlm-calculations-E3eMx (7575cb27)
+
+## [v3.475.0] - 2026-02-07
+
+### ✨ Features
+- feat: Add inline CRUD for fortune bank accounts in settings page (c264e845)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (048d54f1)
+
+## [v3.474.0] - 2026-02-07
+
+### ✨ Features
+- feat: Add fortune-specific bank account settings (5724087f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (6ce71767)
+
+## [v3.473.7] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Payment amount showing 0.00 instead of 49+unique (f02e5453)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (7faab43e)
+
+## [v3.473.6] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add new migration for fortune_readings column types (deploy-ready) (12bc5b4d)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (87621750)
+
+## [v3.473.5] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Change basic_response and deep_response to longText (31779935)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (e3202d70)
+
+## [v3.473.4] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add default ai_response/ai_provider values in startNewConversation (5e0b9134)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (5ee04cc1)
+
+## [v3.473.3] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Make ai_response and ai_provider nullable in fortune_readings (51b39a85)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (233d72b7)
+
+## [v3.473.2] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- debug: Add webhook AI debug endpoint to diagnose fortune reading failure (17066a0c)
+
+## [v3.473.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2501 from xjanova/claude/fix-fortune-ai-integration-mWDAQ (4fe30646)
+- fix: แก้ Facebook Messenger ไม่เรียก AI - ป้องกัน null userProfile crash (444c04a1)
+### 🔧 Other Changes
+
+
+## [v3.473.0] - 2026-02-07
+
+### ✨ Features
+- Merge pull request #2500 from xjanova/claude/fix-fortune-ai-integration-mWDAQ (d0c214bf)
+- feat: แก้ระบบดูดวง AI ให้ทำนายจริง + เพิ่ม Playground + DeepSeek/Typhoon (df0545ae)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.472.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2499 from xjanova/claude/check-horoscope-facebook-CtSPS (75fa4900)
+- fix: แก้บอทไม่ตอบ - เพิ่ม sendMessage retry + แก้ admin handover + เพิ่ม diagnostic (643c5cb2)
+### 🔧 Other Changes
+
+
+## [v3.472.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2498 from xjanova/claude/check-horoscope-facebook-CtSPS (27f3b944)
+- feat: เพิ่ม AI retry + auto-switch provider + เพิ่ม Grok ใน admin (e9555975)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.471.0] - 2026-02-06
+
+### ✨ Features
+- feat: เพิ่มไฟล์ SQL สำหรับสร้างตารางที่ค้างอยู่โดยตรง (3fed4068)
+### 🐛 Bug Fixes
+- fix: แก้ไข error messages ที่เหลือ + เพิ่มความปลอดภัย AI Service (5bb146ba)
+### 🔧 Other Changes
+- Merge pull request #2497 from xjanova/claude/check-horoscope-facebook-CtSPS (b377d365)
+
+## [v3.470.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2496 from xjanova/claude/check-horoscope-facebook-CtSPS (21a78653)
+- feat: เพิ่ม auto-migration อัตโนมัติ - ไม่ต้องกดปุ่มใดๆ (3397c27c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.469.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2495 from xjanova/claude/check-horoscope-facebook-CtSPS (b92e051a)
+- feat: เพิ่มปุ่มแก้ไขฐานข้อมูลอัตโนมัติ + คำแนะนำการแก้ไขในแผงตรวจเช็ค (7e0b42af)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/check-horoscope-facebook-CtSPS (afe98348)
+
+## [v3.468.0] - 2026-02-06
+
+### ✨ Features
+- feat: เพิ่มแผงตรวจเช็คระบบ AI ในหน้า Admin ดูดวง (c30913da)
+- feat: เพิ่ม fallback responses เมื่อ AI ล่ม - บอทยังคุยได้ไม่หยุดชะงัก (46271a0f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #2494 from xjanova/claude/check-horoscope-facebook-CtSPS (825fb267)
+
+## [v3.467.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่มความทนทานของระบบดูดวง - ป้องกัน crash + ปรับ UX flow (af95237e)
+- fix: ปรับปรุง error handling ให้ครอบคลุม + ข้อความ error ที่เป็นมิตร (ef48dea3)
+### 🔧 Other Changes
+- Merge pull request #2493 from xjanova/claude/check-horoscope-facebook-CtSPS (41bf5cb5)
+
+## [v3.467.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2492 from xjanova/claude/check-horoscope-facebook-CtSPS (63ea0297)
+- feat: ปรับระบบดูดวงให้ตอบทุกข้อความผ่าน AI + เพิ่มปุ่มลัด + เช็คสิทธิ์ (f8adede4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.466.2] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Remove fixed special amount, use only unique amounts for fortune reading (9381c0fd)
+### 🔧 Other Changes
+
+
+## [v3.466.1] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- refactor: remove bank account verification for SMS matching (c50fcdf4)
+
+## [v3.466.0] - 2026-02-06
+
+### ✨ Features
+- Merge pull request #2491 from xjanova/claude/check-horoscope-facebook-CtSPS (c7d2346f)
+- feat: เพิ่มระบบ Admin Handover - บอทหยุดเมื่อแอดมินกำลังดูแลลูกค้า (0be254c6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.465.0] - 2026-02-06
+
+### ✨ Features
+- feat: add 7 new banks support (8→15 banks) (a9d2ab28)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.464.23] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: correct money flow - MLM and Fee are separate pools, both deducted from seller (83829414)
+- fix: MLM commission from platform fee, fix calculator formula, add overpay protection (79ab5807)
+### 🔧 Other Changes
+- Merge pull request #2490 from xjanova/claude/review-mlm-calculations-E3eMx (1cbae23d)
+- docs: add comprehensive MLM money flow documentation (972e8de0)
+
+## [v3.464.22] - 2026-02-06
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2489 from xjanova/claude/check-horoscope-facebook-CtSPS (a355bcc6)
+- fix: แก้ไข 4 bugs ในระบบดูดวง Facebook ที่ทำให้บอทตอบว่าผิดพลาดซ้ำๆ (2df7e619)
+### 🔧 Other Changes
+
+
 ## [v3.464.21] - 2026-02-06
 
 ### ✨ Features

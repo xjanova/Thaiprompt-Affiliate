@@ -30,7 +30,7 @@ return [
     // จำกัด rate: จำนวน notifications สูงสุดต่ออุปกรณ์ต่อนาที
     'rate_limit_per_minute' => env('SMSCHECKER_RATE_LIMIT', 30),
 
-    // ธนาคารที่รองรับ
+    // ธนาคารที่รองรับ (15 ธนาคาร - ตรงกับ Android SmsChecker v1.9.1)
     'supported_banks' => [
         'KBANK' => 'ธนาคารกสิกรไทย',
         'SCB' => 'ธนาคารไทยพาณิชย์',
@@ -40,6 +40,13 @@ return [
         'BAY' => 'ธนาคารกรุงศรีอยุธยา',
         'TTB' => 'ธนาคารทหารไทยธนชาต',
         'PROMPTPAY' => 'พร้อมเพย์',
+        'CIMB' => 'ธนาคารซีไอเอ็มบี ไทย',
+        'KKP' => 'ธนาคารเกียรตินาคินภัทร',
+        'LH' => 'ธนาคารแลนด์ แอนด์ เฮ้าส์',
+        'TISCO' => 'ธนาคารทิสโก้',
+        'UOB' => 'ธนาคารยูโอบี',
+        'ICBC' => 'ธนาคารไอซีบีซี (ไทย)',
+        'BAAC' => 'ธนาคารเพื่อการเกษตรและสหกรณ์การเกษตร',
     ],
 
     // เวลาหมดอายุของ nonces (ชั่วโมง) - nonces เก่ากว่านี้จะถูกลบ
@@ -80,16 +87,13 @@ return [
     | ยอดเงินที่ระบบจะตรวจจับและสร้าง order พิเศษอัตโนมัติ
     | เมื่อ SMS ตรวจพบยอดที่ตรงกัน จะสร้างรายการโดยไม่ต้องรอ admin
     |
-    | ถ้ายังไม่ใช่สมาชิก → สร้างเป็น "บิลลอย" (floating bill) รอ admin ยืนยัน
+    | หมายเหตุ: ระบบดูดวงใช้ UniquePaymentAmount (49 + unique decimal)
+    | ไม่ใช้ special_amounts แบบ fixed amount อีกต่อไป
     |
     */
     'special_amounts' => [
-        29.99 => [
-            'type' => 'fortune_reading',
-            'name' => 'ดูดวงเชิงลึก',
-            'description' => 'บริการดูดวงผ่าน Facebook Messenger',
-            'reading_type' => 'deep',
-        ],
+        // ไม่มีการใช้งาน special amounts แบบ fixed
+        // ทุกการชำระเงินใช้ unique decimal ผ่าน UniquePaymentAmount
     ],
 
     /*

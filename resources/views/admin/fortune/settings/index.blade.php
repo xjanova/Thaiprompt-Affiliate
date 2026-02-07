@@ -14,6 +14,40 @@
         </p>
     </div>
 
+    {{-- Quick Navigation Links --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+        <a href="{{ route('admin.fortune.playground') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow hover:shadow-lg transition transform hover:-translate-y-0.5">
+            <span class="text-xl">🎮</span>
+            <span class="text-sm font-semibold">AI Playground</span>
+        </a>
+        <a href="{{ route('admin.fortune.channels.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📡</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ช่องทาง</span>
+        </a>
+        <a href="{{ route('admin.fortune.categories.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📂</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">หมวดหมู่</span>
+        </a>
+        <a href="{{ route('admin.fortune.readings.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📊</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ประวัติ</span>
+        </a>
+        <a href="{{ route('admin.fortune.response-templates.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">📝</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เทมเพลต</span>
+        </a>
+        <a href="{{ route('admin.fortune.billing.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">
+            <span class="text-xl">💳</span>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">การเงิน</span>
+        </a>
+    </div>
+
     <form action="{{ route('admin.fortune.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
@@ -37,6 +71,131 @@
                            class="sr-only peer">
                     <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
                 </label>
+            </div>
+        </div>
+
+        {{-- 🔍 AI Diagnostic Panel --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="aiDiagnostic()">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    🔍 ตรวจเช็คระบบ AI
+                </h3>
+                <button type="button" @click="runDiagnose()"
+                        :disabled="loading"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg transition flex items-center gap-2">
+                    <span x-show="loading" class="animate-spin">⏳</span>
+                    <span x-show="!loading">🔍</span>
+                    <span x-text="loading ? 'กำลังตรวจสอบ...' : 'ตรวจเช็คทั้งหมด'"></span>
+                </button>
+            </div>
+
+            {{-- สถานะรวม --}}
+            <div x-show="result" x-transition class="mb-4">
+                <div class="p-4 rounded-lg border-2"
+                     :class="{
+                        'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700': result?.overall === 'ok',
+                        'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700': result?.overall === 'warning',
+                        'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700': result?.overall === 'error'
+                     }">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl" x-text="result?.overall === 'ok' ? '✅' : (result?.overall === 'warning' ? '⚠️' : '❌')"></span>
+                        <span class="text-lg font-bold"
+                              :class="{
+                                'text-green-800 dark:text-green-200': result?.overall === 'ok',
+                                'text-yellow-800 dark:text-yellow-200': result?.overall === 'warning',
+                                'text-red-800 dark:text-red-200': result?.overall === 'error'
+                              }"
+                              x-text="result?.overall === 'ok' ? 'ระบบพร้อมใช้งาน' : (result?.overall === 'warning' ? 'มีคำเตือน' : 'มีปัญหา - ต้องแก้ไข')">
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400" x-text="'ตรวจเมื่อ: ' + (result?.timestamp || '')"></p>
+                </div>
+            </div>
+
+            {{-- รายการตรวจเช็ค --}}
+            <div x-show="result?.checks" x-transition class="space-y-3">
+                <template x-for="(check, key) in result?.checks" :key="key">
+                    <div class="flex items-start gap-3 p-3 rounded-lg"
+                         :class="{
+                            'bg-green-50 dark:bg-green-900/10': check.status === 'ok',
+                            'bg-yellow-50 dark:bg-yellow-900/10': check.status === 'warning',
+                            'bg-red-50 dark:bg-red-900/10': check.status === 'error'
+                         }">
+                        <span class="text-lg flex-shrink-0 mt-0.5"
+                              x-text="check.status === 'ok' ? '✅' : (check.status === 'warning' ? '⚠️' : '❌')"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-sm text-gray-900 dark:text-white" x-text="check.label"></span>
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      :class="{
+                                        'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200': check.status === 'ok',
+                                        'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200': check.status === 'warning',
+                                        'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200': check.status === 'error'
+                                      }"
+                                      x-text="check.status === 'ok' ? 'ผ่าน' : (check.status === 'warning' ? 'คำเตือน' : 'ไม่ผ่าน')">
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" x-text="check.message"></p>
+
+                            {{-- แสดงคำแนะนำการแก้ไข --}}
+                            <div x-show="check.fix" class="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-800 dark:text-amber-200">
+                                <span class="font-semibold">วิธีแก้ไข:</span>
+                                <span x-text="check.fix"></span>
+                            </div>
+
+                            {{-- ปุ่มแก้ไขฐานข้อมูล --}}
+                            <div x-show="check.has_pending_migrations" class="mt-2">
+                                <button type="button" @click="fixDatabase()"
+                                        :disabled="fixingDb"
+                                        class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white text-xs rounded-lg transition flex items-center gap-1.5">
+                                    <span x-show="fixingDb" class="animate-spin">⏳</span>
+                                    <span x-show="!fixingDb">🔧</span>
+                                    <span x-text="fixingDb ? 'กำลังแก้ไข...' : 'แก้ไขฐานข้อมูล (รัน Migration)'"></span>
+                                </button>
+                            </div>
+
+                            {{-- แสดง preview ถ้ามี (ตัวอย่างคำตอบ AI) --}}
+                            <div x-show="check.preview" class="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 max-h-20 overflow-y-auto">
+                                <span class="font-medium">ตัวอย่างคำตอบ:</span>
+                                <span x-text="check.preview"></span>
+                            </div>
+
+                            {{-- แสดง details ถ้ามี --}}
+                            <div x-show="check.details && Object.keys(check.details).length > 0"
+                                 class="mt-2">
+                                <button type="button" @click="check._showDetails = !check._showDetails"
+                                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                    <span x-text="check._showDetails ? '🔼 ซ่อนรายละเอียด' : '🔽 ดูรายละเอียด'"></span>
+                                </button>
+                                <div x-show="check._showDetails" x-transition
+                                     class="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-700 dark:text-gray-300">
+                                    <template x-for="(val, dKey) in check.details" :key="dKey">
+                                        <div class="flex gap-2">
+                                            <span class="text-gray-500" x-text="dKey + ':'"></span>
+                                            <span x-text="typeof val === 'object' ? JSON.stringify(val) : String(val)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            {{-- ผลลัพธ์การแก้ไข DB --}}
+            <div x-show="dbFixResult" x-transition class="mt-4 p-3 rounded-lg border"
+                 :class="dbFixResult?.success ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'">
+                <div class="flex items-center gap-2 mb-1">
+                    <span x-text="dbFixResult?.success ? '✅' : '❌'"></span>
+                    <span class="font-semibold text-sm" x-text="dbFixResult?.message"></span>
+                </div>
+                <div x-show="dbFixResult?.output" class="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono text-gray-700 dark:text-gray-300 max-h-32 overflow-y-auto whitespace-pre-wrap" x-text="dbFixResult?.output"></div>
+            </div>
+
+            {{-- ข้อความเริ่มต้น --}}
+            <div x-show="!result && !loading" class="text-center py-8 text-gray-400 dark:text-gray-500">
+                <span class="text-4xl mb-2 block">🔍</span>
+                <p>กดปุ่ม "ตรวจเช็คทั้งหมด" เพื่อตรวจสอบสถานะการเชื่อมต่อ AI, Facebook และฐานข้อมูล</p>
             </div>
         </div>
 
@@ -157,9 +316,10 @@
                             ระบบจะอ่าน API Key จากการตั้งค่าระบบหลัก (AiContentSetting) โดยอัตโนมัติ
                         </p>
                         <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini</div>
+                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini (แนะนำ - ฟรี)</div>
                             <div>• หากมี <strong>Claude API Key</strong> จะใช้ Claude (via OpenRouter)</div>
                             <div>• หากมี <strong>OpenAI API Key</strong> จะใช้ GPT (via OpenRouter)</div>
+                            <div>• หากมี Key ใน <strong>API Key Pool</strong> จะใช้ Key จาก Pool (Gemini/Groq/DeepSeek/Typhoon)</div>
                         </div>
                         <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
                             💡 หากต้องการตั้งค่าแยกเฉพาะระบบดูดวง ให้ปิดตัวเลือกนี้
@@ -176,10 +336,13 @@
                     </label>
                     <select name="ai_provider" 
                             class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="gemini" {{ $settings->ai_provider === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ</option>
-                        <option value="groq" {{ $settings->ai_provider === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด</option>
+                        <option value="gemini" {{ $settings->ai_provider === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ ฟรี</option>
+                        <option value="typhoon" {{ $settings->ai_provider === 'typhoon' ? 'selected' : '' }}>Typhoon (SCB 10X) - ภาษาไทยดีสุด ฟรี</option>
+                        <option value="groq" {{ $settings->ai_provider === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด ฟรี</option>
+                        <option value="deepseek" {{ $settings->ai_provider === 'deepseek' ? 'selected' : '' }}>DeepSeek - ราคาถูก มี credits ฟรี</option>
+                        <option value="grok" {{ $settings->ai_provider === 'grok' ? 'selected' : '' }}>Grok (xAI) - ฟันธง</option>
                         <option value="qwen" {{ $settings->ai_provider === 'qwen' ? 'selected' : '' }}>Qwen (Alibaba)</option>
-                        <option value="openrouter" {{ $settings->ai_provider === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+                        <option value="openrouter" {{ $settings->ai_provider === 'openrouter' ? 'selected' : '' }}>OpenRouter - รวมหลาย AI</option>
                     </select>
                 </div>
 
@@ -203,6 +366,29 @@
                            placeholder="AIz...">
                 </div>
             </div> {{-- End of custom settings grid --}}
+
+            {{-- ลิงก์ตั้งค่าที่เกี่ยวข้อง --}}
+            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">🔗 ตั้งค่าที่เกี่ยวข้อง</h4>
+                <div class="flex flex-wrap gap-2">
+                    @if(Route::has('admin.ai-api-keys.index'))
+                    <a href="{{ route('admin.ai-api-keys.index') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/50 transition">
+                        🔑 จัดการ API Key Pool
+                    </a>
+                    @endif
+                    @if(Route::has('admin.ai-content-writer.settings'))
+                    <a href="{{ route('admin.ai-content-writer.settings') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition">
+                        🤖 ตั้งค่า AI หลัก (Global)
+                    </a>
+                    @endif
+                    <a href="{{ route('admin.fortune.playground') }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition">
+                        🎮 ทดสอบ AI Playground
+                    </a>
+                </div>
+            </div>
         </div> {{-- End of AI Settings card --}}
 
         {{-- Comment Engagement Settings --}}
@@ -329,6 +515,363 @@
                     @endif
                 </div>
             </div>
+
+            {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
+            <div class="mt-6" x-data="fortuneBankAccounts()">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        🏦 บัญชีธนาคารสำหรับระบบดูดวง
+                    </label>
+                    <button type="button" @click="showAddForm = !showAddForm"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition">
+                        <span x-text="showAddForm ? '✕ ปิด' : '+ เพิ่มบัญชีใหม่'"></span>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    จัดการบัญชีธนาคารที่จะแสดงให้ลูกค้าเมื่อต้องชำระเงินดูดวง (แยกจากอีคอมเมิร์ช)
+                </p>
+
+                {{-- ข้อความแจ้งเตือน --}}
+                <div x-show="alertMessage" x-cloak x-transition
+                     :class="alertType === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'"
+                     class="p-3 rounded-lg border text-sm mb-3">
+                    <span x-text="alertMessage"></span>
+                </div>
+
+                {{-- ฟอร์มเพิ่มบัญชีใหม่ --}}
+                <div x-show="showAddForm" x-cloak x-transition
+                     class="p-4 mb-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">เพิ่มบัญชีธนาคารใหม่</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ธนาคาร</label>
+                            <select x-model="newAccount.bank_code" @change="updateBankName()"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- เลือกธนาคาร --</option>
+                                @foreach($supportedBanks ?? [] as $code => $name)
+                                    <option value="{{ $code }}" data-name="{{ $name }}">{{ $name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">เลขบัญชี</label>
+                            <input type="text" x-model="newAccount.account_number" placeholder="เช่น 123-4-56789-0"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อบัญชี</label>
+                            <input type="text" x-model="newAccount.account_name" placeholder="เช่น นายสมชาย ใจดี"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">พร้อมเพย์ (ถ้ามี)</label>
+                            <input type="text" x-model="newAccount.promptpay_id" placeholder="เช่น 0812345678"
+                                   class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-3">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" x-model="newAccount.sms_checker_enabled"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-xs text-gray-700 dark:text-gray-300">เปิด SMS Checker (ตรวจสอบยอดโอนอัตโนมัติ)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="showAddForm = false"
+                                    class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition">
+                                ยกเลิก
+                            </button>
+                            <button type="button" @click="addAccount()" :disabled="saving"
+                                    class="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50">
+                                <span x-show="!saving">💾 บันทึก</span>
+                                <span x-show="saving">กำลังบันทึก...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- รายการบัญชี --}}
+                <div class="space-y-2">
+                    <template x-for="account in accounts" :key="account.id">
+                        <div class="p-3 rounded-lg border transition"
+                             :class="account.selected
+                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                 : 'border-gray-200 dark:border-gray-600'">
+
+                            {{-- โหมดแสดงผล --}}
+                            <div x-show="editingId !== account.id" class="flex items-start gap-3">
+                                <input type="checkbox"
+                                       :name="'fortune_bank_account_ids[]'"
+                                       :value="account.id"
+                                       x-model="account.selected"
+                                       class="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white" x-text="account.bank_name"></span>
+                                        <template x-if="account.sms_checker_enabled">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                📱 SMS Checker
+                                            </span>
+                                        </template>
+                                    </div>
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        เลขบัญชี: <span x-text="account.account_number"></span> |
+                                        ชื่อ: <span x-text="account.account_name"></span>
+                                        <template x-if="account.promptpay_id">
+                                            <span> | พร้อมเพย์: <span x-text="account.promptpay_id"></span></span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1 shrink-0">
+                                    <button type="button" @click="startEdit(account)"
+                                            class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition"
+                                            title="แก้ไข">
+                                        ✏️
+                                    </button>
+                                    <button type="button" @click="deleteAccount(account)"
+                                            class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition"
+                                            title="ลบ">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- โหมดแก้ไข --}}
+                            <div x-show="editingId === account.id" x-cloak>
+                                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">แก้ไขบัญชี</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ธนาคาร</label>
+                                        <select x-model="editData.bank_code" @change="updateEditBankName()"
+                                                class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                            @foreach($supportedBanks ?? [] as $code => $name)
+                                                <option value="{{ $code }}">{{ $name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">เลขบัญชี</label>
+                                        <input type="text" x-model="editData.account_number"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อบัญชี</label>
+                                        <input type="text" x-model="editData.account_name"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">พร้อมเพย์</label>
+                                        <input type="text" x-model="editData.promptpay_id"
+                                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between mt-3">
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" x-model="editData.sms_checker_enabled"
+                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                        <span class="text-xs text-gray-700 dark:text-gray-300">เปิด SMS Checker</span>
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="editingId = null"
+                                                class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 transition">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="button" @click="saveEdit(account)" :disabled="saving"
+                                                class="px-4 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50">
+                                            <span x-show="!saving">💾 บันทึก</span>
+                                            <span x-show="saving">กำลังบันทึก...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    {{-- ข้อความเมื่อไม่มีบัญชี --}}
+                    <div x-show="accounts.length === 0" class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-center">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            ยังไม่มีบัญชีธนาคาร กด "+ เพิ่มบัญชีใหม่" เพื่อเพิ่ม
+                        </p>
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    💡 ติ๊กเลือกบัญชีที่ต้องการใช้กับระบบดูดวง หากไม่เลือก จะใช้บัญชีทั้งหมดที่เปิด SMS Checker
+                </p>
+            </div>
+
+            <script>
+                /**
+                 * Alpine.js component สำหรับจัดการบัญชีธนาคารระบบดูดวง
+                 */
+                function fortuneBankAccounts() {
+                    // รายชื่อธนาคารจาก supportedBanks
+                    const bankNames = @json($supportedBanks ?? []);
+                    // IDs ที่เลือกไว้
+                    const selectedIds = @json($settings->fortune_bank_account_ids ?? []);
+
+                    return {
+                        showAddForm: false,
+                        saving: false,
+                        editingId: null,
+                        alertMessage: '',
+                        alertType: 'success',
+                        // บัญชีทั้งหมด (เตรียมจาก controller)
+                        accounts: @json($bankAccountsJson ?? []),
+                        // ฟอร์มเพิ่มบัญชีใหม่
+                        newAccount: {
+                            bank_code: '',
+                            bank_name: '',
+                            account_number: '',
+                            account_name: '',
+                            promptpay_id: '',
+                            sms_checker_enabled: true,
+                        },
+                        // ฟอร์มแก้ไข
+                        editData: {
+                            bank_code: '',
+                            bank_name: '',
+                            account_number: '',
+                            account_name: '',
+                            promptpay_id: '',
+                            sms_checker_enabled: true,
+                        },
+
+                        /**
+                         * อัพเดทชื่อธนาคารจาก bank_code (ฟอร์มเพิ่ม)
+                         */
+                        updateBankName() {
+                            this.newAccount.bank_name = bankNames[this.newAccount.bank_code] || '';
+                        },
+
+                        /**
+                         * อัพเดทชื่อธนาคารจาก bank_code (ฟอร์มแก้ไข)
+                         */
+                        updateEditBankName() {
+                            this.editData.bank_name = bankNames[this.editData.bank_code] || '';
+                        },
+
+                        /**
+                         * แสดงข้อความแจ้งเตือน
+                         */
+                        showAlert(message, type = 'success') {
+                            this.alertMessage = message;
+                            this.alertType = type;
+                            setTimeout(() => { this.alertMessage = ''; }, 4000);
+                        },
+
+                        /**
+                         * เพิ่มบัญชีใหม่ via AJAX
+                         */
+                        async addAccount() {
+                            if (!this.newAccount.bank_code || !this.newAccount.account_number || !this.newAccount.account_name) {
+                                this.showAlert('กรุณากรอกข้อมูลให้ครบ (ธนาคาร, เลขบัญชี, ชื่อบัญชี)', 'error');
+                                return;
+                            }
+                            this.saving = true;
+                            try {
+                                const res = await fetch('{{ route("admin.fortune.settings.bank-accounts.store") }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: JSON.stringify(this.newAccount),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    data.account.selected = true;
+                                    this.accounts.push(data.account);
+                                    // reset ฟอร์ม
+                                    this.newAccount = { bank_code: '', bank_name: '', account_number: '', account_name: '', promptpay_id: '', sms_checker_enabled: true };
+                                    this.showAddForm = false;
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                            this.saving = false;
+                        },
+
+                        /**
+                         * เริ่มแก้ไขบัญชี
+                         */
+                        startEdit(account) {
+                            this.editingId = account.id;
+                            this.editData = {
+                                bank_code: account.bank_code,
+                                bank_name: account.bank_name,
+                                account_number: account.account_number,
+                                account_name: account.account_name,
+                                promptpay_id: account.promptpay_id || '',
+                                sms_checker_enabled: account.sms_checker_enabled,
+                            };
+                        },
+
+                        /**
+                         * บันทึกการแก้ไขบัญชี via AJAX
+                         */
+                        async saveEdit(account) {
+                            this.saving = true;
+                            try {
+                                const url = '{{ route("admin.fortune.settings.bank-accounts.update", ":id") }}'.replace(':id', account.id);
+                                const res = await fetch(url, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: JSON.stringify(this.editData),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    // อัพเดทข้อมูลใน list
+                                    const idx = this.accounts.findIndex(a => a.id === account.id);
+                                    if (idx !== -1) {
+                                        this.accounts[idx] = { ...this.accounts[idx], ...data.account };
+                                    }
+                                    this.editingId = null;
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                            this.saving = false;
+                        },
+
+                        /**
+                         * ลบบัญชี via AJAX
+                         */
+                        async deleteAccount(account) {
+                            if (!confirm('ต้องการลบบัญชี ' + account.bank_name + ' (' + account.account_number + ') หรือไม่?')) return;
+                            try {
+                                const url = '{{ route("admin.fortune.settings.bank-accounts.delete", ":id") }}'.replace(':id', account.id);
+                                const res = await fetch(url, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    this.accounts = this.accounts.filter(a => a.id !== account.id);
+                                    this.showAlert(data.message);
+                                } else {
+                                    this.showAlert(data.message || 'เกิดข้อผิดพลาด', 'error');
+                                }
+                            } catch (e) {
+                                this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                            }
+                        },
+                    };
+                }
+            </script>
 
             <div class="mt-4 space-y-3">
                 <label class="flex items-center">
@@ -533,6 +1076,76 @@
 
 @push('scripts')
 <script>
+function aiDiagnostic() {
+    return {
+        loading: false,
+        result: null,
+        fixingDb: false,
+        dbFixResult: null,
+        async runDiagnose() {
+            this.loading = true;
+            this.result = null;
+            this.dbFixResult = null;
+
+            try {
+                const response = await fetch('{{ route("admin.fortune.settings.diagnose") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                this.result = await response.json();
+            } catch (error) {
+                this.result = {
+                    overall: 'error',
+                    checks: {
+                        connection: {
+                            label: 'การเชื่อมต่อ',
+                            status: 'error',
+                            message: 'ไม่สามารถเรียก API ตรวจสอบได้: ' + error.message,
+                        }
+                    },
+                    timestamp: new Date().toLocaleString('th-TH'),
+                };
+            } finally {
+                this.loading = false;
+            }
+        },
+        async fixDatabase() {
+            if (!confirm('ต้องการรัน Migration เพื่อสร้างตารางที่ขาดหายไป?')) return;
+
+            this.fixingDb = true;
+            this.dbFixResult = null;
+
+            try {
+                const response = await fetch('{{ route("admin.fortune.settings.run-migrations") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                this.dbFixResult = await response.json();
+
+                // ถ้าสำเร็จ ให้ตรวจเช็คใหม่อัตโนมัติ
+                if (this.dbFixResult.success) {
+                    setTimeout(() => this.runDiagnose(), 1500);
+                }
+            } catch (error) {
+                this.dbFixResult = {
+                    success: false,
+                    message: 'เกิดข้อผิดพลาด: ' + error.message,
+                };
+            } finally {
+                this.fixingDb = false;
+            }
+        }
+    };
+}
+
 function fortuneSettings() {
     return {
         commentEngagementEnabled: {{ $settings->comment_engagement_enabled ? 'true' : 'false' }},
