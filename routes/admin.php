@@ -3801,6 +3801,7 @@ use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneChannelController;
+use App\Http\Controllers\Admin\FortuneUserCreditController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3855,6 +3856,16 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/void', [FortuneBillingController::class, 'void'])->name('void');
         Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
         Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
+    });
+
+    // จัดการเครดิตดูดวงฟรีรายคน
+    Route::prefix('credits')->name('credits.')->group(function () {
+        Route::get('/', [FortuneUserCreditController::class, 'index'])->name('index');
+        Route::post('/add-credits', [FortuneUserCreditController::class, 'addCredits'])->name('add-credits');
+        Route::post('/{credit}/reset-daily', [FortuneUserCreditController::class, 'resetDaily'])->name('reset-daily');
+        Route::post('/{credit}/set-unlimited', [FortuneUserCreditController::class, 'setUnlimited'])->name('set-unlimited');
+        Route::post('/{credit}/reset-all', [FortuneUserCreditController::class, 'resetAll'])->name('reset-all');
+        Route::delete('/{credit}', [FortuneUserCreditController::class, 'destroy'])->name('destroy');
     });
 });
 
