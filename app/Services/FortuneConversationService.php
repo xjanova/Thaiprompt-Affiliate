@@ -521,7 +521,7 @@ class FortuneConversationService
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
-        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
         $message = "🔮 *สิทธิ์ดูดวงของคุณวันนี้*\n";
         $message .= "═══════════════════════\n\n";
@@ -833,9 +833,12 @@ class FortuneConversationService
             return $this->createPaymentBill($reading, $questions);
         }
 
+        // ใช้ unique_amount จาก uniquePaymentAmount (ค่าจริงที่ต้องโอน)
+        $payAmount = $uniqueAmount ? number_format($uniqueAmount->unique_amount, 2) : number_format($reading->amount_paid, 2);
+
         return [
             'action' => 'waiting_payment',
-            'message' => "💳 รอรับชำระเงินอยู่ค่ะ\n\nยอดที่ต้องโอน: ฿" . number_format($reading->amount_paid, 2) . "\n\n" .
+            'message' => "💳 รอรับชำระเงินอยู่ค่ะ\n\nยอดที่ต้องโอน: ฿{$payAmount}\n\n" .
                         "เมื่อโอนแล้วระบบจะตรวจสอบอัตโนมัติและส่งคำทำนายให้ทันทีค่ะ ✨\n\n" .
                         "พิมพ์ 'บัญชี' เพื่อดูบัญชีธนาคารอีกครั้ง\n" .
                         "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก",
@@ -1111,7 +1114,11 @@ class FortuneConversationService
      */
     protected function getBankAccountsMessage(FortuneReading $reading): string
     {
-        $amount = number_format($reading->amount_paid, 2);
+        // ดึงยอดจาก uniquePaymentAmount (ค่าจริงที่ต้องโอน) ถ้ามี
+        $uniqueAmount = $reading->uniquePaymentAmount;
+        $amount = $uniqueAmount
+            ? number_format($uniqueAmount->unique_amount, 2)
+            : number_format($reading->amount_paid, 2);
         $message = "💰 *ยอดชำระ: ฿{$amount}*\n\n";
         $message .= $this->getBankAccountsListMessage();
         $message .= "⚠️ กรุณาโอนยอด ฿{$amount} ตรงตามทศนิยมค่ะ";
@@ -1157,7 +1164,7 @@ class FortuneConversationService
      */
     protected function getHelpMessageWithExamples(): string
     {
-        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
         $message = "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n";
         $message .= "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่องอะไร:\n\n";
@@ -1805,7 +1812,7 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
-        $price = $this->settings->deep_reading_price ?? self::DEEP_READING_PRICE;
+        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
 
         $message = "🔮 *สวัสดีค่ะ ขอบคุณที่มาหาหมอนะคะ*\n\n";
         $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";
