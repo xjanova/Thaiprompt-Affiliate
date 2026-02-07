@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.480.2] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2510 from xjanova/claude/fix-payment-notification-TQHwy (48a4dac0)
+- fix: แก้ส่งข้อความ Facebook ไม่ได้เมื่อเกิน 24 ชม. (MESSAGE_TAG) (84cbf812)
+- fix: FacebookWebhookService implements MessagingPlatformInterface (c0eee7fb)
+### 🔧 Other Changes
+
+
 ## [v3.480.1] - 2026-02-07
 
 ### ✨ Features
