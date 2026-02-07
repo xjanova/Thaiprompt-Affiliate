@@ -3802,6 +3802,7 @@ use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
+use App\Http\Controllers\Admin\FortuneUsersController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3839,6 +3840,15 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
+
+    // จัดการผู้ใช้ดูดวง + ส่งข้อความ
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [FortuneUsersController::class, 'index'])->name('index');
+        Route::get('/{platform}/{userId}', [FortuneUsersController::class, 'show'])->name('show');
+        Route::post('/send-message', [FortuneUsersController::class, 'sendMessage'])->name('send-message');
+        Route::post('/broadcast', [FortuneUsersController::class, 'broadcastMessage'])->name('broadcast');
+        Route::post('/quick-add-credits', [FortuneUsersController::class, 'quickAddCredits'])->name('quick-add-credits');
+    });
 
     // เทมเพลตตอบกลับ
     Route::resource('response-templates', FortuneResponseTemplatesController::class)->except('show');
