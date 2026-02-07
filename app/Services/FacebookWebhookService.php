@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
+use App\Contracts\MessagingPlatformInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -22,7 +23,7 @@ use Exception;
  * - Webhook signature verification
  * - Quick replies buttons
  */
-class FacebookWebhookService
+class FacebookWebhookService implements MessagingPlatformInterface
 {
     protected $settings;
     protected $pageAccessToken;
@@ -56,7 +57,7 @@ class FacebookWebhookService
      * @param string $message ข้อความที่ต้องการส่ง
      * @return bool สำเร็จหรือไม่
      */
-    public function sendMessage(string $recipientId, string $message): bool
+    public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
         // ตรวจสอบ Page Access Token ก่อนส่ง
         if (empty($this->pageAccessToken)) {
@@ -69,19 +70,39 @@ class FacebookWebhookService
         $chunks = $this->splitLongMessage($message);
         $maxRetries = 2;
 
+        // กำหนด messaging_type
+        // - RESPONSE: ส่งภายใน 24 ชม. หลังผู้ใช้ส่งมา (default)
+        // - MESSAGE_TAG: ส่งนอก 24 ชม. ต้องมี tag
+        $messagingType = $options['messaging_type'] ?? 'RESPONSE';
+        $messageTag = $options['message_tag'] ?? null;
+
+        // ถ้าเป็นการส่งจาก admin / marketing → ใช้ MESSAGE_TAG + HUMAN_AGENT
+        // เพื่อให้ส่งได้แม้เกิน 24 ชม. (Facebook อนุญาตภายใน 7 วัน)
+        if (!empty($options['from_admin']) || !empty($options['force_tag'])) {
+            $messagingType = 'MESSAGE_TAG';
+            $messageTag = $messageTag ?? 'HUMAN_AGENT';
+        }
+
         foreach ($chunks as $chunkIndex => $chunk) {
             $sent = false;
 
             // ลองส่งแต่ละ chunk สูงสุด 2 ครั้ง
             for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
                 try {
+                    $payload = [
+                        'recipient' => ['id' => $recipientId],
+                        'message' => ['text' => $chunk],
+                        'messaging_type' => $messagingType,
+                        'access_token' => $this->pageAccessToken,
+                    ];
+
+                    // เพิ่ม tag ถ้ามี
+                    if ($messagingType === 'MESSAGE_TAG' && $messageTag) {
+                        $payload['tag'] = $messageTag;
+                    }
+
                     $response = Http::timeout(30)
-                        ->post($this->graphUrl('/me/messages'), [
-                            'recipient' => ['id' => $recipientId],
-                            'message' => ['text' => $chunk],
-                            'messaging_type' => 'RESPONSE',
-                            'access_token' => $this->pageAccessToken,
-                        ]);
+                        ->post($this->graphUrl('/me/messages'), $payload);
 
                     // เช็ค HTTP status อย่างละเอียด
                     if ($response->successful()) {
@@ -101,9 +122,21 @@ class FacebookWebhookService
                         'error_code' => $errorCode,
                         'error_subcode' => $errorSubcode,
                         'error_message' => $errorMsg,
+                        'messaging_type' => $messagingType,
+                        'tag' => $messageTag,
                         'token_prefix' => substr($this->pageAccessToken, 0, 10) . '...',
                         'chunk' => $chunkIndex + 1,
                     ]);
+
+                    // ถ้าใช้ RESPONSE แล้ว error 10 (outside 24hr) → ลองใหม่ด้วย MESSAGE_TAG
+                    if ($messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065])) {
+                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG + HUMAN_AGENT', [
+                            'recipient' => $recipientId,
+                        ]);
+                        $messagingType = 'MESSAGE_TAG';
+                        $messageTag = 'HUMAN_AGENT';
+                        continue; // retry ด้วย tag ใหม่
+                    }
 
                     // ถ้าเป็น token error (190) หรือ permission error (10) ไม่ต้อง retry
                     if (in_array($errorCode, [190, 10, 200])) {
@@ -154,7 +187,7 @@ class FacebookWebhookService
      * @param string|null $caption ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
      * @return bool สำเร็จหรือไม่
      */
-    public function sendImage(string $recipientId, string $imageUrl, ?string $caption = null): bool
+    public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
         try {
             // ส่งรูปภาพ
@@ -174,9 +207,9 @@ class FacebookWebhookService
                     'access_token' => $this->pageAccessToken,
                 ])->throw();
 
-            // ส่งข้อความกำกับรูป (ถ้ามี)
-            if (!empty($caption)) {
-                $this->sendMessage($recipientId, $caption);
+            // ส่งข้อความกำกับรูป (ถ้ามี previewUrl ใช้เป็น caption)
+            if (!empty($previewUrl)) {
+                $this->sendMessage($recipientId, $previewUrl);
             }
 
             Log::info('ส่งรูปภาพสำเร็จ', [
@@ -1154,5 +1187,70 @@ class FacebookWebhookService
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
             ];
         }
+    }
+
+    // ============================================================
+    // MessagingPlatformInterface: methods เพิ่มเติม
+    // ============================================================
+
+    /**
+     * ส่งข้อความแบบ Rich (Facebook ใช้ Generic Template)
+     */
+    public function sendRichMessage(string $recipientId, array $richContent): bool
+    {
+        try {
+            Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), [
+                    'recipient' => ['id' => $recipientId],
+                    'message' => $richContent,
+                    'messaging_type' => 'RESPONSE',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('ส่ง Rich Message ไม่สำเร็จ: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * ตรวจสอบว่า webhook event เป็นข้อความหรือไม่
+     */
+    public function isMessageEvent(array $event): bool
+    {
+        return isset($event['message']['text']);
+    }
+
+    /**
+     * ดึงข้อความจาก webhook event
+     */
+    public function getMessageText(array $event): ?string
+    {
+        return $event['message']['text'] ?? null;
+    }
+
+    /**
+     * ดึง User ID จาก webhook event
+     */
+    public function getUserIdFromEvent(array $event): ?string
+    {
+        return $event['sender']['id'] ?? null;
+    }
+
+    /**
+     * ดึงชื่อ platform
+     */
+    public function getPlatformName(): string
+    {
+        return 'facebook';
+    }
+
+    /**
+     * Facebook Messenger รองรับ Rich Message (Generic Template, Button Template)
+     */
+    public function supportsRichMessage(): bool
+    {
+        return true;
     }
 }
