@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\SmsCheckerDevice;
 use App\Models\User;
+use App\Models\VendorStore;
 use Illuminate\Console\Command;
 
 /**
@@ -21,7 +22,8 @@ class SmsCheckerCreateDeviceCommand extends Command
      */
     protected $signature = 'smschecker:create-device
                             {name : ชื่ออุปกรณ์ (เช่น "Samsung Galaxy S24")}
-                            {--user= : User ID ของเจ้าของอุปกรณ์ (ไม่บังคับ)}';
+                            {--user= : User ID ของเจ้าของอุปกรณ์ (ไม่บังคับ)}
+                            {--store= : Store ID ที่ต้องการผูก (ไม่ระบุ = ร้าน admin/official)}';
 
     /**
      * คำอธิบายคำสั่ง
@@ -55,6 +57,11 @@ class SmsCheckerCreateDeviceCommand extends Command
         $secretKey = SmsCheckerDevice::generateSecretKey();
         $deviceId = 'SMSCHK-' . strtoupper(bin2hex(random_bytes(4)));
 
+        // กำหนด store_id: ถ้าไม่ระบุ → ใช้ platformStoreId (ร้าน admin/official)
+        $storeId = $this->option('store') ?? VendorStore::getPlatformStoreId();
+        $storeName = VendorStore::find($storeId)?->store_name ?? 'Unknown';
+        $this->info("🏪 ร้านค้า: {$storeName} (ID: {$storeId})");
+
         // สร้าง device record
         $device = SmsCheckerDevice::create([
             'device_id' => $deviceId,
@@ -64,6 +71,7 @@ class SmsCheckerCreateDeviceCommand extends Command
             'platform' => 'android',
             'status' => 'active',
             'user_id' => $userId,
+            'store_id' => $storeId,
         ]);
 
         $this->newLine();
@@ -78,6 +86,7 @@ class SmsCheckerCreateDeviceCommand extends Command
                 ['API Key', $apiKey],
                 ['Secret Key', $secretKey],
                 ['Status', $device->status],
+                ['Store', $storeName . ' (ID: ' . $device->store_id . ')'],
                 ['User ID', $device->user_id ?? '-'],
             ]
         );

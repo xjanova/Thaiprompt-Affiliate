@@ -143,10 +143,15 @@ class PaymentService
      * หา store_id ของ order สำหรับ SMS Gateway routing
      *
      * Logic:
-     * - ถ้าทุก item มาจากร้านเดียวกัน (ไม่ใช่ Official Shop) → return store_id นั้น
-     * - ถ้าเป็น Official Shop หรือ mixed stores → return null (admin จัดการ)
+     * - ถ้าทุก item มาจากร้านเดียวกัน (vendor store) → return store_id นั้น
+     * - ถ้าเป็น Official Shop หรือ mixed stores → return platformStoreId
+     *
+     * ⚠️ ไม่ return null เพราะ:
+     * - null ทำให้ SQL WHERE store_id = NULL ไม่ทำงาน
+     * - ใช้ platformStoreId เป็นตัวแทนของร้าน admin/official เสมอ
+     * - ป้องกันการสับสนระหว่าง "ไม่มีร้าน" กับ "ร้าน admin"
      */
-    private function resolveStoreIdForOrder(Order $order): ?int
+    private function resolveStoreIdForOrder(Order $order): int
     {
         $order->loadMissing('items.product');
 
@@ -166,13 +171,13 @@ class PaymentService
 
         $uniqueStoreIds = $storeIds->unique();
 
-        // ทุก item เป็นร้านเดียวกัน
+        // ทุก item เป็นร้านเดียวกัน (vendor store)
         if ($uniqueStoreIds->count() === 1) {
             return $uniqueStoreIds->first();
         }
 
-        // Mixed stores หรือ Official Shop only → null (admin)
-        return null;
+        // Mixed stores หรือ Official Shop only → ใช้ Platform Store ID
+        return VendorStore::getPlatformStoreId();
     }
 
     /**

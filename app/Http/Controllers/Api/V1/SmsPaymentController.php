@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
+use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
 use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
@@ -168,6 +170,89 @@ class SmsPaymentController extends Controller
             // เวลาที่สร้างบิลจริงจากเซิร์ฟ (ISO 8601) - แอพควรใช้เวลานี้แสดง ไม่ใช่ createdAt ของ local DB
             'created_at' => $txn->created_at?->toIso8601String(),
             'updated_at' => $txn->updated_at?->toIso8601String(),
+            'notification' => $notification,
+        ];
+    }
+
+    /**
+     * แปลง FortuneReading → RemoteOrderApproval format สำหรับ Android app
+     *
+     * ใช้ ID ที่บวก offset เพื่อป้องกันชนกับ PaymentTransaction IDs
+     * prefix "FR-" ใน order_number ให้แอพแยกแยะได้
+     */
+    private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
+    {
+        // แปลง conversation_status → approval_status ที่ Android เข้าใจ
+        $approvalStatus = match ($reading->conversation_status) {
+            FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
+            FortuneReading::STATUS_PAID, FortuneReading::STATUS_COMPLETED => 'auto_approved',
+            default => 'pending_review',
+        };
+
+        // ดึงยอดเงินจริงที่ต้องชำระ (unique amount)
+        $uniquePayment = $reading->unique_payment_amount_id
+            ? UniquePaymentAmount::find($reading->unique_payment_amount_id)
+            : null;
+        $displayAmount = $uniquePayment
+            ? (float) $uniquePayment->unique_amount
+            : (float) $reading->amount_paid;
+
+        $orderDetails = [
+            'order_number' => 'FR-' . $reading->id,
+            'product_name' => 'ดูดวง' . ($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
+            'product_details' => $reading->facebook_user_name ?? null,
+            'quantity' => 1,
+            'website_name' => config('app.name'),
+            'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
+            'amount' => $displayAmount,
+        ];
+
+        // ดึง matched notification ถ้ามี
+        $notification = null;
+        if ($reading->sms_notification_id) {
+            $matchedNotification = SmsPaymentNotification::find($reading->sms_notification_id);
+            if ($matchedNotification) {
+                $notification = [
+                    'id' => $matchedNotification->id,
+                    'bank' => $matchedNotification->bank,
+                    'type' => $matchedNotification->type,
+                    'amount' => sprintf('%.2f', (float) $matchedNotification->amount),
+                    'sms_timestamp' => $matchedNotification->sms_timestamp,
+                    'sender_or_receiver' => $matchedNotification->sender_or_receiver,
+                ];
+            }
+        }
+
+        if (! $notification) {
+            $notification = [
+                'id' => $reading->id,
+                'bank' => 'PROMPTPAY',
+                'type' => 'credit',
+                'amount' => sprintf('%.2f', $displayAmount),
+                'sms_timestamp' => $reading->created_at?->format('Y-m-d H:i:s'),
+                'sender_or_receiver' => $reading->facebook_user_name ?? '',
+            ];
+        }
+
+        // ใช้ offset 10,000,000 เพื่อป้องกัน ID ชนกับ PaymentTransaction
+        $virtualId = 10000000 + $reading->id;
+
+        return [
+            'id' => $virtualId,
+            'notification_id' => $reading->sms_notification_id,
+            'matched_transaction_id' => $virtualId,
+            'device_id' => null,
+            'approval_status' => $approvalStatus,
+            'confidence' => $reading->is_paid ? 'high' : 'medium',
+            'approved_by' => null,
+            'approved_at' => $reading->paid_at?->toIso8601String(),
+            'rejected_at' => null,
+            'rejection_reason' => null,
+            'order_details_json' => $orderDetails,
+            'server_name' => config('app.name'),
+            'synced_version' => $reading->updated_at ? intval($reading->updated_at->timestamp * 1000) : 0,
+            'created_at' => $reading->created_at?->toIso8601String(),
+            'updated_at' => $reading->updated_at?->toIso8601String(),
             'notification' => $notification,
         ];
     }
@@ -523,13 +608,52 @@ class SmsPaymentController extends Controller
             return $this->transformToOrderApproval($txn);
         });
 
+        // === รวมบิลดูดวง (FortuneReading) ที่รอชำระเงินหรือชำระแล้ว ===
+        // FortuneReading ไม่ได้ใช้ PaymentTransaction จึงต้องดึงแยก
+        // แสดงเฉพาะ page 1 เพื่อไม่ให้ซ้ำในหน้าถัดไป
+        $fortuneReadings = collect();
+        if ($paginated->currentPage() === 1) {
+            $fortuneQuery = FortuneReading::query()
+                ->whereNotNull('unique_payment_amount_id');
+
+            if ($status === 'waiting') {
+                $fortuneQuery->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT);
+            } elseif ($status === 'all') {
+                $fortuneQuery->whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PAID,
+                    FortuneReading::STATUS_COMPLETED,
+                ]);
+            }
+
+            if ($dateFrom) {
+                $fortuneQuery->where('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $fortuneQuery->where('created_at', '<=', $dateTo);
+            }
+
+            $fortuneReadings = $fortuneQuery->orderBy('created_at', 'desc')
+                ->limit(20)
+                ->get();
+
+            $fortuneOrders = $fortuneReadings->map(function ($reading) {
+                return $this->transformFortuneReadingToOrderApproval($reading);
+            });
+
+            // รวมเข้ากับ orders แล้ว sort ตาม created_at
+            $orders = $orders->concat($fortuneOrders)
+                ->sortByDesc('created_at')
+                ->values();
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
                 'data' => $orders,
                 'current_page' => $paginated->currentPage(),
                 'last_page' => $paginated->lastPage(),
-                'total' => $paginated->total(),
+                'total' => $paginated->total() + $fortuneReadings->count(),
             ],
         ]);
     }
@@ -751,6 +875,31 @@ class SmsPaymentController extends Controller
             return $this->transformToOrderApproval($txn);
         });
 
+        // === รวมบิลดูดวง (FortuneReading) ที่เปลี่ยนแปลง ===
+        $fortuneQuery = FortuneReading::query()
+            ->whereNotNull('unique_payment_amount_id')
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_PAID,
+                FortuneReading::STATUS_COMPLETED,
+            ]);
+
+        if ($sinceVersion > 0) {
+            $fortuneQuery->where('updated_at', '>', date('Y-m-d H:i:s', $sinceVersion / 1000));
+        }
+
+        $fortuneReadings = $fortuneQuery->orderBy('updated_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        $fortuneOrders = $fortuneReadings->map(function ($reading) {
+            return $this->transformFortuneReadingToOrderApproval($reading);
+        });
+
+        $allOrders = $orders->concat($fortuneOrders)
+            ->sortByDesc('updated_at')
+            ->values();
+
         $latestVersion = intval(round(microtime(true) * 1000));
 
         // อัพเดท last_active_at ของอุปกรณ์
@@ -759,7 +908,7 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'orders' => $orders,
+                'orders' => $allOrders,
                 'latest_version' => $latestVersion,
             ],
         ]);
@@ -852,7 +1001,50 @@ class SmsPaymentController extends Controller
             }
         }
 
+        // === Fallback: ตรวจสอบว่าเป็นบิลดูดวง (FortuneReading) ===
+        // ถ้าไม่พบ PaymentTransaction ที่ตรง → ลอง match กับ FortuneReading
         if (! $transaction) {
+            // 1) ยังรอชำระ (pending_payment)
+            $fortuneReading = FortuneReading::findByUniqueAmount($amount);
+
+            // 2) /notify อาจ handle ไปแล้ว → ดูดวง status=paid/completed
+            if (! $fortuneReading) {
+                $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+                    ->where('transaction_type', 'fortune_reading')
+                    ->where('created_at', '>=', now()->subHours(1))
+                    ->first();
+
+                if ($uniquePayment) {
+                    $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
+                        ->whereIn('conversation_status', [
+                            FortuneReading::STATUS_PAID,
+                            FortuneReading::STATUS_COMPLETED,
+                        ])
+                        ->first();
+                }
+            }
+
+            if ($fortuneReading) {
+                $orderData = $this->transformFortuneReadingToOrderApproval($fortuneReading);
+                $device->update(['last_active_at' => now()]);
+
+                Log::info('SMS Payment: Fortune reading matched by amount', [
+                    'device_id' => $device->device_id,
+                    'amount' => $amount,
+                    'fortune_reading_id' => $fortuneReading->id,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'matched' => true,
+                        'order' => $orderData,
+                        'message' => 'Found matching fortune reading',
+                    ],
+                ]);
+            }
+
+            // ไม่พบทั้ง PaymentTransaction และ FortuneReading
             return response()->json([
                 'success' => true,
                 'data' => [

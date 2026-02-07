@@ -132,8 +132,9 @@ class SmsPaymentNotification extends Model
      * พยายามจับคู่ notification นี้กับ pending payment transaction
      *
      * ลำดับการจับคู่:
-     * 1. จับคู่ด้วย unique decimal amount
-     * 2. Fallback: จับคู่ด้วย reference_number + จำนวนเงินใกล้เคียง
+     * 1. จับคู่ด้วย unique decimal amount (UniquePaymentAmount ที่ยังไม่หมดอายุ)
+     * 2. Fallback: จับคู่ด้วย PaymentTransaction.amount ตรงๆ (กรณี UniquePaymentAmount หมดอายุ แต่ transaction ยังเป็น pending)
+     * 3. Fallback: จับคู่ด้วย reference_number + จำนวนเงินใกล้เคียง
      *
      * @param bool $autoConfirm ยืนยัน transaction อัตโนมัติเมื่อจับคู่ได้
      * @return bool จับคู่สำเร็จหรือไม่
@@ -146,15 +147,27 @@ class SmsPaymentNotification extends Model
 
         // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
         return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm) {
-            // จับคู่ด้วย unique amount (พร้อม lock)
+            // ดึง store_id ของ device เพื่อ filter เฉพาะ transactions ของร้านตัวเอง
+            // ป้องกันการ match ข้ามร้านเมื่อมี multi-store
+            // ถ้า device.store_id = null (legacy) → fallback เป็น platformStoreId
+            $deviceModel = SmsCheckerDevice::where('device_id', $this->device_id)->first();
+            $deviceStoreId = (int) ($deviceModel?->store_id ?? VendorStore::getPlatformStoreId());
+
+            // ขั้นที่ 1: จับคู่ด้วย unique amount ที่ยังไม่หมดอายุ (พร้อม lock)
             // กรองเฉพาะบิลอีคอมเมิร์ซ (order, order_payment, topup, tarot_reading)
             // ไม่รวมบิลดูดวง (fortune_reading) เพราะจัดการแยกใน handleFortuneReadingPayment()
-            $uniqueAmount = UniquePaymentAmount::where('unique_amount', $this->amount)
+            $uniqueAmountQuery = UniquePaymentAmount::where('unique_amount', $this->amount)
                 ->where('status', 'reserved')
                 ->where('expires_at', '>', now())
                 ->where('transaction_type', '!=', 'fortune_reading')
-                ->lockForUpdate()
-                ->first();
+                ->lockForUpdate();
+
+            // Filter ตาม store_id ของ device (ป้องกัน match ข้ามร้าน)
+            $uniqueAmountQuery->whereHas('transaction', function ($q) use ($deviceStoreId) {
+                $q->where('store_id', $deviceStoreId);
+            });
+
+            $uniqueAmount = $uniqueAmountQuery->first();
 
             if ($uniqueAmount) {
                 // จับคู่สำเร็จ
@@ -178,10 +191,50 @@ class SmsPaymentNotification extends Model
                 return true;
             }
 
-            // Fallback: จับคู่ด้วย reference_number (พร้อม lock)
+            // ขั้นที่ 2: Fallback - จับคู่ด้วย PaymentTransaction.amount ตรงๆ
+            // กรณี UniquePaymentAmount หมดอายุแล้ว (เช่น ลูกค้าจ่ายหลัง 30 นาที)
+            // แต่ PaymentTransaction ยังเป็น pending อยู่ (ยังไม่ถูก cleanup)
+            // ใช้ exact match กับ amount ที่มีทศนิยม (unique decimal) เพื่อความแม่นยำ
+            $transaction = PaymentTransaction::where('amount', $this->amount)
+                ->whereIn('status', ['pending', 'processing'])
+                ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+                ->where('store_id', $deviceStoreId)
+                ->lockForUpdate()
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($transaction) {
+                $this->status = 'matched';
+                $this->matched_transaction_id = $transaction->id;
+                $this->save();
+
+                // อัพเดท UniquePaymentAmount ที่หมดอายุให้เป็น used (ถ้ามี)
+                $expiredUniqueAmount = UniquePaymentAmount::where('transaction_id', $transaction->id)
+                    ->whereIn('status', ['reserved', 'expired'])
+                    ->first();
+                if ($expiredUniqueAmount) {
+                    $expiredUniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                }
+
+                if ($autoConfirm) {
+                    app(PaymentService::class)->completePayment($transaction);
+                }
+
+                \Illuminate\Support\Facades\Log::info('SMS Payment: จับคู่ผ่าน PaymentTransaction fallback (UniquePaymentAmount หมดอายุ)', [
+                    'notification_id' => $this->id,
+                    'transaction_id' => $transaction->id,
+                    'amount' => $this->amount,
+                    'device_store_id' => $deviceStoreId,
+                ]);
+
+                return true;
+            }
+
+            // ขั้นที่ 3: Fallback - จับคู่ด้วย reference_number (พร้อม lock)
             if ($this->reference_number) {
                 $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
                     ->where('status', 'pending')
+                    ->where('store_id', $deviceStoreId)
                     ->lockForUpdate()
                     ->first();
 

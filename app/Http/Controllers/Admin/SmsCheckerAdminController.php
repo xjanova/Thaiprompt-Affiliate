@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -126,7 +127,12 @@ class SmsCheckerAdminController extends Controller
         $validated = $request->validate([
             'device_name' => 'required|string|max:255',
             'user_id' => 'nullable|integer|exists:users,id',
+            'store_id' => 'nullable|integer|exists:vendor_stores,id',
         ]);
+
+        // ถ้าไม่ได้ระบุ store_id → ใช้ platformStoreId (ร้าน admin/official)
+        // เพื่อให้ device ผูกกับร้านเสมอ (ป้องกัน null store_id)
+        $storeId = $validated['store_id'] ?? VendorStore::getPlatformStoreId();
 
         $device = SmsCheckerDevice::create([
             'device_id' => 'SMSCHK-' . strtoupper(bin2hex(random_bytes(4))),
@@ -136,6 +142,7 @@ class SmsCheckerAdminController extends Controller
             'platform' => 'android',
             'status' => 'active',
             'user_id' => $validated['user_id'] ?? null,
+            'store_id' => $storeId,
         ]);
 
         return redirect()

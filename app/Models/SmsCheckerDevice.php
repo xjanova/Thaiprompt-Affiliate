@@ -175,11 +175,17 @@ class SmsCheckerDevice extends Model
     // ========================================
 
     /**
-     * ตรวจสอบว่าเป็นอุปกรณ์ของ admin หรือไม่
+     * ตรวจสอบว่าเป็นอุปกรณ์ของ admin/official shop หรือไม่
+     *
+     * Admin device = store_id เป็น null (legacy) หรือ platformStoreId
      */
     public function isAdminDevice(): bool
     {
-        return $this->store_id === null;
+        if ($this->store_id === null) {
+            return true; // Legacy device ที่ยังไม่ได้ set store_id
+        }
+
+        return (int) $this->store_id === VendorStore::getPlatformStoreId();
     }
 
     /**

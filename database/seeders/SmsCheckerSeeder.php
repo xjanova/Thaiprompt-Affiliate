@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\SmsCheckerDevice;
+use App\Models\VendorStore;
 use Illuminate\Database\Seeder;
 
 /**
@@ -27,7 +28,7 @@ class SmsCheckerSeeder extends Seeder
             return;
         }
 
-        // สร้างอุปกรณ์ทดสอบ
+        // สร้างอุปกรณ์ทดสอบ — ผูกกับ Platform Store (ร้าน admin/official)
         SmsCheckerDevice::create([
             'device_id' => 'SMSCHK-TESTDEV1',
             'device_name' => 'อุปกรณ์ทดสอบ #1',
@@ -37,6 +38,7 @@ class SmsCheckerSeeder extends Seeder
             'app_version' => '1.0.0',
             'status' => 'active',
             'user_id' => 1,
+            'store_id' => VendorStore::getPlatformStoreId(),
         ]);
 
         $this->command->info('✅ Seed ข้อมูล SMS Checker Device สำเร็จ!');
