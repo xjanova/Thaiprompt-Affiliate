@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.5] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Change basic_response and deep_response to longText (31779935)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (e3202d70)
+
 ## [v3.473.4] - 2026-02-07
 
 ### ✨ Features
