@@ -647,9 +647,12 @@ class FortuneConversationService
             // เพิ่มเลขที่บิลอ้างอิงท้ายคำทำนาย
             $billRefMessage = $this->getBillReferenceMessage($reading->bill_reference);
 
+            // แสดงจำนวนสิทธิ์ฟรีที่เหลือ (รวมเครดิตพิเศษจากแอดมิน/โปรโมชั่น)
+            $remainingMessage = $this->getRemainingCreditsMessage($facebookUserId);
+
             return [
                 'action' => 'basic_done',
-                'message' => $aiResult['response'] . "\n\n" . $billRefMessage . "\n\n" . $upsellMessage,
+                'message' => $aiResult['response'] . "\n\n" . $remainingMessage . "\n\n" . $billRefMessage . "\n\n" . $upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
             ];
@@ -1034,6 +1037,34 @@ class FortuneConversationService
     // ============================================================
     // Helper Methods - Message Builders
     // ============================================================
+
+    /**
+     * สร้างข้อความแสดงจำนวนสิทธิ์ฟรีที่เหลือ (รวมเครดิตพิเศษจากแอดมิน/โปรโมชั่น)
+     */
+    protected function getRemainingCreditsMessage(string $userId): string
+    {
+        $remaining = $this->getRemainingFreeQuestions($userId);
+
+        // เช็คว่ามีเครดิตพิเศษจากแอดมินหรือไม่
+        $userCredit = FortuneUserCredit::findByUser($userId);
+        $hasSpecialCredit = $userCredit && ($userCredit->isCurrentlyUnlimited() || $userCredit->getRemainingCredits() > 0 || $userCredit->isDailyResetActive());
+
+        if ($remaining >= 99) {
+            return "📊 สิทธิ์ดูดวงฟรี: ✨ ไม่จำกัด ✨ (โปรโมชั่นพิเศษ!)";
+        }
+
+        $msg = "📊 สิทธิ์ดูดวงฟรีคงเหลือวันนี้: {$remaining} ครั้ง";
+
+        if ($hasSpecialCredit && $userCredit->getRemainingCredits() > 0) {
+            $msg .= " (รวมเครดิตพิเศษ {$userCredit->getRemainingCredits()} ครั้ง 🎁)";
+        }
+
+        if ($remaining <= 0) {
+            $msg .= "\n💡 สิทธิ์ฟรีหมดแล้ว สามารถดูดวงละเอียดได้ค่ะ";
+        }
+
+        return $msg;
+    }
 
     /**
      * สร้างข้อความ upsell ชวนดูดวงละเอียด
