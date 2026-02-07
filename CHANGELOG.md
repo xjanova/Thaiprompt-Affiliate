@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.482.0] - 2026-02-07
+
+### ✨ Features
+- feat: add fortune reading bills to Android app orders + multi-store strict mode (30edd7ba)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.481.1] - 2026-02-07
 
 ### ✨ Features
