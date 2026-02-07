@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.4] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add default ai_response/ai_provider values in startNewConversation (5e0b9134)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (5ee04cc1)
+
 ## [v3.473.3] - 2026-02-07
 
 ### ✨ Features
