@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.3] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Make ai_response and ai_provider nullable in fortune_readings (51b39a85)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (233d72b7)
+
 ## [v3.473.2] - 2026-02-07
 
 ### ✨ Features
