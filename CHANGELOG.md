@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.473.0] - 2026-02-07
+
+### ✨ Features
+- Merge pull request #2500 from xjanova/claude/fix-fortune-ai-integration-mWDAQ (d0c214bf)
+- feat: แก้ระบบดูดวง AI ให้ทำนายจริง + เพิ่ม Playground + DeepSeek/Typhoon (df0545ae)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.472.1] - 2026-02-06
 
 ### ✨ Features
