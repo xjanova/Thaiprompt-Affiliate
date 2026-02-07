@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.481.0] - 2026-02-07
+
+### ✨ Features
+- feat: แสดงสิทธิ์ฟรีคงเหลือหลังทำนาย + แก้ส่งข้อความหลังชำระเงินไม่สำเร็จ (12bd3baa)
+### 🐛 Bug Fixes
+- fix: แก้บอทตอบแค่ทักทายแทนที่จะทำนายดวง (a8072fac)
+### 🔧 Other Changes
+- Merge pull request #2511 from xjanova/claude/fix-payment-notification-TQHwy (7d6f07cf)
+
 ## [v3.480.3] - 2026-02-07
 
 ### ✨ Features
