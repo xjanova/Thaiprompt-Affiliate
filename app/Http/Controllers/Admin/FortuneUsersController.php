@@ -143,7 +143,8 @@ class FortuneUsersController extends Controller
 
             $success = $platformService->sendMessage(
                 $validated['facebook_user_id'],
-                $validated['message']
+                $validated['message'],
+                ['from_admin' => true]
             );
 
             if ($success) {
@@ -211,14 +212,15 @@ class FortuneUsersController extends Controller
                     if ($platformService) {
                         $success = $platformService->sendMessage(
                             $recipient->facebook_user_id,
-                            $validated['message']
+                            $validated['message'],
+                            ['from_admin' => true]
                         );
                         $success ? $sent++ : $failed++;
                     } else {
                         $failed++;
                     }
-                    // หน่วงเวลาเล็กน้อยเพื่อไม่ให้โดน rate limit
-                    usleep(200000); // 0.2 วินาที
+                    // หน่วงเวลาเพื่อไม่ให้โดน rate limit
+                    usleep(300000); // 0.3 วินาที
                 } catch (\Exception $e) {
                     $failed++;
                     Log::warning('Broadcast message failed for user', [

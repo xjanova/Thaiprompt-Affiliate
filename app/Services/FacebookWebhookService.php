@@ -70,19 +70,39 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $chunks = $this->splitLongMessage($message);
         $maxRetries = 2;
 
+        // กำหนด messaging_type
+        // - RESPONSE: ส่งภายใน 24 ชม. หลังผู้ใช้ส่งมา (default)
+        // - MESSAGE_TAG: ส่งนอก 24 ชม. ต้องมี tag
+        $messagingType = $options['messaging_type'] ?? 'RESPONSE';
+        $messageTag = $options['message_tag'] ?? null;
+
+        // ถ้าเป็นการส่งจาก admin / marketing → ใช้ MESSAGE_TAG + HUMAN_AGENT
+        // เพื่อให้ส่งได้แม้เกิน 24 ชม. (Facebook อนุญาตภายใน 7 วัน)
+        if (!empty($options['from_admin']) || !empty($options['force_tag'])) {
+            $messagingType = 'MESSAGE_TAG';
+            $messageTag = $messageTag ?? 'HUMAN_AGENT';
+        }
+
         foreach ($chunks as $chunkIndex => $chunk) {
             $sent = false;
 
             // ลองส่งแต่ละ chunk สูงสุด 2 ครั้ง
             for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
                 try {
+                    $payload = [
+                        'recipient' => ['id' => $recipientId],
+                        'message' => ['text' => $chunk],
+                        'messaging_type' => $messagingType,
+                        'access_token' => $this->pageAccessToken,
+                    ];
+
+                    // เพิ่ม tag ถ้ามี
+                    if ($messagingType === 'MESSAGE_TAG' && $messageTag) {
+                        $payload['tag'] = $messageTag;
+                    }
+
                     $response = Http::timeout(30)
-                        ->post($this->graphUrl('/me/messages'), [
-                            'recipient' => ['id' => $recipientId],
-                            'message' => ['text' => $chunk],
-                            'messaging_type' => 'RESPONSE',
-                            'access_token' => $this->pageAccessToken,
-                        ]);
+                        ->post($this->graphUrl('/me/messages'), $payload);
 
                     // เช็ค HTTP status อย่างละเอียด
                     if ($response->successful()) {
@@ -102,9 +122,21 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'error_code' => $errorCode,
                         'error_subcode' => $errorSubcode,
                         'error_message' => $errorMsg,
+                        'messaging_type' => $messagingType,
+                        'tag' => $messageTag,
                         'token_prefix' => substr($this->pageAccessToken, 0, 10) . '...',
                         'chunk' => $chunkIndex + 1,
                     ]);
+
+                    // ถ้าใช้ RESPONSE แล้ว error 10 (outside 24hr) → ลองใหม่ด้วย MESSAGE_TAG
+                    if ($messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065])) {
+                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG + HUMAN_AGENT', [
+                            'recipient' => $recipientId,
+                        ]);
+                        $messagingType = 'MESSAGE_TAG';
+                        $messageTag = 'HUMAN_AGENT';
+                        continue; // retry ด้วย tag ใหม่
+                    }
 
                     // ถ้าเป็น token error (190) หรือ permission error (10) ไม่ต้อง retry
                     if (in_array($errorCode, [190, 10, 200])) {

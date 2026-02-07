@@ -333,7 +333,7 @@ PROMPT;
             try {
                 $platformService = $channelManager->getPlatform($recipient->platform);
                 if ($platformService) {
-                    $success = $platformService->sendMessage($recipient->facebook_user_id, $message);
+                    $success = $platformService->sendMessage($recipient->facebook_user_id, $message, ['from_admin' => true]);
                     $success ? $sent++ : $failed++;
                 } else {
                     $failed++;
