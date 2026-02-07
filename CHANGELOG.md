@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.480.0] - 2026-02-07
+
+### ✨ Features
+- Merge pull request #2509 from xjanova/claude/fix-payment-notification-TQHwy (621234f5)
+- feat: เพิ่มระบบการตลาดดูดวงอัตโนมัติ (AI Marketing Campaigns) (f2632f55)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.479.0] - 2026-02-07
 
 ### ✨ Features
