@@ -144,6 +144,11 @@ class FortuneChannelManager
         // สำหรับ platform อื่นๆ ส่งข้อความธรรมดา
         $options = [];
 
+        // ถ้าเป็นการส่งจาก admin หรือ extra ระบุ → ใช้ MESSAGE_TAG เพื่อส่งได้แม้เกิน 24 ชม.
+        if (!empty($extra['from_admin'])) {
+            $options['from_admin'] = true;
+        }
+
         // เพิ่ม quick replies ถ้ามี
         if (!empty($result['show_quick_replies'])) {
             $options['quick_replies'] = $this->getQuickReplies($action);
@@ -399,7 +404,7 @@ class FortuneChannelManager
 
         // สำหรับ LINE ใช้ sendResponse ที่จัดการ deep_readings อยู่แล้ว
         if ($platform === self::PLATFORM_LINE) {
-            $this->sendResponse($platform, $userId, $result);
+            $this->sendResponse($platform, $userId, $result, ['from_admin' => true]);
             return $result;
         }
 
@@ -408,20 +413,30 @@ class FortuneChannelManager
         $platformService = $this->getPlatform($platform);
 
         if ($platformService && !empty($deepReadings)) {
+            // ใช้ from_admin เพราะเป็นการส่งคำทำนายหลังชำระเงิน อาจเกิน 24 ชม.
+            $sendOptions = ['from_admin' => true];
+
             foreach ($deepReadings as $dr) {
                 $message = "═══════════════════════\n";
                 $message .= "❓ คำถามที่ {$dr['question_number']}: {$dr['question']}\n";
                 $message .= "═══════════════════════\n\n";
                 $message .= $dr['answer'];
 
-                $platformService->sendMessage($userId, $message);
+                $sent = $platformService->sendMessage($userId, $message, $sendOptions);
+                if (!$sent) {
+                    Log::error('FortuneChannelManager: ส่งคำทำนายละเอียดไม่สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'user_id' => $userId,
+                        'question_number' => $dr['question_number'],
+                    ]);
+                }
                 usleep(500000); // 0.5 วินาที
             }
 
             // ส่งข้อความขอบคุณ
             $thankYou = $result['thank_you'] ?? '';
             if ($thankYou) {
-                $platformService->sendMessage($userId, $thankYou);
+                $platformService->sendMessage($userId, $thankYou, $sendOptions);
             }
         } else {
             // Fallback: ส่งข้อความรวม
