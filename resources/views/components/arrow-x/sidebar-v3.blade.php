@@ -334,21 +334,26 @@
             icon="fas fa-sitemap"
             dashboardType="admin"
             activeGradient="from-purple-500 to-pink-600"
-            :isActive="request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*')"
+            :isActive="request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') || request()->routeIs('admin.ranks.*') || request()->routeIs('admin.team-transfer.*')"
             :submenu="[
+                {{-- === จัดการ === --}}
                 ['label' => 'Dashboard', 'url' => route('admin.mlm.reports.dashboard'), 'icon' => 'fas fa-chart-pie'],
                 ['label' => 'สมาชิก', 'url' => route('admin.mlm.members.index'), 'icon' => 'fas fa-users-cog'],
-                ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index'), 'icon' => 'fas fa-layer-group'],
+                ['label' => 'ระดับสมาชิก', 'url' => route('admin.ranks.index'), 'icon' => 'fas fa-medal'],
+                ['label' => 'Prospects', 'url' => route('admin.mlm-prospects.index'), 'icon' => 'fas fa-user-plus'],
+                {{-- === การเงิน === --}}
                 ['label' => 'คอมมิชชั่น', 'url' => route('admin.mlm.commissions.index'), 'icon' => 'fas fa-money-bill-wave'],
                 ['label' => 'Product PV', 'url' => route('admin.mlm.product-pv.index'), 'icon' => 'fas fa-tags'],
                 ['label' => 'รายงาน', 'url' => route('admin.mlm.reports.index'), 'icon' => 'fas fa-chart-line'],
+                {{-- === เครือข่าย === --}}
                 ['label' => 'Genealogy', 'url' => route('admin.mlm.genealogy.index'), 'icon' => 'fas fa-project-diagram'],
-                ['label' => 'ระดับสมาชิก', 'url' => route('admin.ranks.index'), 'icon' => 'fas fa-medal'],
-                ['label' => 'Prospects', 'url' => route('admin.mlm-prospects.index'), 'icon' => 'fas fa-user-plus'],
-                ['label' => 'เครื่องคิดเลข', 'url' => route('admin.mlm.calculator'), 'icon' => 'fas fa-calculator'],
-                ['label' => 'ตัวอย่าง Placement', 'url' => route('admin.mlm.placement-examples'), 'icon' => 'fas fa-lightbulb'],
+                ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index'), 'icon' => 'fas fa-layer-group'],
                 ['label' => 'การย้ายทีม', 'url' => route('admin.team-transfer.index'), 'icon' => 'fas fa-exchange-alt'],
                 ['label' => 'ย้ายทีมโดยตรง', 'url' => route('admin.team-transfer.direct'), 'icon' => 'fas fa-random'],
+                {{-- === เครื่องมือ === --}}
+                ['label' => 'เครื่องคิดเลข', 'url' => route('admin.mlm.calculator'), 'icon' => 'fas fa-calculator'],
+                ['label' => 'ตัวอย่าง Placement', 'url' => route('admin.mlm.placement-examples'), 'icon' => 'fas fa-lightbulb'],
+                {{-- === ตั้งค่า === --}}
                 ['label' => 'ตั้งค่า', 'url' => route('admin.mlm.settings.index'), 'icon' => 'fas fa-cogs'],
             ]"
             :defaultUrl="route('admin.mlm.reports.dashboard')"
