@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.480.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: auto-approve order on SMS match and fix status mapping (02b503c7)
+### 🔧 Other Changes
+
+
 ## [v3.480.0] - 2026-02-07
 
 ### ✨ Features
