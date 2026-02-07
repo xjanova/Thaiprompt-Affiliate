@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.480.3] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: resolve race condition in matchOrderByAmount — fallback to completed orders (6b3d935d)
+### 🔧 Other Changes
+
+
 ## [v3.480.2] - 2026-02-07
 
 ### ✨ Features
