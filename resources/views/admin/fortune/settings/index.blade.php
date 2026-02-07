@@ -516,6 +516,66 @@
                 </div>
             </div>
 
+            {{-- บัญชีธนาคารสำหรับระบบดูดวง --}}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    🏦 บัญชีธนาคารสำหรับระบบดูดวง
+                </label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    เลือกบัญชีที่จะแสดงให้ลูกค้าเมื่อต้องชำระเงินดูดวง (แยกจากอีคอมเมิร์ช) หากไม่เลือก จะใช้บัญชีทั้งหมดที่เปิด SMS Checker
+                </p>
+
+                @if(isset($bankAccounts) && $bankAccounts->count() > 0)
+                    <div class="space-y-2">
+                        @foreach($bankAccounts as $account)
+                            @php
+                                $selectedIds = old('fortune_bank_account_ids', $settings->fortune_bank_account_ids ?? []);
+                                $isSelected = is_array($selectedIds) && in_array($account->id, $selectedIds);
+                            @endphp
+                            <label class="flex items-start gap-3 p-3 rounded-lg border transition cursor-pointer
+                                {{ $isSelected
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400'
+                                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-700/50' }}">
+                                <input type="checkbox"
+                                       name="fortune_bank_account_ids[]"
+                                       value="{{ $account->id }}"
+                                       {{ $isSelected ? 'checked' : '' }}
+                                       class="mt-1 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ $account->bank_name }}
+                                        </span>
+                                        @if($account->sms_checker_enabled)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                                📱 SMS Checker
+                                            </span>
+                                        @endif
+                                        @if($account->is_default)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                                ⭐ บัญชีหลัก
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        เลขบัญชี: {{ $account->account_number }} | ชื่อ: {{ $account->account_name }}
+                                        @if($account->promptpay_id)
+                                            | พร้อมเพย์: {{ $account->promptpay_id }}
+                                        @endif
+                                    </div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                            ⚠️ ยังไม่มีบัญชีธนาคารในระบบ กรุณา<a href="{{ route('admin.payment-bank-accounts.index') }}" class="underline font-medium">เพิ่มบัญชีธนาคาร</a>ก่อน
+                        </p>
+                    </div>
+                @endif
+            </div>
+
             <div class="mt-4 space-y-3">
                 <label class="flex items-center">
                     <input type="checkbox" name="respond_in_comment" value="1"

@@ -109,6 +109,19 @@ SELECT '2026_02_07_130000_fix_fortune_readings_nullable_columns', COALESCE(MAX(b
 WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_02_07_130000_fix_fortune_readings_nullable_columns');
 
 -- ============================================================
+-- 6. เพิ่มคอลัมน์ fortune_bank_account_ids (บัญชีธนาคารเฉพาะดูดวง)
+-- ============================================================
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'fortune_telling_settings' AND COLUMN_NAME = 'fortune_bank_account_ids');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE `fortune_telling_settings` ADD COLUMN `fortune_bank_account_ids` json DEFAULT NULL COMMENT \'IDs ของบัญชีธนาคารที่ใช้เฉพาะระบบดูดวง (JSON array)\' AFTER `payment_qr_image`', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+INSERT IGNORE INTO `migrations` (`migration`, `batch`)
+SELECT '2026_02_07_150000_add_fortune_bank_accounts_to_settings', COALESCE(MAX(batch), 0) + 1 FROM `migrations`
+WHERE NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_02_07_150000_add_fortune_bank_accounts_to_settings');
+
+-- ============================================================
 -- เสร็จสิ้น! ตรวจสอบผลลัพธ์:
 -- ============================================================
 SELECT 'fortune_comment_engagements' AS `table`, COUNT(*) AS `rows` FROM `fortune_comment_engagements`

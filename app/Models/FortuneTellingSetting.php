@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
+use App\Models\PaymentBankAccount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -114,6 +115,8 @@ class FortuneTellingSetting extends Model
         // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
         'admin_handover_enabled',
         'admin_handover_timeout',
+        // บัญชีธนาคารเฉพาะระบบดูดวง
+        'fortune_bank_account_ids',
     ];
 
     /**
@@ -134,6 +137,7 @@ class FortuneTellingSetting extends Model
         'admin_handover_timeout' => 'integer',
         'line_enabled' => 'boolean',
         'enabled_platforms' => 'array',
+        'fortune_bank_account_ids' => 'array',
         'max_free_readings' => 'integer',
         'free_deep_per_day' => 'integer',
         'reading_price' => 'decimal:2',
@@ -207,6 +211,39 @@ class FortuneTellingSetting extends Model
         }
 
         return $settings;
+    }
+
+    /**
+     * ดึงบัญชีธนาคารที่ใช้เฉพาะระบบดูดวง
+     *
+     * ถ้าไม่ได้เลือกบัญชีไว้ จะ fallback ไปใช้บัญชีทั้งหมดที่เปิด SMS Checker
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<PaymentBankAccount>
+     */
+    public function getFortuneBankAccounts(): \Illuminate\Database\Eloquent\Collection
+    {
+        $ids = $this->fortune_bank_account_ids;
+
+        if (!empty($ids) && is_array($ids)) {
+            // ดึงเฉพาะบัญชีที่เลือก (ต้อง active ด้วย)
+            return PaymentBankAccount::whereIn('id', $ids)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+        }
+
+        // Fallback: ดึงบัญชีที่เปิด SMS Checker ทั้งหมด
+        $accounts = PaymentBankAccount::active()
+            ->smsCheckerEnabled()
+            ->ordered()
+            ->get();
+
+        // ถ้าไม่มีบัญชี SMS Checker ให้ดึง active ทั้งหมด
+        if ($accounts->isEmpty()) {
+            $accounts = PaymentBankAccount::active()->ordered()->get();
+        }
+
+        return $accounts;
     }
 
     /**

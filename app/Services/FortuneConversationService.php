@@ -1074,19 +1074,15 @@ class FortuneConversationService
     }
 
     /**
-     * ดึงบัญชีธนาคารที่เปิด SMS Checker
+     * ดึงบัญชีธนาคารสำหรับระบบดูดวง
+     *
+     * ใช้บัญชีเฉพาะที่ตั้งค่าไว้ในระบบดูดวง (fortune_bank_account_ids)
+     * ถ้าไม่ได้ตั้งค่า จะ fallback ไปใช้บัญชีที่เปิด SMS Checker ทั้งหมด
      */
     protected function getBankAccountsListMessage(): string
     {
-        $accounts = PaymentBankAccount::active()
-            ->smsCheckerEnabled()
-            ->ordered()
-            ->get();
-
-        if ($accounts->isEmpty()) {
-            // ถ้าไม่มีบัญชีที่เปิด SMS Checker ให้ดึงบัญชีที่ active ทั้งหมด
-            $accounts = PaymentBankAccount::active()->ordered()->get();
-        }
+        // ใช้ method จาก FortuneTellingSetting ที่ดึงบัญชีเฉพาะดูดวง
+        $accounts = $this->settings->getFortuneBankAccounts();
 
         if ($accounts->isEmpty()) {
             return "🏦 กรุณาติดต่อแอดมินเพื่อขอบัญชีธนาคาร\n";

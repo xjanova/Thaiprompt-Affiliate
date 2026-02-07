@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneTellingSetting;
+use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,8 +23,14 @@ class FortuneSettingsController extends Controller
     {
         $settings = FortuneTellingSetting::getSettings();
 
+        // ดึงบัญชีธนาคารที่ active สำหรับให้เลือกใช้กับระบบดูดวง
+        $bankAccounts = PaymentBankAccount::active()
+            ->ordered()
+            ->get();
+
         return view('admin.fortune.settings.index', [
             'settings' => $settings,
+            'bankAccounts' => $bankAccounts,
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
     }
@@ -77,6 +84,9 @@ class FortuneSettingsController extends Controller
             'comment_reply_template' => 'nullable|string|max:500',
             'comment_dm_template' => 'nullable|string|max:2000',
             'comment_engagement_prompt' => 'nullable|string|max:3000',
+            // บัญชีธนาคารเฉพาะระบบดูดวง
+            'fortune_bank_account_ids' => 'nullable|array',
+            'fortune_bank_account_ids.*' => 'exists:payment_bank_accounts,id',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -91,6 +101,11 @@ class FortuneSettingsController extends Controller
             if (!$request->has($field)) {
                 $validated[$field] = false;
             }
+        }
+
+        // จัดการ fortune_bank_account_ids (empty array → null)
+        if (empty($validated['fortune_bank_account_ids'])) {
+            $validated['fortune_bank_account_ids'] = null;
         }
 
         // อัพโหลด QR Code ถ้ามี
