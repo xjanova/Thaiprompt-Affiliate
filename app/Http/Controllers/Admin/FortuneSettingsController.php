@@ -41,7 +41,7 @@ class FortuneSettingsController extends Controller
             'facebook_page_token' => 'nullable|string',
             'facebook_verify_token' => 'nullable|string|max:100',
             // การตั้งค่า AI
-            'ai_provider' => 'required|in:gemini,groq,grok,qwen,openrouter',
+            'ai_provider' => 'required|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
             'ai_api_key' => 'nullable|string',
             'ai_model' => 'required|string|max:100',
             'basic_prompt_template' => 'nullable|string',
@@ -395,6 +395,63 @@ class FortuneSettingsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'รัน migration ไม่สำเร็จ: ' . mb_substr($e->getMessage(), 0, 300),
+            ], 500);
+        }
+    }
+
+    /**
+     * หน้า AI Playground สำหรับทดสอบสนทนากับ AI
+     */
+    public function playground()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        return view('admin.fortune.playground.index', [
+            'settings' => $settings,
+            'pageTitle' => 'AI Playground - ทดสอบดูดวง',
+        ]);
+    }
+
+    /**
+     * API สำหรับส่งข้อความใน Playground
+     */
+    public function playgroundChat(Request $request)
+    {
+        $validated = $request->validate([
+            'messages' => 'required|array|min:1',
+            'messages.*.role' => 'required|in:user,assistant',
+            'messages.*.content' => 'required|string|max:2000',
+            'reading_type' => 'nullable|in:basic,deep',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+
+        try {
+            $aiService = new FortuneAIService($settings);
+            $result = $aiService->playgroundChat(
+                $validated['messages'],
+                $validated['reading_type'] ?? 'basic'
+            );
+
+            return response()->json([
+                'success' => true,
+                'response' => $result['response'],
+                'debug' => [
+                    'provider' => $result['provider'],
+                    'model' => $result['model'],
+                    'tokens_used' => $result['tokens_used'],
+                    'response_time_ms' => $result['response_time_ms'] ?? 0,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'debug' => [
+                    'provider' => $settings->getActualAIProvider(),
+                    'model' => $settings->getActualAIModel(),
+                    'has_api_key' => !empty($settings->getActualAIApiKey()),
+                ],
             ], 500);
         }
     }
