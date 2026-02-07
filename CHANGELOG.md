@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.475.1] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2502 from xjanova/claude/review-mlm-calculations-E3eMx (46315e1b)
+- fix: E2E audit - edit page formula, overpay+referral, race condition (eb4fed3f)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/review-mlm-calculations-E3eMx (7575cb27)
+
 ## [v3.475.0] - 2026-02-07
 
 ### ✨ Features
