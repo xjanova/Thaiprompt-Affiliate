@@ -71,44 +71,61 @@
             </x-modern-card>
 
             @php
-                // Get existing PV data if exists
+                // ดึง PV จากสินค้า
                 $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
                 $existingPv = $defaultPlan ? $product->getMlmPv($defaultPlan->id) : null;
                 $pvValue = old('pv_value', $existingPv?->pv_value ?? 0);
+
+                // ดึงค่า platform fee จาก settings (ตรงกับ create page)
+                $platformFeeFromSettings = \App\Models\MarketplaceSetting::get('platform_fee_percentage', 10);
+                $vatFromSettings = \App\Models\MarketplaceSetting::get('vat_percentage', 7);
+                $commissionPerPv = \App\Models\MlmGlobalSetting::get('commission_per_pv', 1.00);
+                $vatEnabled = \App\Models\MlmGlobalSetting::get('vat_enabled', true);
             @endphp
 
-            {{-- Wrapper x-data สำหรับ Section 2 และ 3 เพื่อให้ calculator ทำงานร่วมกัน --}}
+            {{-- Wrapper x-data - สูตรตรงกับ create page + OrderDistributionService --}}
             <div x-data="{
                     price: {{ old('price', $product->price) }},
                     comparePrice: {{ old('compare_at_price', $product->compare_at_price ?? 0) }},
                     costPrice: {{ old('cost_price', $product->cost_price ?? 0) }},
-                    commissionRate: {{ old('commission_rate', $product->commission_rate ?? 10) }},
+                    platformFee: {{ $platformFeeFromSettings }},
+                    vat: {{ $vatFromSettings }},
                     pvValue: {{ old('pv_value', $pvValue) }},
                     cashbackFixed: {{ old('customer_cashback', $product->customer_cashback ?? 0) }},
                     cashbackPercentage: {{ old('cashback_percentage', $product->cashback_percentage ?? 0) }},
-                    get pvAmount() {
-                        return this.price * (this.pvValue / 100);
-                    },
-                    get commission() {
-                        return this.price * (this.commissionRate / 100);
+                    commissionPerPv: {{ $commissionPerPv }},
+                    vatEnabled: {{ $vatEnabled ? 'true' : 'false' }},
+                    get platformFeeAmount() {
+                        return (Number(this.price) || 0) * ((Number(this.platformFee) || 0) / 100);
                     },
                     get cashbackAmount() {
-                        return this.cashbackFixed + (this.price * (this.cashbackPercentage / 100));
+                        return (Number(this.cashbackFixed) || 0) + ((Number(this.price) || 0) * ((Number(this.cashbackPercentage) || 0) / 100));
+                    },
+                    get vatAmount() {
+                        if (!this.vatEnabled) return 0;
+                        const beforeTax = (Number(this.price) || 0) - this.platformFeeAmount - this.cashbackAmount;
+                        return beforeTax * ((Number(this.vat) || 0) / 100);
+                    },
+                    get pvAmount() {
+                        return (Number(this.pvValue) || 0) * (Number(this.commissionPerPv) || 1);
                     },
                     get totalDeduction() {
-                        return this.commission + this.pvAmount + this.cashbackAmount;
+                        return this.platformFeeAmount + this.cashbackAmount + this.vatAmount + this.pvAmount;
                     },
                     get sellerReceive() {
-                        return this.price - this.totalDeduction;
+                        return Math.max(0, (Number(this.price) || 0) - this.totalDeduction);
                     },
                     get profit() {
-                        return this.sellerReceive - this.costPrice;
+                        return this.sellerReceive - (Number(this.costPrice) || 0);
                     },
                     get profitMargin() {
-                        return this.price > 0 ? ((this.profit / this.price) * 100).toFixed(2) : 0;
+                        const p = Number(this.price) || 0;
+                        return p > 0 ? ((this.profit / p) * 100).toFixed(2) : 0;
                     },
                     get discount() {
-                        return this.comparePrice > this.price ? (((this.comparePrice - this.price) / this.comparePrice) * 100).toFixed(0) : 0;
+                        const cp = Number(this.comparePrice) || 0;
+                        const p = Number(this.price) || 0;
+                        return cp > p ? (((cp - p) / cp) * 100).toFixed(0) : 0;
                     }
                 }" class="space-y-6">
 
@@ -272,20 +289,32 @@
                                 </span>
                             </div>
 
-                            {{-- ค่าแพลตฟอร์ม/คอมมิชชั่น --}}
+                            {{-- Platform Fee --}}
                             <div class="flex justify-between items-center text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">
-                                    🏢 ค่าแพลตฟอร์ม (<span x-text="commissionRate.toFixed(1)"></span>%)
+                                    🏢 Platform Fee (<span x-text="platformFee"></span>%)
                                 </span>
                                 <span class="text-red-600 dark:text-red-400">
-                                    -฿<span x-text="commission.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    -฿<span x-text="platformFeeAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
                                 </span>
                             </div>
 
-                            {{-- ค่า PV --}}
+                            {{-- VAT --}}
+                            <template x-if="vatEnabled && vatAmount > 0">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-600 dark:text-gray-400">
+                                        🧾 VAT (<span x-text="vat"></span>%)
+                                    </span>
+                                    <span class="text-red-600 dark:text-red-400">
+                                        -฿<span x-text="vatAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
+                                    </span>
+                                </div>
+                            </template>
+
+                            {{-- ค่า MLM Commission (PV-based) --}}
                             <div class="flex justify-between items-center text-sm">
                                 <span class="text-gray-600 dark:text-gray-400">
-                                    ⭐ ค่าการตลาด PV (<span x-text="pvValue.toFixed(1)"></span>%)
+                                    ⭐ คอม MLM (<span x-text="pvValue"></span> PV × ฿<span x-text="commissionPerPv"></span>)
                                 </span>
                                 <span class="text-orange-600 dark:text-orange-400">
                                     -฿<span x-text="pvAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})"></span>
