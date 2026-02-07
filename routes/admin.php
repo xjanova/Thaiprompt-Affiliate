@@ -3803,6 +3803,7 @@ use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
+use App\Http\Controllers\Admin\FortuneMarketingController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // การตั้งค่า
@@ -3876,6 +3877,22 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{credit}/set-unlimited', [FortuneUserCreditController::class, 'setUnlimited'])->name('set-unlimited');
         Route::post('/{credit}/reset-all', [FortuneUserCreditController::class, 'resetAll'])->name('reset-all');
         Route::delete('/{credit}', [FortuneUserCreditController::class, 'destroy'])->name('destroy');
+    });
+
+    // การตลาดอัตโนมัติ (AI Marketing Campaigns)
+    Route::prefix('marketing')->name('marketing.')->group(function () {
+        Route::get('/', [FortuneMarketingController::class, 'index'])->name('index');
+        Route::get('/create', [FortuneMarketingController::class, 'create'])->name('create');
+        Route::post('/', [FortuneMarketingController::class, 'store'])->name('store');
+        Route::get('/{campaign}/edit', [FortuneMarketingController::class, 'edit'])->name('edit');
+        Route::put('/{campaign}', [FortuneMarketingController::class, 'update'])->name('update');
+        Route::delete('/{campaign}', [FortuneMarketingController::class, 'destroy'])->name('destroy');
+        Route::post('/{campaign}/generate-message', [FortuneMarketingController::class, 'generateMessage'])->name('generate-message');
+        Route::post('/{campaign}/activate', [FortuneMarketingController::class, 'activate'])->name('activate');
+        Route::post('/{campaign}/pause', [FortuneMarketingController::class, 'pause'])->name('pause');
+        Route::post('/{campaign}/cancel', [FortuneMarketingController::class, 'cancel'])->name('cancel');
+        Route::post('/{campaign}/send-now', [FortuneMarketingController::class, 'sendNow'])->name('send-now');
+        Route::post('/preview', [FortuneMarketingController::class, 'preview'])->name('preview');
     });
 });
 

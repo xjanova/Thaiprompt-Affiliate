@@ -710,6 +710,7 @@ return [
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],
+                ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],
             ],

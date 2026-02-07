@@ -317,6 +317,20 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[SMS Checker] Cleanup failed');
             });
+
+        // ========================================
+        // Fortune Marketing - ส่งแคมเปญการตลาดดูดวงอัตโนมัติ
+        // ========================================
+        $schedule->command('fortune:marketing-send')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Marketing] Campaign check completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Marketing] Campaign check failed');
+            });
     }
 
     /**
