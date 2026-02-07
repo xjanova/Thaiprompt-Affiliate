@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.475.0] - 2026-02-07
+
+### ✨ Features
+- feat: Add inline CRUD for fortune bank accounts in settings page (c264e845)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' of https://github.com/xjanova/Thaiprompt-Affiliate into claude/Main (048d54f1)
+
 ## [v3.474.0] - 2026-02-07
 
 ### ✨ Features
