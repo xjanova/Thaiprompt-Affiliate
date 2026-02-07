@@ -910,6 +910,9 @@ class FortuneConversationService
     /**
      * ประมวลผลเมื่อชำระเงินสำเร็จ
      *
+     * ทำนายทีละคำถาม อิงจากวันเดือนปีเกิด+เพศ
+     * ส่งคู่คำถาม-คำทำนายแยกกัน ให้ละเอียดน่าเชื่อถือ
+     *
      * @param FortuneReading $reading
      * @param SmsPaymentNotification|null $notification
      * @return array
@@ -920,48 +923,83 @@ class FortuneConversationService
             // ยืนยันการชำระเงิน
             $reading->confirmPayment($notification);
 
-            // ทำนายละเอียด
+            // ดึงข้อมูลสำหรับทำนาย
             $questions = $reading->questions ?? $reading->getCollectedQuestions();
             $userProfile = $reading->user_profile;
             $birthDate = $reading->birth_date?->format('Y-m-d');
+            $name = $reading->facebook_user_name ?? 'คุณ';
+            $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
-            $deepPrompt = $this->buildDeepPrompt($userProfile, $questions, $birthDate);
-            $aiResult = $this->aiService->generateWithRetryAndFallback(
-                $questions,
-                $userProfile,
-                null,
-                $deepPrompt,
-                'deep',
-                $birthDate
-            );
+            // ทำนายทีละคำถาม
+            $deepReadings = [];
+            $totalTokens = 0;
+            $lastProvider = '';
+            $lastModel = '';
 
-            // บันทึก AI call สำหรับ rate limiting (deep reading เป็นบริการชำระเงินแต่ยังนับด้วย)
+            foreach ($questions as $index => $question) {
+                $questionNum = $index + 1;
+                $totalQuestions = count($questions);
+
+                // สร้าง prompt เฉพาะคำถามนี้ อิงวันเกิด+เพศ
+                $perQuestionPrompt = $this->buildPerQuestionDeepPrompt(
+                    $userProfile,
+                    $question,
+                    $questionNum,
+                    $totalQuestions,
+                    $birthDate,
+                    $deepReadings
+                );
+
+                $aiResult = $this->aiService->generateWithRetryAndFallback(
+                    [$question],
+                    $userProfile,
+                    null,
+                    $perQuestionPrompt,
+                    'deep',
+                    $birthDate
+                );
+
+                $deepReadings[] = [
+                    'question_number' => $questionNum,
+                    'question' => $question,
+                    'answer' => $aiResult['response'],
+                ];
+
+                $totalTokens += $aiResult['tokens_used'] ?? 0;
+                $lastProvider = $aiResult['provider'] ?? '';
+                $lastModel = $aiResult['model'] ?? '';
+            }
+
+            // บันทึก AI call สำหรับ rate limiting
             if ($reading->facebook_user_id) {
                 $this->recordAICall($reading->facebook_user_id);
             }
 
+            // รวม response ทั้งหมดสำหรับบันทึกลง DB
+            $fullResponse = $this->combineDeepReadings($deepReadings, $name, $reading->bill_reference);
+
             // บันทึกคำทำนายละเอียด
             $reading->saveDeepReading(
-                $aiResult['response'],
-                $aiResult['provider'],
-                $aiResult['model'],
-                $aiResult['tokens_used']
+                $fullResponse,
+                $lastProvider,
+                $lastModel,
+                $totalTokens
             );
 
-            // สร้างข้อความขอบคุณพร้อมเลขที่บิล
-            $thankYouMessage = $this->getThankYouMessage(
-                $reading->facebook_user_name ?? 'คุณ',
-                $reading->bill_reference
-            );
+            // สร้างข้อความขอบคุณ
+            $thankYouMessage = $this->getThankYouMessage($name, $reading->bill_reference);
 
-            Log::info('Fortune Conversation: ทำนายละเอียดสำเร็จ', [
+            Log::info('Fortune Conversation: ทำนายละเอียดสำเร็จ (ทีละคำถาม)', [
                 'reading_id' => $reading->id,
-                'tokens_used' => $aiResult['tokens_used'],
+                'questions_count' => count($questions),
+                'tokens_used' => $totalTokens,
             ]);
 
             return [
                 'action' => 'completed',
-                'message' => $aiResult['response'] . "\n\n" . $thankYouMessage,
+                'message' => $fullResponse . "\n\n" . $thankYouMessage,
+                'deep_readings' => $deepReadings,
+                'thank_you' => $thankYouMessage,
                 'reading' => $reading,
             ];
 
@@ -2181,5 +2219,183 @@ class FortuneConversationService
 2. คุณพูดเฉพาะเรื่องดูดวงเท่านั้น หากถูกถามเรื่องอื่นที่ไม่เกี่ยวกับดูดวง ให้ปฏิเสธอย่างสุภาพว่า \"ขอบคุณที่สนใจนะคะ แต่จันทราขอตอบเฉพาะเรื่องดูดวงนะคะ 🙏 ถ้ามีเรื่องอยากให้ทำนาย ทักมาได้เลยค่ะ 🔮✨\"
 
 ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง เหมือนพี่สาวที่คอยแนะนำน้อง";
+    }
+
+    // ============================================================
+    // Per-Question Deep Reading (ทำนายทีละคำถาม)
+    // ============================================================
+
+    /**
+     * สร้าง prompt สำหรับทำนายละเอียดทีละคำถาม
+     *
+     * แต่ละคำถามจะอ้างอิงจากวันเกิด+เพศอย่างละเอียด
+     * ทำนายเจาะลึกเฉพาะคำถามนั้นๆ ให้แม่นยำ น่าเชื่อถือ
+     *
+     * @param array|null $userProfile โปรไฟล์ผู้ใช้
+     * @param string $question คำถามเดียว
+     * @param int $questionNumber ลำดับคำถาม (1,2,3)
+     * @param int $totalQuestions จำนวนคำถามทั้งหมด
+     * @param string|null $birthDate วันเกิด
+     * @param array $previousReadings คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)
+     * @return string
+     */
+    protected function buildPerQuestionDeepPrompt(
+        ?array $userProfile,
+        string $question,
+        int $questionNumber,
+        int $totalQuestions,
+        ?string $birthDate,
+        array $previousReadings = []
+    ): string {
+        $name = $userProfile['name'] ?? 'คุณ';
+        $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
+        $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
+
+        // ข้อมูลวันเกิดและราศี
+        $birthInfo = '';
+        $zodiacInfo = '';
+        if ($birthDate) {
+            $birthInfo = $this->formatThaiDate($birthDate);
+            $zodiacInfo = $this->getZodiacDescription($birthDate);
+        }
+
+        // สรุปคำทำนายก่อนหน้า (เพื่อไม่ให้ AI ซ้ำ)
+        $previousContext = '';
+        if (!empty($previousReadings)) {
+            $previousContext = "\n[คำทำนายที่ผ่านมา - ห้ามพูดซ้ำ ให้ทำนายมุมใหม่]\n";
+            foreach ($previousReadings as $prev) {
+                $previousContext .= "- คำถาม {$prev['question_number']}: {$prev['question']} → ตอบไปแล้ว (ห้ามพูดซ้ำ)\n";
+            }
+        }
+
+        $prompt = "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้มีพรสวรรค์ในการหยั่งรู้ดวงชะตามาตั้งแต่เด็ก เชี่ยวชาญโหราศาสตร์ไทย โหราศาสตร์สากล ไพ่ทาโรต์ เลขศาสตร์ และการหยั่งรู้ด้วยจิตสัมผัส คุณดูดวงผ่านระบบหยั่งรู้ ทำนายได้แม่นยำมาก พูดจาเพราะ อบอุ่น น่าเชื่อถือ ใช้คำแทนตัวว่า \"จันทรา\"
+
+=== กำลังทำนายคำถามที่ {$questionNumber} จาก {$totalQuestions} ===
+
+ข้อมูลผู้ขอดูดวง:
+- ชื่อ: {$name} (เรียกว่า \"{$genderPrefix}{$name}\")
+" . ($gender ? "- เพศ: {$gender}\n" : "") . "
+" . ($birthInfo ? "- วันเกิด: {$birthInfo}\n" : "") . "
+" . ($zodiacInfo ? "- {$zodiacInfo}\n" : "") . "
+คำถามที่ {$questionNumber}: {$question}
+{$previousContext}
+
+[โครงสร้างคำทำนาย - ต้องทำตามทุกข้อ]
+
+";
+
+        // คำถามแรก: เปิดด้วยวิเคราะห์ดวงจากวันเกิด
+        if ($questionNumber === 1) {
+            $prompt .= "🔮 **เปิดเรื่อง** (คำถามแรก):
+- ทักทาย{$genderPrefix}{$name}อย่างอบอุ่น
+- บอกว่า \"จันทราได้รับคำถาม {$totalQuestions} ข้อจาก{$genderPrefix}{$name} จันทราจะทำนายให้อย่างละเอียดทีละข้อนะคะ\"
+" . ($birthDate ? "- วิเคราะห์ดวงชะตาจากวันเกิดก่อน: ราศี ลัคนา ธาตุประจำตัว ดาวเคราะห์ที่ส่งผลช่วงนี้
+- บอกจุดแข็งจุดอ่อนของดวงชะตาสั้นๆ" : "- บอกว่าจันทราใช้พลังหยั่งรู้ในการสัมผัสดวงชะตาของ{$genderPrefix}{$name}") . "
+
+";
+        }
+
+        $prompt .= "⭐ **วิเคราะห์คำถาม** (เจาะลึกเฉพาะคำถามนี้):
+- ตอบคำถาม \"{$question}\" อย่างละเอียด ลึกซึ้ง
+" . ($birthDate ? "- อ้างอิงจากตำแหน่งดาวเคราะห์ที่ส่งผลต่อเรื่องนี้โดยเฉพาะ
+- ระบุว่าราศีของ{$genderPrefix}{$name}ส่งผลต่อเรื่องนี้อย่างไร" : "- ใช้พลังหยั่งรู้ในการทำนาย") . "
+- ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี
+- ระบุช่วงเวลาที่ชัดเจน เช่น \"ช่วงเดือนมีนา-เมษา\" \"ภายใน 45 วัน\" \"ก่อนวันเกิดปีหน้า\"
+
+💫 **สิ่งที่จะเกิดขึ้น** (แบ่งเป็นช่วงเวลา):
+- ระยะสั้น (1-3 เดือน): ...
+- ระยะกลาง (3-6 เดือน): ...
+- ระยะยาว (6-12 เดือน): ...
+
+🎯 **คำแนะนำเฉพาะเรื่องนี้**:
+- 🎨 สีมงคลสำหรับเรื่องนี้: ระบุ 1-2 สี + เหตุผล
+- 🔢 เลขมงคล: ระบุ 2-3 เลข
+- 📅 วันที่เหมาะทำสิ่งสำคัญเกี่ยวกับเรื่องนี้
+- ⚠️ สิ่งที่ต้องระวัง + วิธีแก้ไข/ป้องกัน
+- 🙏 สิ่งศักดิ์สิทธิ์หรือวิธีเสริมดวงเรื่องนี้
+
+";
+
+        // คำถามสุดท้าย: ปิดด้วยกำลังใจ
+        if ($questionNumber === $totalQuestions) {
+            $prompt .= "🌟 **ปิดท้าย** (คำถามสุดท้าย):
+- สรุปดวงชะตาภาพรวมของ{$genderPrefix}{$name}สั้นๆ
+- ให้กำลังใจอบอุ่น จริงใจ
+- บอกว่า \"ถ้ามีเรื่องอะไรอยากถามเพิ่มเติม ทักมาหาจันทราได้เสมอนะคะ 🔮✨\"
+- เชิญชวนส่งต่อให้เพื่อนๆ มาดูดวงกับจันทรา
+
+";
+        }
+
+        $prompt .= "[กฎสำคัญ]
+- ทำนายเฉพาะคำถามที่ {$questionNumber} เท่านั้น ห้ามตอบคำถามอื่น
+- ห้ามพูดซ้ำกับคำทำนายก่อนหน้า
+- ตอบอย่างละเอียด ไม่น้อยกว่า 300 คำ ไม่เกิน 600 คำ
+- ใช้ \"จันทรา\" แทนตัวเอง
+- ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ";
+
+        return $prompt;
+    }
+
+    /**
+     * รวมคำทำนายทีละคำถามเป็นข้อความเดียว (สำหรับบันทึกลง DB)
+     *
+     * @param array $deepReadings ข้อมูลคำทำนายแต่ละข้อ
+     * @param string $name ชื่อผู้ใช้
+     * @param string|null $billRef เลขที่บิล
+     * @return string
+     */
+    protected function combineDeepReadings(array $deepReadings, string $name, ?string $billRef = null): string
+    {
+        $combined = "";
+
+        foreach ($deepReadings as $reading) {
+            $combined .= "═══════════════════════\n";
+            $combined .= "❓ คำถามที่ {$reading['question_number']}: {$reading['question']}\n";
+            $combined .= "═══════════════════════\n\n";
+            $combined .= $reading['answer'] . "\n\n";
+        }
+
+        return $combined;
+    }
+
+    /**
+     * คำนวณราศีและข้อมูลโหราศาสตร์จากวันเกิด
+     *
+     * @param string $birthDate วันเกิด (Y-m-d)
+     * @return string
+     */
+    protected function getZodiacDescription(string $birthDate): string
+    {
+        try {
+            $date = \Carbon\Carbon::parse($birthDate);
+            $month = $date->month;
+            $day = $date->day;
+
+            // ราศีตามโหราศาสตร์สากล (Western Zodiac)
+            $zodiac = match (true) {
+                ($month == 3 && $day >= 21) || ($month == 4 && $day <= 19) => ['ราศีเมษ (Aries)', 'ไฟ', 'ดาวอังคาร', 'กล้าหาญ ร้อนแรง เป็นผู้นำ'],
+                ($month == 4 && $day >= 20) || ($month == 5 && $day <= 20) => ['ราศีพฤษภ (Taurus)', 'ดิน', 'ดาวศุกร์', 'มั่นคง อดทน รักความสวยงาม'],
+                ($month == 5 && $day >= 21) || ($month == 6 && $day <= 20) => ['ราศีเมถุน (Gemini)', 'ลม', 'ดาวพุธ', 'ฉลาด ช่างพูด ปรับตัวเก่ง'],
+                ($month == 6 && $day >= 21) || ($month == 7 && $day <= 22) => ['ราศีกรกฎ (Cancer)', 'น้ำ', 'ดวงจันทร์', 'อ่อนโยน รักครอบครัว อารมณ์อ่อนไหว'],
+                ($month == 7 && $day >= 23) || ($month == 8 && $day <= 22) => ['ราศีสิงห์ (Leo)', 'ไฟ', 'ดวงอาทิตย์', 'มีเสน่ห์ ผู้นำ มั่นใจ'],
+                ($month == 8 && $day >= 23) || ($month == 9 && $day <= 22) => ['ราศีกันย์ (Virgo)', 'ดิน', 'ดาวพุธ', 'ละเอียด พิถีพิถัน มีระเบียบ'],
+                ($month == 9 && $day >= 23) || ($month == 10 && $day <= 22) => ['ราศีตุลย์ (Libra)', 'ลม', 'ดาวศุกร์', 'รักความยุติธรรม มีเสน่ห์ ชอบความสมดุล'],
+                ($month == 10 && $day >= 23) || ($month == 11 && $day <= 21) => ['ราศีพิจิก (Scorpio)', 'น้ำ', 'ดาวพลูโต', 'ลึกลับ เข้มแข็ง มีพลังแฝง'],
+                ($month == 11 && $day >= 22) || ($month == 12 && $day <= 21) => ['ราศีธนู (Sagittarius)', 'ไฟ', 'ดาวพฤหัส', 'รักอิสระ มองโลกกว้าง โชคดี'],
+                ($month == 12 && $day >= 22) || ($month == 1 && $day <= 19) => ['ราศีมังกร (Capricorn)', 'ดิน', 'ดาวเสาร์', 'ขยัน อดทน ทะเยอทะยาน'],
+                ($month == 1 && $day >= 20) || ($month == 2 && $day <= 18) => ['ราศีกุมภ์ (Aquarius)', 'ลม', 'ดาวยูเรนัส', 'คิดนอกกรอบ เป็นตัวเอง มีความคิดสร้างสรรค์'],
+                default => ['ราศีมีน (Pisces)', 'น้ำ', 'ดาวเนปจูน', 'จิตใจอ่อนโยน สัญชาตญาณแม่น มีจินตนาการ'],
+            };
+
+            // วันเกิดตามโหราศาสตร์ไทย
+            $thaiDayOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            $dayName = $thaiDayOfWeek[$date->dayOfWeek];
+
+            return "ราศี: {$zodiac[0]} | ธาตุ: {$zodiac[1]} | ดาวประจำ: {$zodiac[2]} | ลักษณะนิสัย: {$zodiac[3]} | เกิดวัน{$dayName}";
+
+        } catch (\Exception $e) {
+            return '';
+        }
     }
 }

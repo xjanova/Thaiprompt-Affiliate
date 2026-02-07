@@ -175,6 +175,9 @@ class FortuneChannelManager
             // รอชำระเงิน → ส่ง Payment Flex
             'pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result),
 
+            // ทำนายละเอียดเสร็จ → ส่งทีละคำถาม
+            'completed' => $this->sendLineDeepReadingResponse($lineService, $userId, $result),
+
             // Help → ส่ง Welcome Flex
             'help', 'filtered' => $this->sendLineHelpResponse($lineService, $userId, $result),
 
@@ -265,6 +268,49 @@ class FortuneChannelManager
     }
 
     /**
+     * ส่ง Response คำทำนายละเอียดทีละคำถาม (LINE)
+     *
+     * ส่งแต่ละคู่คำถาม-คำทำนายเป็น message แยก
+     * ให้ผู้ใช้ได้อ่านทีละข้อ น่าติดตาม
+     */
+    protected function sendLineDeepReadingResponse(LineFortuneService $lineService, string $userId, array $result): bool
+    {
+        $deepReadings = $result['deep_readings'] ?? [];
+        $thankYou = $result['thank_you'] ?? '';
+        $reading = $result['reading'] ?? null;
+
+        // ถ้าไม่มี deep_readings (format เก่า) → ส่งข้อความเดียว
+        if (empty($deepReadings)) {
+            return $lineService->sendMessage($userId, $result['message'] ?? '');
+        }
+
+        // ส่งคำทำนายทีละคำถาม
+        foreach ($deepReadings as $dr) {
+            $questionNum = $dr['question_number'];
+            $question = $dr['question'];
+            $answer = $dr['answer'];
+
+            // สร้างข้อความคู่ คำถาม-คำทำนาย
+            $message = "═══════════════════════\n";
+            $message .= "❓ คำถามที่ {$questionNum}: {$question}\n";
+            $message .= "═══════════════════════\n\n";
+            $message .= $answer;
+
+            $lineService->sendMessage($userId, $message);
+
+            // หน่วงเวลาเล็กน้อยระหว่างข้อความ (ป้องกัน rate limit)
+            usleep(500000); // 0.5 วินาที
+        }
+
+        // ส่งข้อความขอบคุณปิดท้าย
+        if ($thankYou) {
+            $lineService->sendMessage($userId, $thankYou);
+        }
+
+        return true;
+    }
+
+    /**
      * ส่ง Response Help/Welcome (LINE)
      */
     protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result): bool
@@ -337,19 +383,50 @@ class FortuneChannelManager
     /**
      * ส่งคำทำนายละเอียดเมื่อชำระเงินสำเร็จ
      *
+     * ส่งคำทำนายทีละคำถาม คู่กับคำตอบ
+     * ให้ผู้ใช้อ่านทีละข้อ น่าติดตาม
+     *
      * @param FortuneReading $reading
      * @return array
      */
     public function sendDeepReadingAfterPayment(FortuneReading $reading): array
     {
-        // ประมวลผลคำทำนาย
+        // ประมวลผลคำทำนาย (ทีละคำถาม)
         $result = $this->conversationService->processPaymentConfirmed($reading);
 
         $platform = $reading->platform ?? self::PLATFORM_FACEBOOK;
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-        // ส่งข้อความตอบกลับ
-        $this->sendResponse($platform, $userId, $result);
+        // สำหรับ LINE ใช้ sendResponse ที่จัดการ deep_readings อยู่แล้ว
+        if ($platform === self::PLATFORM_LINE) {
+            $this->sendResponse($platform, $userId, $result);
+            return $result;
+        }
+
+        // สำหรับ Facebook: ส่งทีละคำถามเช่นกัน
+        $deepReadings = $result['deep_readings'] ?? [];
+        $platformService = $this->getPlatform($platform);
+
+        if ($platformService && !empty($deepReadings)) {
+            foreach ($deepReadings as $dr) {
+                $message = "═══════════════════════\n";
+                $message .= "❓ คำถามที่ {$dr['question_number']}: {$dr['question']}\n";
+                $message .= "═══════════════════════\n\n";
+                $message .= $dr['answer'];
+
+                $platformService->sendMessage($userId, $message);
+                usleep(500000); // 0.5 วินาที
+            }
+
+            // ส่งข้อความขอบคุณ
+            $thankYou = $result['thank_you'] ?? '';
+            if ($thankYou) {
+                $platformService->sendMessage($userId, $thankYou);
+            }
+        } else {
+            // Fallback: ส่งข้อความรวม
+            $this->sendResponse($platform, $userId, $result);
+        }
 
         return $result;
     }
