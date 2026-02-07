@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.475.4] - 2026-02-07
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #2504 from xjanova/claude/fix-payment-notification-TQHwy (dc672d3d)
+- fix: แก้ไขยอดชำระแจ้ง 0 บาท + เปลี่ยน AI persona เป็นแม่หมอจันทรา (0f0baabd)
+### 🔧 Other Changes
+
+
 ## [v3.475.3] - 2026-02-07
 
 ### ✨ Features
