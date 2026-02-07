@@ -8,6 +8,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
+use App\Models\VendorStore;
 use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,59 @@ class SmsPaymentController extends Controller
     ) {}
 
     /**
+     * ตรวจสอบว่า device มีสิทธิ์เข้าถึง transaction หรือไม่
+     *
+     * เปรียบเทียบ store_id ของ device กับ transaction
+     * null === null ผ่านได้ (ทั้งคู่เป็น admin/official shop)
+     * ใช้ == เพื่อให้ null == null เป็น true (strict mode ป้องกันข้ามร้าน)
+     *
+     * @param SmsCheckerDevice $device
+     * @param PaymentTransaction $transaction
+     * @return bool
+     */
+    private function deviceCanAccessTransaction(SmsCheckerDevice $device, PaymentTransaction $transaction): bool
+    {
+        // resolve store_id ของทั้ง device และ transaction
+        // ถ้าเป็น null (legacy) → ใช้ platformStoreId แทน
+        $deviceStoreId = $this->resolveDeviceStoreId($device);
+        $txnStoreId = (int) ($transaction->store_id ?? VendorStore::getPlatformStoreId());
+
+        return $deviceStoreId === $txnStoreId;
+    }
+
+    /**
+     * แปลง device.store_id → ค่าจริงที่ใช้งาน
+     *
+     * ถ้า device.store_id = null (legacy device ที่สร้างก่อนมี multi-store)
+     * → fallback เป็น platformStoreId (ร้าน admin/official)
+     *
+     * @param SmsCheckerDevice $device
+     * @return int
+     */
+    private function resolveDeviceStoreId(SmsCheckerDevice $device): int
+    {
+        return (int) ($device->store_id ?? VendorStore::getPlatformStoreId());
+    }
+
+    /**
+     * เพิ่ม store_id filter ให้ query ตาม device (Strict Mode)
+     *
+     * ทุก device เห็นเฉพาะ orders ของ store ตัวเองเท่านั้น
+     * device.store_id = null → fallback เป็น platformStoreId
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param SmsCheckerDevice $device
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function applyStoreFilter($query, SmsCheckerDevice $device)
+    {
+        $storeId = $this->resolveDeviceStoreId($device);
+        $query->where('store_id', $storeId);
+
+        return $query;
+    }
+
+    /**
      * แปลง PaymentTransaction → RemoteOrderApproval format สำหรับ Android app
      *
      * Android app คาดหวัง format: id, approval_status, confidence,
@@ -42,7 +96,9 @@ class SmsPaymentController extends Controller
             'processing' => 'pending_review',
             'completed' => 'auto_approved',
             'failed' => 'rejected',
-            'cancelled' => 'rejected',
+            'cancelled' => 'cancelled',
+            'expired' => 'expired',
+            'refunded' => 'rejected',
             default => 'pending_review',
         };
 
@@ -106,7 +162,10 @@ class SmsPaymentController extends Controller
             'rejected_at' => $txn->status === 'failed' ? $txn->updated_at?->toIso8601String() : null,
             'rejection_reason' => null,
             'order_details_json' => $orderDetails,
+            // ชื่อเซิร์ฟเวอร์ เพื่อให้แอพแสดงว่าบิลมาจากเซิร์ฟไหน
+            'server_name' => config('app.name'),
             'synced_version' => $txn->updated_at ? intval($txn->updated_at->timestamp * 1000) : 0,
+            // เวลาที่สร้างบิลจริงจากเซิร์ฟ (ISO 8601) - แอพควรใช้เวลานี้แสดง ไม่ใช่ createdAt ของ local DB
             'created_at' => $txn->created_at?->toIso8601String(),
             'updated_at' => $txn->updated_at?->toIso8601String(),
             'notification' => $notification,
@@ -427,10 +486,9 @@ class SmsPaymentController extends Controller
         $query = PaymentTransaction::query();
 
         // === Multi-Store Filtering (Strict Mode) ===
-        // ทุก device ต้องมี store_id และเห็นเฉพาะ order ของร้านตัวเองเท่านั้น
-        // ไม่มี "admin device" ที่เห็นทุก order อีกต่อไป
-        // เพื่อป้องกันความสับสนของยอดเงินระหว่างร้านค้า
-        $query->where('store_id', $device->store_id);
+        // ทุก device เห็นเฉพาะ orders ของ store ตัวเองเท่านั้น
+        // (null = admin/official shop, int = seller store)
+        $this->applyStoreFilter($query, $device);
 
         // กรองสถานะ (default: pending + processing = รอชำระเงิน)
         $status = $request->input('status', 'waiting');
@@ -503,15 +561,24 @@ class SmsPaymentController extends Controller
         }
 
         // === Multi-Store (Strict): ตรวจสอบสิทธิ์ของ device ===
-        // Device ต้องมี store_id ตรงกับ transaction เสมอ
-        if ($transaction->store_id !== $device->store_id) {
+        // device.store_id ต้องตรงกับ transaction.store_id เสมอ
+        if (!$this->deviceCanAccessTransaction($device, $transaction)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
             ], 403);
         }
 
-        if ($transaction->status !== 'pending') {
+        // Idempotent: ถ้า approved แล้ว (เช่น auto-approved ตอน match) → return success
+        if ($transaction->status === 'completed') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order already approved',
+                'data' => ['transaction_id' => $transaction->id, 'status' => 'completed'],
+            ]);
+        }
+
+        if (!in_array($transaction->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction is not pending (current: ' . $transaction->status . ')',
@@ -560,7 +627,8 @@ class SmsPaymentController extends Controller
         }
 
         // === Multi-Store (Strict): ตรวจสอบสิทธิ์ ===
-        if ($transaction->store_id !== $device->store_id) {
+        // device.store_id ต้องตรงกับ transaction.store_id เสมอ
+        if (!$this->deviceCanAccessTransaction($device, $transaction)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
@@ -667,7 +735,7 @@ class SmsPaymentController extends Controller
         $query = PaymentTransaction::query();
 
         // === Multi-Store Filtering (Strict Mode) ===
-        $query->where('store_id', $device->store_id);
+        $this->applyStoreFilter($query, $device);
 
         if ($sinceVersion > 0) {
             // ดึง orders ที่อัพเดทหลังจาก timestamp ที่กำหนด (milliseconds)
@@ -733,11 +801,38 @@ class SmsPaymentController extends Controller
         $query = PaymentTransaction::query()
             ->whereIn('status', ['pending', 'processing'])
             ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
-            ->where('amount', $amount)
-            ->where('store_id', $device->store_id);
+            ->where('amount', $amount);
+
+        // Strict: device เห็นเฉพาะ orders ของ store ตัวเอง
+        $this->applyStoreFilter($query, $device);
 
         // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount + store)
         $transaction = $query->orderBy('created_at', 'desc')->first();
+
+        // === Auto-approve: อนุมัติทันทีเมื่อจับคู่ได้ เพื่อ trigger ระบบปันผล/MLM ===
+        if ($transaction) {
+            $autoConfirm = config('smschecker.auto_confirm_matched', true);
+            if ($autoConfirm && in_array($transaction->status, ['pending', 'processing'])) {
+                try {
+                    app(PaymentService::class)->completePayment($transaction);
+                    $transaction = $transaction->fresh();
+
+                    Log::info('SMS Payment: Auto-approved on match — ระบบปันผลจะทำงานต่อ', [
+                        'device_id' => $device->device_id,
+                        'amount' => $amount,
+                        'transaction_id' => $transaction->id,
+                        'store_id' => $this->resolveDeviceStoreId($device),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('SMS Payment: Auto-approve failed on match', [
+                        'transaction_id' => $transaction->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // ยังคง return matched order แม้ auto-approve ล้มเหลว
+                    // Android app จะ retry ผ่าน POST /orders/{id}/approve
+                }
+            }
+        }
 
         if (!$transaction) {
             return response()->json([
@@ -866,9 +961,11 @@ class SmsPaymentController extends Controller
         $since = now()->subDays($days)->startOfDay();
 
         // === Multi-Store Filtering (Strict Mode) ===
-        // สร้าง base query ที่ filter ตาม store ของ device เสมอ
+        // ทุก device เห็นเฉพาะ stats ของ store ตัวเองเท่านั้น
         $baseQuery = function () use ($device) {
-            return PaymentTransaction::query()->where('store_id', $device->store_id);
+            $query = PaymentTransaction::query();
+            $this->applyStoreFilter($query, $device);
+            return $query;
         };
 
         // นับ orders ตามสถานะ (ใช้ PaymentTransaction เป็น base)
