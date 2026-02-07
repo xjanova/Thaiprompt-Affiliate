@@ -31,9 +31,25 @@ class FortuneSettingsController extends Controller
         // ดึงรายชื่อธนาคารที่รองรับ
         $supportedBanks = PaymentBankAccount::supportedBanks();
 
+        // เตรียมข้อมูลบัญชีธนาคารสำหรับ Alpine.js (JSON-safe)
+        $selectedIds = $settings->fortune_bank_account_ids ?? [];
+        $bankAccountsJson = $bankAccounts->map(function ($a) use ($selectedIds) {
+            return [
+                'id' => $a->id,
+                'bank_code' => $a->bank_code,
+                'bank_name' => $a->bank_name,
+                'account_number' => $a->account_number,
+                'account_name' => $a->account_name,
+                'promptpay_id' => $a->promptpay_id,
+                'sms_checker_enabled' => (bool) $a->sms_checker_enabled,
+                'selected' => is_array($selectedIds) && in_array($a->id, $selectedIds),
+            ];
+        })->values()->toArray();
+
         return view('admin.fortune.settings.index', [
             'settings' => $settings,
             'bankAccounts' => $bankAccounts,
+            'bankAccountsJson' => $bankAccountsJson,
             'supportedBanks' => $supportedBanks,
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);

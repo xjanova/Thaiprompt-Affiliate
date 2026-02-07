@@ -715,22 +715,8 @@
                         editingId: null,
                         alertMessage: '',
                         alertType: 'success',
-                        // บัญชีทั้งหมด
-                        accounts: @json(
-                            ($bankAccounts ?? collect())->map(function($a) use ($settings) {
-                                $ids = $settings->fortune_bank_account_ids ?? [];
-                                return [
-                                    'id' => $a->id,
-                                    'bank_code' => $a->bank_code,
-                                    'bank_name' => $a->bank_name,
-                                    'account_number' => $a->account_number,
-                                    'account_name' => $a->account_name,
-                                    'promptpay_id' => $a->promptpay_id,
-                                    'sms_checker_enabled' => $a->sms_checker_enabled,
-                                    'selected' => is_array($ids) && in_array($a->id, $ids),
-                                ];
-                            })->values()
-                        ),
+                        // บัญชีทั้งหมด (เตรียมจาก controller)
+                        accounts: @json($bankAccountsJson ?? []),
                         // ฟอร์มเพิ่มบัญชีใหม่
                         newAccount: {
                             bank_code: '',

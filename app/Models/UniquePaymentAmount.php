@@ -156,15 +156,30 @@ class UniquePaymentAmount extends Model
     /**
      * ค้นหา unique amount ที่ตรงกับจำนวนเงินที่ได้รับ
      *
+     * สามารถกรองตาม transaction_type เพื่อแยกบิลระหว่างระบบ:
+     * - 'fortune_reading' = บิลดูดวง
+     * - 'tarot_reading' = บิลไพ่ทาโร่
+     * - 'order' / 'order_payment' = บิลอีคอมเมิร์ซ
+     *
      * @param float $amount จำนวนเงินที่ได้รับ
+     * @param string|array|null $transactionType กรองตามประเภท (null = ไม่กรอง, ใช้แบบเดิม)
      * @return self|null
      */
-    public static function findMatch(float $amount): ?self
+    public static function findMatch(float $amount, string|array|null $transactionType = null): ?self
     {
-        return static::where('unique_amount', $amount)
+        $query = static::where('unique_amount', $amount)
             ->where('status', 'reserved')
-            ->where('expires_at', '>', now())
-            ->lockForUpdate()
-            ->first();
+            ->where('expires_at', '>', now());
+
+        // กรองตาม transaction_type เพื่อแยกบิลไม่ปะปนกัน
+        if ($transactionType !== null) {
+            if (is_array($transactionType)) {
+                $query->whereIn('transaction_type', $transactionType);
+            } else {
+                $query->where('transaction_type', $transactionType);
+            }
+        }
+
+        return $query->lockForUpdate()->first();
     }
 }

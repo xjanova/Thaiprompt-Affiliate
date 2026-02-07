@@ -147,9 +147,12 @@ class SmsPaymentNotification extends Model
         // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
         return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm) {
             // จับคู่ด้วย unique amount (พร้อม lock)
+            // กรองเฉพาะบิลอีคอมเมิร์ซ (order, order_payment, topup, tarot_reading)
+            // ไม่รวมบิลดูดวง (fortune_reading) เพราะจัดการแยกใน handleFortuneReadingPayment()
             $uniqueAmount = UniquePaymentAmount::where('unique_amount', $this->amount)
                 ->where('status', 'reserved')
                 ->where('expires_at', '>', now())
+                ->where('transaction_type', '!=', 'fortune_reading')
                 ->lockForUpdate()
                 ->first();
 

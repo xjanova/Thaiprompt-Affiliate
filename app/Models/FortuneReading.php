@@ -556,12 +556,16 @@ class FortuneReading extends Model
     /**
      * ค้นหา reading ที่รอชำระเงินโดย unique amount
      *
+     * กรองเฉพาะ transaction_type = 'fortune_reading' เพื่อแยกบิลดูดวง
+     * ไม่ให้ปะปนกับบิลอีคอมเมิร์ซหรือ seller
+     *
      * @param float $amount
      * @return self|null
      */
     public static function findByUniqueAmount(float $amount): ?self
     {
-        $uniquePayment = UniquePaymentAmount::findMatch($amount);
+        // กรองเฉพาะ fortune_reading เพื่อไม่ให้ match ข้ามระบบ
+        $uniquePayment = UniquePaymentAmount::findMatch($amount, 'fortune_reading');
 
         if (!$uniquePayment) {
             return null;
