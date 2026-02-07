@@ -67,7 +67,7 @@ class FortuneAIService
      */
     protected const READING_CONFIG = [
         'basic' => [
-            'max_tokens' => 1536,
+            'max_tokens' => 2048,
             'temperature' => 0.75,
         ],
         'deep' => [
