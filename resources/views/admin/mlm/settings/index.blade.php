@@ -40,102 +40,109 @@
         </div>
     </div>
 
-    {{-- Overpay Warning Alert --}}
+    {{-- Overpay Warning Alert - ใช้ maxCommissionPercentage จาก settings (ไม่ hardcode) --}}
     <div x-show="totalCommissionPercentage > 0"
          x-transition
          class="rounded-2xl p-6 border-2 shadow-xl"
          :class="{
-             'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700': totalCommissionPercentage > 50,
-             'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700': totalCommissionPercentage > 40 && totalCommissionPercentage <= 50,
-             'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700': totalCommissionPercentage <= 40
+             'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700': totalCommissionPercentage > maxCommissionPercentage,
+             'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700': totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage,
+             'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700': totalCommissionPercentage <= (maxCommissionPercentage * 0.8)
          }">
         <div class="flex items-start gap-4">
             <div class="flex-shrink-0">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center"
                      :class="{
-                         'bg-red-500': totalCommissionPercentage > 50,
-                         'bg-yellow-500': totalCommissionPercentage > 40 && totalCommissionPercentage <= 50,
-                         'bg-green-500': totalCommissionPercentage <= 40
+                         'bg-red-500': totalCommissionPercentage > maxCommissionPercentage,
+                         'bg-yellow-500': totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage,
+                         'bg-green-500': totalCommissionPercentage <= (maxCommissionPercentage * 0.8)
                      }">
                     <i class="fas text-white text-xl"
                        :class="{
-                           'fa-exclamation-triangle': totalCommissionPercentage > 50,
-                           'fa-exclamation-circle': totalCommissionPercentage > 40 && totalCommissionPercentage <= 50,
-                           'fa-check-circle': totalCommissionPercentage <= 40
+                           'fa-exclamation-triangle': totalCommissionPercentage > maxCommissionPercentage,
+                           'fa-exclamation-circle': totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage,
+                           'fa-check-circle': totalCommissionPercentage <= (maxCommissionPercentage * 0.8)
                        }"></i>
                 </div>
             </div>
             <div class="flex-1">
                 <h3 class="text-lg font-bold mb-2"
                     :class="{
-                        'text-red-800 dark:text-red-300': totalCommissionPercentage > 50,
-                        'text-yellow-800 dark:text-yellow-300': totalCommissionPercentage > 40 && totalCommissionPercentage <= 50,
-                        'text-green-800 dark:text-green-300': totalCommissionPercentage <= 40
+                        'text-red-800 dark:text-red-300': totalCommissionPercentage > maxCommissionPercentage,
+                        'text-yellow-800 dark:text-yellow-300': totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage,
+                        'text-green-800 dark:text-green-300': totalCommissionPercentage <= (maxCommissionPercentage * 0.8)
                     }">
-                    <span x-text="`ประมาณการคอมมิชชั่นรวม: ${totalCommissionPercentage.toFixed(2)}%`"></span>
+                    <span x-text="`Effective Commission Rate: ${totalCommissionPercentage.toFixed(2)}% (ขีดจำกัด: ${maxCommissionPercentage}%)`"></span>
                 </h3>
                 <div class="space-y-2 text-sm"
                      :class="{
-                         'text-red-700 dark:text-red-400': totalCommissionPercentage > 50,
-                         'text-yellow-700 dark:text-yellow-400': totalCommissionPercentage > 40 && totalCommissionPercentage <= 50,
-                         'text-green-700 dark:text-green-400': totalCommissionPercentage <= 40
+                         'text-red-700 dark:text-red-400': totalCommissionPercentage > maxCommissionPercentage,
+                         'text-yellow-700 dark:text-yellow-400': totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage,
+                         'text-green-700 dark:text-green-400': totalCommissionPercentage <= (maxCommissionPercentage * 0.8)
                      }">
-                    <template x-if="totalCommissionPercentage > 50">
+                    <template x-if="totalCommissionPercentage > maxCommissionPercentage">
                         <div>
                             <strong class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                อันตราย - Overpay! คอมมิชชั่นรวมเกิน 50%
+                                <span x-text="`Overpay! คอมมิชชั่นรวม ${totalCommissionPercentage.toFixed(2)}% เกินขีดจำกัด ${maxCommissionPercentage}%`"></span>
                             </strong>
-                            <p>การตั้งค่าปัจจุบันอาจทำให้ธุรกิจขาดทุน กรุณาลดอัตราคอมมิชชั่น</p>
+                            <p>ระบบ Overpay Protection จะ scale down คอมมิชชั่นอัตโนมัติเมื่อจ่ายจริง แต่ควรแก้ไขให้อยู่ในเกณฑ์</p>
                             <div class="mt-3 p-3 bg-white/50 dark:bg-black/20 rounded-lg">
                                 <p class="font-medium mb-1">คำแนะนำ:</p>
                                 <ul class="list-disc list-inside space-y-1">
-                                    <li>ลดเปอร์เซ็นต์ Binary Commission</li>
-                                    <li>ลดจำนวนชั้น Unilevel</li>
-                                    <li>ลดเปอร์เซ็นต์ Direct Referral</li>
+                                    <li>ลดเปอร์เซ็นต์ Binary / Unilevel</li>
+                                    <li>ลดค่า Commission Per PV (ปัจจุบัน: <span x-text="settings.commission_per_pv"></span>)</li>
+                                    <li>ลดจำนวนชั้น Unilevel / ลดเปอร์เซ็นต์แต่ละชั้น</li>
                                 </ul>
                             </div>
                         </div>
                     </template>
-                    <template x-if="totalCommissionPercentage > 40 && totalCommissionPercentage <= 50">
+                    <template x-if="totalCommissionPercentage > (maxCommissionPercentage * 0.8) && totalCommissionPercentage <= maxCommissionPercentage">
                         <div>
                             <strong class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-exclamation-circle"></i>
-                                คำเตือน - คอมมิชชั่นใกล้ขีดจำกัด
+                                <span x-text="`คำเตือน - ใกล้ขีดจำกัด (เหลือ ${(maxCommissionPercentage - totalCommissionPercentage).toFixed(2)}%)`"></span>
                             </strong>
-                            <p>เปอร์เซ็นต์คอมมิชชั่นอยู่ในระดับสูง กรุณาตรวจสอบการคำนวณ</p>
+                            <p>เปอร์เซ็นต์คอมมิชชั่นอยู่ในระดับสูง กรุณาตรวจสอบ</p>
                         </div>
                     </template>
-                    <template x-if="totalCommissionPercentage <= 40">
+                    <template x-if="totalCommissionPercentage <= (maxCommissionPercentage * 0.8)">
                         <div>
                             <strong class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-check-circle"></i>
                                 ปลอดภัย - เปอร์เซ็นต์เหมาะสม
                             </strong>
-                            <p>การตั้งค่าอยู่ในเกณฑ์ที่แนะนำ ธุรกิจมีกำไรเหลือเพียงพอ</p>
+                            <p x-text="`ใช้ไป ${totalCommissionPercentage.toFixed(2)}% จากขีดจำกัด ${maxCommissionPercentage}% - เหลือพื้นที่อีก ${(maxCommissionPercentage - totalCommissionPercentage).toFixed(2)}%`"></p>
                         </div>
                     </template>
                 </div>
 
-                {{-- Breakdown --}}
+                {{-- Breakdown - แสดง effective rate ที่ถูกต้อง --}}
                 <div class="mt-4 p-4 bg-white/50 dark:bg-black/20 rounded-xl">
-                    <p class="font-semibold mb-2">รายละเอียดการคำนวณ (เฉพาะระบบที่เปิด):</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <p class="font-semibold mb-2">รายละเอียดการคำนวณ (Effective Rate = raw% x commission_per_pv):</p>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
                         <div :class="{'opacity-40': !settings.binary_enabled}">
                             <p class="opacity-75">Binary</p>
-                            <p class="font-bold text-base" x-text="`${settings.binary_enabled ? (settings.binary_match_commission || 0) : 0}%`"></p>
+                            <p class="font-bold text-base" x-text="`${settings.binary_enabled ? ((settings.binary_match_commission || 0) * settings.commission_per_pv).toFixed(2) : 0}%`"></p>
+                            <p class="opacity-50" x-show="settings.binary_enabled && settings.commission_per_pv != 1" x-text="`(raw: ${settings.binary_match_commission}% × ${settings.commission_per_pv})`"></p>
                         </div>
                         <div :class="{'opacity-40': !settings.unilevel_enabled}">
                             <p class="opacity-75">Unilevel</p>
-                            <p class="font-bold text-base" x-text="`${settings.unilevel_enabled ? unilevelTotal.toFixed(2) : 0}%`"></p>
+                            <p class="font-bold text-base" x-text="`${settings.unilevel_enabled ? (unilevelTotal * settings.commission_per_pv).toFixed(2) : 0}%`"></p>
+                            <p class="opacity-50" x-show="settings.unilevel_enabled && settings.commission_per_pv != 1" x-text="`(raw: ${unilevelTotal.toFixed(2)}% × ${settings.commission_per_pv})`"></p>
                         </div>
                         <div :class="{'opacity-40': !settings.genealogy_enabled}">
-                            <p class="opacity-75">ผังสายเลือด</p>
+                            <p class="opacity-75">ค่าแนะนำตรง</p>
                             <p class="font-bold text-base" x-text="`${settings.genealogy_enabled ? (settings.direct_referral_commission || 0) : 0}%`"></p>
+                            <p class="opacity-50" x-show="settings.genealogy_enabled">(%ของยอดสั่งซื้อ)</p>
                         </div>
                         <div>
-                            <p class="opacity-75">รวมทั้งหมด</p>
-                            <p class="font-bold text-lg" x-text="`${totalCommissionPercentage.toFixed(2)}%`"></p>
+                            <p class="opacity-75">Effective Rate รวม</p>
+                            <p class="font-bold text-lg" :class="{'text-red-600': totalCommissionPercentage > maxCommissionPercentage}" x-text="`${totalCommissionPercentage.toFixed(2)}%`"></p>
+                        </div>
+                        <div>
+                            <p class="opacity-75">ขีดจำกัด</p>
+                            <p class="font-bold text-lg text-blue-600" x-text="`${maxCommissionPercentage}%`"></p>
                         </div>
                     </div>
                 </div>
@@ -866,7 +873,9 @@ function mlmSettings() {
         unilevelPercentages: [5, 3, 2, 1, 1],
         saving: false,
         totalCommissionPercentage: 0,
+        pvEffectiveRate: 0,
         unilevelTotal: 0,
+        maxCommissionPercentage: {{ \App\Models\MlmGlobalSetting::get('max_commission_percentage', 40) }},
 
         // Rebuild task tracking
         rebuildTask: null,
@@ -931,26 +940,35 @@ function mlmSettings() {
         },
 
         calculateTotal() {
-            // Calculate unilevel total
+            const cpv = parseFloat(this.settings.commission_per_pv) || 1;
+
+            // คำนวณ unilevel total (raw %)
             this.unilevelTotal = this.settings.unilevel_enabled
                 ? this.unilevelPercentages.reduce((sum, val) => sum + (parseFloat(val) || 0), 0)
                 : 0;
 
-            // Calculate total commission percentage
-            // รวมเฉพาะระบบที่เปิดใช้งาน (3 ระบบ: Binary, Unilevel, Genealogy)
-            this.totalCommissionPercentage = 0;
+            // คำนวณ Effective Commission Rate
+            // สูตร: (Binary% + Unilevel%) × commissionPerPv + DirectReferral%
+            // ⚠️ Binary + Unilevel คำนวณจาก PV → ต้องคูณ commissionPerPv
+            // ⚠️ Direct Referral คำนวณจาก % ของยอดสั่งซื้อ → ไม่ต้องคูณ commissionPerPv
+            let pvBasedTotal = 0;
+            let orderBasedTotal = 0;
 
             if (this.settings.binary_enabled) {
-                this.totalCommissionPercentage += parseFloat(this.settings.binary_match_commission) || 0;
+                pvBasedTotal += parseFloat(this.settings.binary_match_commission) || 0;
             }
 
             if (this.settings.unilevel_enabled) {
-                this.totalCommissionPercentage += this.unilevelTotal;
+                pvBasedTotal += this.unilevelTotal;
             }
 
             if (this.settings.genealogy_enabled) {
-                this.totalCommissionPercentage += parseFloat(this.settings.direct_referral_commission) || 0;
+                orderBasedTotal += parseFloat(this.settings.direct_referral_commission) || 0;
             }
+
+            // Effective rate = PV-based × commissionPerPv + order-based
+            this.pvEffectiveRate = pvBasedTotal * cpv;
+            this.totalCommissionPercentage = this.pvEffectiveRate + orderBasedTotal;
         },
 
         async saveSettings() {
