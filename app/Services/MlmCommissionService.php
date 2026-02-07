@@ -778,6 +778,47 @@ class MlmCommissionService
                 }
             }
 
+            // ⚠️ Overpay Protection รวม: ตรวจสอบ referral + unilevel + binary ทั้งหมด
+            // calculateCommissionsWithRollup มี overpay check ภายใน แต่ไม่รวม referral
+            // ต้องเช็คอีกครั้งว่ารวมแล้วทั้งหมดไม่เกิน budget
+            $totalPv = $pvData['total_pv'] ?? 0;
+            if ($totalPv > 0 && $result['direct_referral'] !== null) {
+                $referralAmount = $result['direct_referral']->commission_amount;
+                $unilevelTotal = array_sum(array_column($result['unilevel'], 'commission_amount'));
+                $binaryTotal = array_sum(array_column($result['binary'], 'commission_amount'));
+                $grandTotal = $referralAmount + $unilevelTotal + $binaryTotal;
+
+                $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
+                $maxPercentage = (float) MlmGlobalSetting::get('max_commission_percentage', 40);
+                $maxBudget = $totalPv * $commissionPerPv * ($maxPercentage / 100);
+
+                if ($maxBudget > 0 && $grandTotal > $maxBudget) {
+                    // คำนวณจำนวนเงิน referral ที่ลดได้ (unilevel/binary ถูก scale แล้ว)
+                    $allowedReferral = max(0, $maxBudget - $unilevelTotal - $binaryTotal);
+                    $originalReferral = $referralAmount;
+
+                    if ($allowedReferral < $referralAmount) {
+                        // อัปเดท referral commission ให้ไม่เกิน budget
+                        $result['direct_referral']->update([
+                            'commission_amount' => round($allowedReferral, 2),
+                            'notes' => $result['direct_referral']->notes
+                                . ' | Overpay scaled: ฿' . number_format($originalReferral, 2)
+                                . ' → ฿' . number_format($allowedReferral, 2),
+                        ]);
+                        $result['direct_referral']->refresh();
+
+                        Log::warning('Overpay protection: referral bonus scaled down', [
+                            'order_id' => $order->id,
+                            'original_referral' => $originalReferral,
+                            'allowed_referral' => $allowedReferral,
+                            'max_budget' => $maxBudget,
+                            'grand_total_before' => $grandTotal,
+                            'grand_total_after' => $allowedReferral + $unilevelTotal + $binaryTotal,
+                        ]);
+                    }
+                }
+            }
+
             Log::info('Order commissions processed successfully', [
                 'order_id' => $order->id,
                 'has_direct_referral' => $result['direct_referral'] !== null,
