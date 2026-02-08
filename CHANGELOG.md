@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.483.2] - 2026-02-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: fortune reading bills visible only to admin devices (8b4ba95a)
+### 🔧 Other Changes
+
+
 ## [v3.483.1] - 2026-02-08
 
 ### ✨ Features
