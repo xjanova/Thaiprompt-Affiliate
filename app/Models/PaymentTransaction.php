@@ -47,7 +47,7 @@ class PaymentTransaction extends Model
 
         static::creating(function ($model) {
             if (empty($model->transaction_id)) {
-                $model->transaction_id = 'TXN-' . strtoupper(Str::random(12));
+                $model->transaction_id = self::generateBillReference($model->store_id);
             }
         });
 
@@ -56,6 +56,38 @@ class PaymentTransaction extends Model
         static::created(function ($model) {
             $model->generateUniqueAmountIfNeeded();
         });
+    }
+
+    /**
+     * สร้างเลขที่บิล (transaction_id) ตาม store prefix
+     *
+     * - Platform store (admin) → PRE-{YYMMDD}-{XXXXX}
+     * - Vendor store            → SEL-{storeId}-{YYMMDD}-{XXXXX}
+     * - Legacy (backward compat) → TXN-{random12} (เมื่อ store_id = null)
+     */
+    public static function generateBillReference(?int $storeId): string
+    {
+        $datePart = now()->format('ymd');
+        $platformStoreId = VendorStore::getPlatformStoreId();
+
+        if ($storeId === null || (int) $storeId === (int) $platformStoreId) {
+            $prefix = 'PRE';
+        } else {
+            $prefix = "SEL-{$storeId}";
+        }
+
+        for ($i = 0; $i < 10; $i++) {
+            $random = strtoupper(Str::random(5));
+            $ref = "{$prefix}-{$datePart}-{$random}";
+            if (! self::where('transaction_id', $ref)->exists()) {
+                return $ref;
+            }
+        }
+
+        // Fallback: ใช้ microtime
+        $uniquePart = strtoupper(substr(md5(microtime()), 0, 5));
+
+        return "{$prefix}-{$datePart}-{$uniquePart}";
     }
 
     /**

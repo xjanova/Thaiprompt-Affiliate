@@ -781,7 +781,7 @@ class FortuneReading extends Model
      */
     public static function generateBillReference(): string
     {
-        $prefix = 'FR';
+        $prefix = 'FTU';
         $datePart = now()->format('ymd');
         $maxAttempts = 10;
 

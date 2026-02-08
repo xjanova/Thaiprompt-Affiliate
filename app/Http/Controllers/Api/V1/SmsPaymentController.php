@@ -105,8 +105,9 @@ class SmsPaymentController extends Controller
         };
 
         // ดึง order details (ต้องมี amount เสมอ ไม่ว่าจะมี order หรือไม่)
+        // ใช้ transaction_id เป็น order_number หลัก เพื่อให้ Android ส่งกลับ approve ได้ถูกต้อง
         $orderDetails = [
-            'order_number' => null,
+            'order_number' => $txn->transaction_id,
             'product_name' => null,
             'product_details' => null,
             'quantity' => null,
@@ -120,7 +121,6 @@ class SmsPaymentController extends Controller
         // ถ้ามี order เชื่อมโยง ให้เติมข้อมูลเพิ่ม
         if ($txn->order_id && $txn->order) {
             $order = $txn->order;
-            $orderDetails['order_number'] = $order->order_number ?? null;
             $orderDetails['product_name'] = $order->items?->first()?->product?->name ?? null;
             $orderDetails['quantity'] = $order->items?->count() ?? null;
             $orderDetails['customer_name'] = $order->user?->name ?? $txn->user?->name ?? null;
@@ -177,8 +177,8 @@ class SmsPaymentController extends Controller
     /**
      * แปลง FortuneReading → RemoteOrderApproval format สำหรับ Android app
      *
-     * ใช้ ID ที่บวก offset เพื่อป้องกันชนกับ PaymentTransaction IDs
-     * prefix "FR-" ใน order_number ให้แอพแยกแยะได้
+     * ใช้ bill_reference (FTU-YYMMDD-XXXXX) เป็น order_number
+     * เพื่อให้ Android ส่งกลับ approve ตาม prefix ได้ถูกต้อง
      */
     private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
     {
@@ -198,7 +198,7 @@ class SmsPaymentController extends Controller
             : (float) $reading->amount_paid;
 
         $orderDetails = [
-            'order_number' => 'FR-' . $reading->id,
+            'order_number' => $reading->bill_reference,
             'product_name' => 'ดูดวง' . ($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
             'product_details' => $reading->facebook_user_name ?? null,
             'quantity' => 1,
@@ -234,13 +234,10 @@ class SmsPaymentController extends Controller
             ];
         }
 
-        // ใช้ offset 10,000,000 เพื่อป้องกัน ID ชนกับ PaymentTransaction
-        $virtualId = 10000000 + $reading->id;
-
         return [
-            'id' => $virtualId,
+            'id' => $reading->id,
             'notification_id' => $reading->sms_notification_id,
-            'matched_transaction_id' => $virtualId,
+            'matched_transaction_id' => $reading->id,
             'device_id' => null,
             'approval_status' => $approvalStatus,
             'confidence' => $reading->is_paid ? 'high' : 'medium',
@@ -661,60 +658,90 @@ class SmsPaymentController extends Controller
     /**
      * อนุมัติ order (ยืนยันการชำระเงิน)
      *
-     * Android App เรียกเมื่อผู้ใช้กดอนุมัติ
+     * รองรับทั้ง numeric ID (legacy) และ bill_reference string (ใหม่)
+     * Decode prefix: PRE-/SEL-/TXN-/TAROT- → PaymentTransaction, FTU-/FR- → FortuneReading
      *
-     * POST /api/v1/sms-payment/orders/{id}/approve
+     * POST /api/v1/sms-payment/orders/{identifier}/approve
      *
      * @param Request $request
-     * @param int $id
+     * @param mixed $identifier numeric ID หรือ bill_reference string
      * @return JsonResponse
      */
-    public function approveOrder(Request $request, int $id): JsonResponse
+    public function approveOrder(Request $request, $identifier): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $transaction = PaymentTransaction::find($id);
-        if (!$transaction) {
+        $resolved = $this->resolveOrderByIdentifier($identifier);
+        if (! $resolved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction not found',
+                'message' => 'Order not found: ' . $identifier,
             ], 404);
         }
 
-        // === Multi-Store (Strict): ตรวจสอบสิทธิ์ของ device ===
-        // device.store_id ต้องตรงกับ transaction.store_id เสมอ
-        if (!$this->deviceCanAccessTransaction($device, $transaction)) {
+        $model = $resolved['model'];
+        $type = $resolved['type'];
+
+        // === FortuneReading: approve ด้วย confirmPayment() ===
+        if ($type === 'fortune') {
+            /** @var FortuneReading $model */
+            if ($model->is_paid) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fortune reading already paid',
+                    'data' => ['bill_reference' => $model->bill_reference, 'status' => 'paid'],
+                ]);
+            }
+
+            $model->confirmPayment();
+
+            Log::info('SMS Payment: อนุมัติบิลดูดวงจากอุปกรณ์', [
+                'fortune_reading_id' => $model->id,
+                'bill_reference' => $model->bill_reference,
+                'device_id' => $device->device_id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fortune reading approved successfully',
+                'data' => ['bill_reference' => $model->bill_reference, 'status' => 'paid'],
+            ]);
+        }
+
+        // === PaymentTransaction: approve ด้วย completePayment() ===
+        /** @var PaymentTransaction $model */
+
+        // Multi-Store (Strict): ตรวจสอบสิทธิ์ของ device
+        if (! $this->deviceCanAccessTransaction($device, $model)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
             ], 403);
         }
 
-        // Idempotent: ถ้า approved แล้ว (เช่น auto-approved ตอน match) → return success
-        if ($transaction->status === 'completed') {
+        // Idempotent: ถ้า approved แล้ว → return success
+        if ($model->status === 'completed') {
             return response()->json([
                 'success' => true,
                 'message' => 'Order already approved',
-                'data' => ['transaction_id' => $transaction->id, 'status' => 'completed'],
+                'data' => ['transaction_id' => $model->transaction_id, 'status' => 'completed'],
             ]);
         }
 
-        if (!in_array($transaction->status, ['pending', 'processing'])) {
+        if (! in_array($model->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction is not pending (current: ' . $transaction->status . ')',
+                'message' => 'Transaction is not pending (current: ' . $model->status . ')',
             ], 422);
         }
 
-        // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
-        // (MLM Commission, Cashback, Revenue Distribution, ลดสต็อก)
-        app(PaymentService::class)->completePayment($transaction);
+        app(PaymentService::class)->completePayment($model);
 
         Log::info('SMS Payment: อนุมัติ order จากอุปกรณ์', [
-            'transaction_id' => $transaction->id,
+            'transaction_id' => $model->transaction_id,
             'device_id' => $device->device_id,
             'store_id' => $device->store_id,
         ]);
@@ -722,55 +749,154 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Order approved successfully',
-            'data' => ['transaction_id' => $transaction->id, 'status' => 'completed'],
+            'data' => ['transaction_id' => $model->transaction_id, 'status' => 'completed'],
         ]);
+    }
+
+    /**
+     * ค้นหา order จาก identifier (numeric ID หรือ bill_reference string)
+     *
+     * Prefix routing:
+     * - PRE-, SEL-, TXN-, TAROT- → PaymentTransaction (transaction_id)
+     * - FTU-, FR- → FortuneReading (bill_reference)
+     * - Numeric → PaymentTransaction::find() / legacy virtual ID (10M+)
+     *
+     * @param mixed $identifier
+     * @return array{model: Model, type: string}|null
+     */
+    private function resolveOrderByIdentifier($identifier): ?array
+    {
+        // Numeric ID → legacy compat
+        if (is_numeric($identifier)) {
+            $txn = PaymentTransaction::find($identifier);
+            if ($txn) {
+                return ['model' => $txn, 'type' => 'transaction'];
+            }
+
+            // Legacy virtual ID compat (10M+ offset)
+            $id = (int) $identifier;
+            if ($id > 10_000_000) {
+                $fortune = FortuneReading::find($id - 10_000_000);
+                if ($fortune) {
+                    return ['model' => $fortune, 'type' => 'fortune'];
+                }
+            }
+
+            return null;
+        }
+
+        $identifier = (string) $identifier;
+
+        // PaymentTransaction prefixes
+        if (str_starts_with($identifier, 'PRE-')
+            || str_starts_with($identifier, 'SEL-')
+            || str_starts_with($identifier, 'TXN-')
+            || str_starts_with($identifier, 'TAROT-')
+        ) {
+            $txn = PaymentTransaction::where('transaction_id', $identifier)->first();
+
+            return $txn ? ['model' => $txn, 'type' => 'transaction'] : null;
+        }
+
+        // FortuneReading prefixes
+        if (str_starts_with($identifier, 'FTU-') || str_starts_with($identifier, 'FR-')) {
+            $fortune = FortuneReading::where('bill_reference', $identifier)->first();
+
+            return $fortune ? ['model' => $fortune, 'type' => 'fortune'] : null;
+        }
+
+        // Fallback: ลองค้นทั้งสองตาราง
+        $txn = PaymentTransaction::where('transaction_id', $identifier)->first();
+        if ($txn) {
+            return ['model' => $txn, 'type' => 'transaction'];
+        }
+
+        $fortune = FortuneReading::where('bill_reference', $identifier)->first();
+
+        return $fortune ? ['model' => $fortune, 'type' => 'fortune'] : null;
     }
 
     /**
      * ปฏิเสธ order
      *
-     * POST /api/v1/sms-payment/orders/{id}/reject
+     * รองรับทั้ง numeric ID (legacy) และ bill_reference string (ใหม่)
+     *
+     * POST /api/v1/sms-payment/orders/{identifier}/reject
      *
      * @param Request $request
-     * @param int $id
+     * @param mixed $identifier numeric ID หรือ bill_reference string
      * @return JsonResponse
      */
-    public function rejectOrder(Request $request, int $id): JsonResponse
+    public function rejectOrder(Request $request, $identifier): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $transaction = PaymentTransaction::find($id);
-        if (!$transaction) {
+        $resolved = $this->resolveOrderByIdentifier($identifier);
+        if (! $resolved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction not found',
+                'message' => 'Order not found: ' . $identifier,
             ], 404);
         }
 
-        // === Multi-Store (Strict): ตรวจสอบสิทธิ์ ===
-        // device.store_id ต้องตรงกับ transaction.store_id เสมอ
-        if (!$this->deviceCanAccessTransaction($device, $transaction)) {
+        $model = $resolved['model'];
+        $type = $resolved['type'];
+        $reason = $request->input('reason', 'Rejected via SMS Checker');
+
+        // === FortuneReading: reject ===
+        if ($type === 'fortune') {
+            /** @var FortuneReading $model */
+            if ($model->is_paid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fortune reading already paid, cannot reject',
+                ], 422);
+            }
+
+            $model->update([
+                'conversation_status' => 'cancelled',
+                'notes' => $reason,
+            ]);
+
+            Log::info('SMS Payment: ปฏิเสธบิลดูดวงจากอุปกรณ์', [
+                'fortune_reading_id' => $model->id,
+                'bill_reference' => $model->bill_reference,
+                'device_id' => $device->device_id,
+                'reason' => $reason,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Fortune reading rejected',
+                'data' => ['bill_reference' => $model->bill_reference, 'status' => 'cancelled'],
+            ]);
+        }
+
+        // === PaymentTransaction: reject ===
+        /** @var PaymentTransaction $model */
+
+        // Multi-Store (Strict): ตรวจสอบสิทธิ์
+        if (! $this->deviceCanAccessTransaction($device, $model)) {
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to manage this transaction',
             ], 403);
         }
 
-        if ($transaction->status !== 'pending') {
+        if ($model->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction is not pending (current: ' . $transaction->status . ')',
+                'message' => 'Transaction is not pending (current: ' . $model->status . ')',
             ], 422);
         }
 
-        $reason = $request->input('reason', 'Rejected via SMS Checker');
-        $transaction->markAsFailed();
+        $model->markAsFailed();
 
         Log::info('SMS Payment: ปฏิเสธ order จากอุปกรณ์', [
-            'transaction_id' => $transaction->id,
+            'transaction_id' => $model->transaction_id,
             'device_id' => $device->device_id,
             'reason' => $reason,
         ]);
@@ -778,12 +904,14 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Order rejected',
-            'data' => ['transaction_id' => $transaction->id, 'status' => 'failed'],
+            'data' => ['transaction_id' => $model->transaction_id, 'status' => 'failed'],
         ]);
     }
 
     /**
      * อนุมัติหลาย orders พร้อมกัน
+     *
+     * รองรับทั้ง numeric ID (legacy) และ bill_reference string (ใหม่)
      *
      * POST /api/v1/sms-payment/orders/bulk-approve
      *
@@ -793,13 +921,13 @@ class SmsPaymentController extends Controller
     public function bulkApproveOrders(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $validator = Validator::make($request->all(), [
             'ids' => 'required|array|min:1',
-            'ids.*' => 'integer',
+            'ids.*' => ['required'], // รองรับทั้ง integer และ string (bill_reference)
         ]);
 
         if ($validator->fails()) {
@@ -810,19 +938,37 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        $ids = $request->input('ids');
+        $identifiers = $request->input('ids');
         $approved = 0;
         $failed = 0;
 
         $paymentService = app(PaymentService::class);
-        foreach ($ids as $id) {
-            $transaction = PaymentTransaction::find($id);
-            if ($transaction && $transaction->status === 'pending') {
-                // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
-                $paymentService->completePayment($transaction);
-                $approved++;
-            } else {
+        foreach ($identifiers as $identifier) {
+            $resolved = $this->resolveOrderByIdentifier($identifier);
+            if (! $resolved) {
                 $failed++;
+                continue;
+            }
+
+            $model = $resolved['model'];
+            $type = $resolved['type'];
+
+            if ($type === 'fortune') {
+                /** @var FortuneReading $model */
+                if (! $model->is_paid) {
+                    $model->confirmPayment();
+                    $approved++;
+                } else {
+                    $failed++; // already paid
+                }
+            } else {
+                /** @var PaymentTransaction $model */
+                if ($model->status === 'pending') {
+                    $paymentService->completePayment($model);
+                    $approved++;
+                } else {
+                    $failed++;
+                }
             }
         }
 
