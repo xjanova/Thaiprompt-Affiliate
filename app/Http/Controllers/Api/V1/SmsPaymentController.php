@@ -85,6 +85,20 @@ class SmsPaymentController extends Controller
     }
 
     /**
+     * ตรวจสอบว่า device มีสิทธิ์เข้าถึงบิลดูดวงหรือไม่
+     *
+     * FortuneReading ไม่มี store_id → ผูกกับ admin/platform เท่านั้น
+     * เฉพาะ admin device เท่านั้นที่เห็นและจัดการบิลดูดวงได้
+     *
+     * @param SmsCheckerDevice $device
+     * @return bool
+     */
+    private function deviceCanAccessFortuneReading(SmsCheckerDevice $device): bool
+    {
+        return $device->isAdminDevice();
+    }
+
+    /**
      * แปลง PaymentTransaction → RemoteOrderApproval format สำหรับ Android app
      *
      * Android app คาดหวัง format: id, approval_status, confidence,
@@ -606,10 +620,10 @@ class SmsPaymentController extends Controller
         });
 
         // === รวมบิลดูดวง (FortuneReading) ที่รอชำระเงินหรือชำระแล้ว ===
-        // FortuneReading ไม่ได้ใช้ PaymentTransaction จึงต้องดึงแยก
+        // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้นที่เห็น
         // แสดงเฉพาะ page 1 เพื่อไม่ให้ซ้ำในหน้าถัดไป
         $fortuneReadings = collect();
-        if ($paginated->currentPage() === 1) {
+        if ($paginated->currentPage() === 1 && $this->deviceCanAccessFortuneReading($device)) {
             $fortuneQuery = FortuneReading::query()
                 ->whereNotNull('unique_payment_amount_id');
 
@@ -688,6 +702,15 @@ class SmsPaymentController extends Controller
         // === FortuneReading: approve ด้วย confirmPayment() ===
         if ($type === 'fortune') {
             /** @var FortuneReading $model */
+
+            // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้น
+            if (! $this->deviceCanAccessFortuneReading($device)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only admin devices can manage fortune reading bills',
+                ], 403);
+            }
+
             if ($model->is_paid) {
                 return response()->json([
                     'success' => true,
@@ -849,6 +872,15 @@ class SmsPaymentController extends Controller
         // === FortuneReading: reject ===
         if ($type === 'fortune') {
             /** @var FortuneReading $model */
+
+            // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้น
+            if (! $this->deviceCanAccessFortuneReading($device)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only admin devices can manage fortune reading bills',
+                ], 403);
+            }
+
             if ($model->is_paid) {
                 return response()->json([
                     'success' => false,
@@ -955,6 +987,11 @@ class SmsPaymentController extends Controller
 
             if ($type === 'fortune') {
                 /** @var FortuneReading $model */
+                // FortuneReading → เฉพาะ admin device
+                if (! $this->deviceCanAccessFortuneReading($device)) {
+                    $failed++;
+                    continue;
+                }
                 if (! $model->is_paid) {
                     $model->confirmPayment();
                     $approved++;
@@ -1027,29 +1064,33 @@ class SmsPaymentController extends Controller
         });
 
         // === รวมบิลดูดวง (FortuneReading) ที่เปลี่ยนแปลง ===
-        $fortuneQuery = FortuneReading::query()
-            ->whereNotNull('unique_payment_amount_id')
-            ->whereIn('conversation_status', [
-                FortuneReading::STATUS_PENDING_PAYMENT,
-                FortuneReading::STATUS_PAID,
-                FortuneReading::STATUS_COMPLETED,
-            ]);
+        // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้น
+        $allOrders = $orders;
+        if ($this->deviceCanAccessFortuneReading($device)) {
+            $fortuneQuery = FortuneReading::query()
+                ->whereNotNull('unique_payment_amount_id')
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PAID,
+                    FortuneReading::STATUS_COMPLETED,
+                ]);
 
-        if ($sinceVersion > 0) {
-            $fortuneQuery->where('updated_at', '>', date('Y-m-d H:i:s', $sinceVersion / 1000));
+            if ($sinceVersion > 0) {
+                $fortuneQuery->where('updated_at', '>', date('Y-m-d H:i:s', $sinceVersion / 1000));
+            }
+
+            $fortuneReadings = $fortuneQuery->orderBy('updated_at', 'desc')
+                ->limit(50)
+                ->get();
+
+            $fortuneOrders = $fortuneReadings->map(function ($reading) {
+                return $this->transformFortuneReadingToOrderApproval($reading);
+            });
+
+            $allOrders = $orders->concat($fortuneOrders)
+                ->sortByDesc('updated_at')
+                ->values();
         }
-
-        $fortuneReadings = $fortuneQuery->orderBy('updated_at', 'desc')
-            ->limit(50)
-            ->get();
-
-        $fortuneOrders = $fortuneReadings->map(function ($reading) {
-            return $this->transformFortuneReadingToOrderApproval($reading);
-        });
-
-        $allOrders = $orders->concat($fortuneOrders)
-            ->sortByDesc('updated_at')
-            ->values();
 
         $latestVersion = intval(round(microtime(true) * 1000));
 
@@ -1154,7 +1195,8 @@ class SmsPaymentController extends Controller
 
         // === Fallback: ตรวจสอบว่าเป็นบิลดูดวง (FortuneReading) ===
         // ถ้าไม่พบ PaymentTransaction ที่ตรง → ลอง match กับ FortuneReading
-        if (! $transaction) {
+        // เฉพาะ admin device เท่านั้น (FortuneReading ไม่มี store_id)
+        if (! $transaction && $this->deviceCanAccessFortuneReading($device)) {
             // 1) ยังรอชำระ (pending_payment)
             $fortuneReading = FortuneReading::findByUniqueAmount($amount);
 
