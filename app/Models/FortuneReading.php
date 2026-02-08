@@ -772,8 +772,8 @@ class FortuneReading extends Model
     /**
      * สร้างเลขที่บิลอ้างอิงที่ไม่ซ้ำกัน
      *
-     * รูปแบบ: FR-YYMMDD-XXXXX
-     * - FR = Fortune Reading
+     * รูปแบบ: FTU-YYMMDD-XXXXX
+     * - FTU = Fortune Reading
      * - YYMMDD = วันที่ (เช่น 260205)
      * - XXXXX = ลำดับ random 5 หลัก
      *

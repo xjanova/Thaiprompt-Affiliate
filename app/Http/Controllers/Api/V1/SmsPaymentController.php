@@ -886,7 +886,7 @@ class SmsPaymentController extends Controller
             ], 403);
         }
 
-        if ($model->status !== 'pending') {
+        if (! in_array($model->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaction is not pending (current: ' . $model->status . ')',
@@ -963,7 +963,12 @@ class SmsPaymentController extends Controller
                 }
             } else {
                 /** @var PaymentTransaction $model */
-                if ($model->status === 'pending') {
+                // Multi-Store: ตรวจสอบสิทธิ์ device
+                if (! $this->deviceCanAccessTransaction($device, $model)) {
+                    $failed++;
+                    continue;
+                }
+                if (in_array($model->status, ['pending', 'processing'])) {
                     $paymentService->completePayment($model);
                     $approved++;
                 } else {
