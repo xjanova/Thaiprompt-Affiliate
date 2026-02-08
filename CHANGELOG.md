@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.483.0] - 2026-02-08
+
+### ✨ Features
+- feat: bill prefix routing system (PRE-/FTU-/SEL-) + resolve order by identifier (f27fbf76)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.482.0] - 2026-02-07
 
 ### ✨ Features
