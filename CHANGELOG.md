@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.483.1] - 2026-02-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: bulkApprove store access check + status consistency (21cb4a4f)
+### 🔧 Other Changes
+
+
 ## [v3.483.0] - 2026-02-08
 
 ### ✨ Features
