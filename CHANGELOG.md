@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.483.4] - 2026-02-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: admin เห็นเฉพาะบิล Premium Shop + หมอดู (ไม่เห็นบิล seller) (9c621520)
+### 🔧 Other Changes
+
+
 ## [v3.483.3] - 2026-02-09
 
 ### ✨ Features
