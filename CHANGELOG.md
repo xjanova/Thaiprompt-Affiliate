@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.483.3] - 2026-02-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: admin device เห็นทุกบิลทุก store, seller filter ตาม device.store_id (ae8f3929)
+### 🔧 Other Changes
+
+
 ## [v3.483.2] - 2026-02-08
 
 ### ✨ Features
