@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.484.0] - 2026-02-09
+
+### ✨ Features
+- feat: FCM push notification สำหรับ SmsChecker + ปรับ sync interval เป็น 5 นาที (ac553213)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.483.4] - 2026-02-09
 
 ### ✨ Features
