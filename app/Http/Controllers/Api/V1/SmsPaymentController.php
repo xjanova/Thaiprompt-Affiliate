@@ -12,6 +12,7 @@ use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
 use App\Services\Payment\PaymentService;
+use App\Services\FcmNotificationService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,8 @@ use Illuminate\Support\Facades\Validator;
 class SmsPaymentController extends Controller
 {
     public function __construct(
-        private SmsPaymentService $smsPaymentService
+        private SmsPaymentService $smsPaymentService,
+        private FcmNotificationService $fcmService,
     ) {}
 
     /**
@@ -475,6 +477,44 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Device registered successfully',
+        ]);
+    }
+
+    /**
+     * Register/update FCM token สำหรับ push notifications
+     *
+     * Android App เรียกเมื่อ FCM token เปลี่ยน (startup หรือ onNewToken)
+     * endpoint นี้รับเฉพาะ fcm_token เท่านั้น ไม่ต้องส่งข้อมูลอุปกรณ์ทั้งหมดเหมือน register-device
+     *
+     * POST /api/v1/sms-payment/register-fcm-token
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function registerFcmToken(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'fcm_token' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $this->fcmService->registerToken($device, $request->input('fcm_token'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'FCM token registered successfully',
         ]);
     }
 

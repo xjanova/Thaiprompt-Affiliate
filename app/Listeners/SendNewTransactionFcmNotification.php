@@ -24,6 +24,11 @@ class SendNewTransactionFcmNotification implements ShouldQueue
     {
         $transaction = $event->transaction;
 
+        // เช็คว่า FCM เปิดใช้งานอยู่หรือไม่
+        if (! $this->fcmService->isEnabled()) {
+            return;
+        }
+
         // ส่ง FCM เฉพาะบิลที่ต้องรอชำระเงิน (promptpay/bank_transfer)
         if (! in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
             return;

@@ -152,10 +152,25 @@ class FcmNotificationService
     }
 
     /**
+     * Check if FCM is enabled via admin settings
+     */
+    public function isEnabled(): bool
+    {
+        return (bool) Setting::get('fcm_enabled', true);
+    }
+
+    /**
      * Send FCM message to multiple tokens
      */
     private function sendToMultipleTokens(array $tokens, array $data, ?array $notification): bool
     {
+        // Check if FCM is disabled via admin settings
+        if (! $this->isEnabled()) {
+            Log::debug('FCM: Disabled via admin settings, skipping send');
+
+            return false;
+        }
+
         if (empty($tokens)) {
             return false;
         }

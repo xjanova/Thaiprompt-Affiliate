@@ -30,6 +30,9 @@ Route::prefix('v1/sms-payment')->group(function () {
         // ลงทะเบียน/อัพเดทข้อมูลอุปกรณ์
         Route::post('/register-device', [SmsPaymentController::class, 'registerDevice']);
 
+        // FCM Token registration (สำหรับ push notifications)
+        Route::post('/register-fcm-token', [SmsPaymentController::class, 'registerFcmToken']);
+
         // เส้นทางที่ต้องมี SMS Gateway access (subscription/premium/official)
         Route::middleware([VerifySmsGatewayAccess::class])->group(function () {
             // จัดการ Orders (สำหรับ Android App)
