@@ -87,6 +87,7 @@ return [
     'firebase' => [
         'server_key' => env('FCM_SERVER_KEY'),
         'project_id' => env('FCM_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS_PATH', storage_path('app/firebase-credentials.json')),
     ],
 
     'paysolutions' => [

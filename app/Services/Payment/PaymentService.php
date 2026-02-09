@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Events\NewTransactionCreated;
 use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
 use App\Models\PaymentBankAccount;
@@ -135,6 +136,12 @@ class PaymentService
                 'expired_at' => now()->addMinutes(30), // 30 minutes expiry
             ]);
 
+            // ส่ง FCM push ไปยัง SmsChecker app เมื่อมีบิลใหม่
+            // แอพจะโหลดบิลทันทีโดยไม่ต้องรอ periodic sync
+            if (in_array($paymentMethod, ['promptpay', 'bank_transfer'])) {
+                NewTransactionCreated::dispatch($transaction);
+            }
+
             return $transaction;
         });
     }
@@ -197,6 +204,11 @@ class PaymentService
                 'metadata' => $options['metadata'] ?? null,
                 'expired_at' => now()->addMinutes(30), // 30 minutes expiry
             ]);
+
+            // ส่ง FCM push ไปยัง SmsChecker app เมื่อมีบิลเติมเงินใหม่
+            if (in_array($paymentMethod, ['promptpay', 'bank_transfer'])) {
+                NewTransactionCreated::dispatch($transaction);
+            }
 
             return $transaction;
         });

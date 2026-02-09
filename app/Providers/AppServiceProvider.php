@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Events\NewTransactionCreated;
+use App\Listeners\SendNewTransactionFcmNotification;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -99,6 +102,13 @@ class AppServiceProvider extends ServiceProvider
         // Register AI Rental GPU System Observers
         \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
         \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
+
+        // ส่ง FCM push ไปยัง SmsChecker app เมื่อมีบิลใหม่
+        // แอพจะโหลดบิลทันทีโดยไม่ต้องรอ periodic sync
+        Event::listen(
+            NewTransactionCreated::class,
+            SendNewTransactionFcmNotification::class
+        );
     }
 
     /**

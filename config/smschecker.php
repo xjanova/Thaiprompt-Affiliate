@@ -72,8 +72,9 @@ return [
     */
     'sync' => [
         // ระยะเวลา sync (วินาที) - แอพ Android จะ poll ทุก X วินาที
-        // ปรับเป็น 60 วินาที เพราะใช้ match-only mode แล้ว (ถามเซิร์ฟเวอร์เมื่อ SMS เข้ามา)
-        'interval' => env('SMSCHECKER_SYNC_INTERVAL', 60),
+        // ปรับเป็น 300 วินาที (5 นาที) เพราะใช้ FCM push เป็นตัวหลัก
+        // periodic sync เป็น backup เท่านั้น
+        'interval' => env('SMSCHECKER_SYNC_INTERVAL', 300),
 
         // Timeout สำหรับ sync request (วินาที)
         'timeout' => env('SMSCHECKER_SYNC_TIMEOUT', 10),
