@@ -34,8 +34,9 @@ class SmsPaymentController extends Controller
     /**
      * ตรวจสอบว่า device มีสิทธิ์เข้าถึง transaction หรือไม่
      *
-     * - Admin device → เข้าถึงได้ทุกบิล (ไม่จำกัด store)
-     * - Seller device → เข้าถึงได้เฉพาะบิลของ store ตัวเอง (เช็คจาก device.store_id)
+     * - Admin device → เข้าถึงได้เฉพาะบิลของ Premium Shop (platformStoreId)
+     *   ป้องกัน auto-approve ผิดร้าน: ถ้า seller โอนเงินยอดเดียวกัน admin จะไม่เห็นบิลนั้น
+     * - Seller device → เข้าถึงได้เฉพาะบิลของ store ตัวเอง (device.store_id)
      *
      * @param SmsCheckerDevice $device
      * @param PaymentTransaction $transaction
@@ -43,9 +44,11 @@ class SmsPaymentController extends Controller
      */
     private function deviceCanAccessTransaction(SmsCheckerDevice $device, PaymentTransaction $transaction): bool
     {
-        // Admin device → เข้าถึงได้ทุกบิล
+        // Admin device → เห็นเฉพาะบิลของ Premium Shop
         if ($device->isAdminDevice()) {
-            return true;
+            $platformStoreId = VendorStore::getPlatformStoreId();
+            $txnStoreId = (int) ($transaction->store_id ?? $platformStoreId);
+            return $txnStoreId === $platformStoreId;
         }
 
         // Seller device → เช็คว่า store_id ของ device ตรงกับ transaction
@@ -55,8 +58,8 @@ class SmsPaymentController extends Controller
     /**
      * แปลง device.store_id → ค่าจริงที่ใช้งาน
      *
-     * ถ้า device.store_id = null (admin device)
-     * → fallback เป็น platformStoreId (ใช้สำหรับ log เท่านั้น)
+     * - Admin device (store_id = null) → ใช้ platformStoreId (Premium Shop)
+     * - Seller device → ใช้ store_id ของ device
      *
      * @param SmsCheckerDevice $device
      * @return int
@@ -69,8 +72,9 @@ class SmsPaymentController extends Controller
     /**
      * เพิ่ม store_id filter ให้ query ตาม device
      *
-     * - Admin device → ไม่ filter (เห็นทุกบิลทุก store)
-     * - Seller device → filter ตาม store_id ของ device (เห็นเฉพาะบิลร้านตัวเอง)
+     * - Admin device → filter เฉพาะ platformStoreId (เห็นแค่บิล Premium Shop + หมอดู)
+     *   ป้องกัน auto-approve ผิดร้าน: ยอดเงินของ seller ร้านอื่นจะไม่ปนมา
+     * - Seller device → filter ตาม device.store_id (เห็นเฉพาะบิลร้านตัวเอง)
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param SmsCheckerDevice $device
@@ -78,13 +82,13 @@ class SmsPaymentController extends Controller
      */
     private function applyStoreFilter($query, SmsCheckerDevice $device)
     {
-        // Admin device → เห็นทุกบิล ไม่ต้อง filter
         if ($device->isAdminDevice()) {
-            return $query;
+            // Admin device → เห็นเฉพาะบิลของ Premium Shop (platformStoreId)
+            $query->where('store_id', VendorStore::getPlatformStoreId());
+        } else {
+            // Seller device → เห็นเฉพาะบิลของ store ตัวเอง
+            $query->where('store_id', $device->store_id);
         }
-
-        // Seller device → เห็นเฉพาะบิลของ store ตัวเอง
-        $query->where('store_id', $device->store_id);
 
         return $query;
     }
