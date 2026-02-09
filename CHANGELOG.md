@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.485.1] - 2026-02-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่ม fcm_enabled check + register-fcm-token endpoint (a51f2494)
+### 🔧 Other Changes
+
+
 ## [v3.485.0] - 2026-02-09
 
 ### ✨ Features
