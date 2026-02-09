@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.485.0] - 2026-02-09
+
+### ✨ Features
+- feat: เพิ่มหน้า Admin จัดการ Firebase/FCM Settings (a65d99ef)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.484.0] - 2026-02-09
 
 ### ✨ Features
