@@ -34,9 +34,8 @@ class SmsPaymentController extends Controller
     /**
      * ตรวจสอบว่า device มีสิทธิ์เข้าถึง transaction หรือไม่
      *
-     * เปรียบเทียบ store_id ของ device กับ transaction
-     * null === null ผ่านได้ (ทั้งคู่เป็น admin/official shop)
-     * ใช้ == เพื่อให้ null == null เป็น true (strict mode ป้องกันข้ามร้าน)
+     * - Admin device → เข้าถึงได้ทุกบิล (ไม่จำกัด store)
+     * - Seller device → เข้าถึงได้เฉพาะบิลของ store ตัวเอง (เช็คจาก device.store_id)
      *
      * @param SmsCheckerDevice $device
      * @param PaymentTransaction $transaction
@@ -44,19 +43,20 @@ class SmsPaymentController extends Controller
      */
     private function deviceCanAccessTransaction(SmsCheckerDevice $device, PaymentTransaction $transaction): bool
     {
-        // resolve store_id ของทั้ง device และ transaction
-        // ถ้าเป็น null (legacy) → ใช้ platformStoreId แทน
-        $deviceStoreId = $this->resolveDeviceStoreId($device);
-        $txnStoreId = (int) ($transaction->store_id ?? VendorStore::getPlatformStoreId());
+        // Admin device → เข้าถึงได้ทุกบิล
+        if ($device->isAdminDevice()) {
+            return true;
+        }
 
-        return $deviceStoreId === $txnStoreId;
+        // Seller device → เช็คว่า store_id ของ device ตรงกับ transaction
+        return (int) $device->store_id === (int) ($transaction->store_id ?? VendorStore::getPlatformStoreId());
     }
 
     /**
      * แปลง device.store_id → ค่าจริงที่ใช้งาน
      *
-     * ถ้า device.store_id = null (legacy device ที่สร้างก่อนมี multi-store)
-     * → fallback เป็น platformStoreId (ร้าน admin/official)
+     * ถ้า device.store_id = null (admin device)
+     * → fallback เป็น platformStoreId (ใช้สำหรับ log เท่านั้น)
      *
      * @param SmsCheckerDevice $device
      * @return int
@@ -67,10 +67,10 @@ class SmsPaymentController extends Controller
     }
 
     /**
-     * เพิ่ม store_id filter ให้ query ตาม device (Strict Mode)
+     * เพิ่ม store_id filter ให้ query ตาม device
      *
-     * ทุก device เห็นเฉพาะ orders ของ store ตัวเองเท่านั้น
-     * device.store_id = null → fallback เป็น platformStoreId
+     * - Admin device → ไม่ filter (เห็นทุกบิลทุก store)
+     * - Seller device → filter ตาม store_id ของ device (เห็นเฉพาะบิลร้านตัวเอง)
      *
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param SmsCheckerDevice $device
@@ -78,8 +78,13 @@ class SmsPaymentController extends Controller
      */
     private function applyStoreFilter($query, SmsCheckerDevice $device)
     {
-        $storeId = $this->resolveDeviceStoreId($device);
-        $query->where('store_id', $storeId);
+        // Admin device → เห็นทุกบิล ไม่ต้อง filter
+        if ($device->isAdminDevice()) {
+            return $query;
+        }
+
+        // Seller device → เห็นเฉพาะบิลของ store ตัวเอง
+        $query->where('store_id', $device->store_id);
 
         return $query;
     }
