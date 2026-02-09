@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
+use App\Services\FcmNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -346,7 +348,25 @@ class SmsCheckerAdminController extends Controller
 
         $supportedBanks = config('smschecker.supported_banks', []);
 
-        return view('admin.smschecker.settings', compact('settings', 'supportedBanks'));
+        // FCM settings
+        $fcmEnabled = Setting::get('fcm_enabled', false);
+        $fcmProjectId = Setting::get('fcm_project_id', '');
+        $fcmCredentialsPath = Setting::get('fcm_credentials_path', '');
+        $fcmServiceAccount = null;
+
+        if ($fcmCredentialsPath && file_exists($fcmCredentialsPath)) {
+            try {
+                $creds = json_decode(file_get_contents($fcmCredentialsPath), true);
+                $fcmServiceAccount = $creds['client_email'] ?? null;
+            } catch (\Exception $e) {
+                // ignore
+            }
+        }
+
+        return view('admin.smschecker.settings', compact(
+            'settings', 'supportedBanks',
+            'fcmEnabled', 'fcmProjectId', 'fcmCredentialsPath', 'fcmServiceAccount'
+        ));
     }
 
     /**
@@ -363,6 +383,77 @@ class SmsCheckerAdminController extends Controller
         return redirect()
             ->back()
             ->with('info', 'การตั้งค่าถูกจัดเก็บใน config/smschecker.php กรุณาแก้ไขไฟล์โดยตรง');
+    }
+
+    /**
+     * บันทึกการตั้งค่า FCM
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateFcmSettings(Request $request)
+    {
+        $request->validate([
+            'fcm_project_id' => 'required|string|max:100',
+            'fcm_credentials' => 'nullable|file|mimes:json|max:512',
+            'fcm_enabled' => 'nullable|boolean',
+        ]);
+
+        // Save Project ID
+        Setting::set('fcm_project_id', $request->fcm_project_id, 'string', 'fcm');
+
+        // Save enabled status
+        Setting::set('fcm_enabled', $request->boolean('fcm_enabled') ? '1' : '0', 'boolean', 'fcm');
+
+        // Handle JSON file upload
+        if ($request->hasFile('fcm_credentials')) {
+            $file = $request->file('fcm_credentials');
+
+            // Validate JSON content
+            $content = file_get_contents($file->getRealPath());
+            $json = json_decode($content, true);
+
+            if (! $json || empty($json['project_id']) || empty($json['private_key']) || empty($json['client_email'])) {
+                return redirect()->back()->with('error', 'ไฟล์ JSON ไม่ถูกต้อง ต้องเป็น Firebase Service Account JSON');
+            }
+
+            // Save to storage
+            $storagePath = storage_path('app/firebase-credentials.json');
+            file_put_contents($storagePath, $content);
+            chmod($storagePath, 0600);
+
+            Setting::set('fcm_credentials_path', $storagePath, 'string', 'fcm');
+
+            Log::info('FCM: Credentials file uploaded', [
+                'admin_id' => auth()->id(),
+                'service_account' => $json['client_email'],
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.smschecker.settings')
+            ->with('success', 'บันทึกการตั้งค่า FCM เรียบร้อยแล้ว');
+    }
+
+    /**
+     * ทดสอบส่ง FCM push notification
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function testFcm()
+    {
+        $fcmService = app(FcmNotificationService::class);
+        $result = $fcmService->triggerSync();
+
+        if ($result) {
+            return redirect()
+                ->route('admin.smschecker.settings')
+                ->with('success', 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android');
+        }
+
+        return redirect()
+            ->route('admin.smschecker.settings')
+            ->with('error', 'ส่ง FCM test push ล้มเหลว ตรวจสอบ log สำหรับรายละเอียด');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PaymentTransaction;
+use App\Models\Setting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use Illuminate\Support\Facades\Http;
@@ -192,7 +193,8 @@ class FcmNotificationService
             return false;
         }
 
-        $projectId = config('services.firebase.project_id');
+        // Read project ID from database first, fallback to config
+        $projectId = Setting::get('fcm_project_id') ?: config('services.firebase.project_id');
         if (! $projectId) {
             Log::error('FCM: Firebase project ID not configured');
 
@@ -258,7 +260,8 @@ class FcmNotificationService
             return $this->accessToken;
         }
 
-        $credentialsPath = config('services.firebase.credentials');
+        // Read credentials path from database first, fallback to config
+        $credentialsPath = Setting::get('fcm_credentials_path') ?: config('services.firebase.credentials');
         if (! $credentialsPath || ! file_exists($credentialsPath)) {
             Log::error('FCM: Firebase credentials file not found', ['path' => $credentialsPath]);
 
