@@ -57,6 +57,7 @@ class FortuneReading extends Model
      * สถานะ conversation ที่เป็นไปได้
      */
     public const STATUS_NEW = 'new';
+    public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
     public const STATUS_BASIC_DONE = 'basic_done';
     public const STATUS_COLLECTING_BIRTHDATE = 'collecting_birthdate';
     public const STATUS_COLLECTING_QUESTIONS = 'collecting_questions';
@@ -494,15 +495,17 @@ class FortuneReading extends Model
     {
         return $query->where('facebook_user_id', $facebookUserId)
             ->whereIn('conversation_status', [
+                self::STATUS_AWAITING_CONFIRMATION,
                 self::STATUS_BASIC_DONE,
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
                 self::STATUS_PENDING_PAYMENT,
             ])
             ->where(function ($q) {
-                // conversation ทั่วไป: timeout 30 นาที
+                // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
                 $q->where(function ($sub) {
                     $sub->whereIn('conversation_status', [
+                        self::STATUS_AWAITING_CONFIRMATION,
                         self::STATUS_BASIC_DONE,
                         self::STATUS_COLLECTING_BIRTHDATE,
                         self::STATUS_COLLECTING_QUESTIONS,
@@ -544,6 +547,7 @@ class FortuneReading extends Model
     {
         return self::where('facebook_user_id', $facebookUserId)
             ->whereIn('conversation_status', [
+                self::STATUS_AWAITING_CONFIRMATION,
                 self::STATUS_BASIC_DONE,
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
