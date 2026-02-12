@@ -99,7 +99,7 @@ class FortuneAstrologyController extends Controller
 
             // ข้อมูลเจ้าชนะ
             $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
-            $rulingPlanet = $chaochana ? (FortuneChartService::PLANETS[$chaochana['ruling_planet']] ?? null) : null;
+            $rulingPlanet = $chaochana ? (FortuneChartService::PLANETS[$chaochana['planet']] ?? null) : null;
 
             return response()->json([
                 'success' => true,

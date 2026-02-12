@@ -46,13 +46,13 @@ class FortuneChartService
 
     // ตารางเจ้าชนะตามวันเกิด
     public const CHAOCHANA = [
-        0 => ['planet' => 'sun',     'friends' => ['jupiter', 'mars'],    'enemies' => ['saturn', 'rahu']],
-        1 => ['planet' => 'moon',    'friends' => ['mercury', 'venus'],   'enemies' => ['rahu', 'saturn']],
-        2 => ['planet' => 'mars',    'friends' => ['sun', 'jupiter'],     'enemies' => ['mercury', 'saturn']],
-        3 => ['planet' => 'mercury', 'friends' => ['moon', 'venus'],      'enemies' => ['rahu', 'mars']],
-        4 => ['planet' => 'jupiter', 'friends' => ['sun', 'mars'],        'enemies' => ['rahu', 'saturn']],
-        5 => ['planet' => 'venus',   'friends' => ['mercury', 'moon'],    'enemies' => ['sun', 'mars']],
-        6 => ['planet' => 'saturn',  'friends' => ['rahu', 'jupiter'],    'enemies' => ['sun', 'mars']],
+        0 => ['planet' => 'sun',     'friends' => ['jupiter', 'mars'],    'enemies' => ['saturn', 'rahu'],    'element' => 'ไฟ',  'lucky_color' => 'แดง'],
+        1 => ['planet' => 'moon',    'friends' => ['mercury', 'venus'],   'enemies' => ['rahu', 'saturn'],    'element' => 'น้ำ', 'lucky_color' => 'เหลือง'],
+        2 => ['planet' => 'mars',    'friends' => ['sun', 'jupiter'],     'enemies' => ['mercury', 'saturn'], 'element' => 'ไฟ',  'lucky_color' => 'ชมพู'],
+        3 => ['planet' => 'mercury', 'friends' => ['moon', 'venus'],      'enemies' => ['rahu', 'mars'],      'element' => 'ดิน', 'lucky_color' => 'เขียว'],
+        4 => ['planet' => 'jupiter', 'friends' => ['sun', 'mars'],        'enemies' => ['rahu', 'saturn'],    'element' => 'ลม',  'lucky_color' => 'ส้ม'],
+        5 => ['planet' => 'venus',   'friends' => ['mercury', 'moon'],    'enemies' => ['sun', 'mars'],       'element' => 'น้ำ', 'lucky_color' => 'ฟ้า'],
+        6 => ['planet' => 'saturn',  'friends' => ['rahu', 'jupiter'],    'enemies' => ['sun', 'mars'],       'element' => 'ดิน', 'lucky_color' => 'ม่วง'],
     ];
 
     /**

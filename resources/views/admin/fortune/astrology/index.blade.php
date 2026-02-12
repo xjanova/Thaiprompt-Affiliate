@@ -103,7 +103,7 @@
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     @foreach($chaochana as $dayNum => $data)
                         @php
-                            $rulingPlanet = $planets[$data['ruling_planet']] ?? null;
+                            $rulingPlanet = $planets[$data['planet']] ?? null;
                         @endphp
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
                             <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
