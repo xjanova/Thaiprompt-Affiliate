@@ -730,7 +730,7 @@ class FacebookWebhookController extends Controller
             }
 
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
-            $actionsWithQuickReplies = ['basic_done', 'check_remaining'];
+            $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining'];
             if (!empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
@@ -835,11 +835,19 @@ class FacebookWebhookController extends Controller
     protected function sendConversationQuickReplies(string $senderId, string $action): void
     {
         $quickReplies = match ($action) {
+            'awaiting_confirmation' => [
+                ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'FORTUNE_LOVE'],
+                ['content_type' => 'text', 'title' => '💼 การงาน', 'payload' => 'FORTUNE_WORK'],
+                ['content_type' => 'text', 'title' => '💰 การเงิน', 'payload' => 'FORTUNE_MONEY'],
+                ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'FORTUNE_HEALTH'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงรวม', 'payload' => 'FORTUNE_OVERVIEW'],
+            ],
             'basic_done' => [
-                ['content_type' => 'text', 'title' => '✨ ต้องการดูละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
-                ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '✨ ดูละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '💕 ถามเรื่องรัก', 'payload' => 'FORTUNE_LOVE'],
+                ['content_type' => 'text', 'title' => '💼 ถามเรื่องงาน', 'payload' => 'FORTUNE_WORK'],
+                ['content_type' => 'text', 'title' => '💰 ถามเรื่องเงิน', 'payload' => 'FORTUNE_MONEY'],
                 ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
-                ['content_type' => 'text', 'title' => '❌ ไม่ต้องการ', 'payload' => 'DEEP_READING_DECLINE'],
             ],
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
@@ -1057,6 +1065,13 @@ class FacebookWebhookController extends Controller
             // Quick Replies ใหม่สำหรับ conversational flow
             'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'DEEP_READING_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+
+            // Quick Replies หมวดคำทำนาย
+            'FORTUNE_LOVE' => $this->processConversationalMessage($senderId, 'ดูดวงความรัก เนื้อคู่ คู่ครอง'),
+            'FORTUNE_WORK' => $this->processConversationalMessage($senderId, 'ดูดวงการงาน อาชีพ เลื่อนตำแหน่ง'),
+            'FORTUNE_MONEY' => $this->processConversationalMessage($senderId, 'ดูดวงการเงิน รายได้ การลงทุน'),
+            'FORTUNE_HEALTH' => $this->processConversationalMessage($senderId, 'ดูดวงสุขภาพ สิ่งที่ต้องระวัง'),
+            'FORTUNE_OVERVIEW' => $this->processConversationalMessage($senderId, 'ดูดวงภาพรวมทุกด้าน ความรัก การงาน การเงิน สุขภาพ'),
 
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
