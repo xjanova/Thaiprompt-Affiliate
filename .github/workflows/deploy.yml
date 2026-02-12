@@ -26,33 +26,32 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          APP_URL: ${{ secrets.APP_URL }}
         run: |
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$DEPLOY_PATH" ] || [ -z "$APP_URL" ]; then
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PRIVATE_KEY" ]; then
             echo "::error::Required deployment secrets are not configured."
-            echo "Please set: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, DEPLOY_PATH, APP_URL"
+            echo "Please set: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY"
             exit 1
           fi
           echo "✅ All required secrets are configured."
+          echo "Deploy path: ${{ vars.DEPLOY_PATH }}"
 
       - name: Deploy via SSH (run deploy.sh on server)
         uses: appleboy/ssh-action@v1
         env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_PATH }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           command_timeout: 15m
-          envs: DEPLOY_PATH
+          envs: DEPLOY_DIR
           script: |
             echo "🚀 Starting deployment..."
-            echo "Deploy path: $DEPLOY_PATH"
+            echo "Deploy path: $DEPLOY_DIR"
 
-            cd "$DEPLOY_PATH" || {
-              echo "❌ Cannot cd to $DEPLOY_PATH"
+            cd "$DEPLOY_DIR" || {
+              echo "❌ Cannot cd to $DEPLOY_DIR"
               exit 1
             }
 
@@ -61,7 +60,7 @@ jobs:
               chmod +x deploy.sh
               bash deploy.sh claude/Main
             else
-              echo "❌ deploy.sh not found at $DEPLOY_PATH"
+              echo "❌ deploy.sh not found!"
               exit 1
             fi
 
@@ -69,7 +68,7 @@ jobs:
 
       - name: Health check
         env:
-          APP_URL: ${{ secrets.APP_URL }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
           echo "Waiting 10s for deployment to settle..."
           sleep 10
@@ -83,7 +82,7 @@ jobs:
       - name: Deployment summary
         if: always()
         env:
-          APP_URL: ${{ secrets.APP_URL }}
+          APP_URL: ${{ vars.APP_URL }}
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "## ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
