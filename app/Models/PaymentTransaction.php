@@ -189,6 +189,16 @@ class PaymentTransaction extends Model
     }
 
     /**
+     * UniquePaymentAmount ที่เชื่อมโยง (ใช้สำหรับ SMS Checker matching)
+     *
+     * UniquePaymentAmount.transaction_id → PaymentTransaction.id
+     */
+    public function uniquePaymentAmount()
+    {
+        return $this->hasOne(UniquePaymentAmount::class, 'transaction_id');
+    }
+
+    /**
      * Scope for pending transactions
      */
     public function scopePending($query)

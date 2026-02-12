@@ -811,6 +811,20 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
+        // Mark UniquePaymentAmount as used (เหมือน xmanstudio)
+        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
+            ->whereIn('status', ['reserved', 'expired'])
+            ->first();
+        if ($uniqueAmount) {
+            $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+        }
+
+        // Update SMS notification status to confirmed (ถ้ามี)
+        $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+        if ($notification) {
+            $notification->update(['status' => 'confirmed']);
+        }
+
         app(PaymentService::class)->completePayment($model);
 
         Log::info('SMS Payment: อนุมัติ order จากอุปกรณ์', [
@@ -1087,6 +1101,20 @@ class SmsPaymentController extends Controller
                     continue;
                 }
                 if (in_array($model->status, ['pending', 'processing'])) {
+                    // Mark UniquePaymentAmount as used
+                    $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
+                        ->whereIn('status', ['reserved', 'expired'])
+                        ->first();
+                    if ($uniqueAmount) {
+                        $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                    }
+
+                    // Update SMS notification status
+                    $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+                    if ($notification) {
+                        $notification->update(['status' => 'confirmed']);
+                    }
+
                     $paymentService->completePayment($model);
                     $approved++;
                 } else {
@@ -1214,119 +1242,146 @@ class SmsPaymentController extends Controller
         }
 
         $amount = (float) $amount;
+        $graceMinutes = (int) config('smschecker.orphan_match_window', 60);
+        $deviceStoreId = $this->resolveDeviceStoreId($device);
 
-        // ค้นหา PaymentTransaction ที่:
-        // 1. status = pending หรือ processing
-        // 2. amount ตรงกับที่ได้รับ (exact match สำหรับ unique decimal)
-        // 3. payment_method = promptpay หรือ bank_transfer
-        // 4. store_id ตรงกับ device (Strict Mode)
-        $query = PaymentTransaction::query()
+        // =====================================================================
+        // ค้นหา PaymentTransaction (เหมือน xmanstudio)
+        // =====================================================================
+
+        // Query 1: UniquePaymentAmount active/used → PaymentTransaction pending
+        $transaction = PaymentTransaction::with(['order'])
+            ->whereHas('uniquePaymentAmount', function ($q) use ($amount) {
+                $q->where('unique_amount', $amount)
+                    ->whereIn('status', ['reserved', 'used']);
+            })
             ->whereIn('status', ['pending', 'processing'])
-            ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
-            ->where('amount', $amount);
+            ->where('store_id', $deviceStoreId)
+            ->orderBy('created_at', 'desc')
+            ->first();
 
-        // Strict: device เห็นเฉพาะ orders ของ store ตัวเอง
-        $this->applyStoreFilter($query, $device);
-
-        // ดึง transaction ที่ตรงกัน (ควรมีแค่ 1 เพราะ unique amount + store)
-        $transaction = $query->orderBy('created_at', 'desc')->first();
-
-        // Fallback: ถ้า /notify → attemptMatch() ทำไปแล้ว (status=completed)
+        // Fallback 1: /notify → attemptMatch() ทำไปแล้ว (status='completed')
         // → หา transaction ที่ match แล้วเพื่อ return ให้ Android รู้
         $alreadyMatched = false;
         if (! $transaction) {
-            $fallbackQuery = PaymentTransaction::query()
-                ->where('status', 'completed')
-                ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
-                ->where('amount', $amount)
-                ->where('created_at', '>=', now()->subHours(1));
-
-            $this->applyStoreFilter($fallbackQuery, $device);
-            $transaction = $fallbackQuery->orderBy('updated_at', 'desc')->first();
+            $transaction = PaymentTransaction::with(['order'])
+                ->whereHas('uniquePaymentAmount', function ($q) use ($amount) {
+                    $q->where('unique_amount', $amount)
+                        ->where('status', 'used');
+                })
+                ->where('store_id', $deviceStoreId)
+                ->where('created_at', '>=', now()->subHours(1))
+                ->orderBy('created_at', 'desc')
+                ->first();
 
             if ($transaction) {
                 $alreadyMatched = true;
             }
         }
 
-        // === Auto-approve: อนุมัติทันทีเมื่อจับคู่ได้ เพื่อ trigger ระบบปันผล/MLM ===
+        // Fallback 2: UniquePaymentAmount หมดอายุแล้ว (ภายใน grace period)
+        // กรณี SMS มาช้า / cleanup ทำงานแล้ว แต่ transaction ยัง pending/failed
+        if (! $transaction) {
+            $transaction = PaymentTransaction::with(['order'])
+                ->whereHas('uniquePaymentAmount', function ($q) use ($amount, $graceMinutes) {
+                    $q->where('unique_amount', $amount)
+                        ->whereIn('status', ['expired', 'reserved'])
+                        ->where('expires_at', '>', now()->subMinutes($graceMinutes));
+                })
+                ->whereIn('status', ['pending', 'processing', 'failed'])
+                ->where('store_id', $deviceStoreId)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Recovery: ถ้า transaction ถูก markAsFailed โดย cleanup → กู้คืนเป็น pending
+            if ($transaction && $transaction->status === 'failed') {
+                $transaction->update(['status' => 'pending']);
+                Log::info('SMS Payment: Recovered expired transaction for match', [
+                    'transaction_id' => $transaction->id,
+                    'amount' => $amount,
+                ]);
+            }
+        }
+
+        // Fallback 3: ค้นหาด้วย amount ตรงๆ (กรณี UniquePaymentAmount record สูญหาย)
+        if (! $transaction) {
+            $query = PaymentTransaction::query()
+                ->whereIn('status', ['pending', 'processing'])
+                ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+                ->where('amount', $amount)
+                ->where('store_id', $deviceStoreId);
+
+            $transaction = $query->orderBy('created_at', 'desc')->first();
+        }
+
+        // === Auto-approve PaymentTransaction เมื่อจับคู่ได้ ===
         if ($transaction && ! $alreadyMatched) {
             $autoConfirm = config('smschecker.auto_confirm_matched', true);
             if ($autoConfirm && in_array($transaction->status, ['pending', 'processing'])) {
                 try {
+                    // Mark UniquePaymentAmount as used
+                    $uniqueAmount = UniquePaymentAmount::where('transaction_id', $transaction->id)
+                        ->whereIn('status', ['reserved', 'expired'])
+                        ->first();
+                    if ($uniqueAmount) {
+                        $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                    }
+
                     app(PaymentService::class)->completePayment($transaction);
                     $transaction = $transaction->fresh();
 
-                    Log::info('SMS Payment: Auto-approved on match — ระบบปันผลจะทำงานต่อ', [
+                    Log::info('SMS Payment: Auto-approved on match', [
                         'device_id' => $device->device_id,
                         'amount' => $amount,
                         'transaction_id' => $transaction->id,
-                        'store_id' => $this->resolveDeviceStoreId($device),
+                        'store_id' => $deviceStoreId,
                     ]);
                 } catch (\Exception $e) {
                     Log::error('SMS Payment: Auto-approve failed on match', [
                         'transaction_id' => $transaction->id,
                         'error' => $e->getMessage(),
                     ]);
-                    // ยังคง return matched order แม้ auto-approve ล้มเหลว
-                    // Android app จะ retry ผ่าน POST /orders/{id}/approve
                 }
             }
         }
 
-        // === Fallback: ตรวจสอบว่าเป็นบิลดูดวง (FortuneReading) ===
-        // ถ้าไม่พบ PaymentTransaction ที่ตรง → ลอง match กับ FortuneReading
-        // เฉพาะ admin device เท่านั้น (FortuneReading ไม่มี store_id)
+        // =====================================================================
+        // ค้นหา FortuneReading (เฉพาะ admin device)
+        // =====================================================================
         if (! $transaction && $this->deviceCanAccessFortuneReading($device)) {
-            // 1) ยังรอชำระ (pending_payment) — unique amount ยังไม่หมดอายุ
-            $fortuneReading = FortuneReading::findByUniqueAmount($amount);
-
-            // 2) Grace period — unique amount หมดอายุแล้วแต่ FortuneReading ยังรอชำระ/ถูก cleanup ปิดไปแล้ว
-            if (! $fortuneReading) {
-                $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
-                    ->where('transaction_type', 'fortune_reading')
-                    ->whereIn('status', ['reserved', 'expired'])
-                    ->where('expires_at', '>', now()->subMinutes(30))
-                    ->orderBy('expires_at', 'desc')
-                    ->first();
-
-                if ($uniquePayment) {
-                    $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
-                        ->where('is_paid', false)
-                        ->whereIn('conversation_status', [
-                            FortuneReading::STATUS_PENDING_PAYMENT,
-                            FortuneReading::STATUS_COMPLETED,
-                        ])
-                        ->first();
-                }
-            }
-
-            // 3) /notify อาจ handle ไปแล้ว → ดูดวง status=paid/completed
-            if (! $fortuneReading) {
-                $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
-                    ->where('transaction_type', 'fortune_reading')
-                    ->where('created_at', '>=', now()->subHours(1))
-                    ->first();
-
-                if ($uniquePayment) {
-                    $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
-                        ->whereIn('conversation_status', [
-                            FortuneReading::STATUS_PAID,
-                            FortuneReading::STATUS_COMPLETED,
-                        ])
-                        ->first();
-                }
-            }
+            $fortuneReading = $this->matchFortuneReadingByAmount($amount, $graceMinutes);
 
             if ($fortuneReading) {
+                // Recovery: ถ้า cleanup ปิดไปแล้ว → กู้คืนเป็น pending_payment
+                if (! $fortuneReading->is_paid && $fortuneReading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT) {
+                    $fortuneReading->update(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT]);
+                    Log::info('SMS Payment: Recovered fortune reading for match', [
+                        'fortune_reading_id' => $fortuneReading->id,
+                    ]);
+                }
+
+                // Auto-approve fortune reading (เหมือน xmanstudio auto-approve topup)
+                $autoConfirm = config('smschecker.auto_confirm_matched', true);
+                if ($autoConfirm && ! $fortuneReading->is_paid) {
+                    try {
+                        $fortuneReading->confirmPayment();
+                        $fortuneReading = $fortuneReading->fresh();
+
+                        Log::info('SMS Payment: Auto-approved fortune reading on match', [
+                            'device_id' => $device->device_id,
+                            'amount' => $amount,
+                            'fortune_reading_id' => $fortuneReading->id,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('SMS Payment: Auto-approve fortune reading failed', [
+                            'fortune_reading_id' => $fortuneReading->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
                 $orderData = $this->transformFortuneReadingToOrderApproval($fortuneReading);
                 $device->update(['last_active_at' => now()]);
-
-                Log::info('SMS Payment: Fortune reading matched by amount', [
-                    'device_id' => $device->device_id,
-                    'amount' => $amount,
-                    'fortune_reading_id' => $fortuneReading->id,
-                ]);
 
                 return response()->json([
                     'success' => true,
@@ -1337,8 +1392,14 @@ class SmsPaymentController extends Controller
                     ],
                 ]);
             }
+        }
 
-            // ไม่พบทั้ง PaymentTransaction และ FortuneReading
+        // =====================================================================
+        // ไม่พบ order ใดๆ
+        // =====================================================================
+        if (! $transaction) {
+            $device->update(['last_active_at' => now()]);
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1351,24 +1412,68 @@ class SmsPaymentController extends Controller
 
         // แปลงเป็น format ที่ Android เข้าใจ
         $orderData = $this->transformToOrderApproval($transaction);
-
-        // อัพเดท last_active_at ของอุปกรณ์
         $device->update(['last_active_at' => now()]);
-
-        Log::info('SMS Payment: Order matched by amount', [
-            'device_id' => $device->device_id,
-            'amount' => $amount,
-            'transaction_id' => $transaction->id,
-        ]);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'matched' => true,
                 'order' => $orderData,
-                'message' => 'Found matching order',
+                'message' => $alreadyMatched ? 'Order already matched' : 'Found matching order',
             ],
         ]);
+    }
+
+    /**
+     * ค้นหา FortuneReading จากยอดเงิน (3 ระดับ)
+     *
+     * @param float $amount
+     * @param int $graceMinutes
+     * @return FortuneReading|null
+     */
+    private function matchFortuneReadingByAmount(float $amount, int $graceMinutes): ?FortuneReading
+    {
+        // 1) Active unique amount → ยังรอชำระ (pending_payment)
+        $fortuneReading = FortuneReading::findByUniqueAmount($amount);
+
+        // 2) Grace period — unique amount หมดอายุแล้ว แต่ FortuneReading ยังรอชำระ/ถูก cleanup ปิดไปแล้ว
+        if (! $fortuneReading) {
+            $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+                ->where('transaction_type', 'fortune_reading')
+                ->whereIn('status', ['reserved', 'expired'])
+                ->where('expires_at', '>', now()->subMinutes($graceMinutes))
+                ->orderBy('expires_at', 'desc')
+                ->first();
+
+            if ($uniquePayment) {
+                $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
+                    ->where('is_paid', false)
+                    ->whereIn('conversation_status', [
+                        FortuneReading::STATUS_PENDING_PAYMENT,
+                        FortuneReading::STATUS_COMPLETED,
+                    ])
+                    ->first();
+            }
+        }
+
+        // 3) Already handled by /notify → status=paid/completed
+        if (! $fortuneReading) {
+            $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+                ->where('transaction_type', 'fortune_reading')
+                ->where('created_at', '>=', now()->subHours(1))
+                ->first();
+
+            if ($uniquePayment) {
+                $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
+                    ->whereIn('conversation_status', [
+                        FortuneReading::STATUS_PAID,
+                        FortuneReading::STATUS_COMPLETED,
+                    ])
+                    ->first();
+            }
+        }
+
+        return $fortuneReading;
     }
 
     /**
