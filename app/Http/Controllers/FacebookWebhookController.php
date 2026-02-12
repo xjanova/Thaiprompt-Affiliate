@@ -722,6 +722,21 @@ class FacebookWebhookController extends Controller
             // ปิด typing indicator
             $this->facebookService->sendTypingIndicator($senderId, false);
 
+            // ✅ ส่งภาพ Birth Chart ก่อนข้อความทำนาย (ถ้ามี)
+            $chartUrl = $result['chart_image_url'] ?? null;
+            if ($chartUrl) {
+                try {
+                    $this->facebookService->sendImage($senderId, $chartUrl);
+                    // รอสักครู่ให้ภาพส่งก่อน
+                    usleep(500000); // 0.5 วินาที
+                } catch (\Exception $imgErr) {
+                    Log::warning('Fortune: Failed to send chart image', [
+                        'error' => $imgErr->getMessage(),
+                        'chart_url' => $chartUrl,
+                    ]);
+                }
+            }
+
             // ส่งข้อความกลับ
             $message = $result['message'] ?? '';
             if (!empty($message)) {

@@ -22,6 +22,26 @@ class FortuneReadingsController extends Controller
             ->with('user')
             ->orderBy('created_at', 'desc');
 
+        // ค้นหาตามชื่อ
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('facebook_user_name', 'like', "%{$search}%")
+                  ->orWhere('facebook_user_id', 'like', "%{$search}%");
+            });
+        }
+
+        // กรองตามหมวดคำทำนาย
+        if ($request->filled('category')) {
+            $category = $request->category;
+            $query->whereJsonContains('categories', $category);
+        }
+
+        // กรองตามสถานะ Conversation
+        if ($request->filled('conversation_status')) {
+            $query->where('conversation_status', $request->conversation_status);
+        }
+
         // กรองตามสถานะชำระเงิน
         if ($request->filled('is_paid')) {
             $query->where('is_paid', $request->is_paid);

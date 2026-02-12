@@ -15,11 +15,21 @@
     </div>
 
     {{-- Quick Navigation Links --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+        <a href="{{ route('admin.fortune.dashboard') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl shadow hover:shadow-lg transition transform hover:-translate-y-0.5">
+            <span class="text-xl">📊</span>
+            <span class="text-sm font-semibold">Dashboard</span>
+        </a>
         <a href="{{ route('admin.fortune.playground') }}"
            class="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow hover:shadow-lg transition transform hover:-translate-y-0.5">
             <span class="text-xl">🎮</span>
             <span class="text-sm font-semibold">AI Playground</span>
+        </a>
+        <a href="{{ route('admin.fortune.astrology.index') }}"
+           class="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl shadow hover:shadow-lg transition transform hover:-translate-y-0.5">
+            <span class="text-xl">✨</span>
+            <span class="text-sm font-semibold">โหราศาสตร์</span>
         </a>
         <a href="{{ route('admin.fortune.channels.index') }}"
            class="flex items-center gap-2 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow transition">

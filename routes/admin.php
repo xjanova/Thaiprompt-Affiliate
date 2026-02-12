@@ -3807,7 +3807,18 @@ use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 
+use App\Http\Controllers\Admin\FortuneAstrologyController;
+
 Route::prefix('fortune')->name('fortune.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [FortuneSettingsController::class, 'dashboard'])->name('dashboard');
+
+    // Astrology Settings (โหราศาสตร์)
+    Route::get('/astrology', [FortuneAstrologyController::class, 'index'])->name('astrology.index');
+    Route::put('/astrology', [FortuneAstrologyController::class, 'update'])->name('astrology.update');
+    Route::post('/astrology/preview-chart', [FortuneAstrologyController::class, 'previewChart'])->name('astrology.preview-chart');
+    Route::post('/astrology/test-calculation', [FortuneAstrologyController::class, 'testCalculation'])->name('astrology.test-calculation');
+
     // การตั้งค่า
     Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings', [FortuneSettingsController::class, 'update'])->name('settings.update');

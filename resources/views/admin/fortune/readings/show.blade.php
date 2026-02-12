@@ -15,43 +15,111 @@
         </h1>
     </div>
 
-    {{-- User Info --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ข้อมูลผู้ใช้</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <span class="text-gray-600 dark:text-gray-400">ชื่อ:</span>
-                <span class="ml-2 text-gray-900 dark:text-white font-medium">{{ $reading->facebook_user_name ?? 'ไม่ระบุ' }}</span>
-            </div>
-            <div>
-                <span class="text-gray-600 dark:text-gray-400">Facebook ID:</span>
-                <span class="ml-2 text-gray-900 dark:text-white font-mono text-sm">{{ $reading->facebook_user_id }}</span>
-            </div>
-            <div>
-                <span class="text-gray-600 dark:text-gray-400">วันที่:</span>
-                <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->created_at->format('d/m/Y H:i:s') }}</span>
-            </div>
-            <div>
-                <span class="text-gray-600 dark:text-gray-400">ช่องทาง:</span>
-                <span class="ml-2">
-                    <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $reading->response_type === 'comment' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }}">
-                        {{ $reading->response_type === 'comment' ? 'Comment' : 'Private Message' }}
+    {{-- User Info + Conversation Status --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {{-- User Info --}}
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">👤 ข้อมูลผู้ใช้</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">ชื่อ:</span>
+                    <span class="ml-2 text-gray-900 dark:text-white font-medium">{{ $reading->facebook_user_name ?? 'ไม่ระบุ' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Facebook ID:</span>
+                    <span class="ml-2 text-gray-900 dark:text-white font-mono text-sm">{{ $reading->facebook_user_id }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">วันที่:</span>
+                    <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->created_at->format('d/m/Y H:i:s') }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">ช่องทาง:</span>
+                    <span class="ml-2">
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $reading->response_type === 'comment' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }}">
+                            {{ $reading->response_type === 'comment' ? 'Comment' : 'Private Message' }}
+                        </span>
                     </span>
-                </span>
+                </div>
+                <div>
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">ประเภทคำทำนาย:</span>
+                    <span class="ml-2">
+                        @if($reading->reading_type === 'deep')
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                🌟 เชิงลึก
+                            </span>
+                        @else
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
+                                🔮 พื้นฐาน
+                            </span>
+                        @endif
+                    </span>
+                </div>
+                @if($reading->birth_date)
+                    <div>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">วันเกิด:</span>
+                        <span class="ml-2 text-gray-900 dark:text-white font-medium">{{ $reading->birth_date->format('d/m/Y') }}</span>
+                    </div>
+                @endif
+                @if(!empty($reading->categories))
+                    <div>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">หมวดหมู่:</span>
+                        <span class="ml-2">
+                            @foreach($reading->categories as $cat)
+                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
+                                    {{ $cat }}
+                                </span>
+                            @endforeach
+                        </span>
+                    </div>
+                @endif
+                @if($reading->bill_reference)
+                    <div>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">เลขที่บิล:</span>
+                        <span class="ml-2 font-mono text-sm text-gray-900 dark:text-white">{{ $reading->bill_reference }}</span>
+                    </div>
+                @endif
             </div>
-            <div>
-                <span class="text-gray-600 dark:text-gray-400">ประเภทคำทำนาย:</span>
-                <span class="ml-2">
-                    @if($reading->reading_type === 'deep')
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                            เชิงลึก
+        </div>
+
+        {{-- Conversation Timeline --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🔄 สถานะ Conversation</h3>
+            @php
+                $statuses = [
+                    'new' => ['label' => 'ใหม่', 'icon' => '🆕', 'color' => 'blue'],
+                    'awaiting_confirmation' => ['label' => 'รอยืนยัน', 'icon' => '⏳', 'color' => 'yellow'],
+                    'basic_done' => ['label' => 'Basic เสร็จ', 'icon' => '🔮', 'color' => 'cyan'],
+                    'collecting_birthdate' => ['label' => 'รับวันเกิด', 'icon' => '📅', 'color' => 'orange'],
+                    'collecting_questions' => ['label' => 'รับคำถาม', 'icon' => '❓', 'color' => 'purple'],
+                    'pending_payment' => ['label' => 'รอชำระ', 'icon' => '💳', 'color' => 'red'],
+                    'paid' => ['label' => 'ชำระแล้ว', 'icon' => '✅', 'color' => 'green'],
+                    'completed' => ['label' => 'เสร็จสิ้น', 'icon' => '🏁', 'color' => 'green'],
+                ];
+                $currentStatus = $reading->conversation_status ?? 'new';
+                $statusOrder = array_keys($statuses);
+                $currentIndex = array_search($currentStatus, $statusOrder);
+            @endphp
+            <div class="space-y-3">
+                @foreach($statuses as $key => $status)
+                    @php
+                        $index = array_search($key, $statusOrder);
+                        $isPast = $index < $currentIndex;
+                        $isCurrent = $key === $currentStatus;
+                    @endphp
+                    <div class="flex items-center gap-3 {{ $isCurrent ? 'font-bold' : '' }}">
+                        <span class="w-8 h-8 rounded-full flex items-center justify-center text-sm
+                            {{ $isCurrent ? 'bg-'.$status['color'].'-500 text-white ring-2 ring-'.$status['color'].'-300 shadow' : ($isPast ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400') }}">
+                            {{ $isPast ? '✓' : $status['icon'] }}
                         </span>
-                    @else
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200">
-                            พื้นฐาน
+                        <span class="{{ $isCurrent ? 'text-gray-900 dark:text-white' : ($isPast ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500') }} text-sm">
+                            {{ $status['label'] }}
                         </span>
-                    @endif
-                </span>
+                        @if($isCurrent)
+                            <span class="ml-auto text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full">ปัจจุบัน</span>
+                        @endif
+                    </div>
+                @endforeach
             </div>
         </div>
     </div>
@@ -78,35 +146,59 @@
         </div>
     @endif
 
-    {{-- AI Response --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white">คำทำนาย</h3>
-            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                {{ strtoupper($reading->ai_provider) }} / {{ $reading->ai_model }}
-            </span>
-        </div>
-        <div class="prose dark:prose-invert max-w-none">
-            <div class="whitespace-pre-wrap text-gray-900 dark:text-white">{{ $reading->ai_response }}</div>
-        </div>
-        @if($reading->tokens_used)
-            <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                Tokens ที่ใช้: {{ number_format($reading->tokens_used) }}
+    {{-- Birth Chart + AI Response --}}
+    <div class="grid grid-cols-1 {{ $reading->reading_image_url ? 'lg:grid-cols-3' : '' }} gap-6 mb-6">
+        {{-- Birth Chart Image --}}
+        @if($reading->reading_image_url)
+            <div class="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl shadow-lg p-6 flex flex-col items-center justify-center">
+                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">🎨 Birth Chart</h3>
+                <img src="{{ $reading->reading_image_url }}" alt="Birth Chart"
+                     class="rounded-xl shadow-lg max-w-full max-h-80 object-contain border border-purple-500/30"
+                     loading="lazy">
+                <p class="text-purple-300 text-xs mt-2">ภาพดวงดาวที่ส่งให้ผู้ใช้</p>
             </div>
         @endif
-    </div>
 
-    {{-- รูปคำทำนายที่สร้างส่งให้ผู้ใช้ --}}
-    @if($reading->reading_image_url)
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">รูปคำทำนายที่ส่ง</h3>
-            <div class="max-w-md">
-                <img src="{{ $reading->reading_image_url }}" alt="รูปคำทำนาย"
-                     class="rounded-lg shadow-md max-h-96 object-contain"
-                     loading="lazy">
+        {{-- AI Response --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 {{ $reading->reading_image_url ? 'lg:col-span-2' : '' }}">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🔮 คำทำนาย</h3>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {{ strtoupper($reading->ai_provider) }} / {{ $reading->ai_model }}
+                    </span>
+                    @if($reading->tokens_used)
+                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                            {{ number_format($reading->tokens_used) }} tokens
+                        </span>
+                    @endif
+                </div>
             </div>
+            <div class="prose dark:prose-invert max-w-none bg-gray-50 dark:bg-gray-700/50 rounded-xl p-5">
+                <div class="whitespace-pre-wrap text-gray-900 dark:text-white leading-relaxed">{{ $reading->ai_response }}</div>
+            </div>
+
+            {{-- Basic Response --}}
+            @if($reading->basic_response && $reading->basic_response !== $reading->ai_response)
+                <div class="mt-4">
+                    <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📝 คำทำนายพื้นฐาน</h4>
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm">
+                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ Str::limit($reading->basic_response, 500) }}</div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Deep Response --}}
+            @if($reading->deep_response)
+                <div class="mt-4">
+                    <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🌟 คำทำนายเชิงลึก</h4>
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-sm">
+                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ Str::limit($reading->deep_response, 500) }}</div>
+                    </div>
+                </div>
+            @endif
         </div>
-    @endif
+    </div>
 
     {{-- Payment Info --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">

@@ -3,19 +3,124 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * Fortune Settings Controller
  *
- * จัดการการตั้งค่าระบบดูดวง
+ * จัดการการตั้งค่าระบบดูดวง + Dashboard
  */
 class FortuneSettingsController extends Controller
 {
+    /**
+     * แสดง Dashboard ภาพรวมระบบดูดวง
+     */
+    public function dashboard()
+    {
+        $today = Carbon::today();
+        $weekAgo = Carbon::now()->subDays(7);
+        $monthStart = Carbon::now()->startOfMonth();
+
+        // สถิติภาพรวม
+        $stats = [
+            'total' => FortuneReading::count(),
+            'today' => FortuneReading::whereDate('created_at', $today)->count(),
+            'this_week' => FortuneReading::where('created_at', '>=', $weekAgo)->count(),
+            'this_month' => FortuneReading::where('created_at', '>=', $monthStart)->count(),
+            'basic_count' => FortuneReading::where('reading_type', 'basic')->count(),
+            'deep_count' => FortuneReading::where('reading_type', 'deep')->count(),
+            'paid_count' => FortuneReading::paid()->count(),
+            'free_count' => FortuneReading::free()->count(),
+            'total_revenue' => FortuneReading::paid()->sum('amount_paid'),
+            'today_revenue' => FortuneReading::paid()->whereDate('created_at', $today)->sum('amount_paid'),
+            'week_revenue' => FortuneReading::paid()->where('created_at', '>=', $weekAgo)->sum('amount_paid'),
+            'month_revenue' => FortuneReading::paid()->where('created_at', '>=', $monthStart)->sum('amount_paid'),
+            'unique_users' => FortuneReading::distinct('facebook_user_id')->count('facebook_user_id'),
+            'avg_tokens' => (int) FortuneReading::whereNotNull('tokens_used')->avg('tokens_used'),
+            'conversion_rate' => FortuneReading::count() > 0
+                ? round(FortuneReading::where('reading_type', 'deep')->count() / FortuneReading::count() * 100, 1)
+                : 0,
+        ];
+
+        // กราฟ 7 วัน
+        $dailyData = FortuneReading::select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as revenue'),
+                DB::raw('SUM(CASE WHEN reading_type = "basic" THEN 1 ELSE 0 END) as basic_count'),
+                DB::raw('SUM(CASE WHEN reading_type = "deep" THEN 1 ELSE 0 END) as deep_count')
+            )
+            ->where('created_at', '>=', $weekAgo)
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy('date')
+            ->get();
+
+        // เตรียมข้อมูลกราฟ
+        $chartLabels = [];
+        $chartReadings = [];
+        $chartRevenue = [];
+        $chartBasic = [];
+        $chartDeep = [];
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i)->format('Y-m-d');
+            $dayLabel = Carbon::now()->subDays($i)->locale('th')->isoFormat('D MMM');
+            $chartLabels[] = $dayLabel;
+
+            $dayData = $dailyData->firstWhere('date', $date);
+            $chartReadings[] = $dayData->count ?? 0;
+            $chartRevenue[] = (float) ($dayData->revenue ?? 0);
+            $chartBasic[] = $dayData->basic_count ?? 0;
+            $chartDeep[] = $dayData->deep_count ?? 0;
+        }
+
+        // Top 5 ผู้ใช้บ่อย
+        $topUsers = FortuneReading::select('facebook_user_id', 'facebook_user_name',
+                DB::raw('COUNT(*) as reading_count'),
+                DB::raw('MAX(created_at) as last_reading'))
+            ->groupBy('facebook_user_id', 'facebook_user_name')
+            ->orderByDesc('reading_count')
+            ->limit(5)
+            ->get();
+
+        // 10 รายการล่าสุด
+        $recentReadings = FortuneReading::orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+
+        // สถิติตามหมวดหมู่
+        $categoryStats = FortuneReading::whereNotNull('categories')
+            ->where('categories', '!=', '[]')
+            ->get()
+            ->pluck('categories')
+            ->flatten()
+            ->countBy()
+            ->sortDesc()
+            ->take(6);
+
+        // สถานะ AI
+        $settings = FortuneTellingSetting::getSettings();
+        $aiStatus = [
+            'provider' => $settings->getActualAIProvider(),
+            'model' => $settings->getActualAIModel(),
+            'has_key' => !empty($settings->getActualAIApiKey()),
+            'enabled' => $settings->is_enabled,
+        ];
+
+        return view('admin.fortune.dashboard', compact(
+            'stats', 'chartLabels', 'chartReadings', 'chartRevenue',
+            'chartBasic', 'chartDeep', 'topUsers', 'recentReadings',
+            'categoryStats', 'aiStatus'
+        ));
+    }
+
     /**
      * แสดงหน้าตั้งค่า
      */

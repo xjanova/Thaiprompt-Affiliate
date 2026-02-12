@@ -211,11 +211,14 @@ class FortuneConversationService
         ],
     ];
 
+    protected FortuneChartService $chartService;
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
         $this->aiService = new FortuneAIService($this->settings);
         $this->facebookService = new FacebookWebhookService($this->settings);
+        $this->chartService = new FortuneChartService();
     }
 
     /**
@@ -786,6 +789,106 @@ class FortuneConversationService
     }
 
     /**
+     * สร้างบริบทจากประวัติผู้ใช้ (Personalization)
+     * ดึงสรุปคำทำนายก่อนหน้าให้ AI ใช้อ้างอิง
+     *
+     * @param string $facebookUserId
+     * @return string บริบทสำหรับใส่ใน prompt
+     */
+    protected function buildUserContext(string $facebookUserId): string
+    {
+        try {
+            // ดึงคำทำนาย 5 ครั้งล่าสุดของผู้ใช้
+            $previousReadings = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->whereNotNull('basic_response')
+                ->where('basic_response', '!=', '')
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(['questions', 'categories', 'reading_type', 'birth_date', 'created_at']);
+
+            if ($previousReadings->isEmpty()) {
+                return '';
+            }
+
+            $context = "\n[ประวัติผู้ใช้คนนี้ - ใช้เป็นบริบทในการทำนาย ทำให้รู้สึกว่าจำเรื่องเก่าได้]\n";
+
+            // นับหมวดที่ถามบ่อย
+            $categoryCount = [];
+            foreach ($previousReadings as $reading) {
+                $cats = $reading->categories ?? [];
+                foreach ($cats as $cat) {
+                    $categoryCount[$cat] = ($categoryCount[$cat] ?? 0) + 1;
+                }
+            }
+
+            $context .= "- เคยดูดวง {$previousReadings->count()} ครั้ง\n";
+
+            if (!empty($categoryCount)) {
+                arsort($categoryCount);
+                $topCategories = array_slice($categoryCount, 0, 3, true);
+                $catStr = implode(', ', array_map(fn($c, $n) => "{$c}({$n}ครั้ง)", array_keys($topCategories), $topCategories));
+                $context .= "- หมวดที่สนใจมากที่สุด: {$catStr}\n";
+            }
+
+            // วันเกิด (ถ้าเคยบอก)
+            $birthDate = $previousReadings->pluck('birth_date')->filter()->first();
+            if ($birthDate) {
+                $context .= "- เคยบอกวันเกิด: {$birthDate}\n";
+            }
+
+            // คำถามล่าสุด 3 ข้อ
+            $recentQuestions = [];
+            foreach ($previousReadings->take(3) as $reading) {
+                $qs = $reading->questions ?? [];
+                if (!empty($qs)) {
+                    $recentQuestions[] = mb_substr($qs[0], 0, 50);
+                }
+            }
+            if (!empty($recentQuestions)) {
+                $context .= "- คำถามล่าสุด: " . implode(' | ', $recentQuestions) . "\n";
+            }
+
+            $context .= "- ให้ทำนายต่อยอดจากครั้งก่อนได้ เช่น \"จากที่จันทราเคยบอกไว้...\" หรือ \"จันทราจำได้ว่าครั้งก่อน...\"\n";
+
+            return $context;
+        } catch (\Exception $e) {
+            Log::warning('Fortune: buildUserContext failed', ['error' => $e->getMessage()]);
+            return '';
+        }
+    }
+
+    /**
+     * ตรวจจับหมวดคำถามอัตโนมัติจากข้อความ
+     *
+     * @param string $text
+     * @return string|null หมวดที่ตรวจจับได้ หรือ null
+     */
+    protected function detectCategory(string $text): ?string
+    {
+        $textLower = mb_strtolower(trim($text));
+
+        $categories = [
+            'ความรัก' => ['ความรัก', 'แฟน', 'คู่ครอง', 'เนื้อคู่', 'คนรัก', 'สามี', 'ภรรยา', 'แต่งงาน', 'หย่า', 'เลิกกัน', 'รักซ้อน', 'มีคู่'],
+            'การงาน' => ['การงาน', 'งาน', 'ทำงาน', 'อาชีพ', 'เปลี่ยนงาน', 'หางาน', 'เจ้านาย', 'ลูกน้อง', 'เลื่อนตำแหน่ง', 'ถูกไล่ออก', 'ธุรกิจ'],
+            'การเงิน' => ['การเงิน', 'เงิน', 'รายได้', 'หนี้', 'รวย', 'จน', 'ลงทุน', 'หุ้น', 'ค้าขาย', 'ขายของ', 'กำไร', 'ขาดทุน'],
+            'สุขภาพ' => ['สุขภาพ', 'ป่วย', 'โรค', 'อุบัติเหตุ', 'เจ็บ', 'อายุยืน'],
+            'โชคลาภ' => ['โชคลาภ', 'หวย', 'ลอตเตอรี่', 'เลขเด็ด', 'โชค', 'ลาภ', 'ถูกหวย'],
+            'การเรียน' => ['การเรียน', 'สอบ', 'เรียน', 'มหาวิทยาลัย', 'สอบติด', 'สอบตก'],
+        ];
+
+        foreach ($categories as $category => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($textLower, $keyword)) {
+                    return $category;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * เริ่มต้น conversation ใหม่ - ทำนายพื้นฐานฟรี
      *
      * @param string $facebookUserId
@@ -828,8 +931,17 @@ class FortuneConversationService
                 'ai_provider' => '',
             ]);
 
+            // ✅ ดึงบริบทจากประวัติผู้ใช้ (Personalization)
+            $userContext = $this->buildUserContext($facebookUserId);
+
+            // ✅ ตรวจจับหมวดคำถามอัตโนมัติ
+            $detectedCategory = $this->detectCategory($messageText);
+            if ($detectedCategory) {
+                $reading->update(['categories' => [$detectedCategory]]);
+            }
+
             // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
-            $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText);
+            $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText, $userContext, $detectedCategory);
 
             Log::info('Fortune: กำลังเรียก AI', [
                 'facebook_user_id' => $facebookUserId,
@@ -864,6 +976,24 @@ class FortuneConversationService
                 'response_length' => mb_strlen($aiResult['response']),
             ]);
 
+            // ✅ สร้าง Birth Chart / Quick Chart ส่งก่อนคำทำนาย
+            $chartImageUrl = null;
+            try {
+                $birthDate = $reading->birth_date;
+                if ($birthDate) {
+                    $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $userProfile['gender'] ?? null);
+                } else {
+                    $chartImageUrl = $this->chartService->generateQuickChart($name);
+                }
+                if ($chartImageUrl) {
+                    $reading->update(['reading_image_url' => $chartImageUrl]);
+                }
+            } catch (\Exception $chartErr) {
+                Log::warning('Fortune: Chart generation failed (non-critical)', [
+                    'error' => $chartErr->getMessage(),
+                ]);
+            }
+
             // สร้างข้อความเชิญชวนดูดวงละเอียด
             $upsellMessage = $this->getUpsellMessage($name);
 
@@ -878,6 +1008,7 @@ class FortuneConversationService
                 'message' => $aiResult['response'] . "\n\n" . $remainingMessage . "\n\n" . $billRefMessage . "\n\n" . $upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
+                'chart_image_url' => $chartImageUrl,
             ];
 
         } catch (\Exception $e) {
@@ -2441,15 +2572,41 @@ class FortuneConversationService
      * กฎพิเศษ:
      * - ถ้าถูกถามว่าเป็น AI: ตอบว่า "จันทรามีทีมงานช่วยกัน"
      * - พูดเฉพาะเรื่องดูดวง ปฏิเสธเรื่องอื่นสุภาพ
+     *
+     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้ (name, gender)
+     * @param string $question ข้อความที่ผู้ใช้ส่งมา
+     * @param string $userContext บริบทจากประวัติผู้ใช้ (Personalization)
+     * @param string|null $detectedCategory หมวดคำถามที่ตรวจจับได้อัตโนมัติ
+     * @return string prompt ที่สร้างเสร็จ
      */
-    protected function buildBasicPrompt(?array $userProfile, string $question): string
+    protected function buildBasicPrompt(?array $userProfile, string $question, string $userContext = '', ?string $detectedCategory = null): string
     {
         $name = $userProfile['name'] ?? 'คุณ';
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
         $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
 
-        return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์ไทย (โหราศาสตร์เจ้าชนะ) และโหราศาสตร์สากล ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกา พูดจาเพราะ อบอุ่นเป็นกันเอง น่าเชื่อถือ ใช้คำแทนตัวว่า \"จันทรา\" ทำนายแม่นยำมาก ฟันธงแต่อ่อนโยน ไม่เกิน 500 คำ
+        // ส่วน User Context (ประวัติผู้ใช้)
+        $contextSection = '';
+        if (!empty($userContext)) {
+            $contextSection = "\n=== บริบทจากประวัติผู้ใช้ (Personalization) ===\n{$userContext}\n=== จบบริบท ===\n";
+        }
 
+        // ส่วนหมวดคำถาม (Category Hint)
+        $categoryHint = '';
+        if ($detectedCategory) {
+            $categoryMap = [
+                'ความรัก' => 'ผู้ถามสนใจเรื่องความรัก → เน้นวิเคราะห์ภพปัตนิ(7) + ดาวศุกร์ + ความสัมพันธ์',
+                'การงาน' => 'ผู้ถามสนใจเรื่องการงาน → เน้นวิเคราะห์ภพกัมมะ(10) + ดาวเสาร์/พฤหัสบดี + อาชีพ',
+                'การเงิน' => 'ผู้ถามสนใจเรื่องการเงิน → เน้นวิเคราะห์ภพกดุมภ(2) + ดาวพุธ/ศุกร์ + ทรัพย์สิน',
+                'สุขภาพ' => 'ผู้ถามสนใจเรื่องสุขภาพ → เน้นวิเคราะห์ภพอริ(6) + ภพตนุ(1) + ดาวอาทิตย์',
+                'โชคลาภ' => 'ผู้ถามสนใจเรื่องโชคลาภ → เน้นวิเคราะห์ภพศุภะ(9) + ภพลาภะ(11) + ดาวพฤหัสบดี',
+                'การเรียน' => 'ผู้ถามสนใจเรื่องการเรียน → เน้นวิเคราะห์ภพปุตตะ(5) + ดาวพุธ + ปัญญา',
+            ];
+            $categoryHint = "\n[หมวดคำถามที่ตรวจจับได้: {$detectedCategory}]\n" . ($categoryMap[$detectedCategory] ?? '') . "\n";
+        }
+
+        return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์ไทย (โหราศาสตร์เจ้าชนะ) และโหราศาสตร์สากล ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกา พูดจาเพราะ อบอุ่นเป็นกันเอง น่าเชื่อถือ ใช้คำแทนตัวว่า \"จันทรา\" ทำนายแม่นยำมาก ฟันธงแต่อ่อนโยน ไม่เกิน 500 คำ
+{$contextSection}{$categoryHint}
 ข้อมูลผู้ขอดูดวง:
 - ชื่อ: {$name}
 " . ($gender ? "- เพศ: {$gender}\n" : "") . "
