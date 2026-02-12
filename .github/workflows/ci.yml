@@ -1,0 +1,269 @@
+name: CI - Tests & Quality Checks
+
+on:
+  push:
+    branches:
+      - claude/Main
+      - main
+      - develop
+  pull_request:
+    branches:
+      - claude/Main
+      - main
+      - develop
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3']
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
+          coverage: xdebug
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Prepare Laravel application
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          touch database/database.sqlite
+          php artisan config:clear
+          php artisan cache:clear
+
+      - name: Run database migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan migrate --force
+
+      - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: php artisan test --coverage
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Laravel Pint (Code Style)
+        run: ./vendor/bin/pint --test
+
+      - name: Check for security vulnerabilities
+        run: |
+          # Retry logic for transient network failures (Packagist API)
+          for i in 1 2 3 4; do
+            if composer audit; then
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in $((i * 2)) seconds..."
+            sleep $((i * 2))
+          done
+          echo "Security check failed after 4 attempts"
+          exit 1
+
+  build-check:
+    name: Build Assets Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install NPM dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -f public/build/manifest.json ]; then
+            echo "Build manifest not found!"
+            exit 1
+          fi
+          echo "✓ Build completed successfully"
+
+  # Auto-release when all checks pass on main branch
+  # Bumps patch version, commits, creates tag and GitHub Release
+  auto-release:
+    name: Auto Release
+    runs-on: ubuntu-latest
+    needs: [tests, code-quality, build-check]
+    if: (github.ref == 'refs/heads/claude/Main' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    # Prevent race conditions - only one release at a time
+    concurrency:
+      group: auto-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if release needed
+        id: check
+        run: |
+          # Skip if last commit is from bot (version bump)
+          LAST_AUTHOR=$(git log -1 --format='%an')
+          LAST_MSG=$(git log -1 --format='%s')
+          if [[ "$LAST_AUTHOR" == "github-actions[bot]" ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping: last commit from bot"
+          elif [[ "$LAST_MSG" == *"[skip ci]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping: commit message contains [skip ci]"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install semver
+        if: steps.check.outputs.skip != 'true'
+        run: npm install -g semver
+
+      - name: Bump version and commit
+        id: release
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          # Get current version
+          if [ -f VERSION ]; then
+            CURRENT=$(cat VERSION | tr -d '[:space:]')
+          else
+            CURRENT="0.0.0"
+          fi
+
+          # Bump patch version
+          NEW=$(semver -i patch "$CURRENT")
+          echo "new=$NEW" >> $GITHUB_OUTPUT
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Configure git
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Update VERSION file
+          echo "$NEW" > VERSION
+
+          # Update package.json version
+          npm version $NEW --no-git-tag-version --allow-same-version 2>/dev/null || true
+
+          # Stage files
+          git add VERSION
+          git add package.json 2>/dev/null || true
+          git add package-lock.json 2>/dev/null || true
+
+          git commit -m "chore: release v$NEW [skip ci]"
+
+          # Determine target branch
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+
+          # Pull latest and rebase before push
+          git pull --rebase origin "$TARGET_BRANCH"
+
+          # Push directly to target branch
+          git push origin HEAD:"$TARGET_BRANCH"
+
+          echo "Released v$NEW (from $CURRENT)"
+
+      - name: Create and push tag
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          VERSION="v${{ steps.release.outputs.new }}"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Create GitHub Release
+        if: steps.check.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.release.outputs.new }}
+          generate_release_notes: true
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
