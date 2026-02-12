@@ -257,6 +257,16 @@ class FortuneConversationService
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
             if ($activeReading) {
+                // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ
+                if ($this->isCancelRequest($messageText)) {
+                    $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    return [
+                        'action' => 'cancelled',
+                        'message' => "ยกเลิกแล้วค่ะ หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลยนะคะ 🔮",
+                        'reading' => $activeReading,
+                    ];
+                }
+
                 // ถ้าอยู่ในสถานะ awaiting_confirmation: เช็คว่าผู้ใช้ยืนยันจะดูดวงหรือไม่
                 if ($activeReading->conversation_status === FortuneReading::STATUS_AWAITING_CONFIRMATION) {
                     return $this->handleConfirmationResponse($activeReading, $facebookUserId, $messageText, $userProfile);
