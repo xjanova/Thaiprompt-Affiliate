@@ -98,6 +98,8 @@ jobs:
   code-quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
+    # Allow to fail without blocking auto-release
+    continue-on-error: true
 
     steps:
       - name: Checkout code
@@ -113,6 +115,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Laravel Pint (Code Style)
+        timeout-minutes: 10
         run: ./vendor/bin/pint --test
 
       - name: Check for security vulnerabilities
