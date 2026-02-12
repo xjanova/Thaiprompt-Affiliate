@@ -336,6 +336,10 @@ class FortuneChannelManager
     protected function getQuickReplies(string $action): array
     {
         return match ($action) {
+            'awaiting_confirmation' => [
+                ['label' => '🔮 ดูเลย', 'text' => 'ดู'],
+                ['label' => 'ไม่ต้องการ', 'text' => 'ไม่'],
+            ],
             'basic_done' => [
                 ['label' => '✨ ต้องการ', 'text' => 'ต้องการดูดวงละเอียด'],
                 ['label' => 'ไม่ต้องการ', 'text' => 'ไม่ต้องการ'],

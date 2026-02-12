@@ -17,10 +17,11 @@ use Illuminate\Support\Facades\Log;
  * จัดการ conversational flow สำหรับดูดวงผ่าน Facebook Messenger
  *
  * Flow:
- * 1. User พิมพ์ "ดูดวง" → ดึงโปรไฟล์ + ทำนายพื้นฐานฟรี
- * 2. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 3 คำถาม
- * 3. สร้างบิล + unique amount → แสดงบัญชีธนาคาร
- * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
+ * 1. User พิมพ์ข้อความ → แจ้งสิทธิ์ดูดวงฟรีที่เหลือวันนี้ + ถามว่าจะดูไหม
+ * 2. User ยืนยัน → ดึงโปรไฟล์ + ทำนายพื้นฐานฟรี
+ * 3. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 3 คำถาม
+ * 4. สร้างบิล + unique amount → แสดงบัญชีธนาคาร
+ * 5. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
  *
  * Anti-Spam Features:
  * - Rate limiting per user
@@ -253,6 +254,11 @@ class FortuneConversationService
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
             if ($activeReading) {
+                // ถ้าอยู่ในสถานะ awaiting_confirmation: เช็คว่าผู้ใช้ยืนยันจะดูดวงหรือไม่
+                if ($activeReading->conversation_status === FortuneReading::STATUS_AWAITING_CONFIRMATION) {
+                    return $this->handleConfirmationResponse($activeReading, $facebookUserId, $messageText, $userProfile);
+                }
+
                 // ถ้าอยู่ในสถานะ basic_done: เช็คว่ารับ deep reading หรือไม่
                 // ถ้าไม่ใช่ → ปิด conversation เก่าแล้วส่งข้อความใหม่ไปให้ AI ตอบ
                 // ไม่บอก "ไม่เป็นไร" เพราะผู้ใช้อาจจะถามคำถามใหม่
@@ -276,9 +282,9 @@ class FortuneConversationService
                 ];
             }
 
-            // ✅ ส่งทุกข้อความไปให้ AI ตอบ ไม่ว่าจะเป็นเรื่องดูดวงหรือไม่
-            // AI system prompt จะจัดการเองว่าจะตอบแบบไหน
-            return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+            // ✅ ถามผู้ใช้ก่อนว่าจะดูดวงไหม แจ้งสิทธิ์ฟรีที่เหลือ
+            // ไม่ทำนายเลยทันที ต้องให้ผู้ใช้ยืนยันก่อน
+            return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
 
         } catch (\Exception $e) {
             // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
@@ -560,6 +566,186 @@ class FortuneConversationService
             'message' => $message,
             'reading' => null,
         ];
+    }
+
+    /**
+     * ถามผู้ใช้ก่อนว่าจะดูดวงไหม พร้อมแจ้งสิทธิ์ฟรีที่เหลือวันนี้
+     *
+     * สร้าง reading ในสถานะ awaiting_confirmation แล้วส่งข้อความถาม
+     * เก็บข้อความต้นฉบับไว้ใน conversation_state เพื่อใช้ตอนทำนายจริง
+     *
+     * @param string $facebookUserId
+     * @param string $messageText ข้อความต้นฉบับจากผู้ใช้
+     * @param array|null $userProfile
+     * @return array
+     */
+    protected function askFortuneConfirmation(string $facebookUserId, string $messageText, ?array $userProfile = null): array
+    {
+        // ดึงโปรไฟล์ถ้ายังไม่มี
+        if (empty($userProfile)) {
+            $userProfile = $this->facebookService->getUserProfile($facebookUserId);
+        }
+
+        if (!is_array($userProfile)) {
+            $userProfile = [
+                'name' => 'คุณ',
+                'id' => $facebookUserId,
+            ];
+        }
+
+        $name = $userProfile['name'] ?? 'คุณ';
+        $remaining = $this->getRemainingFreeQuestions($facebookUserId);
+        $userCredit = FortuneUserCredit::findByUser($facebookUserId);
+
+        // สร้าง reading ในสถานะรอยืนยัน เก็บข้อความต้นฉบับไว้
+        $reading = FortuneReading::create([
+            'facebook_user_id' => $facebookUserId,
+            'facebook_user_name' => $name,
+            'user_profile' => $userProfile,
+            'questions' => [$messageText],
+            'reading_type' => 'basic',
+            'conversation_status' => FortuneReading::STATUS_AWAITING_CONFIRMATION,
+            'response_type' => 'private_message',
+            'ai_response' => '',
+            'ai_provider' => '',
+        ]);
+
+        // เก็บข้อความต้นฉบับไว้ใน state เพื่อส่งให้ AI ตอนยืนยัน
+        $reading->setConversationState('original_message', $messageText);
+
+        // สร้างข้อความแจ้งสิทธิ์ฟรี
+        $message = "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n";
+        $message .= "จันทรายินดีต้อนรับนะคะ\n\n";
+
+        if ($userCredit && $userCredit->isCurrentlyUnlimited()) {
+            $message .= "🌟 คุณมีสิทธิ์ดูดวงฟรีไม่จำกัด! (โปรโมชั่นพิเศษ)\n\n";
+        } elseif ($remaining >= 99) {
+            $message .= "🌟 คุณมีสิทธิ์ดูดวงฟรีไม่จำกัด!\n\n";
+        } elseif ($remaining > 0) {
+            $message .= "📊 วันนี้คุณมีสิทธิ์ดูดวงฟรี {$remaining} ครั้งค่ะ\n\n";
+        } else {
+            $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n\n";
+        }
+
+        if ($remaining > 0) {
+            $message .= "💫 จะให้จันทราดูดวงให้ไหมคะ?\n";
+            $message .= "ไม่ว่าจะเรื่อง ความรัก 💕 การงาน 💼 การเงิน 💰 สุขภาพ 🏥\n\n";
+            $message .= "ตอบ 'ดู' หรือ 'เอา' เพื่อเริ่มทำนายค่ะ ✨\n";
+            $message .= "ตอบ 'ไม่' หากยังไม่ต้องการ";
+        } else {
+            // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+            $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
+            $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+            $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+            $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+            $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
+        }
+
+        return [
+            'action' => 'awaiting_confirmation',
+            'message' => $message,
+            'reading' => $reading,
+            'show_quick_replies' => ($remaining > 0),
+        ];
+    }
+
+    /**
+     * จัดการเมื่อผู้ใช้ตอบกลับจากการถามยืนยันดูดวง
+     *
+     * ถ้ายืนยัน → ดึงข้อความต้นฉบับจาก state แล้วส่งให้ AI ทำนาย
+     * ถ้าปฏิเสธ → ปิด conversation แล้วบอกลา
+     * ถ้าพิมพ์อย่างอื่น → ถือเป็นข้อความใหม่ เริ่มทำนายเลย
+     *
+     * @param FortuneReading $reading
+     * @param string $facebookUserId
+     * @param string $messageText
+     * @param array|null $userProfile
+     * @return array
+     */
+    protected function handleConfirmationResponse(FortuneReading $reading, string $facebookUserId, string $messageText, ?array $userProfile = null): array
+    {
+        $name = $reading->facebook_user_name ?? 'คุณ';
+
+        // ถ้าผู้ใช้ปฏิเสธ → ปิด conversation
+        if ($this->isDeclineResponse($messageText)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'declined',
+                'message' => "🔮 ไม่เป็นไรค่ะ คุณ{$name}\n\n" .
+                             "เมื่อไหร่อยากดูดวง ทักมาหาจันทราได้ตลอดนะคะ ✨\n" .
+                             "ขอให้โชคดีค่ะ 🙏",
+                'reading' => $reading,
+            ];
+        }
+
+        // ถ้ายืนยัน หรือพิมพ์ข้อความอื่นเข้ามา → เริ่มทำนายเลย
+        // ดึงข้อความต้นฉบับจาก state (ถ้ามี) หรือใช้ข้อความใหม่
+        $originalMessage = $reading->getConversationState('original_message', $messageText);
+
+        // ถ้าผู้ใช้ตอบ "ดู", "เอา", "ใช่" → ใช้ข้อความต้นฉบับที่เก็บไว้
+        // ถ้าผู้ใช้พิมพ์คำถามใหม่เข้ามา → ใช้ข้อความใหม่แทน
+        $isSimpleConfirm = $this->isSimpleConfirmResponse($messageText);
+        $questionText = $isSimpleConfirm ? $originalMessage : $messageText;
+
+        // ปิด reading ที่รอยืนยันนี้ (จะสร้างใหม่ใน startNewConversation)
+        $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        // ตรวจสอบ limit อีกครั้งก่อนส่งให้ AI
+        if (!$this->canMakeAICall($facebookUserId)) {
+            return [
+                'action' => 'ai_limit',
+                'message' => $this->getAILimitMessage(),
+                'reading' => null,
+            ];
+        }
+
+        // เริ่มทำนายจริง
+        return $this->startNewConversation($facebookUserId, $questionText, $userProfile);
+    }
+
+    /**
+     * ตรวจสอบว่าผู้ใช้ปฏิเสธดูดวงหรือไม่
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isDeclineResponse(string $text): bool
+    {
+        $declineKeywords = ['ไม่', 'ไม่เอา', 'ไม่ต้อง', 'ไม่ต้องการ', 'ยังก่อน', 'ไว้ก่อน', 'ไม่ดู', 'no'];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($declineKeywords as $keyword) {
+            if ($text === $keyword || str_starts_with($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่าผู้ใช้ตอบยืนยันแบบสั้นๆ (ดู, เอา, ใช่ ฯลฯ)
+     * ใช้เพื่อแยกว่าเป็นการยืนยันหรือเป็นคำถามใหม่
+     *
+     * @param string $text
+     * @return bool
+     */
+    protected function isSimpleConfirmResponse(string $text): bool
+    {
+        $confirmKeywords = ['ดู', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'ดูเลย', 'ดูดวง', 'เอาเลย', 'ต้องการ', 'ดูค่ะ', 'ดูครับ', 'เอาค่ะ', 'เอาครับ'];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($confirmKeywords as $keyword) {
+            if ($text === $keyword || str_starts_with($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
