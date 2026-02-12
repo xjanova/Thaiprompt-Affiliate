@@ -37,6 +37,7 @@ class SmsCheckerDevice extends Model
         'platform',
         'app_version',
         'status',
+        'approval_mode',
         'last_active_at',
         'user_id',
         'ip_address',
@@ -194,5 +195,19 @@ class SmsCheckerDevice extends Model
     public function belongsToStore(int $storeId): bool
     {
         return $this->store_id === $storeId;
+    }
+
+    /**
+     * ดึงโหมดการอนุมัติของอุปกรณ์
+     *
+     * - auto: อนุมัติอัตโนมัติเมื่อ SMS ตรงกับบิล
+     * - manual: ต้องอนุมัติด้วยตัวเองทุกครั้ง
+     * - smart: อนุมัติอัตโนมัติเมื่อ confidence สูง, manual เมื่อต่ำ
+     *
+     * @return string auto|manual|smart
+     */
+    public function getApprovalMode(): string
+    {
+        return $this->approval_mode ?? config('smschecker.default_approval_mode', 'auto');
     }
 }

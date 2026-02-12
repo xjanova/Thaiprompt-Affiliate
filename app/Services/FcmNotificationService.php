@@ -133,6 +133,132 @@ class FcmNotificationService
     }
 
     /**
+     * Send push notification when transaction is approved (by admin or Android app)
+     * Android app receives this and updates local DB immediately
+     */
+    public function notifyTransactionApproved(PaymentTransaction $transaction, ?SmsCheckerDevice $device = null): bool
+    {
+        $tokens = $this->getTargetTokens($device);
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $data = [
+            'type' => 'order_approved',
+            'order_id' => (string) $transaction->id,
+            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'amount' => number_format((float) $transaction->amount, 2, '.', ''),
+            'payment_status' => $transaction->status ?? 'completed',
+        ];
+
+        $notification = [
+            'title' => '✅ อนุมัติรายการแล้ว',
+            'body' => sprintf(
+                'รายการ #%s ยอด ฿%s อนุมัติแล้ว',
+                $transaction->transaction_id ?? $transaction->id,
+                number_format((float) $transaction->amount, 2)
+            ),
+        ];
+
+        Log::info('FCM: Sending order_approved push', [
+            'transaction_id' => $transaction->id,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notification);
+    }
+
+    /**
+     * Send push notification when transaction is rejected
+     */
+    public function notifyTransactionRejected(PaymentTransaction $transaction, ?SmsCheckerDevice $device = null): bool
+    {
+        $tokens = $this->getTargetTokens($device);
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $data = [
+            'type' => 'order_rejected',
+            'order_id' => (string) $transaction->id,
+            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'payment_status' => $transaction->status ?? 'failed',
+        ];
+
+        $notification = [
+            'title' => '❌ ปฏิเสธรายการ',
+            'body' => sprintf(
+                'รายการ #%s ถูกปฏิเสธ',
+                $transaction->transaction_id ?? $transaction->id
+            ),
+        ];
+
+        Log::info('FCM: Sending order_rejected push', [
+            'transaction_id' => $transaction->id,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notification);
+    }
+
+    /**
+     * Send push notification when transaction is cancelled
+     */
+    public function notifyTransactionCancelled(PaymentTransaction $transaction, ?SmsCheckerDevice $device = null): bool
+    {
+        $tokens = $this->getTargetTokens($device);
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $data = [
+            'type' => 'order_cancelled',
+            'order_id' => (string) $transaction->id,
+            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'payment_status' => $transaction->status ?? 'cancelled',
+        ];
+
+        $notification = [
+            'title' => '🚫 ยกเลิกรายการ',
+            'body' => sprintf(
+                'รายการ #%s ถูกยกเลิก',
+                $transaction->transaction_id ?? $transaction->id
+            ),
+        ];
+
+        Log::info('FCM: Sending order_cancelled push', [
+            'transaction_id' => $transaction->id,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notification);
+    }
+
+    /**
+     * Notify device that settings changed (e.g. approval_mode from admin panel)
+     * Device will trigger sync to pull updated settings
+     */
+    public function notifySettingsChanged(SmsCheckerDevice $device, string $setting, string $value): bool
+    {
+        $tokens = $this->getTargetTokens($device);
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $data = [
+            'type' => 'settings_changed',
+            'setting' => $setting,
+            'value' => $value,
+            'device_id' => $device->device_id,
+        ];
+
+        Log::info('FCM: Sending settings_changed push', [
+            'device_id' => $device->device_id,
+            'setting' => $setting,
+            'value' => $value,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, null);
+    }
+
+    /**
      * Send silent push to trigger sync
      */
     public function triggerSync(?SmsCheckerDevice $device = null): bool

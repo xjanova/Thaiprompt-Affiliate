@@ -827,6 +827,13 @@ class SmsPaymentController extends Controller
 
         app(PaymentService::class)->completePayment($model);
 
+        // ส่ง FCM push ให้แอพอัพเดทสถานะทันที (เหมือน xmanstudio)
+        try {
+            $this->fcmService->notifyTransactionApproved($model);
+        } catch (\Exception $e) {
+            Log::warning('FCM push for transaction_approved failed', ['error' => $e->getMessage()]);
+        }
+
         Log::info('SMS Payment: อนุมัติ order จากอุปกรณ์', [
             'transaction_id' => $model->transaction_id,
             'device_id' => $device->device_id,
@@ -1020,6 +1027,13 @@ class SmsPaymentController extends Controller
                 'payment_status' => 'failed',
                 'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
             ]);
+        }
+
+        // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
+        try {
+            $this->fcmService->notifyTransactionRejected($model);
+        } catch (\Exception $e) {
+            Log::warning('FCM push for transaction_rejected failed', ['error' => $e->getMessage()]);
         }
 
         Log::info('SMS Payment: ปฏิเสธ order จากอุปกรณ์', [
@@ -1494,7 +1508,7 @@ class SmsPaymentController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'approval_mode' => $device->approval_mode ?? config('smschecker.default_approval_mode', 'auto'),
+                'approval_mode' => $device->getApprovalMode(),
                 'device_id' => $device->device_id,
                 'device_name' => $device->device_name,
                 'status' => $device->status,
@@ -1543,6 +1557,15 @@ class SmsPaymentController extends Controller
 
         if (!empty($updateData)) {
             $device->update($updateData);
+
+            // ส่ง FCM push ให้แอพอัพเดทตั้งค่าทันที (เหมือน xmanstudio)
+            if (isset($updateData['approval_mode'])) {
+                try {
+                    $this->fcmService->notifySettingsChanged($device, 'approval_mode', $updateData['approval_mode']);
+                } catch (\Exception $e) {
+                    Log::warning('FCM push for settings_changed failed', ['error' => $e->getMessage()]);
+                }
+            }
         }
 
         return response()->json([
