@@ -2708,8 +2708,35 @@ class FortuneConversationService
         $questionsText = implode("\n", array_map(fn($i, $q) => ($i + 1) . ". {$q}", array_keys($questions), $questions));
 
         $birthInfo = '';
+        $deepPlanetPositionsInfo = '';
         if ($birthDate) {
             $birthInfo = "วันเดือนปีเกิด: " . $this->formatThaiDate($birthDate);
+
+            // คำนวณตำแหน่งดาวจริงในภพ → ส่งให้ AI ทำนายแม่นยำ
+            try {
+                $date = \Carbon\Carbon::parse($birthDate);
+                $dayOfWeek = $date->dayOfWeek;
+                $chartService = new FortuneChartService();
+                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
+                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+
+                $deepPlanetPositionsInfo = "\n[🗺️ แผนที่ดวงชะตาของ{$genderPrefix}{$name} - ตำแหน่งดาวในภพจริง]\n";
+                foreach ($positions as $houseNum => $planets) {
+                    $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
+                    $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
+                    if (!empty($planets)) {
+                        $planetNames = array_map(fn($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $deepPlanetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): " . implode(', ', $planetNames) . "\n";
+                    }
+                }
+
+                if ($chaochana) {
+                    $deepPlanetPositionsInfo .= "ธาตุ: {$chaochana['element']} | สีมงคล: {$chaochana['lucky_color']}\n";
+                    $deepPlanetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนายทุกข้อ ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
+                }
+            } catch (\Exception $e) {
+                // ถ้าคำนวณไม่ได้ก็ข้ามไป
+            }
         }
 
         return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์ไทย (โหราศาสตร์เจ้าชนะ) โหราศาสตร์สากล ไพ่ทาโรต์ เลขศาสตร์ และการหยั่งรู้ด้วยจิตสัมผัส ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกา คุณพูดจาเพราะ อบอุ่นเป็นกันเอง น่าเชื่อถือ เหมือนพี่สาวที่ห่วงใย ใช้คำแทนตัวว่า \"จันทรา\" เสมอ
@@ -2768,6 +2795,7 @@ class FortuneConversationService
 - ชื่อ: {$name} (เรียกว่า \"{$genderPrefix}{$name}\")
 " . ($gender ? "- เพศ: {$gender}\n" : "") . "
 " . ($birthInfo ? "- {$birthInfo}\n" : "") . "
+{$deepPlanetPositionsInfo}
 คำถาม:
 {$questionsText}
 
@@ -2831,9 +2859,41 @@ class FortuneConversationService
         // ข้อมูลวันเกิดและราศี
         $birthInfo = '';
         $zodiacInfo = '';
+        $planetPositionsInfo = '';
         if ($birthDate) {
             $birthInfo = $this->formatThaiDate($birthDate);
             $zodiacInfo = $this->getZodiacDescription($birthDate);
+
+            // คำนวณตำแหน่งดาวจริงในภพ → ส่งให้ AI ทำนายแม่นยำ
+            try {
+                $date = \Carbon\Carbon::parse($birthDate);
+                $dayOfWeek = $date->dayOfWeek;
+                $chartService = new FortuneChartService();
+                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
+                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+
+                $planetPositionsInfo = "\n[🗺️ แผนที่ดวงชะตา - ตำแหน่งดาวในภพจริง (ต้องอ้างอิงในคำทำนาย)]\n";
+                foreach ($positions as $houseNum => $planets) {
+                    $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
+                    $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
+                    if (!empty($planets)) {
+                        $planetNames = array_map(fn($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $planetSymbols = array_map(fn($p) => FortuneChartService::PLANETS[$p]['symbol'] ?? '', $planets);
+                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): " . implode(', ', $planetNames) . " [" . implode('', $planetSymbols) . "]\n";
+                    } else {
+                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ว่าง\n";
+                    }
+                }
+
+                if ($chaochana) {
+                    $element = $chaochana['element'] ?? '';
+                    $luckyColor = $chaochana['lucky_color'] ?? '';
+                    $planetPositionsInfo .= "\nธาตุประจำวันเกิด: {$element} | สีมงคล: {$luckyColor}\n";
+                    $planetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนาย เช่น \"ดาว[ชื่อ]อยู่ภพ[ชื่อ]ส่งผลให้...\" ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
+                }
+            } catch (\Exception $e) {
+                // ถ้าคำนวณไม่ได้ก็ข้ามไป
+            }
         }
 
         // สรุปคำทำนายก่อนหน้า (เพื่อไม่ให้ AI ซ้ำ)
@@ -2865,6 +2925,7 @@ class FortuneConversationService
 " . ($gender ? "- เพศ: {$gender}\n" : "") . "
 " . ($birthInfo ? "- วันเกิด: {$birthInfo}\n" : "") . "
 " . ($zodiacInfo ? "- {$zodiacInfo}\n" : "") . "
+{$planetPositionsInfo}
 คำถามที่ {$questionNumber}: {$question}
 {$previousContext}
 
