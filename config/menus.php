@@ -705,6 +705,8 @@ return [
             'badge_color' => 'bg-gradient-to-r from-purple-500 to-indigo-600',
             'submenu' => [
                 ['label' => '🔮 ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
+                ['label' => '📊 Dashboard', 'route' => 'admin.fortune.dashboard', 'description' => 'สถิติภาพรวม กราฟ รายได้'],
+                ['label' => '✨ โหราศาสตร์', 'route' => 'admin.fortune.astrology.index', 'description' => 'ตารางเจ้าชนะ ดาวเคราะห์ ทดสอบ Birth Chart'],
                 ['label' => '📱 ช่องทางรับข้อความ', 'route' => 'admin.fortune.channels.index', 'description' => 'Facebook Messenger, LINE Official Account'],
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
