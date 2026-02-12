@@ -111,11 +111,22 @@ jobs:
           php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
 
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Laravel Pint (Code Style)
-        timeout-minutes: 10
+        timeout-minutes: 20
         run: ./vendor/bin/pint --test
 
       - name: Check for security vulnerabilities
@@ -242,25 +253,58 @@ jobs:
           # Determine target branch
           TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
 
-          # Pull latest and rebase before push
-          git pull --rebase origin "$TARGET_BRANCH"
-
-          # Push directly to target branch
-          git push origin HEAD:"$TARGET_BRANCH"
-
-          echo "Released v$NEW (from $CURRENT)"
+          # Push with retry logic (handles concurrent pushes and transient failures)
+          for i in 1 2 3 4; do
+            echo "Push attempt $i..."
+            git fetch origin "$TARGET_BRANCH"
+            git rebase "origin/$TARGET_BRANCH" || {
+              echo "Rebase conflict, resetting and retrying..."
+              git rebase --abort 2>/dev/null || true
+              # Re-read current version from remote and bump again
+              git reset --hard "origin/$TARGET_BRANCH"
+              REMOTE_VER=$(cat VERSION 2>/dev/null | tr -d '[:space:]' || echo "0.0.0")
+              NEW=$(semver -i patch "$REMOTE_VER")
+              echo "new=$NEW" >> $GITHUB_OUTPUT
+              echo "$NEW" > VERSION
+              npm version $NEW --no-git-tag-version --allow-same-version 2>/dev/null || true
+              git add VERSION package.json package-lock.json 2>/dev/null || true
+              git commit -m "chore: release v$NEW [skip ci]"
+            }
+            if git push origin HEAD:"$TARGET_BRANCH"; then
+              echo "Released v$NEW (from $CURRENT)"
+              exit 0
+            fi
+            echo "Push failed, retrying in $((i * 2)) seconds..."
+            sleep $((i * 2))
+          done
+          echo "Push failed after 4 attempts"
+          exit 1
 
       - name: Create and push tag
-        if: steps.check.outputs.skip != 'true'
+        if: steps.check.outputs.skip != 'true' && steps.release.outcome == 'success'
         run: |
           VERSION="v${{ steps.release.outputs.new }}"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          # Skip if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, skipping"
+            exit 0
+          fi
           git tag -a "$VERSION" -m "Release $VERSION"
-          git push origin "$VERSION"
+          # Push tag with retry
+          for i in 1 2 3 4; do
+            if git push origin "$VERSION"; then
+              exit 0
+            fi
+            echo "Tag push attempt $i failed, retrying in $((i * 2)) seconds..."
+            sleep $((i * 2))
+          done
+          echo "Tag push failed after 4 attempts"
+          exit 1
 
       - name: Create GitHub Release
-        if: steps.check.outputs.skip != 'true'
+        if: steps.check.outputs.skip != 'true' && steps.release.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.release.outputs.new }}

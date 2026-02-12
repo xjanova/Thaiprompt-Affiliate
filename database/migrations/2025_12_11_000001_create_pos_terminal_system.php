@@ -116,10 +116,9 @@ return new class extends Migration
         // เพิ่ม index สำหรับ POS orders
         Schema::table('orders', function (Blueprint $table) {
             // ตรวจสอบว่ามี index อยู่แล้วหรือไม่
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('orders');
+            $indexNames = collect(Schema::getIndexes('orders'))->pluck('name')->toArray();
 
-            if (!array_key_exists('orders_pos_terminal_local_idx', $indexes)) {
+            if (!in_array('orders_pos_terminal_local_idx', $indexNames)) {
                 $table->index(['pos_terminal_id', 'pos_local_id'], 'orders_pos_terminal_local_idx');
             }
         });
@@ -135,10 +134,9 @@ return new class extends Migration
         // ลบ index และคอลัมน์ POS ในตาราง orders
         Schema::table('orders', function (Blueprint $table) {
             // ลบ index ก่อน
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('orders');
+            $indexNames = collect(Schema::getIndexes('orders'))->pluck('name')->toArray();
 
-            if (array_key_exists('orders_pos_terminal_local_idx', $indexes)) {
+            if (in_array('orders_pos_terminal_local_idx', $indexNames)) {
                 $table->dropIndex('orders_pos_terminal_local_idx');
             }
 

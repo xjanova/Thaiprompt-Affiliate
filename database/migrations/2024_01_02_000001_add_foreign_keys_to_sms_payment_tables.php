@@ -23,8 +23,7 @@ return new class extends Migration
         if (Schema::hasTable('sms_checker_devices') && Schema::hasTable('users')) {
             Schema::table('sms_checker_devices', function (Blueprint $table) {
                 // เช็คว่ามี FK อยู่แล้วหรือยัง โดยลอง index name
-                $sm = Schema::getConnection()->getDoctrineSchemaManager();
-                $existingIndexes = collect($sm->listTableIndexes('sms_checker_devices'))->keys()->toArray();
+                $existingIndexes = collect(Schema::getIndexes('sms_checker_devices'))->pluck('name')->toArray();
 
                 if (!in_array('sms_devices_user_fk', $existingIndexes)) {
                     $table->foreign('user_id', 'sms_devices_user_fk')
@@ -38,8 +37,7 @@ return new class extends Migration
         // FK: sms_payment_notifications.matched_transaction_id → payment_transactions.id
         if (Schema::hasTable('sms_payment_notifications') && Schema::hasTable('payment_transactions')) {
             Schema::table('sms_payment_notifications', function (Blueprint $table) {
-                $sm = Schema::getConnection()->getDoctrineSchemaManager();
-                $existingIndexes = collect($sm->listTableIndexes('sms_payment_notifications'))->keys()->toArray();
+                $existingIndexes = collect(Schema::getIndexes('sms_payment_notifications'))->pluck('name')->toArray();
 
                 if (!in_array('sms_notif_txn_fk', $existingIndexes)) {
                     $table->foreign('matched_transaction_id', 'sms_notif_txn_fk')
@@ -53,8 +51,7 @@ return new class extends Migration
         // FK: unique_payment_amounts.transaction_id → payment_transactions.id
         if (Schema::hasTable('unique_payment_amounts') && Schema::hasTable('payment_transactions')) {
             Schema::table('unique_payment_amounts', function (Blueprint $table) {
-                $sm = Schema::getConnection()->getDoctrineSchemaManager();
-                $existingIndexes = collect($sm->listTableIndexes('unique_payment_amounts'))->keys()->toArray();
+                $existingIndexes = collect(Schema::getIndexes('unique_payment_amounts'))->pluck('name')->toArray();
 
                 if (!in_array('unique_amt_txn_fk', $existingIndexes)) {
                     $table->foreign('transaction_id', 'unique_amt_txn_fk')
@@ -68,8 +65,7 @@ return new class extends Migration
         // FK: sms_payment_nonces.device_id → sms_checker_devices.device_id
         if (Schema::hasTable('sms_payment_nonces') && Schema::hasTable('sms_checker_devices')) {
             Schema::table('sms_payment_nonces', function (Blueprint $table) {
-                $sm = Schema::getConnection()->getDoctrineSchemaManager();
-                $existingIndexes = collect($sm->listTableIndexes('sms_payment_nonces'))->keys()->toArray();
+                $existingIndexes = collect(Schema::getIndexes('sms_payment_nonces'))->pluck('name')->toArray();
 
                 if (!in_array('sms_nonce_device_fk', $existingIndexes)) {
                     $table->foreign('device_id', 'sms_nonce_device_fk')

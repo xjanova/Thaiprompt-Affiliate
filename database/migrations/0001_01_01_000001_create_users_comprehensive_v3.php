@@ -257,12 +257,10 @@ return new class extends Migration
     protected function hasForeignKey(string $table, string $column): bool
     {
         try {
-            $foreignKeys = Schema::getConnection()
-                ->getDoctrineSchemaManager()
-                ->listTableForeignKeys($table);
+            $foreignKeys = Schema::getForeignKeys($table);
 
             return collect($foreignKeys)->contains(function ($fk) use ($column) {
-                return in_array($column, $fk->getLocalColumns());
+                return in_array($column, $fk['columns']);
             });
         } catch (\Exception $e) {
             // หากเกิดข้อผิดพลาด ถือว่ายังไม่มี foreign key

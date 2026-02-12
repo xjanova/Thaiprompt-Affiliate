@@ -41,12 +41,10 @@ return new class extends Migration
         }
 
         // ตรวจสอบว่ามี foreign key อยู่แล้วหรือไม่
-        $foreignKeys = Schema::getConnection()
-            ->getDoctrineSchemaManager()
-            ->listTableForeignKeys('users');
+        $foreignKeys = Schema::getForeignKeys('users');
 
         $hasForeignKey = collect($foreignKeys)->contains(function ($fk) {
-            return in_array('affiliate_id', $fk->getLocalColumns());
+            return in_array('affiliate_id', $fk['columns']);
         });
 
         if ($hasForeignKey) {
