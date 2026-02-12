@@ -1,6 +1,7 @@
 name: Deploy to Production
 
 on:
+  # Manual trigger
   workflow_dispatch:
     inputs:
       environment:
@@ -11,9 +12,8 @@ on:
         options:
           - production
           - staging
-  push:
-    tags:
-      - 'v*'
+  # Auto-trigger when called from ci.yml
+  workflow_call:
 
 jobs:
   deploy:
@@ -31,120 +31,53 @@ jobs:
         run: |
           if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$DEPLOY_PATH" ] || [ -z "$APP_URL" ]; then
             echo "::error::Required deployment secrets are not configured."
-            echo "Please set the following repository secrets: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, DEPLOY_PATH, APP_URL"
-            echo "Optionally set: SSH_PORT (defaults to 22)"
+            echo "Please set: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY, DEPLOY_PATH, APP_URL"
             exit 1
           fi
-          echo "All required secrets are configured."
+          echo "✅ All required secrets are configured."
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-interaction --no-dev --optimize-autoloader
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install NPM dependencies
-        run: npm ci
-
-      - name: Build production assets
-        run: npm run build
-
-      - name: Create deployment package
-        run: |
-          tar -czf deployment.tar.gz \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='tests' \
-            --exclude='.github' \
-            --exclude='storage/logs/*' \
-            --exclude='storage/framework/cache/*' \
-            --exclude='storage/framework/sessions/*' \
-            --exclude='storage/framework/views/*' \
-            --exclude='mobile-app/node_modules' \
-            --exclude='tpix-blockchain/node_modules' \
-            .
-
-      - name: Deploy via SSH
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "deployment.tar.gz,deploy.sh"
-          target: "/tmp/tp-affiliate-deploy"
-
-      - name: Execute deployment script
+      - name: Deploy via SSH (run deploy.sh on server)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
-            set -e
-
-            # Configuration
+            echo "🚀 Starting deployment..."
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
-            BACKUP_DIR="${DEPLOY_PATH}/backups"
-            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-            echo "Starting deployment to ${DEPLOY_PATH}"
+            cd "$DEPLOY_PATH" || {
+              echo "❌ Cannot cd to $DEPLOY_PATH"
+              exit 1
+            }
 
-            # Create backup
-            echo "Creating backup..."
-            mkdir -p ${BACKUP_DIR}
-            if [ -f ${DEPLOY_PATH}/.env ]; then
-              cp ${DEPLOY_PATH}/.env ${BACKUP_DIR}/env_${TIMESTAMP}
+            # Run deploy.sh (it handles git pull, composer, npm, migrate, cache)
+            if [ -f deploy.sh ]; then
+              chmod +x deploy.sh
+              bash deploy.sh claude/Main
+            else
+              echo "❌ deploy.sh not found at $DEPLOY_PATH"
+              exit 1
             fi
 
-            # Extract new version
-            echo "Extracting new version..."
-            cd ${DEPLOY_PATH}
-            tar -xzf /tmp/tp-affiliate-deploy/deployment.tar.gz
-
-            # Copy deploy.sh if updated
-            if [ -f /tmp/tp-affiliate-deploy/deploy.sh ]; then
-              cp /tmp/tp-affiliate-deploy/deploy.sh ${DEPLOY_PATH}/deploy.sh
-              chmod +x ${DEPLOY_PATH}/deploy.sh
-            fi
-
-            # Run deployment script
-            echo "Running deployment script..."
-            chmod +x deploy.sh
-            ./deploy.sh ${{ github.ref_name }} --skip-backup
-
-            # Cleanup
-            rm -rf /tmp/tp-affiliate-deploy
-
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completed!"
 
       - name: Health check
         env:
           APP_URL: ${{ secrets.APP_URL }}
         run: |
+          echo "Waiting 10s for deployment to settle..."
           sleep 10
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL")
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 302 ]; then
-            echo "Application is healthy (HTTP $HTTP_CODE)"
+            echo "✅ Application is healthy (HTTP $HTTP_CODE)"
           else
-            echo "Application health check failed (HTTP $HTTP_CODE)"
-            exit 1
+            echo "⚠️ Health check returned HTTP $HTTP_CODE (may still be starting)"
           fi
 
-      - name: Notify deployment status
+      - name: Deployment summary
         if: always()
         env:
           APP_URL: ${{ secrets.APP_URL }}
@@ -156,5 +89,5 @@ jobs:
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**URL:** $APP_URL" >> $GITHUB_STEP_SUMMARY

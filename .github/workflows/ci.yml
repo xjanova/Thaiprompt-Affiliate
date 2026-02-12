@@ -268,3 +268,11 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Auto-deploy to production after release
+  auto-deploy:
+    name: Auto Deploy
+    needs: [auto-release]
+    if: (github.ref == 'refs/heads/claude/Main' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
