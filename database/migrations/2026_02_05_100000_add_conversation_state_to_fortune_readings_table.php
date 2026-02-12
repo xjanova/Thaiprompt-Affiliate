@@ -48,9 +48,8 @@ return new class extends Migration
 
             // Index สำหรับค้นหา pending payments
             $indexName = 'fr_conv_status_fb_user_idx';
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('fortune_readings');
-            if (!isset($indexes[$indexName])) {
+            $indexNames = collect(Schema::getIndexes('fortune_readings'))->pluck('name')->toArray();
+            if (!in_array($indexName, $indexNames)) {
                 $table->index(['conversation_status', 'facebook_user_id'], $indexName);
             }
         });

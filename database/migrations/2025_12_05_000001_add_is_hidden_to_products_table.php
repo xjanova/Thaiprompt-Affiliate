@@ -28,10 +28,9 @@ return new class extends Migration
         // เพิ่ม index สำหรับ query ที่ filter hidden products
         Schema::table('products', function (Blueprint $table) {
             // สร้าง composite index สำหรับ query ที่ใช้บ่อย
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('products');
+            $indexNames = collect(Schema::getIndexes('products'))->pluck('name')->toArray();
 
-            if (!array_key_exists('products_is_active_is_hidden_index', $indexes)) {
+            if (!in_array('products_is_active_is_hidden_index', $indexNames)) {
                 $table->index(['is_active', 'is_hidden'], 'products_is_active_is_hidden_index');
             }
         });
@@ -46,10 +45,9 @@ return new class extends Migration
     {
         Schema::table('products', function (Blueprint $table) {
             // ลบ index ก่อน
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('products');
+            $indexNames = collect(Schema::getIndexes('products'))->pluck('name')->toArray();
 
-            if (array_key_exists('products_is_active_is_hidden_index', $indexes)) {
+            if (in_array('products_is_active_is_hidden_index', $indexNames)) {
                 $table->dropIndex('products_is_active_is_hidden_index');
             }
 

@@ -63,10 +63,9 @@ return new class extends Migration
         // เพิ่ม index สำหรับ course_level
         Schema::table('learning_articles', function (Blueprint $table) {
             // เพิ่ม index ถ้ายังไม่มี
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('learning_articles');
+            $indexNames = collect(Schema::getIndexes('learning_articles'))->pluck('name')->toArray();
 
-            if (!isset($indexes['learning_articles_course_level_index'])) {
+            if (!in_array('learning_articles_course_level_index', $indexNames)) {
                 $table->index('course_level', 'learning_articles_course_level_index');
             }
         });
@@ -79,10 +78,9 @@ return new class extends Migration
     {
         Schema::table('learning_articles', function (Blueprint $table) {
             // ลบ index ก่อน
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $indexes = $sm->listTableIndexes('learning_articles');
+            $indexNames = collect(Schema::getIndexes('learning_articles'))->pluck('name')->toArray();
 
-            if (isset($indexes['learning_articles_course_level_index'])) {
+            if (in_array('learning_articles_course_level_index', $indexNames)) {
                 $table->dropIndex('learning_articles_course_level_index');
             }
 
