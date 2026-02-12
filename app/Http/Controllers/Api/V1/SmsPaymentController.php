@@ -17,6 +17,7 @@ use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -1528,5 +1529,429 @@ class SmsPaymentController extends Controller
                 'daily_breakdown' => $dailyBreakdown,
             ],
         ]);
+    }
+
+    // =================================================================
+    // Endpoints เพิ่มเติมเพื่อให้ Android App เชื่อมต่อได้สมบูรณ์
+    // =================================================================
+
+    /**
+     * รับ encrypted action (approve/reject) จาก Android App
+     *
+     * ใช้ security flow เหมือน notify() (signature, nonce, timestamp, decrypt)
+     * Payload: { action, order_identifier, amount, bank, sms_reference, device_id, reason, nonce }
+     *
+     * POST /api/v1/sms-payment/notify-action
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function notifyAction(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        // ตรวจสอบ security headers ที่จำเป็น
+        $signature = $request->header('X-Signature');
+        $nonce = $request->header('X-Nonce');
+        $timestamp = $request->header('X-Timestamp');
+
+        if (! $signature || ! $nonce || ! $timestamp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Missing required security headers',
+            ], 400);
+        }
+
+        // ตรวจสอบความสดของ timestamp (ภายใน 5 นาที)
+        $requestTime = intval($timestamp);
+        $currentTime = intval(round(microtime(true) * 1000));
+        $tolerance = config('smschecker.timestamp_tolerance', 300) * 1000;
+
+        if (abs($currentTime - $requestTime) > $tolerance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request timestamp expired',
+            ], 400);
+        }
+
+        // รับ encrypted data
+        $encryptedData = $request->input('data');
+        if (! $encryptedData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No payload data',
+            ], 400);
+        }
+
+        // ตรวจสอบ HMAC signature
+        $signatureData = $encryptedData . $nonce . $timestamp;
+        if (! $this->smsPaymentService->verifySignature($signatureData, $signature, $device->secret_key)) {
+            Log::warning('SMS Payment notifyAction: ลายเซ็นไม่ถูกต้อง', [
+                'device_id' => $device->device_id,
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid signature',
+            ], 401);
+        }
+
+        // ถอดรหัส payload
+        $payload = $this->smsPaymentService->decryptPayload($encryptedData, $device->secret_key);
+        if (! $payload) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to decrypt payload',
+            ], 400);
+        }
+
+        // ตรวจสอบ payload fields
+        $validator = Validator::make($payload, [
+            'action' => 'required|in:approve,reject',
+            'order_identifier' => 'required|string|max:100',
+            'amount' => 'required|numeric|min:0.01',
+            'bank' => 'nullable|string|max:20',
+            'sms_reference' => 'nullable|string|max:100',
+            'device_id' => 'required|string',
+            'reason' => 'nullable|string|max:500',
+            'nonce' => 'required|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid payload data',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // ตรวจสอบ duplicate nonce (ป้องกัน replay attack)
+        $existingNonce = DB::table('sms_payment_nonces')
+            ->where('nonce', $payload['nonce'])
+            ->exists();
+
+        if ($existingNonce) {
+            Log::warning('SMS Payment notifyAction: Duplicate nonce', [
+                'nonce' => $payload['nonce'],
+                'device_id' => $device->device_id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate request (nonce already used)',
+            ], 409);
+        }
+
+        // บันทึก nonce
+        DB::table('sms_payment_nonces')->insert([
+            'nonce' => $payload['nonce'],
+            'device_id' => $device->device_id,
+            'used_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // ค้นหา order จาก identifier (รองรับทั้ง numeric ID, transaction_id, bill_reference)
+        $identifier = $payload['order_identifier'];
+        $resolved = $this->resolveOrderByIdentifier($identifier);
+
+        if (! $resolved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found: ' . $identifier,
+            ], 404);
+        }
+
+        $model = $resolved['model'];
+        $type = $resolved['type'];
+        $action = $payload['action'];
+
+        // === FortuneReading ===
+        if ($type === 'fortune') {
+            /** @var FortuneReading $model */
+            if (! $this->deviceCanAccessFortuneReading($device)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only admin devices can manage fortune reading bills',
+                ], 403);
+            }
+
+            return $action === 'approve'
+                ? $this->executeFortuneApproveAction($payload, $model, $device, $request->ip())
+                : $this->executeFortuneRejectAction($payload, $model, $device, $request->ip());
+        }
+
+        // === PaymentTransaction ===
+        /** @var PaymentTransaction $model */
+        if (! $this->deviceCanAccessTransaction($device, $model)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage this transaction',
+            ], 403);
+        }
+
+        return $action === 'approve'
+            ? $this->executeTransactionApproveAction($payload, $model, $device, $request->ip())
+            : $this->executeTransactionRejectAction($payload, $model, $device, $request->ip());
+    }
+
+    /**
+     * Execute encrypted approve action on a PaymentTransaction
+     */
+    private function executeTransactionApproveAction(array $payload, PaymentTransaction $txn, SmsCheckerDevice $device, string $ipAddress): JsonResponse
+    {
+        // Idempotent: ถ้า completed แล้ว → return success
+        if ($txn->status === 'completed') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order already approved',
+                'data' => ['order' => $this->transformToOrderApproval($txn)],
+            ]);
+        }
+
+        if (! in_array($txn->status, ['pending', 'processing'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction cannot be approved in current status: ' . $txn->status,
+            ], 422);
+        }
+
+        app(PaymentService::class)->completePayment($txn);
+
+        // อัพเดท device activity
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $ipAddress,
+        ]);
+
+        $txn = $txn->fresh();
+
+        Log::info('SMS Payment: Transaction approved via encrypted action', [
+            'transaction_id' => $txn->transaction_id,
+            'amount' => $payload['amount'],
+            'bank' => $payload['bank'] ?? 'N/A',
+            'device_id' => $device->device_id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order approved successfully',
+            'data' => ['order' => $this->transformToOrderApproval($txn)],
+        ]);
+    }
+
+    /**
+     * Execute encrypted reject action on a PaymentTransaction
+     */
+    private function executeTransactionRejectAction(array $payload, PaymentTransaction $txn, SmsCheckerDevice $device, string $ipAddress): JsonResponse
+    {
+        $reason = $payload['reason'] ?? 'Rejected via SMS Checker';
+
+        if (! in_array($txn->status, ['pending', 'processing'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaction cannot be rejected in current status: ' . $txn->status,
+            ], 422);
+        }
+
+        $txn->markAsFailed($reason);
+
+        // ยกเลิก UniquePaymentAmount
+        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $txn->id)
+            ->whereIn('status', ['reserved', 'expired'])
+            ->first();
+        if ($uniqueAmount) {
+            $uniqueAmount->cancel();
+        }
+
+        // ยกเลิก SMS notification ที่เชื่อมโยง
+        $matchedNotification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+        if ($matchedNotification) {
+            $matchedNotification->update(['status' => 'rejected']);
+        }
+
+        // ยกเลิก Order ที่เชื่อมโยง
+        if ($txn->order_id && $txn->order && $txn->order->status === 'pending') {
+            $txn->order->update([
+                'status' => 'cancelled',
+                'payment_status' => 'failed',
+                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
+            ]);
+        }
+
+        // อัพเดท device activity
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $ipAddress,
+        ]);
+
+        $txn = $txn->fresh();
+
+        Log::info('SMS Payment: Transaction rejected via encrypted action', [
+            'transaction_id' => $txn->transaction_id,
+            'reason' => $reason,
+            'device_id' => $device->device_id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order rejected',
+            'data' => ['order' => $this->transformToOrderApproval($txn)],
+        ]);
+    }
+
+    /**
+     * Execute encrypted approve action on a FortuneReading
+     */
+    private function executeFortuneApproveAction(array $payload, FortuneReading $reading, SmsCheckerDevice $device, string $ipAddress): JsonResponse
+    {
+        // Idempotent: ถ้า paid แล้ว → return success
+        if ($reading->is_paid) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Fortune reading already paid',
+                'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
+            ]);
+        }
+
+        $reading->confirmPayment();
+
+        // อัพเดท device activity
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $ipAddress,
+        ]);
+
+        $reading = $reading->fresh();
+
+        Log::info('SMS Payment: Fortune reading approved via encrypted action', [
+            'fortune_reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'amount' => $payload['amount'],
+            'device_id' => $device->device_id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fortune reading approved successfully',
+            'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
+        ]);
+    }
+
+    /**
+     * Execute encrypted reject action on a FortuneReading
+     */
+    private function executeFortuneRejectAction(array $payload, FortuneReading $reading, SmsCheckerDevice $device, string $ipAddress): JsonResponse
+    {
+        $reason = $payload['reason'] ?? 'Rejected via SMS Checker';
+
+        if ($reading->is_paid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fortune reading already paid, cannot reject',
+            ], 422);
+        }
+
+        $reading->update([
+            'conversation_status' => 'cancelled',
+            'notes' => $reason,
+        ]);
+
+        // ยกเลิก UniquePaymentAmount
+        if ($reading->unique_payment_amount_id) {
+            $uniqueAmount = UniquePaymentAmount::find($reading->unique_payment_amount_id);
+            if ($uniqueAmount && in_array($uniqueAmount->status, ['reserved', 'expired'])) {
+                $uniqueAmount->cancel();
+            }
+        }
+
+        // อัพเดท device activity
+        $device->update([
+            'last_active_at' => now(),
+            'ip_address' => $ipAddress,
+        ]);
+
+        $reading = $reading->fresh();
+
+        Log::info('SMS Payment: Fortune reading rejected via encrypted action', [
+            'fortune_reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'reason' => $reason,
+            'device_id' => $device->device_id,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fortune reading rejected',
+            'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
+        ]);
+    }
+
+    /**
+     * Legacy sync — redirect ไป syncOrders()
+     *
+     * Android app เวอร์ชันเก่าเรียก GET /sync แทน /orders/sync
+     *
+     * GET /api/v1/sms-payment/sync
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function sync(Request $request): JsonResponse
+    {
+        return $this->syncOrders($request);
+    }
+
+    /**
+     * ดึง sync version ปัจจุบัน
+     *
+     * Android app ใช้เช็คว่าข้อมูลฝั่ง server มีการเปลี่ยนแปลงหรือไม่
+     * ก่อนจะเรียก syncOrders() เพื่อดึงข้อมูลจริง
+     *
+     * GET /api/v1/sms-payment/sync-version
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getSyncVersion(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'version' => $this->getSyncVersionNumber(),
+                'server_time' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * คำนวณ sync version number จาก last update ของ PaymentTransaction + FortuneReading
+     *
+     * @return int Unix timestamp ของ record ที่ update ล่าสุด
+     */
+    private function getSyncVersionNumber(): int
+    {
+        return Cache::remember('sms_payment_sync_version', 60, function () {
+            $lastTransaction = PaymentTransaction::orderBy('updated_at', 'desc')->first();
+            $lastFortune = FortuneReading::whereNotNull('unique_payment_amount_id')
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            $timestamps = array_filter([
+                $lastTransaction?->updated_at?->timestamp,
+                $lastFortune?->updated_at?->timestamp,
+            ]);
+
+            return ! empty($timestamps) ? max($timestamps) : time();
+        });
     }
 }

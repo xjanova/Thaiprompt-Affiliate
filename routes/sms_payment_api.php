@@ -24,6 +24,9 @@ Route::prefix('v1/sms-payment')->group(function () {
         // รับ SMS notification จาก Android App (ไม่ต้องเช็ค subscription — รับ SMS ได้เสมอ)
         Route::post('/notify', [SmsPaymentController::class, 'notify']);
 
+        // รับ encrypted action (approve/reject) จาก Android App (critical path — ไม่ต้องเช็ค subscription)
+        Route::post('/notify-action', [SmsPaymentController::class, 'notifyAction']);
+
         // ตรวจสอบสถานะอุปกรณ์
         Route::get('/status', [SmsPaymentController::class, 'status']);
 
@@ -42,6 +45,12 @@ Route::prefix('v1/sms-payment')->group(function () {
             Route::post('/orders/{id}/reject', [SmsPaymentController::class, 'rejectOrder']);
             Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
             Route::get('/orders/sync', [SmsPaymentController::class, 'syncOrders']);
+
+            // Legacy sync (Android app เวอร์ชันเก่า)
+            Route::get('/sync', [SmsPaymentController::class, 'sync']);
+
+            // Sync version — แอพเช็คก่อนว่า data มีการเปลี่ยนแปลงหรือไม่
+            Route::get('/sync-version', [SmsPaymentController::class, 'getSyncVersion']);
 
             // สถิติ dashboard (สำหรับ Android App)
             Route::get('/dashboard-stats', [SmsPaymentController::class, 'dashboardStats']);
