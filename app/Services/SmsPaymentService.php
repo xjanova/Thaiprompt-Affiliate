@@ -83,15 +83,22 @@ class SmsPaymentService
             // พยายามจับคู่อัตโนมัติสำหรับ credit transactions
             $matched = false;
             $fortuneReadingHandled = false;
+            $specialAmountHandled = false;
 
             if ($notification->type === 'credit') {
                 // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
                 $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
 
                 if (!$fortuneReadingHandled) {
-                    // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction
+                    // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction (อีคอมเมิร์ซ)
                     $autoConfirm = config('smschecker.auto_confirm_matched', true);
                     $matched = $notification->attemptMatch($autoConfirm);
+                }
+
+                if (!$fortuneReadingHandled && !$matched) {
+                    // ขั้นที่ 3: ตรวจจับยอดพิเศษ (เช่น 29.99 = ดูดวง)
+                    // สร้าง FortuneReading อัตโนมัติเป็น "บิลลอย" ถ้า match ไม่ได้กับ unique amount
+                    $specialAmountHandled = $this->handleSpecialAmount($notification);
                 }
             }
 
@@ -102,11 +109,14 @@ class SmsPaymentService
                 'amount' => $notification->amount,
                 'matched' => $matched,
                 'fortune_reading' => $fortuneReadingHandled,
+                'special_amount' => $specialAmountHandled,
             ]);
 
             $message = $fortuneReadingHandled
                 ? 'Fortune reading payment matched and processed'
-                : ($matched ? 'Payment matched and confirmed' : 'Notification recorded');
+                : ($matched ? 'Payment matched and confirmed'
+                    : ($specialAmountHandled ? 'Special amount detected and processed'
+                        : 'Notification recorded'));
 
             return [
                 'success' => true,
@@ -116,6 +126,7 @@ class SmsPaymentService
                     'status' => $notification->fresh()->status,
                     'matched' => $matched,
                     'fortune_reading' => $fortuneReadingHandled,
+                    'special_amount' => $specialAmountHandled,
                     'matched_transaction_id' => $notification->matched_transaction_id,
                 ],
             ];
@@ -272,6 +283,7 @@ class SmsPaymentService
             'cancelled_transactions' => 0,
             'cancelled_orders' => 0,
             'expired_amounts' => 0,
+            'expired_fortune_readings' => 0,
             'deleted_nonces' => 0,
             'expired_notifications' => 0,
         ];
@@ -280,9 +292,11 @@ class SmsPaymentService
         // ขั้นที่ 1: ยกเลิก PaymentTransaction และ Order ที่หมดเวลาชำระ (30 นาที)
         // ========================================
 
-        // ดึง unique amounts ที่หมดอายุและยังเป็น 'reserved'
+        // ดึง unique amounts ที่หมดอายุและยังเป็น 'reserved' (ไม่รวม fortune_reading)
+        // fortune_reading มี grace period แยก → จัดการใน ขั้นที่ 1.5
         $expiredUniqueAmounts = UniquePaymentAmount::where('status', 'reserved')
             ->where('expires_at', '<=', now())
+            ->where('transaction_type', '!=', 'fortune_reading')
             ->with('transaction.order')
             ->get();
 
@@ -317,6 +331,41 @@ class SmsPaymentService
                         'order_number' => $uniqueAmount->transaction->order->order_number,
                     ]);
                 }
+            }
+
+            // อัปเดต unique amount เป็น expired
+            $uniqueAmount->update(['status' => 'expired']);
+            $stats['expired_amounts']++;
+        }
+
+        // ========================================
+        // ขั้นที่ 1.5: ล้าง FortuneReading ที่หมดเวลา (หลัง grace period)
+        // ========================================
+        // fortune_reading unique amounts หมดอายุ 60 นาที + grace period 30 นาที = 90 นาที
+        // หลัง grace period → expire unique amount + ปิด FortuneReading conversation
+
+        $expiredFortuneAmounts = UniquePaymentAmount::where('status', 'reserved')
+            ->where('transaction_type', 'fortune_reading')
+            ->where('expires_at', '<=', now()->subMinutes(30)) // grace period 30 นาที
+            ->get();
+
+        foreach ($expiredFortuneAmounts as $uniqueAmount) {
+            // ปิด FortuneReading ที่ยังรอชำระ
+            $expiredReadings = FortuneReading::where('unique_payment_amount_id', $uniqueAmount->id)
+                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->get();
+
+            foreach ($expiredReadings as $reading) {
+                $reading->update([
+                    'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                ]);
+                $stats['expired_fortune_readings']++;
+
+                Log::info('SMS Payment: ปิดบิลดูดวงหมดเวลา (หลัง grace period)', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'unique_amount' => $uniqueAmount->unique_amount,
+                ]);
             }
 
             // อัปเดต unique amount เป็น expired
@@ -399,8 +448,40 @@ class SmsPaymentService
     {
         $amount = (float) $notification->amount;
 
-        // ค้นหา FortuneReading ที่รอชำระเงินด้วยยอดนี้
+        // ขั้นที่ 1: ค้นหา FortuneReading ที่รอชำระเงินด้วย unique amount ที่ยังไม่หมดอายุ
         $reading = FortuneReading::findByUniqueAmount($amount);
+
+        // ขั้นที่ 2: Grace period — ค้นหา unique amount ที่เพิ่งหมดอายุ (ภายใน 30 นาที)
+        // กรณีลูกค้าโอนช้ากว่าเวลาที่กำหนด แต่ยังอยู่ใน grace period
+        if (!$reading) {
+            $reading = $this->findFortuneReadingByExpiredAmount($amount);
+
+            if ($reading) {
+                Log::info('SMS Payment: พบ Fortune Reading ผ่าน grace period (unique amount หมดอายุแล้ว)', [
+                    'notification_id' => $notification->id,
+                    'reading_id' => $reading->id,
+                    'amount' => $amount,
+                ]);
+            }
+        }
+
+        // ขั้นที่ 3: Fallback — ค้นหาจาก amount_paid ตรงๆ ที่ยังรอชำระอยู่
+        // กรณี unique amount ถูกลบไปแล้ว แต่ FortuneReading ยังเป็น pending_payment
+        if (!$reading) {
+            $reading = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('amount_paid', $amount)
+                ->where('updated_at', '>=', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES + 30))
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            if ($reading) {
+                Log::info('SMS Payment: พบ Fortune Reading ผ่าน amount_paid fallback', [
+                    'notification_id' => $notification->id,
+                    'reading_id' => $reading->id,
+                    'amount' => $amount,
+                ]);
+            }
+        }
 
         if (!$reading) {
             return false;
@@ -513,5 +594,38 @@ class SmsPaymentService
         if (!empty($currentMessage)) {
             $facebookService->sendMessage($recipientId, trim($currentMessage));
         }
+    }
+
+    /**
+     * ค้นหา FortuneReading จาก unique amount ที่เพิ่งหมดอายุ (grace period)
+     *
+     * กรณีลูกค้าโอนเงินช้ากว่าเวลาที่กำหนด (60 นาที) แต่ unique amount
+     * เพิ่งหมดอายุไม่นาน (ภายใน 30 นาทีหลังหมดอายุ)
+     * → ยังสามารถจับคู่กับ FortuneReading ที่รอชำระเงินได้
+     *
+     * @param float $amount
+     * @return FortuneReading|null
+     */
+    protected function findFortuneReadingByExpiredAmount(float $amount): ?FortuneReading
+    {
+        // ค้นหา unique amount ที่หมดอายุแล้วแต่ยังอยู่ใน grace period (30 นาทีหลังหมดอายุ)
+        $gracePeriodMinutes = 30;
+
+        $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+            ->where('transaction_type', 'fortune_reading')
+            ->whereIn('status', ['reserved', 'expired'])
+            ->where('expires_at', '<=', now())
+            ->where('expires_at', '>', now()->subMinutes($gracePeriodMinutes))
+            ->orderBy('expires_at', 'desc')
+            ->lockForUpdate()
+            ->first();
+
+        if (!$uniquePayment) {
+            return null;
+        }
+
+        return FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
+            ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            ->first();
     }
 }
