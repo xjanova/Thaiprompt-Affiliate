@@ -114,7 +114,22 @@ class FortuneAstrologyController extends Controller
                 'friends' => $chaochana['friends'] ?? [],
                 'enemies' => $chaochana['enemies'] ?? [],
                 'lucky_color' => $chaochana['lucky_color'] ?? '',
-                'planet_positions' => $positions,
+                'planet_positions' => collect($positions)->map(function ($planets, $houseNum) {
+                    $house = FortuneChartService::HOUSES[$houseNum] ?? null;
+                    return [
+                        'house_number' => $houseNum,
+                        'house_name' => $house['name'] ?? "ภพ $houseNum",
+                        'planets' => collect($planets)->map(function ($pKey) {
+                            $p = FortuneChartService::PLANETS[$pKey] ?? null;
+                            return $p ? [
+                                'key' => $pKey,
+                                'name' => $p['name'],
+                                'symbol' => $p['symbol'],
+                                'color' => $p['color'],
+                            ] : null;
+                        })->filter()->values()->toArray(),
+                    ];
+                })->values()->toArray(),
             ]);
         } catch (\Exception $e) {
             Log::error('Astrology: test calculation failed', ['error' => $e->getMessage()]);

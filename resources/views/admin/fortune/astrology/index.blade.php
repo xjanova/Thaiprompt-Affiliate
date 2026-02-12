@@ -203,6 +203,35 @@
                             <span class="inline-flex items-center px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-full text-xs mr-1" x-text="e"></span>
                         </template>
                     </div>
+
+                    {{-- Planet Positions in Houses --}}
+                    <template x-if="testResult?.planet_positions?.length > 0">
+                        <div class="mt-3 pt-3 border-t border-purple-200 dark:border-purple-700">
+                            <p class="font-semibold text-purple-800 dark:text-purple-200 mb-2">🏛️ ตำแหน่งดาวในภพ:</p>
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
+                                <template x-for="pos in testResult.planet_positions" :key="pos.house_number">
+                                    <div class="bg-white/60 dark:bg-gray-700/60 rounded-lg p-2 text-center border border-purple-100 dark:border-purple-800">
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400" x-text="pos.house_name"></div>
+                                        <template x-if="pos.planets.length > 0">
+                                            <div>
+                                                <template x-for="pl in pos.planets" :key="pl.key">
+                                                    <span class="text-lg mx-0.5" :style="'color:' + pl.color" x-text="pl.symbol" :title="pl.name"></span>
+                                                </template>
+                                                <div class="text-[10px] font-medium text-gray-700 dark:text-gray-300">
+                                                    <template x-for="pl in pos.planets" :key="pl.key + '_name'">
+                                                        <span class="mr-0.5" x-text="pl.name"></span>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="pos.planets.length === 0">
+                                            <div class="text-lg text-gray-300 dark:text-gray-600">—</div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
