@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 class FortuneChartService
 {
     // ดาวเคราะห์ 9 ดวง
-    protected const PLANETS = [
+    public const PLANETS = [
         'sun'     => ['name' => 'อาทิตย์', 'symbol' => "\u{2609}", 'color' => '#FF6B35', 'day' => 0],
         'moon'    => ['name' => 'จันทร์',   'symbol' => "\u{263D}", 'color' => '#C0C0C0', 'day' => 1],
         'mars'    => ['name' => 'อังคาร',   'symbol' => "\u{2642}", 'color' => '#E74C3C', 'day' => 2],
@@ -29,7 +29,7 @@ class FortuneChartService
     ];
 
     // ภพ 12 ภพ
-    protected const HOUSES = [
+    public const HOUSES = [
         1  => ['name' => 'ตนุ',       'meaning' => 'ตัวตน',         'color' => '#E74C3C'],
         2  => ['name' => 'กดุมภ',     'meaning' => 'ทรัพย์',        'color' => '#F39C12'],
         3  => ['name' => 'สหัชชะ',    'meaning' => 'พี่น้อง',       'color' => '#2ECC71'],
@@ -45,7 +45,7 @@ class FortuneChartService
     ];
 
     // ตารางเจ้าชนะตามวันเกิด
-    protected const CHAOCHANA = [
+    public const CHAOCHANA = [
         0 => ['planet' => 'sun',     'friends' => ['jupiter', 'mars'],    'enemies' => ['saturn', 'rahu']],
         1 => ['planet' => 'moon',    'friends' => ['mercury', 'venus'],   'enemies' => ['rahu', 'saturn']],
         2 => ['planet' => 'mars',    'friends' => ['sun', 'jupiter'],     'enemies' => ['mercury', 'saturn']],
