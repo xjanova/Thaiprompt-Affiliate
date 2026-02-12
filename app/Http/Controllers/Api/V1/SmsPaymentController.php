@@ -1256,7 +1256,7 @@ class SmsPaymentController extends Controller
         }
 
         $amount = (float) $amount;
-        $graceMinutes = (int) config('smschecker.orphan_match_window', 60);
+        $graceMinutes = (int) config('smschecker.orphan.match_window_minutes', 60);
         $deviceStoreId = $this->resolveDeviceStoreId($device);
 
         // =====================================================================
@@ -1343,6 +1343,13 @@ class SmsPaymentController extends Controller
 
                     app(PaymentService::class)->completePayment($transaction);
                     $transaction = $transaction->fresh();
+
+                    // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
+                    try {
+                        $this->fcmService->notifyTransactionApproved($transaction, $device);
+                    } catch (\Exception $fcmEx) {
+                        Log::warning('FCM push for auto-approved match failed', ['error' => $fcmEx->getMessage()]);
+                    }
 
                     Log::info('SMS Payment: Auto-approved on match', [
                         'device_id' => $device->device_id,
@@ -1848,7 +1855,28 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
+        // Mark UniquePaymentAmount as used (เหมือน approveOrder)
+        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $txn->id)
+            ->whereIn('status', ['reserved', 'expired'])
+            ->first();
+        if ($uniqueAmount) {
+            $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+        }
+
+        // Update SMS notification status to confirmed (ถ้ามี)
+        $notification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+        if ($notification) {
+            $notification->update(['status' => 'confirmed']);
+        }
+
         app(PaymentService::class)->completePayment($txn);
+
+        // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
+        try {
+            $this->fcmService->notifyTransactionApproved($txn, $device);
+        } catch (\Exception $e) {
+            Log::warning('FCM push for encrypted approve failed', ['error' => $e->getMessage()]);
+        }
 
         // อัพเดท device activity
         $device->update([
@@ -1909,6 +1937,13 @@ class SmsPaymentController extends Controller
                 'payment_status' => 'failed',
                 'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
             ]);
+        }
+
+        // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
+        try {
+            $this->fcmService->notifyTransactionRejected($txn, $device);
+        } catch (\Exception $e) {
+            Log::warning('FCM push for encrypted reject failed', ['error' => $e->getMessage()]);
         }
 
         // อัพเดท device activity

@@ -28,7 +28,8 @@ return [
     'max_pending_per_amount' => env('SMSCHECKER_MAX_PENDING', 99),
 
     // จำกัด rate: จำนวน notifications สูงสุดต่ออุปกรณ์ต่อนาที
-    'rate_limit_per_minute' => env('SMSCHECKER_RATE_LIMIT', 30),
+    // ตั้ง 120 เพื่อไม่ block FCM token sync และ debug reports
+    'rate_limit_per_minute' => env('SMSCHECKER_RATE_LIMIT', 120),
 
     // ธนาคารที่รองรับ (15 ธนาคาร - ตรงกับ Android SmsChecker v1.9.1)
     'supported_banks' => [
@@ -52,11 +53,24 @@ return [
     // เวลาหมดอายุของ nonces (ชั่วโมง) - nonces เก่ากว่านี้จะถูกลบ
     'nonce_expiry_hours' => env('SMSCHECKER_NONCE_EXPIRY', 24),
 
-    // ยืนยัน payment อัตโนมัติเมื่อจับคู่สำเร็จ
-    'auto_confirm_matched' => env('SMSCHECKER_AUTO_CONFIRM', true),
+    /*
+    |--------------------------------------------------------------------------
+    | Default Approval Mode
+    |--------------------------------------------------------------------------
+    |
+    | โหมดอนุมัติเริ่มต้นสำหรับอุปกรณ์ใหม่
+    | สามารถเปลี่ยนแปลงได้ต่ออุปกรณ์ผ่าน Android app
+    |
+    | Options:
+    | - 'auto': อนุมัติอัตโนมัติเมื่อยอดตรงกัน 100%
+    | - 'manual': ทุกรายการต้องอนุมัติด้วยตัวเอง
+    | - 'smart': auto สำหรับ exact match, manual สำหรับ partial/suspicious
+    |
+    */
+    'default_approval_mode' => env('SMSCHECKER_DEFAULT_APPROVAL_MODE', 'auto'),
 
-    // ส่ง notification เมื่อจับคู่สำเร็จ
-    'notify_on_match' => env('SMSCHECKER_NOTIFY_ON_MATCH', true),
+    // ยืนยัน payment อัตโนมัติเมื่อจับคู่สำเร็จ (ผ่าน /orders/match endpoint)
+    'auto_confirm_matched' => env('SMSCHECKER_AUTO_CONFIRM_MATCHED', true),
 
     // ระดับ log: debug, info, warning
     'log_level' => env('SMSCHECKER_LOG_LEVEL', 'info'),
@@ -78,6 +92,63 @@ return [
 
         // Timeout สำหรับ sync request (วินาที)
         'timeout' => env('SMSCHECKER_SYNC_TIMEOUT', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification Settings
+    |--------------------------------------------------------------------------
+    |
+    | ตั้งค่าการแจ้งเตือนเมื่อจับคู่การชำระเงินสำเร็จ
+    |
+    */
+    'notifications' => [
+        // ส่ง LINE notification เมื่อจับคู่การชำระเงินได้
+        'line_on_match' => env('SMSCHECKER_LINE_ON_MATCH', true),
+
+        // ส่ง email notification เมื่อจับคู่การชำระเงินได้
+        'email_on_match' => env('SMSCHECKER_EMAIL_ON_MATCH', false),
+
+        // ส่ง FCM push notification เมื่อจับคู่การชำระเงินได้
+        'fcm_on_match' => env('SMSCHECKER_FCM_ON_MATCH', true),
+
+        // ส่ง FCM push notification เมื่อมีบิลใหม่
+        'fcm_on_new_order' => env('SMSCHECKER_FCM_ON_NEW_ORDER', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | WebSocket Settings
+    |--------------------------------------------------------------------------
+    |
+    | ตั้งค่าสำหรับ WebSocket/Pusher broadcasting (real-time updates)
+    |
+    */
+    'websocket' => [
+        // เปิด/ปิด real-time broadcasting
+        'enabled' => env('SMSCHECKER_WEBSOCKET_ENABLED', true),
+
+        // Channel prefix สำหรับ WebSocket
+        'channel_prefix' => env('SMSCHECKER_CHANNEL_PREFIX', 'sms-checker'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Orphan Transaction Settings
+    |--------------------------------------------------------------------------
+    |
+    | ตั้งค่าสำหรับจัดการ orphan transactions (SMS ที่ไม่ตรงกับบิลใดๆ ณ ขณะรับ)
+    |
+    */
+    'orphan' => [
+        // เก็บ orphan transactions กี่วันก่อนหมดอายุ
+        'retention_days' => env('SMSCHECKER_ORPHAN_RETENTION_DAYS', 7),
+
+        // ช่วงเวลา (นาที) ที่ยอมรับสำหรับค้นหาบิลที่ตรงกัน (grace period)
+        'match_window_minutes' => env('SMSCHECKER_ORPHAN_MATCH_WINDOW', 60),
+
+        // ค่าเผื่อทศนิยมสูงสุดสำหรับ amount matching
+        'amount_tolerance' => env('SMSCHECKER_ORPHAN_AMOUNT_TOLERANCE', 0.01),
     ],
 
     /*
