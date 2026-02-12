@@ -182,4 +182,16 @@ class UniquePaymentAmount extends Model
 
         return $query->lockForUpdate()->first();
     }
+
+    /**
+     * ยกเลิก unique amount (ปลดปล่อย suffix ให้ใช้ซ้ำได้)
+     *
+     * ใช้เมื่อ admin/Android app ปฏิเสธบิล หรือผู้ใช้ยกเลิก
+     *
+     * @return void
+     */
+    public function cancel(): void
+    {
+        $this->update(['status' => 'cancelled']);
+    }
 }

@@ -942,6 +942,14 @@ class SmsPaymentController extends Controller
                 'notes' => $reason,
             ]);
 
+            // ยกเลิก UniquePaymentAmount เพื่อปลดปล่อย suffix ให้ใช้ซ้ำได้
+            if ($model->unique_payment_amount_id) {
+                $uniqueAmount = UniquePaymentAmount::find($model->unique_payment_amount_id);
+                if ($uniqueAmount && in_array($uniqueAmount->status, ['reserved', 'expired'])) {
+                    $uniqueAmount->cancel();
+                }
+            }
+
             Log::info('SMS Payment: ปฏิเสธบิลดูดวงจากอุปกรณ์', [
                 'fortune_reading_id' => $model->id,
                 'bill_reference' => $model->bill_reference,
@@ -974,7 +982,30 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        $model->markAsFailed();
+        $model->markAsFailed($reason);
+
+        // ยกเลิก UniquePaymentAmount เพื่อปลดปล่อย suffix
+        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
+            ->whereIn('status', ['reserved', 'expired'])
+            ->first();
+        if ($uniqueAmount) {
+            $uniqueAmount->cancel();
+        }
+
+        // ยกเลิก SMS notification ที่เชื่อมโยง (ถ้ามี)
+        $matchedNotification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+        if ($matchedNotification) {
+            $matchedNotification->update(['status' => 'rejected']);
+        }
+
+        // ยกเลิก Order ที่เชื่อมโยง (ถ้ายัง pending)
+        if ($model->order_id && $model->order && $model->order->status === 'pending') {
+            $model->order->update([
+                'status' => 'cancelled',
+                'payment_status' => 'failed',
+                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
+            ]);
+        }
 
         Log::info('SMS Payment: ปฏิเสธ order จากอุปกรณ์', [
             'transaction_id' => $model->transaction_id,
@@ -1246,10 +1277,30 @@ class SmsPaymentController extends Controller
         // ถ้าไม่พบ PaymentTransaction ที่ตรง → ลอง match กับ FortuneReading
         // เฉพาะ admin device เท่านั้น (FortuneReading ไม่มี store_id)
         if (! $transaction && $this->deviceCanAccessFortuneReading($device)) {
-            // 1) ยังรอชำระ (pending_payment)
+            // 1) ยังรอชำระ (pending_payment) — unique amount ยังไม่หมดอายุ
             $fortuneReading = FortuneReading::findByUniqueAmount($amount);
 
-            // 2) /notify อาจ handle ไปแล้ว → ดูดวง status=paid/completed
+            // 2) Grace period — unique amount หมดอายุแล้วแต่ FortuneReading ยังรอชำระ/ถูก cleanup ปิดไปแล้ว
+            if (! $fortuneReading) {
+                $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
+                    ->where('transaction_type', 'fortune_reading')
+                    ->whereIn('status', ['reserved', 'expired'])
+                    ->where('expires_at', '>', now()->subMinutes(30))
+                    ->orderBy('expires_at', 'desc')
+                    ->first();
+
+                if ($uniquePayment) {
+                    $fortuneReading = FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
+                        ->where('is_paid', false)
+                        ->whereIn('conversation_status', [
+                            FortuneReading::STATUS_PENDING_PAYMENT,
+                            FortuneReading::STATUS_COMPLETED,
+                        ])
+                        ->first();
+                }
+            }
+
+            // 3) /notify อาจ handle ไปแล้ว → ดูดวง status=paid/completed
             if (! $fortuneReading) {
                 $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
                     ->where('transaction_type', 'fortune_reading')

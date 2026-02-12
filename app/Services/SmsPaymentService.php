@@ -465,10 +465,15 @@ class SmsPaymentService
             }
         }
 
-        // ขั้นที่ 3: Fallback — ค้นหาจาก amount_paid ตรงๆ ที่ยังรอชำระอยู่
-        // กรณี unique amount ถูกลบไปแล้ว แต่ FortuneReading ยังเป็น pending_payment
+        // ขั้นที่ 3: Fallback — ค้นหาจาก amount_paid ตรงๆ
+        // กรณี unique amount ถูกลบไปแล้ว แต่ FortuneReading ยังรอชำระ
+        // หรือ cleanup ปิดไปแล้ว (completed) แต่ SMS มาช้า → recover กลับมา
         if (!$reading) {
-            $reading = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            $reading = FortuneReading::whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว
+                ])
+                ->where('is_paid', false)
                 ->where('amount_paid', $amount)
                 ->where('updated_at', '>=', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES + 30))
                 ->orderBy('updated_at', 'desc')
@@ -479,12 +484,23 @@ class SmsPaymentService
                     'notification_id' => $notification->id,
                     'reading_id' => $reading->id,
                     'amount' => $amount,
+                    'was_status' => $reading->conversation_status,
                 ]);
             }
         }
 
         if (!$reading) {
             return false;
+        }
+
+        // Recovery: ถ้า reading ถูก cleanup ปิดไปแล้ว (completed) แต่ยังไม่ได้จ่าย → กู้คืนกลับมา
+        if ($reading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT && !$reading->is_paid) {
+            Log::info('SMS Payment: กู้คืน Fortune Reading ที่หมดอายุ/ถูกปิด กลับเป็น pending_payment', [
+                'reading_id' => $reading->id,
+                'old_status' => $reading->conversation_status,
+                'amount' => $amount,
+            ]);
+            $reading->update(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT]);
         }
 
         // ระบุ platform และ user ID ที่จะส่งข้อความ
@@ -624,8 +640,13 @@ class SmsPaymentService
             return null;
         }
 
+        // ค้นหา FortuneReading ที่ยังรอชำระ หรือ cleanup ปิดไปแล้ว (completed) แต่ยังไม่ได้จ่าย
         return FortuneReading::where('unique_payment_amount_id', $uniquePayment->id)
-            ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            ->where('is_paid', false)
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว → recover
+            ])
             ->first();
     }
 }
