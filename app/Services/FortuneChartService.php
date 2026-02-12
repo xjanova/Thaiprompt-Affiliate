@@ -143,7 +143,7 @@ class FortuneChartService
      * @param int $dayOfWeek 0-6
      * @return array [house_number => [planet_keys]]
      */
-    protected function calculatePlanetPositions(int $dayOfWeek): array
+    public function calculatePlanetPositions(int $dayOfWeek): array
     {
         $positions = array_fill(1, 12, []);
 
