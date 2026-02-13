@@ -675,8 +675,7 @@ class SmsPaymentController extends Controller
         // → ใช้ conversation_status เป็นหลักในการกรอง ไม่ต้องบังคับว่าต้องมี unique_payment_amount_id
         $fortuneReadings = collect();
         if ($this->deviceCanAccessFortuneReading($device)) {
-            $fortuneQuery = FortuneReading::query()
-                ->whereNotNull('bill_reference');
+            $fortuneQuery = FortuneReading::query();
 
             if ($status === 'waiting') {
                 $fortuneQuery->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT);
