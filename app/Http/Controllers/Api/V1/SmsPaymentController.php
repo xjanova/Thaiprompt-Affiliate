@@ -671,11 +671,10 @@ class SmsPaymentController extends Controller
 
         // === รวมบิลดูดวง (FortuneReading) ที่รอชำระเงินหรือชำระแล้ว ===
         // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้นที่เห็น
-        // แสดงเฉพาะ page 1 เพื่อไม่ให้ซ้ำในหน้าถัดไป
         // หมายเหตุ: บิลเก่าอาจไม่มี unique_payment_amount_id (สร้างก่อนระบบ SMS Checker)
         // → ใช้ conversation_status เป็นหลักในการกรอง ไม่ต้องบังคับว่าต้องมี unique_payment_amount_id
         $fortuneReadings = collect();
-        if ($paginated->currentPage() === 1 && $this->deviceCanAccessFortuneReading($device)) {
+        if ($this->deviceCanAccessFortuneReading($device)) {
             $fortuneQuery = FortuneReading::query()
                 ->whereNotNull('bill_reference');
 
