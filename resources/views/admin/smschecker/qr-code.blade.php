@@ -29,22 +29,49 @@
 
             {{-- QR Code Container --}}
             <div id="qrcode-container" class="flex justify-center mb-4">
-                <div id="qr-loading" class="w-[280px] h-[280px] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                    <div class="text-gray-400">
-                        <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
-                        <p class="text-sm">กำลังสร้าง QR Code...</p>
+                @if(!empty($qrCodeSvg))
+                    {{-- Server-side SVG QR Code (Error Correction H = สแกนได้ไวมาก) --}}
+                    <div id="qrcode-svg" class="p-4 bg-white rounded-2xl shadow-lg">
+                        {!! $qrCodeSvg !!}
                     </div>
-                </div>
+                @else
+                    {{-- Loading indicator สำหรับ JS fallback --}}
+                    <div id="qr-loading" class="w-[300px] h-[300px] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <div class="text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
+                            <p class="text-sm">กำลังสร้าง QR Code...</p>
+                        </div>
+                    </div>
+                @endif
             </div>
 
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+            @if(!empty($qrCodeSvg))
+            <div class="inline-flex items-center px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium mb-3">
+                <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                Error Correction H (สแกนไว)
+            </div>
+            @endif
+
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
                 เปิดแอพ SMS Checker → กดสแกน QR → เล็งกล้องไปที่ QR Code นี้
             </p>
 
             {{-- ปุ่มดาวน์โหลด QR Code --}}
-            <button id="download-qr" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold hidden">
+            <button id="download-qr" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold {{ empty($qrCodeSvg) ? 'hidden' : '' }}">
                 <i class="fas fa-download mr-1"></i> ดาวน์โหลด QR Code
             </button>
+
+            {{-- คำเตือน --}}
+            <div class="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800">
+                <p class="text-xs text-amber-700 dark:text-amber-300 flex items-start">
+                    <svg class="w-4 h-4 mr-1 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    อย่าแชร์ QR Code นี้กับผู้อื่น เพราะมี API Key สำหรับเข้าถึงระบบ
+                </p>
+            </div>
         </div>
 
         {{-- ข้อมูลการตั้งค่า (Manual) --}}
@@ -87,39 +114,69 @@
 @endsection
 
 @push('scripts')
-{{-- QR Code Library (qrcodejs) --}}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+{{-- QR Code JS Library (fallback เมื่อ server-side SVG ไม่พร้อม) --}}
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var qrData = @json($qrData);
     var qrText = typeof qrData === 'string' ? qrData : JSON.stringify(qrData);
     var container = document.getElementById('qrcode-container');
-    var loading = document.getElementById('qr-loading');
     var downloadBtn = document.getElementById('download-qr');
+    var hasSvg = !!document.getElementById('qrcode-svg');
+
+    if (hasSvg) {
+        // Server-side SVG QR มีอยู่แล้ว → ตั้งค่าดาวน์โหลดเท่านั้น
+        downloadBtn.addEventListener('click', function() {
+            var svgEl = document.querySelector('#qrcode-svg svg');
+            if (!svgEl) return;
+
+            // แปลง SVG → Canvas → PNG สำหรับดาวน์โหลด
+            var svgData = new XMLSerializer().serializeToString(svgEl);
+            var canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 600;
+            var ctx = canvas.getContext('2d');
+
+            var img = new Image();
+            img.onload = function() {
+                // พื้นขาว
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 600, 600);
+                ctx.drawImage(img, 0, 0, 600, 600);
+
+                var link = document.createElement('a');
+                link.download = 'smschecker-qr-{{ $device->device_id }}.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        });
+        return;
+    }
+
+    // === JS Fallback: สร้าง QR Code ด้วย qrcodejs ===
+    var loading = document.getElementById('qr-loading');
 
     if (typeof QRCode !== 'undefined') {
-        // ลบ loading indicator
-        loading.remove();
+        if (loading) loading.remove();
 
-        // สร้าง div สำหรับ QR Code
         var qrDiv = document.createElement('div');
         qrDiv.id = 'qrcode';
+        qrDiv.className = 'p-4 bg-white rounded-2xl shadow-lg';
         container.appendChild(qrDiv);
 
-        // สร้าง QR Code
-        var qr = new QRCode(qrDiv, {
+        // ใช้ correctLevel H เหมือน server-side (สแกนได้ไว)
+        new QRCode(qrDiv, {
             text: qrText,
-            width: 280,
-            height: 280,
+            width: 300,
+            height: 300,
             colorDark: '#000000',
             colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M,
+            correctLevel: QRCode.CorrectLevel.H,
         });
 
-        // แสดงปุ่มดาวน์โหลด
         downloadBtn.classList.remove('hidden');
         downloadBtn.addEventListener('click', function() {
-            // รอให้ QR Code render เสร็จ
             setTimeout(function() {
                 var canvas = qrDiv.querySelector('canvas');
                 var img = qrDiv.querySelector('img');
@@ -137,8 +194,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         });
     } else {
-        // Fallback: แสดง JSON data ให้ copy เมื่อโหลด library ไม่ได้
-        loading.remove();
+        // Fallback สุดท้าย: แสดง JSON data ให้ copy
+        if (loading) loading.remove();
         var fallback = document.createElement('div');
         fallback.className = 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-left max-w-sm mx-auto';
         fallback.innerHTML = '<p class="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2">' +

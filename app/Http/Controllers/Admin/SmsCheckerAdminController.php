@@ -10,6 +10,10 @@ use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
 use App\Services\FcmNotificationService;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -295,17 +299,42 @@ class SmsCheckerAdminController extends Controller
      */
     public function qrCode(SmsCheckerDevice $device)
     {
+        // Config format ตรงกับ xman studio version 2 (camelCase สำหรับ Android app)
         $qrData = [
             'type' => 'smschecker_config',
-            'version' => 1,
+            'version' => 2,
             'url' => config('app.url'),
             'apiKey' => $device->api_key,
             'secretKey' => $device->secret_key,
             'deviceId' => $device->device_id,
             'deviceName' => $device->device_name ?? $device->device_id,
+            'sync_interval' => (int) config('smschecker.sync.interval', 5),
         ];
 
-        return view('admin.smschecker.qr-code', compact('device', 'qrData'));
+        // สร้าง SVG QR Code server-side ด้วย BaconQrCode (สแกนได้เร็วกว่า JS)
+        // ใช้ Error Correction Level H (High) = recover 30% data loss → กล้องจับได้ไวมาก
+        $qrCodeSvg = '';
+        try {
+            $renderer = new ImageRenderer(
+                new RendererStyle(300, 1, null, null,
+                    \BaconQrCode\Renderer\RendererStyle\Fill::uniformColor(
+                        new \BaconQrCode\Renderer\Color\Rgb(255, 255, 255),
+                        new \BaconQrCode\Renderer\Color\Rgb(0, 0, 0)
+                    )
+                ),
+                new SvgImageBackEnd()
+            );
+            $writer = new Writer($renderer);
+            $qrCodeSvg = $writer->writeString(
+                json_encode($qrData),
+                \BaconQrCode\Encoder\Encoder::DEFAULT_BYTE_MODE_ECODING,
+                \BaconQrCode\Common\ErrorCorrectionLevel::H()
+            );
+        } catch (\Throwable $e) {
+            Log::warning('QR Code SVG generation failed, will use JS fallback: ' . $e->getMessage());
+        }
+
+        return view('admin.smschecker.qr-code', compact('device', 'qrData', 'qrCodeSvg'));
     }
 
     /**
@@ -318,12 +347,13 @@ class SmsCheckerAdminController extends Controller
     {
         return response()->json([
             'type' => 'smschecker_config',
-            'version' => 1,
+            'version' => 2,
             'url' => config('app.url'),
             'apiKey' => $device->api_key,
             'secretKey' => $device->secret_key,
             'deviceId' => $device->device_id,
             'deviceName' => $device->device_name ?? $device->device_id,
+            'sync_interval' => (int) config('smschecker.sync.interval', 5),
         ]);
     }
 
