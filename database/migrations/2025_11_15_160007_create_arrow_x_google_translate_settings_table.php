@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง google_translate_settings สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -27,7 +25,8 @@ return new class extends Migration
 
             // Default Settings
             $table->string('default_source_language', 5)->default('th')->comment('ภาษาต้นทาง');
-            $table->json('enabled_target_languages')->default(json_encode(['en', 'ja', 'zh', 'ko']))->comment('ภาษาที่เปิดใช้งาน');
+            // ⚠️ MySQL 8.0 ไม่รองรับ default value สำหรับ JSON column
+            $table->json('enabled_target_languages')->nullable()->comment('ภาษาที่เปิดใช้งาน');
 
             // Features
             $table->boolean('auto_detect_enabled')->default(true)->comment('ตรวจจับภาษาอัตโนมัติ');
@@ -60,8 +59,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง google_translate_settings
-     *
-     * @return void
      */
     public function down(): void
     {

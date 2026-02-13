@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง theme_settings สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -53,7 +51,9 @@ return new class extends Migration
 
             // Language Settings
             $table->string('default_language', 5)->default('th')->comment('th, en, etc.');
-            $table->json('available_languages')->default(json_encode(['th', 'en']));
+            // ⚠️ MySQL 8.0 ไม่รองรับ default value สำหรับ JSON column
+            // ใช้ nullable แทน - แอปจะ fallback เป็น ['th', 'en']
+            $table->json('available_languages')->nullable();
             $table->boolean('rtl_enabled')->default(false);
 
             // Created/Updated
@@ -66,8 +66,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_settings
-     *
-     * @return void
      */
     public function down(): void
     {

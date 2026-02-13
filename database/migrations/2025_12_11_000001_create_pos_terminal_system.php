@@ -16,16 +16,15 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตาราง API Keys สำหรับ POS
-        if (!Schema::hasTable('pos_api_keys')) {
+        if (! Schema::hasTable('pos_api_keys')) {
             Schema::create('pos_api_keys', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
+                // ⚠️ ใช้ unsignedBigInteger แทน constrained() เพราะตาราง shops อาจยังไม่มี
+                $table->unsignedBigInteger('shop_id')->comment('Shop ID');
                 $table->string('name')->comment('ชื่อ API Key เช่น "สาขาหลัก"');
                 $table->string('key', 64)->unique()->comment('API Key (เก็บ hashed)');
                 $table->string('key_prefix', 8)->comment('ตัวอักษรต้น key สำหรับแสดง');
@@ -44,11 +43,12 @@ return new class extends Migration
         }
 
         // ตาราง POS Terminals
-        if (!Schema::hasTable('pos_terminals')) {
+        if (! Schema::hasTable('pos_terminals')) {
             Schema::create('pos_terminals', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('api_key_id')->constrained('pos_api_keys')->onDelete('cascade');
-                $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
+                // ⚠️ ใช้ unsignedBigInteger แทน constrained() เพราะตาราง shops อาจยังไม่มี
+                $table->unsignedBigInteger('shop_id')->comment('Shop ID');
                 $table->string('product_key', 50)->unique()->comment('Product Key ที่ generate จากเครื่อง');
                 $table->string('device_id', 100)->comment('Device ID (hardware fingerprint)');
                 $table->string('device_name')->default('POS Terminal')->comment('ชื่อเครื่อง');
@@ -71,11 +71,12 @@ return new class extends Migration
         }
 
         // ตารางรายงานยอดขายรายวัน
-        if (!Schema::hasTable('pos_daily_reports')) {
+        if (! Schema::hasTable('pos_daily_reports')) {
             Schema::create('pos_daily_reports', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('pos_terminal_id')->constrained('pos_terminals')->onDelete('cascade');
-                $table->foreignId('shop_id')->constrained('shops')->onDelete('cascade');
+                // ⚠️ ใช้ unsignedBigInteger แทน constrained() เพราะตาราง shops อาจยังไม่มี
+                $table->unsignedBigInteger('shop_id')->comment('Shop ID');
                 $table->date('report_date')->comment('วันที่รายงาน');
                 $table->decimal('total_sales', 12, 2)->default(0)->comment('ยอดขายรวม');
                 $table->integer('total_orders')->default(0)->comment('จำนวนออเดอร์');
@@ -97,28 +98,30 @@ return new class extends Migration
         }
 
         // เพิ่มคอลัมน์ในตาราง orders สำหรับ POS
-        Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'pos_terminal_id')) {
-                $table->foreignId('pos_terminal_id')->nullable()->after('shop_id')
-                    ->constrained('pos_terminals')->nullOnDelete()
-                    ->comment('เครื่อง POS ที่สร้าง order');
-            }
-            if (!Schema::hasColumn('orders', 'pos_local_id')) {
-                $table->string('pos_local_id', 50)->nullable()->after('pos_terminal_id')
-                    ->comment('Local ID จากเครื่อง POS');
-            }
-            if (!Schema::hasColumn('orders', 'pos_synced_at')) {
-                $table->timestamp('pos_synced_at')->nullable()->after('pos_local_id')
-                    ->comment('เวลาที่ sync จาก POS');
-            }
-        });
+        if (Schema::hasTable('orders')) {
+            Schema::table('orders', function (Blueprint $table) {
+                if (! Schema::hasColumn('orders', 'pos_terminal_id')) {
+                    // ⚠️ ไม่ใช้ after('shop_id') เพราะคอลัมน์ shop_id อาจไม่มี
+                    $table->unsignedBigInteger('pos_terminal_id')->nullable()
+                        ->comment('เครื่อง POS ที่สร้าง order');
+                }
+                if (! Schema::hasColumn('orders', 'pos_local_id')) {
+                    $table->string('pos_local_id', 50)->nullable()
+                        ->comment('Local ID จากเครื่อง POS');
+                }
+                if (! Schema::hasColumn('orders', 'pos_synced_at')) {
+                    $table->timestamp('pos_synced_at')->nullable()
+                        ->comment('เวลาที่ sync จาก POS');
+                }
+            });
+        }
 
         // เพิ่ม index สำหรับ POS orders
         Schema::table('orders', function (Blueprint $table) {
             // ตรวจสอบว่ามี index อยู่แล้วหรือไม่
             $indexNames = collect(Schema::getIndexes('orders'))->pluck('name')->toArray();
 
-            if (!in_array('orders_pos_terminal_local_idx', $indexNames)) {
+            if (! in_array('orders_pos_terminal_local_idx', $indexNames)) {
                 $table->index(['pos_terminal_id', 'pos_local_id'], 'orders_pos_terminal_local_idx');
             }
         });
@@ -126,8 +129,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

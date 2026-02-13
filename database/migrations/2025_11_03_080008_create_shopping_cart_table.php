@@ -7,10 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * สร้างตาราง shopping_cart สำหรับระบบตะกร้าสินค้า
      */
     public function up(): void
     {
+        if (Schema::hasTable('shopping_cart')) {
+            return;
+        }
+
         Schema::create('shopping_cart', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -23,7 +27,9 @@ return new class extends Migration
 
             // Indexes
             $table->index(['user_id']);
-            $table->unique(['user_id', 'product_id', 'selected_attributes']); // Prevent duplicate items
+            // ⚠️ ไม่สามารถสร้าง UNIQUE index บน JSON column ได้ใน MySQL 8.0
+            // ใช้ unique index เฉพาะ user_id + product_id แทน
+            $table->unique(['user_id', 'product_id'], 'cart_user_product_unique');
         });
     }
 

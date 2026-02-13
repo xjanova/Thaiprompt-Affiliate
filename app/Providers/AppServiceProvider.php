@@ -5,10 +5,10 @@ namespace App\Providers;
 use App\Events\NewTransactionCreated;
 use App\Listeners\SendNewTransactionFcmNotification;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -117,12 +117,20 @@ class AppServiceProvider extends ServiceProvider
      * ตรวจสอบวันละครั้งว่ามี migration ค้างหรือไม่
      * ถ้ามี จะรันให้อัตโนมัติเพื่อให้ระบบพร้อมใช้งานเสมอ
      * ใช้ cache file เพื่อไม่ให้ตรวจสอบทุก request
-     *
-     * @return void
      */
     protected function autoRunPendingMigrations(): void
     {
         try {
+            // ข้ามถ้ากำลังรัน migrate command อยู่แล้ว (ป้องกัน nested migration
+            // ที่อาจทำให้เกิดสถานะ partial - ตารางถูกสร้างแต่ migration ไม่ถูกบันทึก)
+            if ($this->app->runningInConsole()) {
+                $argv = $_SERVER['argv'] ?? [];
+                $command = implode(' ', $argv);
+                if (str_contains($command, 'migrate')) {
+                    return;
+                }
+            }
+
             // ใช้ file cache เพื่อตรวจสอบวันละครั้ง (ไม่ใช้ DB cache เพราะ DB อาจยังไม่พร้อม)
             $cacheFile = storage_path('framework/cache/migration_check.txt');
             $today = date('Y-m-d');
@@ -140,7 +148,7 @@ class AppServiceProvider extends ServiceProvider
             file_put_contents($cacheFile, $today);
 
             // Log ถ้ามี migration ที่รัน
-            if (!str_contains($output, 'Nothing to migrate')) {
+            if (! str_contains($output, 'Nothing to migrate')) {
                 \Log::info('Auto-migration: รัน pending migrations สำเร็จ', [
                     'output' => trim($output),
                 ]);
@@ -160,8 +168,6 @@ class AppServiceProvider extends ServiceProvider
      * - Session storage error เมื่อ storage/framework/sessions ไม่มีอยู่
      * - Cache error เมื่อ storage/framework/cache ไม่มีอยู่
      * - View error เมื่อ storage/framework/views ไม่มีอยู่
-     *
-     * @return void
      */
     protected function ensureStorageDirectoriesExist(): void
     {
@@ -174,7 +180,7 @@ class AppServiceProvider extends ServiceProvider
         ];
 
         foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 try {
                     mkdir($directory, 0755, true);
                 } catch (\Exception $e) {
