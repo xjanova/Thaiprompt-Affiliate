@@ -535,6 +535,23 @@ class SmsPaymentService
                 $facebookService->sendTypingIndicator($userId, false);
             }
 
+            // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+            $chartUrl = $result['chart_image_url'] ?? null;
+            if ($chartUrl) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $chartUrl);
+                        usleep(500000); // 0.5 วินาที ให้ภาพส่งก่อน
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('SMS Payment: Failed to send chart image', [
+                        'error' => $imgErr->getMessage(),
+                        'chart_url' => $chartUrl,
+                    ]);
+                }
+            }
+
             // ส่งคำทำนายผ่าน Channel Manager (รองรับทุก platform)
             if (!empty($result['message'])) {
                 $channelManager->sendResponse($platform, $userId, $result);

@@ -1330,6 +1330,23 @@ class FortuneConversationService
             $name = $reading->facebook_user_name ?? 'คุณ';
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
+            // สร้าง Birth Chart ใหม่จากวันเกิดจริง (ส่งก่อนคำทำนาย)
+            $chartImageUrl = null;
+            try {
+                if ($birthDate) {
+                    $chartImageUrl = $this->chartService->generateBirthChart(
+                        $birthDate, $name, $userProfile['gender'] ?? null
+                    );
+                    if ($chartImageUrl) {
+                        $reading->update(['reading_image_url' => $chartImageUrl]);
+                    }
+                }
+            } catch (\Exception $chartErr) {
+                Log::warning('Fortune Deep: Failed to generate birth chart', [
+                    'error' => $chartErr->getMessage(),
+                ]);
+            }
+
             // ทำนายทีละคำถาม
             $deepReadings = [];
             $totalTokens = 0;
@@ -1401,6 +1418,7 @@ class FortuneConversationService
                 'deep_readings' => $deepReadings,
                 'thank_you' => $thankYouMessage,
                 'reading' => $reading,
+                'chart_image_url' => $chartImageUrl,
             ];
 
         } catch (\Exception $e) {

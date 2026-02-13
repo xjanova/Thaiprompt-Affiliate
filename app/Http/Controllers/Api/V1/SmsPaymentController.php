@@ -769,12 +769,20 @@ class SmsPaymentController extends Controller
                 ]);
             }
 
-            $model->confirmPayment();
+            // ค้นหา SMS notification ที่จับคู่กับบิลนี้
+            $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+            $model->confirmPayment($notification);
+
+            // อัพเดท notification สถานะเป็น confirmed
+            if ($notification) {
+                $notification->update(['status' => 'confirmed']);
+            }
 
             Log::info('SMS Payment: อนุมัติบิลดูดวงจากอุปกรณ์', [
                 'fortune_reading_id' => $model->id,
                 'bill_reference' => $model->bill_reference,
                 'device_id' => $device->device_id,
+                'sms_notification_id' => $notification?->id,
             ]);
 
             return response()->json([
@@ -1981,7 +1989,28 @@ class SmsPaymentController extends Controller
             ]);
         }
 
-        $reading->confirmPayment();
+        // ค้นหา SMS notification ที่ตรงกับบิลนี้ (จับคู่ด้วย amount + สถานะ matched)
+        $notification = SmsPaymentNotification::where('matched_transaction_id', $reading->id)
+            ->first();
+
+        // ถ้าไม่พบจาก matched_transaction_id → ลองหาจากยอดเงินที่ตรงกัน
+        if (!$notification && !empty($payload['amount'])) {
+            $notification = SmsPaymentNotification::where('amount', $payload['amount'])
+                ->where('type', 'credit')
+                ->whereIn('status', ['matched', 'pending'])
+                ->orderBy('created_at', 'desc')
+                ->first();
+        }
+
+        $reading->confirmPayment($notification);
+
+        // อัพเดท notification สถานะเป็น confirmed
+        if ($notification) {
+            $notification->update([
+                'status' => 'confirmed',
+                'matched_transaction_id' => $reading->id,
+            ]);
+        }
 
         // อัพเดท device activity
         $device->update([
@@ -1996,6 +2025,7 @@ class SmsPaymentController extends Controller
             'bill_reference' => $reading->bill_reference,
             'amount' => $payload['amount'],
             'device_id' => $device->device_id,
+            'sms_notification_id' => $notification?->id,
         ]);
 
         return response()->json([

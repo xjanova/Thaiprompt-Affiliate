@@ -289,6 +289,19 @@ class FortuneChannelManager
             return $lineService->sendMessage($userId, $result['message'] ?? '');
         }
 
+        // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $lineService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $imgErr) {
+                Log::warning('FortuneChannelManager: Failed to send LINE chart image', [
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
         // ส่งคำทำนายทีละคำถาม
         foreach ($deepReadings as $dr) {
             $questionNum = $dr['question_number'];
@@ -419,6 +432,19 @@ class FortuneChannelManager
         if ($platformService && !empty($deepReadings)) {
             // ใช้ from_admin เพราะเป็นการส่งคำทำนายหลังชำระเงิน อาจเกิน 24 ชม.
             $sendOptions = ['from_admin' => true];
+
+            // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+            $chartUrl = $result['chart_image_url'] ?? null;
+            if ($chartUrl) {
+                try {
+                    $platformService->sendImage($userId, $chartUrl);
+                    usleep(500000);
+                } catch (\Exception $imgErr) {
+                    Log::warning('FortuneChannelManager: Failed to send chart image', [
+                        'error' => $imgErr->getMessage(),
+                    ]);
+                }
+            }
 
             foreach ($deepReadings as $dr) {
                 $message = "═══════════════════════\n";
