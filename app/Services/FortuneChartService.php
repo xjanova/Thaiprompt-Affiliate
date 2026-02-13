@@ -330,7 +330,7 @@ class FortuneChartService
             $tx = $cx + ($outerR - 25) * cos($midAngle);
             $ty = $cy + ($outerR - 25) * sin($midAngle);
             $label = "{$i}.{$house['name']}";
-            $this->drawCenteredText($img, $thaiFont, 11, $tx, $ty, $label, $houseColor);
+            $this->drawCenteredText($img, $thaiFont, 13, $tx, $ty, $label, $houseColor);
 
             // ดาวเคราะห์ในภพ
             $planets = $chartData['planetPositions'][$i] ?? [];
@@ -350,10 +350,10 @@ class FortuneChartService
                     imagefilledellipse($img, (int)$px, (int)$py, 30, 30, $bgPlanet);
 
                     // สัญลักษณ์ดาว (ใช้ symbol font)
-                    $this->drawCenteredText($img, $symbolFont, 16, $px, $py - 2, $planet['symbol'], $planetColor);
+                    $this->drawCenteredText($img, $symbolFont, 18, $px, $py - 2, $planet['symbol'], $planetColor);
 
                     // ชื่อดาว (ภาษาไทย)
-                    $this->drawCenteredText($img, $thaiFont, 9, $px, $py + 14, $planet['name'], $planetColor);
+                    $this->drawCenteredText($img, $thaiFont, 11, $px, $py + 16, $planet['name'], $planetColor);
                 }
             }
         }
@@ -364,35 +364,35 @@ class FortuneChartService
         if ($chartData['isFullChart']) {
             $mainColor = $this->hexColor($img, $chartData['mainPlanetColor'] ?? '#FFD700');
 
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy - 55, 'BIRTH CHART', $gold);
-            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 33, $name, $white);
-            $this->drawCenteredText($img, $thaiFont, 12, $cx, $cy - 13, "วัน{$chartData['dayOfWeek']}", $purpleLight);
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 5, $chartData['birthDate'], $gray);
+            $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy - 55, 'BIRTH CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 33, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy - 13, "วัน{$chartData['dayOfWeek']}", $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 7, $chartData['birthDate'], $gray);
 
             // ดาวเจ้าชนะ (symbol ใหญ่)
-            $this->drawCenteredText($img, $symbolFont, 26, $cx, $cy + 32, $chartData['mainPlanetSymbol'], $mainColor);
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 55, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
+            $this->drawCenteredText($img, $symbolFont, 30, $cx, $cy + 35, $chartData['mainPlanetSymbol'], $mainColor);
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 58, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
 
             // มิตร/ศัตรู
             $friendNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
             $enemyNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
-            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 75, "มิตร: {$friendNames}", $green);
-            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 92, "ศัตรู: {$enemyNames}", $red);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 78, "มิตร: {$friendNames}", $green);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 95, "ศัตรู: {$enemyNames}", $red);
         } else {
             // Quick chart (ไม่มีวันเกิด)
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy - 50, 'TRANSIT CHART', $gold);
-            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 25, $name, $white);
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy, 'ดวงดาวโคจรขณะนี้', $purpleLight);
-            $this->drawCenteredText($img, $thaiFont, 10, $cx, $cy + 20, $chartData['transitDate'], $gray);
-            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 70, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleFaint);
+            $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy - 50, 'TRANSIT CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 25, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy, 'ดวงดาวโคจรขณะนี้', $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 12, $cx, $cy + 20, $chartData['transitDate'], $gray);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 70, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleFaint);
         }
 
         // === หัวเรื่องด้านบน ===
-        $this->drawCenteredText($img, $thaiFont, 20, $cx, 32, '~~ แม่หมอจันทรา ~~', $gold);
-        $this->drawCenteredText($img, $thaiFont, 10, $cx, 55, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
+        $this->drawCenteredText($img, $thaiFont, 22, $cx, 32, '~~ จันทราพยากรณ์ ~~', $gold);
+        $this->drawCenteredText($img, $thaiFont, 12, $cx, 58, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
 
         // === Footer ===
-        $this->drawCenteredText($img, $thaiFont, 9, $cx, $height - 20, 'holyzonethailand | Powered by AI Astrology', $grayDark);
+        $this->drawCenteredText($img, $thaiFont, 10, $cx, $height - 20, 'จันทราพยากรณ์ | Powered by Xman Studio', $grayDark);
 
         // === Export PNG ===
         ob_start();
@@ -575,7 +575,7 @@ SVG;
             // ชื่อภพ (วงนอก)
             $tx = $cx + ($outerR - 22) * cos(deg2rad(($i - 1) * 30 - 90 + 15));
             $ty = $cy + ($outerR - 22) * sin(deg2rad(($i - 1) * 30 - 90 + 15));
-            $svg .= "<text x=\"{$tx}\" y=\"{$ty}\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$house['color']}\" font-size=\"11\" font-weight=\"bold\" opacity=\"0.9\">{$i}.{$house['name']}</text>\n";
+            $svg .= "<text x=\"{$tx}\" y=\"{$ty}\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$house['color']}\" font-size=\"13\" font-weight=\"bold\" opacity=\"0.9\">{$i}.{$house['name']}</text>\n";
 
             // ดาวเคราะห์ในภพ
             $planets = $chartData['planetPositions'][$i] ?? [];
@@ -592,10 +592,10 @@ SVG;
                     $py = $cy + ($planetR + $offset) * sin($baseAngle);
 
                     // วงกลมรอบดาว
-                    $svg .= "<circle cx=\"{$px}\" cy=\"{$py}\" r=\"14\" fill=\"{$planet['color']}\" opacity=\"0.2\"/>\n";
-                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 1) . "\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$planet['color']}\" font-size=\"16\" font-weight=\"bold\">{$planet['symbol']}</text>\n";
-                    // ชื่อดาวเล็กๆ ด้านล่าง
-                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 16) . "\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"10\" opacity=\"0.9\">{$planet['name']}</text>\n";
+                    $svg .= "<circle cx=\"{$px}\" cy=\"{$py}\" r=\"16\" fill=\"{$planet['color']}\" opacity=\"0.2\"/>\n";
+                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 1) . "\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$planet['color']}\" font-size=\"18\" font-weight=\"bold\">{$planet['symbol']}</text>\n";
+                    // ชื่อดาว ด้านล่าง
+                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 18) . "\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"12\" opacity=\"0.9\">{$planet['name']}</text>\n";
                 }
             }
         }
@@ -606,36 +606,36 @@ SVG;
         if ($chartData['isFullChart']) {
             // Birth chart
             $mainColor = $chartData['mainPlanetColor'] ?? '#FFD700';
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 50) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"13\" font-weight=\"bold\" filter=\"url(#textGlow)\">BIRTH CHART</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 30) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"16\" font-weight=\"bold\">{$name}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 10) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"12\">วัน{$chartData['dayOfWeek']}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 10) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"11\">{$chartData['birthDate']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 55) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">BIRTH CHART</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 33) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 13) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"14\">วัน{$chartData['dayOfWeek']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 7) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"13\">{$chartData['birthDate']}</text>\n";
 
             // ดาวเจ้าชนะ
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 35) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"28\" filter=\"url(#textGlow)\">{$chartData['mainPlanetSymbol']}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 55) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"11\" font-weight=\"bold\">ดาวเจ้าชนะ: {$chartData['mainPlanet']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 35) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"30\" filter=\"url(#textGlow)\">{$chartData['mainPlanetSymbol']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 58) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"13\" font-weight=\"bold\">ดาวเจ้าชนะ: {$chartData['mainPlanet']}</text>\n";
 
             // Legend มิตร/ศัตรู
             $friendNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
             $enemyNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 75) . "\" text-anchor=\"middle\" fill=\"#4ADE80\" font-size=\"9\">มิตร: {$friendNames}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 90) . "\" text-anchor=\"middle\" fill=\"#F87171\" font-size=\"9\">ศัตรู: {$enemyNames}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 78) . "\" text-anchor=\"middle\" fill=\"#4ADE80\" font-size=\"11\">มิตร: {$friendNames}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 95) . "\" text-anchor=\"middle\" fill=\"#F87171\" font-size=\"11\">ศัตรู: {$enemyNames}</text>\n";
         } else {
             // Quick chart (ไม่มีวันเกิด)
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 45) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"13\" font-weight=\"bold\" filter=\"url(#textGlow)\">TRANSIT CHART</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 20) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"16\" font-weight=\"bold\">{$name}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 5) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"11\">ดวงดาวโคจรขณะนี้</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 25) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"10\">{$chartData['transitDate']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 50) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">TRANSIT CHART</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 25) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"13\">ดวงดาวโคจรขณะนี้</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 20) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"12\">{$chartData['transitDate']}</text>\n";
             $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 55) . "\" text-anchor=\"middle\" fill=\"#8B5CF6\" font-size=\"32\" filter=\"url(#textGlow)\">\u{2728}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 80) . "\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"9\">บอกวันเกิดเพื่อดู Birth Chart</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 80) . "\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"11\">บอกวันเกิดเพื่อดู Birth Chart</text>\n";
         }
 
         // Title ด้านบน
-        $svg .= "<text x=\"{$cx}\" y=\"30\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"18\" font-weight=\"bold\" filter=\"url(#textGlow)\">~~ แม่หมอจันทรา ~~</text>\n";
-        $svg .= "<text x=\"{$cx}\" y=\"50\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"10\">โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"30\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"22\" font-weight=\"bold\" filter=\"url(#textGlow)\">~~ จันทราพยากรณ์ ~~</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"55\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"12\">โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ</text>\n";
 
         // Footer
-        $svg .= "<text x=\"{$cx}\" y=\"" . ($height - 20) . "\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"9\">holyzonethailand | Powered by AI Astrology</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"" . ($height - 20) . "\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"10\">จันทราพยากรณ์ | Powered by Xman Studio</text>\n";
 
         $svg .= "</svg>";
 
