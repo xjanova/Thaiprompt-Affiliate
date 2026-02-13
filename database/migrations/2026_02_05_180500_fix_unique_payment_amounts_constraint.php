@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * แก้ไข unique constraint ที่ผิดพลาดใน unique_payment_amounts
@@ -32,21 +32,22 @@ return new class extends Migration
             ->delete();
 
         // ลบ unique index ที่ผิดพลาด (ถ้ามี)
-        Schema::table('unique_payment_amounts', function (Blueprint $table) {
-            // ลอง drop unique index ที่อาจถูกสร้างโดย mistake
-            try {
+        $indexNames = collect(Schema::getIndexes('unique_payment_amounts'))->pluck('name')->toArray();
+
+        if (in_array('unique_payment_amounts_base_amount_decimal_suffix_status_unique', $indexNames)) {
+            Schema::table('unique_payment_amounts', function (Blueprint $table) {
                 $table->dropUnique('unique_payment_amounts_base_amount_decimal_suffix_status_unique');
-            } catch (\Exception $e) {
-                // Index อาจไม่มีอยู่ - skip
-            }
-        });
+            });
+        }
 
         // สร้าง index ที่ถูกต้อง (ไม่ใช่ unique, เฉพาะ reserved เท่านั้น)
         // เพื่อให้ query หา suffix ที่ว่างได้เร็ว
-        Schema::table('unique_payment_amounts', function (Blueprint $table) {
-            // Index สำหรับหา reserved suffixes ที่ยังไม่หมดอายุ
-            $table->index(['base_amount', 'status', 'expires_at'], 'upa_base_status_expires_idx');
-        });
+        if (! in_array('upa_base_status_expires_idx', $indexNames)) {
+            Schema::table('unique_payment_amounts', function (Blueprint $table) {
+                // Index สำหรับหา reserved suffixes ที่ยังไม่หมดอายุ
+                $table->index(['base_amount', 'status', 'expires_at'], 'upa_base_status_expires_idx');
+            });
+        }
     }
 
     /**
