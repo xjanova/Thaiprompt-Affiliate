@@ -102,6 +102,46 @@ class FortuneChartService
     }
 
     /**
+     * สร้าง birth chart แบบ SVG (สำหรับ admin preview ในเบราว์เซอร์)
+     *
+     * @return string|null data URI ของ SVG
+     */
+    public function generateBirthChartSvg(string $birthDate, string $name, ?string $gender = null): ?string
+    {
+        try {
+            $date = Carbon::parse($birthDate);
+            $dayOfWeek = $date->dayOfWeek;
+
+            $planetPositions = $this->calculatePlanetPositions($dayOfWeek);
+            $chaochana = self::CHAOCHANA[$dayOfWeek];
+            $mainPlanet = self::PLANETS[$chaochana['planet']];
+
+            $thaiDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+            $chartData = [
+                'name' => $name,
+                'birthDate' => $date->format('d/m/') . ($date->year + 543),
+                'dayOfWeek' => $thaiDays[$dayOfWeek],
+                'mainPlanet' => $mainPlanet['name'],
+                'mainPlanetSymbol' => $mainPlanet['symbol'],
+                'mainPlanetColor' => $mainPlanet['color'],
+                'planetPositions' => $planetPositions,
+                'chaochana' => $chaochana,
+                'isFullChart' => true,
+            ];
+
+            $svg = $this->buildSvgChart($chartData);
+            return 'data:image/svg+xml;base64,' . base64_encode($svg);
+
+        } catch (\Exception $e) {
+            Log::warning('FortuneChart: Failed to generate SVG chart', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * สร้าง chart แบบด่วน (ไม่มีวันเกิด) - แสดงดวงดาวช่วงปัจจุบัน
      *
      * @param string $name ชื่อผู้ใช้

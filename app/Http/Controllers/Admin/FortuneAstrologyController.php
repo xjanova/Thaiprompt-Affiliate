@@ -57,7 +57,7 @@ class FortuneAstrologyController extends Controller
 
         try {
             $chartService = new FortuneChartService();
-            $chartUrl = $chartService->generateBirthChart(
+            $chartUrl = $chartService->generateBirthChartSvg(
                 $request->birth_date,
                 $request->name,
                 $request->gender
