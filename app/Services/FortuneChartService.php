@@ -88,12 +88,13 @@ class FortuneChartService
                 'isFullChart' => true,
             ];
 
-            $svg = $this->buildSvgChart($chartData);
-            return $this->saveSvgAsImage($svg, "birth-chart-{$dayOfWeek}");
+            $pngData = $this->buildPngChart($chartData);
+            return $this->saveChartAsImage($pngData, "birth-chart-{$dayOfWeek}");
 
         } catch (\Exception $e) {
             Log::warning('FortuneChart: Failed to generate birth chart', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'birthDate' => $birthDate,
             ]);
             return null;
@@ -125,8 +126,8 @@ class FortuneChartService
                 'transitDate' => $now->format('d/m/') . ($now->year + 543),
             ];
 
-            $svg = $this->buildSvgChart($chartData);
-            return $this->saveSvgAsImage($svg, "quick-chart");
+            $pngData = $this->buildPngChart($chartData);
+            return $this->saveChartAsImage($pngData, "quick-chart");
 
         } catch (\Exception $e) {
             Log::warning('FortuneChart: Failed to generate quick chart', [
@@ -203,7 +204,259 @@ class FortuneChartService
     }
 
     /**
-     * สร้าง SVG chart
+     * สร้าง PNG chart ด้วย GD — รองรับภาษาไทย + ใช้ได้ใน Facebook/LINE
+     *
+     * @param array $chartData ข้อมูล chart
+     * @return string PNG binary data
+     */
+    protected function buildPngChart(array $chartData): string
+    {
+        $width = 800;
+        $height = 800;
+        $cx = $width / 2;
+        $cy = $height / 2;
+        $outerR = 340;
+        $innerR = 220;
+        $centerR = 130;
+
+        // สร้าง canvas
+        $img = imagecreatetruecolor($width, $height);
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
+
+        // โหลดฟอนต์
+        $thaiFont = $this->getThaiFont();
+        $symbolFont = $this->getSymbolFont();
+
+        // === สีที่ใช้ ===
+        $bgColor = $this->hexColor($img, '#0d0521');
+        $bgInner = $this->hexColor($img, '#1a0a3e');
+        $purple = $this->hexColor($img, '#8B5CF6');
+        $purpleDark = $this->hexColor($img, '#6D28D9');
+        $purpleLight = $this->hexColor($img, '#A78BFA');
+        $purpleFaint = $this->hexColor($img, '#C4B5FD');
+        $gold = $this->hexColor($img, '#FFD700');
+        $white = $this->hexColor($img, '#FFFFFF');
+        $gray = $this->hexColor($img, '#D1D5DB');
+        $grayDark = $this->hexColor($img, '#6B7280');
+        $green = $this->hexColor($img, '#4ADE80');
+        $red = $this->hexColor($img, '#F87171');
+
+        // === พื้นหลัง ===
+        imagefilledrectangle($img, 0, 0, $width, $height, $bgColor);
+
+        // ดาวกะพริบ (decorative)
+        for ($i = 0; $i < 60; $i++) {
+            $sx = rand(10, $width - 10);
+            $sy = rand(10, $height - 10);
+            $sr = rand(1, 2);
+            $starColor = imagecolorallocatealpha($img, 255, 255, 255, rand(40, 100));
+            imagefilledellipse($img, $sx, $sy, $sr * 2, $sr * 2, $starColor);
+        }
+
+        // Glow ตรงกลาง (วงกลมโปร่งใส)
+        for ($r = $outerR; $r > $centerR; $r -= 5) {
+            $alpha = (int)(127 - (127 - 100) * ($r - $centerR) / ($outerR - $centerR));
+            $glowColor = imagecolorallocatealpha($img, 139, 92, 246, $alpha);
+            imagefilledellipse($img, (int)$cx, (int)$cy, $r * 2, $r * 2, $glowColor);
+        }
+
+        // === วงกลม 3 ชั้น ===
+        // วงนอก
+        $this->drawCircle($img, $cx, $cy, $outerR, $purple, 2);
+        // วงใน
+        $this->drawCircle($img, $cx, $cy, $innerR, $purpleDark, 2);
+        // วงกลาง (filled)
+        imagefilledellipse($img, (int)$cx, (int)$cy, $centerR * 2, $centerR * 2, $bgInner);
+        $this->drawCircle($img, $cx, $cy, $centerR, $purpleLight, 2);
+
+        // === เส้นแบ่ง 12 ภพ ===
+        for ($i = 0; $i < 12; $i++) {
+            $angle = deg2rad($i * 30 - 90);
+            $x1 = (int)($cx + $innerR * cos($angle));
+            $y1 = (int)($cy + $innerR * sin($angle));
+            $x2 = (int)($cx + $outerR * cos($angle));
+            $y2 = (int)($cy + $outerR * sin($angle));
+            imageline($img, $x1, $y1, $x2, $y2, $purpleDark);
+        }
+
+        // === ชื่อภพ + ดาวในแต่ละภพ ===
+        for ($i = 1; $i <= 12; $i++) {
+            $house = self::HOUSES[$i];
+            $midAngle = deg2rad(($i - 1) * 30 - 90 + 15);
+
+            // ชื่อภพ (วงนอก)
+            $houseColor = $this->hexColor($img, $house['color']);
+            $tx = $cx + ($outerR - 25) * cos($midAngle);
+            $ty = $cy + ($outerR - 25) * sin($midAngle);
+            $label = "{$i}.{$house['name']}";
+            $this->drawCenteredText($img, $thaiFont, 11, $tx, $ty, $label, $houseColor);
+
+            // ดาวเคราะห์ในภพ
+            $planets = $chartData['planetPositions'][$i] ?? [];
+            if (!empty($planets)) {
+                $planetR = ($innerR + $centerR) / 2 + 15;
+                $planetCount = count($planets);
+
+                foreach ($planets as $pIdx => $planetKey) {
+                    $planet = self::PLANETS[$planetKey];
+                    $planetColor = $this->hexColor($img, $planet['color']);
+                    $offset = ($pIdx - ($planetCount - 1) / 2) * 12;
+                    $px = $cx + ($planetR + $offset) * cos($midAngle);
+                    $py = $cy + ($planetR + $offset) * sin($midAngle);
+
+                    // วงกลมพื้นหลังดาว
+                    $bgPlanet = $this->hexColorAlpha($img, $planet['color'], 90);
+                    imagefilledellipse($img, (int)$px, (int)$py, 30, 30, $bgPlanet);
+
+                    // สัญลักษณ์ดาว (ใช้ symbol font)
+                    $this->drawCenteredText($img, $symbolFont, 16, $px, $py - 2, $planet['symbol'], $planetColor);
+
+                    // ชื่อดาว (ภาษาไทย)
+                    $this->drawCenteredText($img, $thaiFont, 9, $px, $py + 14, $planet['name'], $planetColor);
+                }
+            }
+        }
+
+        // === ตรงกลาง: ข้อมูลผู้ใช้ ===
+        $name = mb_substr($chartData['name'], 0, 15);
+
+        if ($chartData['isFullChart']) {
+            $mainColor = $this->hexColor($img, $chartData['mainPlanetColor'] ?? '#FFD700');
+
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy - 55, 'BIRTH CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 33, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 12, $cx, $cy - 13, "วัน{$chartData['dayOfWeek']}", $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 5, $chartData['birthDate'], $gray);
+
+            // ดาวเจ้าชนะ (symbol ใหญ่)
+            $this->drawCenteredText($img, $symbolFont, 26, $cx, $cy + 32, $chartData['mainPlanetSymbol'], $mainColor);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 55, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
+
+            // มิตร/ศัตรู
+            $friendNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
+            $enemyNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
+            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 75, "มิตร: {$friendNames}", $green);
+            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 92, "ศัตรู: {$enemyNames}", $red);
+        } else {
+            // Quick chart (ไม่มีวันเกิด)
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy - 50, 'TRANSIT CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 25, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy, 'ดวงดาวโคจรขณะนี้', $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 10, $cx, $cy + 20, $chartData['transitDate'], $gray);
+            $this->drawCenteredText($img, $thaiFont, 9, $cx, $cy + 70, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleFaint);
+        }
+
+        // === หัวเรื่องด้านบน ===
+        $this->drawCenteredText($img, $thaiFont, 20, $cx, 32, '~~ แม่หมอจันทรา ~~', $gold);
+        $this->drawCenteredText($img, $thaiFont, 10, $cx, 55, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
+
+        // === Footer ===
+        $this->drawCenteredText($img, $thaiFont, 9, $cx, $height - 20, 'holyzonethailand | Powered by AI Astrology', $grayDark);
+
+        // === Export PNG ===
+        ob_start();
+        imagepng($img, null, 7); // compression level 7
+        $pngData = ob_get_clean();
+        imagedestroy($img);
+
+        return $pngData;
+    }
+
+    /**
+     * หา path ฟอนต์ภาษาไทย
+     */
+    protected function getThaiFont(): string
+    {
+        // ลองหาฟอนต์ตามลำดับ
+        $paths = [
+            resource_path('fonts/NotoSansThai-Bold.ttf'),
+            '/usr/share/fonts/truetype/noto/NotoSansThai-Bold.ttf',
+            '/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf',
+            '/usr/share/fonts/truetype/tlwg/TlwgTypo-Bold.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        ];
+
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        // fallback — ใช้ GD built-in (จะไม่มีภาษาไทย แต่ไม่ crash)
+        return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+    }
+
+    /**
+     * หา path ฟอนต์สำหรับ Unicode symbols (☉☽♂☿♃♀♄)
+     */
+    protected function getSymbolFont(): string
+    {
+        $paths = [
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+            resource_path('fonts/NotoSansThai-Bold.ttf'), // fallback ใช้ฟอนต์ไทย
+        ];
+
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        return resource_path('fonts/NotoSansThai-Bold.ttf');
+    }
+
+    /**
+     * สร้างสีจาก hex string
+     */
+    protected function hexColor($img, string $hex): int
+    {
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return imagecolorallocate($img, $r, $g, $b);
+    }
+
+    /**
+     * สร้างสีจาก hex + alpha (0=opaque, 127=transparent)
+     */
+    protected function hexColorAlpha($img, string $hex, int $alpha): int
+    {
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return imagecolorallocatealpha($img, $r, $g, $b, $alpha);
+    }
+
+    /**
+     * วาดข้อความจัดกลาง (centered) ด้วย TTF
+     */
+    protected function drawCenteredText($img, string $font, float $size, float $x, float $y, string $text, int $color): void
+    {
+        $bbox = imagettfbbox($size, 0, $font, $text);
+        if ($bbox === false) return;
+        $textWidth = $bbox[2] - $bbox[0];
+        $textHeight = $bbox[1] - $bbox[7];
+        $drawX = $x - $textWidth / 2;
+        $drawY = $y + $textHeight / 2;
+        imagettftext($img, $size, 0, (int)$drawX, (int)$drawY, $color, $font, $text);
+    }
+
+    /**
+     * วาดวงกลม (ไม่ fill) ด้วยเส้นหนา
+     */
+    protected function drawCircle($img, float $cx, float $cy, float $r, int $color, int $thickness = 1): void
+    {
+        imagesetthickness($img, $thickness);
+        imagearc($img, (int)$cx, (int)$cy, (int)($r * 2), (int)($r * 2), 0, 360, $color);
+        imagesetthickness($img, 1);
+    }
+
+    /**
+     * สร้าง SVG chart (ใช้สำหรับ admin preview ในเบราว์เซอร์)
      *
      * @param array $chartData ข้อมูล chart
      * @return string SVG XML
@@ -235,6 +488,9 @@ class FortuneChartService
     <filter id="textGlow">
         <feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#FFD700" flood-opacity="0.8"/>
     </filter>
+    <style>
+        text { font-family: 'Noto Sans Thai', 'Sarabun', 'Prompt', 'Kanit', sans-serif; }
+    </style>
 </defs>
 
 <!-- Background -->
@@ -299,7 +555,7 @@ SVG;
                     $svg .= "<circle cx=\"{$px}\" cy=\"{$py}\" r=\"14\" fill=\"{$planet['color']}\" opacity=\"0.2\"/>\n";
                     $svg .= "<text x=\"{$px}\" y=\"" . ($py + 1) . "\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$planet['color']}\" font-size=\"16\" font-weight=\"bold\">{$planet['symbol']}</text>\n";
                     // ชื่อดาวเล็กๆ ด้านล่าง
-                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 16) . "\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"7\" opacity=\"0.8\">{$planet['name']}</text>\n";
+                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 16) . "\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"10\" opacity=\"0.9\">{$planet['name']}</text>\n";
                 }
             }
         }
@@ -353,17 +609,17 @@ SVG;
      * @param string $prefix prefix ชื่อไฟล์
      * @return string|null URL ของภาพ
      */
-    protected function saveSvgAsImage(string $svg, string $prefix): ?string
+    protected function saveChartAsImage(string $pngData, string $prefix): ?string
     {
         try {
-            $filename = "{$prefix}-" . Str::random(8) . '.svg';
+            $filename = "{$prefix}-" . Str::random(8) . '.png';
             $path = "fortune/charts/{$filename}";
 
-            Storage::disk('public')->put($path, $svg);
+            Storage::disk('public')->put($path, $pngData);
 
             return Storage::disk('public')->url($path);
         } catch (\Exception $e) {
-            Log::error('FortuneChart: Failed to save SVG', [
+            Log::error('FortuneChart: Failed to save chart image', [
                 'error' => $e->getMessage(),
             ]);
             return null;
