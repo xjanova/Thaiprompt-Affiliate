@@ -672,10 +672,12 @@ class SmsPaymentController extends Controller
         // === รวมบิลดูดวง (FortuneReading) ที่รอชำระเงินหรือชำระแล้ว ===
         // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้นที่เห็น
         // แสดงเฉพาะ page 1 เพื่อไม่ให้ซ้ำในหน้าถัดไป
+        // หมายเหตุ: บิลเก่าอาจไม่มี unique_payment_amount_id (สร้างก่อนระบบ SMS Checker)
+        // → ใช้ conversation_status เป็นหลักในการกรอง ไม่ต้องบังคับว่าต้องมี unique_payment_amount_id
         $fortuneReadings = collect();
         if ($paginated->currentPage() === 1 && $this->deviceCanAccessFortuneReading($device)) {
             $fortuneQuery = FortuneReading::query()
-                ->whereNotNull('unique_payment_amount_id');
+                ->whereNotNull('bill_reference');
 
             if ($status === 'waiting') {
                 $fortuneQuery->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT);
@@ -1196,10 +1198,11 @@ class SmsPaymentController extends Controller
 
         // === รวมบิลดูดวง (FortuneReading) ที่เปลี่ยนแปลง ===
         // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้น
+        // ใช้ bill_reference แทน unique_payment_amount_id เพื่อรองรับบิลเก่า
         $allOrders = $orders;
         if ($this->deviceCanAccessFortuneReading($device)) {
             $fortuneQuery = FortuneReading::query()
-                ->whereNotNull('unique_payment_amount_id')
+                ->whereNotNull('bill_reference')
                 ->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
