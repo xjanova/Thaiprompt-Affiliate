@@ -293,10 +293,13 @@ class FortuneConversationService
 
                         return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
                     }
-                    // ถ้าไม่ใช่คำถามดูดวง → ตกลงไปถาม confirmation ตามปกติ
-                } else {
-                    return $this->continueConversation($activeReading, $messageText, $userProfile);
+                    // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ (ต้อง return ไม่ให้ fall through)
+                    return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
+
+                // ✅ สถานะอื่นๆ (collecting_birthdate, collecting_questions, pending_payment)
+                // → ส่งต่อให้ continueConversation() จัดการตามสถานะ
+                return $this->continueConversation($activeReading, $messageText, $userProfile);
             }
 
             // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
@@ -591,6 +594,35 @@ class FortuneConversationService
     }
 
     /**
+     * ปิด conversation ที่ยังค้างอยู่ทั้งหมดของผู้ใช้
+     *
+     * ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
+     * เรียกก่อนสร้าง conversation ใหม่เสมอ
+     */
+    protected function closeAllActiveConversations(string $facebookUserId): int
+    {
+        $closed = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_AWAITING_CONFIRMATION,
+                FortuneReading::STATUS_BASIC_DONE,
+                FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_NEW,
+            ])
+            ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        if ($closed > 0) {
+            Log::info('Fortune: ปิด conversation เก่าที่ค้างอยู่', [
+                'facebook_user_id' => $facebookUserId,
+                'closed_count' => $closed,
+            ]);
+        }
+
+        return $closed;
+    }
+
+    /**
      * ถามผู้ใช้ก่อนว่าจะดูดวงไหม พร้อมแจ้งสิทธิ์ฟรีที่เหลือวันนี้
      *
      * สร้าง reading ในสถานะ awaiting_confirmation แล้วส่งข้อความถาม
@@ -615,6 +647,9 @@ class FortuneConversationService
         $name = $userProfile['name'] ?? 'คุณ';
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
+
+        // ✅ ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมดก่อนสร้างใหม่
+        $this->closeAllActiveConversations($facebookUserId);
 
         // สร้าง reading ในสถานะรอยืนยัน เก็บข้อความต้นฉบับไว้
         $reading = FortuneReading::create([
@@ -891,6 +926,10 @@ class FortuneConversationService
                 'facebook_user_id' => $facebookUserId,
             ]);
         }
+
+        // ✅ ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมดก่อนสร้างใหม่
+        // ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
+        $this->closeAllActiveConversations($facebookUserId);
 
         $reading = null;
         $name = $userProfile['name'] ?? 'คุณ';
