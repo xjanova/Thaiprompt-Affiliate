@@ -397,6 +397,27 @@ class SmsPaymentController extends Controller
             $request->ip()
         );
 
+        // ✅ แปลง matched model เป็น RemoteOrderApproval format เพื่อให้แอพแสดงบิลได้ทันที
+        $matchedOrder = null;
+        if (!empty($result['matched_model'])) {
+            $model = $result['matched_model'];
+            $type = $result['matched_model_type'] ?? null;
+
+            if ($type === 'fortune_reading' && $model instanceof FortuneReading) {
+                $matchedOrder = $this->transformFortuneReadingToOrderApproval($model);
+            } elseif ($type === 'payment_transaction' && $model instanceof PaymentTransaction) {
+                $matchedOrder = $this->transformToOrderApproval($model);
+            }
+
+            // ลบ matched_model ออกจาก response (ไม่ต้องส่ง Eloquent model ทั้งก้อน)
+            unset($result['matched_model'], $result['matched_model_type']);
+        }
+
+        // เพิ่ม matched_order ลงใน data เพื่อให้แอพแสดงบิลได้ทันทีหลัง notify
+        if ($matchedOrder) {
+            $result['data']['matched_order'] = $matchedOrder;
+        }
+
         return response()->json($result, $result['success'] ? 200 : 400);
     }
 
@@ -635,11 +656,18 @@ class SmsPaymentController extends Controller
         // (null = admin/official shop, int = seller store)
         $this->applyStoreFilter($query, $device);
 
-        // กรองสถานะ (default: pending + processing = รอชำระเงิน)
+        // กรองสถานะ (default: pending + processing + completed ล่าสุด)
         $status = $request->input('status', 'waiting');
         if ($status === 'waiting') {
-            // 'waiting' = pending หรือ processing (รอชำระเงิน)
-            $query->whereIn('status', ['pending', 'processing']);
+            // 'waiting' = pending/processing (รอชำระ) + completed ที่เพิ่ง auto-approve (ภายใน 1 ชม.)
+            // เพื่อให้แอพแสดงบิลที่เพิ่งจับคู่สำเร็จจาก SMS ด้วย
+            $query->where(function ($q) {
+                $q->whereIn('status', ['pending', 'processing'])
+                  ->orWhere(function ($q2) {
+                      $q2->where('status', 'completed')
+                         ->where('paid_at', '>=', now()->subHour());
+                  });
+            });
         } elseif ($status !== 'all') {
             $query->where('status', $status);
         }
@@ -677,7 +705,12 @@ class SmsPaymentController extends Controller
             $fortuneQuery = FortuneReading::query();
 
             if ($status === 'waiting') {
-                $fortuneQuery->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT);
+                // รวม STATUS_PAID ด้วย เพราะบิลที่เพิ่ง auto-approve จาก SMS จะเปลี่ยนเป็น paid ทันที
+                // แอพควรแสดงบิลที่ชำระแล้วเพื่อให้เห็นผลการจับคู่
+                $fortuneQuery->whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PAID,
+                ]);
             } elseif ($status === 'all') {
                 $fortuneQuery->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,

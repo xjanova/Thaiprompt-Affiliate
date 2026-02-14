@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
@@ -84,21 +85,40 @@ class SmsPaymentService
             $matched = false;
             $fortuneReadingHandled = false;
             $specialAmountHandled = false;
+            $matchedModel = null; // เก็บ model ที่ match ได้เพื่อส่งกลับให้แอพแสดงบิล
+            $matchedModelType = null;
 
             if ($notification->type === 'credit') {
                 // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
                 $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
 
+                // ดึง FortuneReading ที่ match ได้ เพื่อส่งกลับให้แอพแสดงบิล
+                if ($fortuneReadingHandled && $notification->matched_transaction_id) {
+                    $matchedModel = FortuneReading::find($notification->matched_transaction_id);
+                    $matchedModelType = 'fortune_reading';
+                }
+
                 if (!$fortuneReadingHandled) {
                     // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction (อีคอมเมิร์ซ)
                     $autoConfirm = config('smschecker.auto_confirm_matched', true);
                     $matched = $notification->attemptMatch($autoConfirm);
+
+                    // ดึง PaymentTransaction ที่ match ได้
+                    if ($matched && $notification->matched_transaction_id) {
+                        $matchedModel = PaymentTransaction::find($notification->matched_transaction_id);
+                        $matchedModelType = 'payment_transaction';
+                    }
                 }
 
                 if (!$fortuneReadingHandled && !$matched) {
                     // ขั้นที่ 3: ตรวจจับยอดพิเศษ (เช่น 29.99 = ดูดวง)
                     // สร้าง FortuneReading อัตโนมัติเป็น "บิลลอย" ถ้า match ไม่ได้กับ unique amount
                     $specialAmountHandled = $this->handleSpecialAmount($notification);
+
+                    if ($specialAmountHandled && $notification->matched_transaction_id) {
+                        $matchedModel = FortuneReading::find($notification->matched_transaction_id);
+                        $matchedModelType = 'fortune_reading';
+                    }
                 }
             }
 
@@ -129,6 +149,9 @@ class SmsPaymentService
                     'special_amount' => $specialAmountHandled,
                     'matched_transaction_id' => $notification->matched_transaction_id,
                 ],
+                // ส่ง matched model กลับเพื่อให้ controller แปลงเป็น RemoteOrderApproval ให้แอพแสดง
+                'matched_model' => $matchedModel,
+                'matched_model_type' => $matchedModelType,
             ];
         });
     }

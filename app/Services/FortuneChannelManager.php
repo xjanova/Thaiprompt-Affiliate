@@ -149,6 +149,20 @@ class FortuneChannelManager
             $options['from_admin'] = true;
         }
 
+        // ส่ง Birth Chart / Quick Chart ก่อนข้อความทำนาย (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $platformService->sendImage($userId, $chartUrl);
+                usleep(500000); // 0.5 วินาที
+            } catch (\Exception $imgErr) {
+                Log::warning('FortuneChannelManager: Failed to send chart image', [
+                    'platform' => $platform,
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
         // เพิ่ม quick replies ถ้ามี
         if (!empty($result['show_quick_replies'])) {
             $options['quick_replies'] = $this->getQuickReplies($action);
@@ -199,6 +213,19 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $userName = $reading?->facebook_user_name ?? 'คุณ';
         $billRef = $reading?->bill_reference;
+
+        // ส่ง Birth Chart / Quick Chart ก่อนคำทำนาย (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $lineService->sendImage($userId, $chartUrl);
+                usleep(500000); // 0.5 วินาที
+            } catch (\Exception $imgErr) {
+                Log::warning('FortuneChannelManager: Failed to send LINE chart image (basic_done)', [
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
 
         // แยกคำทำนายออกจากข้อความ upsell
         $message = $result['message'] ?? '';
