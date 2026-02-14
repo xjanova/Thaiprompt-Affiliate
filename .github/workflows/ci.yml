@@ -129,17 +129,18 @@ jobs:
         timeout-minutes: 5
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # PR: lint only changed PHP files (much faster)
+            # PR: lint only changed PHP files vs base branch
             CHANGED=$(git diff --name-only --diff-filter=d origin/${{ github.base_ref }}...HEAD -- '*.php' || true)
-            if [ -n "$CHANGED" ]; then
-              echo "Checking $(echo "$CHANGED" | wc -l) changed PHP files..."
-              echo "$CHANGED" | xargs ./vendor/bin/pint --test
-            else
-              echo "No PHP files changed, skipping Pint"
-            fi
           else
-            # Push to main: lint all files
-            ./vendor/bin/pint --test
+            # Push: lint only changed PHP files vs previous commit
+            CHANGED=$(git diff --name-only --diff-filter=d HEAD~1...HEAD -- '*.php' || true)
+          fi
+
+          if [ -n "$CHANGED" ]; then
+            echo "Checking $(echo "$CHANGED" | wc -l) changed PHP files..."
+            echo "$CHANGED" | xargs ./vendor/bin/pint --test
+          else
+            echo "No PHP files changed, skipping Pint"
           fi
 
       - name: Check for security vulnerabilities (informational)
