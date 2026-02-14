@@ -99,15 +99,14 @@ class SmsPaymentController extends Controller
     /**
      * ตรวจสอบว่า device มีสิทธิ์เข้าถึงบิลดูดวงหรือไม่
      *
-     * FortuneReading ไม่มี store_id → ผูกกับ admin/platform เท่านั้น
-     * เฉพาะ admin device เท่านั้นที่เห็นและจัดการบิลดูดวงได้
+     * บิลดูดวงให้ทุก device เห็นได้ เพราะต้องรองรับ auto-approve เมื่อโอนตรงยอด
      *
      * @param SmsCheckerDevice $device
      * @return bool
      */
     private function deviceCanAccessFortuneReading(SmsCheckerDevice $device): bool
     {
-        return $device->isAdminDevice();
+        return true;
     }
 
     /**
