@@ -255,10 +255,19 @@ class FortuneConversationService
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
+            // 🔍 Debug log: ติดตามสถานะ conversation
+            Log::info('Fortune processMessage: ตรวจสอบ active conversation', [
+                'facebook_user_id' => $facebookUserId,
+                'has_active' => ! is_null($activeReading),
+                'active_status' => $activeReading?->conversation_status,
+                'active_id' => $activeReading?->id,
+                'text_preview' => mb_substr($messageText, 0, 30),
+            ]);
+
             if ($activeReading) {
-                // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ
+                // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                 if ($this->isCancelRequest($messageText)) {
-                    $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    $this->closeAllActiveConversations($facebookUserId);
 
                     return [
                         'action' => 'cancelled',
@@ -325,11 +334,52 @@ class FortuneConversationService
             Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
                 'facebook_user_id' => $facebookUserId,
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'error_file' => $e->getFile().':'.$e->getLine(),
+                'trace_short' => mb_substr($e->getTraceAsString(), 0, 800),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
 
             // ✅ ป้องกัน null userProfile - ใช้ is_array ก่อนเข้าถึง array key
             $name = (is_array($userProfile) && isset($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+
+            // ✅ ถ้ามี conversation ค้างอยู่ → ตอบตามสถานะแทนที่จะเริ่มใหม่
+            try {
+                $activeReading = FortuneReading::findActiveConversation($facebookUserId);
+                if ($activeReading) {
+                    $status = $activeReading->conversation_status;
+
+                    // ถ้าอยู่ระหว่างเก็บคำถาม → แจ้งให้พิมพ์คำถามอีกครั้ง
+                    if ($status === FortuneReading::STATUS_COLLECTING_QUESTIONS) {
+                        $collected = count($activeReading->getCollectedQuestions());
+                        $remaining = max(0, self::REQUIRED_QUESTIONS - $collected);
+
+                        return [
+                            'action' => 'retry_question',
+                            'message' => "ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\n"
+                                ."ตอนนี้จันทรารับคำถามแล้ว {$collected} ข้อ\n"
+                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อใหม่อีกครั้งนะคะ",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ถ้าอยู่ระหว่างเก็บวันเกิด → แจ้งให้พิมพ์วันเกิดอีกครั้ง
+                    if ($status === FortuneReading::STATUS_COLLECTING_BIRTHDATE) {
+                        return [
+                            'action' => 'retry_birthdate',
+                            'message' => "ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nกรุณาพิมพ์วันเกิดอีกครั้งนะคะ\n📅 เช่น 15/08/1990",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ถ้ารอชำระเงิน → แจ้งยอดชำระ
+                    if ($status === FortuneReading::STATUS_PENDING_PAYMENT) {
+                        return $this->handlePendingPayment($activeReading, $messageText);
+                    }
+                }
+            } catch (\Exception $innerErr) {
+                Log::error('Fortune: Error recovery ล้มเหลว', ['error' => $innerErr->getMessage()]);
+            }
 
             return [
                 'action' => 'error',
