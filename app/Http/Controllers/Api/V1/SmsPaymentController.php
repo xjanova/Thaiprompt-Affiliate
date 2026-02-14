@@ -1418,10 +1418,22 @@ class SmsPaymentController extends Controller
                         $fortuneReading->confirmPayment();
                         $fortuneReading = $fortuneReading->fresh();
 
+                        // Dispatch job สร้างคำทำนาย + ส่งข้อความ (เหมือน approveOrder)
+                        // ถ้าไม่ dispatch ตรงนี้ → Android เห็น auto_approved → skip เรียก /approve → ไม่มีใครสร้างคำทำนาย
+                        $platform = $fortuneReading->platform ?? 'facebook';
+                        $userId = $fortuneReading->platform_user_id ?? $fortuneReading->facebook_user_id;
+
+                        if ($userId) {
+                            \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                                $fortuneReading->id, null, $platform, $userId
+                            );
+                        }
+
                         Log::info('SMS Payment: Auto-approved fortune reading on match', [
                             'device_id' => $device->device_id,
                             'amount' => $amount,
                             'fortune_reading_id' => $fortuneReading->id,
+                            'job_dispatched' => (bool) $userId,
                         ]);
                     } catch (\Exception $e) {
                         Log::error('SMS Payment: Auto-approve fortune reading failed', [
