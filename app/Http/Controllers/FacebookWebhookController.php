@@ -774,7 +774,11 @@ class FacebookWebhookController extends Controller
             }
 
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
-            $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining', 'collecting_questions', 'need_more_questions'];
+            $actionsWithQuickReplies = [
+                'awaiting_confirmation', 'basic_done', 'check_remaining',
+                'collecting_questions', 'need_more_questions',
+                'ai_limit', 'declined', 'payment_expired', 'completed',
+            ];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
@@ -897,6 +901,15 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '💰 การเงิน', 'payload' => 'QUESTION_MONEY'],
                 ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'QUESTION_HEALTH'],
                 ['content_type' => 'text', 'title' => '✏️ พิมพ์เอง', 'payload' => 'QUESTION_CUSTOM'],
+            ],
+            'ai_limit', 'payment_expired' => [
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+            ],
+            'declined', 'completed' => [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
             default => null,
         };
