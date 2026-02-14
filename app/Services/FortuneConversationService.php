@@ -1349,29 +1349,54 @@ class FortuneConversationService
      */
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
-        // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
-        $question = trim($messageText);
-        if (! empty($question)) {
-            $reading->addQuestion($question);
+        try {
+            // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
+            $question = trim($messageText);
+            if (! empty($question)) {
+                $reading->addQuestion($question);
+            }
+
+            $collectedQuestions = $reading->getCollectedQuestions();
+            $questionCount = count($collectedQuestions);
+
+            Log::info('Fortune: handleQuestionInput', [
+                'reading_id' => $reading->id,
+                'question_count' => $questionCount,
+                'required' => self::REQUIRED_QUESTIONS,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            if ($questionCount < self::REQUIRED_QUESTIONS) {
+                $nextNumber = $questionCount + 1;
+
+                return [
+                    'action' => 'need_more_questions',
+                    'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n".
+                                 "📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS." — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇",
+                    'reading' => $reading,
+                    'question_number' => $nextNumber,
+                ];
+            }
+
+            // ได้ครบ 3 คำถามแล้ว → สร้างบิลรอชำระ
+            Log::info('Fortune: ครบ 3 คำถาม กำลังสร้างบิล', [
+                'reading_id' => $reading->id,
+                'questions' => $collectedQuestions,
+            ]);
+
+            return $this->createPaymentBill($reading, $collectedQuestions);
+
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleQuestionInput ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+                'error_file' => $e->getFile().':'.$e->getLine(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 500),
+            ]);
+
+            // Re-throw เพื่อให้ processMessage catch handler จัดการ
+            throw $e;
         }
-
-        $collectedQuestions = $reading->getCollectedQuestions();
-        $questionCount = count($collectedQuestions);
-
-        if ($questionCount < self::REQUIRED_QUESTIONS) {
-            $nextNumber = $questionCount + 1;
-
-            return [
-                'action' => 'need_more_questions',
-                'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n".
-                             "📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS." — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇",
-                'reading' => $reading,
-                'question_number' => $nextNumber,
-            ];
-        }
-
-        // ได้ครบ 3 คำถามแล้ว → สร้างบิลรอชำระ
-        return $this->createPaymentBill($reading, $collectedQuestions);
     }
 
     /**

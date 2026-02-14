@@ -776,7 +776,7 @@ class FacebookWebhookController extends Controller
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
             $actionsWithQuickReplies = [
                 'awaiting_confirmation', 'basic_done', 'check_remaining',
-                'collecting_questions', 'need_more_questions',
+                'collecting_questions', 'need_more_questions', 'retry_question',
                 'ai_limit', 'declined', 'payment_expired', 'completed',
             ];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
@@ -895,7 +895,7 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ],
-            'collecting_questions', 'need_more_questions' => [
+            'collecting_questions', 'need_more_questions', 'retry_question' => [
                 ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'QUESTION_LOVE'],
                 ['content_type' => 'text', 'title' => '💼 การงาน', 'payload' => 'QUESTION_WORK'],
                 ['content_type' => 'text', 'title' => '💰 การเงิน', 'payload' => 'QUESTION_MONEY'],
