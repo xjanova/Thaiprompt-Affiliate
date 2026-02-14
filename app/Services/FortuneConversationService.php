@@ -1541,6 +1541,9 @@ class FortuneConversationService
         // ถ้ามี channelManager → ส่งผลทีละคำถามแบบ streaming (ป้องกัน timeout)
         $streaming = $channelManager && $platform && $userId;
 
+        // ขยายเวลา execution เป็น 3 นาที (AI ใช้เวลา ~15-20 วินาทีต่อคำถาม × 3 ข้อ)
+        set_time_limit(180);
+
         try {
             // ยืนยันการชำระเงิน
             $reading->confirmPayment($notification);
