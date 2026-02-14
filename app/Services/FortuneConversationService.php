@@ -223,6 +223,49 @@ class FortuneConversationService
     }
 
     /**
+     * ดึงราคาดูดวงละเอียดจากการตั้งค่า
+     *
+     * ⚠️ สำคัญ: ต้องใช้ method นี้แทน $this->settings->deep_reading_price ?: DEEP_READING_PRICE
+     * เพราะ Laravel decimal:2 cast จะคืนค่า "0.00" เป็น string ซึ่ง PHP ถือว่าเป็น truthy
+     * ทำให้ ?: operator ไม่ fallback ไปค่า default
+     *
+     * @return float ราคาดูดวงละเอียด (บาท)
+     */
+    protected function getDeepReadingPrice(): float
+    {
+        $price = (float) ($this->settings->deep_reading_price ?? 0);
+
+        return $price > 0 ? $price : self::DEEP_READING_PRICE;
+    }
+
+    /**
+     * ดึง QR Code URL สำหรับชำระเงิน
+     *
+     * ลำดับ: 1) QR จากการตั้งค่าดูดวง (payment_qr_image)
+     *        2) QR จากบัญชีธนาคารตัวแรกที่มี (qr_image)
+     *
+     * @return string|null URL ของ QR Code หรือ null ถ้าไม่มี
+     */
+    protected function getPaymentQrImageUrl(): ?string
+    {
+        // 1. เช็ค QR จากการตั้งค่าดูดวง
+        $settingsQr = $this->settings->getPaymentQrUrl();
+        if ($settingsQr) {
+            return $settingsQr;
+        }
+
+        // 2. เช็ค QR จากบัญชีธนาคาร
+        $accounts = $this->settings->getFortuneBankAccounts();
+        foreach ($accounts as $account) {
+            if (! empty($account->qr_image_url)) {
+                return $account->qr_image_url;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * ประมวลผลข้อความจาก Messenger
      *
      * @return array ผลลัพธ์ ['action' => '...', 'message' => '...', 'reading' => FortuneReading|null]
@@ -603,7 +646,7 @@ class FortuneConversationService
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         // ดึงข้อมูลเครดิตพิเศษ
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
@@ -740,7 +783,7 @@ class FortuneConversationService
             // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+            $price = $this->getDeepReadingPrice();
             $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
             $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
@@ -1256,10 +1299,14 @@ class FortuneConversationService
             ];
         }
 
-        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคารเสมอ
+        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคาร+เวลาเหลือ
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $billRef = $reading->bill_reference;
+
+        // คำนวณเวลาที่เหลือ
+        $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
+        $remainingMinutes = max(0, $remainingMinutes);
 
         $message = "🔮 จันทรารอคำทำนายละเอียดให้อยู่ค่ะ\n\n";
         $message .= "กรุณาโอนเงินเพื่อรับคำทำนายนะคะ 🙏\n\n";
@@ -1267,6 +1314,7 @@ class FortuneConversationService
         $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
         $message .= "🔖 เลขที่บิล: {$billRef}\n";
         $message .= "⏰ โอนก่อน: {$expiresAt} น.\n";
+        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
         $message .= "═══════════════════════\n\n";
 
         // แสดงบัญชีธนาคารทุกครั้ง
@@ -1275,12 +1323,16 @@ class FortuneConversationService
         $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
         $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n\n";
+        if ($remainingMinutes <= 10) {
+            $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุค่ะ\n\n";
+        }
         $message .= "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก";
 
         return [
             'action' => 'waiting_payment',
             'message' => $message,
             'reading' => $reading,
+            'payment_qr_url' => $this->getPaymentQrImageUrl(),
         ];
     }
 
@@ -1290,12 +1342,13 @@ class FortuneConversationService
     protected function createPaymentBill(FortuneReading $reading, array $questions): array
     {
         try {
-            // สร้าง unique amount
+            // สร้าง unique amount จากราคาในการตั้งค่า
+            $basePrice = $this->getDeepReadingPrice();
             $uniqueAmount = UniquePaymentAmount::generate(
-                self::DEEP_READING_PRICE,
+                $basePrice,
                 $reading->id,
                 'fortune_reading',
-                60  // หมดอายุใน 60 นาที
+                30  // หมดอายุใน 30 นาที
             );
 
             if (! $uniqueAmount) {
@@ -1321,10 +1374,14 @@ class FortuneConversationService
                 'facebook_user_id' => $reading->facebook_user_id,
             ]);
 
+            // ดึง QR Code URL สำหรับชำระเงิน (ถ้ามี)
+            $qrImageUrl = $this->getPaymentQrImageUrl();
+
             return [
                 'action' => 'pending_payment',
                 'message' => $message,
                 'reading' => $reading,
+                'payment_qr_url' => $qrImageUrl,
             ];
 
         } catch (\Exception $e) {
@@ -1502,7 +1559,7 @@ class FortuneConversationService
      */
     protected function getUpsellMessage(string $name): string
     {
-        $price = self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         return "═══════════════════════\n".
                "🌟 *ดูดวงละเอียด* 🌟\n".
@@ -1573,9 +1630,14 @@ class FortuneConversationService
             $message .= "{$num}. {$q}\n";
         }
 
+        // คำนวณเวลาที่เหลือ
+        $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
+        $remainingMinutes = max(0, $remainingMinutes);
+
         $message .= "\n═══════════════════════\n";
         $message .= "💰 *ยอดชำระ: ฿{$amount}*\n";
         $message .= "⏰ หมดอายุ: {$expiresAt} น.\n";
+        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
         $message .= "═══════════════════════\n\n";
 
         // เพิ่มบัญชีธนาคาร
@@ -1583,7 +1645,8 @@ class FortuneConversationService
 
         $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨';
+        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n";
+        $message .= "📌 บิลจะหมดอายุอัตโนมัติใน {$remainingMinutes} นาทีค่ะ";
 
         return $message;
     }
@@ -1673,7 +1736,7 @@ class FortuneConversationService
      */
     protected function getHelpMessageWithExamples(): string
     {
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         $message = "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n";
         $message .= "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่องอะไร:\n\n";
@@ -2315,7 +2378,7 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         $message = "🔮 *สวัสดีค่ะ ขอบคุณที่มาหาหมอนะคะ*\n\n";
         $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";

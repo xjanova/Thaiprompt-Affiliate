@@ -443,11 +443,11 @@ class FortuneReading extends Model
      * ระยะเวลา timeout ของ conversation (นาที)
      *
      * conversation ที่เก่ากว่านี้จะถูกปิดอัตโนมัติ
-     * ยกเว้น pending_payment ให้รอนานกว่า (60 นาที)
+     * pending_payment ก็ใช้ 30 นาทีเท่ากัน (บิลหมดอายุ 30 นาที)
      */
     public const CONVERSATION_TIMEOUT_MINUTES = 30;
 
-    public const PAYMENT_TIMEOUT_MINUTES = 60;
+    public const PAYMENT_TIMEOUT_MINUTES = 30;
 
     /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่
