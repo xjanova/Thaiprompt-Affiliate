@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Models\User;
+use App\Services\FortuneChannelManager;
+use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Fortune Billing Controller
@@ -139,6 +143,11 @@ class FortuneBillingController extends Controller
     /**
      * ยืนยันการชำระเงินด้วยตนเอง (Manual confirm)
      *
+     * เมื่อยืนยัน จะ:
+     * 1. เปลี่ยนสถานะเป็น paid
+     * 2. สร้างคำทำนายละเอียดด้วย AI (ถ้าเป็นบิลเชิงลึก)
+     * 3. ส่งคำทำนายไป Messenger/LINE ให้ลูกค้าอัตโนมัติ
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function manualConfirm(Request $request, FortuneReading $reading)
@@ -152,15 +161,87 @@ class FortuneBillingController extends Controller
             return back()->with('error', 'บิลนี้ชำระเงินแล้ว');
         }
 
+        // อัพเดท amount_paid + sender_info ก่อน (processPaymentConfirmed จะเรียก confirmPayment เอง)
         $reading->update([
-            'is_paid' => true,
             'amount_paid' => $request->amount,
-            'paid_at' => now(),
-            'conversation_status' => FortuneReading::STATUS_PAID,
             'sender_info' => 'Manual: '.($request->note ?? 'Admin confirmed'),
         ]);
 
-        return back()->with('success', 'ยืนยันการชำระเงินสำเร็จ');
+        // ประมวลผลคำทำนาย + ส่งข้อความ (ถ้าเป็นบิลเชิงลึกที่มีคำถาม)
+        $deepReadingSent = false;
+        $hasQuestions = ! empty($reading->getCollectedQuestions());
+
+        if ($hasQuestions) {
+            try {
+                $settings = FortuneTellingSetting::getSettings();
+                $conversationService = new FortuneConversationService($settings);
+                $channelManager = new FortuneChannelManager($settings);
+
+                $platform = $reading->platform ?? 'facebook';
+                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+                // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
+                $result = $conversationService->processPaymentConfirmed($reading);
+
+                // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+                $chartUrl = $result['chart_image_url'] ?? null;
+                if ($chartUrl) {
+                    try {
+                        $platformService = $channelManager->getPlatform($platform);
+                        if ($platformService) {
+                            $platformService->sendImage($userId, $chartUrl);
+                            usleep(500000);
+                        }
+                    } catch (\Exception $imgErr) {
+                        Log::warning('ManualConfirm: ส่ง chart image ไม่สำเร็จ', [
+                            'error' => $imgErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                // ส่งคำทำนายผ่าน Channel Manager
+                if (! empty($result['message'])) {
+                    $channelManager->sendResponse($platform, $userId, $result);
+                    $deepReadingSent = true;
+                }
+
+                Log::info('ManualConfirm: สร้างคำทำนาย + ส่งข้อความสำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'platform' => $platform,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('ManualConfirm: สร้างคำทำนายล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Fallback: ถ้าสร้างคำทำนายไม่ได้ แค่ confirm payment
+                if (! $reading->is_paid) {
+                    $reading->update([
+                        'is_paid' => true,
+                        'paid_at' => now(),
+                        'conversation_status' => FortuneReading::STATUS_PAID,
+                    ]);
+                }
+
+                return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่สร้างคำทำนายไม่สำเร็จ: '.$e->getMessage());
+            }
+        } else {
+            // ไม่มีคำถาม (บิลพื้นฐาน) → แค่ confirm payment
+            $reading->update([
+                'is_paid' => true,
+                'paid_at' => now(),
+                'conversation_status' => FortuneReading::STATUS_PAID,
+            ]);
+        }
+
+        $successMessage = 'ยืนยันการชำระเงินสำเร็จ';
+        if ($deepReadingSent) {
+            $successMessage .= ' ✨ ส่งคำทำนายให้ลูกค้าแล้ว';
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     /**
