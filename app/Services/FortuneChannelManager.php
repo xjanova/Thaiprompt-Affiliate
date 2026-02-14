@@ -426,64 +426,16 @@ class FortuneChannelManager
      */
     public function sendDeepReadingAfterPayment(FortuneReading $reading): array
     {
-        // ประมวลผลคำทำนาย (ทีละคำถาม)
-        $result = $this->conversationService->processPaymentConfirmed($reading);
-
         $platform = $reading->platform ?? self::PLATFORM_FACEBOOK;
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-        // สำหรับ LINE ใช้ sendResponse ที่จัดการ deep_readings อยู่แล้ว
-        if ($platform === self::PLATFORM_LINE) {
-            $this->sendResponse($platform, $userId, $result, ['from_admin' => true]);
+        // Streaming mode: ส่ง chart + คำทำนายทีละข้อโดยตรงจาก processPaymentConfirmed
+        $result = $this->conversationService->processPaymentConfirmed(
+            $reading, null, $this, $platform, $userId
+        );
 
-            return $result;
-        }
-
-        // สำหรับ Facebook: ส่งทีละคำถามเช่นกัน
-        $deepReadings = $result['deep_readings'] ?? [];
-        $platformService = $this->getPlatform($platform);
-
-        if ($platformService && ! empty($deepReadings)) {
-            // ใช้ from_admin เพราะเป็นการส่งคำทำนายหลังชำระเงิน อาจเกิน 24 ชม.
-            $sendOptions = ['from_admin' => true];
-
-            // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
-            $chartUrl = $result['chart_image_url'] ?? null;
-            if ($chartUrl) {
-                try {
-                    $platformService->sendImage($userId, $chartUrl);
-                    usleep(500000);
-                } catch (\Exception $imgErr) {
-                    Log::warning('FortuneChannelManager: Failed to send chart image', [
-                        'error' => $imgErr->getMessage(),
-                    ]);
-                }
-            }
-
-            foreach ($deepReadings as $dr) {
-                $message = "═══════════════════════\n";
-                $message .= "❓ คำถามที่ {$dr['question_number']}: {$dr['question']}\n";
-                $message .= "═══════════════════════\n\n";
-                $message .= $dr['answer'];
-
-                $sent = $platformService->sendMessage($userId, $message, $sendOptions);
-                if (! $sent) {
-                    Log::error('FortuneChannelManager: ส่งคำทำนายละเอียดไม่สำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'user_id' => $userId,
-                        'question_number' => $dr['question_number'],
-                    ]);
-                }
-                usleep(500000); // 0.5 วินาที
-            }
-
-            // ส่งข้อความขอบคุณ
-            $thankYou = $result['thank_you'] ?? '';
-            if ($thankYou) {
-                $platformService->sendMessage($userId, $thankYou, $sendOptions);
-            }
-        } else {
-            // Fallback: ส่งข้อความรวม
+        // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
+        if (empty($result['streaming']) && ! empty($result['message'])) {
             $this->sendResponse($platform, $userId, $result);
         }
 

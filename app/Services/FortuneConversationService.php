@@ -7,6 +7,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
+use App\Services\FortuneChannelManager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -1530,8 +1531,16 @@ class FortuneConversationService
      * ทำนายทีละคำถาม อิงจากวันเดือนปีเกิด+เพศ
      * ส่งคู่คำถาม-คำทำนายแยกกัน ให้ละเอียดน่าเชื่อถือ
      */
-    public function processPaymentConfirmed(FortuneReading $reading, ?SmsPaymentNotification $notification = null): array
-    {
+    public function processPaymentConfirmed(
+        FortuneReading $reading,
+        ?SmsPaymentNotification $notification = null,
+        ?FortuneChannelManager $channelManager = null,
+        ?string $platform = null,
+        ?string $userId = null
+    ): array {
+        // ถ้ามี channelManager → ส่งผลทีละคำถามแบบ streaming (ป้องกัน timeout)
+        $streaming = $channelManager && $platform && $userId;
+
         try {
             // ยืนยันการชำระเงิน
             $reading->confirmPayment($notification);
@@ -1558,6 +1567,21 @@ class FortuneConversationService
                 Log::warning('Fortune Deep: Failed to generate birth chart', [
                     'error' => $chartErr->getMessage(),
                 ]);
+            }
+
+            // [Streaming] ส่ง Birth Chart ทันทีถ้ามี
+            if ($streaming && $chartImageUrl) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $chartImageUrl);
+                        usleep(500000); // รอ 0.5 วินาที
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
+                        'error' => $imgErr->getMessage(),
+                    ]);
+                }
             }
 
             // ทำนายทีละคำถาม
@@ -1598,6 +1622,24 @@ class FortuneConversationService
                 $totalTokens += $aiResult['tokens_used'] ?? 0;
                 $lastProvider = $aiResult['provider'] ?? '';
                 $lastModel = $aiResult['model'] ?? '';
+
+                // [Streaming] ส่งคำทำนายแต่ละข้อกลับทันที
+                if ($streaming) {
+                    try {
+                        $perQuestionMessage = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
+                            ."❓ {$question}\n\n"
+                            .$aiResult['response'];
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'partial',
+                            'message' => $perQuestionMessage,
+                        ]);
+                        usleep(300000); // รอ 0.3 วินาทีก่อนข้อถัดไป
+                    } catch (\Exception $sendErr) {
+                        Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
+                            'error' => $sendErr->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // บันทึก AI call สำหรับ rate limiting
@@ -1623,21 +1665,38 @@ class FortuneConversationService
                 'reading_id' => $reading->id,
                 'questions_count' => count($questions),
                 'tokens_used' => $totalTokens,
+                'streaming' => $streaming,
             ]);
+
+            // [Streaming] ส่งข้อความขอบคุณ
+            if ($streaming) {
+                try {
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'completed',
+                        'message' => $thankYouMessage,
+                    ]);
+                } catch (\Exception $sendErr) {
+                    Log::warning('Fortune Deep Streaming: ส่งข้อความขอบคุณไม่สำเร็จ', [
+                        'error' => $sendErr->getMessage(),
+                    ]);
+                }
+            }
 
             return [
                 'action' => 'completed',
-                'message' => $fullResponse."\n\n".$thankYouMessage,
+                'message' => $streaming ? null : $fullResponse."\n\n".$thankYouMessage,
                 'deep_readings' => $deepReadings,
                 'thank_you' => $thankYouMessage,
                 'reading' => $reading,
                 'chart_image_url' => $chartImageUrl,
+                'streaming' => $streaming,
             ];
 
         } catch (\Exception $e) {
             Log::error('Fortune Conversation: ทำนายละเอียดล้มเหลว', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
             return [

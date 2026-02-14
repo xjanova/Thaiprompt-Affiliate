@@ -785,29 +785,10 @@ class SmsPaymentController extends Controller
                 $platform = $model->platform ?? 'facebook';
                 $userId = $model->platform_user_id ?? $model->facebook_user_id;
 
-                // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
-                $result = $conversationService->processPaymentConfirmed($model, $notification);
-
-                // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
-                $chartUrl = $result['chart_image_url'] ?? null;
-                if ($chartUrl) {
-                    try {
-                        $platformService = $channelManager->getPlatform($platform);
-                        if ($platformService) {
-                            $platformService->sendImage($userId, $chartUrl);
-                            usleep(500000); // 0.5 วินาที ให้ภาพส่งก่อน
-                        }
-                    } catch (\Exception $imgErr) {
-                        Log::warning('SMS Payment: ส่ง chart image ไม่สำเร็จ (manual approve)', [
-                            'error' => $imgErr->getMessage(),
-                        ]);
-                    }
-                }
-
-                // ส่งคำทำนายผ่าน Channel Manager (รองรับทุก platform)
-                if (! empty($result['message'])) {
-                    $channelManager->sendResponse($platform, $userId, $result);
-                }
+                // ใช้ streaming mode — ส่ง chart + คำทำนายทีละข้อทันที (ป้องกัน timeout)
+                $result = $conversationService->processPaymentConfirmed(
+                    $model, $notification, $channelManager, $platform, $userId
+                );
             } catch (\Exception $e) {
                 Log::error('SMS Payment: ประมวลผลคำทำนายล้มเหลว (manual approve)', [
                     'fortune_reading_id' => $model->id,
@@ -1163,9 +1144,13 @@ class SmsPaymentController extends Controller
                         $platform = $model->platform ?? 'facebook';
                         $userId = $model->platform_user_id ?? $model->facebook_user_id;
 
-                        $result = $conversationService->processPaymentConfirmed($model);
+                        // Streaming mode: ส่ง chart + คำทำนายทีละข้อผ่าน Messenger โดยตรง
+                        $result = $conversationService->processPaymentConfirmed(
+                            $model, null, $channelManager, $platform, $userId
+                        );
 
-                        if (! empty($result['message'])) {
+                        // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
+                        if (empty($result['streaming']) && ! empty($result['message'])) {
                             $channelManager->sendResponse($platform, $userId, $result);
                         }
                     } catch (\Exception $e) {
@@ -2060,27 +2045,13 @@ class SmsPaymentController extends Controller
             $platform = $reading->platform ?? 'facebook';
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-            // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
-            $result = $conversationService->processPaymentConfirmed($reading, $notification);
+            // Streaming mode: ส่ง chart + คำทำนายทีละข้อผ่าน Messenger โดยตรง
+            $result = $conversationService->processPaymentConfirmed(
+                $reading, $notification, $channelManager, $platform, $userId
+            );
 
-            // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
-            $chartUrl = $result['chart_image_url'] ?? null;
-            if ($chartUrl) {
-                try {
-                    $platformService = $channelManager->getPlatform($platform);
-                    if ($platformService) {
-                        $platformService->sendImage($userId, $chartUrl);
-                        usleep(500000);
-                    }
-                } catch (\Exception $imgErr) {
-                    Log::warning('SMS Payment: ส่ง chart image ไม่สำเร็จ (encrypted approve)', [
-                        'error' => $imgErr->getMessage(),
-                    ]);
-                }
-            }
-
-            // ส่งคำทำนายผ่าน Channel Manager
-            if (! empty($result['message'])) {
+            // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
+            if (empty($result['streaming']) && ! empty($result['message'])) {
                 $channelManager->sendResponse($platform, $userId, $result);
             }
         } catch (\Exception $e) {

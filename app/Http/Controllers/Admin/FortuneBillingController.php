@@ -180,49 +180,29 @@ class FortuneBillingController extends Controller
                 $platform = $reading->platform ?? 'facebook';
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-                // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
-                $result = $conversationService->processPaymentConfirmed($reading);
+                // ใช้ streaming mode — ส่ง chart + คำทำนายทีละข้อทันที (ป้องกัน timeout)
+                $result = $conversationService->processPaymentConfirmed(
+                    $reading, null, $channelManager, $platform, $userId
+                );
 
                 // ตรวจสอบว่า AI generation สำเร็จหรือไม่
-                $aiGenerationFailed = ($result['action'] ?? '') === 'error';
-
-                if ($aiGenerationFailed) {
-                    // AI generation ล้มเหลว — ส่ง fallback message ให้ลูกค้า + แจ้ง admin
-                    Log::warning('ManualConfirm: AI generation ล้มเหลว — ส่ง fallback message', [
+                if (($result['action'] ?? '') === 'error') {
+                    Log::warning('ManualConfirm: AI generation ล้มเหลว', [
                         'reading_id' => $reading->id,
                         'bill_reference' => $reading->bill_reference,
                     ]);
 
+                    // ส่ง fallback message ให้ลูกค้า
                     if (! empty($result['message'])) {
                         $channelManager->sendResponse($platform, $userId, $result);
                     }
 
-                    return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่ AI สร้างคำทำนายไม่สำเร็จ — กรุณาลองกด "ส่งคำทำนาย" อีกครั้ง หรือตรวจสอบ AI API Key');
+                    return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่ AI สร้างคำทำนายไม่สำเร็จ — กรุณาลองกด "🔮 ส่งคำทำนาย" อีกครั้ง');
                 }
 
-                // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
-                $chartUrl = $result['chart_image_url'] ?? null;
-                if ($chartUrl) {
-                    try {
-                        $platformService = $channelManager->getPlatform($platform);
-                        if ($platformService) {
-                            $platformService->sendImage($userId, $chartUrl);
-                            usleep(500000);
-                        }
-                    } catch (\Exception $imgErr) {
-                        Log::warning('ManualConfirm: ส่ง chart image ไม่สำเร็จ', [
-                            'error' => $imgErr->getMessage(),
-                        ]);
-                    }
-                }
+                $deepReadingSent = true;
 
-                // ส่งคำทำนายผ่าน Channel Manager
-                if (! empty($result['message'])) {
-                    $channelManager->sendResponse($platform, $userId, $result);
-                    $deepReadingSent = true;
-                }
-
-                Log::info('ManualConfirm: สร้างคำทำนาย + ส่งข้อความสำเร็จ', [
+                Log::info('ManualConfirm: สร้างคำทำนาย + ส่งข้อความสำเร็จ (streaming)', [
                     'reading_id' => $reading->id,
                     'bill_reference' => $reading->bill_reference,
                     'platform' => $platform,
@@ -314,8 +294,10 @@ class FortuneBillingController extends Controller
                 return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
             }
 
-            // สร้างคำทำนายใหม่
-            $result = $conversationService->processPaymentConfirmed($reading);
+            // ใช้ streaming mode — ส่ง chart + คำทำนายทีละข้อทันที (ป้องกัน timeout)
+            $result = $conversationService->processPaymentConfirmed(
+                $reading, null, $channelManager, $platform, $userId
+            );
 
             // ตรวจสอบว่า AI generation สำเร็จหรือไม่
             if (($result['action'] ?? '') === 'error') {
@@ -323,31 +305,10 @@ class FortuneBillingController extends Controller
                     'reading_id' => $reading->id,
                 ]);
 
-                return back()->with('warning', 'AI สร้างคำทำนายไม่สำเร็จอีกครั้ง — กรุณาตรวจสอบ AI API Key');
+                return back()->with('warning', 'AI สร้างคำทำนายไม่สำเร็จ — กรุณาตรวจสอบ AI API Key');
             }
 
-            // ส่ง Birth Chart (ถ้ามี)
-            $chartUrl = $result['chart_image_url'] ?? null;
-            if ($chartUrl) {
-                try {
-                    $platformService = $channelManager->getPlatform($platform);
-                    if ($platformService) {
-                        $platformService->sendImage($userId, $chartUrl);
-                        usleep(500000);
-                    }
-                } catch (\Exception $imgErr) {
-                    Log::warning('RetryFortune: ส่ง chart image ไม่สำเร็จ', [
-                        'error' => $imgErr->getMessage(),
-                    ]);
-                }
-            }
-
-            // ส่งคำทำนาย
-            if (! empty($result['message'])) {
-                $channelManager->sendResponse($platform, $userId, $result);
-            }
-
-            Log::info('RetryFortune: สร้างคำทำนาย + ส่งข้อความสำเร็จ', [
+            Log::info('RetryFortune: สร้างคำทำนาย + ส่งข้อความสำเร็จ (streaming)', [
                 'reading_id' => $reading->id,
                 'bill_reference' => $reading->bill_reference,
             ]);
