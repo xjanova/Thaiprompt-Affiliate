@@ -80,50 +80,92 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
         $this->platform = $platform;
         $this->userId = $userId;
 
-        // ใช้ database queue เพื่อรัน background จริง (ไม่ติด web timeout)
-        // ต้องมี jobs table + queue:work worker
-        $this->onConnection('database');
-        $this->onQueue('fortune-deep');
+        // ไม่ force connection ใน constructor — ให้ dispatchSmart() ตัดสินใจ
     }
 
     /**
-     * Dispatch job อัจฉริยะ — ลอง database queue ก่อน, fallback เป็น default
+     * Dispatch อัจฉริยะ — รัน fortune processing ใน background เสมอ
      *
-     * ถ้า jobs table มีอยู่ → dispatch ไป database queue (background จริง)
-     * ถ้าไม่มี → dispatch ตาม default driver (อาจเป็น sync)
+     * Priority:
+     * 1. Queue driver จริง (database/redis) → dispatch ไป queue worker
+     * 2. exec() background process → รัน artisan command แยก process (ไม่ติด web timeout)
+     * 3. Sync fallback → รันใน request เดิม (อาจติด web timeout)
      *
-     * @return \Illuminate\Foundation\Bus\PendingDispatch
+     * @return void
      */
-    public static function dispatchSmart(int $readingId, ?int $notificationId, string $platform, string $userId)
+    public static function dispatchSmart(int $readingId, ?int $notificationId, string $platform, string $userId): void
     {
-        $job = new self($readingId, $notificationId, $platform, $userId);
+        $driver = config('queue.default', 'sync');
 
-        // ตรวจว่ามี jobs table หรือไม่
-        try {
-            if (Schema::hasTable('jobs')) {
-                // มี jobs table → ใช้ database queue (background จริง)
-                Log::info('ProcessDeepFortuneReadingJob: dispatch ไป database queue', [
-                    'reading_id' => $readingId,
-                ]);
-
-                return dispatch($job);
-            }
-        } catch (\Exception $e) {
-            Log::warning('ProcessDeepFortuneReadingJob: ไม่สามารถเช็ค jobs table', [
-                'error' => $e->getMessage(),
-            ]);
-        }
-
-        // ไม่มี jobs table → fallback เป็น default driver
-        // ขยาย PHP timeout เพื่อป้องกัน PHP timeout (แม้ web server อาจยังตัด)
-        Log::info('ProcessDeepFortuneReadingJob: fallback ไป default queue driver', [
+        Log::info('ProcessDeepFortuneReadingJob: dispatch', [
             'reading_id' => $readingId,
+            'queue_driver' => $driver,
+            'platform' => $platform,
         ]);
 
-        $job->onConnection(config('queue.default', 'sync'));
-        $job->onQueue('default');
+        // ถ้ามี queue driver จริง → dispatch ไป queue worker (background)
+        if ($driver !== 'sync') {
+            $job = new self($readingId, $notificationId, $platform, $userId);
+            $job->onQueue('fortune-deep');
+            dispatch($job);
 
-        return dispatch($job);
+            return;
+        }
+
+        // Sync driver → ใช้ exec() รัน artisan command ใน background process แยก
+        // ไม่ติด web server (nginx) timeout เพราะเป็น process อิสระ
+        $artisan = base_path('artisan');
+        $php = self::findPhpBinary();
+        $notifArg = $notificationId ? " --notification-id={$notificationId}" : '';
+
+        // สร้าง command สำหรับ background process
+        $cmd = sprintf(
+            '%s %s fortune:process-deep %d %s %s%s',
+            escapeshellarg($php),
+            escapeshellarg($artisan),
+            $readingId,
+            escapeshellarg($platform),
+            escapeshellarg($userId),
+            $notifArg
+        );
+
+        // ตรวจสอบ OS เพื่อรัน background ให้ถูกต้อง
+        if (self::isWindows()) {
+            // Windows: ใช้ start /B
+            $bgCmd = "start /B {$cmd} > NUL 2>&1";
+        } else {
+            // Linux/Mac: ใช้ & + nohup
+            $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
+        }
+
+        Log::info('ProcessDeepFortuneReadingJob: exec background process', [
+            'reading_id' => $readingId,
+            'command' => $cmd,
+        ]);
+
+        exec($bgCmd);
+    }
+
+    /**
+     * หา PHP binary path
+     */
+    private static function findPhpBinary(): string
+    {
+        // ลองใช้ PHP_BINARY ก่อน
+        if (defined('PHP_BINARY') && PHP_BINARY !== '') {
+            return PHP_BINARY;
+        }
+
+        // Fallback: ใช้ 'php' ใน PATH
+        return 'php';
+    }
+
+    /**
+     * ตรวจสอบว่าเป็น Windows หรือไม่
+     */
+    private static function isWindows(): bool
+    {
+        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
     }
 
     /**
