@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\MessagingPlatformInterface;
+use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Support\Facades\Log;
@@ -429,16 +430,23 @@ class FortuneChannelManager
         $platform = $reading->platform ?? self::PLATFORM_FACEBOOK;
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-        // Streaming mode: ส่ง chart + คำทำนายทีละข้อโดยตรงจาก processPaymentConfirmed
-        $result = $this->conversationService->processPaymentConfirmed(
-            $reading, null, $this, $platform, $userId
+        // Dispatch background job → ไม่ติด web server timeout / webhook 5s timeout
+        // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+        ProcessDeepFortuneReadingJob::dispatchSmart(
+            $reading->id, null, $platform, $userId
         );
 
-        // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
-        if (empty($result['streaming']) && ! empty($result['message'])) {
-            $this->sendResponse($platform, $userId, $result);
-        }
+        Log::info('FortuneChannelManager: dispatch ProcessDeepFortuneReadingJob', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'user_id' => $userId,
+        ]);
 
-        return $result;
+        return [
+            'action' => 'queued',
+            'message' => null,
+            'reading' => $reading,
+            'streaming' => true,
+        ];
     }
 }

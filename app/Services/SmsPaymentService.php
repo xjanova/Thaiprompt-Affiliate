@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentTransaction;
@@ -538,41 +539,22 @@ class SmsPaymentService
             'user_id' => $userId,
         ]);
 
+        // อัพเดท notification สถานะเป็น matched ก่อน dispatch job
+        $notification->update([
+            'status' => 'matched',
+            'matched_transaction_id' => $reading->id,
+        ]);
+
+        // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
+        // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
         try {
-            // ประมวลผลการชำระเงินและทำนายละเอียด
-            $settings = FortuneTellingSetting::getSettings();
-            $conversationService = new FortuneConversationService($settings);
-            $channelManager = new FortuneChannelManager($settings);
-
-            // ส่ง typing indicator (สำหรับ Facebook เท่านั้น)
-            if ($platform === 'facebook') {
-                $facebookService = new FacebookWebhookService($settings);
-                $facebookService->sendTypingIndicator($userId);
-            }
-
-            // Streaming mode: ส่ง chart + คำทำนายทีละข้อผ่าน Messenger โดยตรง (ป้องกัน timeout)
-            $result = $conversationService->processPaymentConfirmed(
-                $reading, $notification, $channelManager, $platform, $userId
+            ProcessDeepFortuneReadingJob::dispatchSmart(
+                $reading->id, $notification->id, $platform, $userId
             );
 
-            // ปิด typing indicator (สำหรับ Facebook เท่านั้น)
-            if ($platform === 'facebook') {
-                $facebookService->sendTypingIndicator($userId, false);
-            }
-
-            // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
-            if (empty($result['streaming']) && ! empty($result['message'])) {
-                $channelManager->sendResponse($platform, $userId, $result);
-            }
-
-            // อัพเดท notification สถานะเป็น matched
-            $notification->update([
-                'status' => 'matched',
-                'matched_transaction_id' => $reading->id,
-            ]);
-
-            Log::info('SMS Payment: ส่งคำทำนายดูดวงสำเร็จ', [
+            Log::info('SMS Payment: dispatch ProcessDeepFortuneReadingJob', [
                 'reading_id' => $reading->id,
+                'notification_id' => $notification->id,
                 'platform' => $platform,
                 'user_id' => $userId,
             ]);
@@ -580,22 +562,11 @@ class SmsPaymentService
             return true;
 
         } catch (\Exception $e) {
-            Log::error('SMS Payment: ส่งคำทำนายดูดวงล้มเหลว', [
+            Log::error('SMS Payment: dispatch job ล้มเหลว', [
                 'reading_id' => $reading->id,
                 'platform' => $platform,
                 'error' => $e->getMessage(),
             ]);
-
-            // ส่งข้อความแจ้ง error
-            try {
-                $settings = FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
-                $channelManager->sendResponse($platform, $userId, [
-                    'message' => "✅ ได้รับการชำระเงินแล้วค่ะ!\n\nขออภัย เกิดข้อผิดพลาดในการทำนาย กรุณาติดต่อแอดมินเพื่อรับคำทำนาย 🙏",
-                ]);
-            } catch (\Exception $msgError) {
-                Log::error('SMS Payment: ส่งข้อความ error ล้มเหลว', ['error' => $msgError->getMessage()]);
-            }
 
             return false;
         }

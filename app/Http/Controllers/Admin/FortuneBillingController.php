@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\User;
@@ -172,58 +173,26 @@ class FortuneBillingController extends Controller
         $hasQuestions = ! empty($reading->getCollectedQuestions());
 
         if ($hasQuestions) {
-            try {
-                $settings = FortuneTellingSetting::getSettings();
-                $conversationService = new FortuneConversationService($settings);
-                $channelManager = new FortuneChannelManager($settings);
+            $platform = $reading->platform ?? 'facebook';
+            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-                $platform = $reading->platform ?? 'facebook';
-                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-
-                // ใช้ streaming mode — ส่ง chart + คำทำนายทีละข้อทันที (ป้องกัน timeout)
-                $result = $conversationService->processPaymentConfirmed(
-                    $reading, null, $channelManager, $platform, $userId
-                );
-
-                // ตรวจสอบว่า AI generation สำเร็จหรือไม่
-                if (($result['action'] ?? '') === 'error') {
-                    Log::warning('ManualConfirm: AI generation ล้มเหลว', [
-                        'reading_id' => $reading->id,
-                        'bill_reference' => $reading->bill_reference,
-                    ]);
-
-                    // ส่ง fallback message ให้ลูกค้า
-                    if (! empty($result['message'])) {
-                        $channelManager->sendResponse($platform, $userId, $result);
-                    }
-
-                    return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่ AI สร้างคำทำนายไม่สำเร็จ — กรุณาลองกด "🔮 ส่งคำทำนาย" อีกครั้ง');
-                }
-
-                $deepReadingSent = true;
-
-                Log::info('ManualConfirm: สร้างคำทำนาย + ส่งข้อความสำเร็จ (streaming)', [
-                    'reading_id' => $reading->id,
-                    'bill_reference' => $reading->bill_reference,
-                    'platform' => $platform,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('ManualConfirm: สร้างคำทำนายล้มเหลว', [
-                    'reading_id' => $reading->id,
-                    'error' => $e->getMessage(),
-                ]);
-
-                // Fallback: ถ้าสร้างคำทำนายไม่ได้ แค่ confirm payment
-                if (! $reading->is_paid) {
-                    $reading->update([
-                        'is_paid' => true,
-                        'paid_at' => now(),
-                        'conversation_status' => FortuneReading::STATUS_PAID,
-                    ]);
-                }
-
-                return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่สร้างคำทำนายไม่สำเร็จ: '.$e->getMessage());
+            if (! $userId) {
+                return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
             }
+
+            // Dispatch background job → ไม่ติด web server timeout
+            // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+            ProcessDeepFortuneReadingJob::dispatchSmart(
+                $reading->id, null, $platform, $userId
+            );
+
+            $deepReadingSent = true;
+
+            Log::info('ManualConfirm: dispatch ProcessDeepFortuneReadingJob', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'platform' => $platform,
+            ]);
         } else {
             // ไม่มีคำถาม (บิลพื้นฐาน) → แค่ confirm payment
             $reading->update([
@@ -282,46 +251,25 @@ class FortuneBillingController extends Controller
             return back()->with('error', 'บิลนี้ไม่มีคำถาม — ไม่สามารถสร้างคำทำนายได้');
         }
 
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $conversationService = new FortuneConversationService($settings);
-            $channelManager = new FortuneChannelManager($settings);
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
-            $platform = $reading->platform ?? 'facebook';
-            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-
-            if (! $userId) {
-                return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
-            }
-
-            // ใช้ streaming mode — ส่ง chart + คำทำนายทีละข้อทันที (ป้องกัน timeout)
-            $result = $conversationService->processPaymentConfirmed(
-                $reading, null, $channelManager, $platform, $userId
-            );
-
-            // ตรวจสอบว่า AI generation สำเร็จหรือไม่
-            if (($result['action'] ?? '') === 'error') {
-                Log::warning('RetryFortune: AI generation ล้มเหลว', [
-                    'reading_id' => $reading->id,
-                ]);
-
-                return back()->with('warning', 'AI สร้างคำทำนายไม่สำเร็จ — กรุณาตรวจสอบ AI API Key');
-            }
-
-            Log::info('RetryFortune: สร้างคำทำนาย + ส่งข้อความสำเร็จ (streaming)', [
-                'reading_id' => $reading->id,
-                'bill_reference' => $reading->bill_reference,
-            ]);
-
-            return back()->with('success', 'ส่งคำทำนายให้ลูกค้าสำเร็จ ✨');
-        } catch (\Exception $e) {
-            Log::error('RetryFortune: ล้มเหลว', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', 'ส่งคำทำนายไม่สำเร็จ: '.$e->getMessage());
+        if (! $userId) {
+            return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
         }
+
+        // Dispatch background job → ไม่ติด web server timeout
+        // Job จะ: สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+        ProcessDeepFortuneReadingJob::dispatchSmart(
+            $reading->id, null, $platform, $userId
+        );
+
+        Log::info('RetryFortune: dispatch ProcessDeepFortuneReadingJob', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+        ]);
+
+        return back()->with('success', 'กำลังสร้างคำทำนายและส่งให้ลูกค้า... ⏳ (ใช้เวลาประมาณ 1-2 นาที)');
     }
 
     /**
