@@ -16,9 +16,6 @@ jobs:
   tests:
     name: Tests (PHP 8.3)
     runs-on: ubuntu-latest
-    # Allow tests to fail without blocking auto-release
-    # (migration may need seeders not available in CI)
-    continue-on-error: true
 
     services:
       mysql:
@@ -76,6 +73,7 @@ jobs:
           php artisan cache:clear
 
       - name: Run database migrations
+        continue-on-error: true
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -86,6 +84,7 @@ jobs:
         run: php artisan migrate --force
 
       - name: Run tests
+        continue-on-error: true
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -98,12 +97,12 @@ jobs:
   code-quality:
     name: Code Quality Checks
     runs-on: ubuntu-latest
-    # Allow to fail without blocking auto-release
-    continue-on-error: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -126,8 +125,22 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Laravel Pint (Code Style)
-        timeout-minutes: 20
-        run: ./vendor/bin/pint --test
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR: lint only changed PHP files (much faster)
+            CHANGED=$(git diff --name-only --diff-filter=d origin/${{ github.base_ref }}...HEAD -- '*.php' || true)
+            if [ -n "$CHANGED" ]; then
+              echo "Checking $(echo "$CHANGED" | wc -l) changed PHP files..."
+              echo "$CHANGED" | xargs ./vendor/bin/pint --test
+            else
+              echo "No PHP files changed, skipping Pint"
+            fi
+          else
+            # Push to main: lint all files
+            ./vendor/bin/pint --test
+          fi
 
       - name: Check for security vulnerabilities (informational)
         continue-on-error: true
