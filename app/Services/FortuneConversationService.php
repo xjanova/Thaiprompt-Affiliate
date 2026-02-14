@@ -62,6 +62,35 @@ class FortuneConversationService
     public const MAX_MESSAGE_LENGTH = 2000;
 
     /**
+     * คำถามสำเร็จรูปแยกตามหมวดหมู่
+     *
+     * ใช้สำหรับ Quick Reply buttons — user กดเลือกหมวดแทนพิมพ์เอง
+     * แต่ละหมวดมี 3 คำถาม เพื่อให้ไม่ซ้ำกันเมื่อกดหมวดเดิมหลายครั้ง
+     */
+    protected const CATEGORY_QUESTION_MAP = [
+        'love' => [
+            'ดวงความรักและเนื้อคู่ในช่วงนี้เป็นอย่างไร',
+            'จะมีคู่ครองหรือคนรักใหม่เข้ามาไหม',
+            'ความสัมพันธ์กับคนรักจะเป็นอย่างไร',
+        ],
+        'work' => [
+            'ดวงการงานและอาชีพในช่วงนี้เป็นอย่างไร',
+            'จะได้เลื่อนตำแหน่งหรือเปลี่ยนงานไหม',
+            'ธุรกิจหรืองานที่ทำจะเจริญก้าวหน้าไหม',
+        ],
+        'money' => [
+            'ดวงการเงินและรายได้ในช่วงนี้เป็นอย่างไร',
+            'จะมีโชคลาภหรือรายได้พิเศษไหม',
+            'การลงทุนหรือการออมเงินจะเป็นอย่างไร',
+        ],
+        'health' => [
+            'ดวงสุขภาพในช่วงนี้ต้องระวังอะไรบ้าง',
+            'สุขภาพโดยรวมจะเป็นอย่างไร',
+            'มีเรื่องสุขภาพอะไรที่ควรใส่ใจเป็นพิเศษ',
+        ],
+    ];
+
+    /**
      * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที - เพิ่มให้คุยได้ลื่นขึ้น
      */
     public const MAX_MESSAGES_PER_MINUTE = 30;
@@ -676,7 +705,7 @@ class FortuneConversationService
             $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-            $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
+            $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
         }
 
         return [
@@ -777,8 +806,7 @@ class FortuneConversationService
         if ($remaining > 0) {
             $message .= "💫 จะให้จันทราดูดวงให้ไหมคะ?\n";
             $message .= "ไม่ว่าจะเรื่อง ความรัก 💕 การงาน 💼 การเงิน 💰 สุขภาพ 🏥\n\n";
-            $message .= "ตอบ 'ดู' หรือ 'เอา' เพื่อเริ่มทำนายค่ะ ✨\n";
-            $message .= "ตอบ 'ไม่' หากยังไม่ต้องการ";
+            $message .= 'กดเลือกด้านล่าง หรือพิมพ์คำถามมาได้เลยค่ะ 👇';
         } else {
             // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -788,7 +816,7 @@ class FortuneConversationService
             $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-            $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
+            $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
         }
 
         return [
@@ -1243,29 +1271,32 @@ class FortuneConversationService
     }
 
     /**
-     * จัดการ input คำถาม
+     * จัดการ input คำถาม — เก็บทีละข้อ
+     *
+     * รับข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split อีกต่อไป)
+     * ถ้ายังไม่ครบ 3 ข้อ → return action 'need_more_questions'
+     * ถ้าครบ 3 ข้อ → สร้างบิลรอชำระ
      */
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
-        // พยายาม parse คำถามหลายข้อจากข้อความเดียว
-        $questions = $this->parseMultipleQuestions($messageText);
-
-        foreach ($questions as $question) {
-            if (! empty(trim($question))) {
-                $reading->addQuestion(trim($question));
-            }
+        // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
+        $question = trim($messageText);
+        if (! empty($question)) {
+            $reading->addQuestion($question);
         }
 
         $collectedQuestions = $reading->getCollectedQuestions();
         $questionCount = count($collectedQuestions);
 
         if ($questionCount < self::REQUIRED_QUESTIONS) {
-            $remaining = self::REQUIRED_QUESTIONS - $questionCount;
+            $nextNumber = $questionCount + 1;
 
             return [
                 'action' => 'need_more_questions',
-                'message' => "✅ รับคำถามแล้ว {$questionCount} ข้อ\n\nกรุณาพิมพ์คำถามอีก {$remaining} ข้อค่ะ\n\nหรือพิมพ์ทุกคำถามในครั้งเดียว คั่นด้วย , หรือขึ้นบรรทัดใหม่",
+                'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n".
+                             "📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS." — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇",
                 'reading' => $reading,
+                'question_number' => $nextNumber,
             ];
         }
 
@@ -1568,8 +1599,7 @@ class FortuneConversationService
                "📍 บอกวันเดือนปีเกิด\n".
                "📍 ถามได้ 3 คำถาม\n".
                "📍 เริ่มต้นเพียง {$price} บาท\n\n".
-               "ตอบ 'ต้องการ' หรือ 'เอา' เพื่อเริ่มต้นค่ะ ✨\n".
-               "ตอบ 'ไม่' หากไม่ต้องการ";
+               'กดเลือกด้านล่างได้เลยค่ะ 👇';
     }
 
     /**
@@ -1585,7 +1615,7 @@ class FortuneConversationService
     }
 
     /**
-     * สร้างข้อความขอคำถาม
+     * สร้างข้อความขอคำถาม — บอกให้กดปุ่มเลือกหมวดได้
      */
     protected function getQuestionsRequestMessage(string $name, string $birthDate): string
     {
@@ -1597,12 +1627,7 @@ class FortuneConversationService
                "🔮 *ตั้งคำถาม {$count} ข้อ*\n".
                "═══════════════════════\n\n".
                "คุณ{$name} ต้องการถามเรื่องอะไรบ้างคะ?\n\n".
-               "💡 ตัวอย่างคำถาม:\n".
-               "• การเงินปีนี้เป็นอย่างไร\n".
-               "• ความรักจะสมหวังไหม\n".
-               "• การงานจะเจริญก้าวหน้าไหม\n\n".
-               "📝 พิมพ์ทีละข้อ หรือพิมพ์ทั้ง {$count} ข้อในครั้งเดียว\n".
-               '(คั่นด้วย , หรือขึ้นบรรทัดใหม่)';
+               "📝 คำถามข้อที่ 1 จาก {$count} — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇";
     }
 
     /**
@@ -2400,8 +2425,7 @@ class FortuneConversationService
         $message .= "3️⃣ ระบบจะออกบิลพร้อมยอดชำระ\n";
         $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
 
-        $message .= "💡 พิมพ์ \"*ต้องการดูละเอียด*\" หรือ \"*โอนแล้ว*\"\n";
-        $message .= 'เพื่อเริ่มกระบวนการค่ะ ✨';
+        $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
 
         return $message;
     }
@@ -2622,6 +2646,51 @@ class FortuneConversationService
         }
 
         return array_values($questions);
+    }
+
+    /**
+     * สร้างคำถามสำเร็จรูปจากหมวดที่ user เลือก
+     *
+     * เลือกคำถามจาก CATEGORY_QUESTION_MAP ที่ไม่ซ้ำกับคำถามที่เก็บไปแล้ว
+     * ถ้าคำถามในหมวดเดียวกันถูกใช้หมดแล้ว จะสุ่มคำถามจากหมวดอื่นแทน
+     *
+     * @param  string  $category  หมวดคำถาม (love, work, money, health)
+     * @param  array  $existingQuestions  คำถามที่เก็บไปแล้ว
+     * @return string  คำถามที่สร้างขึ้น
+     */
+    public function getQuestionForCategory(string $category, array $existingQuestions = []): string
+    {
+        $categoryQuestions = self::CATEGORY_QUESTION_MAP[$category] ?? [];
+
+        // กรองคำถามที่ยังไม่เคยใช้
+        $available = array_filter($categoryQuestions, function ($q) use ($existingQuestions) {
+            return ! in_array($q, $existingQuestions);
+        });
+
+        if (! empty($available)) {
+            // สุ่มเลือกจากคำถามที่ยังว่าง
+            $values = array_values($available);
+
+            return $values[array_rand($values)];
+        }
+
+        // ถ้าหมวดนี้ใช้หมดแล้ว → หาจากหมวดอื่น
+        foreach (self::CATEGORY_QUESTION_MAP as $cat => $questions) {
+            if ($cat === $category) {
+                continue;
+            }
+            $available = array_filter($questions, function ($q) use ($existingQuestions) {
+                return ! in_array($q, $existingQuestions);
+            });
+            if (! empty($available)) {
+                $values = array_values($available);
+
+                return $values[array_rand($values)];
+            }
+        }
+
+        // fallback: ใช้คำถามแรกของหมวดที่เลือก
+        return $categoryQuestions[0] ?? 'ดวงชะตาในช่วงนี้เป็นอย่างไร';
     }
 
     /**

@@ -774,7 +774,7 @@ class FacebookWebhookController extends Controller
             }
 
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
-            $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining'];
+            $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining', 'collecting_questions', 'need_more_questions'];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
@@ -881,15 +881,22 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงรวม', 'payload' => 'FORTUNE_OVERVIEW'],
             ],
             'basic_done' => [
-                ['content_type' => 'text', 'title' => '✨ ดูละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '❌ ไม่ต้องค่ะ', 'payload' => 'DEEP_READING_NO'],
                 ['content_type' => 'text', 'title' => '💕 ถามเรื่องรัก', 'payload' => 'FORTUNE_LOVE'],
                 ['content_type' => 'text', 'title' => '💼 ถามเรื่องงาน', 'payload' => 'FORTUNE_WORK'],
-                ['content_type' => 'text', 'title' => '💰 ถามเรื่องเงิน', 'payload' => 'FORTUNE_MONEY'],
                 ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+            ],
+            'collecting_questions', 'need_more_questions' => [
+                ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'QUESTION_LOVE'],
+                ['content_type' => 'text', 'title' => '💼 การงาน', 'payload' => 'QUESTION_WORK'],
+                ['content_type' => 'text', 'title' => '💰 การเงิน', 'payload' => 'QUESTION_MONEY'],
+                ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'QUESTION_HEALTH'],
+                ['content_type' => 'text', 'title' => '✏️ พิมพ์เอง', 'payload' => 'QUESTION_CUSTOM'],
             ],
             default => null,
         };
@@ -1104,13 +1111,21 @@ class FacebookWebhookController extends Controller
             // Quick Replies ใหม่สำหรับ conversational flow
             'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'DEEP_READING_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+            'DEEP_READING_NO' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
 
-            // Quick Replies หมวดคำทำนาย
+            // Quick Replies หมวดคำทำนาย (ดูดวงฟรี)
             'FORTUNE_LOVE' => $this->processConversationalMessage($senderId, 'ดูดวงความรัก เนื้อคู่ คู่ครอง'),
             'FORTUNE_WORK' => $this->processConversationalMessage($senderId, 'ดูดวงการงาน อาชีพ เลื่อนตำแหน่ง'),
             'FORTUNE_MONEY' => $this->processConversationalMessage($senderId, 'ดูดวงการเงิน รายได้ การลงทุน'),
             'FORTUNE_HEALTH' => $this->processConversationalMessage($senderId, 'ดูดวงสุขภาพ สิ่งที่ต้องระวัง'),
             'FORTUNE_OVERVIEW' => $this->processConversationalMessage($senderId, 'ดูดวงภาพรวมทุกด้าน ความรัก การงาน การเงิน สุขภาพ'),
+
+            // Quick Replies สำหรับเลือกหมวดคำถาม (ดูดวงละเอียด — เก็บทีละข้อ)
+            'QUESTION_LOVE' => $this->handleCategoryQuestion($senderId, 'love'),
+            'QUESTION_WORK' => $this->handleCategoryQuestion($senderId, 'work'),
+            'QUESTION_MONEY' => $this->handleCategoryQuestion($senderId, 'money'),
+            'QUESTION_HEALTH' => $this->handleCategoryQuestion($senderId, 'health'),
+            'QUESTION_CUSTOM' => $this->sendCustomQuestionPrompt($senderId),
 
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
@@ -1151,6 +1166,63 @@ class FacebookWebhookController extends Controller
         } else {
             $this->facebookService->sendMessage($comment['from']['id'] ?? '', $message);
         }
+    }
+
+    /**
+     * จัดการเมื่อ user กดปุ่มเลือกหมวดคำถาม (Quick Reply)
+     *
+     * ดึงคำถามสำเร็จรูปจาก CATEGORY_QUESTION_MAP แล้วส่งเข้า conversation
+     * เหมือนกับว่า user พิมพ์คำถามเอง
+     *
+     * @param  string  $senderId  Facebook user ID
+     * @param  string  $category  หมวดคำถาม (love, work, money, health)
+     */
+    protected function handleCategoryQuestion(string $senderId, string $category): void
+    {
+        try {
+            // ดึง active reading เพื่อเช็คคำถามที่เก็บไปแล้ว
+            $reading = FortuneReading::where('facebook_user_id', $senderId)
+                ->where('conversation_status', FortuneReading::STATUS_COLLECTING_QUESTIONS)
+                ->latest()
+                ->first();
+
+            $existingQuestions = [];
+            if ($reading) {
+                $existingQuestions = $reading->getCollectedQuestions();
+            }
+
+            // สร้างคำถามจากหมวดที่เลือก (ไม่ซ้ำกับที่เก็บไปแล้ว)
+            $question = $this->conversationService->getQuestionForCategory($category, $existingQuestions);
+
+            // ส่งเข้า processConversationalMessage เหมือน user พิมพ์เอง
+            $this->processConversationalMessage($senderId, $question);
+        } catch (\Exception $e) {
+            Log::error('handleCategoryQuestion error: '.$e->getMessage(), [
+                'sender_id' => $senderId,
+                'category' => $category,
+            ]);
+            // Fallback: ส่งข้อความแจ้ง
+            $this->facebookService->sendMessage($senderId, "🔮 ขอโทษค่ะ ลองกดเลือกอีกครั้งนะคะ ✨");
+        }
+    }
+
+    /**
+     * ส่ง prompt ให้ user พิมพ์คำถามเอง
+     *
+     * เมื่อ user กดปุ่ม "✏️ พิมพ์เอง" จะส่งข้อความตัวอย่างให้
+     *
+     * @param  string  $senderId  Facebook user ID
+     */
+    protected function sendCustomQuestionPrompt(string $senderId): void
+    {
+        $message = "✏️ *พิมพ์คำถามที่ต้องการถามได้เลยค่ะ*\n\n";
+        $message .= "💡 ตัวอย่าง:\n";
+        $message .= "• ปีนี้จะมีคู่ครองไหม\n";
+        $message .= "• ควรเปลี่ยนงานตอนนี้ไหม\n";
+        $message .= "• การเงินช่วงนี้จะเป็นอย่างไร\n\n";
+        $message .= 'พิมพ์คำถามมาได้เลยค่ะ 👇';
+
+        $this->facebookService->sendMessage($senderId, $message);
     }
 
     /**
