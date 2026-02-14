@@ -383,7 +383,14 @@ class FortuneConversationService
                 return $this->continueConversation($activeReading, $messageText, $userProfile);
             }
 
-            // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
+            // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
+            // เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" จาก ai_limit → ต้องเข้า flow เก็บวันเกิด+คำถาม ไม่ใช่วน ai_limit ซ้ำ
+            // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
+            if ($this->isExplicitDeepReadingRequest($messageText)) {
+                return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            }
+
+            // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI (เฉพาะบริการฟรี)
             if (! $this->canMakeAICall($facebookUserId)) {
                 return [
                     'action' => 'ai_limit',
@@ -1239,6 +1246,69 @@ class FortuneConversationService
             'message' => "ไม่เป็นไรค่ะ หากต้องการดูดวงอีกครั้ง พิมพ์ 'ดูดวง' ได้เลยนะคะ ✨\n\nอย่าลืมส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮",
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * เริ่ม flow ดูดวงละเอียด (บริการเสียเงิน) — สร้าง reading ใหม่ + ถามวันเกิด
+     *
+     * ใช้เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" โดยไม่มี active reading (เช่น หลังจาก ai_limit)
+     * ข้าม canMakeAICall() เพราะเป็นบริการเสียเงิน ไม่ใช่บริการฟรี
+     *
+     * @param string $facebookUserId
+     * @param array|null $userProfile
+     * @return array
+     */
+    protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null): array
+    {
+        try {
+            // ดึงโปรไฟล์ถ้ายังไม่มี
+            if (empty($userProfile)) {
+                $userProfile = $this->facebookService->getUserProfile($facebookUserId);
+            }
+            if (! is_array($userProfile)) {
+                $userProfile = ['name' => 'คุณ', 'id' => $facebookUserId];
+            }
+
+            // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
+            $this->closeAllActiveConversations($facebookUserId);
+
+            $name = $userProfile['name'] ?? 'คุณ';
+
+            // สร้าง FortuneReading ใหม่สำหรับ deep reading
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $facebookUserId,
+                'facebook_user_name' => $name,
+                'user_profile' => $userProfile,
+                'questions' => [],
+                'reading_type' => 'deep',
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                'response_type' => 'private_message',
+                'ai_response' => '',
+                'ai_provider' => '',
+            ]);
+
+            Log::info('Fortune: เริ่ม deep reading flow ใหม่ (ข้าม free limit)', [
+                'facebook_user_id' => $facebookUserId,
+                'reading_id' => $reading->id,
+            ]);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => $this->getBirthdateRequestMessage(),
+                'reading' => $reading,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Fortune: เกิดข้อผิดพลาดในการเริ่ม deep reading flow', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'error',
+                'message' => "ขอโทษค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'reading' => null,
+            ];
+        }
     }
 
     /**
@@ -2527,7 +2597,7 @@ class FortuneConversationService
     }
 
     /**
-     * ตรวจสอบว่าต้องการดูดวงละเอียดหรือไม่
+     * ตรวจสอบว่าต้องการดูดวงละเอียดหรือไม่ (ใช้ตอนมี active reading อยู่แล้ว — keyword กว้าง)
      */
     protected function isDeepReadingAccepted(string $text): bool
     {
@@ -2535,6 +2605,35 @@ class FortuneConversationService
         $text = mb_strtolower(trim($text));
 
         foreach ($acceptKeywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูดวงละเอียดอย่างชัดเจน (ใช้ตอนไม่มี active reading — keyword เข้มงวด)
+     *
+     * ใช้ keyword ที่เฉพาะเจาะจงกว่า isDeepReadingAccepted() เพื่อไม่ให้คำทั่วไป
+     * อย่าง "ใช่", "ได้", "ok" trigger การเริ่ม deep reading flow โดยไม่ตั้งใจ
+     */
+    protected function isExplicitDeepReadingRequest(string $text): bool
+    {
+        $explicitKeywords = [
+            'ต้องการดูละเอียด',
+            'ดูดวงละเอียด',
+            'ดูละเอียด',
+            'ต้องการดูดวงละเอียด',
+            'อยากดูละเอียด',
+            'สนใจดูละเอียด',
+            'เอาละเอียด',
+            'ดูเพิ่มเติม',
+        ];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($explicitKeywords as $keyword) {
             if (str_contains($text, $keyword)) {
                 return true;
             }
