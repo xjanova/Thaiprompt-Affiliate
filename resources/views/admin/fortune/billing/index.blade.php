@@ -261,7 +261,7 @@
                                         </button>
                                     @endif
                                     @if($bill->is_paid && !$bill->is_floating)
-                                        @if($bill->is_paid && !empty($bill->getCollectedQuestions()) && empty($bill->deep_reading))
+                                        @if($bill->is_paid && !empty($bill->getCollectedQuestions()) && empty($bill->deep_response))
                                             <form action="{{ route('admin.fortune.billing.retry-fortune', $bill) }}" method="POST" class="inline"
                                                   onsubmit="return confirm('ต้องการส่งคำทำนายให้ลูกค้าอีกครั้ง?')">
                                                 @csrf
