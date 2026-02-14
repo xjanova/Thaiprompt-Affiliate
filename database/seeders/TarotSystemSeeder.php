@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\TarotCard;
-use App\Models\TarotSpreadType;
+use App\Models\TarotCardBackImage;
 use App\Models\TarotReadingCategory;
 use App\Models\TarotSetting;
-use App\Models\TarotCardBackImage;
+use App\Models\TarotSpreadType;
 use Illuminate\Database\Seeder;
 
 class TarotSystemSeeder extends Seeder
@@ -239,35 +239,35 @@ class TarotSystemSeeder extends Seeder
             TarotCard::create(array_merge($card, [
                 'type' => 'major_arcana',
                 'suit' => null,
-                'description_en' => $card['name_en'] . ' represents ' . implode(', ', $card['keywords_en']),
-                'description_th' => 'ไพ่' . $card['name_th'] . ' แทน' . implode(', ', $card['keywords_th']),
-                'upright_meaning_en' => 'Upright: ' . implode(', ', $card['keywords_en']),
-                'reversed_meaning_en' => 'Reversed: Blocked or excessive ' . implode(', ', $card['keywords_en']),
+                'description_en' => $card['name_en'].' represents '.implode(', ', $card['keywords_en']),
+                'description_th' => 'ไพ่'.$card['name_th'].' แทน'.implode(', ', $card['keywords_th']),
+                'upright_meaning_en' => 'Upright: '.implode(', ', $card['keywords_en']),
+                'reversed_meaning_en' => 'Reversed: Blocked or excessive '.implode(', ', $card['keywords_en']),
             ]));
         }
 
         // Minor Arcana - Wands (14 cards)
         $this->seedMinorArcana('wands', 'ไม้เท้า', [
             'en' => ['passion', 'creativity', 'action', 'adventure'],
-            'th' => ['ความหลงใหล', 'ความคิดสร้างสรรค์', 'การกระทำ', 'การผจญภัย']
+            'th' => ['ความหลงใหล', 'ความคิดสร้างสรรค์', 'การกระทำ', 'การผจญภัย'],
         ]);
 
         // Minor Arcana - Cups (14 cards)
         $this->seedMinorArcana('cups', 'ถ้วย', [
             'en' => ['emotions', 'relationships', 'feelings', 'intuition'],
-            'th' => ['อารมณ์', 'ความสัมพันธ์', 'ความรู้สึก', 'สัญชาตญาณ']
+            'th' => ['อารมณ์', 'ความสัมพันธ์', 'ความรู้สึก', 'สัญชาตญาณ'],
         ]);
 
         // Minor Arcana - Swords (14 cards)
         $this->seedMinorArcana('swords', 'ดาบ', [
             'en' => ['thoughts', 'intellect', 'conflict', 'communication'],
-            'th' => ['ความคิด', 'สติปัญญา', 'ความขัดแย้ง', 'การสื่อสาร']
+            'th' => ['ความคิด', 'สติปัญญา', 'ความขัดแย้ง', 'การสื่อสาร'],
         ]);
 
         // Minor Arcana - Pentacles (14 cards)
         $this->seedMinorArcana('pentacles', 'เหรียญ', [
             'en' => ['material', 'money', 'career', 'practical'],
-            'th' => ['วัตถุ', 'เงิน', 'การงาน', 'ความเป็นจริง']
+            'th' => ['วัตถุ', 'เงิน', 'การงาน', 'ความเป็นจริง'],
         ]);
     }
 
@@ -298,16 +298,16 @@ class TarotSystemSeeder extends Seeder
                 'type' => 'minor_arcana',
                 'suit' => $suit,
                 'number' => $rank['number'],
-                'name_en' => $rank['name'] . ' of ' . ucfirst($suit),
-                'name_th' => $rank['name_th'] . 'แห่ง' . $suitTh,
+                'name_en' => $rank['name'].' of '.ucfirst($suit),
+                'name_th' => $rank['name_th'].'แห่ง'.$suitTh,
                 'keywords_en' => $keywords['en'],
                 'keywords_th' => $keywords['th'],
-                'description_en' => $rank['name'] . ' of ' . ucfirst($suit) . ' - ' . implode(', ', $keywords['en']),
-                'description_th' => $rank['name_th'] . 'แห่ง' . $suitTh . ' - ' . implode(', ', $keywords['th']),
-                'upright_meaning_en' => 'Positive aspects of ' . implode(', ', $keywords['en']),
-                'upright_meaning_th' => 'ด้านบวกของ' . implode(', ', $keywords['th']),
-                'reversed_meaning_en' => 'Negative aspects of ' . implode(', ', $keywords['en']),
-                'reversed_meaning_th' => 'ด้านลบของ' . implode(', ', $keywords['th']),
+                'description_en' => $rank['name'].' of '.ucfirst($suit).' - '.implode(', ', $keywords['en']),
+                'description_th' => $rank['name_th'].'แห่ง'.$suitTh.' - '.implode(', ', $keywords['th']),
+                'upright_meaning_en' => 'Positive aspects of '.implode(', ', $keywords['en']),
+                'upright_meaning_th' => 'ด้านบวกของ'.implode(', ', $keywords['th']),
+                'reversed_meaning_en' => 'Negative aspects of '.implode(', ', $keywords['en']),
+                'reversed_meaning_th' => 'ด้านลบของ'.implode(', ', $keywords['th']),
             ]);
         }
     }
@@ -325,7 +325,7 @@ class TarotSystemSeeder extends Seeder
                 'description_th' => 'การทำนายแบบไพ่ใบเดียวสำหรับคำตอบรวดเร็ว',
                 'card_count' => 1,
                 'positions' => [
-                    ['name_en' => 'Answer', 'name_th' => 'คำตอบ', 'description_th' => 'คำตอบของคำถามที่คุณถาม']
+                    ['name_en' => 'Answer', 'name_th' => 'คำตอบ', 'description_th' => 'คำตอบของคำถามที่คุณถาม'],
                 ],
                 'sort_order' => 1,
             ],
@@ -338,7 +338,7 @@ class TarotSystemSeeder extends Seeder
                 'positions' => [
                     ['name_en' => 'Past', 'name_th' => 'อดีต', 'description_th' => 'สิ่งที่ผ่านมาที่มีผลต่อปัจจุบัน'],
                     ['name_en' => 'Present', 'name_th' => 'ปัจจุบัน', 'description_th' => 'สถานการณ์ปัจจุบันของคุณ'],
-                    ['name_en' => 'Future', 'name_th' => 'อนาคต', 'description_th' => 'สิ่งที่กำลังจะเกิดขึ้น']
+                    ['name_en' => 'Future', 'name_th' => 'อนาคต', 'description_th' => 'สิ่งที่กำลังจะเกิดขึ้น'],
                 ],
                 'sort_order' => 2,
             ],
@@ -358,7 +358,7 @@ class TarotSystemSeeder extends Seeder
                     ['name_en' => 'Advice', 'name_th' => 'คำแนะนำ', 'description_th' => 'สิ่งที่คุณควรทำ'],
                     ['name_en' => 'External', 'name_th' => 'ภายนอก', 'description_th' => 'อิทธิพลจากภายนอก'],
                     ['name_en' => 'Hopes', 'name_th' => 'ความหวัง', 'description_th' => 'ความหวังและความกลัว'],
-                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'ผลลัพธ์สุดท้าย']
+                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'ผลลัพธ์สุดท้าย'],
                 ],
                 'sort_order' => 3,
             ],
@@ -373,7 +373,7 @@ class TarotSystemSeeder extends Seeder
                     ['name_en' => 'Partner', 'name_th' => 'คู่ของคุณ', 'description_th' => 'สถานะของคู่'],
                     ['name_en' => 'Connection', 'name_th' => 'ความเชื่อมโยง', 'description_th' => 'สิ่งที่เชื่อมคุณทั้งสอง'],
                     ['name_en' => 'Challenge', 'name_th' => 'อุปสรรค', 'description_th' => 'สิ่งที่เป็นปัญหา'],
-                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'อนาคตของความสัมพันธ์']
+                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'อนาคตของความสัมพันธ์'],
                 ],
                 'sort_order' => 4,
             ],
@@ -388,7 +388,7 @@ class TarotSystemSeeder extends Seeder
                     ['name_en' => 'Strengths', 'name_th' => 'จุดแข็ง', 'description_th' => 'จุดแข็งของคุณ'],
                     ['name_en' => 'Challenges', 'name_th' => 'อุปสรรค', 'description_th' => 'สิ่งที่ต้องเอาชนะ'],
                     ['name_en' => 'Advice', 'name_th' => 'คำแนะนำ', 'description_th' => 'สิ่งที่ควรทำ'],
-                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'อนาคตด้านอาชีพ']
+                    ['name_en' => 'Outcome', 'name_th' => 'ผลลัพธ์', 'description_th' => 'อนาคตด้านอาชีพ'],
                 ],
                 'sort_order' => 5,
             ],

@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class GameTournament extends Model
 {
@@ -63,7 +63,7 @@ class GameTournament extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === 'active' && 
+        return $this->status === 'active' &&
                Carbon::now()->between($this->starts_at, $this->ends_at);
     }
 
@@ -73,7 +73,7 @@ class GameTournament extends Model
     public function isRegistrationOpen(): bool
     {
         $now = Carbon::now();
-        
+
         return $this->status === 'upcoming' &&
                ($this->registration_starts === null || $now->gte($this->registration_starts)) &&
                ($this->registration_ends === null || $now->lte($this->registration_ends)) &&
@@ -131,13 +131,13 @@ class GameTournament extends Model
      */
     private function distributePrizes()
     {
-        if (!$this->prize_pool) {
+        if (! $this->prize_pool) {
             return;
         }
 
         foreach ($this->prize_pool as $position => $amount) {
             $rankNumber = is_numeric($position) ? $position : $this->parsePosition($position);
-            
+
             $participant = $this->participants()
                 ->where('rank', $rankNumber)
                 ->first();

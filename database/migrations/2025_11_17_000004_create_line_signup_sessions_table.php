@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้ใช้เก็บข้อมูล session การสมัครสมาชิกผ่าน LINE
      * รองรับการสมัครแบบ multi-step conversation
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -72,8 +70,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_sessions
-     *
-     * @return void
      */
     public function down(): void
     {

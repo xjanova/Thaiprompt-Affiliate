@@ -18,8 +18,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง service_booking_disputes
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -130,8 +128,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_disputes
-     *
-     * @return void
      */
     public function down(): void
     {

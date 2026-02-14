@@ -58,8 +58,6 @@ class SmsCheckerDevice extends Model
 
     /**
      * ตรวจสอบว่าอุปกรณ์ active หรือไม่
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
@@ -102,9 +100,6 @@ class SmsCheckerDevice extends Model
 
     /**
      * ค้นหาอุปกรณ์จาก API Key
-     *
-     * @param string $apiKey
-     * @return self|null
      */
     public static function findByApiKey(string $apiKey): ?self
     {
@@ -113,8 +108,6 @@ class SmsCheckerDevice extends Model
 
     /**
      * สร้าง API Key ใหม่ (64-char hex string)
-     *
-     * @return string
      */
     public static function generateApiKey(): string
     {
@@ -123,8 +116,6 @@ class SmsCheckerDevice extends Model
 
     /**
      * สร้าง Secret Key ใหม่ (64-char hex string)
-     *
-     * @return string
      */
     public static function generateSecretKey(): string
     {
@@ -144,6 +135,7 @@ class SmsCheckerDevice extends Model
         if ($storeId === null) {
             return $query->whereNull('store_id');
         }
+
         return $query->where('store_id', $storeId);
     }
 

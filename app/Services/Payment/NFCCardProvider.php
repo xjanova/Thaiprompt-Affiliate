@@ -2,10 +2,10 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\NFCCard;
-use App\Services\NFC\NFCCardService;
+use App\Models\PaymentTransaction;
 use App\Services\NFC\NFCCardEncryptionService;
+use App\Services\NFC\NFCCardService;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 class NFCCardProvider implements PaymentProviderInterface
 {
     protected NFCCardService $nfcCardService;
+
     protected NFCCardEncryptionService $encryptionService;
 
     public function __construct(
@@ -34,18 +35,18 @@ class NFCCardProvider implements PaymentProviderInterface
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบข้อมูลที่จำเป็น
-        if (!isset($data['card_number'])) {
+        if (! isset($data['card_number'])) {
             throw new Exception('Card number is required');
         }
 
-        if (!isset($data['encrypted_card_data'])) {
+        if (! isset($data['encrypted_card_data'])) {
             throw new Exception('Encrypted card data is required');
         }
 
         // ค้นหาบัตร
         $card = NFCCard::where('card_number', $data['card_number'])->first();
 
-        if (!$card) {
+        if (! $card) {
             throw new Exception('Card not found');
         }
 
@@ -55,8 +56,8 @@ class NFCCardProvider implements PaymentProviderInterface
         }
 
         // ตรวจสอบสถานะบัตร
-        if (!$card->isActive()) {
-            throw new Exception('Card is not active. Status: ' . $card->status);
+        if (! $card->isActive()) {
+            throw new Exception('Card is not active. Status: '.$card->status);
         }
 
         // ตรวจสอบว่าบัตรหมดอายุหรือไม่
@@ -66,7 +67,7 @@ class NFCCardProvider implements PaymentProviderInterface
 
         // ตรวจสอบว่าบัตรถูกบล็อกหรือไม่
         if ($card->isBlocked()) {
-            throw new Exception('Card is blocked: ' . $card->blocked_reason);
+            throw new Exception('Card is blocked: '.$card->blocked_reason);
         }
 
         // ตรวจสอบความถูกต้องของข้อมูลเข้ารหัส
@@ -75,14 +76,14 @@ class NFCCardProvider implements PaymentProviderInterface
             $data['encrypted_card_data']
         );
 
-        if (!$verification['verified']) {
-            throw new Exception('Card verification failed: ' . $verification['error']);
+        if (! $verification['verified']) {
+            throw new Exception('Card verification failed: '.$verification['error']);
         }
 
         // ตรวจสอบยอดเงินในบัตร
-        if (!$card->hasSufficientBalance($transaction->amount)) {
+        if (! $card->hasSufficientBalance($transaction->amount)) {
             throw new Exception(
-                'Insufficient card balance. Available: ' . $card->balance . ' ' . $transaction->currency
+                'Insufficient card balance. Available: '.$card->balance.' '.$transaction->currency
             );
         }
 
@@ -101,12 +102,12 @@ class NFCCardProvider implements PaymentProviderInterface
                     ->lockForUpdate()
                     ->first();
 
-                if (!$card) {
+                if (! $card) {
                     throw new Exception('Card not found');
                 }
 
                 // ตรวจสอบอีกครั้งว่ามียอดเงินเพียงพอ
-                if (!$card->hasSufficientBalance($transaction->amount)) {
+                if (! $card->hasSufficientBalance($transaction->amount)) {
                     throw new Exception('Insufficient card balance');
                 }
 
@@ -203,13 +204,13 @@ class NFCCardProvider implements PaymentProviderInterface
         return DB::transaction(function () use ($transaction, $amount) {
             try {
                 // ค้นหาบัตรจาก metadata
-                if (!isset($transaction->metadata['card_id'])) {
+                if (! isset($transaction->metadata['card_id'])) {
                     throw new Exception('Card ID not found in transaction metadata');
                 }
 
                 $card = NFCCard::lockForUpdate()->find($transaction->metadata['card_id']);
 
-                if (!$card) {
+                if (! $card) {
                     throw new Exception('Card not found');
                 }
 
@@ -221,7 +222,7 @@ class NFCCardProvider implements PaymentProviderInterface
                     [
                         'payment_transaction_id' => $transaction->id,
                         'type' => 'refund',
-                        'description' => 'Refund for ' . $this->getTransactionDescription($transaction),
+                        'description' => 'Refund for '.$this->getTransactionDescription($transaction),
                     ]
                 );
 
@@ -256,7 +257,7 @@ class NFCCardProvider implements PaymentProviderInterface
     protected function getTransactionDescription(PaymentTransaction $transaction): string
     {
         if ($transaction->type === 'order_payment' && $transaction->order) {
-            return 'Payment for Order #' . $transaction->order->order_number;
+            return 'Payment for Order #'.$transaction->order->order_number;
         }
 
         return 'Payment via NFC Card';
@@ -269,7 +270,7 @@ class NFCCardProvider implements PaymentProviderInterface
     {
         $card = NFCCard::where('card_number', $cardNumber)->first();
 
-        if (!$card) {
+        if (! $card) {
             return null;
         }
 

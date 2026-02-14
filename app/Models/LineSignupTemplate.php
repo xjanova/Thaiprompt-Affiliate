@@ -42,7 +42,7 @@ class LineSignupTemplate extends Model
      *
      * แทนที่ตัวแปรใน template ด้วยข้อมูลจริง
      *
-     * @param array $data ข้อมูลสำหรับแทนที่ตัวแปร
+     * @param  array  $data  ข้อมูลสำหรับแทนที่ตัวแปร
      * @return array Flex Message JSON ที่แทนค่าแล้ว
      */
     public function render(array $data = []): array
@@ -50,7 +50,7 @@ class LineSignupTemplate extends Model
         $json = json_encode($this->flex_message_json);
 
         foreach ($data as $key => $value) {
-            $json = str_replace("{{" . $key . "}}", $value, $json);
+            $json = str_replace('{{'.$key.'}}', $value, $json);
         }
 
         return json_decode($json, true);
@@ -60,8 +60,6 @@ class LineSignupTemplate extends Model
      * ตรวจสอบว่าสามารถ reset ได้หรือไม่
      *
      * Template สามารถ reset ได้เมื่อเป็น default template
-     *
-     * @return bool
      */
     public function canReset(): bool
     {
@@ -70,23 +68,21 @@ class LineSignupTemplate extends Model
 
     /**
      * ดึง default template data จาก seeder
-     *
-     * @return array|null
      */
     public function getDefaultData(): ?array
     {
-        if (!$this->is_default) {
+        if (! $this->is_default) {
             return null;
         }
 
         // ดึงข้อมูลจาก seeder class
-        $seeder = new \Database\Seeders\LineSignupTemplateSeeder();
+        $seeder = new \Database\Seeders\LineSignupTemplateSeeder;
         $reflection = new \ReflectionClass($seeder);
 
         // เรียก method ตาม template_key
-        $methodName = 'get' . str_replace('_', '', ucwords($this->template_key, '_')) . 'Template';
+        $methodName = 'get'.str_replace('_', '', ucwords($this->template_key, '_')).'Template';
 
-        if (!$reflection->hasMethod($methodName)) {
+        if (! $reflection->hasMethod($methodName)) {
             return null;
         }
 
@@ -102,8 +98,6 @@ class LineSignupTemplate extends Model
 
     /**
      * ดึง default variables สำหรับแต่ละ template
-     *
-     * @return array
      */
     protected function getDefaultVariables(): array
     {
@@ -119,8 +113,6 @@ class LineSignupTemplate extends Model
 
     /**
      * ดึง default description สำหรับแต่ละ template
-     *
-     * @return string
      */
     protected function getDefaultDescription(): string
     {

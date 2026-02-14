@@ -3,7 +3,6 @@
 namespace App\Services\Exchange;
 
 use App\Models\TradingAccount;
-use Illuminate\Support\Facades\Http;
 
 class BybitConnector extends BaseExchangeConnector
 {
@@ -222,6 +221,7 @@ class BybitConnector extends BaseExchangeConnector
             $this->makeRequest('GET', '/v5/account/wallet-balance', [
                 'accountType' => 'SPOT',
             ], true);
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -235,6 +235,7 @@ class BybitConnector extends BaseExchangeConnector
     {
         ksort($params);
         $queryString = http_build_query($params);
+
         return hash_hmac('sha256', $queryString, $secret);
     }
 
@@ -243,8 +244,8 @@ class BybitConnector extends BaseExchangeConnector
      */
     protected function signRequest(array $params): array
     {
-        if (!$this->account) {
-            throw new \Exception("Trading account not set");
+        if (! $this->account) {
+            throw new \Exception('Trading account not set');
         }
 
         $timestamp = now()->timestamp * 1000;

@@ -7,7 +7,6 @@ use App\Jobs\SendScheduledBroadcast;
 use App\Models\LineBroadcastMessage;
 use App\Models\LineFlexMessageTemplate;
 use App\Models\User;
-use App\Services\LineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,6 +24,7 @@ class LineBroadcastController extends Controller
     public function create()
     {
         $flexTemplates = LineFlexMessageTemplate::active()->get();
+
         return view('admin.line-bot.broadcast.create', compact('flexTemplates'));
     }
 
@@ -56,20 +56,21 @@ class LineBroadcastController extends Controller
     public function show($id)
     {
         $broadcast = LineBroadcastMessage::with('flexTemplate', 'creator')->findOrFail($id);
+
         return view('admin.line-bot.broadcast.show', compact('broadcast'));
     }
 
     /**
      * ส่ง broadcast ทันที (dispatch job)
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function send($id)
     {
         $broadcast = LineBroadcastMessage::findOrFail($id);
 
-        if (!in_array($broadcast->status, ['draft', 'scheduled'])) {
+        if (! in_array($broadcast->status, ['draft', 'scheduled'])) {
             return back()->with('error', 'ไม่สามารถส่งแคมเปญนี้ได้');
         }
 
@@ -81,21 +82,21 @@ class LineBroadcastController extends Controller
                 ->with('success', 'ส่งคำสั่งไปยัง Queue แล้ว! ระบบจะเริ่มส่งข้อความในไม่ช้า');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ส่งซ้ำสำหรับ broadcast ที่ล้มเหลว
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function retry($id)
     {
         $broadcast = LineBroadcastMessage::findOrFail($id);
 
-        if (!$broadcast->canRetry()) {
+        if (! $broadcast->canRetry()) {
             return back()->with('error', 'ไม่สามารถส่งซ้ำได้ (เกินจำนวนครั้งสูงสุด หรือสถานะไม่ถูกต้อง)');
         }
 
@@ -113,7 +114,7 @@ class LineBroadcastController extends Controller
                 ->with('success', 'เริ่มการส่งซ้ำแล้ว!');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 

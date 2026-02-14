@@ -22,7 +22,7 @@ return new class extends Migration
                 'customer_support',    // ตอบคำถามซัพพอร์ต
                 'sales_assistant',     // ปิดการขาย/แนะนำสินค้า
                 'engagement',          // ตอบกลับคอมเมนต์/ข้อความ
-                'analytics'            // รายงานผล
+                'analytics',            // รายงานผล
             ])->default('scheduled_post');
 
             $table->enum('trigger_type', ['schedule', 'event', 'webhook', 'manual'])->default('schedule');

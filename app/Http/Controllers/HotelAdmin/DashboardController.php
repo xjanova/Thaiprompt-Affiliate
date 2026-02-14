@@ -7,7 +7,6 @@ use App\Models\Hotel;
 use App\Models\HotelBooking;
 use App\Models\HotelReview;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller

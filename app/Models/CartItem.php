@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read Cart $cart
  * @property-read Product $product
  */
@@ -64,8 +63,6 @@ class CartItem extends Model
 
     /**
      * ความสัมพันธ์กับ Cart
-     *
-     * @return BelongsTo
      */
     public function cart(): BelongsTo
     {
@@ -74,8 +71,6 @@ class CartItem extends Model
 
     /**
      * ความสัมพันธ์กับ Product
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -84,8 +79,6 @@ class CartItem extends Model
 
     /**
      * คำนวณยอดรวมของรายการนี้
-     *
-     * @return float
      */
     public function getSubtotalAttribute(): float
     {
@@ -94,13 +87,11 @@ class CartItem extends Model
 
     /**
      * ตรวจสอบว่าสินค้ามีสต็อกพอหรือไม่
-     *
-     * @return bool
      */
     public function hasEnoughStock(): bool
     {
         // ถ้าสินค้าไม่ต้องติดตามสต็อก ให้ผ่านเสมอ
-        if (!$this->product->track_inventory) {
+        if (! $this->product->track_inventory) {
             return true;
         }
 
@@ -109,8 +100,6 @@ class CartItem extends Model
 
     /**
      * ตรวจสอบว่าสินค้าพร้อมขายหรือไม่
-     *
-     * @return bool
      */
     public function isAvailable(): bool
     {
@@ -131,7 +120,7 @@ class CartItem extends Model
 
         static::creating(function ($cartItem) {
             // ถ้ายังไม่ได้ตั้งราคา ให้ดึงจากสินค้า
-            if (!$cartItem->price && $cartItem->product) {
+            if (! $cartItem->price && $cartItem->product) {
                 $cartItem->price = $cartItem->product->price;
             }
         });
@@ -140,8 +129,7 @@ class CartItem extends Model
     /**
      * Scope: ดึงรายการตาม product_id
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $productId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForProduct($query, int $productId)
@@ -152,7 +140,7 @@ class CartItem extends Model
     /**
      * Scope: ดึงรายการที่พร้อมขาย
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAvailable($query)

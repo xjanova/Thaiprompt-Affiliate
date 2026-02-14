@@ -2,9 +2,9 @@
 
 namespace App\Observers;
 
-use App\Models\AiRentalDeployment;
 use App\Events\AiRental\DeploymentCreated;
 use App\Events\AiRental\DeploymentStatusChanged;
+use App\Models\AiRentalDeployment;
 use App\Services\AiRental\AuditService;
 use Illuminate\Support\Facades\Log;
 
@@ -18,15 +18,12 @@ class AiRentalDeploymentObserver
 {
     /**
      * Audit Service
-     *
-     * @var AuditService
      */
     protected AuditService $auditService;
 
     /**
      * สร้าง observer instance
      *
-     * @param AuditService $auditService
      * @return void
      */
     public function __construct(AuditService $auditService)
@@ -39,9 +36,6 @@ class AiRentalDeploymentObserver
      *
      * เรียกก่อนที่ deployment จะถูกสร้าง
      * ใช้สำหรับ set default values หรือ validation
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function creating(AiRentalDeployment $deployment): void
     {
@@ -64,9 +58,6 @@ class AiRentalDeploymentObserver
      * Handle the "created" event
      *
      * เรียกหลังจาก deployment ถูกสร้างแล้ว
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function created(AiRentalDeployment $deployment): void
     {
@@ -116,9 +107,6 @@ class AiRentalDeploymentObserver
      *
      * เรียกก่อน deployment จะถูกอัพเดท
      * ใช้สำหรับตรวจจับ status change
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function updating(AiRentalDeployment $deployment): void
     {
@@ -142,9 +130,6 @@ class AiRentalDeploymentObserver
      * Handle the "updated" event
      *
      * เรียกหลังจาก deployment ถูกอัพเดทแล้ว
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function updated(AiRentalDeployment $deployment): void
     {
@@ -204,9 +189,6 @@ class AiRentalDeploymentObserver
      * Handle the "deleted" event
      *
      * เรียกหลังจาก deployment ถูกลบ (soft delete)
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function deleted(AiRentalDeployment $deployment): void
     {
@@ -246,9 +228,6 @@ class AiRentalDeploymentObserver
      * Handle the "restored" event
      *
      * เรียกหลังจาก deployment ถูก restore
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function restored(AiRentalDeployment $deployment): void
     {
@@ -286,9 +265,6 @@ class AiRentalDeploymentObserver
      * Handle the "force deleted" event
      *
      * เรียกหลังจาก deployment ถูกลบถาวร
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function forceDeleted(AiRentalDeployment $deployment): void
     {

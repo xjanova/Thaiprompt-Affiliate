@@ -78,10 +78,10 @@ class PosAdvertisement extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('start_date')
-              ->orWhere('start_date', '<=', now());
+                ->orWhere('start_date', '<=', now());
         })->where(function ($q) {
             $q->whereNull('end_date')
-              ->orWhere('end_date', '>=', now());
+                ->orWhere('end_date', '>=', now());
         });
     }
 
@@ -94,7 +94,7 @@ class PosAdvertisement extends Model
     {
         return $query->where(function ($q) use ($deviceId) {
             $q->whereNull('target_devices')
-              ->orWhereJsonContains('target_devices', $deviceId);
+                ->orWhereJsonContains('target_devices', $deviceId);
         });
     }
 
@@ -108,7 +108,7 @@ class PosAdvertisement extends Model
      */
     public function isActiveNow(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -131,17 +131,17 @@ class PosAdvertisement extends Model
         }
 
         // Check display hours
-        if ($this->display_hours && !empty($this->display_hours)) {
+        if ($this->display_hours && ! empty($this->display_hours)) {
             $currentHour = now()->hour;
-            if (!in_array($currentHour, $this->display_hours)) {
+            if (! in_array($currentHour, $this->display_hours)) {
                 return false;
             }
         }
 
         // Check display days (0 = Sunday, 6 = Saturday)
-        if ($this->display_days && !empty($this->display_days)) {
+        if ($this->display_days && ! empty($this->display_days)) {
             $currentDay = now()->dayOfWeek;
-            if (!in_array($currentDay, $this->display_days)) {
+            if (! in_array($currentDay, $this->display_days)) {
                 return false;
             }
         }
@@ -168,12 +168,12 @@ class PosAdvertisement extends Model
 
     public function canDisplayOnDevice(?int $deviceId = null): bool
     {
-        if (!$this->isActiveNow()) {
+        if (! $this->isActiveNow()) {
             return false;
         }
 
         // Check device targeting
-        if ($deviceId && $this->target_devices && !empty($this->target_devices)) {
+        if ($deviceId && $this->target_devices && ! empty($this->target_devices)) {
             return in_array($deviceId, $this->target_devices);
         }
 
@@ -216,8 +216,8 @@ class PosAdvertisement extends Model
             : "฿{$this->discount_amount} OFF";
 
         $validity = $this->promotion_end
-            ? "Valid until " . $this->promotion_end->format('M d, Y')
-            : "Limited time offer";
+            ? 'Valid until '.$this->promotion_end->format('M d, Y')
+            : 'Limited time offer';
 
         return "{$this->title}\n{$discount}\n{$validity}";
     }

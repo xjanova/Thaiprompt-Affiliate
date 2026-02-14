@@ -26,7 +26,7 @@ class QuotationMail extends Mailable
      */
     public function build()
     {
-        return $this->subject('ใบเสนอราคา ' . $this->quotation->quotation_number)
+        return $this->subject('ใบเสนอราคา '.$this->quotation->quotation_number)
             ->view('emails.quotation')
             ->with([
                 'quotation' => $this->quotation,

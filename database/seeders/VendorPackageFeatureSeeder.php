@@ -38,7 +38,7 @@ class VendorPackageFeatureSeeder extends Seeder
             VendorPackageFeature::create($feature);
         }
 
-        $this->command->info('✅ Vendor package features seeded successfully: ' . count($features) . ' features');
+        $this->command->info('✅ Vendor package features seeded successfully: '.count($features).' features');
     }
 
     /**
@@ -54,7 +54,7 @@ class VendorPackageFeatureSeeder extends Seeder
         $skipped = 0;
 
         foreach ($features as $feature) {
-            if (!VendorPackageFeature::where('feature_slug', $feature['feature_slug'])->exists()) {
+            if (! VendorPackageFeature::where('feature_slug', $feature['feature_slug'])->exists()) {
                 VendorPackageFeature::create($feature);
                 $this->command->info("   ➕ Added: {$feature['feature_name']}");
                 $added++;

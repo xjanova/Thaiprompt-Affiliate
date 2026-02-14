@@ -17,8 +17,6 @@ class StoreBannerSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -28,7 +26,8 @@ class StoreBannerSeeder extends Seeder
         $existingBanners = StoreBanner::forHomepage()->count();
 
         if ($existingBanners > 0) {
-            $this->command->info('📌 มี Banner หน้าแรกอยู่แล้ว ' . $existingBanners . ' รายการ - ข้าม');
+            $this->command->info('📌 มี Banner หน้าแรกอยู่แล้ว '.$existingBanners.' รายการ - ข้าม');
+
             return;
         }
 
@@ -83,6 +82,6 @@ class StoreBannerSeeder extends Seeder
             StoreBanner::create($bannerData);
         }
 
-        $this->command->info('✅ สร้าง Banner สำเร็จ ' . count($banners) . ' รายการ');
+        $this->command->info('✅ สร้าง Banner สำเร็จ '.count($banners).' รายการ');
     }
 }

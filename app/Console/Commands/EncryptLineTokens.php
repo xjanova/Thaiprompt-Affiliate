@@ -44,9 +44,10 @@ class EncryptLineTokens extends Command
 
         $this->info('🔐 Starting LINE token encryption migration...');
 
-        if (!$this->option('force') && !$isDryRun) {
-            if (!$this->confirm('This will encrypt all LINE access tokens in the database. Continue?')) {
+        if (! $this->option('force') && ! $isDryRun) {
+            if (! $this->confirm('This will encrypt all LINE access tokens in the database. Continue?')) {
                 $this->warn('❌ Migration cancelled.');
+
                 return 1;
             }
         }
@@ -59,6 +60,7 @@ class EncryptLineTokens extends Command
             // Just count how many would be affected
             $count = \App\Models\User::whereNotNull('line_access_token')->count();
             $this->info("ℹ️  Would process {$count} users with LINE tokens");
+
             return 0;
         }
 
@@ -77,10 +79,12 @@ class EncryptLineTokens extends Command
 
         if ($stats['failed'] > 0) {
             $this->warn('⚠️  Some tokens failed to encrypt. Check logs for details.');
+
             return 1;
         }
 
         $this->info('🎉 All tokens encrypted successfully!');
+
         return 0;
     }
 }

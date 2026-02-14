@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Log;
 class CryptoExchangeController extends Controller
 {
     protected CryptoExchangeService $exchangeService;
+
     protected CryptoPriceService $priceService;
+
     protected CryptoWalletService $walletService;
 
     public function __construct(
@@ -89,7 +91,7 @@ class CryptoExchangeController extends Controller
                 $request->type === 'buy' ? 'THB' : $currency->code
             );
 
-            if (!$preview) {
+            if (! $preview) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถดึงข้อมูลราคาได้ กรุณาลองใหม่อีกครั้ง',
@@ -108,7 +110,7 @@ class CryptoExchangeController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -150,7 +152,7 @@ class CryptoExchangeController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -191,7 +193,7 @@ class CryptoExchangeController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 

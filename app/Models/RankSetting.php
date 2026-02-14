@@ -70,6 +70,7 @@ class RankSetting extends Model
     {
         $settings = static::get();
         $settings->$key = $value;
+
         return $settings->save();
     }
 
@@ -79,6 +80,7 @@ class RankSetting extends Model
     public static function getSetting(string $key, $default = null)
     {
         $settings = static::get();
+
         return $settings->$key ?? $default;
     }
 }

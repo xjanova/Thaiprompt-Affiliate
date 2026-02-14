@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 /**
  * PosClockRecord Model
@@ -142,7 +142,7 @@ class PosClockRecord extends Model
 
         // คำนวณความล่าช้า
         if ($this->workShift) {
-            $scheduledStart = Carbon::parse($this->work_date->format('Y-m-d') . ' ' . $this->workShift->start_time);
+            $scheduledStart = Carbon::parse($this->work_date->format('Y-m-d').' '.$this->workShift->start_time);
             $lateMinutes = $now->gt($scheduledStart) ? $now->diffInMinutes($scheduledStart) : 0;
 
             if ($lateMinutes > 0) {
@@ -172,7 +172,7 @@ class PosClockRecord extends Model
         $earlyOutMinutes = 0;
 
         if ($this->workShift) {
-            $scheduledEnd = Carbon::parse($this->work_date->format('Y-m-d') . ' ' . $this->workShift->end_time);
+            $scheduledEnd = Carbon::parse($this->work_date->format('Y-m-d').' '.$this->workShift->end_time);
 
             if ($this->workShift->crosses_midnight) {
                 $scheduledEnd->addDay();

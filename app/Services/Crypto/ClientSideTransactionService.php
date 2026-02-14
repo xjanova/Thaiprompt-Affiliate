@@ -2,11 +2,10 @@
 
 namespace App\Services\Crypto;
 
+use App\Models\CryptoCurrency;
 use App\Models\CryptoTransaction;
 use App\Models\CryptoWallet;
-use App\Models\CryptoCurrency;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Client-Side Transaction Service
@@ -24,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class ClientSideTransactionService
 {
     protected Web3Service $web3Service;
+
     protected CryptoPriceService $priceService;
 
     public function __construct(
@@ -37,11 +37,6 @@ class ClientSideTransactionService
     /**
      * Prepare transaction data for client-side signing
      *
-     * @param CryptoWallet $wallet
-     * @param string $toAddress
-     * @param float $amount
-     * @param CryptoCurrency $currency
-     * @param string $network
      * @return array Transaction data ready for MetaMask
      */
     public function prepareTransaction(
@@ -60,10 +55,10 @@ class ClientSideTransactionService
 
             // Get wallet address
             $fromAddress = $wallet->cryptoAddresses()
-                ->whereHas('currency', fn($q) => $q->where('network', $network))
+                ->whereHas('currency', fn ($q) => $q->where('network', $network))
                 ->first();
 
-            if (!$fromAddress) {
+            if (! $fromAddress) {
                 throw new \Exception('No address found for this network');
             }
 
@@ -143,15 +138,15 @@ class ClientSideTransactionService
         string $network
     ): array {
         // Convert amount to Wei
-        $amountWei = $this->web3Service->toWei((string)$amount, 18);
+        $amountWei = $this->web3Service->toWei((string) $amount, 18);
 
         return [
             'from' => $from,
             'to' => $to,
-            'value' => '0x' . dechex((int)$amountWei),
+            'value' => '0x'.dechex((int) $amountWei),
             'gas' => '0x5208', // 21000 gas for simple transfer
-            'gasPrice' => '0x' . dechex((int)$gasPrice),
-            'nonce' => '0x' . dechex($nonce),
+            'gasPrice' => '0x'.dechex((int) $gasPrice),
+            'nonce' => '0x'.dechex($nonce),
             'chainId' => $this->web3Service->getChainId($network),
         ];
     }
@@ -170,24 +165,24 @@ class ClientSideTransactionService
     ): array {
         // Convert amount based on token decimals
         $decimals = $currency->decimals ?? 18;
-        $amountInSmallestUnit = bcmul((string)$amount, bcpow('10', (string)$decimals, 0), 0);
+        $amountInSmallestUnit = bcmul((string) $amount, bcpow('10', (string) $decimals, 0), 0);
 
         // ERC-20 transfer function signature
         $functionSignature = '0xa9059cbb'; // transfer(address,uint256)
 
         // Encode parameters
         $toAddressEncoded = str_pad(substr($to, 2), 64, '0', STR_PAD_LEFT);
-        $amountEncoded = str_pad(dechex((int)$amountInSmallestUnit), 64, '0', STR_PAD_LEFT);
+        $amountEncoded = str_pad(dechex((int) $amountInSmallestUnit), 64, '0', STR_PAD_LEFT);
 
-        $data = $functionSignature . $toAddressEncoded . $amountEncoded;
+        $data = $functionSignature.$toAddressEncoded.$amountEncoded;
 
         return [
             'from' => $from,
             'to' => $currency->contract_address,
             'value' => '0x0',
-            'gas' => '0x' . dechex(100000), // 100k gas for ERC-20 transfer
-            'gasPrice' => '0x' . dechex((int)$gasPrice),
-            'nonce' => '0x' . dechex($nonce),
+            'gas' => '0x'.dechex(100000), // 100k gas for ERC-20 transfer
+            'gasPrice' => '0x'.dechex((int) $gasPrice),
+            'nonce' => '0x'.dechex($nonce),
             'data' => $data,
             'chainId' => $this->web3Service->getChainId($network),
         ];
@@ -196,9 +191,9 @@ class ClientSideTransactionService
     /**
      * Broadcast signed transaction to blockchain
      *
-     * @param int $transactionId Our database transaction ID
-     * @param string $signedTx Signed transaction from client
-     * @param string $network Network name
+     * @param  int  $transactionId  Our database transaction ID
+     * @param  string  $signedTx  Signed transaction from client
+     * @param  string  $network  Network name
      * @return array Result
      */
     public function broadcastTransaction(
@@ -220,12 +215,12 @@ class ClientSideTransactionService
             $txHash = null;
             $web3->eth->sendRawTransaction($signedTx, function ($err, $hash) use (&$txHash) {
                 if ($err !== null) {
-                    throw new \Exception('Failed to broadcast transaction: ' . $err->getMessage());
+                    throw new \Exception('Failed to broadcast transaction: '.$err->getMessage());
                 }
                 $txHash = $hash;
             });
 
-            if (!$txHash) {
+            if (! $txHash) {
                 throw new \Exception('No transaction hash returned');
             }
 
@@ -292,18 +287,18 @@ class ClientSideTransactionService
             $gasLimit = $currency->is_native ? 21000 : 100000;
 
             // Calculate fee in native token
-            $feeWei = bcmul((string)$gasPrice, (string)$gasLimit, 0);
+            $feeWei = bcmul((string) $gasPrice, (string) $gasLimit, 0);
             $fee = $this->web3Service->fromWei($feeWei, 18);
 
             // Get native token price in THB
             $nativeToken = $this->getNativeTokenForNetwork($network);
-            if (!$nativeToken) {
+            if (! $nativeToken) {
                 return 50; // Default fallback
             }
 
             $rate = $this->priceService->getCurrentRate($nativeToken);
 
-            return (float)$fee * ($rate->rate_thb ?? 0);
+            return (float) $fee * ($rate->rate_thb ?? 0);
 
         } catch (\Exception $e) {
             Log::warning('Failed to estimate gas fee', [
@@ -323,7 +318,8 @@ class ClientSideTransactionService
         $gasPriceInt = hexdec(str_replace('0x', '', $gasPrice));
         $gasLimitInt = hexdec(str_replace('0x', '', $gasLimit));
 
-        $totalWei = bcmul((string)$gasPriceInt, (string)$gasLimitInt, 0);
+        $totalWei = bcmul((string) $gasPriceInt, (string) $gasLimitInt, 0);
+
         return $this->web3Service->fromWei($totalWei, $decimals);
     }
 
@@ -360,7 +356,7 @@ class ClientSideTransactionService
      */
     protected function getRequiredConfirmations(CryptoCurrency $currency): int
     {
-        return match($currency->network) {
+        return match ($currency->network) {
             'ethereum' => 12,
             'bsc' => 15,
             'polygon' => 128,
@@ -381,7 +377,7 @@ class ClientSideTransactionService
             'bitcoin' => 'BTC',
         ];
 
-        if (!isset($codes[$network])) {
+        if (! isset($codes[$network])) {
             return null;
         }
 
@@ -396,7 +392,7 @@ class ClientSideTransactionService
         try {
             $receipt = $this->web3Service->getTransactionReceipt($network, $txHash);
 
-            if (!$receipt) {
+            if (! $receipt) {
                 return [
                     'status' => 'pending',
                     'confirmations' => 0,
@@ -435,7 +431,7 @@ class ClientSideTransactionService
      */
     public function updateTransactionConfirmations(CryptoTransaction $transaction): bool
     {
-        if (!$transaction->tx_hash) {
+        if (! $transaction->tx_hash) {
             return false;
         }
 

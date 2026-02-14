@@ -109,8 +109,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * ความสัมพันธ์กับ Rank
-     *
-     * @return BelongsTo
      */
     public function rank(): BelongsTo
     {
@@ -134,15 +132,12 @@ class VideoMissionRankLimit extends Model
      *
      * ถ้า user ไม่มี rank (rank_id = 0 หรือ null)
      * จะ return default limit object โดยไม่บันทึกลง database
-     *
-     * @param int|null $rankId
-     * @return self
      */
     public static function getForRank(?int $rankId): self
     {
         // ถ้าไม่มี rank ให้ return default limit (ไม่บันทึกลง DB)
-        if (!$rankId || $rankId <= 0) {
-            $defaultLimit = new static();
+        if (! $rankId || $rankId <= 0) {
+            $defaultLimit = new static;
             $defaultLimit->rank_id = null;
             $defaultLimit->daily_mission_limit = 5;
             $defaultLimit->weekly_mission_limit = 20;
@@ -162,7 +157,7 @@ class VideoMissionRankLimit extends Model
 
         // ตรวจสอบว่า Rank มีอยู่จริงหรือไม่
         $rankExists = \App\Models\Rank::where('id', $rankId)->exists();
-        if (!$rankExists) {
+        if (! $rankExists) {
             // Rank ไม่มีอยู่ ให้ return default
             return static::getForRank(null);
         }
@@ -181,7 +176,6 @@ class VideoMissionRankLimit extends Model
     /**
      * ตรวจสอบว่า user ยังทำภารกิจได้อีกหรือไม่ (รายวัน)
      *
-     * @param User $user
      * @return array ['can' => bool, 'remaining' => int, 'limit' => int]
      */
     public function checkDailyLimit(User $user): array
@@ -205,9 +199,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * ตรวจสอบว่า user ยังทำภารกิจได้อีกหรือไม่ (รายสัปดาห์)
-     *
-     * @param User $user
-     * @return array
      */
     public function checkWeeklyLimit(User $user): array
     {
@@ -232,9 +223,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * ตรวจสอบว่า user ยังทำภารกิจได้อีกหรือไม่ (รายเดือน)
-     *
-     * @param User $user
-     * @return array
      */
     public function checkMonthlyLimit(User $user): array
     {
@@ -259,9 +247,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * ตรวจสอบทุก limit
-     *
-     * @param User $user
-     * @return array
      */
     public function checkAllLimits(User $user): array
     {
@@ -272,11 +257,11 @@ class VideoMissionRankLimit extends Model
         $canDoMore = $daily['can'] && $weekly['can'] && $monthly['can'];
 
         $reason = null;
-        if (!$daily['can']) {
+        if (! $daily['can']) {
             $reason = 'คุณทำภารกิจครบโควต้ารายวันแล้ว';
-        } elseif (!$weekly['can']) {
+        } elseif (! $weekly['can']) {
             $reason = 'คุณทำภารกิจครบโควต้ารายสัปดาห์แล้ว';
-        } elseif (!$monthly['can']) {
+        } elseif (! $monthly['can']) {
             $reason = 'คุณทำภารกิจครบโควต้ารายเดือนแล้ว';
         }
 
@@ -292,13 +277,11 @@ class VideoMissionRankLimit extends Model
     /**
      * ตรวจสอบรางวัลไม่เกิน limit (รายวัน)
      *
-     * @param User $user
-     * @param float $rewardAmount
      * @return array ['can' => bool, 'remaining' => float|null]
      */
     public function checkDailyRewardLimit(User $user, float $rewardAmount): array
     {
-        if (!$this->daily_reward_limit) {
+        if (! $this->daily_reward_limit) {
             return ['can' => true, 'remaining' => null];
         }
 
@@ -322,9 +305,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * คำนวณ cooldown ตาม reduction percent
-     *
-     * @param int $originalCooldownMinutes
-     * @return int
      */
     public function calculateCooldown(int $originalCooldownMinutes): int
     {
@@ -337,14 +317,12 @@ class VideoMissionRankLimit extends Model
         }
 
         $reduction = $originalCooldownMinutes * ($this->cooldown_reduction_percent / 100);
+
         return max(0, (int) round($originalCooldownMinutes - $reduction));
     }
 
     /**
      * คำนวณรางวัลพร้อม multiplier และ bonus
-     *
-     * @param float $baseReward
-     * @return float
      */
     public function calculateReward(float $baseReward): float
     {
@@ -356,9 +334,6 @@ class VideoMissionRankLimit extends Model
 
     /**
      * คำนวณ EXP พร้อม bonus
-     *
-     * @param int $baseExp
-     * @return int
      */
     public function calculateExp(int $baseExp): int
     {
@@ -367,13 +342,12 @@ class VideoMissionRankLimit extends Model
         }
 
         $bonus = $baseExp * ($this->bonus_exp_percentage / 100);
+
         return (int) round($baseExp + $bonus);
     }
 
     /**
      * ดึงสรุป limit ทั้งหมด
-     *
-     * @return array
      */
     public function getSummary(): array
     {

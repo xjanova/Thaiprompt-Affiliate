@@ -69,13 +69,19 @@ class MlmRebuildTask extends Model
     // =====================================
 
     const TYPE_UNILEVEL_REBUILD = 'unilevel_rebuild';
+
     const TYPE_BINARY_REBUILD = 'binary_rebuild';
+
     const TYPE_FULL_RECALCULATE = 'full_recalculate';
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_RUNNING = 'running';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     // Lock timeout in minutes
@@ -135,9 +141,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ตรวจสอบว่ามี task กำลังทำงานอยู่หรือไม่
-     *
-     * @param string $type
-     * @return bool
      */
     public static function hasRunningTask(string $type): bool
     {
@@ -152,9 +155,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ดึง task ล่าสุดของประเภทที่ระบุ
-     *
-     * @param string $type
-     * @return self|null
      */
     public static function getLatestTask(string $type): ?self
     {
@@ -166,9 +166,6 @@ class MlmRebuildTask extends Model
     /**
      * สร้าง task ใหม่พร้อม lock
      *
-     * @param string $type
-     * @param array $config
-     * @param int|null $userId
      * @return self|null null ถ้ามี task running อยู่
      */
     public static function createWithLock(string $type, array $config, ?int $userId = null): ?self
@@ -178,7 +175,7 @@ class MlmRebuildTask extends Model
             return null;
         }
 
-        $lockKey = $type . '_' . uniqid();
+        $lockKey = $type.'_'.uniqid();
 
         return self::create([
             'type' => $type,
@@ -196,9 +193,6 @@ class MlmRebuildTask extends Model
 
     /**
      * เริ่มต้น task
-     *
-     * @param int $totalItems
-     * @return bool
      */
     public function start(int $totalItems): bool
     {
@@ -221,11 +215,6 @@ class MlmRebuildTask extends Model
 
     /**
      * อัพเดท progress
-     *
-     * @param int $processedItems
-     * @param int $failedItems
-     * @param int|null $lastProcessedId
-     * @return void
      */
     public function updateProgress(int $processedItems, int $failedItems = 0, ?int $lastProcessedId = null): void
     {
@@ -245,8 +234,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ทำเครื่องหมายว่าเสร็จสมบูรณ์
-     *
-     * @return void
      */
     public function markCompleted(): void
     {
@@ -264,10 +251,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ทำเครื่องหมายว่าล้มเหลว
-     *
-     * @param string $message
-     * @param array|null $details
-     * @return void
      */
     public function markFailed(string $message, ?array $details = null): void
     {
@@ -286,8 +269,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ยกเลิก task
-     *
-     * @return void
      */
     public function cancel(): void
     {
@@ -301,8 +282,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ต่ออายุ lock
-     *
-     * @return void
      */
     public function renewLock(): void
     {
@@ -313,8 +292,6 @@ class MlmRebuildTask extends Model
 
     /**
      * ตรวจสอบว่า lock หมดอายุหรือไม่
-     *
-     * @return bool
      */
     public function isLockExpired(): bool
     {
@@ -323,18 +300,14 @@ class MlmRebuildTask extends Model
 
     /**
      * ตรวจสอบว่ากำลังทำงานอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isRunning(): bool
     {
-        return $this->status === self::STATUS_RUNNING && !$this->isLockExpired();
+        return $this->status === self::STATUS_RUNNING && ! $this->isLockExpired();
     }
 
     /**
      * ดึงข้อมูลสำหรับแสดง progress
-     *
-     * @return array
      */
     public function getProgressData(): array
     {

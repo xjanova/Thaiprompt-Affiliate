@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Game;
-use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
@@ -14,6 +13,7 @@ class GameController extends Controller
     public function index()
     {
         $games = Game::active()->ordered()->get();
+
         return view('demo-game-selector', compact('games'));
     }
 
@@ -23,6 +23,7 @@ class GameController extends Controller
     public function getGames()
     {
         $games = Game::active()->ordered()->get();
+
         return response()->json($games);
     }
 }

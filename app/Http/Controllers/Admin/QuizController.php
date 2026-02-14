@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Quiz;
-use App\Models\QuizQuestion;
-use App\Models\QuestionOption;
-use App\Models\QuizAttempt;
-use App\Models\QuizAnswer;
 use App\Models\LearningArticle;
+use App\Models\Quiz;
+use App\Models\QuizAnswer;
+use App\Models\QuizAttempt;
+use App\Models\QuizQuestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,12 +23,12 @@ class QuizController extends Controller
         $quiz = Quiz::with(['questions.options', 'article'])->findOrFail($id);
 
         // Check if quiz is active
-        if (!$quiz->is_active) {
+        if (! $quiz->is_active) {
             return redirect()->back()->with('error', 'Quiz นี้ยังไม่เปิดใช้งาน');
         }
 
         // Check if user has remaining attempts
-        if (!$quiz->hasRemainingAttempts($user->id)) {
+        if (! $quiz->hasRemainingAttempts($user->id)) {
             return redirect()->back()->with('error', 'คุณใช้จำนวนครั้งในการทำ Quiz นี้หมดแล้ว');
         }
 
@@ -94,7 +93,7 @@ class QuizController extends Controller
             foreach ($validated['answers'] as $questionId => $answer) {
                 $question = QuizQuestion::findOrFail($questionId);
 
-                $quizAnswer = new QuizAnswer();
+                $quizAnswer = new QuizAnswer;
                 $quizAnswer->attempt_id = $attempt->id;
                 $quizAnswer->question_id = $questionId;
 
@@ -132,8 +131,9 @@ class QuizController extends Controller
             }
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -147,7 +147,7 @@ class QuizController extends Controller
         $attempt = QuizAttempt::with([
             'quiz.questions.options',
             'quizAnswers.question.options',
-            'quizAnswers.option'
+            'quizAnswers.option',
         ])
             ->where('user_id', $user->id)
             ->findOrFail($attemptId);
@@ -155,7 +155,7 @@ class QuizController extends Controller
         $quiz = $attempt->quiz;
 
         // Check if results should be shown
-        if (!$quiz->show_results_immediately && !$attempt->isCompleted()) {
+        if (! $quiz->show_results_immediately && ! $attempt->isCompleted()) {
             return redirect()->back()->with('error', 'ผลลัพธ์ยังไม่พร้อมแสดง');
         }
 

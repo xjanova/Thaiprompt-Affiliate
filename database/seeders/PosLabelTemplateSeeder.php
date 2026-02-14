@@ -18,8 +18,6 @@ class PosLabelTemplateSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -28,6 +26,7 @@ class PosLabelTemplateSeeder extends Seeder
         // ตรวจสอบว่ามี templates อยู่แล้วหรือไม่
         if (LabelTemplate::where('is_pos_template', true)->exists()) {
             $this->command->info('⏭️  POS Label Templates มีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -257,9 +256,9 @@ class PosLabelTemplateSeeder extends Seeder
 
         foreach ($templates as $templateData) {
             LabelTemplate::create($templateData);
-            $this->command->info('  ✓ สร้าง: ' . $templateData['name']);
+            $this->command->info('  ✓ สร้าง: '.$templateData['name']);
         }
 
-        $this->command->info('✅ Seed POS Label Templates สำเร็จ! (' . count($templates) . ' templates)');
+        $this->command->info('✅ Seed POS Label Templates สำเร็จ! ('.count($templates).' templates)');
     }
 }

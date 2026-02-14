@@ -26,10 +26,6 @@ class LazadaApiService extends BaseMarketplaceService
 
     /**
      * Generate API signature for Lazada
-     *
-     * @param string $path
-     * @param array $params
-     * @return string
      */
     private function generateSignature(string $path, array $params): string
     {
@@ -48,7 +44,7 @@ class LazadaApiService extends BaseMarketplaceService
         // Concatenate all parameters
         $stringToBeSigned = $path;
         foreach ($params as $key => $value) {
-            $stringToBeSigned .= $key . $value;
+            $stringToBeSigned .= $key.$value;
         }
 
         // Generate HMAC-SHA256 signature
@@ -59,11 +55,6 @@ class LazadaApiService extends BaseMarketplaceService
 
     /**
      * Make signed request to Lazada API
-     *
-     * @param string $path
-     * @param array $params
-     * @param string $method
-     * @return array|null
      */
     private function makeSignedRequest(string $path, array $params = [], string $method = 'GET'): ?array
     {
@@ -90,6 +81,7 @@ class LazadaApiService extends BaseMarketplaceService
 
         if ($response && isset($response['code']) && $response['code'] === '0') {
             $this->account->update(['status' => 'active']);
+
             return true;
         }
 
@@ -110,11 +102,11 @@ class LazadaApiService extends BaseMarketplaceService
         $params = array_merge($defaultParams, $params);
         $response = $this->makeSignedRequest('/products/get', $params);
 
-        if (!$response || !isset($response['data']['products'])) {
+        if (! $response || ! isset($response['data']['products'])) {
             return [];
         }
 
-        return array_map(fn($product) => $this->normalizeProduct($product), $response['data']['products']);
+        return array_map(fn ($product) => $this->normalizeProduct($product), $response['data']['products']);
     }
 
     /**
@@ -126,7 +118,7 @@ class LazadaApiService extends BaseMarketplaceService
             'item_id' => $productId,
         ]);
 
-        if (!$response || !isset($response['data'])) {
+        if (! $response || ! isset($response['data'])) {
             return null;
         }
 
@@ -147,11 +139,11 @@ class LazadaApiService extends BaseMarketplaceService
         $params = array_merge($defaultParams, $params);
         $response = $this->makeSignedRequest('/orders/get', $params);
 
-        if (!$response || !isset($response['data']['orders'])) {
+        if (! $response || ! isset($response['data']['orders'])) {
             return [];
         }
 
-        return array_map(fn($order) => $this->normalizeOrder($order), $response['data']['orders']);
+        return array_map(fn ($order) => $this->normalizeOrder($order), $response['data']['orders']);
     }
 
     /**
@@ -163,7 +155,7 @@ class LazadaApiService extends BaseMarketplaceService
             'order_id' => $orderId,
         ]);
 
-        if (!$response || !isset($response['data'])) {
+        if (! $response || ! isset($response['data'])) {
             return null;
         }
 
@@ -186,7 +178,7 @@ class LazadaApiService extends BaseMarketplaceService
      */
     public function refreshToken(): bool
     {
-        if (!$this->account->refresh_token) {
+        if (! $this->account->refresh_token) {
             return false;
         }
 
@@ -194,7 +186,7 @@ class LazadaApiService extends BaseMarketplaceService
             'refresh_token' => $this->account->refresh_token,
         ]);
 
-        if (!$response || !isset($response['access_token'])) {
+        if (! $response || ! isset($response['access_token'])) {
             return false;
         }
 

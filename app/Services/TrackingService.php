@@ -134,9 +134,9 @@ class TrackingService
     /**
      * ติดตามพัสดุ realtime - ดึงข้อมูลล่าสุดจากขนส่ง
      *
-     * @param string $trackingNumber เลขพัสดุ
-     * @param string $providerCode รหัสขนส่ง (thaipost, kerry, flash, etc.)
-     * @param bool $forceRefresh บังคับดึงข้อมูลใหม่ (ไม่ใช้ cache)
+     * @param  string  $trackingNumber  เลขพัสดุ
+     * @param  string  $providerCode  รหัสขนส่ง (thaipost, kerry, flash, etc.)
+     * @param  bool  $forceRefresh  บังคับดึงข้อมูลใหม่ (ไม่ใช้ cache)
      * @return array ข้อมูลติดตามพัสดุ
      */
     public function track(string $trackingNumber, string $providerCode, bool $forceRefresh = false): array
@@ -144,7 +144,7 @@ class TrackingService
         $providerCode = $this->normalizeProviderCode($providerCode);
 
         // ตรวจสอบว่ารองรับขนส่งนี้หรือไม่
-        if (!isset(self::SUPPORTED_CARRIERS[$providerCode])) {
+        if (! isset(self::SUPPORTED_CARRIERS[$providerCode])) {
             return $this->buildResponse(
                 trackingNumber: $trackingNumber,
                 provider: $providerCode,
@@ -155,9 +155,10 @@ class TrackingService
 
         // ตรวจสอบ cache (ถ้าไม่บังคับ refresh)
         $cacheKey = "tracking:{$providerCode}:{$trackingNumber}";
-        if (!$forceRefresh && Cache::has($cacheKey)) {
+        if (! $forceRefresh && Cache::has($cacheKey)) {
             $cached = Cache::get($cacheKey);
             $cached['from_cache'] = true;
+
             return $cached;
         }
 
@@ -172,7 +173,7 @@ class TrackingService
 
             return $result;
         } catch (\Exception $e) {
-            Log::error("TrackingService: ไม่สามารถดึงข้อมูลติดตามได้", [
+            Log::error('TrackingService: ไม่สามารถดึงข้อมูลติดตามได้', [
                 'tracking_number' => $trackingNumber,
                 'provider' => $providerCode,
                 'error' => $e->getMessage(),
@@ -183,6 +184,7 @@ class TrackingService
                 $cached = Cache::get($cacheKey);
                 $cached['from_cache'] = true;
                 $cached['cache_note'] = 'ใช้ข้อมูล cache เนื่องจากไม่สามารถเชื่อมต่อขนส่งได้';
+
                 return $cached;
             }
 
@@ -198,13 +200,13 @@ class TrackingService
     /**
      * ติดตามพัสดุจาก Order โดยตรง
      *
-     * @param Order $order คำสั่งซื้อ
-     * @param bool $forceRefresh บังคับดึงข้อมูลใหม่
+     * @param  Order  $order  คำสั่งซื้อ
+     * @param  bool  $forceRefresh  บังคับดึงข้อมูลใหม่
      * @return array ข้อมูลติดตามพร้อม tracking history ในระบบ
      */
     public function trackOrder(Order $order, bool $forceRefresh = false): array
     {
-        if (!$order->tracking_number) {
+        if (! $order->tracking_number) {
             return [
                 'success' => false,
                 'message' => 'คำสั่งซื้อนี้ยังไม่มีเลขพัสดุ',
@@ -223,7 +225,7 @@ class TrackingService
         $internalHistory = $order->trackingHistory()
             ->orderBy('tracked_at', 'desc')
             ->get()
-            ->map(fn($h) => [
+            ->map(fn ($h) => [
                 'status' => $h->status,
                 'title' => $h->title,
                 'description' => $h->description,
@@ -271,10 +273,6 @@ class TrackingService
 
     /**
      * ดึงข้อมูลจาก API ของขนส่ง
-     *
-     * @param string $trackingNumber
-     * @param string $providerCode
-     * @return array
      */
     protected function fetchFromCarrier(string $trackingNumber, string $providerCode): array
     {
@@ -315,6 +313,7 @@ class TrackingService
 
                 if ($response->successful()) {
                     $data = $response->json();
+
                     return $this->parseThaiPostResponse($data, $trackingNumber);
                 }
             }
@@ -331,7 +330,7 @@ class TrackingService
                 trackingUrl: str_replace('{tracking_number}', $trackingNumber, self::SUPPORTED_CARRIERS['thaipost']['tracking_url']),
             );
         } catch (\Exception $e) {
-            Log::warning("TrackingService: ThaiPost API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: ThaiPost API error', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
@@ -354,12 +353,14 @@ class TrackingService
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return $this->parseKerryResponse($data, $trackingNumber);
             }
 
             return $this->buildFallbackResponse($trackingNumber, 'kerry');
         } catch (\Exception $e) {
-            Log::warning("TrackingService: Kerry API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: Kerry API error', ['error' => $e->getMessage()]);
+
             return $this->buildFallbackResponse($trackingNumber, 'kerry');
         }
     }
@@ -382,12 +383,14 @@ class TrackingService
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return $this->parseFlashResponse($data, $trackingNumber);
             }
 
             return $this->buildFallbackResponse($trackingNumber, 'flash');
         } catch (\Exception $e) {
-            Log::warning("TrackingService: Flash API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: Flash API error', ['error' => $e->getMessage()]);
+
             return $this->buildFallbackResponse($trackingNumber, 'flash');
         }
     }
@@ -410,12 +413,14 @@ class TrackingService
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return $this->parseJTResponse($data, $trackingNumber);
             }
 
             return $this->buildFallbackResponse($trackingNumber, 'jt');
         } catch (\Exception $e) {
-            Log::warning("TrackingService: J&T API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: J&T API error', ['error' => $e->getMessage()]);
+
             return $this->buildFallbackResponse($trackingNumber, 'jt');
         }
     }
@@ -438,13 +443,15 @@ class TrackingService
 
                 if ($response->successful()) {
                     $data = $response->json();
+
                     return $this->parseNinjaVanResponse($data, $trackingNumber);
                 }
             }
 
             return $this->buildFallbackResponse($trackingNumber, 'ninja');
         } catch (\Exception $e) {
-            Log::warning("TrackingService: NinjaVan API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: NinjaVan API error', ['error' => $e->getMessage()]);
+
             return $this->buildFallbackResponse($trackingNumber, 'ninja');
         }
     }
@@ -485,13 +492,15 @@ class TrackingService
 
                 if ($response->successful()) {
                     $data = $response->json();
+
                     return $this->parseDHLResponse($data, $trackingNumber);
                 }
             }
 
             return $this->buildFallbackResponse($trackingNumber, 'dhl');
         } catch (\Exception $e) {
-            Log::warning("TrackingService: DHL API error", ['error' => $e->getMessage()]);
+            Log::warning('TrackingService: DHL API error', ['error' => $e->getMessage()]);
+
             return $this->buildFallbackResponse($trackingNumber, 'dhl');
         }
     }
@@ -533,7 +542,7 @@ class TrackingService
             }
 
             // สถานะล่าสุดจาก timeline
-            if (!empty($timeline)) {
+            if (! empty($timeline)) {
                 $latest = $timeline[0];
                 $currentStatus = $latest['status'];
                 $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -574,7 +583,7 @@ class TrackingService
                 ];
             }
 
-            if (!empty($timeline)) {
+            if (! empty($timeline)) {
                 $latest = $timeline[0];
                 $currentStatus = $latest['status'];
                 $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -613,7 +622,7 @@ class TrackingService
             ];
         }
 
-        if (!empty($timeline)) {
+        if (! empty($timeline)) {
             $latest = $timeline[0];
             $currentStatus = $latest['status'];
             $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -651,7 +660,7 @@ class TrackingService
             ];
         }
 
-        if (!empty($timeline)) {
+        if (! empty($timeline)) {
             $latest = $timeline[0];
             $currentStatus = $latest['status'];
             $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -689,7 +698,7 @@ class TrackingService
             ];
         }
 
-        if (!empty($timeline)) {
+        if (! empty($timeline)) {
             $latest = $timeline[0];
             $currentStatus = $latest['status'];
             $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -715,7 +724,7 @@ class TrackingService
         $currentStatusLabel = 'อยู่ระหว่างขนส่ง';
 
         $shipments = $data['shipments'] ?? [];
-        if (!empty($shipments)) {
+        if (! empty($shipments)) {
             $events = $shipments[0]['events'] ?? [];
             foreach ($events as $event) {
                 $status = $this->mapDHLStatus($event['statusCode'] ?? '');
@@ -729,7 +738,7 @@ class TrackingService
                 ];
             }
 
-            if (!empty($timeline)) {
+            if (! empty($timeline)) {
                 $latest = $timeline[0];
                 $currentStatus = $latest['status'];
                 $currentStatusLabel = self::STATUS_MAP[$currentStatus] ?? $latest['title'];
@@ -945,7 +954,7 @@ class TrackingService
         $providerCode = $this->normalizeProviderCode($providerCode);
         $carrier = self::SUPPORTED_CARRIERS[$providerCode] ?? null;
 
-        if (!$carrier || !isset($carrier['tracking_url'])) {
+        if (! $carrier || ! isset($carrier['tracking_url'])) {
             return null;
         }
 
@@ -967,6 +976,7 @@ class TrackingService
                 'logo' => $info['logo'],
             ];
         }
+
         return $carriers;
     }
 
@@ -1016,7 +1026,7 @@ class TrackingService
             trackingNumber: $trackingNumber,
             provider: $providerCode,
             success: true,
-            message: 'กดลิงก์ด้านล่างเพื่อติดตามพัสดุที่เว็บไซต์ของ' . ($carrier['name'] ?? 'บริษัทขนส่ง'),
+            message: 'กดลิงก์ด้านล่างเพื่อติดตามพัสดุที่เว็บไซต์ของ'.($carrier['name'] ?? 'บริษัทขนส่ง'),
             currentStatus: 'in_transit',
             currentStatusLabel: 'อยู่ระหว่างขนส่ง',
             timeline: [],
@@ -1049,6 +1059,7 @@ class TrackingService
         usort($merged, function ($a, $b) {
             $timeA = strtotime($a['timestamp'] ?? '0');
             $timeB = strtotime($b['timestamp'] ?? '0');
+
             return $timeB - $timeA;
         });
 
@@ -1112,7 +1123,7 @@ class TrackingService
                 ->where('tracked_at', $event['timestamp'])
                 ->exists();
 
-            if (!$exists && !empty($event['timestamp'])) {
+            if (! $exists && ! empty($event['timestamp'])) {
                 OrderTrackingHistory::create([
                     'order_id' => $order->id,
                     'status' => $event['status'],

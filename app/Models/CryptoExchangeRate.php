@@ -45,9 +45,10 @@ class CryptoExchangeRate extends Model
      */
     public function isValid(): bool
     {
-        if (!$this->valid_until) {
+        if (! $this->valid_until) {
             return true;
         }
+
         return now()->lessThan($this->valid_until);
     }
 
@@ -56,7 +57,7 @@ class CryptoExchangeRate extends Model
      */
     public function isExpired(): bool
     {
-        return !$this->isValid();
+        return ! $this->isValid();
     }
 
     /**
@@ -83,6 +84,7 @@ class CryptoExchangeRate extends Model
         if ($this->buy_rate_thb <= 0) {
             return 0;
         }
+
         return $thbAmount / $this->buy_rate_thb;
     }
 
@@ -112,7 +114,8 @@ class CryptoExchangeRate extends Model
         }
 
         $sign = $this->price_change_24h >= 0 ? '+' : '';
-        return $sign . number_format($this->price_change_24h, 2) . '%';
+
+        return $sign.number_format($this->price_change_24h, 2).'%';
     }
 
     // ==================== Relationships ====================
@@ -150,7 +153,7 @@ class CryptoExchangeRate extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('valid_until')
-              ->orWhere('valid_until', '>', now());
+                ->orWhere('valid_until', '>', now());
         });
     }
 
@@ -160,7 +163,7 @@ class CryptoExchangeRate extends Model
     public function scopeExpired($query)
     {
         return $query->whereNotNull('valid_until')
-                     ->where('valid_until', '<=', now());
+            ->where('valid_until', '<=', now());
     }
 
     /**

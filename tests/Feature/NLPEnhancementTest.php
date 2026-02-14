@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\MessageSentiment;
-use App\Models\MessageEntity;
-use App\Models\MessageIntent;
 use App\Models\KeywordCluster;
 use App\Models\KeywordClusterItem;
 use App\Models\LineBotKeyword;
+use App\Models\MessageEntity;
+use App\Models\MessageIntent;
+use App\Models\MessageSentiment;
 use App\Services\NLPEnhancementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,9 +16,6 @@ class NLPEnhancementTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * @var NLPEnhancementService
-     */
     protected NLPEnhancementService $nlpService;
 
     /**
@@ -512,7 +509,7 @@ class NLPEnhancementTest extends TestCase
                     'entities',
                     'intents',
                     'clusters',
-                ]
+                ],
             ]);
     }
 
@@ -543,6 +540,7 @@ class NLPEnhancementTest extends TestCase
     protected function actingAsAdmin()
     {
         $admin = \App\Models\User::factory()->create(['role' => 'admin']);
+
         return $this->actingAs($admin);
     }
 }

@@ -6,7 +6,6 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class AdminStoreController extends Controller
 {
@@ -28,9 +27,9 @@ class AdminStoreController extends Controller
 
         // Apply filters
         if ($request->filled('search')) {
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -113,7 +112,7 @@ class AdminStoreController extends Controller
 
         $store = VendorStore::with('user')->where('user_id', $adminUserId)->first();
 
-        if (!$store) {
+        if (! $store) {
             // Create default admin store
             $store = VendorStore::create([
                 'user_id' => $adminUserId,

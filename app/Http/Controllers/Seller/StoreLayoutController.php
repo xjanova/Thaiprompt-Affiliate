@@ -8,8 +8,8 @@ use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 /**
  * Store Layout Controller
@@ -31,7 +31,7 @@ class StoreLayoutController extends Controller
         $user = auth()->user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.store.settings')
                 ->with('error', 'กรุณาตั้งค่าร้านค้าก่อนปรับแต่ง Layout');
         }
@@ -60,7 +60,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Layout ทั่วไป (Colors, Header, Footer)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveGeneral(Request $request)
@@ -100,7 +99,7 @@ class StoreLayoutController extends Controller
         $booleanFields = [
             'show_store_logo', 'show_store_name', 'show_store_description',
             'show_store_stats', 'show_sidebar', 'show_footer',
-            'show_contact_info', 'show_social_links'
+            'show_contact_info', 'show_social_links',
         ];
 
         foreach ($booleanFields as $field) {
@@ -122,7 +121,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Slider
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveSlider(Request $request)
@@ -163,7 +161,6 @@ class StoreLayoutController extends Controller
     /**
      * อัพโหลดรูปภาพ Slider
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function uploadSliderImage(Request $request)
@@ -177,7 +174,7 @@ class StoreLayoutController extends Controller
         try {
             $imagePath = $this->convertAndSaveAsWebP(
                 $request->file('image'),
-                'stores/sliders/' . $user->id,
+                'stores/sliders/'.$user->id,
                 1920,
                 800
             );
@@ -191,7 +188,7 @@ class StoreLayoutController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -199,7 +196,6 @@ class StoreLayoutController extends Controller
     /**
      * ลบรูปภาพ Slider
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function deleteSliderImage(Request $request)
@@ -212,7 +208,7 @@ class StoreLayoutController extends Controller
         $path = $request->input('path');
 
         // ตรวจสอบว่าเป็นรูปของ user นี้
-        if (!str_contains($path, 'stores/sliders/' . $user->id)) {
+        if (! str_contains($path, 'stores/sliders/'.$user->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถลบรูปภาพนี้ได้',
@@ -232,7 +228,6 @@ class StoreLayoutController extends Controller
     /**
      * อัพโหลดรูปภาพ Header
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function uploadHeaderImage(Request $request)
@@ -252,7 +247,7 @@ class StoreLayoutController extends Controller
 
             $imagePath = $this->convertAndSaveAsWebP(
                 $request->file('image'),
-                'stores/headers/' . $user->id,
+                'stores/headers/'.$user->id,
                 1920,
                 600
             );
@@ -269,7 +264,7 @@ class StoreLayoutController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -277,7 +272,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Featured Products
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveFeatured(Request $request)
@@ -307,7 +301,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Categories Section
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveCategories(Request $request)
@@ -337,7 +330,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Promotion Banner
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function savePromotion(Request $request)
@@ -367,7 +359,6 @@ class StoreLayoutController extends Controller
     /**
      * อัพโหลดรูปภาพ Promotion
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function uploadPromotionImage(Request $request)
@@ -387,7 +378,7 @@ class StoreLayoutController extends Controller
 
             $imagePath = $this->convertAndSaveAsWebP(
                 $request->file('image'),
-                'stores/promotions/' . $user->id,
+                'stores/promotions/'.$user->id,
                 1920,
                 400
             );
@@ -404,7 +395,7 @@ class StoreLayoutController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'อัพโหลดรูปภาพไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -412,7 +403,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Social Links
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveSocialLinks(Request $request)
@@ -442,7 +432,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า SEO
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveSeo(Request $request)
@@ -468,7 +457,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกการตั้งค่า Custom CSS/JS
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveCustomCode(Request $request)
@@ -493,7 +481,6 @@ class StoreLayoutController extends Controller
     /**
      * บันทึกลำดับ Sections
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveSectionsOrder(Request $request)
@@ -611,21 +598,21 @@ class StoreLayoutController extends Controller
     /**
      * แปลงและบันทึกรูปภาพเป็นรูปแบบ WebP
      *
-     * @param \Illuminate\Http\UploadedFile $file ไฟล์รูปภาพที่อัปโหลด
-     * @param string $directory โฟลเดอร์ที่จะบันทึก
-     * @param int $maxWidth ความกว้างสูงสุด
-     * @param int $maxHeight ความสูงสูงสุด
+     * @param  \Illuminate\Http\UploadedFile  $file  ไฟล์รูปภาพที่อัปโหลด
+     * @param  string  $directory  โฟลเดอร์ที่จะบันทึก
+     * @param  int  $maxWidth  ความกว้างสูงสุด
+     * @param  int  $maxHeight  ความสูงสูงสุด
      * @return string เส้นทางไฟล์ที่บันทึก
      */
     private function convertAndSaveAsWebP($file, $directory, $maxWidth = 1920, $maxHeight = 1080)
     {
         try {
             // สร้างชื่อไฟล์ unique
-            $filename = Str::random(40) . '.webp';
-            $fullPath = $directory . '/' . $filename;
+            $filename = Str::random(40).'.webp';
+            $fullPath = $directory.'/'.$filename;
 
             // สร้าง ImageManager ด้วย GD driver (Intervention Image v3)
-            $manager = new ImageManager(new Driver());
+            $manager = new ImageManager(new Driver);
 
             // โหลดรูปภาพโดยใช้ Intervention Image v3 API
             $image = $manager->read($file->getPathname());
@@ -644,10 +631,11 @@ class StoreLayoutController extends Controller
             return $fullPath;
         } catch (\Exception $e) {
             // Fallback: ถ้าแปลง WebP ไม่สำเร็จ ให้บันทึกไฟล์ต้นฉบับ
-            \Log::error('WebP conversion failed: ' . $e->getMessage());
+            \Log::error('WebP conversion failed: '.$e->getMessage());
 
             // บันทึกไฟล์ต้นฉบับโดยไม่แปลง
             $originalPath = $file->store($directory, 'public');
+
             return $originalPath;
         }
     }

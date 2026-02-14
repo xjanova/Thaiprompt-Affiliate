@@ -13,7 +13,7 @@ class HotelAdminMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
@@ -30,7 +30,7 @@ class HotelAdminMiddleware
         }
 
         // Check if user is hotel admin
-        if (!$user->is_hotel_admin || !$user->managed_hotel_id) {
+        if (! $user->is_hotel_admin || ! $user->managed_hotel_id) {
             abort(403, 'Unauthorized access. You need hotel admin privileges.');
         }
 

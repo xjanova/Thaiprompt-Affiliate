@@ -54,13 +54,13 @@ class TPIXReferralCode extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>', now());
+                    ->orWhere('expires_at', '>', now());
             })
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('max_uses')
-                  ->orWhereRaw('current_uses < max_uses');
+                    ->orWhereRaw('current_uses < max_uses');
             });
     }
 
@@ -69,7 +69,7 @@ class TPIXReferralCode extends Model
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 

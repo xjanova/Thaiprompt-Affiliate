@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\TarotReading;
-use App\Models\TarotReadingCard;
 use App\Models\TarotCard;
 use App\Models\TarotCardInterpretation;
-use App\Models\TarotReadingCategory;
-use App\Models\TarotSpreadType;
+use App\Models\TarotReading;
+use App\Models\TarotReadingCard;
 
 /**
  * TarotInterpretationService
@@ -16,6 +14,7 @@ use App\Models\TarotSpreadType;
  * รวมบริบทของหมวดหมู่, ตำแหน่งไพ่, และสถานะหงาย/กลับหัว
  *
  * @author Claude AI
+ *
  * @version 1.0.0
  */
 class TarotInterpretationService
@@ -23,8 +22,6 @@ class TarotInterpretationService
     /**
      * บริบทของแต่ละหมวดหมู่การทำนาย
      * กำหนดโฟกัสและคำศัพท์ที่ใช้ในแต่ละด้าน
-     *
-     * @var array
      */
     protected array $categoryContexts = [
         'love-relationships' => [
@@ -66,8 +63,6 @@ class TarotInterpretationService
 
     /**
      * บริบทของตำแหน่งไพ่แต่ละตำแหน่ง
-     *
-     * @var array
      */
     protected array $positionContexts = [
         // สำหรับไพ่ใบเดียว
@@ -244,8 +239,7 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายสำหรับการอ่านไพ่ทั้งชุด
      *
-     * @param TarotReading $reading การอ่านไพ่ที่ต้องการสร้างคำทำนาย
-     * @return void
+     * @param  TarotReading  $reading  การอ่านไพ่ที่ต้องการสร้างคำทำนาย
      */
     public function generateInterpretations(TarotReading $reading): void
     {
@@ -285,10 +279,10 @@ class TarotInterpretationService
      * 2. ถ้าไม่มี ใช้คำทำนายพื้นฐานจากไพ่ (TarotCard)
      * 3. ถ้าไม่มี ใช้คำทำนายที่สร้างอัตโนมัติ
      *
-     * @param TarotReadingCard $readingCard ไพ่ที่เลือก
-     * @param array $categoryContext บริบทของหมวดหมู่
-     * @param string|null $question คำถามของผู้ใช้
-     * @param int|null $categoryId ID ของหมวดหมู่
+     * @param  TarotReadingCard  $readingCard  ไพ่ที่เลือก
+     * @param  array  $categoryContext  บริบทของหมวดหมู่
+     * @param  string|null  $question  คำถามของผู้ใช้
+     * @param  int|null  $categoryId  ID ของหมวดหมู่
      * @return string คำทำนายละเอียด
      */
     protected function generateCardInterpretation(
@@ -310,7 +304,7 @@ class TarotInterpretationService
 
         // 1. ตรวจสอบคำทำนายที่กำหนดเองจากฐานข้อมูลก่อน
         $customInterpretation = $this->getCustomInterpretation($card->id, $categoryId, $isReversed);
-        if (!empty($customInterpretation)) {
+        if (! empty($customInterpretation)) {
             return $this->buildInterpretationWithCustom(
                 $customInterpretation,
                 $positionName,
@@ -350,20 +344,20 @@ class TarotInterpretationService
     /**
      * ดึงคำทำนายที่กำหนดเองจากฐานข้อมูล
      *
-     * @param int $cardId ID ของไพ่
-     * @param int|null $categoryId ID ของหมวดหมู่
-     * @param bool $isReversed ไพ่กลับหัวหรือไม่
+     * @param  int  $cardId  ID ของไพ่
+     * @param  int|null  $categoryId  ID ของหมวดหมู่
+     * @param  bool  $isReversed  ไพ่กลับหัวหรือไม่
      * @return string|null คำทำนายที่กำหนดเอง หรือ null ถ้าไม่มี
      */
     protected function getCustomInterpretation(int $cardId, ?int $categoryId, bool $isReversed): ?string
     {
-        if (!$categoryId) {
+        if (! $categoryId) {
             return null;
         }
 
         $customInterpretation = TarotCardInterpretation::findFor($cardId, $categoryId);
 
-        if (!$customInterpretation) {
+        if (! $customInterpretation) {
             return null;
         }
 
@@ -372,19 +366,18 @@ class TarotInterpretationService
             ? $customInterpretation->getReversedInterpretation('th')
             : $customInterpretation->getUprightInterpretation('th');
 
-        return !empty($interpretation) ? $interpretation : null;
+        return ! empty($interpretation) ? $interpretation : null;
     }
 
     /**
      * สร้างคำทำนายจากข้อมูลที่กำหนดเอง
      *
-     * @param string $customInterpretation คำทำนายที่กำหนดเอง
-     * @param string $positionName ชื่อตำแหน่ง
-     * @param array $positionContext บริบทตำแหน่ง
-     * @param string $cardName ชื่อไพ่
-     * @param bool $isReversed ไพ่กลับหัวหรือไม่
-     * @param int|null $categoryId ID ของหมวดหมู่
-     * @return string
+     * @param  string  $customInterpretation  คำทำนายที่กำหนดเอง
+     * @param  string  $positionName  ชื่อตำแหน่ง
+     * @param  array  $positionContext  บริบทตำแหน่ง
+     * @param  string  $cardName  ชื่อไพ่
+     * @param  bool  $isReversed  ไพ่กลับหัวหรือไม่
+     * @param  int|null  $categoryId  ID ของหมวดหมู่
      */
     protected function buildInterpretationWithCustom(
         string $customInterpretation,
@@ -400,12 +393,12 @@ class TarotInterpretationService
         $lines[] = "ความหมาย: {$customInterpretation}";
 
         // ส่วนตำแหน่ง
-        $lines[] = "";
+        $lines[] = '';
         $lines[] = "ในตำแหน่ง \"{$positionName}\" - {$positionContext['meaning']}";
 
         // คำแนะนำที่กำหนดเอง (ถ้ามี)
         if ($categoryId) {
-            $customInterpretationModel = TarotCardInterpretation::where('card_id', function($query) use ($cardName) {
+            $customInterpretationModel = TarotCardInterpretation::where('card_id', function ($query) use ($cardName) {
                 $query->select('id')
                     ->from('tarot_cards')
                     ->where('name_th', $cardName)
@@ -415,8 +408,8 @@ class TarotInterpretationService
 
             if ($customInterpretationModel) {
                 $advice = $customInterpretationModel->getAdvice('th');
-                if (!empty($advice)) {
-                    $lines[] = "";
+                if (! empty($advice)) {
+                    $lines[] = '';
                     $lines[] = "คำแนะนำ: {$advice}";
                 }
             }
@@ -428,16 +421,15 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายละเอียดสำหรับไพ่
      *
-     * @param string $cardName ชื่อไพ่
-     * @param string $orientationText ข้อความหงาย/กลับหัว
-     * @param string $orientationEmoji อีโมจิ
-     * @param string $positionName ชื่อตำแหน่ง
-     * @param array $positionContext บริบทตำแหน่ง
-     * @param string $cardMeaning ความหมายไพ่
-     * @param array $keywords คีย์เวิร์ด
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @param bool $isReversed ไพ่กลับหัวหรือไม่
-     * @return string
+     * @param  string  $cardName  ชื่อไพ่
+     * @param  string  $orientationText  ข้อความหงาย/กลับหัว
+     * @param  string  $orientationEmoji  อีโมจิ
+     * @param  string  $positionName  ชื่อตำแหน่ง
+     * @param  array  $positionContext  บริบทตำแหน่ง
+     * @param  string  $cardMeaning  ความหมายไพ่
+     * @param  array  $keywords  คีย์เวิร์ด
+     * @param  array  $categoryContext  บริบทหมวดหมู่
+     * @param  bool  $isReversed  ไพ่กลับหัวหรือไม่
      */
     protected function buildDetailedInterpretation(
         string $cardName,
@@ -450,7 +442,7 @@ class TarotInterpretationService
         array $categoryContext,
         bool $isReversed
     ): string {
-        $keywordString = !empty($keywords) ? implode(', ', array_slice($keywords, 0, 3)) : '';
+        $keywordString = ! empty($keywords) ? implode(', ', array_slice($keywords, 0, 3)) : '';
 
         // สร้างคำทำนายแบบอ่านง่าย (ไม่ใช้ markdown)
         $lines = [];
@@ -459,11 +451,11 @@ class TarotInterpretationService
         $lines[] = "ความหมาย: {$cardMeaning}";
 
         // ส่วนตำแหน่ง
-        $lines[] = "";
+        $lines[] = '';
         $lines[] = "ในตำแหน่ง \"{$positionName}\" - {$positionContext['meaning']}";
 
         // ส่วนการตีความตามบริบท
-        $lines[] = "";
+        $lines[] = '';
         if ($isReversed) {
             $lines[] = $this->getReversedContextualInterpretation(
                 $cardName,
@@ -481,8 +473,8 @@ class TarotInterpretationService
         }
 
         // ส่วนคำแนะนำ
-        $lines[] = "";
-        $lines[] = "คำแนะนำ: " . $this->getAdvice($isReversed, $positionContext, $categoryContext);
+        $lines[] = '';
+        $lines[] = 'คำแนะนำ: '.$this->getAdvice($isReversed, $positionContext, $categoryContext);
 
         return implode("\n", $lines);
     }
@@ -490,11 +482,10 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายตามบริบทสำหรับไพ่หัวตั้ง
      *
-     * @param string $cardName ชื่อไพ่
-     * @param array $positionContext บริบทตำแหน่ง
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @param string $keywords คีย์เวิร์ด
-     * @return string
+     * @param  string  $cardName  ชื่อไพ่
+     * @param  array  $positionContext  บริบทตำแหน่ง
+     * @param  array  $categoryContext  บริบทหมวดหมู่
+     * @param  string  $keywords  คีย์เวิร์ด
      */
     protected function getUprightContextualInterpretation(
         string $cardName,
@@ -522,11 +513,10 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายตามบริบทสำหรับไพ่กลับหัว
      *
-     * @param string $cardName ชื่อไพ่
-     * @param array $positionContext บริบทตำแหน่ง
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @param string $keywords คีย์เวิร์ด
-     * @return string
+     * @param  string  $cardName  ชื่อไพ่
+     * @param  array  $positionContext  บริบทตำแหน่ง
+     * @param  array  $categoryContext  บริบทหมวดหมู่
+     * @param  string  $keywords  คีย์เวิร์ด
      */
     protected function getReversedContextualInterpretation(
         string $cardName,
@@ -554,10 +544,9 @@ class TarotInterpretationService
     /**
      * สร้างคำแนะนำตามไพ่
      *
-     * @param bool $isReversed ไพ่กลับหัวหรือไม่
-     * @param array $positionContext บริบทตำแหน่ง
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @return string
+     * @param  bool  $isReversed  ไพ่กลับหัวหรือไม่
+     * @param  array  $positionContext  บริบทตำแหน่ง
+     * @param  array  $categoryContext  บริบทหมวดหมู่
      */
     protected function getAdvice(bool $isReversed, array $positionContext, array $categoryContext): string
     {
@@ -586,9 +575,8 @@ class TarotInterpretationService
     /**
      * สร้างคำทำนายรวมสำหรับการอ่านทั้งชุด
      *
-     * @param TarotReading $reading การอ่านไพ่
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @return string
+     * @param  TarotReading  $reading  การอ่านไพ่
+     * @param  array  $categoryContext  บริบทหมวดหมู่
      */
     protected function generateOverallInterpretation(TarotReading $reading, array $categoryContext): string
     {
@@ -618,19 +606,19 @@ class TarotInterpretationService
         $lines = [];
 
         $lines[] = "พลังงานโดยรวม: {$energyAnalysis['description_clean']}";
-        $lines[] = "";
-        $lines[] = "การวิเคราะห์:";
+        $lines[] = '';
+        $lines[] = 'การวิเคราะห์:';
         $lines[] = $this->buildOverallAnalysis($cards, $categoryContext, $energyAnalysis);
-        $lines[] = "";
-        $lines[] = "คำแนะนำ: " . $this->getOverallAdvice($energyAnalysis, $categoryContext);
-        $lines[] = "";
-        $lines[] = "ข้อคิด: " . $this->getInspirationMessage($energyAnalysis, $focus);
+        $lines[] = '';
+        $lines[] = 'คำแนะนำ: '.$this->getOverallAdvice($energyAnalysis, $categoryContext);
+        $lines[] = '';
+        $lines[] = 'ข้อคิด: '.$this->getInspirationMessage($energyAnalysis, $focus);
 
         // คำถามของผู้ใช้ (ถ้ามี)
-        if (!empty($reading->question)) {
-            $lines[] = "";
+        if (! empty($reading->question)) {
+            $lines[] = '';
             $lines[] = "คำถามของคุณ: \"{$reading->question}\"";
-            $lines[] = "คำตอบ: " . $this->answerQuestion($reading->question, $cards, $categoryContext, $energyAnalysis);
+            $lines[] = 'คำตอบ: '.$this->answerQuestion($reading->question, $cards, $categoryContext, $energyAnalysis);
         }
 
         return implode("\n", $lines);
@@ -639,10 +627,9 @@ class TarotInterpretationService
     /**
      * วิเคราะห์พลังงานโดยรวมจากไพ่ทั้งหมด
      *
-     * @param int $uprightCount จำนวนไพ่หัวตั้ง
-     * @param int $reversedCount จำนวนไพ่กลับหัว
-     * @param int $totalCards จำนวนไพ่ทั้งหมด
-     * @return array
+     * @param  int  $uprightCount  จำนวนไพ่หัวตั้ง
+     * @param  int  $reversedCount  จำนวนไพ่กลับหัว
+     * @param  int  $totalCards  จำนวนไพ่ทั้งหมด
      */
     protected function analyzeOverallEnergy(int $uprightCount, int $reversedCount, int $totalCards): array
     {
@@ -694,10 +681,9 @@ class TarotInterpretationService
     /**
      * สร้างการวิเคราะห์โดยรวมจากไพ่ทั้งหมด
      *
-     * @param \Illuminate\Database\Eloquent\Collection $cards ไพ่ทั้งหมด
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @param array $energyAnalysis การวิเคราะห์พลังงาน
-     * @return string
+     * @param  \Illuminate\Database\Eloquent\Collection  $cards  ไพ่ทั้งหมด
+     * @param  array  $categoryContext  บริบทหมวดหมู่
+     * @param  array  $energyAnalysis  การวิเคราะห์พลังงาน
      */
     protected function buildOverallAnalysis($cards, array $categoryContext, array $energyAnalysis): string
     {
@@ -714,7 +700,7 @@ class TarotInterpretationService
         $firstReversed = $firstCard?->is_reversed ? ' (กลับหัว)' : '';
         $lastReversed = $lastCard?->is_reversed ? ' (กลับหัว)' : '';
 
-        $analysis = "";
+        $analysis = '';
 
         switch ($type) {
             case 'very_positive':
@@ -749,9 +735,8 @@ class TarotInterpretationService
     /**
      * สร้างคำแนะนำโดยรวม
      *
-     * @param array $energyAnalysis การวิเคราะห์พลังงาน
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @return string
+     * @param  array  $energyAnalysis  การวิเคราะห์พลังงาน
+     * @param  array  $categoryContext  บริบทหมวดหมู่
      */
     protected function getOverallAdvice(array $energyAnalysis, array $categoryContext): string
     {
@@ -776,9 +761,8 @@ class TarotInterpretationService
     /**
      * สร้างข้อความสร้างแรงบันดาลใจ
      *
-     * @param array $energyAnalysis การวิเคราะห์พลังงาน
-     * @param string $focus โฟกัสของการทำนาย
-     * @return string
+     * @param  array  $energyAnalysis  การวิเคราะห์พลังงาน
+     * @param  string  $focus  โฟกัสของการทำนาย
      */
     protected function getInspirationMessage(array $energyAnalysis, string $focus): string
     {
@@ -798,11 +782,10 @@ class TarotInterpretationService
     /**
      * ตอบคำถามของผู้ใช้ตามไพ่ที่ได้
      *
-     * @param string $question คำถาม
-     * @param \Illuminate\Database\Eloquent\Collection $cards ไพ่
-     * @param array $categoryContext บริบทหมวดหมู่
-     * @param array $energyAnalysis การวิเคราะห์พลังงาน
-     * @return string
+     * @param  string  $question  คำถาม
+     * @param  \Illuminate\Database\Eloquent\Collection  $cards  ไพ่
+     * @param  array  $categoryContext  บริบทหมวดหมู่
+     * @param  array  $energyAnalysis  การวิเคราะห์พลังงาน
      */
     protected function answerQuestion(string $question, $cards, array $categoryContext, array $energyAnalysis): string
     {

@@ -21,7 +21,9 @@ use Illuminate\Support\Facades\Log;
 class FortuneChannelManager
 {
     protected FortuneTellingSetting $settings;
+
     protected FortuneConversationService $conversationService;
+
     protected FortuneAIService $aiService;
 
     /**
@@ -33,6 +35,7 @@ class FortuneChannelManager
      * Supported platforms
      */
     public const PLATFORM_FACEBOOK = 'facebook';
+
     public const PLATFORM_LINE = 'line';
 
     public function __construct(?FortuneTellingSetting $settings = null)
@@ -45,8 +48,7 @@ class FortuneChannelManager
     /**
      * ดึง platform instance
      *
-     * @param string $platform ชื่อ platform (facebook, line)
-     * @return MessagingPlatformInterface|null
+     * @param  string  $platform  ชื่อ platform (facebook, line)
      */
     public function getPlatform(string $platform): ?MessagingPlatformInterface
     {
@@ -70,11 +72,11 @@ class FortuneChannelManager
     /**
      * ประมวลผลข้อความจากทุก platform
      *
-     * @param string $platform ชื่อ platform
-     * @param string $userId User ID ของ platform นั้น
-     * @param string $messageText ข้อความ
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้ (optional)
-     * @param array $extra ข้อมูลเพิ่มเติม (reply_token สำหรับ LINE, etc.)
+     * @param  string  $platform  ชื่อ platform
+     * @param  string  $userId  User ID ของ platform นั้น
+     * @param  string  $messageText  ข้อความ
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้ (optional)
+     * @param  array  $extra  ข้อมูลเพิ่มเติม (reply_token สำหรับ LINE, etc.)
      * @return array ผลลัพธ์
      */
     public function processMessage(
@@ -119,17 +121,15 @@ class FortuneChannelManager
     /**
      * ส่งข้อความตอบกลับตาม platform
      *
-     * @param string $platform
-     * @param string $userId
-     * @param array $result ผลลัพธ์จาก conversation service
-     * @param array $extra ข้อมูลเพิ่มเติม
-     * @return bool
+     * @param  array  $result  ผลลัพธ์จาก conversation service
+     * @param  array  $extra  ข้อมูลเพิ่มเติม
      */
     public function sendResponse(string $platform, string $userId, array $result, array $extra = []): bool
     {
         $platformService = $this->getPlatform($platform);
-        if (!$platformService) {
+        if (! $platformService) {
             Log::error('FortuneChannelManager: Platform not found', ['platform' => $platform]);
+
             return false;
         }
 
@@ -145,7 +145,7 @@ class FortuneChannelManager
         $options = [];
 
         // ถ้าเป็นการส่งจาก admin หรือ extra ระบุ → ใช้ MESSAGE_TAG เพื่อส่งได้แม้เกิน 24 ชม.
-        if (!empty($extra['from_admin'])) {
+        if (! empty($extra['from_admin'])) {
             $options['from_admin'] = true;
         }
 
@@ -164,7 +164,7 @@ class FortuneChannelManager
         }
 
         // เพิ่ม quick replies ถ้ามี
-        if (!empty($result['show_quick_replies'])) {
+        if (! empty($result['show_quick_replies'])) {
             $options['quick_replies'] = $this->getQuickReplies($action);
         }
 
@@ -173,12 +173,6 @@ class FortuneChannelManager
 
     /**
      * ส่ง Response สำหรับ LINE ด้วย Flex Message
-     *
-     * @param LineFortuneService $lineService
-     * @param string $userId
-     * @param array $result
-     * @param array $extra
-     * @return bool
      */
     protected function sendLineResponse(LineFortuneService $lineService, string $userId, array $result, array $extra = []): bool
     {
@@ -229,7 +223,7 @@ class FortuneChannelManager
 
         // แยกคำทำนายออกจากข้อความ upsell
         $message = $result['message'] ?? '';
-        $parts = explode("═══════════════════════", $message);
+        $parts = explode('═══════════════════════', $message);
         $prediction = trim($parts[0] ?? $message);
 
         // ส่ง Flex Message คำทำนาย
@@ -241,6 +235,7 @@ class FortuneChannelManager
 
         // ส่ง Flex Message Upsell
         $upsellFlex = $lineService->buildUpsellFlexMessage($userName, FortuneConversationService::DEEP_READING_PRICE);
+
         return $lineService->sendRichMessage($userId, [
             'alt_text' => 'ดูดวงละเอียด',
             'contents' => $upsellFlex,
@@ -254,7 +249,7 @@ class FortuneChannelManager
     {
         $reading = $result['reading'] ?? null;
 
-        if (!$reading) {
+        if (! $reading) {
             return $lineService->sendMessage($userId, $result['message'] ?? 'เกิดข้อผิดพลาด');
         }
 
@@ -263,7 +258,7 @@ class FortuneChannelManager
             ->smsCheckerEnabled()
             ->ordered()
             ->get()
-            ->map(fn($a) => [
+            ->map(fn ($a) => [
                 'bank_name' => $a->bank_name,
                 'account_number' => $a->account_number,
                 'account_name' => $a->account_name,
@@ -274,7 +269,7 @@ class FortuneChannelManager
             $bankAccounts = \App\Models\PaymentBankAccount::active()
                 ->ordered()
                 ->get()
-                ->map(fn($a) => [
+                ->map(fn ($a) => [
                     'bank_name' => $a->bank_name,
                     'account_number' => $a->account_number,
                     'account_name' => $a->account_name,
@@ -293,8 +288,9 @@ class FortuneChannelManager
 
         // ส่ง Payment Flex พร้อมยอด unique amount สำหรับเช็คผ่าน SMS payment checker
         $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
+
         return $lineService->sendRichMessage($userId, [
-            'alt_text' => "ยอดชำระ ฿" . number_format($amount, 2),
+            'alt_text' => 'ยอดชำระ ฿'.number_format($amount, 2),
             'contents' => $paymentFlex,
         ]);
     }
@@ -361,6 +357,7 @@ class FortuneChannelManager
     protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result): bool
     {
         $welcomeFlex = $lineService->buildWelcomeFlexMessage();
+
         return $lineService->sendRichMessage($userId, [
             'alt_text' => 'แม่หมอจันทรายินดีต้อนรับค่ะ',
             'contents' => $welcomeFlex,
@@ -369,9 +366,6 @@ class FortuneChannelManager
 
     /**
      * ดึง Quick Replies ตาม action
-     *
-     * @param string $action
-     * @return array
      */
     protected function getQuickReplies(string $action): array
     {
@@ -397,9 +391,6 @@ class FortuneChannelManager
 
     /**
      * ตรวจสอบว่า platform รองรับหรือไม่
-     *
-     * @param string $platform
-     * @return bool
      */
     public function isPlatformSupported(string $platform): bool
     {
@@ -408,8 +399,6 @@ class FortuneChannelManager
 
     /**
      * ดึงรายการ platform ที่รองรับ
-     *
-     * @return array
      */
     public function getSupportedPlatforms(): array
     {
@@ -434,9 +423,6 @@ class FortuneChannelManager
      *
      * ส่งคำทำนายทีละคำถาม คู่กับคำตอบ
      * ให้ผู้ใช้อ่านทีละข้อ น่าติดตาม
-     *
-     * @param FortuneReading $reading
-     * @return array
      */
     public function sendDeepReadingAfterPayment(FortuneReading $reading): array
     {
@@ -449,6 +435,7 @@ class FortuneChannelManager
         // สำหรับ LINE ใช้ sendResponse ที่จัดการ deep_readings อยู่แล้ว
         if ($platform === self::PLATFORM_LINE) {
             $this->sendResponse($platform, $userId, $result, ['from_admin' => true]);
+
             return $result;
         }
 
@@ -456,7 +443,7 @@ class FortuneChannelManager
         $deepReadings = $result['deep_readings'] ?? [];
         $platformService = $this->getPlatform($platform);
 
-        if ($platformService && !empty($deepReadings)) {
+        if ($platformService && ! empty($deepReadings)) {
             // ใช้ from_admin เพราะเป็นการส่งคำทำนายหลังชำระเงิน อาจเกิน 24 ชม.
             $sendOptions = ['from_admin' => true];
 
@@ -480,7 +467,7 @@ class FortuneChannelManager
                 $message .= $dr['answer'];
 
                 $sent = $platformService->sendMessage($userId, $message, $sendOptions);
-                if (!$sent) {
+                if (! $sent) {
                     Log::error('FortuneChannelManager: ส่งคำทำนายละเอียดไม่สำเร็จ', [
                         'reading_id' => $reading->id,
                         'user_id' => $userId,

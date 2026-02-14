@@ -52,9 +52,9 @@ class ServiceBookingLocation extends Model
         'longitude' => 'decimal:8',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * การจอง
@@ -64,9 +64,9 @@ class ServiceBookingLocation extends Model
         return $this->belongsTo(ServiceBooking::class, 'booking_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: ตำแหน่งให้บริการ (ที่ลูกค้า)
@@ -84,16 +84,12 @@ class ServiceBookingLocation extends Model
         return $query->where('type', 'provider_location');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Location
-    //===========================================
+    // ===========================================
 
     /**
      * คำนวณระยะทางไปยังตำแหน่งอื่น (km)
-     *
-     * @param float $destinationLat
-     * @param float $destinationLng
-     * @return float
      */
     public function calculateDistanceTo(float $destinationLat, float $destinationLng): float
     {

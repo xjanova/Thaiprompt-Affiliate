@@ -49,7 +49,7 @@ class RecordCarbonCreditOnBlockchainJob implements ShouldQueue
 
         try {
             $product = $this->credit->foodProduct;
-            if (!$product) {
+            if (! $product) {
                 throw new \Exception('Product not found for carbon credit');
             }
 
@@ -57,7 +57,7 @@ class RecordCarbonCreditOnBlockchainJob implements ShouldQueue
             $operation = $this->determineOperation();
 
             // Handle based on status and operation
-            match($operation) {
+            match ($operation) {
                 'mint' => $this->mintCarbonCreditToken($blockchain),
                 'transfer' => $this->transferCarbonCreditToken($blockchain),
                 'retire' => $this->retireCarbonCreditToken($blockchain),
@@ -87,7 +87,7 @@ class RecordCarbonCreditOnBlockchainJob implements ShouldQueue
     protected function determineOperation(): string
     {
         // If no blockchain hash, this is initial minting
-        if (!$this->credit->blockchain_hash) {
+        if (! $this->credit->blockchain_hash) {
             return 'mint';
         }
 
@@ -112,6 +112,7 @@ class RecordCarbonCreditOnBlockchainJob implements ShouldQueue
     {
         if ($this->credit->blockchain_hash) {
             Log::info('Carbon credit already minted', ['credit_id' => $this->credit->id]);
+
             return;
         }
 
@@ -143,7 +144,7 @@ class RecordCarbonCreditOnBlockchainJob implements ShouldQueue
     protected function transferCarbonCreditToken(TpixBlockchainService $blockchain): void
     {
         $buyer = $this->credit->tradedToUser;
-        if (!$buyer || !$buyer->wallet_address) {
+        if (! $buyer || ! $buyer->wallet_address) {
             throw new \Exception('Buyer wallet address not found');
         }
 

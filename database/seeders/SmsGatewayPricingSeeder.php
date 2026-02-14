@@ -157,6 +157,6 @@ class SmsGatewayPricingSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ SMS Gateway Pricing seeder completed! Created ' . count($plans) . ' plans.');
+        $this->command->info('✅ SMS Gateway Pricing seeder completed! Created '.count($plans).' plans.');
     }
 }

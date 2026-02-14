@@ -29,7 +29,7 @@ return new class extends Migration
                 'wallet_locked',
                 'wallet_unlocked',
                 'suspicious_activity',
-                'settings_changed'
+                'settings_changed',
             ]);
             $table->text('description');
             $table->string('ip_address', 45)->nullable();

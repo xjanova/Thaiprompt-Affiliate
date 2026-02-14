@@ -78,20 +78,30 @@ class EarningsLedger extends Model
      * ประเภทรายได้
      */
     const TYPE_SELLER_SALE = 'seller_sale';
+
     const TYPE_SERVICE_PROVIDER = 'service_provider';
+
     const TYPE_MLM_COMMISSION = 'mlm_commission';
+
     const TYPE_AFFILIATE_COMMISSION = 'affiliate_commission';
+
     const TYPE_REFERRAL_BONUS = 'referral_bonus';
+
     const TYPE_OTHER = 'other';
 
     /**
      * สถานะ
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_AVAILABLE = 'available';
+
     const STATUS_PROCESSING = 'processing';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_HELD = 'held';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**

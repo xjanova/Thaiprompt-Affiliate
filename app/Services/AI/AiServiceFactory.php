@@ -2,9 +2,9 @@
 
 namespace App\Services\AI;
 
-use App\Models\AiProvider;
-use App\Models\AiModel;
 use App\Models\AiBotProfile;
+use App\Models\AiModel;
+use App\Models\AiProvider;
 
 class AiServiceFactory
 {
@@ -43,15 +43,15 @@ class AiServiceFactory
     {
         $bot->load(['provider', 'model']);
 
-        if (!$bot->provider || !$bot->model) {
+        if (! $bot->provider || ! $bot->model) {
             throw new \Exception('Bot profile missing provider or model');
         }
 
-        if (!$bot->provider->is_active) {
+        if (! $bot->provider->is_active) {
             throw new \Exception("Provider {$bot->provider->display_name} is not active");
         }
 
-        if (!$bot->model->is_active) {
+        if (! $bot->model->is_active) {
             throw new \Exception("Model {$bot->model->display_name} is not active");
         }
 
@@ -89,6 +89,7 @@ class AiServiceFactory
                     'success' => false,
                     'message' => 'No active models',
                 ];
+
                 continue;
             }
 

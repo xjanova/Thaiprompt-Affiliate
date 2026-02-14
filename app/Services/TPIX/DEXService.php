@@ -60,7 +60,7 @@ class DEXService
                 ->where('token_id', $tokenIn->id)
                 ->first();
 
-            if (!$userBalance || bccomp($userBalance->available_balance, $amountIn, 8) < 0) {
+            if (! $userBalance || bccomp($userBalance->available_balance, $amountIn, 8) < 0) {
                 throw new \Exception('Insufficient balance');
             }
 
@@ -98,12 +98,12 @@ class DEXService
                 'amount_out' => $amountOutAfterFee,
                 'fee' => $fee,
                 'price_impact' => $priceImpact,
-                'tx_hash' => '0x' . bin2hex(random_bytes(32)),
+                'tx_hash' => '0x'.bin2hex(random_bytes(32)),
             ]);
 
             DB::commit();
 
-            Log::info("Swap executed", [
+            Log::info('Swap executed', [
                 'user_id' => $user->id,
                 'token_in' => $tokenIn->symbol,
                 'token_out' => $tokenOut->symbol,
@@ -123,7 +123,7 @@ class DEXService
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Swap failed: ' . $e->getMessage());
+            Log::error('Swap failed: '.$e->getMessage());
             throw $e;
         }
     }
@@ -369,7 +369,7 @@ class DEXService
     {
         // Distribute fee proportionally to LP token holders
         // This is a simplified version - implement full distribution logic
-        Log::info("Distributing fee to LPs", ['pool_id' => $poolId, 'fee' => $fee]);
+        Log::info('Distributing fee to LPs', ['pool_id' => $poolId, 'fee' => $fee]);
     }
 
     /**

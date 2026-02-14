@@ -63,7 +63,7 @@ class CoinExchangeRate extends Model
 
         // Check user level
         $userLevel = UserVideoLevel::where('user_id', $user->id)->first();
-        if (!$userLevel || $userLevel->currentLevel->level < $this->min_level) {
+        if (! $userLevel || $userLevel->currentLevel->level < $this->min_level) {
             return ['can' => false, 'reason' => 'User level too low'];
         }
 

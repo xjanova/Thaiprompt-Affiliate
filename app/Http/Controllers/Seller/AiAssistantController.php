@@ -18,9 +18,6 @@ class AiAssistantController extends Controller
 {
     /**
      * หน้าหลัก AI Assistant Dashboard
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -56,9 +53,6 @@ class AiAssistantController extends Controller
 
     /**
      * ตั้งค่า AI Assistant
-     *
-     * @param Request $request
-     * @return View
      */
     public function settings(Request $request): View
     {
@@ -78,7 +72,6 @@ class AiAssistantController extends Controller
     /**
      * อัพเดทการตั้งค่า AI
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)
@@ -112,9 +105,6 @@ class AiAssistantController extends Controller
 
     /**
      * แสดงรายการการสนทนา
-     *
-     * @param Request $request
-     * @return View
      */
     public function conversations(Request $request): View
     {
@@ -139,10 +129,6 @@ class AiAssistantController extends Controller
 
     /**
      * แสดงรายละเอียดการสนทนา
-     *
-     * @param Request $request
-     * @param AiConversation $conversation
-     * @return View
      */
     public function showConversation(Request $request, AiConversation $conversation): View
     {
@@ -151,7 +137,7 @@ class AiAssistantController extends Controller
             ->where('bot_type', 'sales')
             ->first();
 
-        if (!$aiBot || $conversation->bot_id !== $aiBot->id) {
+        if (! $aiBot || $conversation->bot_id !== $aiBot->id) {
             abort(403, 'ไม่มีสิทธิ์ดูการสนทนานี้');
         }
 
@@ -165,9 +151,6 @@ class AiAssistantController extends Controller
 
     /**
      * Analytics ของ AI
-     *
-     * @param Request $request
-     * @return View
      */
     public function analytics(Request $request): View
     {
@@ -201,9 +184,6 @@ class AiAssistantController extends Controller
 
     /**
      * ทดสอบ Bot
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function testBot(Request $request): JsonResponse
     {

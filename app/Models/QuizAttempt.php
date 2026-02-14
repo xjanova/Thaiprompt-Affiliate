@@ -106,7 +106,7 @@ class QuizAttempt extends Model
      */
     public function isInProgress()
     {
-        return $this->started_at && !$this->completed_at;
+        return $this->started_at && ! $this->completed_at;
     }
 
     /**

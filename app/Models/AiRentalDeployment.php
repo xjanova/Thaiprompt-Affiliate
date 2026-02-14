@@ -153,15 +153,13 @@ class AiRentalDeployment extends Model
         // สร้าง deployment_id อัตโนมัติ
         static::creating(function ($model) {
             if (empty($model->deployment_id)) {
-                $model->deployment_id = 'dep_' . Str::random(16);
+                $model->deployment_id = 'dep_'.Str::random(16);
             }
         });
     }
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -170,8 +168,6 @@ class AiRentalDeployment extends Model
 
     /**
      * ความสัมพันธ์กับ Cloud Config
-     *
-     * @return BelongsTo
      */
     public function cloudConfig(): BelongsTo
     {
@@ -180,8 +176,6 @@ class AiRentalDeployment extends Model
 
     /**
      * ตรวจสอบว่ากำลัง running อยู่หรือไม่
-     *
-     * @return bool
      */
     public function isRunning(): bool
     {
@@ -190,8 +184,6 @@ class AiRentalDeployment extends Model
 
     /**
      * ตรวจสอบว่าหยุดแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isStopped(): bool
     {
@@ -200,8 +192,6 @@ class AiRentalDeployment extends Model
 
     /**
      * ตรวจสอบว่ามี error หรือไม่
-     *
-     * @return bool
      */
     public function hasError(): bool
     {
@@ -210,8 +200,6 @@ class AiRentalDeployment extends Model
 
     /**
      * คำนวณ success rate
-     *
-     * @return float
      */
     public function getSuccessRateAttribute(): float
     {
@@ -224,8 +212,6 @@ class AiRentalDeployment extends Model
 
     /**
      * คำนวณ error rate
-     *
-     * @return float
      */
     public function getErrorRateAttribute(): float
     {
@@ -239,9 +225,8 @@ class AiRentalDeployment extends Model
     /**
      * บันทึก request
      *
-     * @param bool $success สำเร็จหรือไม่
-     * @param float|null $responseTime เวลาตอบสนอง (ms)
-     * @return void
+     * @param  bool  $success  สำเร็จหรือไม่
+     * @param  float|null  $responseTime  เวลาตอบสนอง (ms)
      */
     public function recordRequest(bool $success, ?float $responseTime = null): void
     {
@@ -264,8 +249,7 @@ class AiRentalDeployment extends Model
     /**
      * บันทึก error
      *
-     * @param string $error ข้อความ error
-     * @return void
+     * @param  string  $error  ข้อความ error
      */
     public function recordError(string $error): void
     {
@@ -277,8 +261,6 @@ class AiRentalDeployment extends Model
 
     /**
      * เริ่ม deployment
-     *
-     * @return void
      */
     public function markAsDeploying(): void
     {
@@ -288,8 +270,6 @@ class AiRentalDeployment extends Model
 
     /**
      * Deployment สำเร็จ
-     *
-     * @return void
      */
     public function markAsRunning(): void
     {
@@ -304,8 +284,6 @@ class AiRentalDeployment extends Model
 
     /**
      * หยุด deployment
-     *
-     * @return void
      */
     public function markAsStopped(): void
     {
@@ -329,27 +307,24 @@ class AiRentalDeployment extends Model
 
     /**
      * คำนวณเวลาที่ใช้ไป (ชั่วโมง)
-     *
-     * @return float
      */
     public function getElapsedHoursAttribute(): float
     {
-        if (!$this->deployed_at) {
+        if (! $this->deployed_at) {
             return 0;
         }
 
         $end = $this->stopped_at ?? now();
+
         return round($this->deployed_at->diffInMinutes($end) / 60, 2);
     }
 
     /**
      * คำนวณค่าใช้จ่ายปัจจุบัน
-     *
-     * @return float
      */
     public function getCurrentCostAttribute(): float
     {
-        if (!$this->cost_per_hour || !$this->isRunning()) {
+        if (! $this->cost_per_hour || ! $this->isRunning()) {
             return $this->total_cost;
         }
 
@@ -362,7 +337,7 @@ class AiRentalDeployment extends Model
      * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
      * เมื่อใช้ร่วมกับ HasManyThrough relationship
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRunning($query)
@@ -376,7 +351,7 @@ class AiRentalDeployment extends Model
      * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
      * เมื่อใช้ร่วมกับ HasManyThrough relationship
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStopped($query)
@@ -390,7 +365,7 @@ class AiRentalDeployment extends Model
      * ใช้ qualified table name เพื่อหลีกเลี่ยง ambiguous column
      * เมื่อใช้ร่วมกับ HasManyThrough relationship
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -401,8 +376,7 @@ class AiRentalDeployment extends Model
     /**
      * Scope: ของ user ที่ระบุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -413,7 +387,7 @@ class AiRentalDeployment extends Model
     /**
      * Scope: จาก Hugging Face
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFromHuggingFace($query)

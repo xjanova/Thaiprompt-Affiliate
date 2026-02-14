@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read ForumThread $thread
  * @property-read User $user
  * @property-read ForumPost|null $parent
@@ -93,8 +92,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับกระทู้
-     *
-     * @return BelongsTo
      */
     public function thread(): BelongsTo
     {
@@ -103,8 +100,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับผู้เขียน
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -113,8 +108,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับโพสต์แม่
-     *
-     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -123,8 +116,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับโพสต์ลูก (nested replies)
-     *
-     * @return HasMany
      */
     public function replies(): HasMany
     {
@@ -134,8 +125,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับไลค์ (polymorphic)
-     *
-     * @return MorphMany
      */
     public function likes(): MorphMany
     {
@@ -144,8 +133,6 @@ class ForumPost extends Model
 
     /**
      * ความสัมพันธ์กับรายงาน (polymorphic)
-     *
-     * @return MorphMany
      */
     public function reports(): MorphMany
     {
@@ -155,7 +142,7 @@ class ForumPost extends Model
     /**
      * Scope: โพสต์ที่ไม่ถูกซ่อน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVisible($query)
@@ -166,7 +153,7 @@ class ForumPost extends Model
     /**
      * Scope: โพสต์ระดับบนสุด (ไม่ใช่ reply)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeTopLevel($query)
@@ -177,7 +164,7 @@ class ForumPost extends Model
     /**
      * Scope: โพสต์ที่เป็น best answer
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBestAnswers($query)
@@ -187,8 +174,6 @@ class ForumPost extends Model
 
     /**
      * ตั้งเป็นคำตอบที่ดีที่สุด
-     *
-     * @return void
      */
     public function markAsBestAnswer(): void
     {
@@ -205,19 +190,17 @@ class ForumPost extends Model
     /**
      * ตรวจสอบว่าผู้ใช้กดไลค์โพสต์นี้หรือยัง
      *
-     * @param User|int $user
-     * @return bool
+     * @param  User|int  $user
      */
     public function isLikedBy($user): bool
     {
         $userId = $user instanceof User ? $user->id : $user;
+
         return $this->likes()->where('user_id', $userId)->exists();
     }
 
     /**
      * ซ่อนโพสต์
-     *
-     * @return void
      */
     public function hide(): void
     {
@@ -226,8 +209,6 @@ class ForumPost extends Model
 
     /**
      * แสดงโพสต์
-     *
-     * @return void
      */
     public function show(): void
     {

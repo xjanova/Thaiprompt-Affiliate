@@ -14,8 +14,6 @@ class HuggingFaceTrendingModelsSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล trending models
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class HuggingFaceTrendingModelsSeeder extends Seeder
         // ✅ ตรวจสอบก่อนสร้าง (idempotent)
         if (HuggingFaceTrendingModel::count() > 0) {
             $this->command->info('ข้อมูล Trending Models มีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -748,6 +747,6 @@ class HuggingFaceTrendingModelsSeeder extends Seeder
             $this->command->info("  ✅ {$modelData['model_name']} ({$modelData['category']})");
         }
 
-        $this->command->info('✅ Seed Trending Models สำเร็จ! สร้างทั้งหมด ' . count($models) . ' models');
+        $this->command->info('✅ Seed Trending Models สำเร็จ! สร้างทั้งหมด '.count($models).' models');
     }
 }

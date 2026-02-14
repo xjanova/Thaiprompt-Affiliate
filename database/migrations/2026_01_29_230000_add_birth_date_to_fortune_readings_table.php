@@ -9,13 +9,11 @@ return new class extends Migration
     /**
      * เพิ่มคอลัมน์วันเดือนปีเกิดในตาราง fortune_readings
      * เพื่อให้ AI วิเคราะห์ดวงชะตาได้แม่นยำยิ่งขึ้น
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('fortune_readings', function (Blueprint $table) {
-            if (!Schema::hasColumn('fortune_readings', 'birth_date')) {
+            if (! Schema::hasColumn('fortune_readings', 'birth_date')) {
                 $table->date('birth_date')->nullable()->after('user_posts_context')
                     ->comment('วันเดือนปีเกิดผู้ถาม เพื่อทำนายตามราศี/ลัคนา');
             }
@@ -24,8 +22,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ birth_date
-     *
-     * @return void
      */
     public function down(): void
     {

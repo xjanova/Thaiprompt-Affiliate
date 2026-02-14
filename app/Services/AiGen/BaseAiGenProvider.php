@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 abstract class BaseAiGenProvider
 {
     protected AiGenProvider $provider;
+
     protected array $config = [];
 
     public function __construct(AiGenProvider $provider)
@@ -123,6 +124,7 @@ abstract class BaseAiGenProvider
                 return $response['error']['message'];
             }
         }
+
         return 'Unknown error occurred';
     }
 }

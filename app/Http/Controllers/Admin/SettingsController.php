@@ -18,6 +18,7 @@ class SettingsController extends Controller
     {
         $settings = Setting::all()->groupBy('group');
         $availablePermissions = \App\Models\User::availablePermissions();
+
         return view('admin.settings-v3', compact('settings', 'availablePermissions'));
     }
 
@@ -27,6 +28,7 @@ class SettingsController extends Controller
     public function profile()
     {
         $user = auth()->user();
+
         return view('admin.profile-v3', compact('user'));
     }
 
@@ -39,7 +41,7 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . auth()->id()],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.auth()->id()],
             'phone' => ['nullable', 'string', 'max:20'],
             'position' => ['nullable', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
@@ -83,7 +85,6 @@ class SettingsController extends Controller
     /**
      * เปลี่ยนรหัสผ่าน
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function changePassword(Request $request)
@@ -102,10 +103,10 @@ class SettingsController extends Controller
         $user = auth()->user();
 
         // ตรวจสอบรหัสผ่านปัจจุบัน
-        if (!\Hash::check($validated['current_password'], $user->password)) {
+        if (! \Hash::check($validated['current_password'], $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง'
+                'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
             ], 422);
         }
 
@@ -113,7 +114,7 @@ class SettingsController extends Controller
         if (\Hash::check($validated['new_password'], $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'รหัสผ่านใหม่ต้องไม่เหมือนรหัสผ่านเดิม'
+                'message' => 'รหัสผ่านใหม่ต้องไม่เหมือนรหัสผ่านเดิม',
             ], 422);
         }
 
@@ -123,7 +124,7 @@ class SettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'เปลี่ยนรหัสผ่านสำเร็จ'
+            'message' => 'เปลี่ยนรหัสผ่านสำเร็จ',
         ]);
     }
 
@@ -210,7 +211,7 @@ class SettingsController extends Controller
             if ($extension === 'gif') {
                 // Keep GIF as is for animation support
                 $gifPath = $request->file('page_loader_gif')->store('page-loaders', 'public');
-                $gifUrl = '/storage/' . $gifPath;
+                $gifUrl = '/storage/'.$gifPath;
             } else {
                 // Convert static images to WebP
                 $result = $webpService->convertAndStore($request->file('page_loader_gif'), 'page-loaders', 85);
@@ -248,10 +249,10 @@ class SettingsController extends Controller
 
         // Update config cache if Turnstile settings changed
         $turnstileKeys = ['turnstile_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'turnstile_bypass_admin',
-                          'turnstile_theme', 'turnstile_size', 'turnstile_login', 'turnstile_register',
-                          'turnstile_password_change', 'turnstile_profile_update', 'turnstile_withdrawal', 'turnstile_affiliate_app'];
+            'turnstile_theme', 'turnstile_size', 'turnstile_login', 'turnstile_register',
+            'turnstile_password_change', 'turnstile_profile_update', 'turnstile_withdrawal', 'turnstile_affiliate_app'];
 
-        $hasTurnstileChanges = !empty(array_intersect_key($validated, array_flip($turnstileKeys)));
+        $hasTurnstileChanges = ! empty(array_intersect_key($validated, array_flip($turnstileKeys)));
 
         if ($hasTurnstileChanges) {
             // Update .env file
@@ -272,13 +273,13 @@ class SettingsController extends Controller
     /**
      * Update .env file with Turnstile settings
      *
-     * @param array $validated ข้อมูลที่ validated แล้ว
+     * @param  array  $validated  ข้อมูลที่ validated แล้ว
      */
     protected function updateEnvFile(array $validated)
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 
@@ -324,9 +325,9 @@ class SettingsController extends Controller
     public function updateBranding(Request $request)
     {
         // ตรวจสอบ storage symlink ก่อนอัพโหลด
-        if (!$this->checkStorageLink()) {
+        if (! $this->checkStorageLink()) {
             return back()->withErrors([
-                'storage' => 'ไม่พบ storage symlink กรุณารันคำสั่ง "php artisan storage:fix" ก่อนอัพโหลดไฟล์'
+                'storage' => 'ไม่พบ storage symlink กรุณารันคำสั่ง "php artisan storage:fix" ก่อนอัพโหลดไฟล์',
             ]);
         }
 
@@ -411,6 +412,7 @@ class SettingsController extends Controller
         // ตรวจสอบว่ามี symlink และชี้ไปยัง storage/app/public
         if (is_link($link)) {
             $target = storage_path('app/public');
+
             return readlink($link) === $target;
         }
 
@@ -429,7 +431,7 @@ class SettingsController extends Controller
         // Check credentials file
         $credentialsPath = Setting::get('google_vision_credentials_path')
             ?: config('services.google.credentials_path');
-        $credentialsExists = !empty($credentialsPath) && file_exists($credentialsPath);
+        $credentialsExists = ! empty($credentialsPath) && file_exists($credentialsPath);
 
         // Get credentials info if file exists
         $credentialsInfo = null;
@@ -452,7 +454,7 @@ class SettingsController extends Controller
         // Get API status from OCR Service
         $apiStatus = null;
         try {
-            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService();
+            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService;
             $apiStatus = $ocrService->getApiStatus();
         } catch (\Exception $e) {
             $apiStatus = [
@@ -509,14 +511,16 @@ class SettingsController extends Controller
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 $errorMsg = 'ไฟล์ JSON ไม่ถูกต้อง กรุณาตรวจสอบไฟล์อีกครั้ง';
+
                 return $isJsonRequest
                     ? response()->json(['success' => false, 'message' => $errorMsg], 400)
                     : back()->with('error', $errorMsg);
             }
 
             // Check if it's a valid service account key
-            if (!isset($json['type']) || $json['type'] !== 'service_account') {
+            if (! isset($json['type']) || $json['type'] !== 'service_account') {
                 $errorMsg = 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง';
+
                 return $isJsonRequest
                     ? response()->json(['success' => false, 'message' => $errorMsg], 400)
                     : back()->with('error', $errorMsg);
@@ -524,11 +528,11 @@ class SettingsController extends Controller
 
             // Save the file
             $fileName = 'google-credentials.json';
-            $path = storage_path('app/' . $fileName);
+            $path = storage_path('app/'.$fileName);
 
             // Backup old file if exists
             if (file_exists($path)) {
-                $backupPath = storage_path('app/google-credentials-backup-' . date('Y-m-d-His') . '.json');
+                $backupPath = storage_path('app/google-credentials-backup-'.date('Y-m-d-His').'.json');
                 copy($path, $backupPath);
             }
 
@@ -539,12 +543,14 @@ class SettingsController extends Controller
             Setting::set('google_vision_credentials_path', $path, 'string', 'ocr');
 
             $successMsg = 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว และอัปโหลดไฟล์ credentials สำเร็จ';
+
             return $isJsonRequest
                 ? response()->json(['success' => true, 'message' => $successMsg])
                 : back()->with('success', $successMsg);
         }
 
         $successMsg = 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว';
+
         return $isJsonRequest
             ? response()->json(['success' => true, 'message' => $successMsg])
             : back()->with('success', $successMsg);
@@ -559,10 +565,10 @@ class SettingsController extends Controller
     {
         try {
             // ใช้ ThaiIdCardOcrService ในการทดสอบ
-            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService();
+            $ocrService = new \App\Services\OCR\ThaiIdCardOcrService;
             $apiStatus = $ocrService->getApiStatus();
 
-            if (!$apiStatus['configured']) {
+            if (! $apiStatus['configured']) {
                 return response()->json([
                     'success' => false,
                     'message' => $apiStatus['error'] ?? 'ไม่พบการตั้งค่า API Key หรือ Service Account credentials',
@@ -575,13 +581,13 @@ class SettingsController extends Controller
                 if ($apiStatus['connection_test']['success']) {
                     return response()->json([
                         'success' => true,
-                        'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! (' . $apiStatus['method'] . ')',
+                        'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! ('.$apiStatus['method'].')',
                         'data' => $apiStatus,
                     ]);
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'เชื่อมต่อ API ไม่สำเร็จ: ' . ($apiStatus['connection_test']['error'] ?? 'Unknown error'),
+                        'message' => 'เชื่อมต่อ API ไม่สำเร็จ: '.($apiStatus['connection_test']['error'] ?? 'Unknown error'),
                         'data' => $apiStatus,
                     ], 500);
                 }
@@ -591,7 +597,7 @@ class SettingsController extends Controller
             if ($apiStatus['method'] === 'SDK + Service Account') {
                 $credentialsPath = $apiStatus['credentials_file'];
 
-                if (empty($credentialsPath) || !file_exists($credentialsPath)) {
+                if (empty($credentialsPath) || ! file_exists($credentialsPath)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'ไม่พบไฟล์ credentials กรุณาอัปโหลดไฟล์ก่อน',
@@ -600,7 +606,7 @@ class SettingsController extends Controller
 
                 // Try to initialize client
                 $client = new \Google\Cloud\Vision\V1\ImageAnnotatorClient([
-                    'credentials' => $credentialsPath
+                    'credentials' => $credentialsPath,
                 ]);
                 $client->close();
 
@@ -610,20 +616,20 @@ class SettingsController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! Project: ' . ($credentials['project_id'] ?? 'N/A'),
+                    'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! Project: '.($credentials['project_id'] ?? 'N/A'),
                     'data' => $apiStatus,
                 ]);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'การตั้งค่าถูกต้อง (' . $apiStatus['method'] . ')',
+                'message' => 'การตั้งค่าถูกต้อง ('.$apiStatus['method'].')',
                 'data' => $apiStatus,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เชื่อมต่อ Google Cloud Vision API ไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'เชื่อมต่อ Google Cloud Vision API ไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -652,7 +658,6 @@ class SettingsController extends Controller
     /**
      * อัพเดทการตั้งค่า Google Maps
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function updateGoogleMaps(Request $request)
@@ -799,7 +804,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เชื่อมต่อ Google Maps API ไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'เชื่อมต่อ Google Maps API ไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -807,7 +812,6 @@ class SettingsController extends Controller
     /**
      * คำนวณระยะทางระหว่าง 2 จุด (สำหรับทดสอบ)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculateDistance(Request $request)
@@ -848,7 +852,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'คำนวณระยะทางไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'คำนวณระยะทางไม่สำเร็จ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -856,14 +860,13 @@ class SettingsController extends Controller
     /**
      * อัพเดท .env file สำหรับ Google Maps settings
      *
-     * @param array $validated ข้อมูลที่ validated แล้ว
-     * @return void
+     * @param  array  $validated  ข้อมูลที่ validated แล้ว
      */
     protected function updateGoogleMapsEnv(array $validated): void
     {
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             return;
         }
 
@@ -920,7 +923,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการตรวจสอบ: '.$e->getMessage(),
             ], 500);
         }
     }

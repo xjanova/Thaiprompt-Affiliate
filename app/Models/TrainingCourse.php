@@ -100,9 +100,10 @@ class TrainingCourse extends Model
      */
     public function getIsFullAttribute()
     {
-        if (!$this->max_participants) {
+        if (! $this->max_participants) {
             return false;
         }
+
         return $this->enrolled_count >= $this->max_participants;
     }
 
@@ -111,9 +112,10 @@ class TrainingCourse extends Model
      */
     public function getAvailableSeatsAttribute()
     {
-        if (!$this->max_participants) {
+        if (! $this->max_participants) {
             return 'Unlimited';
         }
+
         return max(0, $this->max_participants - $this->enrolled_count);
     }
 
@@ -125,6 +127,7 @@ class TrainingCourse extends Model
         if ($this->enrolled_count == 0) {
             return 0;
         }
+
         return round(($this->completed_count / $this->enrolled_count) * 100, 2);
     }
 
@@ -172,7 +175,7 @@ class TrainingCourse extends Model
     public function scopeUpcoming($query)
     {
         return $query->where('status', 'scheduled')
-                    ->where('start_date', '>', now());
+            ->where('start_date', '>', now());
     }
 
     /**

@@ -165,7 +165,7 @@ class AiBotProfile extends Model
     public function scopeRentable($query)
     {
         return $query->where('is_rentable', true)
-                     ->where('is_active', true);
+            ->where('is_active', true);
     }
 
     /**
@@ -181,9 +181,9 @@ class AiBotProfile extends Model
      */
     public function hasLineOaConfigured(): bool
     {
-        return !empty($this->line_oa_channel_id)
-            && !empty($this->line_oa_channel_secret)
-            && !empty($this->line_oa_access_token);
+        return ! empty($this->line_oa_channel_id)
+            && ! empty($this->line_oa_channel_secret)
+            && ! empty($this->line_oa_access_token);
     }
 
     /**

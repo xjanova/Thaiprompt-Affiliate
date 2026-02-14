@@ -14,13 +14,11 @@ return new class extends Migration
      *
      * ตาราง line_signup_rewards เป็นตาราง template รางวัล
      * ไม่ใช่รางวัลของ session เฉพาะ ดังนั้นไม่ควรมี session_id
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
@@ -38,13 +36,11 @@ return new class extends Migration
 
     /**
      * เพิ่ม column session_id กลับ (สำหรับ rollback)
-     *
-     * @return void
      */
     public function down(): void
     {
         Schema::table('line_signup_rewards', function (Blueprint $table) {
-            if (!Schema::hasColumn('line_signup_rewards', 'session_id')) {
+            if (! Schema::hasColumn('line_signup_rewards', 'session_id')) {
                 $table->foreignId('session_id')
                     ->nullable()
                     ->after('id')

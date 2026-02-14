@@ -7,7 +7,6 @@ use App\Models\CryptoPriceHistory;
 use App\Services\Crypto\CryptoPriceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Cryptocurrency Price Chart Controller
@@ -135,7 +134,7 @@ class CryptoPriceChartController extends Controller
             ], 400);
         }
 
-        $cacheKey = "crypto_compare_" . implode('_', $currencyIds) . "_{$period}";
+        $cacheKey = 'crypto_compare_'.implode('_', $currencyIds)."_{$period}";
 
         return Cache::remember($cacheKey, 300, function () use ($currencyIds, $period) {
             [$from, $interval] = $this->getPeriodRange($period);
@@ -144,7 +143,9 @@ class CryptoPriceChartController extends Controller
 
             foreach ($currencyIds as $currencyId) {
                 $currency = CryptoCurrency::find($currencyId);
-                if (!$currency) continue;
+                if (! $currency) {
+                    continue;
+                }
 
                 $priceHistory = CryptoPriceHistory::where('crypto_currency_id', $currencyId)
                     ->where('created_at', '>=', $from)
@@ -230,6 +231,7 @@ class CryptoPriceChartController extends Controller
 
             $gainers = $currencies->filter(function ($currency) {
                 $rate = $currency->latestRate;
+
                 return $rate && ($rate->change_24h ?? 0) > 0;
             })->sortByDesc(function ($currency) {
                 return $currency->latestRate->change_24h ?? 0;
@@ -237,6 +239,7 @@ class CryptoPriceChartController extends Controller
 
             $losers = $currencies->filter(function ($currency) {
                 $rate = $currency->latestRate;
+
                 return $rate && ($rate->change_24h ?? 0) < 0;
             })->sortBy(function ($currency) {
                 return $currency->latestRate->change_24h ?? 0;
@@ -249,13 +252,13 @@ class CryptoPriceChartController extends Controller
                     'total_volume_24h' => $totalVolume24h,
                     'active_currencies' => $currencies->count(),
                 ],
-                'top_gainers' => $gainers->map(fn($c) => [
+                'top_gainers' => $gainers->map(fn ($c) => [
                     'code' => $c->code,
                     'name' => $c->name,
                     'change_24h' => $c->latestRate->change_24h ?? 0,
                     'price_thb' => $c->latestRate->rate_thb ?? 0,
                 ]),
-                'top_losers' => $losers->map(fn($c) => [
+                'top_losers' => $losers->map(fn ($c) => [
                     'code' => $c->code,
                     'name' => $c->name,
                     'change_24h' => $c->latestRate->change_24h ?? 0,
@@ -270,7 +273,7 @@ class CryptoPriceChartController extends Controller
      */
     protected function getPeriodRange(string $period): array
     {
-        return match($period) {
+        return match ($period) {
             '1h' => [now()->subHour(), '1 minute'],
             '24h' => [now()->subDay(), '10 minutes'],
             '7d' => [now()->subDays(7), '1 hour'],
@@ -286,7 +289,7 @@ class CryptoPriceChartController extends Controller
      */
     protected function getCurrencyColor(string $code): string
     {
-        return match($code) {
+        return match ($code) {
             'BTC' => '#F7931A',
             'ETH' => '#627EEA',
             'BNB' => '#F3BA2F',
@@ -297,7 +300,7 @@ class CryptoPriceChartController extends Controller
             'SOL' => '#00FFA3',
             'DOT' => '#E6007A',
             'LINK' => '#2A5ADA',
-            default => '#' . substr(md5($code), 0, 6),
+            default => '#'.substr(md5($code), 0, 6),
         };
     }
 }

@@ -74,6 +74,7 @@ class VideoCoinTransaction extends Model
     public function getFormattedAmountAttribute()
     {
         $prefix = $this->amount > 0 ? '+' : '';
-        return $prefix . number_format($this->amount, 2);
+
+        return $prefix.number_format($this->amount, 2);
     }
 }

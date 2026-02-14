@@ -30,7 +30,7 @@ class ApiEndpointController extends Controller
         if ($request->filled('status')) {
             if ($request->status === 'active') {
                 $query->where('is_active', true);
-            } else if ($request->status === 'inactive') {
+            } elseif ($request->status === 'inactive') {
                 $query->where('is_active', false);
             }
         }
@@ -192,7 +192,7 @@ class ApiEndpointController extends Controller
     public function toggleStatus(ApiEndpoint $apiEndpoint)
     {
         $apiEndpoint->update([
-            'is_active' => !$apiEndpoint->is_active,
+            'is_active' => ! $apiEndpoint->is_active,
         ]);
 
         return response()->json([

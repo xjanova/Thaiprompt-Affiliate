@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\Wallet;
 use App\Models\WalletSetting;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class PaymentGatewayService
 {
     protected $walletService;
+
     protected $notificationService;
 
     public function __construct(WalletService $walletService, NotificationService $notificationService)
@@ -24,13 +24,13 @@ class PaymentGatewayService
      */
     public function processPromptPayDeposit(User $user, float $amount, array $metadata = []): array
     {
-        if (!WalletSetting::isPaymentMethodEnabled('promptpay')) {
+        if (! WalletSetting::isPaymentMethodEnabled('promptpay')) {
             throw new Exception('PromptPay ไม่สามารถใช้งานได้ในขณะนี้');
         }
 
         // Validate amount
         $errors = WalletSetting::validateDepositAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
@@ -43,7 +43,7 @@ class PaymentGatewayService
             'payment_method' => 'promptpay',
             'amount' => $amount,
             'qr_code' => $qrCode,
-            'reference' => 'PP' . strtoupper(uniqid()),
+            'reference' => 'PP'.strtoupper(uniqid()),
             'expires_at' => now()->addMinutes(15),
         ];
     }
@@ -63,13 +63,13 @@ class PaymentGatewayService
      */
     public function processStripePayment(User $user, float $amount, string $paymentMethodId): array
     {
-        if (!WalletSetting::isPaymentMethodEnabled('stripe')) {
+        if (! WalletSetting::isPaymentMethodEnabled('stripe')) {
             throw new Exception('Stripe ไม่สามารถใช้งานได้ในขณะนี้');
         }
 
         // Validate amount
         $errors = WalletSetting::validateDepositAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
@@ -99,8 +99,8 @@ class PaymentGatewayService
                 'amount' => $amount,
             ];
         } catch (Exception $e) {
-            Log::error('Stripe payment failed: ' . $e->getMessage());
-            throw new Exception('การชำระเงินผ่าน Stripe ล้มเหลว: ' . $e->getMessage());
+            Log::error('Stripe payment failed: '.$e->getMessage());
+            throw new Exception('การชำระเงินผ่าน Stripe ล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -109,13 +109,13 @@ class PaymentGatewayService
      */
     public function processPayPalPayment(User $user, float $amount, string $orderId): array
     {
-        if (!WalletSetting::isPaymentMethodEnabled('paypal')) {
+        if (! WalletSetting::isPaymentMethodEnabled('paypal')) {
             throw new Exception('PayPal ไม่สามารถใช้งานได้ในขณะนี้');
         }
 
         // Validate amount
         $errors = WalletSetting::validateDepositAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
@@ -144,8 +144,8 @@ class PaymentGatewayService
                 'amount' => $amount,
             ];
         } catch (Exception $e) {
-            Log::error('PayPal payment failed: ' . $e->getMessage());
-            throw new Exception('การชำระเงินผ่าน PayPal ล้มเหลว: ' . $e->getMessage());
+            Log::error('PayPal payment failed: '.$e->getMessage());
+            throw new Exception('การชำระเงินผ่าน PayPal ล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -156,7 +156,7 @@ class PaymentGatewayService
     {
         // Validate amount
         $errors = WalletSetting::validateDepositAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
@@ -170,12 +170,12 @@ class PaymentGatewayService
                 'payment_method' => 'bank_transfer',
                 'amount' => $amount,
                 'slip_path' => $slipPath,
-                'reference' => 'BT' . strtoupper(uniqid()),
+                'reference' => 'BT'.strtoupper(uniqid()),
                 'metadata' => $metadata,
             ];
         } catch (Exception $e) {
-            Log::error('Bank transfer processing failed: ' . $e->getMessage());
-            throw new Exception('การอัพโหลดสลิปล้มเหลว: ' . $e->getMessage());
+            Log::error('Bank transfer processing failed: '.$e->getMessage());
+            throw new Exception('การอัพโหลดสลิปล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -200,7 +200,7 @@ class PaymentGatewayService
             // Notify user
             $this->notificationService->notifyDeposit($user, $amount);
         } catch (Exception $e) {
-            Log::error('Bank transfer approval failed: ' . $e->getMessage());
+            Log::error('Bank transfer approval failed: '.$e->getMessage());
             throw $e;
         }
     }
@@ -212,7 +212,7 @@ class PaymentGatewayService
     {
         // In production, integrate with PromptPay QR Code generator
         // For now, return a placeholder
-        return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     }
 
     /**

@@ -36,8 +36,6 @@ class SendScheduledBroadcasts extends Command
 
     /**
      * Execute the console command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -48,7 +46,7 @@ class SendScheduledBroadcasts extends Command
             ->where('status', 'scheduled');
 
         // ถ้าไม่ใช่ force ให้เช็คเวลา
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $query->where('scheduled_at', '<=', now());
         }
 
@@ -57,6 +55,7 @@ class SendScheduledBroadcasts extends Command
 
         if ($broadcasts->isEmpty()) {
             $this->info('✨ ไม่มี Scheduled Broadcasts ที่ต้องส่งในขณะนี้');
+
             return Command::SUCCESS;
         }
 
@@ -82,13 +81,15 @@ class SendScheduledBroadcasts extends Command
         // ถ้าเป็น dry-run ให้หยุดตรงนี้
         if ($this->option('dry-run')) {
             $this->warn('⚠️  Dry-run mode: ไม่มีการส่งข้อความจริง');
+
             return Command::SUCCESS;
         }
 
         // ยืนยันก่อนส่ง (ถ้าไม่ได้ run ผ่าน cron)
         if ($this->input->isInteractive()) {
-            if (!$this->confirm('คุณต้องการส่ง Broadcasts เหล่านี้หรือไม่?', true)) {
+            if (! $this->confirm('คุณต้องการส่ง Broadcasts เหล่านี้หรือไม่?', true)) {
                 $this->warn('❌ ยกเลิกการส่ง');
+
                 return Command::SUCCESS;
             }
         }
@@ -113,8 +114,8 @@ class SendScheduledBroadcasts extends Command
                 $failCount++;
                 $this->output->progressAdvance();
 
-                $this->error("❌ ไม่สามารถ dispatch broadcast {$broadcast->id}: " . $e->getMessage());
-                Log::error("❌ Failed to dispatch broadcast {$broadcast->id}: " . $e->getMessage());
+                $this->error("❌ ไม่สามารถ dispatch broadcast {$broadcast->id}: ".$e->getMessage());
+                Log::error("❌ Failed to dispatch broadcast {$broadcast->id}: ".$e->getMessage());
             }
         }
 

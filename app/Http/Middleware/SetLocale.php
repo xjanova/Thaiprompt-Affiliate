@@ -26,15 +26,15 @@ class SetLocale
         // 5. Default config
         $locale = $request->get('lang');
 
-        if (!$locale) {
+        if (! $locale) {
             $locale = Session::get('locale');
         }
 
-        if (!$locale && $request->user()) {
+        if (! $locale && $request->user()) {
             $locale = $request->user()->preferred_language;
         }
 
-        if (!$locale) {
+        if (! $locale) {
             // Try to get default language from database
             $defaultLang = LanguageSetting::getDefault();
             if ($defaultLang) {
@@ -42,7 +42,7 @@ class SetLocale
             }
         }
 
-        if (!$locale) {
+        if (! $locale) {
             $locale = config('app.locale', 'en');
         }
 
@@ -54,7 +54,7 @@ class SetLocale
             $supportedLocales = config('app.supported_locales', ['en', 'th']);
         }
 
-        if (!in_array($locale, $supportedLocales)) {
+        if (! in_array($locale, $supportedLocales)) {
             // Try to use default language from database first
             $defaultLang = LanguageSetting::getDefault();
             $locale = $defaultLang ? $defaultLang->code : config('app.fallback_locale', 'en');
@@ -64,7 +64,7 @@ class SetLocale
         App::setLocale($locale);
 
         // Store in session for persistence
-        if (!Session::has('locale') || Session::get('locale') !== $locale) {
+        if (! Session::has('locale') || Session::get('locale') !== $locale) {
             Session::put('locale', $locale);
         }
 

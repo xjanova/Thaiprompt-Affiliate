@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\MlmMember;
 use App\Models\MlmProspect;
-use App\Services\MlmProspectService;
-use App\Services\LineSignupService;
 use App\Services\LineService;
+use App\Services\LineSignupService;
+use App\Services\MlmProspectService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -27,7 +27,7 @@ class LineSignupController extends Controller
             // Get prospect
             $prospect = $this->prospectService->getProspectByToken($token);
 
-            if (!$prospect) {
+            if (! $prospect) {
                 return view('line.signup.error', [
                     'message' => 'ลิงก์เชิญไม่ถูกต้อง',
                 ]);
@@ -80,7 +80,7 @@ class LineSignupController extends Controller
             $state = json_decode($request->input('state'), true);
             $referralToken = $state['referral_token'] ?? null;
 
-            if (!$code || !$referralToken) {
+            if (! $code || ! $referralToken) {
                 return view('line.signup.error', [
                     'message' => 'ข้อมูลไม่ครบถ้วน',
                 ]);
@@ -90,7 +90,7 @@ class LineSignupController extends Controller
             $tokenData = $this->lineService->getAccessToken($code);
             $accessToken = $tokenData['access_token'] ?? null;
 
-            if (!$accessToken) {
+            if (! $accessToken) {
                 throw new \Exception('Failed to get access token');
             }
 
@@ -106,7 +106,7 @@ class LineSignupController extends Controller
                 $request->userAgent()
             );
 
-            if (!$prospect) {
+            if (! $prospect) {
                 return view('line.signup.error', [
                     'message' => 'ไม่พบข้อมูลการเชิญ',
                 ]);
@@ -137,7 +137,7 @@ class LineSignupController extends Controller
      * เมื่อผู้มุ่งหวังสแกน QR Code จะมาที่ route นี้
      * ระบบจะสร้าง invitation อัตโนมัติและพาไปเพิ่มเพื่อน LINE OA
      *
-     * @param string $memberCode รหัสสมาชิก MLM
+     * @param  string  $memberCode  รหัสสมาชิก MLM
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
     public function inviteByMemberCode(string $memberCode)
@@ -146,7 +146,7 @@ class LineSignupController extends Controller
             // หา MLM Member จาก member_code
             $member = MlmMember::where('member_code', $memberCode)->first();
 
-            if (!$member) {
+            if (! $member) {
                 Log::warning('LINE invite: member code not found', [
                     'member_code' => $memberCode,
                 ]);

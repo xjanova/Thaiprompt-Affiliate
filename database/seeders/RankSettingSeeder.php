@@ -15,8 +15,6 @@ class RankSettingSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้น Rank Settings
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -25,6 +23,7 @@ class RankSettingSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (RankSetting::count() > 0) {
             $this->command->info('  ✓ Rank Settings มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

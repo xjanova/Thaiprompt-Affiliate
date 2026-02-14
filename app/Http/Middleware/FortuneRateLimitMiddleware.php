@@ -38,16 +38,12 @@ class FortuneRateLimitMiddleware
      * - ต่อ IP: 10 requests/minute
      * - ต่อ Facebook User: 20 requests/minute
      * - Log การละเมิด
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         // ดึง IP address
         $ip = $request->ip();
-        $ipKey = 'fortune_rate_limit:ip:' . $ip;
+        $ipKey = 'fortune_rate_limit:ip:'.$ip;
 
         // ตรวจสอบ rate limit สำหรับ IP
         if ($this->tooManyAttempts($ipKey, $this->maxAttemptsPerIp)) {
@@ -67,7 +63,7 @@ class FortuneRateLimitMiddleware
         // ถ้ามี Facebook User ID ให้เช็คด้วย
         $facebookUserId = $this->extractFacebookUserId($request);
         if ($facebookUserId) {
-            $userKey = 'fortune_rate_limit:fb_user:' . $facebookUserId;
+            $userKey = 'fortune_rate_limit:fb_user:'.$facebookUserId;
 
             if ($this->tooManyAttempts($userKey, $this->maxAttemptsPerUser)) {
                 Log::warning('Fortune API: User rate limit exceeded', [
@@ -102,10 +98,6 @@ class FortuneRateLimitMiddleware
 
     /**
      * ตรวจสอบว่ามี attempts เกินจำนวนที่กำหนดหรือไม่
-     *
-     * @param string $key
-     * @param int $maxAttempts
-     * @return bool
      */
     protected function tooManyAttempts(string $key, int $maxAttempts): bool
     {
@@ -114,9 +106,6 @@ class FortuneRateLimitMiddleware
 
     /**
      * เพิ่มจำนวน attempts
-     *
-     * @param string $key
-     * @return int
      */
     protected function hit(string $key): int
     {
@@ -125,8 +114,8 @@ class FortuneRateLimitMiddleware
         Cache::put($key, $attempts, $expiry);
 
         // เก็บเวลาหมดอายุสำหรับคำนวณ retry_after
-        if (!Cache::has($key . ':timer')) {
-            Cache::put($key . ':timer', $expiry, $expiry);
+        if (! Cache::has($key.':timer')) {
+            Cache::put($key.':timer', $expiry, $expiry);
         }
 
         return $attempts;
@@ -134,9 +123,6 @@ class FortuneRateLimitMiddleware
 
     /**
      * ดึงจำนวน attempts ปัจจุบัน
-     *
-     * @param string $key
-     * @return int
      */
     protected function attempts(string $key): int
     {
@@ -145,15 +131,12 @@ class FortuneRateLimitMiddleware
 
     /**
      * ดึงจำนวนวินาทีที่ต้องรอก่อนลองใหม่
-     *
-     * @param string $key
-     * @return int
      */
     protected function availableIn(string $key): int
     {
-        $expiresAt = Cache::get($key . ':timer');
+        $expiresAt = Cache::get($key.':timer');
 
-        if (!$expiresAt) {
+        if (! $expiresAt) {
             return $this->decayMinutes * 60;
         }
 
@@ -162,13 +145,10 @@ class FortuneRateLimitMiddleware
 
     /**
      * ดึง timestamp ที่ rate limit จะ reset
-     *
-     * @param string $key
-     * @return int
      */
     protected function availableAt(string $key): int
     {
-        $expiresAt = Cache::get($key . ':timer');
+        $expiresAt = Cache::get($key.':timer');
 
         return $expiresAt
             ? $expiresAt->timestamp
@@ -177,9 +157,6 @@ class FortuneRateLimitMiddleware
 
     /**
      * ดึง Facebook User ID จาก webhook payload
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return string|null
      */
     protected function extractFacebookUserId(Request $request): ?string
     {
@@ -197,15 +174,12 @@ class FortuneRateLimitMiddleware
 
     /**
      * Clear rate limit (สำหรับ testing)
-     *
-     * @param string $identifier
-     * @return void
      */
     public static function clearRateLimit(string $identifier): void
     {
-        Cache::forget('fortune_rate_limit:ip:' . $identifier);
-        Cache::forget('fortune_rate_limit:ip:' . $identifier . ':timer');
-        Cache::forget('fortune_rate_limit:fb_user:' . $identifier);
-        Cache::forget('fortune_rate_limit:fb_user:' . $identifier . ':timer');
+        Cache::forget('fortune_rate_limit:ip:'.$identifier);
+        Cache::forget('fortune_rate_limit:ip:'.$identifier.':timer');
+        Cache::forget('fortune_rate_limit:fb_user:'.$identifier);
+        Cache::forget('fortune_rate_limit:fb_user:'.$identifier.':timer');
     }
 }

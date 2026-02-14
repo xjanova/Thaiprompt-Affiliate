@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง service_provider_areas - พื้นที่ที่ provider รับงาน
      *
      * เชื่อมโยง provider กับพื้นที่ที่เขายินดีให้บริการ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_provider_areas
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * V3 Menu System ใช้ config-based approach แทน database-driven
      * เมนูทั้งหมดอยู่ใน config/menus.php
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -24,12 +22,10 @@ return new class extends Migration
 
     /**
      * Rollback: สร้างตารางกลับคืน (สำหรับ backward compatibility)
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('menu_items')) {
+        if (! Schema::hasTable('menu_items')) {
             Schema::create('menu_items', function (Blueprint $table) {
                 $table->id();
                 $table->string('menu_location')->default('header');

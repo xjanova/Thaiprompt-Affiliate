@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * FortuneReading Model
@@ -57,12 +57,19 @@ class FortuneReading extends Model
      * สถานะ conversation ที่เป็นไปได้
      */
     public const STATUS_NEW = 'new';
+
     public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
+
     public const STATUS_BASIC_DONE = 'basic_done';
+
     public const STATUS_COLLECTING_BIRTHDATE = 'collecting_birthdate';
+
     public const STATUS_COLLECTING_QUESTIONS = 'collecting_questions';
+
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
+
     public const STATUS_PAID = 'paid';
+
     public const STATUS_COMPLETED = 'completed';
 
     /**
@@ -152,8 +159,6 @@ class FortuneReading extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -162,8 +167,6 @@ class FortuneReading extends Model
 
     /**
      * ความสัมพันธ์กับ SMS Payment Notification
-     *
-     * @return BelongsTo
      */
     public function smsNotification(): BelongsTo
     {
@@ -173,7 +176,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะบิลลอย (ยังไม่ระบุตัวตนลูกค้า)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFloating($query)
@@ -184,7 +187,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะที่ชำระผ่าน SMS
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeViaSms($query)
@@ -195,7 +198,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายที่ชำระเงินแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePaid($query)
@@ -206,7 +209,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายฟรี
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFree($query)
@@ -217,8 +220,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะของผู้ใช้ Facebook คนใดคนหนึ่ง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $facebookUserId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByFacebookUser($query, string $facebookUserId)
@@ -229,7 +231,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายวันนี้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeToday($query)
@@ -240,7 +242,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายที่ได้รับการตอบกลับแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeResponded($query)
@@ -251,7 +253,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายเชิงลึก
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDeep($query)
@@ -262,7 +264,7 @@ class FortuneReading extends Model
     /**
      * Scope: เฉพาะการทำนายพื้นฐาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBasic($query)
@@ -272,9 +274,6 @@ class FortuneReading extends Model
 
     /**
      * นับจำนวนการทำนายเชิงลึกฟรีของผู้ใช้ Facebook ในวันนี้
-     *
-     * @param string $facebookUserId
-     * @return int
      */
     public static function countTodayDeepReadings(string $facebookUserId): int
     {
@@ -290,9 +289,6 @@ class FortuneReading extends Model
      *
      * นับเฉพาะ reading ที่มี AI ตอบกลับแล้ว (responded_at != null)
      * ไม่นับ reading ที่ล้มเหลว (status = 'new') เพื่อไม่ให้หักสิทธิ์ฟรี
-     *
-     * @param string $facebookUserId
-     * @return int
      */
     public static function countTodayReadings(string $facebookUserId): int
     {
@@ -304,21 +300,16 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรีแล้วหรือยัง
-     *
-     * @param string $facebookUserId
-     * @param int $maxFreeReadings
-     * @return bool
      */
     public static function hasReachedFreeLimit(string $facebookUserId, int $maxFreeReadings): bool
     {
         $todayCount = self::countTodayReadings($facebookUserId);
+
         return $todayCount >= $maxFreeReadings;
     }
 
     /**
      * เพิ่มจำนวนการดู
-     *
-     * @return void
      */
     public function incrementViewCount(): void
     {
@@ -327,8 +318,6 @@ class FortuneReading extends Model
 
     /**
      * บันทึกเวลาที่ตอบกลับ
-     *
-     * @return void
      */
     public function markAsResponded(): void
     {
@@ -337,9 +326,6 @@ class FortuneReading extends Model
 
     /**
      * บันทึกการชำระเงิน
-     *
-     * @param float $amount
-     * @return void
      */
     public function markAsPaid(float $amount = 0): void
     {
@@ -352,8 +338,6 @@ class FortuneReading extends Model
 
     /**
      * ดึงคำถามทั้งหมดเป็น string
-     *
-     * @return string
      */
     public function getQuestionsText(): string
     {
@@ -367,8 +351,7 @@ class FortuneReading extends Model
     /**
      * ดึงข้อมูลผู้ใช้จากโปรไฟล์ Facebook
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getProfileData(string $key, $default = null)
@@ -378,22 +361,18 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่ามีคะแนนรีวิวหรือยัง
-     *
-     * @return bool
      */
     public function hasRating(): bool
     {
-        return !is_null($this->rating);
+        return ! is_null($this->rating);
     }
 
     /**
      * ดึงคะแนนรีวิวเป็นดาว (สำหรับแสดงผล)
-     *
-     * @return string
      */
     public function getRatingStars(): string
     {
-        if (!$this->hasRating()) {
+        if (! $this->hasRating()) {
             return '';
         }
 
@@ -402,8 +381,6 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่าเป็นคำทำนายเชิงลึกหรือไม่
-     *
-     * @return bool
      */
     public function isDeep(): bool
     {
@@ -412,28 +389,22 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่ามีรูปคำทำนายหรือไม่
-     *
-     * @return bool
      */
     public function hasReadingImage(): bool
     {
-        return !empty($this->reading_image_url);
+        return ! empty($this->reading_image_url);
     }
 
     /**
      * ตรวจสอบว่าผู้ใช้ส่งรูปมาหรือไม่
-     *
-     * @return bool
      */
     public function hasUserImage(): bool
     {
-        return !empty($this->user_image_url);
+        return ! empty($this->user_image_url);
     }
 
     /**
      * ดึงข้อความสรุปประเภทคำทำนาย (สำหรับแสดงผล)
-     *
-     * @return string
      */
     public function getReadingTypeLabel(): string
     {
@@ -449,8 +420,6 @@ class FortuneReading extends Model
 
     /**
      * ความสัมพันธ์กับ UniquePaymentAmount
-     *
-     * @return BelongsTo
      */
     public function uniquePaymentAmount(): BelongsTo
     {
@@ -460,8 +429,7 @@ class FortuneReading extends Model
     /**
      * Scope: ค้นหา reading ที่รอชำระเงินของผู้ใช้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $facebookUserId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePendingPaymentByUser($query, string $facebookUserId)
@@ -478,6 +446,7 @@ class FortuneReading extends Model
      * ยกเว้น pending_payment ให้รอนานกว่า (60 นาที)
      */
     public const CONVERSATION_TIMEOUT_MINUTES = 30;
+
     public const PAYMENT_TIMEOUT_MINUTES = 60;
 
     /**
@@ -487,8 +456,7 @@ class FortuneReading extends Model
      * - conversation ทั่วไป: timeout 30 นาที
      * - pending_payment: timeout 60 นาที
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $facebookUserId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActiveConversation($query, string $facebookUserId)
@@ -510,13 +478,13 @@ class FortuneReading extends Model
                         self::STATUS_COLLECTING_BIRTHDATE,
                         self::STATUS_COLLECTING_QUESTIONS,
                     ])
-                    ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
+                        ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
                 // pending_payment: timeout 60 นาที (รอโอนเงินนานกว่า)
-                ->orWhere(function ($sub) {
-                    $sub->where('conversation_status', self::STATUS_PENDING_PAYMENT)
-                        ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
-                });
+                    ->orWhere(function ($sub) {
+                        $sub->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+                            ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                    });
             })
             ->latest();
     }
@@ -525,9 +493,6 @@ class FortuneReading extends Model
      * ค้นหา reading ที่กำลัง conversation อยู่สำหรับผู้ใช้
      *
      * ถ้าพบ conversation ที่หมดเวลาแล้ว จะปิดอัตโนมัติ
-     *
-     * @param string $facebookUserId
-     * @return self|null
      */
     public static function findActiveConversation(string $facebookUserId): ?self
     {
@@ -540,7 +505,6 @@ class FortuneReading extends Model
     /**
      * ปิด conversation ที่หมดเวลาอัตโนมัติ
      *
-     * @param string $facebookUserId
      * @return int จำนวน conversation ที่ถูกปิด
      */
     public static function expireOldConversations(string $facebookUserId): int
@@ -562,16 +526,13 @@ class FortuneReading extends Model
      *
      * กรองเฉพาะ transaction_type = 'fortune_reading' เพื่อแยกบิลดูดวง
      * ไม่ให้ปะปนกับบิลอีคอมเมิร์ซหรือ seller
-     *
-     * @param float $amount
-     * @return self|null
      */
     public static function findByUniqueAmount(float $amount): ?self
     {
         // กรองเฉพาะ fortune_reading เพื่อไม่ให้ match ข้ามระบบ
         $uniquePayment = UniquePaymentAmount::findMatch($amount, 'fortune_reading');
 
-        if (!$uniquePayment) {
+        if (! $uniquePayment) {
             return null;
         }
 
@@ -582,9 +543,6 @@ class FortuneReading extends Model
 
     /**
      * อัพเดทสถานะ conversation
-     *
-     * @param string $status
-     * @return void
      */
     public function updateConversationStatus(string $status): void
     {
@@ -594,9 +552,7 @@ class FortuneReading extends Model
     /**
      * เก็บข้อมูลใน conversation state
      *
-     * @param string $key
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     public function setConversationState(string $key, $value): void
     {
@@ -608,8 +564,7 @@ class FortuneReading extends Model
     /**
      * ดึงข้อมูลจาก conversation state
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getConversationState(string $key, $default = null)
@@ -620,7 +575,6 @@ class FortuneReading extends Model
     /**
      * เพิ่มคำถามเข้าไปใน state
      *
-     * @param string $question
      * @return int จำนวนคำถามปัจจุบัน
      */
     public function addQuestion(string $question): int
@@ -634,8 +588,6 @@ class FortuneReading extends Model
 
     /**
      * ดึงคำถามที่เก็บไว้ทั้งหมด
-     *
-     * @return array
      */
     public function getCollectedQuestions(): array
     {
@@ -644,8 +596,6 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่ารอชำระเงินอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isPendingPayment(): bool
     {
@@ -654,8 +604,6 @@ class FortuneReading extends Model
 
     /**
      * ตรวจสอบว่าเสร็จสิ้นขั้นตอนพื้นฐานแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isBasicDone(): bool
     {
@@ -664,12 +612,6 @@ class FortuneReading extends Model
 
     /**
      * บันทึกคำทำนายพื้นฐานและเปลี่ยนสถานะ
-     *
-     * @param string $response
-     * @param string $provider
-     * @param string $model
-     * @param int $tokensUsed
-     * @return void
      */
     public function saveBasicReading(string $response, string $provider, string $model, int $tokensUsed): void
     {
@@ -686,12 +628,6 @@ class FortuneReading extends Model
 
     /**
      * บันทึกคำทำนายละเอียดหลังชำระเงิน
-     *
-     * @param string $response
-     * @param string $provider
-     * @param string $model
-     * @param int $tokensUsed
-     * @return void
      */
     public function saveDeepReading(string $response, string $provider, string $model, int $tokensUsed): void
     {
@@ -708,9 +644,6 @@ class FortuneReading extends Model
 
     /**
      * ตั้งค่า unique payment amount และเปลี่ยนสถานะเป็นรอชำระ
-     *
-     * @param UniquePaymentAmount $uniqueAmount
-     * @return void
      */
     public function setPendingPayment(UniquePaymentAmount $uniqueAmount): void
     {
@@ -723,9 +656,6 @@ class FortuneReading extends Model
 
     /**
      * ยืนยันการชำระเงินและเปลี่ยนสถานะ
-     *
-     * @param SmsPaymentNotification|null $notification
-     * @return void
      */
     public function confirmPayment(?SmsPaymentNotification $notification = null): void
     {
@@ -780,8 +710,6 @@ class FortuneReading extends Model
      * - FTU = Fortune Reading
      * - YYMMDD = วันที่ (เช่น 260205)
      * - XXXXX = ลำดับ random 5 หลัก
-     *
-     * @return string
      */
     public static function generateBillReference(): string
     {
@@ -795,21 +723,19 @@ class FortuneReading extends Model
             $reference = "{$prefix}-{$datePart}-{$randomPart}";
 
             // ตรวจสอบว่าซ้ำหรือไม่
-            if (!self::where('bill_reference', $reference)->exists()) {
+            if (! self::where('bill_reference', $reference)->exists()) {
                 return $reference;
             }
         }
 
         // Fallback: ใช้ microtime
         $uniquePart = substr(md5(microtime()), 0, 5);
+
         return "{$prefix}-{$datePart}-{$uniquePart}";
     }
 
     /**
      * ค้นหา reading จากเลขที่บิล
-     *
-     * @param string $billReference
-     * @return self|null
      */
     public static function findByBillReference(string $billReference): ?self
     {

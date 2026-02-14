@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AICoreFeature;
+use App\Models\AICoreQuota;
 use App\Models\AICoreTenant;
 use App\Models\AICoreUsageLog;
-use App\Models\AICoreQuota;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * AI Core Analytics Controller
@@ -21,7 +20,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * แสดงหน้า Analytics Dashboard
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -67,8 +65,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * แสดง Analytics สำหรับ Feature เฉพาะ
      *
-     * @param Request $request
-     * @param AICoreFeature $feature
      * @return \Illuminate\View\View
      */
     public function feature(Request $request, AICoreFeature $feature)
@@ -144,8 +140,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * แสดง Analytics สำหรับ Tenant เฉพาะ
      *
-     * @param Request $request
-     * @param AICoreTenant $tenant
      * @return \Illuminate\View\View
      */
     public function tenant(Request $request, AICoreTenant $tenant)
@@ -230,7 +224,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * Export Analytics Data
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function export(Request $request)
@@ -252,10 +245,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงสถิติรวมทั้งหมด
-     *
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getOverallStats(string $startDate, string $endDate): array
     {
@@ -285,10 +274,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูลกราฟการใช้งานรายวัน
-     *
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getDailyUsageChart(string $startDate, string $endDate): array
     {
@@ -328,9 +313,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * ดึง Features ที่ได้รับความนิยมสูงสุด
      *
-     * @param string $startDate
-     * @param string $endDate
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     private function getTopFeatures(string $startDate, string $endDate, int $limit = 10)
@@ -347,9 +329,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * ดึง Tenants ที่ใช้งานมากที่สุด
      *
-     * @param string $startDate
-     * @param string $endDate
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     private function getTopTenants(string $startDate, string $endDate, int $limit = 10)
@@ -366,10 +345,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูลอัตราความสำเร็จ
-     *
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getSuccessRateChart(string $startDate, string $endDate): array
     {
@@ -398,8 +373,6 @@ class AICoreAnalyticsController extends Controller
     /**
      * ดึงการใช้งานแบ่งตามหมวดหมู่
      *
-     * @param string $startDate
-     * @param string $endDate
      * @return \Illuminate\Support\Collection
      */
     private function getCategoryUsage(string $startDate, string $endDate)
@@ -439,11 +412,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงการใช้งานรายวันสำหรับ Feature
-     *
-     * @param int $featureId
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getFeatureDailyUsage(int $featureId, string $startDate, string $endDate): array
     {
@@ -465,11 +433,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงการใช้งานรายวันสำหรับ Tenant
-     *
-     * @param int $tenantId
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getTenantDailyUsage(int $tenantId, string $startDate, string $endDate): array
     {
@@ -491,11 +454,6 @@ class AICoreAnalyticsController extends Controller
 
     /**
      * ดึงการใช้งานแบ่งตามชั่วโมง
-     *
-     * @param int $featureId
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getHourlyUsage(int $featureId, string $startDate, string $endDate): array
     {
@@ -518,7 +476,7 @@ class AICoreAnalyticsController extends Controller
         }
 
         return [
-            'labels' => array_map(fn($h) => sprintf('%02d:00', $h), $labels),
+            'labels' => array_map(fn ($h) => sprintf('%02d:00', $h), $labels),
             'data' => $usageByHour,
         ];
     }

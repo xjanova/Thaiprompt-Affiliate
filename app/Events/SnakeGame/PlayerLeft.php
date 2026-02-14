@@ -18,13 +18,14 @@ class PlayerLeft implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $playerId;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่ผู้เล่นออกไป
-     * @param int $playerId ID ผู้เล่น
+     * @param  int  $roomId  ห้องที่ผู้เล่นออกไป
+     * @param  int  $playerId  ID ผู้เล่น
      */
     public function __construct(int $roomId, int $playerId)
     {
@@ -34,8 +35,6 @@ class PlayerLeft implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -46,8 +45,6 @@ class PlayerLeft implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -62,7 +59,7 @@ class PlayerLeft implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

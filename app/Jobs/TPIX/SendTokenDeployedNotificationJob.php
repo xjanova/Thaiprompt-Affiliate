@@ -16,6 +16,7 @@ class SendTokenDeployedNotificationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 30;
 
     protected int $tokenId;
@@ -31,8 +32,9 @@ class SendTokenDeployedNotificationJob implements ShouldQueue
         try {
             $token = TPIXToken::with('creator')->find($this->tokenId);
 
-            if (!$token || !$token->creator) {
+            if (! $token || ! $token->creator) {
                 Log::error("Token or creator not found for notification: {$this->tokenId}");
+
                 return;
             }
 
@@ -41,7 +43,7 @@ class SendTokenDeployedNotificationJob implements ShouldQueue
             Log::info("Token deployed notification sent to user {$token->creator_id}");
 
         } catch (\Exception $e) {
-            Log::error("Failed to send token deployed notification: " . $e->getMessage());
+            Log::error('Failed to send token deployed notification: '.$e->getMessage());
             throw $e;
         }
     }

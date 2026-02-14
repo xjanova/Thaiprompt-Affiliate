@@ -28,7 +28,7 @@ class TicketReplyObserver
                 try {
                     $this->notificationService->notifyTicketReply($ticket->user, $ticket, $reply);
                 } catch (\Exception $e) {
-                    \Log::error('Failed to notify user about ticket reply: ' . $e->getMessage(), [
+                    \Log::error('Failed to notify user about ticket reply: '.$e->getMessage(), [
                         'reply_id' => $reply->id,
                         'ticket_id' => $ticket->id,
                     ]);

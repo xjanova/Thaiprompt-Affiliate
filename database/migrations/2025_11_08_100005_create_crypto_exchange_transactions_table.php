@@ -70,7 +70,7 @@ return new class extends Migration
                 'completed',         // Exchange completed
                 'failed',            // Exchange failed
                 'cancelled',         // Cancelled by user
-                'refunded'           // Refunded
+                'refunded',           // Refunded
             ])->default('pending');
 
             // Related transactions

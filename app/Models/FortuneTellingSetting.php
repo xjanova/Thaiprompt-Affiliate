@@ -2,9 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\AiApiKey;
-use App\Models\AiContentSetting;
-use App\Models\PaymentBankAccount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -193,14 +190,12 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึงการตั้งค่าระบบ (Singleton pattern)
-     *
-     * @return self
      */
     public static function getSettings(): self
     {
         $settings = self::first();
 
-        if (!$settings) {
+        if (! $settings) {
             $settings = self::create([
                 'ai_provider' => 'gemini',
                 'ai_model' => 'gemini-2.0-flash',
@@ -224,7 +219,7 @@ class FortuneTellingSetting extends Model
     {
         $ids = $this->fortune_bank_account_ids;
 
-        if (!empty($ids) && is_array($ids)) {
+        if (! empty($ids) && is_array($ids)) {
             // ดึงเฉพาะบัญชีที่เลือก (ต้อง active ด้วย)
             return PaymentBankAccount::whereIn('id', $ids)
                 ->where('is_active', true)
@@ -248,8 +243,6 @@ class FortuneTellingSetting extends Model
 
     /**
      * ตรวจสอบว่าบริการเปิดใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isServiceEnabled(): bool
     {
@@ -258,21 +251,17 @@ class FortuneTellingSetting extends Model
 
     /**
      * ตรวจสอบว่ามีการตั้งค่า Facebook ครบถ้วนหรือไม่
-     *
-     * @return bool
      */
     public function hasFacebookConfigured(): bool
     {
-        return !empty($this->facebook_app_id)
-            && !empty($this->facebook_app_secret)
-            && !empty($this->facebook_page_id)
-            && !empty($this->facebook_page_token);
+        return ! empty($this->facebook_app_id)
+            && ! empty($this->facebook_app_secret)
+            && ! empty($this->facebook_page_id)
+            && ! empty($this->facebook_page_token);
     }
 
     /**
      * ตรวจสอบว่ามีการตั้งค่า AI ครบถ้วนหรือไม่
-     *
-     * @return bool
      */
     public function hasAIConfigured(): bool
     {
@@ -282,33 +271,31 @@ class FortuneTellingSetting extends Model
         }
 
         // ถ้าใช้ custom settings ให้เช็คจากตัวเอง
-        return !empty($this->ai_provider)
-            && !empty($this->ai_api_key)
-            && !empty($this->ai_model);
+        return ! empty($this->ai_provider)
+            && ! empty($this->ai_api_key)
+            && ! empty($this->ai_model);
     }
 
     /**
      * ตรวจสอบว่าระบบหลักมีการตั้งค่า AI หรือไม่
-     *
-     * @return bool
      */
     protected function hasGlobalAIConfigured(): bool
     {
         // ตรวจสอบว่ามี Gemini API Key ในระบบหลัก
         $geminiKey = AiContentSetting::getValue('gemini_api_key');
-        if (!empty($geminiKey)) {
+        if (! empty($geminiKey)) {
             return true;
         }
 
         // ตรวจสอบ Claude
         $claudeKey = AiContentSetting::getValue('claude_api_key');
-        if (!empty($claudeKey)) {
+        if (! empty($claudeKey)) {
             return true;
         }
 
         // ตรวจสอบ OpenAI
         $openaiKey = AiContentSetting::getValue('openai_api_key');
-        if (!empty($openaiKey)) {
+        if (! empty($openaiKey)) {
             return true;
         }
 
@@ -325,25 +312,23 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึง AI Provider ที่ใช้งานจริง
-     *
-     * @return string
      */
     public function getActualAIProvider(): string
     {
         if ($this->use_global_ai_settings) {
             // ใช้ global settings - เช็คว่ามี provider ไหนพร้อมใช้งาน
             $geminiKey = AiContentSetting::getValue('gemini_api_key');
-            if (!empty($geminiKey)) {
+            if (! empty($geminiKey)) {
                 return 'gemini';
             }
 
             $claudeKey = AiContentSetting::getValue('claude_api_key');
-            if (!empty($claudeKey)) {
+            if (! empty($claudeKey)) {
                 return 'openrouter'; // ใช้ OpenRouter เรียก Claude
             }
 
             $openaiKey = AiContentSetting::getValue('openai_api_key');
-            if (!empty($openaiKey)) {
+            if (! empty($openaiKey)) {
                 return 'openrouter'; // ใช้ OpenRouter เรียก OpenAI
             }
 
@@ -367,8 +352,6 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึง AI Model ที่ใช้งานจริง
-     *
-     * @return string
      */
     public function getActualAIModel(): string
     {
@@ -391,8 +374,6 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึง AI API Key ที่ใช้งานจริง
-     *
-     * @return string|null
      */
     public function getActualAIApiKey(): ?string
     {
@@ -407,7 +388,7 @@ class FortuneTellingSetting extends Model
                 default => null,
             };
 
-            if (!empty($key)) {
+            if (! empty($key)) {
                 return $key;
             }
 
@@ -430,8 +411,6 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึง Default Prompt Template
-     *
-     * @return string
      */
     public function getDefaultPromptTemplate(): string
     {
@@ -462,8 +441,6 @@ EOT;
 
     /**
      * ดึง URL ของ QR Code ชำระเงิน
-     *
-     * @return string|null
      */
     public function getPaymentQrUrl(): ?string
     {
@@ -471,13 +448,11 @@ EOT;
             return null;
         }
 
-        return asset('storage/' . $this->payment_qr_image);
+        return asset('storage/'.$this->payment_qr_image);
     }
 
     /**
      * ตรวจสอบว่าเปิดใช้งานระบบคำทำนายเชิงลึกหรือไม่
-     *
-     * @return bool
      */
     public function isDeepReadingEnabled(): bool
     {
@@ -486,8 +461,6 @@ EOT;
 
     /**
      * ตรวจสอบว่าเปิดใช้งานระบบสมัครสมาชิกหรือไม่
-     *
-     * @return bool
      */
     public function isSubscriptionEnabled(): bool
     {
@@ -496,8 +469,6 @@ EOT;
 
     /**
      * ตรวจสอบว่าอนุญาตให้ทดลองก่อนจ่ายหรือไม่
-     *
-     * @return bool
      */
     public function isTryBeforeBuyEnabled(): bool
     {
@@ -506,8 +477,6 @@ EOT;
 
     /**
      * ดึง Prompt Template สำหรับคำทำนายพื้นฐาน
-     *
-     * @return string
      */
     public function getBasicPromptTemplate(): string
     {
@@ -542,8 +511,6 @@ EOT;
 
     /**
      * ดึง Prompt Template สำหรับคำทำนายเชิงลึก
-     *
-     * @return string
      */
     public function getDeepPromptTemplate(): string
     {
@@ -610,12 +577,10 @@ EOT;
 
     /**
      * สร้างข้อความแนะนำสมัครสมาชิก
-     *
-     * @return string
      */
     public function getSubscriptionMessage(): string
     {
-        if (!empty($this->subscription_message)) {
+        if (! empty($this->subscription_message)) {
             return $this->subscription_message;
         }
 
@@ -632,19 +597,17 @@ EOT;
             $message .= "👑 รายปี: {$this->subscription_yearly_price} บาท (ประหยัดกว่า!)\n\n";
         }
 
-        $message .= "สมัครได้ที่: " . url('/register') . "\n";
+        $message .= 'สมัครได้ที่: '.url('/register')."\n";
 
         return $message;
     }
 
     /**
      * สร้างข้อความหลังทดลองดูฟรี (แนะนำให้จ่ายเงิน/สมัครสมาชิก)
-     *
-     * @return string
      */
     public function getTryBeforeBuyMessage(): string
     {
-        if (!empty($this->try_before_buy_message)) {
+        if (! empty($this->try_before_buy_message)) {
             return $this->try_before_buy_message;
         }
 
@@ -662,10 +625,10 @@ EOT;
             }
         }
 
-        $message .= "\n📱 สมัคร/ชำระเงิน: " . url('/register');
+        $message .= "\n📱 สมัคร/ชำระเงิน: ".url('/register');
 
         if ($this->payment_qr_image) {
-            $message .= "\n📸 หรือสแกน QR Code: " . $this->getPaymentQrUrl();
+            $message .= "\n📸 หรือสแกน QR Code: ".$this->getPaymentQrUrl();
         }
 
         return $message;
@@ -696,11 +659,11 @@ EOT;
      */
     public function getCommentReplyTemplate(): string
     {
-        if (!empty($this->comment_reply_template)) {
+        if (! empty($this->comment_reply_template)) {
             return $this->comment_reply_template;
         }
 
-        return "สวัสดีค่ะคุณ {name} 🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨";
+        return 'สวัสดีค่ะคุณ {name} 🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨';
     }
 
     /**
@@ -708,7 +671,7 @@ EOT;
      */
     public function getCommentDmTemplate(): string
     {
-        if (!empty($this->comment_dm_template)) {
+        if (! empty($this->comment_dm_template)) {
             return $this->comment_dm_template;
         }
 
@@ -719,7 +682,7 @@ EOT;
         $msg .= "• พิมพ์ \"ดูดวง เรื่องความรัก\" - ระบุเรื่องที่อยากรู้\n";
         $msg .= "• พิมพ์ \"ดูดวงละเอียด\" - ดูดวงเชิงลึก\n";
         $msg .= "• ระบุวันเกิดด้วยจะแม่นยิ่งขึ้น เช่น \"ดูดวง เกิด 15 มกราคม 2540\"\n\n";
-        $msg .= "ลองพิมพ์ \"ดูดวง\" ได้เลยค่ะ 🙏✨";
+        $msg .= 'ลองพิมพ์ "ดูดวง" ได้เลยค่ะ 🙏✨';
 
         return $msg;
     }
@@ -729,7 +692,7 @@ EOT;
      */
     public function getCommentEngagementPrompt(): string
     {
-        if (!empty($this->comment_engagement_prompt)) {
+        if (! empty($this->comment_engagement_prompt)) {
             return $this->comment_engagement_prompt;
         }
 
@@ -756,8 +719,6 @@ PROMPT;
 
     /**
      * ตรวจสอบว่าเปิดใช้งาน LINE หรือไม่
-     *
-     * @return bool
      */
     public function isLineEnabled(): bool
     {
@@ -766,20 +727,16 @@ PROMPT;
 
     /**
      * ตรวจสอบว่ามีการตั้งค่า LINE ครบถ้วนหรือไม่
-     *
-     * @return bool
      */
     public function hasLineConfigured(): bool
     {
-        return !empty($this->line_channel_id)
-            && !empty($this->line_channel_secret)
-            && !empty($this->line_channel_access_token);
+        return ! empty($this->line_channel_id)
+            && ! empty($this->line_channel_secret)
+            && ! empty($this->line_channel_access_token);
     }
 
     /**
      * ดึงรายการ platform ที่เปิดใช้งาน
-     *
-     * @return array
      */
     public function getEnabledPlatforms(): array
     {
@@ -801,8 +758,6 @@ PROMPT;
 
     /**
      * ดึงสีหลักสำหรับ LINE Flex Message
-     *
-     * @return string
      */
     public function getLineFlexPrimaryColor(): string
     {
@@ -811,8 +766,6 @@ PROMPT;
 
     /**
      * ดึง URL รูปภาพ Welcome สำหรับ LINE
-     *
-     * @return string|null
      */
     public function getLineWelcomeImageUrl(): ?string
     {

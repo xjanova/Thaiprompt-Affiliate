@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง line_signup_settings
      *
      * เก็บการตั้งค่าต่างๆ สำหรับระบบสมัครสมาชิกผ่าน LINE
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -44,8 +42,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_signup_settings
-     *
-     * @return void
      */
     public function down(): void
     {

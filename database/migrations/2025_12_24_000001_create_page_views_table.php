@@ -14,8 +14,6 @@ return new class extends Migration
      * - ผู้ใช้มาจากแหล่งใด (referrer)
      * - ใช้อุปกรณ์อะไร (device/browser)
      * - เวลาที่คนเข้าชมมากที่สุด
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -86,8 +84,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง page_views
-     *
-     * @return void
      */
     public function down(): void
     {

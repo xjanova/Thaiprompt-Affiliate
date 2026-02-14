@@ -141,8 +141,8 @@ class KbArticle extends Model
     {
         return $query->where(function ($q) use ($keyword) {
             $q->where('title', 'like', "%{$keyword}%")
-              ->orWhere('content', 'like', "%{$keyword}%")
-              ->orWhere('summary', 'like', "%{$keyword}%");
+                ->orWhere('content', 'like', "%{$keyword}%")
+                ->orWhere('summary', 'like', "%{$keyword}%");
         });
     }
 
@@ -152,7 +152,7 @@ class KbArticle extends Model
     public function scopeFullTextSearch($query, $keyword)
     {
         return $query->whereRaw(
-            "MATCH(title, content) AGAINST(? IN NATURAL LANGUAGE MODE)",
+            'MATCH(title, content) AGAINST(? IN NATURAL LANGUAGE MODE)',
             [$keyword]
         );
     }
@@ -201,6 +201,7 @@ class KbArticle extends Model
     {
         $wordCount = str_word_count(strip_tags($this->content));
         $minutes = ceil($wordCount / 200); // Average reading speed: 200 words/minute
+
         return $minutes;
     }
 
@@ -214,6 +215,7 @@ class KbArticle extends Model
         }
 
         $text = strip_tags($this->content);
+
         return Str::limit($text, 200);
     }
 

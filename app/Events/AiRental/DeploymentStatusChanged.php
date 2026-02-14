@@ -23,47 +23,36 @@ class DeploymentStatusChanged
 
     /**
      * Deployment ที่เปลี่ยนสถานะ
-     *
-     * @var AiRentalDeployment
      */
     public AiRentalDeployment $deployment;
 
     /**
      * สถานะเก่า
-     *
-     * @var string
      */
     public string $oldStatus;
 
     /**
      * สถานะใหม่
-     *
-     * @var string
      */
     public string $newStatus;
 
     /**
      * เหตุผลการเปลี่ยนสถานะ
-     *
-     * @var string|null
      */
     public ?string $reason;
 
     /**
      * ข้อมูลเพิ่มเติม
-     *
-     * @var array
      */
     public array $metadata;
 
     /**
      * สร้าง event instance
      *
-     * @param AiRentalDeployment $deployment
-     * @param string $oldStatus สถานะเก่า
-     * @param string $newStatus สถานะใหม่
-     * @param string|null $reason เหตุผล
-     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @param  string  $oldStatus  สถานะเก่า
+     * @param  string  $newStatus  สถานะใหม่
+     * @param  string|null  $reason  เหตุผล
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      * @return void
      *
      * @example
@@ -94,8 +83,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าเป็นการเปลี่ยนจาก pending → running
-     *
-     * @return bool
      */
     public function isDeploymentReady(): bool
     {
@@ -104,8 +91,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าเป็นการ terminate
-     *
-     * @return bool
      */
     public function isTerminated(): bool
     {
@@ -114,8 +99,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าเป็นการ failed
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {
@@ -124,8 +107,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าเป็นการ stopped
-     *
-     * @return bool
      */
     public function isStopped(): bool
     {
@@ -134,8 +115,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าควรหยุด billing หรือไม่
-     *
-     * @return bool
      */
     public function shouldStopBilling(): bool
     {
@@ -144,8 +123,6 @@ class DeploymentStatusChanged
 
     /**
      * ตรวจสอบว่าควรส่ง notification หรือไม่
-     *
-     * @return bool
      */
     public function shouldNotifyUser(): bool
     {
@@ -170,8 +147,6 @@ class DeploymentStatusChanged
 
     /**
      * แปลง event เป็น array
-     *
-     * @return array
      */
     public function toArray(): array
     {

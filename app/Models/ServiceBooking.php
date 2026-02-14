@@ -152,9 +152,9 @@ class ServiceBooking extends Model
         'user_location_updated_at' => 'datetime',
     ];
 
-    //===========================================
+    // ===========================================
     // Lifecycle Hooks
-    //===========================================
+    // ===========================================
 
     protected static function boot()
     {
@@ -168,9 +168,9 @@ class ServiceBooking extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * ลูกค้า
@@ -268,9 +268,9 @@ class ServiceBooking extends Model
         return $this->hasMany(ServiceReview::class, 'booking_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: กรองตามสถานะ
@@ -340,9 +340,9 @@ class ServiceBooking extends Model
         return $query->whereDate('scheduled_at', $date);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Booking Number
-    //===========================================
+    // ===========================================
 
     /**
      * สร้างเลขที่การจอง
@@ -360,9 +360,9 @@ class ServiceBooking extends Model
         return sprintf('%s-%s-%04d', $prefix, $date, $sequence);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Status Management
-    //===========================================
+    // ===========================================
 
     /**
      * อัพเดทสถานะ
@@ -400,7 +400,7 @@ class ServiceBooking extends Model
      */
     public function cancel(string $reason, string $cancelledBy = 'customer'): void
     {
-        if (!$this->canCancel()) {
+        if (! $this->canCancel()) {
             throw new \Exception('ไม่สามารถยกเลิกการจองได้');
         }
 
@@ -417,9 +417,9 @@ class ServiceBooking extends Model
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Provider Response
-    //===========================================
+    // ===========================================
 
     /**
      * แจ้งเตือน provider
@@ -444,7 +444,7 @@ class ServiceBooking extends Model
      */
     public function markAsViewed(): void
     {
-        if (!$this->provider_viewed_at) {
+        if (! $this->provider_viewed_at) {
             $this->update([
                 'provider_viewed_at' => now(),
                 'status' => 'waiting_provider',
@@ -514,22 +514,22 @@ class ServiceBooking extends Model
      */
     public function isProviderResponseOnTime(): bool
     {
-        if (!$this->provider_response_deadline) {
+        if (! $this->provider_response_deadline) {
             return true;
         }
 
         $responseTime = $this->provider_accepted_at ?? $this->provider_rejected_at;
 
-        if (!$responseTime) {
+        if (! $responseTime) {
             return false;
         }
 
         return $responseTime->lte($this->provider_response_deadline);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Service Lifecycle
-    //===========================================
+    // ===========================================
 
     /**
      * เริ่มเดินทาง
@@ -571,9 +571,9 @@ class ServiceBooking extends Model
         $this->logAction('service_completed');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Payment
-    //===========================================
+    // ===========================================
 
     /**
      * ชำระเงิน
@@ -603,9 +603,9 @@ class ServiceBooking extends Model
         $this->logAction('payment_refunded');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Price Calculation
-    //===========================================
+    // ===========================================
 
     /**
      * คำนวณราคารวม
@@ -622,8 +622,6 @@ class ServiceBooking extends Model
      * คำนวณค่าธรรมเนียมทั้งหมด (Platform Fee + PV + Provider Earnings)
      *
      * ใช้ค่าจากบริการเป็น snapshot ณ เวลาจอง
-     *
-     * @return void
      */
     public function calculateFees(): void
     {
@@ -644,8 +642,6 @@ class ServiceBooking extends Model
 
     /**
      * คำนวณทั้งหมด (ราคา + ค่าธรรมเนียม)
-     *
-     * @return void
      */
     public function calculateAll(): void
     {
@@ -655,8 +651,6 @@ class ServiceBooking extends Model
 
     /**
      * ได้ข้อมูลสรุปค่าธรรมเนียม
-     *
-     * @return array
      */
     public function getFeeBreakdown(): array
     {
@@ -676,9 +670,9 @@ class ServiceBooking extends Model
         ];
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Audit Trail
-    //===========================================
+    // ===========================================
 
     /**
      * บันทึก action log
@@ -697,9 +691,9 @@ class ServiceBooking extends Model
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // Accessors
-    //===========================================
+    // ===========================================
 
     /**
      * สถานะเป็นภาษาไทย

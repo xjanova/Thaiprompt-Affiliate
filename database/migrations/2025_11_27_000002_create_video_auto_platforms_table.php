@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_platforms
      * เก็บข้อมูลการเชื่อมต่อกับ platforms ต่างๆ เช่น YouTube, Facebook, TikTok
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -68,8 +66,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_platforms
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis as RedisClient;
 
 class SystemMonitoringService
@@ -123,7 +123,7 @@ class SystemMonitoringService
             // For file-based sessions
             if (config('session.driver') === 'file') {
                 $sessionPath = storage_path('framework/sessions');
-                if (!is_dir($sessionPath)) {
+                if (! is_dir($sessionPath)) {
                     return 0;
                 }
 
@@ -131,7 +131,7 @@ class SystemMonitoringService
                 $count = 0;
                 $cutoff = time() - 1800; // 30 minutes
 
-                foreach (glob($sessionPath . '/*') as $file) {
+                foreach (glob($sessionPath.'/*') as $file) {
                     if (filemtime($file) > $cutoff) {
                         $count++;
                     }
@@ -151,6 +151,7 @@ class SystemMonitoringService
             if (config('session.driver') === 'redis') {
                 try {
                     $keys = RedisClient::keys('laravel_session:*');
+
                     return count($keys);
                 } catch (\Exception $e) {
                     return 0;
@@ -170,6 +171,7 @@ class SystemMonitoringService
     {
         try {
             $result = DB::select("SHOW STATUS WHERE variable_name = 'Threads_connected'");
+
             return $result[0]->Value ?? 0;
         } catch (\Exception $e) {
             return 0;
@@ -186,13 +188,13 @@ class SystemMonitoringService
 
             // Get database size
             $dbName = config('database.connections.mysql.database');
-            $result = DB::select("
+            $result = DB::select('
                 SELECT
                     SUM(data_length + index_length) as size,
                     COUNT(*) as tables
                 FROM information_schema.TABLES
                 WHERE table_schema = ?
-            ", [$dbName]);
+            ', [$dbName]);
 
             $metrics['size'] = $this->formatBytes($result[0]->size ?? 0);
             $metrics['tables'] = $result[0]->tables ?? 0;
@@ -201,11 +203,11 @@ class SystemMonitoringService
             $stats = DB::select("SHOW GLOBAL STATUS WHERE Variable_name IN ('Queries', 'Slow_queries', 'Uptime')");
             foreach ($stats as $stat) {
                 if ($stat->Variable_name === 'Queries') {
-                    $metrics['total_queries'] = (int)$stat->Value;
+                    $metrics['total_queries'] = (int) $stat->Value;
                 } elseif ($stat->Variable_name === 'Slow_queries') {
-                    $metrics['slow_queries'] = (int)$stat->Value;
+                    $metrics['slow_queries'] = (int) $stat->Value;
                 } elseif ($stat->Variable_name === 'Uptime') {
-                    $metrics['uptime_seconds'] = (int)$stat->Value;
+                    $metrics['uptime_seconds'] = (int) $stat->Value;
                 }
             }
 
@@ -316,7 +318,7 @@ class SystemMonitoringService
         $memInfo = [];
 
         try {
-            if (!@file_exists('/proc/meminfo')) {
+            if (! @file_exists('/proc/meminfo')) {
                 return $memInfo;
             }
 
@@ -345,7 +347,7 @@ class SystemMonitoringService
     protected function getCpuCount(): int
     {
         try {
-            if (!@file_exists('/proc/cpuinfo')) {
+            if (! @file_exists('/proc/cpuinfo')) {
                 return 1;
             }
 
@@ -374,7 +376,7 @@ class SystemMonitoringService
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 
     /**
@@ -420,8 +422,8 @@ class SystemMonitoringService
                 foreach ($lines as $line) {
                     if (preg_match('/^\s*(eth\d+|ens\d+|enp\d+s\d+):\s*(\d+)\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+)/', $line, $matches)) {
                         $interface = $matches[1];
-                        $rxBytes = (int)$matches[2];
-                        $txBytes = (int)$matches[3];
+                        $rxBytes = (int) $matches[2];
+                        $txBytes = (int) $matches[3];
 
                         $stats[] = [
                             'interface' => $interface,

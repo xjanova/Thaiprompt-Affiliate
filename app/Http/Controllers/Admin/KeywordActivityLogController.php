@@ -24,7 +24,6 @@ class KeywordActivityLogController extends Controller
     /**
      * แสดงรายการ activity logs
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -33,7 +32,7 @@ class KeywordActivityLogController extends Controller
 
         // Filter by keyword
         if ($request->has('keyword') && $request->input('keyword')) {
-            $query->where('keyword_name', 'like', '%' . $request->input('keyword') . '%');
+            $query->where('keyword_name', 'like', '%'.$request->input('keyword').'%');
         }
 
         // Filter by action type
@@ -93,8 +92,6 @@ class KeywordActivityLogController extends Controller
 
     /**
      * ดึง statistics
-     *
-     * @return array
      */
     private function getStatistics(): array
     {
@@ -120,8 +117,6 @@ class KeywordActivityLogController extends Controller
 
     /**
      * ดึง most used keyword
-     *
-     * @return array|null
      */
     private function getMostUsedKeyword(): ?array
     {
@@ -132,7 +127,7 @@ class KeywordActivityLogController extends Controller
             ->orderBy('count', 'desc')
             ->first();
 
-        if (!$keyword) {
+        if (! $keyword) {
             return null;
         }
 
@@ -144,8 +139,6 @@ class KeywordActivityLogController extends Controller
 
     /**
      * ดึง match rate (%)
-     *
-     * @return float
      */
     private function getMatchRate(): float
     {
@@ -164,7 +157,6 @@ class KeywordActivityLogController extends Controller
     /**
      * Export logs to CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -172,7 +164,7 @@ class KeywordActivityLogController extends Controller
         $days = $request->input('days', 30);
         $csv = $this->activityLogService->exportToCSV($days);
 
-        $filename = 'keyword-activity-logs-' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'keyword-activity-logs-'.now()->format('Y-m-d_H-i-s').'.csv';
 
         return response()->streamDownload(
             function () use ($csv) {
@@ -181,7 +173,7 @@ class KeywordActivityLogController extends Controller
             $filename,
             [
                 'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ]
         );
     }
@@ -189,7 +181,6 @@ class KeywordActivityLogController extends Controller
     /**
      * ดึง user conversation history
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getUserHistory(Request $request)
@@ -215,7 +206,6 @@ class KeywordActivityLogController extends Controller
     /**
      * Clear old logs
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function clearOldLogs(Request $request)
@@ -253,7 +243,6 @@ class KeywordActivityLogController extends Controller
     /**
      * Get daily activity chart data
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getDailyActivityChart(Request $request)
@@ -277,7 +266,7 @@ class KeywordActivityLogController extends Controller
         $noMatches = [];
 
         foreach ($data as $item) {
-            if (!in_array($item->date, $dates)) {
+            if (! in_array($item->date, $dates)) {
                 $dates[] = $item->date;
             }
         }

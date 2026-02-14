@@ -8,24 +8,22 @@ return new class extends Migration
 {
     /**
      * เพิ่ม cashback fields ในตาราง products
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('products')) {
+        if (! Schema::hasTable('products')) {
             return;
         }
 
         Schema::table('products', function (Blueprint $table) {
             // ✅ เช็คก่อนเพิ่มคอลัมน์ (idempotent)
-            if (!Schema::hasColumn('products', 'customer_cashback')) {
+            if (! Schema::hasColumn('products', 'customer_cashback')) {
                 $table->decimal('customer_cashback', 10, 2)->default(0)->after('commission_rate')
                     ->comment('Fixed cashback amount for customer');
             }
 
-            if (!Schema::hasColumn('products', 'cashback_percentage')) {
+            if (! Schema::hasColumn('products', 'cashback_percentage')) {
                 $table->decimal('cashback_percentage', 5, 2)->default(0)->after('customer_cashback')
                     ->comment('Cashback percentage of price');
             }
@@ -34,8 +32,6 @@ return new class extends Migration
 
     /**
      * ลบ cashback fields จากตาราง products
-     *
-     * @return void
      */
     public function down(): void
     {
@@ -50,7 +46,7 @@ return new class extends Migration
                 $columnsToDrop[] = 'cashback_percentage';
             }
 
-            if (!empty($columnsToDrop)) {
+            if (! empty($columnsToDrop)) {
                 $table->dropColumn($columnsToDrop);
             }
         });

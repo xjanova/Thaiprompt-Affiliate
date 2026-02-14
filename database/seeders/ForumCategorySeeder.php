@@ -14,8 +14,6 @@ class ForumCategorySeeder extends Seeder
 {
     /**
      * รันการ seed หมวดหมู่ฟอรั่ม
-     *
-     * @return void
      */
     public function run(): void
     {

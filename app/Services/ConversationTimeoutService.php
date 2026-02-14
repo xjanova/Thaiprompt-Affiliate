@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\MlmProspect;
 use App\Models\LineSignupFlow;
+use App\Models\MlmProspect;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 /**
  * Conversation Timeout Service
@@ -88,12 +87,12 @@ class ConversationTimeoutService
      */
     public function updateProgress(MlmProspect $prospect): void
     {
-        if (!$prospect->conversation_total_steps) {
+        if (! $prospect->conversation_total_steps) {
             return;
         }
 
         $currentStep = LineSignupFlow::getByStepKey($prospect->conversation_step);
-        if (!$currentStep) {
+        if (! $currentStep) {
             return;
         }
 
@@ -111,7 +110,7 @@ class ConversationTimeoutService
      */
     public function isExpired(MlmProspect $prospect): bool
     {
-        if (!$prospect->conversation_started_at) {
+        if (! $prospect->conversation_started_at) {
             return false;
         }
 
@@ -139,7 +138,7 @@ class ConversationTimeoutService
      */
     public function shouldSendWarning(MlmProspect $prospect): bool
     {
-        if (!$prospect->conversation_timeout_at) {
+        if (! $prospect->conversation_timeout_at) {
             return false;
         }
 
@@ -149,8 +148,9 @@ class ConversationTimeoutService
         // and warning hasn't been sent yet
         if ($remainingSeconds > 0 && $remainingSeconds <= self::WARNING_THRESHOLD) {
             $warningKey = "conversation_warning_sent:{$prospect->id}";
-            if (!Cache::has($warningKey)) {
+            if (! Cache::has($warningKey)) {
                 Cache::put($warningKey, true, now()->addSeconds(self::TIMEOUT_DURATION));
+
                 return true;
             }
         }
@@ -167,7 +167,7 @@ class ConversationTimeoutService
 
         $message = "⏰ สวัสดีค่ะ!\n\n";
         $message .= "การสมัครสมาชิกของคุณจะหมดอายุในอีก {$remainingMinutes} นาที\n\n";
-        $message .= "กรุณาตอบกลับให้เสร็จสิ้นภายในเวลาที่กำหนด หรือคุณสามารถเริ่มใหม่ได้ตลอดเวลา 😊";
+        $message .= 'กรุณาตอบกลับให้เสร็จสิ้นภายในเวลาที่กำหนด หรือคุณสามารถเริ่มใหม่ได้ตลอดเวลา 😊';
 
         $this->lineService->sendPushMessage($prospect->line_user_id, $message);
 
@@ -194,7 +194,7 @@ class ConversationTimeoutService
         $message .= "ไม่ต้องกังวลค่ะ! คุณสามารถเริ่มใหม่ได้ตลอดเวลา\n\n";
         $message .= "กดลิงก์นี้เพื่อเริ่มใหม่:\n{$resumeUrl}\n\n";
         $message .= "📊 ความคืบหน้าของคุณ: {$prospect->conversation_progress_percent}%\n";
-        $message .= "✨ เราจะช่วยคุณทำต่อจากจุดที่ค้างไว้ได้เลย!";
+        $message .= '✨ เราจะช่วยคุณทำต่อจากจุดที่ค้างไว้ได้เลย!';
 
         $this->lineService->sendPushMessage($prospect->line_user_id, $message);
 
@@ -232,7 +232,7 @@ class ConversationTimeoutService
             $message .= "---\n\n";
             $message .= $currentStep->message_text;
         } else {
-            $message .= "กรุณารอสักครู่...";
+            $message .= 'กรุณารอสักครู่...';
         }
 
         $this->lineService->sendPushMessage($prospect->line_user_id, $message);
@@ -288,7 +288,7 @@ class ConversationTimeoutService
      */
     public function getRemainingTime(MlmProspect $prospect): ?string
     {
-        if (!$prospect->conversation_timeout_at) {
+        if (! $prospect->conversation_timeout_at) {
             return null;
         }
 

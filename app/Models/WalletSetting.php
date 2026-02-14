@@ -47,7 +47,7 @@ class WalletSetting extends Model
      */
     public function getTypedValue()
     {
-        return match($this->type) {
+        return match ($this->type) {
             'number' => (float) $this->value,
             'percentage' => (float) $this->value,
             'boolean' => filter_var($this->value, FILTER_VALIDATE_BOOLEAN),
@@ -67,7 +67,7 @@ class WalletSetting extends Model
 
         $setting = $settings->get($key);
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -81,7 +81,7 @@ class WalletSetting extends Model
     {
         $setting = static::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return false;
         }
 
@@ -164,7 +164,7 @@ class WalletSetting extends Model
     {
         $taxEnabled = static::get('tax_enabled', false);
 
-        if (!$taxEnabled) {
+        if (! $taxEnabled) {
             return 0;
         }
 
@@ -186,6 +186,7 @@ class WalletSetting extends Model
     public static function calculateTransferFee(float $amount): float
     {
         $fee = static::get('transfer_fee_amount', 0);
+
         return round($fee, 2);
     }
 
@@ -196,7 +197,7 @@ class WalletSetting extends Model
     {
         $requiresApproval = static::get('withdrawal_requires_approval', true);
 
-        if (!$requiresApproval) {
+        if (! $requiresApproval) {
             return false;
         }
 
@@ -220,11 +221,11 @@ class WalletSetting extends Model
         $errors = [];
 
         if ($amount < $minAmount) {
-            $errors[] = "ยอดถอนขั้นต่ำคือ " . number_format($minAmount, 2) . " บาท";
+            $errors[] = 'ยอดถอนขั้นต่ำคือ '.number_format($minAmount, 2).' บาท';
         }
 
         if ($amount > $maxAmount) {
-            $errors[] = "ยอดถอนสูงสุดคือ " . number_format($maxAmount, 2) . " บาท";
+            $errors[] = 'ยอดถอนสูงสุดคือ '.number_format($maxAmount, 2).' บาท';
         }
 
         return $errors;
@@ -240,7 +241,7 @@ class WalletSetting extends Model
         $errors = [];
 
         if ($amount < $minAmount) {
-            $errors[] = "ยอดโอนขั้นต่ำคือ " . number_format($minAmount, 2) . " บาท";
+            $errors[] = 'ยอดโอนขั้นต่ำคือ '.number_format($minAmount, 2).' บาท';
         }
 
         return $errors;
@@ -256,7 +257,7 @@ class WalletSetting extends Model
         $errors = [];
 
         if ($amount < $minAmount) {
-            $errors[] = "ยอดฝากขั้นต่ำคือ " . number_format($minAmount, 2) . " บาท";
+            $errors[] = 'ยอดฝากขั้นต่ำคือ '.number_format($minAmount, 2).' บาท';
         }
 
         return $errors;
@@ -267,7 +268,8 @@ class WalletSetting extends Model
      */
     public static function isPaymentMethodEnabled(string $method): bool
     {
-        $key = $method . '_enabled';
+        $key = $method.'_enabled';
+
         return static::get($key, false);
     }
 

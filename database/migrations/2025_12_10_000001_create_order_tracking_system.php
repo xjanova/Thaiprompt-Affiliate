@@ -20,7 +20,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตารางบริษัทขนส่ง
-        if (!Schema::hasTable('shipping_providers')) {
+        if (! Schema::hasTable('shipping_providers')) {
             Schema::create('shipping_providers', function (Blueprint $table) {
                 $table->id();
                 $table->string('code', 50)->unique()->comment('รหัสขนส่ง เช่น THAIPOST, KERRY');
@@ -40,7 +40,7 @@ return new class extends Migration
         }
 
         // ตารางประวัติการติดตามสถานะ
-        if (!Schema::hasTable('order_tracking_history')) {
+        if (! Schema::hasTable('order_tracking_history')) {
             Schema::create('order_tracking_history', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
@@ -62,7 +62,7 @@ return new class extends Migration
         }
 
         // ตารางแชทคำสั่งซื้อ
-        if (!Schema::hasTable('order_messages')) {
+        if (! Schema::hasTable('order_messages')) {
             Schema::create('order_messages', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
@@ -86,19 +86,19 @@ return new class extends Migration
 
         // เพิ่มคอลัมน์ในตาราง orders ถ้ายังไม่มี
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'shipping_provider_id')) {
+            if (! Schema::hasColumn('orders', 'shipping_provider_id')) {
                 $table->foreignId('shipping_provider_id')->nullable()->after('shipping_fee')
                     ->constrained('shipping_providers')->nullOnDelete();
             }
-            if (!Schema::hasColumn('orders', 'estimated_delivery_at')) {
+            if (! Schema::hasColumn('orders', 'estimated_delivery_at')) {
                 $table->timestamp('estimated_delivery_at')->nullable()->after('delivered_at')
                     ->comment('วันที่คาดว่าจะได้รับ');
             }
-            if (!Schema::hasColumn('orders', 'has_unread_messages')) {
+            if (! Schema::hasColumn('orders', 'has_unread_messages')) {
                 $table->boolean('has_unread_messages')->default(false)->after('admin_notes')
                     ->comment('มีข้อความที่ยังไม่ได้อ่าน');
             }
-            if (!Schema::hasColumn('orders', 'last_message_at')) {
+            if (! Schema::hasColumn('orders', 'last_message_at')) {
                 $table->timestamp('last_message_at')->nullable()->after('has_unread_messages')
                     ->comment('เวลาข้อความล่าสุด');
             }

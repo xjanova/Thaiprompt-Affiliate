@@ -12,7 +12,7 @@ class FreepikProvider extends BaseAiGenProvider
         $apiKey = $this->getConfig('api_key');
         $endpoint = $this->getConfig('api_endpoint', 'https://api.freepik.com/v1');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return [
                 'success' => false,
                 'error' => 'API key not configured',
@@ -37,14 +37,14 @@ class FreepikProvider extends BaseAiGenProvider
         }
 
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
+            'Authorization' => 'Bearer '.$apiKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
 
-        $response = $this->makeRequest('post', $endpoint . '/ai/image/generate', $data, $headers);
+        $response = $this->makeRequest('post', $endpoint.'/ai/image/generate', $data, $headers);
 
-        if (!$response['success']) {
+        if (! $response['success']) {
             return [
                 'success' => false,
                 'error' => $this->parseError($response),
@@ -71,7 +71,7 @@ class FreepikProvider extends BaseAiGenProvider
         $apiKey = $this->getConfig('api_key');
         $endpoint = $this->getConfig('api_endpoint', 'https://api.freepik.com/v1');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return [
                 'success' => false,
                 'error' => 'API key not configured',
@@ -91,14 +91,14 @@ class FreepikProvider extends BaseAiGenProvider
         }
 
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
+            'Authorization' => 'Bearer '.$apiKey,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
         ];
 
-        $response = $this->makeRequest('post', $endpoint . '/ai/video/generate', $data, $headers);
+        $response = $this->makeRequest('post', $endpoint.'/ai/video/generate', $data, $headers);
 
-        if (!$response['success']) {
+        if (! $response['success']) {
             return [
                 'success' => false,
                 'error' => $this->parseError($response),
@@ -124,7 +124,7 @@ class FreepikProvider extends BaseAiGenProvider
         $apiKey = $this->getConfig('api_key');
         $endpoint = $this->getConfig('api_endpoint', 'https://api.freepik.com/v1');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return [
                 'success' => false,
                 'error' => 'API key not configured',
@@ -132,13 +132,13 @@ class FreepikProvider extends BaseAiGenProvider
         }
 
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
+            'Authorization' => 'Bearer '.$apiKey,
             'Accept' => 'application/json',
         ];
 
-        $response = $this->makeRequest('get', $endpoint . '/ai/generation/' . $generationId, [], $headers);
+        $response = $this->makeRequest('get', $endpoint.'/ai/generation/'.$generationId, [], $headers);
 
-        if (!$response['success']) {
+        if (! $response['success']) {
             return [
                 'success' => false,
                 'error' => $this->parseError($response),
@@ -168,7 +168,8 @@ class FreepikProvider extends BaseAiGenProvider
     public function isConfigured(): bool
     {
         $apiKey = $this->getConfig('api_key');
-        return !empty($apiKey);
+
+        return ! empty($apiKey);
     }
 
     /**
@@ -179,7 +180,7 @@ class FreepikProvider extends BaseAiGenProvider
         $apiKey = $this->getConfig('api_key');
         $endpoint = $this->getConfig('api_endpoint', 'https://api.freepik.com/v1');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return [
                 'success' => false,
                 'error' => 'API key not configured',
@@ -187,11 +188,11 @@ class FreepikProvider extends BaseAiGenProvider
         }
 
         $headers = [
-            'Authorization' => 'Bearer ' . $apiKey,
+            'Authorization' => 'Bearer '.$apiKey,
             'Accept' => 'application/json',
         ];
 
-        $response = $this->makeRequest('get', $endpoint . '/ai/models', [], $headers);
+        $response = $this->makeRequest('get', $endpoint.'/ai/models', [], $headers);
 
         return [
             'success' => $response['success'],

@@ -159,7 +159,7 @@ class AiBotRental extends Model
     /**
      * Cancel rental
      */
-    public function cancel(string $reason = null): void
+    public function cancel(?string $reason = null): void
     {
         $this->status = 'cancelled';
         $this->cancellation_reason = $reason;
@@ -204,7 +204,7 @@ class AiBotRental extends Model
      */
     public function getDaysRemaining(): ?int
     {
-        if ($this->rental_type !== 'monthly' || !$this->end_date) {
+        if ($this->rental_type !== 'monthly' || ! $this->end_date) {
             return null;
         }
 

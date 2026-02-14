@@ -1,20 +1,20 @@
 <?php
+
 /**
  * สคริปต์สำหรับเพิ่ม hasTable check ให้ migrations ที่ไม่มี
  *
  * ใช้งาน: php scripts/fix-migrations-hastable.php
  */
-
-$migrationsDir = __DIR__ . '/../database/migrations';
+$migrationsDir = __DIR__.'/../database/migrations';
 $fixedCount = 0;
 $skippedCount = 0;
 $errorCount = 0;
 
 // หาไฟล์ migrations ทั้งหมดที่ขึ้นต้นด้วย 2025_11
-$files = glob($migrationsDir . '/2025_11_*.php');
+$files = glob($migrationsDir.'/2025_11_*.php');
 
 echo "🔧 กำลังสแกน migrations...\n";
-echo "พบ " . count($files) . " ไฟล์\n\n";
+echo 'พบ '.count($files)." ไฟล์\n\n";
 
 foreach ($files as $file) {
     $filename = basename($file);
@@ -24,6 +24,7 @@ foreach ($files as $file) {
     if (strpos($content, 'hasTable') !== false) {
         echo "⏭️  SKIP: $filename (มี hasTable แล้ว)\n";
         $skippedCount++;
+
         continue;
     }
 
@@ -31,6 +32,7 @@ foreach ($files as $file) {
     if (strpos($content, 'Schema::create') === false) {
         echo "⏭️  SKIP: $filename (ไม่มี Schema::create)\n";
         $skippedCount++;
+
         continue;
     }
 
@@ -40,6 +42,7 @@ foreach ($files as $file) {
     if (empty($matches[1])) {
         echo "⚠️  WARN: $filename (ไม่พบชื่อตาราง)\n";
         $errorCount++;
+
         continue;
     }
 
@@ -48,7 +51,7 @@ foreach ($files as $file) {
 
     foreach ($tables as $table) {
         // สร้าง pattern สำหรับหา Schema::create สำหรับตารางนี้
-        $pattern = "/(Schema::create\(['\"]" . preg_quote($table, '/') . "['\"],\s*function)/";
+        $pattern = "/(Schema::create\(['\"]".preg_quote($table, '/')."['\"],\s*function)/";
 
         // ถ้ายังไม่มี hasTable check สำหรับตารางนี้
         if (strpos($content, "hasTable('$table')") === false &&
@@ -70,7 +73,7 @@ foreach ($files as $file) {
     if ($modified) {
         // สำหรับตอนนี้แค่รายงานว่าต้องแก้ไขอะไร
         echo "🔧 NEED FIX: $filename\n";
-        echo "   ตาราง: " . implode(', ', $tables) . "\n";
+        echo '   ตาราง: '.implode(', ', $tables)."\n";
         $fixedCount++;
     }
 }

@@ -34,7 +34,7 @@ class UpdateThreatIntelligence extends Command
             if ($source) {
                 $this->info("Updating from {$source}...");
 
-                $results = match($source) {
+                $results = match ($source) {
                     'firehol' => ['firehol' => $service->updateFromFirehol()],
                     default => throw new \InvalidArgumentException("Unknown source: {$source}"),
                 };
@@ -77,7 +77,7 @@ class UpdateThreatIntelligence extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('Error updating threat intelligence: ' . $e->getMessage());
+            $this->error('Error updating threat intelligence: '.$e->getMessage());
             $this->error($e->getTraceAsString());
 
             return Command::FAILURE;

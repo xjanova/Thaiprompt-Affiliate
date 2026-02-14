@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,42 +33,46 @@ class MlmReferralBonusService
      *
      * เรียกใช้หลังจากออเดอร์ได้รับชำระเงินแล้ว
      *
-     * @param Order $order ออเดอร์ที่ชำระแล้ว
+     * @param  Order  $order  ออเดอร์ที่ชำระแล้ว
      * @return MlmCommission|null รายการคอมมิชชันที่สร้าง หรือ null ถ้าไม่ผ่านเงื่อนไข
      */
     public function calculateReferralBonus(Order $order): ?MlmCommission
     {
         // ตรวจสอบว่าเปิดใช้ระบบผังสายเลือด (Genealogy) หรือไม่
-        if (!MlmGlobalSetting::get('genealogy_enabled', true)) {
+        if (! MlmGlobalSetting::get('genealogy_enabled', true)) {
             Log::debug('Genealogy commission system disabled', ['order_id' => $order->id]);
+
             return null;
         }
 
         // ตรวจสอบว่าเปิดใช้ค่าแนะนำตรงหรือไม่
-        if (!MlmGlobalSetting::get('direct_referral_bonus_enabled', true)) {
+        if (! MlmGlobalSetting::get('direct_referral_bonus_enabled', true)) {
             Log::debug('Direct referral bonus disabled', ['order_id' => $order->id]);
+
             return null;
         }
 
         // หา MlmMember ของผู้ซื้อ
         $buyerMember = MlmMember::where('user_id', $order->user_id)->first();
 
-        if (!$buyerMember) {
+        if (! $buyerMember) {
             Log::debug('Buyer is not MLM member', [
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
             ]);
+
             return null;
         }
 
         // หา original sponsor (ผู้แนะนำตรงจริงๆ)
         $originalSponsor = $buyerMember->originalSponsor;
 
-        if (!$originalSponsor) {
+        if (! $originalSponsor) {
             Log::debug('No original sponsor found', [
                 'order_id' => $order->id,
                 'buyer_member_id' => $buyerMember->id,
             ]);
+
             return null;
         }
 
@@ -81,6 +85,7 @@ class MlmReferralBonusService
                 'order_total' => $order->total_amount,
                 'min_order' => $minOrder,
             ]);
+
             return null;
         }
 
@@ -97,6 +102,7 @@ class MlmReferralBonusService
                     'order_id' => $order->id,
                     'buyer_member_id' => $buyerMember->id,
                 ]);
+
                 return null;
             }
         }
@@ -111,6 +117,7 @@ class MlmReferralBonusService
             Log::debug('Referral bonus already paid for this order', [
                 'order_id' => $order->id,
             ]);
+
             return null;
         }
 
@@ -123,6 +130,7 @@ class MlmReferralBonusService
                 'order_id' => $order->id,
                 'order_total' => $order->total_amount,
             ]);
+
             return null;
         }
 
@@ -133,7 +141,7 @@ class MlmReferralBonusService
     /**
      * คำนวณจำนวนเงินค่าแนะนำ
      *
-     * @param float $orderTotal ยอดสั่งซื้อ
+     * @param  float  $orderTotal  ยอดสั่งซื้อ
      * @return float จำนวนเงินค่าแนะนำ
      */
     protected function calculateBonusAmount(float $orderTotal): float
@@ -160,11 +168,10 @@ class MlmReferralBonusService
     /**
      * สร้างรายการ commission สำหรับค่าแนะนำตรง
      *
-     * @param MlmMember $sponsor ผู้แนะนำที่จะได้รับค่าแนะนำ
-     * @param MlmMember $buyer ผู้ซื้อ (ลูกทีมตรง)
-     * @param Order $order ออเดอร์
-     * @param float $amount จำนวนเงิน
-     * @return MlmCommission
+     * @param  MlmMember  $sponsor  ผู้แนะนำที่จะได้รับค่าแนะนำ
+     * @param  MlmMember  $buyer  ผู้ซื้อ (ลูกทีมตรง)
+     * @param  Order  $order  ออเดอร์
+     * @param  float  $amount  จำนวนเงิน
      */
     protected function createReferralCommission(
         MlmMember $sponsor,
@@ -188,7 +195,7 @@ class MlmReferralBonusService
                 'commission_amount' => $amount,
                 'percentage' => $this->getPercentageForRecord($order->total_amount, $amount),
                 'status' => 'pending',
-                'notes' => 'ค่าแนะนำตรงจากออเดอร์ #' . $order->order_number,
+                'notes' => 'ค่าแนะนำตรงจากออเดอร์ #'.$order->order_number,
             ]);
 
             Log::info('Direct referral bonus created', [
@@ -206,9 +213,8 @@ class MlmReferralBonusService
     /**
      * คำนวณ percentage สำหรับบันทึก (เพื่อแสดงใน report)
      *
-     * @param float $orderTotal ยอดสั่งซื้อ
-     * @param float $bonusAmount จำนวนเงินค่าแนะนำ
-     * @return float
+     * @param  float  $orderTotal  ยอดสั่งซื้อ
+     * @param  float  $bonusAmount  จำนวนเงินค่าแนะนำ
      */
     protected function getPercentageForRecord(float $orderTotal, float $bonusAmount): float
     {
@@ -221,9 +227,6 @@ class MlmReferralBonusService
 
     /**
      * ดึงสถิติค่าแนะนำตรงของสมาชิก
-     *
-     * @param MlmMember $member
-     * @return array
      */
     public function getReferralBonusStats(MlmMember $member): array
     {
@@ -243,8 +246,6 @@ class MlmReferralBonusService
     /**
      * ดึงรายการลูกทีมตรง (สำหรับแสดงผังสายเลือด)
      *
-     * @param MlmMember $member
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getDirectReferralsList(MlmMember $member, int $limit = 50)
@@ -261,10 +262,6 @@ class MlmReferralBonusService
      *
      * ต่างจาก Unilevel Tree ตรงที่ใช้ original_sponsor_id แทน unilevel_sponsor_id
      * แสดงว่า "ใครแนะนำใครจริงๆ" ไม่ใช่ตำแหน่งใน Unilevel Tree
-     *
-     * @param MlmMember $member
-     * @param int $maxDepth
-     * @return array
      */
     public function buildGenealogyTree(MlmMember $member, int $maxDepth = 5): array
     {
@@ -273,11 +270,6 @@ class MlmReferralBonusService
 
     /**
      * สร้าง tree แบบ recursive
-     *
-     * @param MlmMember $member
-     * @param int $currentDepth
-     * @param int $maxDepth
-     * @return array
      */
     protected function buildTreeRecursive(MlmMember $member, int $currentDepth, int $maxDepth): array
     {
@@ -314,10 +306,6 @@ class MlmReferralBonusService
 
     /**
      * นับจำนวนลูกทีมตรงทั้งหมด (recursive) สำหรับ member
-     *
-     * @param MlmMember $member
-     * @param int $maxDepth
-     * @return int
      */
     public function countTotalGenealogyDescendants(MlmMember $member, int $maxDepth = 10): int
     {
@@ -326,11 +314,6 @@ class MlmReferralBonusService
 
     /**
      * นับ descendants แบบ recursive
-     *
-     * @param MlmMember $member
-     * @param int $currentDepth
-     * @param int $maxDepth
-     * @return int
      */
     protected function countDescendantsRecursive(MlmMember $member, int $currentDepth, int $maxDepth): int
     {

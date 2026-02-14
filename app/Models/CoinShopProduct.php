@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 /**
  * CoinShopProduct Model
@@ -214,8 +214,6 @@ class CoinShopProduct extends Model
 
     /**
      * ผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -224,8 +222,6 @@ class CoinShopProduct extends Model
 
     /**
      * ผู้แก้ไขล่าสุด
-     *
-     * @return BelongsTo
      */
     public function updater(): BelongsTo
     {
@@ -234,8 +230,6 @@ class CoinShopProduct extends Model
 
     /**
      * Rank ขั้นต่ำ
-     *
-     * @return BelongsTo
      */
     public function minRank(): BelongsTo
     {
@@ -244,8 +238,6 @@ class CoinShopProduct extends Model
 
     /**
      * ประวัติการซื้อ
-     *
-     * @return HasMany
      */
     public function purchases(): HasMany
     {
@@ -258,8 +250,6 @@ class CoinShopProduct extends Model
 
     /**
      * ชื่อที่แสดง (ภาษาไทยก่อน)
-     *
-     * @return string
      */
     public function getDisplayNameAttribute(): string
     {
@@ -268,8 +258,6 @@ class CoinShopProduct extends Model
 
     /**
      * รายละเอียดที่แสดง
-     *
-     * @return string|null
      */
     public function getDisplayDescriptionAttribute(): ?string
     {
@@ -278,8 +266,6 @@ class CoinShopProduct extends Model
 
     /**
      * ข้อมูลประเภทสินค้า
-     *
-     * @return array
      */
     public function getTypeInfoAttribute(): array
     {
@@ -288,8 +274,6 @@ class CoinShopProduct extends Model
 
     /**
      * ชื่อประเภท
-     *
-     * @return string
      */
     public function getTypeNameAttribute(): string
     {
@@ -298,8 +282,6 @@ class CoinShopProduct extends Model
 
     /**
      * ไอคอนประเภท
-     *
-     * @return string
      */
     public function getTypeIconAttribute(): string
     {
@@ -308,8 +290,6 @@ class CoinShopProduct extends Model
 
     /**
      * สีประเภท
-     *
-     * @return string
      */
     public function getTypeColorAttribute(): string
     {
@@ -318,12 +298,10 @@ class CoinShopProduct extends Model
 
     /**
      * เปอร์เซ็นต์ส่วนลด
-     *
-     * @return float|null
      */
     public function getDiscountPercentAttribute(): ?float
     {
-        if (!$this->original_price_coins || $this->original_price_coins <= 0) {
+        if (! $this->original_price_coins || $this->original_price_coins <= 0) {
             return null;
         }
 
@@ -332,8 +310,6 @@ class CoinShopProduct extends Model
 
     /**
      * มีส่วนลดหรือไม่
-     *
-     * @return bool
      */
     public function getHasDiscountAttribute(): bool
     {
@@ -342,8 +318,6 @@ class CoinShopProduct extends Model
 
     /**
      * สินค้าหมดหรือไม่
-     *
-     * @return bool
      */
     public function getIsOutOfStockAttribute(): bool
     {
@@ -356,8 +330,6 @@ class CoinShopProduct extends Model
 
     /**
      * จำนวนคงเหลือ (สำหรับแสดง)
-     *
-     * @return string
      */
     public function getStockDisplayAttribute(): string
     {
@@ -370,8 +342,6 @@ class CoinShopProduct extends Model
 
     /**
      * อยู่ในช่วงขายหรือไม่
-     *
-     * @return bool
      */
     public function getIsInSalePeriodAttribute(): bool
     {
@@ -390,25 +360,21 @@ class CoinShopProduct extends Model
 
     /**
      * สามารถซื้อได้หรือไม่
-     *
-     * @return bool
      */
     public function getIsPurchasableAttribute(): bool
     {
         return $this->is_active
-            && !$this->is_out_of_stock
+            && ! $this->is_out_of_stock
             && $this->is_in_sale_period;
     }
 
     /**
      * URL รูปภาพ
-     *
-     * @return string
      */
     public function getThumbnailUrlAttribute(): string
     {
         if ($this->thumbnail) {
-            return asset('storage/' . $this->thumbnail);
+            return asset('storage/'.$this->thumbnail);
         }
 
         return asset('images/placeholder-product.png');
@@ -494,25 +460,25 @@ class CoinShopProduct extends Model
     /**
      * ตรวจสอบว่า user ซื้อได้หรือไม่
      *
-     * @param User $user
-     * @param int $quantity จำนวนที่ต้องการซื้อ
+     * @param  int  $quantity  จำนวนที่ต้องการซื้อ
      * @return array ['can_purchase' => bool, 'reason' => string|null]
      */
     public function canPurchase(User $user, int $quantity = 1): array
     {
         // ตรวจสอบสถานะสินค้า
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return ['can_purchase' => false, 'reason' => 'สินค้านี้ไม่ได้เปิดขายในขณะนี้'];
         }
 
         // ตรวจสอบช่วงเวลาขาย
-        if (!$this->is_in_sale_period) {
+        if (! $this->is_in_sale_period) {
             if ($this->sale_start_at && Carbon::now()->lt($this->sale_start_at)) {
                 return [
                     'can_purchase' => false,
-                    'reason' => 'สินค้านี้ยังไม่เปิดขาย จะเริ่มขาย ' . $this->sale_start_at->thaidate('j M y H:i'),
+                    'reason' => 'สินค้านี้ยังไม่เปิดขาย จะเริ่มขาย '.$this->sale_start_at->thaidate('j M y H:i'),
                 ];
             }
+
             return ['can_purchase' => false, 'reason' => 'สินค้านี้หมดระยะเวลาขายแล้ว'];
         }
 
@@ -537,6 +503,7 @@ class CoinShopProduct extends Model
             $userRankId = $user->rank_id ?? 0;
             if ($userRankId < $this->min_rank_id) {
                 $rankName = $this->minRank?->name ?? "Rank {$this->min_rank_id}";
+
                 return [
                     'can_purchase' => false,
                     'reason' => "ต้องมี Rank อย่างน้อย {$rankName} จึงจะซื้อได้",
@@ -545,7 +512,7 @@ class CoinShopProduct extends Model
         }
 
         // ตรวจสอบ KYC
-        if ($this->require_kyc && !$user->is_kyc_verified) {
+        if ($this->require_kyc && ! $user->is_kyc_verified) {
             return ['can_purchase' => false, 'reason' => 'สินค้านี้ต้องยืนยันตัวตน (KYC) ก่อนจึงจะซื้อได้'];
         }
 
@@ -558,6 +525,7 @@ class CoinShopProduct extends Model
 
             if (($userPurchaseCount + $quantity) > $this->max_per_user) {
                 $remaining = $this->max_per_user - $userPurchaseCount;
+
                 return [
                     'can_purchase' => false,
                     'reason' => "สินค้านี้จำกัดการซื้อต่อคน {$this->max_per_user} ชิ้น (คุณซื้อไปแล้ว {$userPurchaseCount} ชิ้น, เหลือ {$remaining} ชิ้น)",
@@ -575,6 +543,7 @@ class CoinShopProduct extends Model
 
             if (($todayPurchaseCount + $quantity) > $this->max_per_day) {
                 $remaining = $this->max_per_day - $todayPurchaseCount;
+
                 return [
                     'can_purchase' => false,
                     'reason' => "สินค้านี้จำกัดการซื้อ {$this->max_per_day} ชิ้นต่อวัน (คุณซื้อไปแล้ว {$todayPurchaseCount} ชิ้นวันนี้)",
@@ -588,7 +557,7 @@ class CoinShopProduct extends Model
         if ($userBalance < $totalPrice) {
             return [
                 'can_purchase' => false,
-                'reason' => "Coins ไม่เพียงพอ ต้องการ " . number_format($totalPrice, 2) . " Coins แต่คุณมี " . number_format($userBalance, 2) . " Coins",
+                'reason' => 'Coins ไม่เพียงพอ ต้องการ '.number_format($totalPrice, 2).' Coins แต่คุณมี '.number_format($userBalance, 2).' Coins',
             ];
         }
 
@@ -597,15 +566,13 @@ class CoinShopProduct extends Model
 
     /**
      * ลดสต็อก
-     *
-     * @param int $quantity
-     * @return bool
      */
     public function decreaseStock(int $quantity = 1): bool
     {
         if ($this->stock_quantity === null) {
             // ไม่จำกัดสต็อก
             $this->increment('total_sold', $quantity);
+
             return true;
         }
 
@@ -621,9 +588,6 @@ class CoinShopProduct extends Model
 
     /**
      * เพิ่มสต็อก (คืนสินค้า)
-     *
-     * @param int $quantity
-     * @return void
      */
     public function increaseStock(int $quantity = 1): void
     {
@@ -636,8 +600,6 @@ class CoinShopProduct extends Model
 
     /**
      * เพิ่มยอดเข้าชม
-     *
-     * @return void
      */
     public function incrementViewCount(): void
     {
@@ -646,8 +608,6 @@ class CoinShopProduct extends Model
 
     /**
      * คำนวณวันหมดอายุหลังซื้อ
-     *
-     * @return Carbon|null
      */
     public function calculateExpiryDate(): ?Carbon
     {

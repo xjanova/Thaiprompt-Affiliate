@@ -118,7 +118,7 @@ class FortuneCategory extends Model
     /**
      * Scope: เฉพาะหมวดหมู่ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -129,7 +129,7 @@ class FortuneCategory extends Model
     /**
      * Scope: เรียงตามลำดับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -139,8 +139,6 @@ class FortuneCategory extends Model
 
     /**
      * ดึง icon ของหมวดหมู่ (หรือ default icon)
-     *
-     * @return string
      */
     public function getIconAttribute($value): string
     {
@@ -149,8 +147,6 @@ class FortuneCategory extends Model
 
     /**
      * ดึงตัวอย่างคำถามเป็น array
-     *
-     * @return array
      */
     public function getExampleQuestionsArray(): array
     {
@@ -163,8 +159,6 @@ class FortuneCategory extends Model
 
     /**
      * ดึง prompt context สำหรับหมวดหมู่นี้
-     *
-     * @return string
      */
     public function getPromptContextText(): string
     {

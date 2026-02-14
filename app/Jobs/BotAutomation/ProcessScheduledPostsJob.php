@@ -16,6 +16,7 @@ class ProcessScheduledPostsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 1;
+
     public $timeout = 600; // 10 minutes
 
     /**
@@ -25,13 +26,13 @@ class ProcessScheduledPostsJob implements ShouldQueue
     {
         $posts = BotScheduledPost::dueForPublishing()->get();
 
-        Log::info("Processing scheduled posts", ['count' => $posts->count()]);
+        Log::info('Processing scheduled posts', ['count' => $posts->count()]);
 
         foreach ($posts as $post) {
             try {
                 PublishScheduledPostJob::dispatch($post);
             } catch (\Exception $e) {
-                Log::error("Failed to dispatch post job", [
+                Log::error('Failed to dispatch post job', [
                     'post_id' => $post->id,
                     'error' => $e->getMessage(),
                 ]);

@@ -14,13 +14,11 @@ return new class extends Migration
      *
      * ตาราง line_signup_rewards เป็นตาราง template รางวัล
      * ไม่ควรมี user_id, session_id, reward_name หรือ columns อื่นๆ ที่เกี่ยวกับ instance
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
@@ -63,8 +61,6 @@ return new class extends Migration
 
     /**
      * เพิ่ม columns กลับ (สำหรับ rollback)
-     *
-     * @return void
      */
     public function down(): void
     {

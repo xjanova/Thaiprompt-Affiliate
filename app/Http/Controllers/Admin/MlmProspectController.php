@@ -34,10 +34,10 @@ class MlmProspectController extends Controller
         // Search
         if ($request->has('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('line_display_name', 'like', "%{$search}%")
-                  ->orWhere('referral_token', 'like', "%{$search}%")
-                  ->orWhere('line_user_id', 'like', "%{$search}%");
+                    ->orWhere('referral_token', 'like', "%{$search}%")
+                    ->orWhere('line_user_id', 'like', "%{$search}%");
             });
         }
 

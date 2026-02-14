@@ -16,7 +16,7 @@ class AppNameSettingSeeder extends Seeder
     public function run(): void
     {
         // ตรวจสอบว่าตาราง settings มีอยู่หรือไม่
-        if (!$this->requireTable('settings', 'AppNameSettingSeeder')) {
+        if (! $this->requireTable('settings', 'AppNameSettingSeeder')) {
             return;
         }
 
@@ -27,6 +27,7 @@ class AppNameSettingSeeder extends Seeder
             $this->command->warn('⚠️  App name setting already exists!');
             $this->command->info("   Current value: {$existingSetting->value}");
             $this->command->info('   Skipping to preserve your customization.');
+
             return;
         }
 
@@ -37,7 +38,7 @@ class AppNameSettingSeeder extends Seeder
             'key' => 'app_name',
             'value' => 'ร้านค้าชุมชนไทยพร๊อม',
             'type' => 'string',
-            'group' => 'general'
+            'group' => 'general',
         ]);
 
         $this->command->info('✅ App name created successfully: ร้านค้าชุมชนไทยพร๊อม');

@@ -16,7 +16,7 @@ class SeoMetaSeeder extends Seeder
         $existingSeoCount = SeoMeta::whereIn('page_type', [
             'home',
             'about',
-            'contact'
+            'contact',
         ])->count();
 
         if ($existingSeoCount > 0) {
@@ -39,7 +39,7 @@ class SeoMetaSeeder extends Seeder
             SeoMeta::create($data);
         }
 
-        $this->command->info('✅ SEO meta data seeded successfully: ' . count($seoData) . ' entries');
+        $this->command->info('✅ SEO meta data seeded successfully: '.count($seoData).' entries');
     }
 
     /**
@@ -59,7 +59,7 @@ class SeoMetaSeeder extends Seeder
                 ->where('language', $data['language'])
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 SeoMeta::create($data);
                 $this->command->info("   ➕ Added: {$data['page_type']} ({$data['language']})");
                 $added++;

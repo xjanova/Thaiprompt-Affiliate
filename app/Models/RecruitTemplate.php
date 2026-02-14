@@ -89,8 +89,6 @@ class RecruitTemplate extends Model
     /**
      * ความสัมพันธ์กับ RecruitCustomization
      * เทมเพลตหนึ่งสามารถถูกใช้โดยหลาย customizations
-     *
-     * @return HasMany
      */
     public function customizations(): HasMany
     {
@@ -100,7 +98,7 @@ class RecruitTemplate extends Model
     /**
      * Scope: เฉพาะเทมเพลตที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -111,7 +109,7 @@ class RecruitTemplate extends Model
     /**
      * Scope: เฉพาะเทมเพลต default
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDefault($query)
@@ -122,8 +120,6 @@ class RecruitTemplate extends Model
     /**
      * ดึงเทมเพลต default
      * ถ้าไม่มี จะส่งเทมเพลต active ตัวแรก
-     *
-     * @return RecruitTemplate|null
      */
     public static function getDefault(): ?RecruitTemplate
     {
@@ -131,7 +127,7 @@ class RecruitTemplate extends Model
             ->where('is_active', true)
             ->first();
 
-        if (!$default) {
+        if (! $default) {
             $default = self::where('is_active', true)->first();
         }
 
@@ -141,8 +137,6 @@ class RecruitTemplate extends Model
     /**
      * ตั้งค่าเป็นเทมเพลต default
      * จะยกเลิก default ของเทมเพลตอื่นทั้งหมด
-     *
-     * @return bool
      */
     public function setAsDefault(): bool
     {
@@ -151,6 +145,7 @@ class RecruitTemplate extends Model
 
         // ตั้งเป็น default
         $this->is_default = true;
+
         return $this->save();
     }
 }

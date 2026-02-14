@@ -83,8 +83,9 @@ class SmartSliderTemplate extends Model
     public function getThumbnailUrl()
     {
         if ($this->thumbnail) {
-            return asset('storage/' . $this->thumbnail);
+            return asset('storage/'.$this->thumbnail);
         }
+
         return asset('images/default-template.jpg');
     }
 }

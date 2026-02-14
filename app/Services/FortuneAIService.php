@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Fortune AI Service
@@ -20,10 +20,15 @@ use Exception;
 class FortuneAIService
 {
     protected $settings;
+
     protected $provider;
+
     protected $apiKey;
+
     protected $model;
+
     protected ?AiApiKeyPoolService $poolService = null;
+
     protected ?AiApiKey $currentKey = null;
 
     public function __construct(?FortuneTellingSetting $settings = null)
@@ -36,7 +41,7 @@ class FortuneAIService
 
         // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
         try {
-            $this->poolService = new AiApiKeyPoolService();
+            $this->poolService = new AiApiKeyPoolService;
             $this->currentKey = $this->poolService->getKey($this->provider);
         } catch (\Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
@@ -89,12 +94,12 @@ class FortuneAIService
     /**
      * สร้างคำทำนายจาก AI
      *
-     * @param array $questions คำถามที่ต้องการทำนาย
-     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้
-     * @param array|null $userPosts โพสล่าสุดของผู้ใช้ (เฉพาะเชิงลึก)
-     * @param string|null $promptTemplate Prompt template ที่กำหนดเอง (ถ้าไม่ระบุจะใช้ค่าเริ่มต้น)
-     * @param string $readingType ประเภทคำทำนาย: 'basic' หรือ 'deep' (ส่งผลต่อ maxTokens/temperature)
-     * @param string|null $birthDate วันเดือนปีเกิด (Y-m-d) เพื่อทำนายตามราศี/ลัคนา
+     * @param  array  $questions  คำถามที่ต้องการทำนาย
+     * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @param  array|null  $userPosts  โพสล่าสุดของผู้ใช้ (เฉพาะเชิงลึก)
+     * @param  string|null  $promptTemplate  Prompt template ที่กำหนดเอง (ถ้าไม่ระบุจะใช้ค่าเริ่มต้น)
+     * @param  string  $readingType  ประเภทคำทำนาย: 'basic' หรือ 'deep' (ส่งผลต่อ maxTokens/temperature)
+     * @param  string|null  $birthDate  วันเดือนปีเกิด (Y-m-d) เพื่อทำนายตามราศี/ลัคนา
      */
     public function generateFortuneTelling(
         array $questions,
@@ -153,13 +158,14 @@ class FortuneAIService
      * 2. Provider สำรองจาก API Key Pool
      * 3. Provider สำรองจาก Global AI Settings
      *
-     * @param array $questions คำถาม
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้
-     * @param array|null $userPosts โพสล่าสุด
-     * @param string|null $promptTemplate Prompt template
-     * @param string $readingType ประเภทคำทำนาย: 'basic' หรือ 'deep'
-     * @param string|null $birthDate วันเดือนปีเกิด
+     * @param  array  $questions  คำถาม
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @param  array|null  $userPosts  โพสล่าสุด
+     * @param  string|null  $promptTemplate  Prompt template
+     * @param  string  $readingType  ประเภทคำทำนาย: 'basic' หรือ 'deep'
+     * @param  string|null  $birthDate  วันเดือนปีเกิด
      * @return array ผลลัพธ์จาก AI
+     *
      * @throws Exception เมื่อทุก provider ล้มเหลวหมด
      */
     public function generateWithRetryAndFallback(
@@ -176,7 +182,7 @@ class FortuneAIService
         $startTime = microtime(true);
 
         // ขั้นที่ 1: ลอง provider หลัก 2 ครั้ง
-        if (!empty($this->apiKey)) {
+        if (! empty($this->apiKey)) {
             for ($attempt = 1; $attempt <= 2; $attempt++) {
                 try {
                     Log::info("FortuneAI Retry: ลอง {$this->provider} ครั้งที่ {$attempt}");
@@ -207,7 +213,7 @@ class FortuneAIService
         // ขั้นที่ 2: ลองสลับไป provider อื่นอัตโนมัติ
         $backupProviders = $this->getBackupProviders();
 
-        if (!empty($backupProviders)) {
+        if (! empty($backupProviders)) {
             Log::info('FortuneAI: สลับไป backup providers', [
                 'primary_failed' => $this->provider,
                 'backup_count' => count($backupProviders),
@@ -240,17 +246,17 @@ class FortuneAIService
         // ทุก provider ล้มหมด
         $errorSummary = implode(' | ', array_slice($errors, 0, 5));
         Log::error('FortuneAI: ทุก provider ล้มหมด', ['errors' => $errors]);
-        throw new Exception("ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว " . count($errors) . " ครั้ง): {$errorSummary}");
+        throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." ครั้ง): {$errorSummary}");
     }
 
     /**
      * เรียก AI provider โดยตรง พร้อม override api_key/model ชั่วคราว
      *
-     * @param string $provider ชื่อ provider
-     * @param string $apiKey API Key ที่ใช้
-     * @param string $model ชื่อ model
-     * @param string $prompt ข้อความ prompt
-     * @param array $config การตั้งค่า
+     * @param  string  $provider  ชื่อ provider
+     * @param  string  $apiKey  API Key ที่ใช้
+     * @param  string  $model  ชื่อ model
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า
      * @return array ผลลัพธ์
      */
     protected function callProviderDirect(string $provider, string $apiKey, string $model, string $prompt, array $config): array
@@ -302,7 +308,7 @@ class FortuneAIService
                         continue;
                     }
                     $key = $this->poolService->getKey($provider);
-                    if ($key && !empty($key->api_key)) {
+                    if ($key && ! empty($key->api_key)) {
                         $backups[] = [
                             'provider' => $provider,
                             'api_key' => $key->api_key,
@@ -318,9 +324,9 @@ class FortuneAIService
 
         // 2) ดึงจาก Global AI Settings (Gemini key มักจะมีอยู่)
         try {
-            if (!in_array('gemini', $addedProviders)) {
+            if (! in_array('gemini', $addedProviders)) {
                 $geminiKey = AiContentSetting::getValue('gemini_api_key');
-                if (!empty($geminiKey)) {
+                if (! empty($geminiKey)) {
                     $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
                     $backups[] = [
                         'provider' => 'gemini',
@@ -332,9 +338,9 @@ class FortuneAIService
             }
 
             // OpenRouter จาก claude key
-            if (!in_array('openrouter', $addedProviders)) {
+            if (! in_array('openrouter', $addedProviders)) {
                 $claudeKey = AiContentSetting::getValue('claude_api_key');
-                if (!empty($claudeKey)) {
+                if (! empty($claudeKey)) {
                     $backups[] = [
                         'provider' => 'openrouter',
                         'api_key' => $claudeKey,
@@ -348,8 +354,8 @@ class FortuneAIService
         }
 
         // 3) ดึงจาก fortune settings เอง (กรณี use_global_ai_settings = false อาจมี key อื่นอยู่)
-        if (!empty($this->settings->ai_api_key) && !empty($this->settings->ai_provider)) {
-            if (!in_array($this->settings->ai_provider, $addedProviders)) {
+        if (! empty($this->settings->ai_api_key) && ! empty($this->settings->ai_provider)) {
+            if (! in_array($this->settings->ai_provider, $addedProviders)) {
                 $backups[] = [
                     'provider' => $this->settings->ai_provider,
                     'api_key' => $this->settings->ai_api_key,
@@ -363,9 +369,6 @@ class FortuneAIService
 
     /**
      * ดึง default model สำหรับแต่ละ provider
-     *
-     * @param string $provider
-     * @return string
      */
     protected function getDefaultModelForProvider(string $provider): string
     {
@@ -384,18 +387,18 @@ class FortuneAIService
     /**
      * สร้าง prompt สำหรับส่งให้ AI
      *
-     * @param array $questions คำถาม
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้
-     * @param array|null $userPosts โพสล่าสุด
-     * @param string|null $promptTemplate template ที่กำหนดเอง
-     * @param string|null $birthDate วันเดือนปีเกิด (Y-m-d)
+     * @param  array  $questions  คำถาม
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @param  array|null  $userPosts  โพสล่าสุด
+     * @param  string|null  $promptTemplate  template ที่กำหนดเอง
+     * @param  string|null  $birthDate  วันเดือนปีเกิด (Y-m-d)
      */
     protected function buildPrompt(array $questions, ?array $userProfile, ?array $userPosts, ?string $promptTemplate = null, ?string $birthDate = null): string
     {
         $template = $promptTemplate ?? $this->settings->getDefaultPromptTemplate();
         $profileText = $this->formatUserProfile($userProfile);
         $postsText = $this->formatUserPosts($userPosts);
-        $questionsText = implode("\n", array_map(fn($i, $q) => ($i+1).". $q", array_keys($questions), $questions));
+        $questionsText = implode("\n", array_map(fn ($i, $q) => ($i + 1).". $q", array_keys($questions), $questions));
         $birthDateSection = $this->formatBirthDateSection($birthDate);
 
         return str_replace(
@@ -408,8 +411,7 @@ class FortuneAIService
     /**
      * สร้างส่วนวิเคราะห์วันเดือนปีเกิด
      *
-     * @param string|null $birthDate วันเดือนปีเกิด (Y-m-d)
-     * @return string
+     * @param  string|null  $birthDate  วันเดือนปีเกิด (Y-m-d)
      */
     protected function formatBirthDateSection(?string $birthDate): string
     {
@@ -420,7 +422,7 @@ class FortuneAIService
         try {
             $date = \Carbon\Carbon::parse($birthDate);
             $thaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
             $thaiYear = $date->year + 543;
             $age = $date->age;
             $dayOfWeekIndex = $date->dayOfWeek; // 0=อาทิตย์, 1=จันทร์, ...6=เสาร์
@@ -458,7 +460,7 @@ class FortuneAIService
     /**
      * คำนวณดาวเคราะห์ประจำวันเกิดตามหลักเจ้าชนะ
      *
-     * @param int $dayOfWeek 0=อาทิตย์, 1=จันทร์, ...6=เสาร์
+     * @param  int  $dayOfWeek  0=อาทิตย์, 1=จันทร์, ...6=เสาร์
      * @return array ข้อมูลดาวเคราะห์
      */
     protected function getPlanetByDayOfWeek(int $dayOfWeek): array
@@ -556,8 +558,8 @@ class FortuneAIService
     /**
      * คำนวณราศีจากเดือนและวันเกิด (Western Zodiac)
      *
-     * @param int $month เดือน
-     * @param int $day วัน
+     * @param  int  $month  เดือน
+     * @param  int  $day  วัน
      * @return string ชื่อราศี
      */
     protected function getZodiacSign(int $month, int $day): string
@@ -591,54 +593,60 @@ class FortuneAIService
 
     protected function formatUserProfile(?array $userProfile): string
     {
-        if (empty($userProfile)) return 'ไม่มีข้อมูลโปรไฟล์';
+        if (empty($userProfile)) {
+            return 'ไม่มีข้อมูลโปรไฟล์';
+        }
 
         $parts = [];
-        if (!empty($userProfile['name'])) $parts[] = "ชื่อ: {$userProfile['name']}";
+        if (! empty($userProfile['name'])) {
+            $parts[] = "ชื่อ: {$userProfile['name']}";
+        }
 
         // เพศ (จาก Facebook หรือที่ผู้ใช้บอก)
-        if (!empty($userProfile['gender'])) {
+        if (! empty($userProfile['gender'])) {
             $genderMap = ['male' => 'ชาย', 'female' => 'หญิง'];
             $gender = $genderMap[$userProfile['gender']] ?? $userProfile['gender'];
             $parts[] = "เพศ: {$gender}";
         }
 
         // อายุ (คำนวณจาก birthday)
-        if (!empty($userProfile['age'])) {
+        if (! empty($userProfile['age'])) {
             $parts[] = "อายุ: {$userProfile['age']} ปี";
         }
 
         // วันเกิด (จาก Facebook)
-        if (!empty($userProfile['birthday'])) {
+        if (! empty($userProfile['birthday'])) {
             $parts[] = "วันเกิด: {$userProfile['birthday']}";
         }
 
         // ภาษา/ภูมิภาค
-        if (!empty($userProfile['locale'])) {
+        if (! empty($userProfile['locale'])) {
             $parts[] = "ภาษา/ภูมิภาค: {$userProfile['locale']}";
         }
 
         // Timezone (ช่วยวิเคราะห์ดวงตามเวลาท้องถิ่น)
-        if (!empty($userProfile['timezone'])) {
-            $parts[] = "Timezone: UTC" . ($userProfile['timezone'] >= 0 ? '+' : '') . $userProfile['timezone'];
+        if (! empty($userProfile['timezone'])) {
+            $parts[] = 'Timezone: UTC'.($userProfile['timezone'] >= 0 ? '+' : '').$userProfile['timezone'];
         }
 
-        return !empty($parts) ? implode("\n", $parts) : 'ข้อมูลพื้นฐาน';
+        return ! empty($parts) ? implode("\n", $parts) : 'ข้อมูลพื้นฐาน';
     }
 
     protected function formatUserPosts(?array $userPosts): string
     {
-        if (empty($userPosts)) return 'ไม่มีข้อมูลโพสล่าสุด';
+        if (empty($userPosts)) {
+            return 'ไม่มีข้อมูลโพสล่าสุด';
+        }
 
         $formatted = [];
         foreach (array_slice($userPosts, 0, 3) as $index => $post) {
             $message = $post['message'] ?? $post['story'] ?? '';
-            if (!empty($message)) {
-                $formatted[] = ($index + 1) . ". " . substr($message, 0, 200);
+            if (! empty($message)) {
+                $formatted[] = ($index + 1).'. '.substr($message, 0, 200);
             }
         }
 
-        return !empty($formatted) ? implode("\n", $formatted) : 'ไม่มีข้อมูลโพสล่าสุด';
+        return ! empty($formatted) ? implode("\n", $formatted) : 'ไม่มีข้อมูลโพสล่าสุด';
     }
 
     protected function callGemini(string $prompt, array $config = []): array
@@ -659,7 +667,7 @@ class FortuneAIService
                 ],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $errorBody = $response->json();
                 $errorMessage = $errorBody['error']['message'] ?? $response->body();
                 $errorCode = $errorBody['error']['code'] ?? $response->status();
@@ -689,7 +697,7 @@ class FortuneAIService
                 'model' => $this->model,
             ];
         } catch (Exception $e) {
-            Log::error('Gemini API Error: ' . $e->getMessage());
+            Log::error('Gemini API Error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -811,9 +819,9 @@ class FortuneAIService
     /**
      * สร้างข้อความ engage จากคอมเม้นต์
      *
-     * @param string $commentText ข้อความคอมเม้นต์
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้ (name, gender, birthday ฯลฯ)
-     * @param string|null $engagementPrompt Prompt template (ถ้าไม่ระบุจะใช้ค่าเริ่มต้นจาก settings)
+     * @param  string  $commentText  ข้อความคอมเม้นต์
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้ (name, gender, birthday ฯลฯ)
+     * @param  string|null  $engagementPrompt  Prompt template (ถ้าไม่ระบุจะใช้ค่าเริ่มต้นจาก settings)
      * @return array ['comment_reply' => '...', 'dm_message' => '...']
      */
     public function generateCommentEngagement(
@@ -872,17 +880,17 @@ class FortuneAIService
 
         $info = [];
 
-        if (!empty($userProfile['gender'])) {
+        if (! empty($userProfile['gender'])) {
             $genderMap = ['male' => 'ชาย', 'female' => 'หญิง'];
-            $info[] = 'เพศ: ' . ($genderMap[$userProfile['gender']] ?? $userProfile['gender']);
+            $info[] = 'เพศ: '.($genderMap[$userProfile['gender']] ?? $userProfile['gender']);
         }
 
-        if (!empty($userProfile['birthday'])) {
-            $info[] = 'วันเกิด: ' . $userProfile['birthday'];
+        if (! empty($userProfile['birthday'])) {
+            $info[] = 'วันเกิด: '.$userProfile['birthday'];
         }
 
-        if (!empty($userProfile['locale'])) {
-            $info[] = 'ภาษา: ' . $userProfile['locale'];
+        if (! empty($userProfile['locale'])) {
+            $info[] = 'ภาษา: '.$userProfile['locale'];
         }
 
         return empty($info) ? '(ไม่มีข้อมูลเพิ่มเติม)' : implode(', ', $info);
@@ -906,8 +914,9 @@ class FortuneAIService
         }
 
         // ถ้ายังไม่ได้ ใช้ค่า default
-        if (empty($data) || !isset($data['comment_reply'])) {
+        if (empty($data) || ! isset($data['comment_reply'])) {
             Log::warning('AI engagement response ไม่ใช่ JSON ที่ถูกต้อง', ['response' => $response]);
+
             return [
                 'comment_reply' => '🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨',
                 'dm_message' => $this->settings->getCommentDmTemplate(),
@@ -938,6 +947,7 @@ class FortuneAIService
 
         try {
             $result = $this->generateFortuneTelling(['ทดสอบการเชื่อมต่อ AI'], null, null);
+
             return [
                 'success' => true,
                 'message' => "เชื่อมต่อกับ {$this->provider} ({$this->model}) สำเร็จ",
@@ -956,8 +966,8 @@ class FortuneAIService
                 'debug' => [
                     'provider' => $this->provider,
                     'model' => $this->model,
-                    'has_api_key' => !empty($this->apiKey),
-                    'api_key_prefix' => substr($this->apiKey ?? '', 0, 8) . '...',
+                    'has_api_key' => ! empty($this->apiKey),
+                    'api_key_prefix' => substr($this->apiKey ?? '', 0, 8).'...',
                     'use_global' => $this->settings->use_global_ai_settings ?? false,
                 ],
             ];
@@ -971,8 +981,8 @@ class FortuneAIService
     /**
      * เรียก Grok API (xAI)
      *
-     * @param string $prompt ข้อความ prompt
-     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า (max_tokens, temperature)
      * @return array ผลลัพธ์
      */
     protected function callGrok(string $prompt, array $config = []): array
@@ -1005,8 +1015,8 @@ class FortuneAIService
             Log::error('Grok API Error', [
                 'error' => $errorMsg,
                 'model' => $this->model ?: 'grok-2-latest',
-                'has_api_key' => !empty($this->apiKey),
-                'api_key_prefix' => substr($this->apiKey ?? '', 0, 8) . '...',
+                'has_api_key' => ! empty($this->apiKey),
+                'api_key_prefix' => substr($this->apiKey ?? '', 0, 8).'...',
             ]);
             throw new Exception("Grok API Error: {$errorMsg}");
         }
@@ -1022,8 +1032,8 @@ class FortuneAIService
      * DeepSeek ใช้ OpenAI-compatible API
      * ราคาถูกมาก + มี sign-up credits 5M tokens ฟรี
      *
-     * @param string $prompt ข้อความ prompt
-     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า (max_tokens, temperature)
      * @return array ผลลัพธ์
      */
     protected function callDeepSeek(string $prompt, array $config = []): array
@@ -1070,8 +1080,8 @@ class FortuneAIService
      * Typhoon เป็น LLM ที่ออกแบบมาเฉพาะสำหรับภาษาไทย
      * ใช้ OpenAI-compatible API format
      *
-     * @param string $prompt ข้อความ prompt
-     * @param array $config การตั้งค่า (max_tokens, temperature)
+     * @param  string  $prompt  ข้อความ prompt
+     * @param  array  $config  การตั้งค่า (max_tokens, temperature)
      * @return array ผลลัพธ์
      */
     protected function callTyphoon(string $prompt, array $config = []): array
@@ -1117,8 +1127,8 @@ class FortuneAIService
      *
      * รับ messages array แบบ chat history เพื่อรองรับการสนทนาต่อเนื่อง
      *
-     * @param array $messages ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
-     * @param string $readingType ประเภท: 'basic' หรือ 'deep'
+     * @param  array  $messages  ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     * @param  string  $readingType  ประเภท: 'basic' หรือ 'deep'
      * @return array ผลลัพธ์
      */
     public function playgroundChat(array $messages, string $readingType = 'basic'): array
@@ -1185,8 +1195,8 @@ class FortuneAIService
     /**
      * Playground สำหรับ Gemini (ใช้ API format ต่างจาก OpenAI)
      *
-     * @param array $chatMessages messages array พร้อม system message
-     * @param array $config การตั้งค่า
+     * @param  array  $chatMessages  messages array พร้อม system message
+     * @param  array  $config  การตั้งค่า
      * @return array ผลลัพธ์
      */
     protected function playgroundGemini(array $chatMessages, array $config): array
@@ -1198,6 +1208,7 @@ class FortuneAIService
         foreach ($chatMessages as $msg) {
             if ($msg['role'] === 'system') {
                 $systemMessage = $msg['content'];
+
                 continue;
             }
             $geminiRole = $msg['role'] === 'assistant' ? 'model' : 'user';
@@ -1219,7 +1230,7 @@ class FortuneAIService
             ],
         ];
 
-        if (!empty($systemMessage)) {
+        if (! empty($systemMessage)) {
             $body['system_instruction'] = [
                 'parts' => [['text' => $systemMessage]],
             ];
@@ -1249,14 +1260,14 @@ class FortuneAIService
     /**
      * บันทึกการใช้งาน tokens ผ่าน Pool Service
      *
-     * @param int $tokensUsed จำนวน tokens ที่ใช้
-     * @param string $model model ที่ใช้
-     * @param int $responseTime เวลาตอบกลับ (ms)
-     * @param string $requestType ประเภท request
+     * @param  int  $tokensUsed  จำนวน tokens ที่ใช้
+     * @param  string  $model  model ที่ใช้
+     * @param  int  $responseTime  เวลาตอบกลับ (ms)
+     * @param  string  $requestType  ประเภท request
      */
     protected function recordUsage(int $tokensUsed, string $model, int $responseTime, string $requestType = 'fortune'): void
     {
-        if (!$this->currentKey || !$this->poolService) {
+        if (! $this->currentKey || ! $this->poolService) {
             return;
         }
 
@@ -1280,12 +1291,12 @@ class FortuneAIService
     /**
      * บันทึก error ผ่าน Pool Service
      *
-     * @param string $errorMessage ข้อความ error
-     * @param string|null $model model ที่ใช้
+     * @param  string  $errorMessage  ข้อความ error
+     * @param  string|null  $model  model ที่ใช้
      */
     protected function recordError(string $errorMessage, ?string $model = null): void
     {
-        if (!$this->currentKey || !$this->poolService) {
+        if (! $this->currentKey || ! $this->poolService) {
             return;
         }
 

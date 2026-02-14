@@ -24,10 +24,6 @@ class StoreRatingController extends Controller
 {
     /**
      * แสดงฟอร์มให้คะแนนร้านค้า
-     *
-     * @param VendorStore $store
-     * @param Request $request
-     * @return View
      */
     public function create(VendorStore $store, Request $request): View
     {
@@ -47,15 +43,13 @@ class StoreRatingController extends Controller
             'store' => $store,
             'order' => $order,
             'existingRating' => $existingRating,
-            'pageTitle' => 'ให้คะแนนร้าน ' . $store->name,
+            'pageTitle' => 'ให้คะแนนร้าน '.$store->name,
         ]);
     }
 
     /**
      * บันทึกคะแนนร้านค้า
      *
-     * @param Request $request
-     * @param VendorStore $store
      * @return JsonResponse|RedirectResponse
      */
     public function store(Request $request, VendorStore $store)
@@ -89,6 +83,7 @@ class StoreRatingController extends Controller
                     'errors' => $validator->errors(),
                 ], 422);
             }
+
             return back()->withErrors($validator)->withInput();
         }
 
@@ -96,13 +91,14 @@ class StoreRatingController extends Controller
         $orderId = $request->input('order_id');
         if ($orderId) {
             $order = Order::find($orderId);
-            if (!$order || $order->user_id !== $user->id) {
+            if (! $order || $order->user_id !== $user->id) {
                 if ($request->wantsJson()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'คำสั่งซื้อไม่ถูกต้อง',
                     ], 403);
                 }
+
                 return back()->with('error', 'คำสั่งซื้อไม่ถูกต้อง');
             }
         }
@@ -124,7 +120,7 @@ class StoreRatingController extends Controller
             'shipping_rating' => $request->input('shipping_rating'),
             'communication_rating' => $request->input('communication_rating'),
             'comment' => $request->input('comment'),
-            'images' => !empty($images) ? $images : null,
+            'images' => ! empty($images) ? $images : null,
             'is_anonymous' => $request->boolean('is_anonymous'),
         ]);
 
@@ -143,9 +139,6 @@ class StoreRatingController extends Controller
 
     /**
      * แสดงประวัติการให้คะแนนของผู้ใช้
-     *
-     * @param Request $request
-     * @return View
      */
     public function history(Request $request): View
     {
@@ -164,9 +157,6 @@ class StoreRatingController extends Controller
 
     /**
      * แสดงคะแนนของร้านค้า (สำหรับ public)
-     *
-     * @param VendorStore $store
-     * @return View
      */
     public function showStoreRatings(VendorStore $store): View
     {
@@ -185,15 +175,13 @@ class StoreRatingController extends Controller
             'store' => $store,
             'stats' => $stats,
             'ratings' => $ratings,
-            'pageTitle' => 'คะแนนร้าน ' . $store->name,
+            'pageTitle' => 'คะแนนร้าน '.$store->name,
         ]);
     }
 
     /**
      * ลบคะแนนที่ตัวเองให้
      *
-     * @param Request $request
-     * @param StoreRating $rating
      * @return JsonResponse|RedirectResponse
      */
     public function destroy(Request $request, StoreRating $rating)
@@ -208,6 +196,7 @@ class StoreRatingController extends Controller
                     'message' => 'ไม่มีสิทธิ์ลบคะแนนนี้',
                 ], 403);
             }
+
             return back()->with('error', 'ไม่มีสิทธิ์ลบคะแนนนี้');
         }
 
@@ -229,10 +218,6 @@ class StoreRatingController extends Controller
 
     /**
      * กด helpful ให้รีวิว
-     *
-     * @param Request $request
-     * @param StoreRating $rating
-     * @return JsonResponse
      */
     public function markHelpful(Request $request, StoreRating $rating): JsonResponse
     {

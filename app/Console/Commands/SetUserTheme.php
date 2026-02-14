@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\User;
+use Illuminate\Console\Command;
 
 class SetUserTheme extends Command
 {
@@ -30,15 +30,17 @@ class SetUserTheme extends Command
         $theme = $this->argument('theme');
 
         // Validate theme
-        if (!in_array($theme, ['millennium', 'classic_x'])) {
+        if (! in_array($theme, ['millennium', 'classic_x'])) {
             $this->error('Invalid theme! Use: millennium or classic_x');
+
             return 1;
         }
 
         // Find user
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             $this->error("User with ID {$userId} not found!");
+
             return 1;
         }
 

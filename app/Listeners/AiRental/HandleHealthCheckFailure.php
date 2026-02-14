@@ -38,23 +38,17 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * Audit Service
-     *
-     * @var AuditService
      */
     protected AuditService $auditService;
 
     /**
      * Monitoring Service
-     *
-     * @var MonitoringService
      */
     protected MonitoringService $monitoringService;
 
     /**
      * สร้าง listener instance
      *
-     * @param AuditService $auditService
-     * @param MonitoringService $monitoringService
      * @return void
      */
     public function __construct(
@@ -67,9 +61,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * จัดการ event
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     public function handle(DeploymentHealthCheckFailed $event): void
     {
@@ -122,9 +113,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * บันทึก incident log
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     protected function createIncidentLog(DeploymentHealthCheckFailed $event): void
     {
@@ -157,9 +145,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * สร้าง health check alert
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     protected function createHealthCheckAlert(DeploymentHealthCheckFailed $event): void
     {
@@ -184,7 +169,7 @@ class HandleHealthCheckFailure implements ShouldQueue
                 'consecutive_failures' => $event->consecutiveFailures,
                 'error_details' => $errorDetails,
                 'recommended_action' => $event->getRecommendedAction(),
-                'estimated_downtime' => $event->estimateDowntimeMinutes() . ' นาที',
+                'estimated_downtime' => $event->estimateDowntimeMinutes().' นาที',
             ],
             'action_required' => $this->getActionRequired($event),
             'action_url' => route('admin.ai-rental.deployments.show', $deployment->id),
@@ -201,9 +186,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * ลอง auto-recovery
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     protected function attemptAutoRecovery(DeploymentHealthCheckFailed $event): void
     {
@@ -240,8 +222,7 @@ class HandleHealthCheckFailure implements ShouldQueue
     /**
      * Schedule deployment restart
      *
-     * @param \App\Models\AiRentalDeployment $deployment
-     * @return void
+     * @param  \App\Models\AiRentalDeployment  $deployment
      */
     protected function scheduleRestart($deployment): void
     {
@@ -269,9 +250,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * Escalate to admin
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     protected function escalateToAdmin(DeploymentHealthCheckFailed $event): void
     {
@@ -295,7 +273,7 @@ class HandleHealthCheckFailure implements ShouldQueue
                 'deployment_id' => $deployment->id,
                 'user_id' => $deployment->user_id,
                 'consecutive_failures' => $event->consecutiveFailures,
-                'downtime_estimate' => $event->estimateDowntimeMinutes() . ' นาที',
+                'downtime_estimate' => $event->estimateDowntimeMinutes().' นาที',
                 'error_details' => $event->getErrorDetails(),
             ],
             'action_required' => 'ตรวจสอบและแก้ไขทันที',
@@ -321,9 +299,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * Update deployment health status
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return void
      */
     protected function updateDeploymentHealthStatus(DeploymentHealthCheckFailed $event): void
     {
@@ -342,9 +317,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * ดึง alert title
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return string
      */
     protected function getAlertTitle(DeploymentHealthCheckFailed $event): string
     {
@@ -360,9 +332,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * ดึง alert message
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return string
      */
     protected function getAlertMessage(DeploymentHealthCheckFailed $event): string
     {
@@ -374,9 +343,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * ดึง action required
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @return string
      */
     protected function getActionRequired(DeploymentHealthCheckFailed $event): string
     {
@@ -392,9 +358,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * ดึง priority จาก severity
-     *
-     * @param string $severity
-     * @return int
      */
     protected function getPriority(string $severity): int
     {
@@ -408,10 +371,6 @@ class HandleHealthCheckFailure implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลว
-     *
-     * @param DeploymentHealthCheckFailed $event
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(DeploymentHealthCheckFailed $event, \Throwable $exception): void
     {

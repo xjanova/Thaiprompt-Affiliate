@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\AiGenProvider;
 use App\Models\AiGenPackage;
+use App\Models\AiGenProvider;
 use App\Models\AiGenQuota;
+use Illuminate\Database\Seeder;
 
 class AiGenSeeder extends Seeder
 {

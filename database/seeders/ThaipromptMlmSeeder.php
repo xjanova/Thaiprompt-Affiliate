@@ -31,8 +31,6 @@ class ThaipromptMlmSeeder extends Seeder
 
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -176,12 +174,13 @@ class ThaipromptMlmSeeder extends Seeder
         $admin = User::where('email', 'superadmin@thaiprompt.com')->first()
             ?? User::where('role', 'admin')->where('is_super_admin', true)->first();
 
-        if (!$admin) {
+        if (! $admin) {
             $this->command->error('❌ ไม่พบ Super Admin กรุณารัน AdminUsersSeeder ก่อน');
             throw new \Exception('Super Admin not found');
         }
 
         $this->command->info("✅ Admin: {$admin->name}");
+
         return $admin;
     }
 
@@ -234,7 +233,7 @@ class ThaipromptMlmSeeder extends Seeder
             // Unilevel: ต่อเรียงลำดับจากคนก่อนหน้า
             $unilevelLevel = $i + 1;
             $unilevelPath = $previousMember->unilevel_path
-                ? $previousMember->unilevel_path . '/' . $previousMember->id
+                ? $previousMember->unilevel_path.'/'.$previousMember->id
                 : (string) $previousMember->id;
 
             // สร้าง MLM Member (Binary จะอัพเดททีหลัง)
@@ -274,6 +273,7 @@ class ThaipromptMlmSeeder extends Seeder
         }
 
         $this->command->info('   ✅ สร้าง Users และ Members เสร็จ');
+
         return $members;
     }
 
@@ -304,6 +304,7 @@ class ThaipromptMlmSeeder extends Seeder
                     'binary_position' => 'left',
                     'binary_path' => (string) $adminMember->id,
                 ]);
+
                 continue;
             }
 
@@ -315,7 +316,7 @@ class ThaipromptMlmSeeder extends Seeder
             $position = ($index % 2 === 1) ? 'left' : 'right';
 
             // สร้าง path
-            $path = $parent->binary_path . '/' . $parent->id;
+            $path = $parent->binary_path.'/'.$parent->id;
 
             $member->update([
                 'binary_sponsor_id' => $parent->id,
@@ -381,6 +382,7 @@ class ThaipromptMlmSeeder extends Seeder
                 $count += $this->countAllBinaryDescendants($member->id, $members);
             }
         }
+
         return $count;
     }
 
@@ -396,6 +398,7 @@ class ThaipromptMlmSeeder extends Seeder
                 $count += $this->countAllBinaryDescendants($member->id, $members);
             }
         }
+
         return $count;
     }
 
@@ -411,6 +414,7 @@ class ThaipromptMlmSeeder extends Seeder
                 $count += $this->countUnilevelDownline($member->id, $members);
             }
         }
+
         return $count;
     }
 

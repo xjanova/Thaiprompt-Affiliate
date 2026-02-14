@@ -39,7 +39,7 @@ class MlmPoolBonusCommand extends Command
     public function handle()
     {
         $action = $this->argument('action');
-        $service = new MlmPoolBonusService();
+        $service = new MlmPoolBonusService;
 
         return match ($action) {
             'calculate' => $this->runCalculate($service),
@@ -77,16 +77,18 @@ class MlmPoolBonusCommand extends Command
             $this->table(
                 ['รายการ', 'ค่า'],
                 [
-                    ['ยอดใน Pool', number_format($result['pool_amount'] ?? 0, 2) . ' บาท'],
+                    ['ยอดใน Pool', number_format($result['pool_amount'] ?? 0, 2).' บาท'],
                     ['สมาชิกที่ qualify', $result['qualified_count'] ?? 0],
                     ['Total Shares', $result['total_shares'] ?? 0],
-                    ['ต่อ Share', number_format($result['amount_per_share'] ?? 0, 2) . ' บาท'],
+                    ['ต่อ Share', number_format($result['amount_per_share'] ?? 0, 2).' บาท'],
                 ]
             );
+
             return 0;
         }
 
-        $this->error('❌ เกิดข้อผิดพลาด: ' . ($result['message'] ?? 'Unknown error'));
+        $this->error('❌ เกิดข้อผิดพลาด: '.($result['message'] ?? 'Unknown error'));
+
         return 1;
     }
 
@@ -102,6 +104,7 @@ class MlmPoolBonusCommand extends Command
 
         if ($period->status !== 'pending') {
             $this->warn("⚠️ Period นี้มี status: {$period->status} (ต้องเป็น pending)");
+
             return 1;
         }
 
@@ -112,14 +115,16 @@ class MlmPoolBonusCommand extends Command
             $this->table(
                 ['รายการ', 'ค่า'],
                 [
-                    ['จ่ายให้', $result['paid_count'] . ' คน'],
-                    ['ยอดรวม', number_format($result['total_paid'] ?? 0, 2) . ' บาท'],
+                    ['จ่ายให้', $result['paid_count'].' คน'],
+                    ['ยอดรวม', number_format($result['total_paid'] ?? 0, 2).' บาท'],
                 ]
             );
+
             return 0;
         }
 
-        $this->error('❌ เกิดข้อผิดพลาด: ' . ($result['message'] ?? 'Unknown error'));
+        $this->error('❌ เกิดข้อผิดพลาด: '.($result['message'] ?? 'Unknown error'));
+
         return 1;
     }
 
@@ -135,10 +140,12 @@ class MlmPoolBonusCommand extends Command
         if ($result['success']) {
             $this->info('✅ รันอัตโนมัติสำเร็จ!');
             $this->info($result['message'] ?? '');
+
             return 0;
         }
 
-        $this->warn('⚠️ ' . ($result['message'] ?? 'Unknown issue'));
+        $this->warn('⚠️ '.($result['message'] ?? 'Unknown issue'));
+
         return 1;
     }
 
@@ -156,7 +163,7 @@ class MlmPoolBonusCommand extends Command
         $this->table(
             ['สรุปทั้งหมด', 'ค่า'],
             [
-                ['ยอด Pool รวม', number_format($summary['totals']['total_pool'], 2) . ' บาท'],
+                ['ยอด Pool รวม', number_format($summary['totals']['total_pool'], 2).' บาท'],
                 ['จำนวนสมาชิกที่ได้รับ', number_format($summary['totals']['total_members'])],
                 ['จำนวน Periods', $summary['totals']['total_periods']],
             ]

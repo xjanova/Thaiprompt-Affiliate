@@ -93,8 +93,6 @@ class StoreBanner extends Model
 
     /**
      * ความสัมพันธ์กับ VendorStore
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -104,7 +102,7 @@ class StoreBanner extends Model
     /**
      * Scope: เฉพาะ banners ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -115,7 +113,7 @@ class StoreBanner extends Model
     /**
      * Scope: เฉพาะ banners ที่กำลังแสดงอยู่ (ตามช่วงเวลา)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCurrentlyDisplaying($query)
@@ -136,7 +134,7 @@ class StoreBanner extends Model
     /**
      * Scope: Banner สำหรับ Homepage
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForHomepage($query)
@@ -148,8 +146,7 @@ class StoreBanner extends Model
     /**
      * Scope: Banner สำหรับร้านค้าเฉพาะ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $storeId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForStore($query, int $storeId)
@@ -160,8 +157,7 @@ class StoreBanner extends Model
     /**
      * Scope: Banner สำหรับหมวดหมู่เฉพาะ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $categorySlug
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForCategory($query, string $categorySlug)
@@ -173,7 +169,7 @@ class StoreBanner extends Model
     /**
      * Scope: เรียงตาม sort_order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -183,8 +179,6 @@ class StoreBanner extends Model
 
     /**
      * เพิ่ม view count
-     *
-     * @return void
      */
     public function incrementViewCount(): void
     {
@@ -193,8 +187,6 @@ class StoreBanner extends Model
 
     /**
      * เพิ่ม click count
-     *
-     * @return void
      */
     public function incrementClickCount(): void
     {
@@ -203,12 +195,10 @@ class StoreBanner extends Model
 
     /**
      * ตรวจสอบว่า banner กำลังแสดงอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isCurrentlyDisplaying(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -227,8 +217,6 @@ class StoreBanner extends Model
 
     /**
      * ดึง click-through rate (CTR)
-     *
-     * @return float
      */
     public function getCtrAttribute(): float
     {

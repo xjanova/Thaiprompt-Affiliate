@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง ai_rental_cloud_configs
      *
      * เก็บการตั้งค่า Cloud GPU สำหรับแต่ละ user
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -93,8 +91,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_cloud_configs
-     *
-     * @return void
      */
     public function down(): void
     {

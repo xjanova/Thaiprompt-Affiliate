@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineBotKeyword;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,8 +36,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * คำนวณ performance metrics
-     *
-     * @return array
      */
     private function calculatePerformanceMetrics(): array
     {
@@ -86,8 +83,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * คำนวณ average response time สำหรับแต่ละ keyword
-     *
-     * @return array
      */
     private function calculateAverageResponseTime(): array
     {
@@ -117,8 +112,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * คำนวณ effectiveness score (0-100)
-     *
-     * @return array
      */
     private function calculateEffectivenessScores(): array
     {
@@ -146,14 +139,12 @@ class KeywordPerformanceDashboardController extends Controller
         }
 
         arsort($scores);
+
         return array_slice($scores, 0, 15, true); // Top 15
     }
 
     /**
      * Get response type score
-     *
-     * @param string $type
-     * @return float
      */
     private function getResponseTypeScore(string $type): float
     {
@@ -167,9 +158,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * Get category score
-     *
-     * @param string $category
-     * @return float
      */
     private function getCategoryScore(string $category): float
     {
@@ -184,8 +172,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * ดึง keyword popularity data
-     *
-     * @return array
      */
     private function getKeywordPopularity(): array
     {
@@ -207,8 +193,6 @@ class KeywordPerformanceDashboardController extends Controller
 
     /**
      * ดึง performance by category
-     *
-     * @return array
      */
     private function getCategoryPerformance(): array
     {
@@ -299,9 +283,9 @@ class KeywordPerformanceDashboardController extends Controller
         $responseTime = $this->calculateAverageResponseTime();
 
         $keywords = array_keys($responseTime);
-        $keywordTimes = array_map(fn($k) => $responseTime[$k]['keyword_time'], $keywords);
-        $aiTimes = array_map(fn($k) => $responseTime[$k]['ai_time'], $keywords);
-        $savings = array_map(fn($k) => $responseTime[$k]['savings'], $keywords);
+        $keywordTimes = array_map(fn ($k) => $responseTime[$k]['keyword_time'], $keywords);
+        $aiTimes = array_map(fn ($k) => $responseTime[$k]['ai_time'], $keywords);
+        $savings = array_map(fn ($k) => $responseTime[$k]['savings'], $keywords);
 
         return response()->json([
             'success' => true,
@@ -315,7 +299,6 @@ class KeywordPerformanceDashboardController extends Controller
     /**
      * Get detailed keyword performance
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\JsonResponse
      */
     public function getKeywordDetails(LineBotKeyword $keyword)
@@ -342,8 +325,7 @@ class KeywordPerformanceDashboardController extends Controller
     /**
      * Get matches per day
      *
-     * @param \Illuminate\Support\Collection $logs
-     * @return array
+     * @param  \Illuminate\Support\Collection  $logs
      */
     private function getMatchesPerDay($logs): array
     {
@@ -403,20 +385,20 @@ class KeywordPerformanceDashboardController extends Controller
         $categoryPerf = $this->getCategoryPerformance();
 
         $csv = "KEYWORD PERFORMANCE REPORT\n";
-        $csv .= "Generated: " . now()->format('Y-m-d H:i:s') . "\n\n";
+        $csv .= 'Generated: '.now()->format('Y-m-d H:i:s')."\n\n";
 
         // Summary
         $csv .= "SUMMARY\n";
-        $csv .= "Total Keywords," . $metrics['totalKeywords'] . "\n";
-        $csv .= "Used Keywords," . $metrics['usedKeywords'] . "\n";
-        $csv .= "Unused Keywords," . $metrics['unusedKeywords'] . "\n";
-        $csv .= "Coverage," . $metrics['coveragePercentage'] . "%\n\n";
+        $csv .= 'Total Keywords,'.$metrics['totalKeywords']."\n";
+        $csv .= 'Used Keywords,'.$metrics['usedKeywords']."\n";
+        $csv .= 'Unused Keywords,'.$metrics['unusedKeywords']."\n";
+        $csv .= 'Coverage,'.$metrics['coveragePercentage']."%\n\n";
 
         // Category Performance
         $csv .= "CATEGORY PERFORMANCE\n";
         $csv .= "Category,Matches,Keywords,Avg Matches\n";
         foreach ($categoryPerf as $cat => $perf) {
-            $csv .= "{$cat}," . $perf['matches'] . "," . $perf['keywords'] . "," . $perf['avgMatches'] . "\n";
+            $csv .= "{$cat},".$perf['matches'].','.$perf['keywords'].','.$perf['avgMatches']."\n";
         }
 
         $csv .= "\n";
@@ -428,7 +410,7 @@ class KeywordPerformanceDashboardController extends Controller
             $csv .= "{$keyword},{$score}\n";
         }
 
-        $filename = 'keyword-performance-report-' . now()->format('Y-m-d_H-i-s') . '.csv';
+        $filename = 'keyword-performance-report-'.now()->format('Y-m-d_H-i-s').'.csv';
 
         return response()->streamDownload(
             function () use ($csv) {
@@ -437,7 +419,7 @@ class KeywordPerformanceDashboardController extends Controller
             $filename,
             [
                 'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ]
         );
     }

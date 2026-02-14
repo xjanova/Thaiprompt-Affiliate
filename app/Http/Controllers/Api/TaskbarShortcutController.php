@@ -16,7 +16,7 @@ class TaskbarShortcutController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated',
@@ -40,7 +40,7 @@ class TaskbarShortcutController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated',
@@ -86,7 +86,7 @@ class TaskbarShortcutController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated',
@@ -97,7 +97,7 @@ class TaskbarShortcutController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$shortcut) {
+        if (! $shortcut) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบไอค่อนทางลัดนี้',
@@ -119,7 +119,7 @@ class TaskbarShortcutController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'User not authenticated',

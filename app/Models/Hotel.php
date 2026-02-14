@@ -167,10 +167,10 @@ class Hotel extends Model
     /**
      * ค้นหาโรงแรมใกล้เคียงจากพิกัด GPS
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $latitude ละติจูด
-     * @param float $longitude ลองจิจูด
-     * @param float $radius รัศมีเป็นกิโลเมตร (default: 50km)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $latitude  ละติจูด
+     * @param  float  $longitude  ลองจิจูด
+     * @param  float  $radius  รัศมีเป็นกิโลเมตร (default: 50km)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeNearby($query, float $latitude, float $longitude, float $radius = 50)
@@ -199,8 +199,9 @@ class Hotel extends Model
     public function getMainImageUrlAttribute()
     {
         if ($this->main_image) {
-            return asset('storage/' . $this->main_image);
+            return asset('storage/'.$this->main_image);
         }
+
         return asset('images/default-hotel.jpg');
     }
 
@@ -208,9 +209,10 @@ class Hotel extends Model
     {
         if ($this->gallery_images) {
             return collect($this->gallery_images)->map(function ($image) {
-                return asset('storage/' . $image);
+                return asset('storage/'.$image);
             })->toArray();
         }
+
         return [];
     }
 

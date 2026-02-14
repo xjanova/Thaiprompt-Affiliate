@@ -37,7 +37,7 @@ class FoodCertificationPolicy
         return in_array($user->role, [
             'certification_body',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -96,7 +96,7 @@ class FoodCertificationPolicy
     public function renew(User $user, FoodCertification $certification): bool
     {
         // Only certification bodies and admins can renew
-        if (!in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
+        if (! in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
             return false;
         }
 
@@ -113,7 +113,7 @@ class FoodCertificationPolicy
         return in_array($user->role, [
             'certification_body',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -153,7 +153,7 @@ class FoodCertificationPolicy
         return in_array($user->role, [
             'certification_body',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -192,7 +192,7 @@ class FoodCertificationPolicy
     public function recordOnBlockchain(User $user, FoodCertification $certification): bool
     {
         // Only admins and certification bodies can record on blockchain
-        if (!in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
+        if (! in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
             return false;
         }
 
@@ -224,7 +224,7 @@ class FoodCertificationPolicy
             'farmer',
             'processor',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 }

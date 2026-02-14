@@ -17,23 +17,17 @@ class AiRentalBudgetLimitObserver
 {
     /**
      * Audit Service
-     *
-     * @var AuditService
      */
     protected AuditService $auditService;
 
     /**
      * Monitoring Service
-     *
-     * @var MonitoringService
      */
     protected MonitoringService $monitoringService;
 
     /**
      * สร้าง observer instance
      *
-     * @param AuditService $auditService
-     * @param MonitoringService $monitoringService
      * @return void
      */
     public function __construct(
@@ -48,9 +42,6 @@ class AiRentalBudgetLimitObserver
      * Handle the "creating" event
      *
      * เรียกก่อน budget limit จะถูกสร้าง
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     public function creating(AiRentalBudgetLimit $budget): void
     {
@@ -83,9 +74,6 @@ class AiRentalBudgetLimitObserver
      * Handle the "created" event
      *
      * เรียกหลังจาก budget limit ถูกสร้างแล้ว
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     public function created(AiRentalBudgetLimit $budget): void
     {
@@ -147,9 +135,6 @@ class AiRentalBudgetLimitObserver
      * Handle the "updating" event
      *
      * เรียกก่อน budget limit จะถูกอัพเดท
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     public function updating(AiRentalBudgetLimit $budget): void
     {
@@ -189,9 +174,6 @@ class AiRentalBudgetLimitObserver
      * Handle the "updated" event
      *
      * เรียกหลังจาก budget limit ถูกอัพเดทแล้ว
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     public function updated(AiRentalBudgetLimit $budget): void
     {
@@ -256,9 +238,6 @@ class AiRentalBudgetLimitObserver
      * Handle the "deleted" event
      *
      * เรียกหลังจาก budget limit ถูกลบ
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     public function deleted(AiRentalBudgetLimit $budget): void
     {
@@ -297,9 +276,6 @@ class AiRentalBudgetLimitObserver
 
     /**
      * ตรวจสอบ budget threshold
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return void
      */
     protected function checkBudgetThreshold(AiRentalBudgetLimit $budget): void
     {
@@ -310,7 +286,7 @@ class AiRentalBudgetLimitObserver
 
         foreach ($thresholds as $threshold) {
             // ถ้าเกิน threshold และยังไม่ได้แจ้งเตือน
-            if ($percentage >= $threshold && !$budget->hasAlertedThreshold($threshold)) {
+            if ($percentage >= $threshold && ! $budget->hasAlertedThreshold($threshold)) {
                 $this->monitoringService->createCostWarningAlert(
                     $budget->user,
                     $budget,
@@ -332,11 +308,6 @@ class AiRentalBudgetLimitObserver
 
     /**
      * แจ้งเตือนเมื่อ limit เปลี่ยน
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param float $oldLimit
-     * @param float $newLimit
-     * @return void
      */
     protected function notifyLimitChanged(AiRentalBudgetLimit $budget, float $oldLimit, float $newLimit): void
     {
@@ -363,10 +334,6 @@ class AiRentalBudgetLimitObserver
 
     /**
      * แจ้งเตือนเมื่อ status เปลี่ยน
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param bool $isActive
-     * @return void
      */
     protected function notifyStatusChanged(AiRentalBudgetLimit $budget, bool $isActive): void
     {
@@ -390,9 +357,6 @@ class AiRentalBudgetLimitObserver
 
     /**
      * คำนวณ period_end จาก period_type
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return \Carbon\Carbon
      */
     protected function calculatePeriodEnd(AiRentalBudgetLimit $budget): \Carbon\Carbon
     {

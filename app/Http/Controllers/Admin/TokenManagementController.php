@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TPIXToken;
-use App\Models\User;
-use App\Services\TPIX\TokenFactoryService;
-use App\Services\TPIX\CoinControlService;
 use App\Services\TPIX\CMCIntegrationService;
+use App\Services\TPIX\CoinControlService;
+use App\Services\TPIX\TokenFactoryService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class TokenManagementController extends Controller
 {
     protected TokenFactoryService $tokenFactory;
+
     protected CoinControlService $coinControl;
+
     protected CMCIntegrationService $cmcService;
 
     public function __construct(
@@ -53,8 +53,8 @@ class TokenManagementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('symbol', 'like', "%{$search}%")
-                  ->orWhere('contract_address', 'like', "%{$search}%");
+                    ->orWhere('symbol', 'like', "%{$search}%")
+                    ->orWhere('contract_address', 'like', "%{$search}%");
             });
         }
 
@@ -78,7 +78,7 @@ class TokenManagementController extends Controller
      *
      * แสดงรายละเอียดของ Token พร้อมข้อมูลที่เกี่ยวข้อง
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\View\View
      */
     public function show($id)
@@ -123,7 +123,7 @@ class TokenManagementController extends Controller
      *
      * อนุมัติ token ที่รอการตรวจสอบ
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\Http\RedirectResponse
      */
     public function approve($id)
@@ -139,7 +139,7 @@ class TokenManagementController extends Controller
         activity()
             ->performedOn($token)
             ->causedBy(auth()->user())
-            ->log('อนุมัติ token: ' . $token->name);
+            ->log('อนุมัติ token: '.$token->name);
 
         return redirect()->back()->with('success', 'อนุมัติ Token สำเร็จ!');
     }
@@ -149,7 +149,7 @@ class TokenManagementController extends Controller
      *
      * ปฏิเสธ token ที่รอการตรวจสอบ
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, $id)
@@ -170,7 +170,7 @@ class TokenManagementController extends Controller
             ->performedOn($token)
             ->causedBy(auth()->user())
             ->withProperties(['reason' => $request->reason])
-            ->log('ปฏิเสธ token: ' . $token->name . ' (เหตุผล: ' . $request->reason . ')');
+            ->log('ปฏิเสธ token: '.$token->name.' (เหตุผล: '.$request->reason.')');
 
         return redirect()->back()->with('success', 'ปฏิเสธ Token สำเร็จ!');
     }
@@ -202,7 +202,7 @@ class TokenManagementController extends Controller
         activity()
             ->performedOn($token)
             ->causedBy(auth()->user())
-            ->log('ตั้งค่า token เป็น Featured: ' . $token->name);
+            ->log('ตั้งค่า token เป็น Featured: '.$token->name);
 
         return redirect()->back()->with('success', 'Token featured!');
     }
@@ -210,7 +210,7 @@ class TokenManagementController extends Controller
     /**
      * ยกเลิกการแสดง Token แบบ Featured
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unfeature($id)
@@ -222,7 +222,7 @@ class TokenManagementController extends Controller
         activity()
             ->performedOn($token)
             ->causedBy(auth()->user())
-            ->log('ยกเลิก Featured: ' . $token->name);
+            ->log('ยกเลิก Featured: '.$token->name);
 
         return redirect()->back()->with('success', 'Token unfeatured!');
     }
@@ -265,9 +265,9 @@ class TokenManagementController extends Controller
                 $request->reason
             );
 
-            return redirect()->back()->with('success', 'Tokens minted successfully! TX: ' . $result['tx_hash']);
+            return redirect()->back()->with('success', 'Tokens minted successfully! TX: '.$result['tx_hash']);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to mint: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to mint: '.$e->getMessage());
         }
     }
 
@@ -293,9 +293,9 @@ class TokenManagementController extends Controller
                 $request->reason
             );
 
-            return redirect()->back()->with('success', 'Tokens burned successfully! TX: ' . $result['tx_hash']);
+            return redirect()->back()->with('success', 'Tokens burned successfully! TX: '.$result['tx_hash']);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to burn: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to burn: '.$e->getMessage());
         }
     }
 
@@ -321,7 +321,7 @@ class TokenManagementController extends Controller
 
             return redirect()->back()->with('success', 'Address frozen successfully!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to freeze: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to freeze: '.$e->getMessage());
         }
     }
 
@@ -347,7 +347,7 @@ class TokenManagementController extends Controller
 
             return redirect()->back()->with('success', 'Address unfrozen successfully!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to unfreeze: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to unfreeze: '.$e->getMessage());
         }
     }
 
@@ -371,7 +371,7 @@ class TokenManagementController extends Controller
 
             return redirect()->back()->with('success', 'Token paused successfully!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to pause: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to pause: '.$e->getMessage());
         }
     }
 
@@ -395,7 +395,7 @@ class TokenManagementController extends Controller
 
             return redirect()->back()->with('success', 'Token unpaused successfully!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to unpause: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to unpause: '.$e->getMessage());
         }
     }
 
@@ -438,9 +438,9 @@ class TokenManagementController extends Controller
         try {
             $listing = $this->cmcService->importToken($request->cmc_id, auth()->user());
 
-            return redirect()->back()->with('success', 'Token imported from CMC: ' . $listing->name . ' (' . $listing->symbol . ')');
+            return redirect()->back()->with('success', 'Token imported from CMC: '.$listing->name.' ('.$listing->symbol.')');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to import: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to import: '.$e->getMessage());
         }
     }
 
@@ -451,16 +451,16 @@ class TokenManagementController extends Controller
     {
         $token = TPIXToken::findOrFail($id);
 
-        if (!$token->cmc_id) {
+        if (! $token->cmc_id) {
             return redirect()->back()->with('error', 'Token does not have CMC ID');
         }
 
         try {
             $syncLog = $this->cmcService->syncTPIXToken($token, auth()->user());
 
-            return redirect()->back()->with('success', 'Token synced with CMC successfully! New price: ' . $token->fresh()->current_price_tpix . ' TPIX');
+            return redirect()->back()->with('success', 'Token synced with CMC successfully! New price: '.$token->fresh()->current_price_tpix.' TPIX');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to sync: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to sync: '.$e->getMessage());
         }
     }
 
@@ -481,9 +481,9 @@ class TokenManagementController extends Controller
             ->performedOn($token)
             ->causedBy(auth()->user())
             ->withProperties(['cmc_id' => $request->cmc_id])
-            ->log('เชื่อมโยง token กับ CMC ID: ' . $request->cmc_id);
+            ->log('เชื่อมโยง token กับ CMC ID: '.$request->cmc_id);
 
-        return redirect()->back()->with('success', 'Token linked to CMC ID: ' . $request->cmc_id);
+        return redirect()->back()->with('success', 'Token linked to CMC ID: '.$request->cmc_id);
     }
 
     /**
@@ -491,7 +491,7 @@ class TokenManagementController extends Controller
      *
      * แสดง logs การ sync ข้อมูลกับ CoinMarketCap
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\View\View
      */
     public function cmcLogs($id)
@@ -514,7 +514,7 @@ class TokenManagementController extends Controller
      *
      * แสดงประวัติการควบคุม token (mint, burn, freeze, pause)
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\View\View
      */
     public function controlActions($id)
@@ -535,7 +535,7 @@ class TokenManagementController extends Controller
      *
      * แสดงหน้าแก้ไขข้อมูล token
      *
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\View\View
      */
     public function edit($id)
@@ -550,8 +550,7 @@ class TokenManagementController extends Controller
      *
      * อัพเดทข้อมูลพื้นฐานของ token
      *
-     * @param Request $request
-     * @param int $id Token ID
+     * @param  int  $id  Token ID
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
@@ -585,7 +584,7 @@ class TokenManagementController extends Controller
         activity()
             ->performedOn($token)
             ->causedBy(auth()->user())
-            ->log('อัพเดทข้อมูล token: ' . $token->name);
+            ->log('อัพเดทข้อมูล token: '.$token->name);
 
         return redirect()->route('admin.tokens.show', $token->id)
             ->with('success', 'อัพเดทข้อมูล Token สำเร็จ!');

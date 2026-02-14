@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\TranslationService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class TranslationController extends Controller
@@ -13,8 +13,6 @@ class TranslationController extends Controller
 
     /**
      * Cache สำหรับภาษาที่ใช้ได้ เพื่อป้องกัน validation loop
-     *
-     * @var array|null
      */
     protected static ?array $cachedLanguages = null;
 
@@ -25,8 +23,6 @@ class TranslationController extends Controller
 
     /**
      * ดึงรายการภาษาที่ใช้ได้พร้อม cache ป้องกัน loop
-     *
-     * @return array
      */
     protected function getAvailableLanguageCodes(): array
     {
@@ -40,7 +36,8 @@ class TranslationController extends Controller
             try {
                 return \App\Models\LanguageSetting::getEnabledCodes();
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Cannot load language codes: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Cannot load language codes: '.$e->getMessage());
+
                 // Fallback to config
                 return array_keys(config('translate.supported_languages', ['en' => 'English', 'th' => 'Thai']));
             }
@@ -58,8 +55,8 @@ class TranslationController extends Controller
 
         $request->validate([
             'text' => 'required|string|max:5000',
-            'target_lang' => 'required|string|in:' . implode(',', $availableLanguages),
-            'source_lang' => 'nullable|string|in:' . implode(',', $availableLanguages),
+            'target_lang' => 'required|string|in:'.implode(',', $availableLanguages),
+            'source_lang' => 'nullable|string|in:'.implode(',', $availableLanguages),
         ]);
 
         $text = trim($request->input('text'));
@@ -76,7 +73,7 @@ class TranslationController extends Controller
             ]);
         }
 
-        if (!$this->translationService->isEnabled()) {
+        if (! $this->translationService->isEnabled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Translation service is not enabled',
@@ -105,15 +102,15 @@ class TranslationController extends Controller
         $request->validate([
             'texts' => 'required|array|max:50',
             'texts.*' => 'string|max:5000',
-            'target_lang' => 'required|string|in:' . implode(',', $availableLanguages),
-            'source_lang' => 'nullable|string|in:' . implode(',', $availableLanguages),
+            'target_lang' => 'required|string|in:'.implode(',', $availableLanguages),
+            'source_lang' => 'nullable|string|in:'.implode(',', $availableLanguages),
         ]);
 
         $texts = $request->input('texts');
         $targetLang = $request->input('target_lang');
         $sourceLang = $request->input('source_lang');
 
-        if (!$this->translationService->isEnabled()) {
+        if (! $this->translationService->isEnabled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Translation service is not enabled',
@@ -154,7 +151,7 @@ class TranslationController extends Controller
 
         $text = $request->input('text');
 
-        if (!$this->translationService->isEnabled()) {
+        if (! $this->translationService->isEnabled()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Translation service is not enabled',

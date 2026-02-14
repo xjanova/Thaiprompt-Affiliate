@@ -16,8 +16,6 @@ return new class extends Migration
      * - points: คะแนนที่ผู้ใช้จะได้รับเมื่อได้รับถ้วยรางวัล
      * - is_automatic: มอบรางวัลอัตโนมัติเมื่อผู้ใช้ทำตามเงื่อนไข
      * - requirements: เงื่อนไขอัตโนมัติ (JSON) เช่น min_threads, min_posts
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -38,8 +36,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -29,8 +29,7 @@ class AiApiKeyPoolService
     /**
      * ดึง API Key ที่พร้อมใช้งานสำหรับ provider
      *
-     * @param string $provider ชื่อ provider (grok, openai, etc.)
-     * @return AiApiKey|null
+     * @param  string  $provider  ชื่อ provider (grok, openai, etc.)
      */
     public function getKey(string $provider): ?AiApiKey
     {
@@ -65,26 +64,16 @@ class AiApiKeyPoolService
 
     /**
      * ดึง API Key string สำหรับ provider
-     *
-     * @param string $provider
-     * @return string|null
      */
     public function getApiKey(string $provider): ?string
     {
         $key = $this->getKey($provider);
+
         return $key?->api_key;
     }
 
     /**
      * บันทึกการใช้งาน tokens
-     *
-     * @param string $provider
-     * @param int $inputTokens
-     * @param int $outputTokens
-     * @param string|null $model
-     * @param int|null $responseTimeMs
-     * @param string $requestType
-     * @return void
      */
     public function recordUsage(
         string $provider,
@@ -110,11 +99,6 @@ class AiApiKeyPoolService
 
     /**
      * บันทึก error
-     *
-     * @param string $provider
-     * @param string $errorMessage
-     * @param string|null $model
-     * @return void
      */
     public function recordError(string $provider, string $errorMessage, ?string $model = null): void
     {
@@ -151,7 +135,7 @@ class AiApiKeyPoolService
         }
 
         // ดึง index ปัจจุบันจาก cache
-        $cacheKey = self::CACHE_PREFIX . "rr_index_{$provider}";
+        $cacheKey = self::CACHE_PREFIX."rr_index_{$provider}";
         $currentIndex = Cache::get($cacheKey, 0);
 
         // วน index
@@ -244,7 +228,7 @@ class AiApiKeyPoolService
      */
     protected function setLastUsedKey(string $provider, AiApiKey $key): void
     {
-        $cacheKey = self::CACHE_PREFIX . "last_used_{$provider}";
+        $cacheKey = self::CACHE_PREFIX."last_used_{$provider}";
         Cache::put($cacheKey, $key->id, now()->addMinutes(30));
     }
 
@@ -253,7 +237,7 @@ class AiApiKeyPoolService
      */
     protected function getLastUsedKey(string $provider): ?AiApiKey
     {
-        $cacheKey = self::CACHE_PREFIX . "last_used_{$provider}";
+        $cacheKey = self::CACHE_PREFIX."last_used_{$provider}";
         $keyId = Cache::get($cacheKey);
 
         if ($keyId) {
@@ -395,6 +379,7 @@ class AiApiKeyPoolService
     {
         $key = AiApiKey::findOrFail($keyId);
         $key->update($data);
+
         return $key->fresh();
     }
 
@@ -404,6 +389,7 @@ class AiApiKeyPoolService
     public function deleteKey(int $keyId): bool
     {
         $key = AiApiKey::findOrFail($keyId);
+
         return $key->delete();
     }
 

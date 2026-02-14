@@ -20,7 +20,7 @@ class VerifyCloudfareTurnstile
     public function handle(Request $request, Closure $next, ?string $point = null): Response
     {
         // Check if Turnstile is globally enabled
-        if (!config('turnstile.enabled')) {
+        if (! config('turnstile.enabled')) {
             return $next($request);
         }
 
@@ -39,11 +39,12 @@ class VerifyCloudfareTurnstile
                 'warning' => 'Turnstile is BYPASSED - no actual protection!',
                 'solution' => 'ตั้งค่า CLOUDFLARE_TURNSTILE_SITE_KEY และ CLOUDFLARE_TURNSTILE_SECRET_KEY ใน .env หรือปิด CLOUDFLARE_TURNSTILE_ENABLED=false',
             ]);
+
             return $next($request);
         }
 
         // Check if this specific point is enabled
-        if ($point && !config("turnstile.points.{$point}", false)) {
+        if ($point && ! config("turnstile.points.{$point}", false)) {
             return $next($request);
         }
 
@@ -54,18 +55,19 @@ class VerifyCloudfareTurnstile
                 'ip' => $request->ip(),
                 'point' => $point,
             ]);
+
             return $next($request);
         }
 
         // Get the Turnstile token from request
         $token = $request->input('cf-turnstile-response');
 
-        if (!$token) {
+        if (! $token) {
             return $this->failedVerification($request, $point, 'Missing Turnstile token');
         }
 
         // Verify the token with Cloudflare
-        if (!$this->verifyToken($token, $request->ip())) {
+        if (! $this->verifyToken($token, $request->ip())) {
             return $this->failedVerification($request, $point, 'Invalid Turnstile token');
         }
 
@@ -86,7 +88,7 @@ class VerifyCloudfareTurnstile
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -101,8 +103,9 @@ class VerifyCloudfareTurnstile
     {
         $secretKey = config('turnstile.secret_key');
 
-        if (!$secretKey) {
+        if (! $secretKey) {
             Log::error('Cloudflare Turnstile secret key not configured');
+
             return false;
         }
 
@@ -113,21 +116,23 @@ class VerifyCloudfareTurnstile
                 'remoteip' => $ip,
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Cloudflare Turnstile API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
             $data = $response->json();
 
-            if (!isset($data['success']) || !$data['success']) {
+            if (! isset($data['success']) || ! $data['success']) {
                 Log::warning('Cloudflare Turnstile verification failed', [
                     'ip' => $ip,
                     'error_codes' => $data['error-codes'] ?? [],
                 ]);
+
                 return false;
             }
 
@@ -138,6 +143,7 @@ class VerifyCloudfareTurnstile
                 'message' => $e->getMessage(),
                 'ip' => $ip,
             ]);
+
             return false;
         }
     }

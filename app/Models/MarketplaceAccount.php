@@ -150,7 +150,7 @@ class MarketplaceAccount extends Model
      */
     public function getAccessTokenAttribute($value)
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -176,7 +176,7 @@ class MarketplaceAccount extends Model
      */
     public function getRefreshTokenAttribute($value)
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -201,7 +201,7 @@ class MarketplaceAccount extends Model
     public function scopeNeedsSync($query)
     {
         return $query->where('status', 'active')
-                     ->where('auto_sync_products', true);
+            ->where('auto_sync_products', true);
     }
 
     /**
@@ -209,7 +209,7 @@ class MarketplaceAccount extends Model
      */
     public function isTokenExpired(): bool
     {
-        if (!$this->token_expires_at) {
+        if (! $this->token_expires_at) {
             return false;
         }
 

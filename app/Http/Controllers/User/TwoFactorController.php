@@ -47,14 +47,14 @@ class TwoFactorController extends Controller
             // ตรวจสอบรหัสจาก authenticator
             $verifyResult = $this->twoFactorService->verifySetupCode($user, $request->input('code'));
 
-            if (!$verifyResult['success']) {
+            if (! $verifyResult['success']) {
                 return redirect()->back()->with('error', $verifyResult['message']);
             }
         }
 
         $result = $this->twoFactorService->enable($user, $preferredMethod);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return redirect()->back()->with('error', $result['message']);
         }
 
@@ -97,7 +97,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
         $result = $this->twoFactorService->disable($user);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return redirect()->back()->with('error', $result['message']);
         }
 
@@ -147,7 +147,7 @@ class TwoFactorController extends Controller
             $request->boolean('remember_device')
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json($result, 422);
         }
 
@@ -175,7 +175,7 @@ class TwoFactorController extends Controller
             $request->input('action')
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json($result, 422);
         }
 
@@ -193,6 +193,7 @@ class TwoFactorController extends Controller
     public function showRecoveryCodes(Request $request)
     {
         $codes = json_decode($request->input('codes', '[]'), true);
+
         return view('user.two-factor.recovery-codes', compact('codes'));
     }
 
@@ -204,7 +205,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
         $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings || !$userSettings->enabled) {
+        if (! $userSettings || ! $userSettings->enabled) {
             return redirect()->back()->with('error', '2FA ยังไม่ได้เปิดใช้งาน');
         }
 
@@ -226,7 +227,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
         $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings) {
+        if (! $userSettings) {
             return response()->json(['success' => false, 'message' => 'User settings not found'], 404);
         }
 
@@ -243,7 +244,7 @@ class TwoFactorController extends Controller
         $user = Auth::user();
         $userSettings = \App\Models\TwoFactorUserSetting::where('user_id', $user->id)->first();
 
-        if (!$userSettings) {
+        if (! $userSettings) {
             return redirect()->back()->with('error', 'ไม่พบการตั้งค่า');
         }
 

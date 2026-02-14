@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PageBuilder;
 use App\Models\PageBuilderSection;
-use App\Models\PageBuilderTemplate;
 use App\Services\PageBuilderService;
 use App\Services\PageSectionService;
 use App\Services\PageTemplateService;
@@ -15,7 +14,9 @@ use Illuminate\Support\Facades\Validator;
 class PageBuilderController extends Controller
 {
     protected PageBuilderService $pageBuilderService;
+
     protected PageSectionService $sectionService;
+
     protected PageTemplateService $templateService;
 
     public function __construct(
@@ -111,7 +112,7 @@ class PageBuilderController extends Controller
         $validator = Validator::make($request->all(), [
             'page_type' => 'required|string|max:255',
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:page_builders,slug,' . $page->id,
+            'slug' => 'nullable|string|unique:page_builders,slug,'.$page->id,
             'is_active' => 'boolean',
             'meta_data' => 'nullable|array',
             'settings' => 'nullable|array',
@@ -122,7 +123,7 @@ class PageBuilderController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -142,7 +143,7 @@ class PageBuilderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Page updated successfully!',
-                'page' => $page->fresh()
+                'page' => $page->fresh(),
             ]);
         }
 

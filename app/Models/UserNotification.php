@@ -75,8 +75,6 @@ class UserNotification extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -85,8 +83,6 @@ class UserNotification extends Model
 
     /**
      * ความสัมพันธ์กับ PushNotification
-     *
-     * @return BelongsTo
      */
     public function pushNotification(): BelongsTo
     {
@@ -127,12 +123,10 @@ class UserNotification extends Model
 
     /**
      * ชื่อประเภทภาษาไทย
-     *
-     * @return string
      */
     public function getTypeTextAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'general' => 'ทั่วไป',
             'order' => 'ออเดอร์',
             'rider' => 'ไรเดอร์',
@@ -146,8 +140,6 @@ class UserNotification extends Model
 
     /**
      * เวลาที่ผ่านมา
-     *
-     * @return string
      */
     public function getTimeAgoAttribute(): string
     {
@@ -160,12 +152,10 @@ class UserNotification extends Model
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @return void
      */
     public function markAsRead(): void
     {
-        if (!$this->is_read) {
+        if (! $this->is_read) {
             $this->update([
                 'is_read' => true,
                 'read_at' => now(),
@@ -175,13 +165,6 @@ class UserNotification extends Model
 
     /**
      * สร้าง notification สำหรับผู้ใช้
-     *
-     * @param int $userId
-     * @param string $title
-     * @param string $body
-     * @param string $type
-     * @param array $options
-     * @return self
      */
     public static function createForUser(int $userId, string $title, string $body, string $type = 'general', array $options = []): self
     {

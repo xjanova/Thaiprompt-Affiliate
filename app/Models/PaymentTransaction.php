@@ -99,7 +99,7 @@ class PaymentTransaction extends Model
     public function generateUniqueAmountIfNeeded(): void
     {
         // เฉพาะ promptpay และ bank_transfer
-        if (!in_array($this->payment_method, ['promptpay', 'bank_transfer'])) {
+        if (! in_array($this->payment_method, ['promptpay', 'bank_transfer'])) {
             return;
         }
 
@@ -110,16 +110,16 @@ class PaymentTransaction extends Model
 
         // ตรวจสอบว่ายังไม่มี unique amount
         $metadata = $this->metadata ?? [];
-        if (!empty($metadata['unique_amount_id'])) {
+        if (! empty($metadata['unique_amount_id'])) {
             return; // มี unique amount แล้ว
         }
 
         // ตรวจสอบว่า SMS Checker เปิดใช้งาน
-        if (!config('smschecker.enabled', true)) {
+        if (! config('smschecker.enabled', true)) {
             // ตรวจสอบแบบ fallback
             try {
                 $hasDevice = SmsCheckerDevice::where('status', 'active')->exists();
-                if (!$hasDevice) {
+                if (! $hasDevice) {
                     return;
                 }
             } catch (\Exception $e) {

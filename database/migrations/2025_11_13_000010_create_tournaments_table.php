@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Game Tournaments - ข้อมูลการแข่งขัน
-        if (!Schema::hasTable('game_tournaments')) {
+        if (! Schema::hasTable('game_tournaments')) {
             Schema::create('game_tournaments', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('game_id')->constrained()->onDelete('cascade');
@@ -40,7 +40,7 @@ return new class extends Migration
         }
 
         // Tournament Participants - ผู้เข้าแข่งขัน
-        if (!Schema::hasTable('tournament_participants')) {
+        if (! Schema::hasTable('tournament_participants')) {
             Schema::create('tournament_participants', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('tournament_id')->constrained('game_tournaments')->onDelete('cascade');
@@ -62,7 +62,7 @@ return new class extends Migration
         }
 
         // Tournament Matches - ผลการแข่งขัน
-        if (!Schema::hasTable('tournament_matches')) {
+        if (! Schema::hasTable('tournament_matches')) {
             Schema::create('tournament_matches', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('tournament_id')->constrained('game_tournaments')->onDelete('cascade');

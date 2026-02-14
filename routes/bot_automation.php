@@ -1,12 +1,12 @@
 <?php
 
-use App\Http\Controllers\Admin\BotAutomation\BotAutomationController;
-use App\Http\Controllers\Admin\BotAutomation\BotPlatformController;
-use App\Http\Controllers\Admin\BotAutomation\BotTemplateController;
-use App\Http\Controllers\Admin\BotAutomation\BotMarketplaceController;
-use App\Http\Controllers\Admin\BotAutomation\BotSupportController;
-use App\Http\Controllers\Admin\BotAutomation\BotSalesController;
 use App\Http\Controllers\Admin\BotAutomation\BotAnalyticsController;
+use App\Http\Controllers\Admin\BotAutomation\BotAutomationController;
+use App\Http\Controllers\Admin\BotAutomation\BotMarketplaceController;
+use App\Http\Controllers\Admin\BotAutomation\BotPlatformController;
+use App\Http\Controllers\Admin\BotAutomation\BotSalesController;
+use App\Http\Controllers\Admin\BotAutomation\BotSupportController;
+use App\Http\Controllers\Admin\BotAutomation\BotTemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*

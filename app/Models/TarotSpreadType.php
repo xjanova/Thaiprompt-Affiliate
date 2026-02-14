@@ -42,6 +42,7 @@ class TarotSpreadType extends Model
     public function getName(string $language = 'th'): string
     {
         $nameField = "name_{$language}";
+
         return $this->$nameField ?? $this->name_en;
     }
 
@@ -51,6 +52,7 @@ class TarotSpreadType extends Model
     public function getDescription(string $language = 'th'): string
     {
         $descField = "description_{$language}";
+
         return $this->$descField ?? $this->description_en ?? '';
     }
 
@@ -64,6 +66,7 @@ class TarotSpreadType extends Model
         if (isset($positions[$position - 1])) {
             $positionData = $positions[$position - 1];
             $nameField = "name_{$language}";
+
             return $positionData[$nameField] ?? $positionData['name_en'] ?? "Position {$position}";
         }
 

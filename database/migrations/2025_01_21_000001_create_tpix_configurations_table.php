@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บการตั้งค่าสำหรับ TPIX Native Coin Deployment Wizard
      * ใช้สำหรับติดตาม progress และเก็บค่าต่างๆ ก่อน deploy
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -70,7 +68,7 @@ return new class extends Migration
             $table->string('website_url')->nullable()->comment('เว็บไซต์');
             $table->enum('category', [
                 'defi', 'gamefi', 'meme', 'utility',
-                'stablecoin', 'nft', 'dao', 'other'
+                'stablecoin', 'nft', 'dao', 'other',
             ])->nullable()->comment('หมวดหมู่');
 
             // Social Links
@@ -179,8 +177,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง tpix_configurations
-     *
-     * @return void
      */
     public function down(): void
     {

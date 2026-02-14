@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 use Cron\CronExpression;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * VideoAutoSchedule Model
@@ -177,8 +176,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * เทมเพลตที่ใช้
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -187,8 +184,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -202,7 +197,7 @@ class VideoAutoSchedule extends Model
     /**
      * Scope: กรองเฉพาะที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -213,7 +208,7 @@ class VideoAutoSchedule extends Model
     /**
      * Scope: กรองเฉพาะที่พร้อมรัน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDueToRun($query)
@@ -236,8 +231,7 @@ class VideoAutoSchedule extends Model
     /**
      * Scope: กรองตาม frequency type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -251,8 +245,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ดึง label ของ frequency type
-     *
-     * @return string
      */
     public function getFrequencyTypeLabelAttribute(): string
     {
@@ -261,16 +253,14 @@ class VideoAutoSchedule extends Model
 
     /**
      * ตรวจสอบว่าถึงเวลารันหรือยัง
-     *
-     * @return bool
      */
     public function getIsDueAttribute(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
-        if (!$this->isWithinValidPeriod()) {
+        if (! $this->isWithinValidPeriod()) {
             return false;
         }
 
@@ -282,7 +272,7 @@ class VideoAutoSchedule extends Model
             return false;
         }
 
-        if (!$this->next_run_at) {
+        if (! $this->next_run_at) {
             return true;
         }
 
@@ -291,25 +281,21 @@ class VideoAutoSchedule extends Model
 
     /**
      * ดึงคำอธิบาย schedule
-     *
-     * @return string
      */
     public function getScheduleDescriptionAttribute(): string
     {
         return match ($this->frequency_type) {
-            'once' => 'ครั้งเดียวเมื่อ ' . ($this->run_at?->format('d/m/Y H:i') ?? '-'),
-            'daily' => 'ทุกวันเวลา ' . ($this->daily_time ?? '-'),
-            'weekly' => 'ทุกสัปดาห์ วัน' . $this->getWeekdaysDescription() . ' เวลา ' . ($this->weekly_time ?? '-'),
-            'monthly' => 'ทุกเดือน วันที่ ' . implode(', ', $this->monthly_days ?? []) . ' เวลา ' . ($this->monthly_time ?? '-'),
-            'custom' => 'Cron: ' . ($this->cron_expression ?? '-'),
+            'once' => 'ครั้งเดียวเมื่อ '.($this->run_at?->format('d/m/Y H:i') ?? '-'),
+            'daily' => 'ทุกวันเวลา '.($this->daily_time ?? '-'),
+            'weekly' => 'ทุกสัปดาห์ วัน'.$this->getWeekdaysDescription().' เวลา '.($this->weekly_time ?? '-'),
+            'monthly' => 'ทุกเดือน วันที่ '.implode(', ', $this->monthly_days ?? []).' เวลา '.($this->monthly_time ?? '-'),
+            'custom' => 'Cron: '.($this->cron_expression ?? '-'),
             default => 'ไม่ระบุ',
         };
     }
 
     /**
      * คำนวณ success rate
-     *
-     * @return float
      */
     public function getSuccessRateAttribute(): float
     {
@@ -322,12 +308,10 @@ class VideoAutoSchedule extends Model
 
     /**
      * ตรวจสอบว่ามี error หรือไม่
-     *
-     * @return bool
      */
     public function getHasErrorAttribute(): bool
     {
-        return !empty($this->last_error);
+        return ! empty($this->last_error);
     }
 
     // =========================================
@@ -336,8 +320,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ดึงคำอธิบายวันในสัปดาห์
-     *
-     * @return string
      */
     protected function getWeekdaysDescription(): string
     {
@@ -346,14 +328,12 @@ class VideoAutoSchedule extends Model
         }
 
         return collect($this->weekly_days)
-            ->map(fn($day) => self::WEEKDAYS[$day] ?? $day)
+            ->map(fn ($day) => self::WEEKDAYS[$day] ?? $day)
             ->implode(', ');
     }
 
     /**
      * ตรวจสอบว่าอยู่ในช่วงเวลาที่ใช้งานได้หรือไม่
-     *
-     * @return bool
      */
     public function isWithinValidPeriod(): bool
     {
@@ -372,8 +352,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ตรวจสอบว่าเกิน limit หรือไม่
-     *
-     * @return bool
      */
     public function isExceededLimits(): bool
     {
@@ -412,8 +390,7 @@ class VideoAutoSchedule extends Model
     /**
      * ดึงจำนวนครั้งที่รันในช่วงเวลา
      *
-     * @param string $period day, week, month
-     * @return int
+     * @param  string  $period  day, week, month
      */
     protected function getRunCountForPeriod(string $period): int
     {
@@ -424,8 +401,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ตรวจสอบว่าหยุดเพราะ error หรือไม่
-     *
-     * @return bool
      */
     public function isPausedDueToErrors(): bool
     {
@@ -435,8 +410,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * คำนวณเวลารันครั้งต่อไป
-     *
-     * @return Carbon|null
      */
     public function calculateNextRunAt(): ?Carbon
     {
@@ -454,13 +427,10 @@ class VideoAutoSchedule extends Model
 
     /**
      * คำนวณเวลารันครั้งต่อไป (daily)
-     *
-     * @param string $tz
-     * @return Carbon|null
      */
     protected function calculateNextDaily(string $tz): ?Carbon
     {
-        if (!$this->daily_time) {
+        if (! $this->daily_time) {
             return null;
         }
 
@@ -475,13 +445,10 @@ class VideoAutoSchedule extends Model
 
     /**
      * คำนวณเวลารันครั้งต่อไป (weekly)
-     *
-     * @param string $tz
-     * @return Carbon|null
      */
     protected function calculateNextWeekly(string $tz): ?Carbon
     {
-        if (empty($this->weekly_days) || !$this->weekly_time) {
+        if (empty($this->weekly_days) || ! $this->weekly_time) {
             return null;
         }
 
@@ -504,13 +471,10 @@ class VideoAutoSchedule extends Model
 
     /**
      * คำนวณเวลารันครั้งต่อไป (monthly)
-     *
-     * @param string $tz
-     * @return Carbon|null
      */
     protected function calculateNextMonthly(string $tz): ?Carbon
     {
-        if (empty($this->monthly_days) || !$this->monthly_time) {
+        if (empty($this->monthly_days) || ! $this->monthly_time) {
             return null;
         }
 
@@ -533,19 +497,17 @@ class VideoAutoSchedule extends Model
 
     /**
      * คำนวณเวลารันครั้งต่อไป (cron)
-     *
-     * @param string $tz
-     * @return Carbon|null
      */
     protected function calculateNextCron(string $tz): ?Carbon
     {
-        if (!$this->cron_expression) {
+        if (! $this->cron_expression) {
             return null;
         }
 
         try {
             $cron = new CronExpression($this->cron_expression);
             $next = Carbon::instance($cron->getNextRunDate())->setTimezone($tz);
+
             return $next->setTimezone('UTC');
         } catch (\Exception $e) {
             return null;
@@ -554,8 +516,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * อัพเดทเวลารันครั้งต่อไป
-     *
-     * @return void
      */
     public function updateNextRunAt(): void
     {
@@ -565,10 +525,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * บันทึกผลการรัน
-     *
-     * @param bool $success
-     * @param string|null $error
-     * @return void
      */
     public function recordRun(bool $success, ?string $error = null): void
     {
@@ -598,8 +554,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * เปิดใช้งาน schedule
-     *
-     * @return void
      */
     public function activate(): void
     {
@@ -611,8 +565,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * ปิดใช้งาน schedule
-     *
-     * @return void
      */
     public function deactivate(): void
     {
@@ -623,8 +575,6 @@ class VideoAutoSchedule extends Model
 
     /**
      * Reset error status
-     *
-     * @return void
      */
     public function resetErrors(): void
     {

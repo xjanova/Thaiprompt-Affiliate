@@ -109,7 +109,7 @@ class TicketRating extends Model
      */
     public function getRatingEmojiAttribute()
     {
-        return match($this->rating) {
+        return match ($this->rating) {
             5 => '⭐⭐⭐⭐⭐',
             4 => '⭐⭐⭐⭐',
             3 => '⭐⭐⭐',
@@ -124,7 +124,7 @@ class TicketRating extends Model
      */
     public function getRatingLabelAttribute()
     {
-        return match($this->rating) {
+        return match ($this->rating) {
             5 => 'ยอดเยี่ยม',
             4 => 'ดีมาก',
             3 => 'ดี',
@@ -139,7 +139,7 @@ class TicketRating extends Model
      */
     public function getRatingColorAttribute()
     {
-        return match($this->rating) {
+        return match ($this->rating) {
             5 => 'green',
             4 => 'blue',
             3 => 'yellow',

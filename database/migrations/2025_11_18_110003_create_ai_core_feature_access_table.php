@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บสิทธิ์การเข้าถึง AI features ของแต่ละ tenant
      * ควบคุมว่า tenant ไหนสามารถใช้ feature ใดได้บ้าง
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -77,8 +75,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_feature_access
-     *
-     * @return void
      */
     public function down(): void
     {

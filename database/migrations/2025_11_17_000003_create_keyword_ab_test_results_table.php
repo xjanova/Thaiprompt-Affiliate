@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง keyword_ab_test_results สำหรับบันทึกผลการทดสอบแต่ละครั้ง
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง keyword_ab_test_results
-     *
-     * @return void
      */
     public function down(): void
     {

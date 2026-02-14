@@ -34,16 +34,13 @@ class MarketingController extends Controller
 
     /**
      * หน้าหลัก Marketing Dashboard
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function index(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -91,16 +88,13 @@ class MarketingController extends Controller
 
     /**
      * หน้าเลือกสินค้าเพื่อโปรโมท
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function selectProductForPromotion(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -125,8 +119,6 @@ class MarketingController extends Controller
     /**
      * ขอโปรโมทสินค้าใหม่
      *
-     * @param Request $request
-     * @param Product $product
      * @return JsonResponse|RedirectResponse
      */
     public function requestPromotion(Request $request, Product $product)
@@ -135,13 +127,14 @@ class MarketingController extends Controller
         $user = $request->user();
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
                 ], 403);
             }
+
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -154,6 +147,7 @@ class MarketingController extends Controller
                     'message' => 'สินค้านี้ไม่ใช่ของร้านค้าคุณ',
                 ], 403);
             }
+
             return back()->with('error', 'สินค้านี้ไม่ใช่ของร้านค้าคุณ');
         }
 
@@ -174,16 +168,13 @@ class MarketingController extends Controller
 
     /**
      * แสดงประวัติโปรโมทสินค้าใหม่
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function promotionHistory(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -201,16 +192,13 @@ class MarketingController extends Controller
 
     /**
      * แสดงรายละเอียด Warnings
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function warnings(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -228,16 +216,13 @@ class MarketingController extends Controller
 
     /**
      * แสดงสินค้าที่อยู่ใน Official Shop
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function officialShopProducts(Request $request): View|RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -255,17 +240,13 @@ class MarketingController extends Controller
 
     /**
      * ดู Preview คะแนน AI ของสินค้า
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function previewScore(Request $request, Product $product): JsonResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
@@ -300,10 +281,6 @@ class MarketingController extends Controller
 
     /**
      * สร้างคำแนะนำในการปรับปรุงคะแนน
-     *
-     * @param array $breakdown
-     * @param float $scoreGap
-     * @return array
      */
     protected function getImprovementTips(array $breakdown, float $scoreGap): array
     {
@@ -314,6 +291,7 @@ class MarketingController extends Controller
                 'type' => 'success',
                 'message' => 'คะแนนผ่านเกณฑ์แล้ว รักษามาตรฐานเพื่อให้อยู่ใน Official Shop ต่อไป',
             ];
+
             return $tips;
         }
 
@@ -358,16 +336,13 @@ class MarketingController extends Controller
 
     /**
      * ดูรายละเอียด Cooldown
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getCooldownStatus(Request $request): JsonResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้',
@@ -378,7 +353,7 @@ class MarketingController extends Controller
             ->where('promotion_type', 'new_product')
             ->first();
 
-        if (!$cooldown) {
+        if (! $cooldown) {
             return response()->json([
                 'is_available' => true,
                 'message' => 'พร้อมโปรโมทสินค้าใหม่',
@@ -386,7 +361,7 @@ class MarketingController extends Controller
         }
 
         return response()->json([
-            'is_available' => !$cooldown->is_on_cooldown,
+            'is_available' => ! $cooldown->is_on_cooldown,
             'available_at' => $cooldown->available_at?->toDateTimeString(),
             'time_remaining' => $cooldown->time_remaining,
             'usage_count' => $cooldown->usage_count,
@@ -396,17 +371,13 @@ class MarketingController extends Controller
 
     /**
      * ขอแก้ไขสินค้าที่ถูกล็อค (สร้าง Ticket)
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return RedirectResponse
      */
     public function requestEditLockedProduct(Request $request, Product $product): RedirectResponse
     {
         $store = $request->user()->vendorStore;
 
         // ตรวจสอบว่ามี store หรือไม่
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาสร้างร้านค้าก่อนใช้งานฟีเจอร์นี้');
         }
@@ -417,14 +388,14 @@ class MarketingController extends Controller
         }
 
         // ตรวจสอบว่าสินค้าถูกล็อคจริง
-        if (!$product->is_promotion_locked) {
+        if (! $product->is_promotion_locked) {
             return back()->with('error', 'สินค้านี้ไม่ได้ถูกล็อค');
         }
 
         // Redirect ไปหน้าสร้าง Ticket พร้อม context
         return redirect()
             ->route('seller.tickets.create', [
-                'subject' => 'ขอแก้ไขสินค้าที่ถูกล็อค: ' . $product->name,
+                'subject' => 'ขอแก้ไขสินค้าที่ถูกล็อค: '.$product->name,
                 'product_id' => $product->id,
                 'category' => 'product_edit_request',
             ]);

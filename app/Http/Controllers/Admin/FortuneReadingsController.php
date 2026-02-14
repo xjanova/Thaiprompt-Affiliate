@@ -27,7 +27,7 @@ class FortuneReadingsController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('facebook_user_name', 'like', "%{$search}%")
-                  ->orWhere('facebook_user_id', 'like', "%{$search}%");
+                    ->orWhere('facebook_user_id', 'like', "%{$search}%");
             });
         }
 
@@ -95,7 +95,7 @@ class FortuneReadingsController extends Controller
 
         return view('admin.fortune.readings.show', [
             'reading' => $reading,
-            'pageTitle' => 'รายละเอียดการทำนาย #' . $reading->id,
+            'pageTitle' => 'รายละเอียดการทำนาย #'.$reading->id,
         ]);
     }
 
@@ -117,15 +117,15 @@ class FortuneReadingsController extends Controller
     public function export(Request $request)
     {
         $readings = FortuneReading::with('user')
-            ->when($request->filled('ai_provider'), fn($q) => $q->where('ai_provider', $request->ai_provider))
-            ->when($request->filled('is_paid'), fn($q) => $q->where('is_paid', $request->is_paid))
-            ->when($request->filled('reading_type'), fn($q) => $q->where('reading_type', $request->reading_type))
-            ->when($request->filled('date_from'), fn($q) => $q->whereDate('created_at', '>=', $request->date_from))
-            ->when($request->filled('date_to'), fn($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->when($request->filled('ai_provider'), fn ($q) => $q->where('ai_provider', $request->ai_provider))
+            ->when($request->filled('is_paid'), fn ($q) => $q->where('is_paid', $request->is_paid))
+            ->when($request->filled('reading_type'), fn ($q) => $q->where('reading_type', $request->reading_type))
+            ->when($request->filled('date_from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->filled('date_to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $filename = 'fortune_readings_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'fortune_readings_'.now()->format('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -134,10 +134,10 @@ class FortuneReadingsController extends Controller
 
         $callback = function () use ($readings) {
             $file = fopen('php://output', 'w');
-            
+
             // BOM สำหรับ UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
-            
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
             // Header
             fputcsv($file, ['ID', 'วันที่', 'ชื่อผู้ใช้', 'Facebook ID', 'คำถาม', 'ประเภทคำทำนาย', 'AI Provider', 'สถานะชำระเงิน', 'ราคา']);
 

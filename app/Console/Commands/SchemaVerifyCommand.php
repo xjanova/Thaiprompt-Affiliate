@@ -2,11 +2,10 @@
 
 namespace App\Console\Commands;
 
+use Doctrine\DBAL\Schema\Column;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Doctrine\DBAL\Schema\Column;
 
 class SchemaVerifyCommand extends Command
 {
@@ -85,14 +84,15 @@ class SchemaVerifyCommand extends Command
         $hasIssues = false;
 
         foreach ($this->tablesToVerify as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 $this->error("✗ Table '{$table}' does not exist!");
                 $this->issues[] = [
                     'table' => $table,
                     'type' => 'missing_table',
-                    'message' => "Table does not exist",
+                    'message' => 'Table does not exist',
                 ];
                 $hasIssues = true;
+
                 continue;
             }
 
@@ -101,13 +101,13 @@ class SchemaVerifyCommand extends Command
             // Verify columns
             $issues = $this->verifyTableSchema($table);
 
-            if (!empty($issues)) {
+            if (! empty($issues)) {
                 $hasIssues = true;
                 foreach ($issues as $issue) {
                     $this->warn("  ⚠ {$issue}");
                 }
             } else {
-                $this->line("  ✓ Schema is correct");
+                $this->line('  ✓ Schema is correct');
             }
 
             $this->newLine();
@@ -142,6 +142,7 @@ class SchemaVerifyCommand extends Command
             $this->info('═══════════════════════════════════════');
             $this->info('  ✅ All Schema Checks Passed!');
             $this->info('═══════════════════════════════════════');
+
             return Command::SUCCESS;
         }
     }
@@ -157,7 +158,7 @@ class SchemaVerifyCommand extends Command
             // Get expected schema
             $expectedSchema = $this->getExpectedSchema($table);
             if (empty($expectedSchema)) {
-                return ["No expected schema defined for verification"];
+                return ['No expected schema defined for verification'];
             }
 
             // Get actual columns
@@ -165,7 +166,7 @@ class SchemaVerifyCommand extends Command
 
             // Check for missing columns
             foreach ($expectedSchema as $columnName => $expectedType) {
-                if (!isset($actualColumns[$columnName])) {
+                if (! isset($actualColumns[$columnName])) {
                     $issues[] = "Missing column: {$columnName} ({$expectedType})";
                     $this->issues[] = [
                         'table' => $table,
@@ -181,7 +182,7 @@ class SchemaVerifyCommand extends Command
             $actualKeys = array_keys($actualColumns);
             $extraColumns = array_diff($actualKeys, $expectedKeys);
 
-            if (!empty($extraColumns)) {
+            if (! empty($extraColumns)) {
                 foreach ($extraColumns as $extra) {
                     $this->issues[] = [
                         'table' => $table,
@@ -193,7 +194,7 @@ class SchemaVerifyCommand extends Command
             }
 
         } catch (\Exception $e) {
-            $issues[] = "Error verifying schema: " . $e->getMessage();
+            $issues[] = 'Error verifying schema: '.$e->getMessage();
         }
 
         return $issues;
@@ -214,7 +215,7 @@ class SchemaVerifyCommand extends Command
                 $columns[$columnName] = $columnType;
             }
         } catch (\Exception $e) {
-            $this->error("Error getting columns for {$table}: " . $e->getMessage());
+            $this->error("Error getting columns for {$table}: ".$e->getMessage());
         }
 
         return $columns;
@@ -391,7 +392,7 @@ class SchemaVerifyCommand extends Command
         foreach ($this->issues as $issue) {
             if ($issue['type'] === 'missing_table') {
                 $this->line("-- Table '{$issue['table']}' is missing");
-                $this->line("-- Please run: php artisan migrate --force");
+                $this->line('-- Please run: php artisan migrate --force');
                 $this->newLine();
                 $hasStatements = true;
             } elseif ($issue['type'] === 'missing_column') {
@@ -401,7 +402,7 @@ class SchemaVerifyCommand extends Command
             }
         }
 
-        if (!$hasStatements) {
+        if (! $hasStatements) {
             $this->info('No fix statements needed.');
         }
 
@@ -442,8 +443,9 @@ class SchemaVerifyCommand extends Command
         ];
 
         foreach ($this->tablesToVerify as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 $this->warn("Skipping {$table} (does not exist)");
+
                 continue;
             }
 
@@ -480,7 +482,7 @@ class SchemaVerifyCommand extends Command
 
             foreach ($rawIndexes as $index) {
                 $keyName = $index->Key_name;
-                if (!isset($indexes[$keyName])) {
+                if (! isset($indexes[$keyName])) {
                     $indexes[$keyName] = [
                         'columns' => [],
                         'unique' => $index->Non_unique == 0,
@@ -506,16 +508,16 @@ class SchemaVerifyCommand extends Command
         $this->newLine();
 
         // Collect fixable issues
-        $fixableIssues = array_filter($this->issues, function($issue) {
+        $fixableIssues = array_filter($this->issues, function ($issue) {
             return $issue['type'] === 'missing_column';
         });
 
-        $missingTableIssues = array_filter($this->issues, function($issue) {
+        $missingTableIssues = array_filter($this->issues, function ($issue) {
             return $issue['type'] === 'missing_table';
         });
 
         // Handle missing tables
-        if (!empty($missingTableIssues)) {
+        if (! empty($missingTableIssues)) {
             $this->error('⚠️ Cannot auto-fix missing tables!');
             $this->newLine();
             foreach ($missingTableIssues as $issue) {
@@ -525,6 +527,7 @@ class SchemaVerifyCommand extends Command
             $this->warn('Please run migrations first:');
             $this->line('  php artisan migrate --force');
             $this->newLine();
+
             return Command::FAILURE;
         }
 
@@ -532,6 +535,7 @@ class SchemaVerifyCommand extends Command
         if (empty($fixableIssues)) {
             $this->warn('No fixable issues found.');
             $this->newLine();
+
             return Command::SUCCESS;
         }
 
@@ -559,10 +563,11 @@ class SchemaVerifyCommand extends Command
         $this->newLine();
 
         // Ask for confirmation (unless --force)
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $confirm = $this->confirm('⚠️  Do you want to execute these ALTER TABLE statements?', false);
-            if (!$confirm) {
+            if (! $confirm) {
                 $this->warn('Auto-fix cancelled by user.');
+
                 return Command::FAILURE;
             }
         }
@@ -580,10 +585,10 @@ class SchemaVerifyCommand extends Command
                 $totalCount = count($statements);
                 $this->line("  [{$currentIndex}/{$totalCount}] Executing...");
                 DB::statement($sql);
-                $this->info("  ✓ Success: " . $statements[$index]);
+                $this->info('  ✓ Success: '.$statements[$index]);
                 $successCount++;
             } catch (\Exception $e) {
-                $this->error("  ✗ Failed: " . $e->getMessage());
+                $this->error('  ✗ Failed: '.$e->getMessage());
                 $this->warn("    SQL: {$sql}");
                 $failCount++;
             }
@@ -594,10 +599,10 @@ class SchemaVerifyCommand extends Command
         $this->newLine();
         $this->info('═══════════════════════════════════════');
         if ($failCount === 0) {
-            $this->info("  ✅ Auto-Fix Completed Successfully!");
+            $this->info('  ✅ Auto-Fix Completed Successfully!');
             $this->info("     Fixed {$successCount} issue(s)");
         } else {
-            $this->warn("  ⚠️  Auto-Fix Completed with Errors");
+            $this->warn('  ⚠️  Auto-Fix Completed with Errors');
             $this->line("     Success: {$successCount}");
             $this->line("     Failed: {$failCount}");
         }
@@ -613,23 +618,25 @@ class SchemaVerifyCommand extends Command
         $hasIssues = false;
 
         foreach ($this->tablesToVerify as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
             $issues = $this->verifyTableSchema($table);
-            if (!empty($issues)) {
+            if (! empty($issues)) {
                 $hasIssues = true;
             }
         }
 
-        if (!$hasIssues) {
+        if (! $hasIssues) {
             $this->info('✅ All schema issues have been resolved!');
             $this->newLine();
+
             return Command::SUCCESS;
         } else {
             $this->warn('⚠️  Some issues still remain. Run schema:verify for details.');
             $this->newLine();
+
             return Command::FAILURE;
         }
     }

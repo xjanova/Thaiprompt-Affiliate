@@ -36,6 +36,7 @@ class OptimizeCommand extends Command
                 Artisan::call('config:clear');
                 Artisan::call('route:clear');
                 Artisan::call('view:clear');
+
                 return true;
             });
         }
@@ -43,24 +44,28 @@ class OptimizeCommand extends Command
         // Cache configuration
         $this->task('Caching configuration', function () {
             Artisan::call('config:cache');
+
             return true;
         });
 
         // Cache routes
         $this->task('Caching routes', function () {
             Artisan::call('route:cache');
+
             return true;
         });
 
         // Cache views
         $this->task('Caching views', function () {
             Artisan::call('view:cache');
+
             return true;
         });
 
         // Optimize application
         $this->task('Optimizing application', function () {
             Artisan::call('optimize');
+
             return true;
         });
 

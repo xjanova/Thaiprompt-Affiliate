@@ -13,6 +13,7 @@ class TokenMinted
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public TPIXToken $token;
+
     public CoinControlAction $action;
 
     public function __construct(TPIXToken $token, CoinControlAction $action)

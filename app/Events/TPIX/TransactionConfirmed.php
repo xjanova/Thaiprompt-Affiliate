@@ -11,6 +11,7 @@ class TransactionConfirmed
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public string $txHash;
+
     public array $txData;
 
     public function __construct(string $txHash, array $txData)

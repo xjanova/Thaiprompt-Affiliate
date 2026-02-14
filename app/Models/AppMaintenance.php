@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class AppMaintenance extends Model
 {
@@ -62,7 +62,7 @@ class AppMaintenance extends Model
     {
         $maintenance = static::getInstance();
 
-        if (!$maintenance->is_maintenance_mode) {
+        if (! $maintenance->is_maintenance_mode) {
             return false;
         }
 
@@ -81,7 +81,7 @@ class AppMaintenance extends Model
      */
     public function canUserBypass($userId = null, $bypassKey = null, $isAdmin = false)
     {
-        if (!$this->is_maintenance_mode) {
+        if (! $this->is_maintenance_mode) {
             return true;
         }
 

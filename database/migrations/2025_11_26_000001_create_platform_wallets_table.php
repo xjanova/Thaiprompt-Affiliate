@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง platform_wallets
      * กระเป๋าเงินของระบบ สำหรับเก็บรายได้ Platform
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -28,7 +26,7 @@ return new class extends Migration
                 'refund_pool',      // กองทุนคืนเงิน
                 'admin_shop',       // รายได้ร้านแอดมิน
                 'admin_services',   // รายได้บริการแอดมิน
-                'other'             // อื่นๆ
+                'other',             // อื่นๆ
             ])->default('platform_fee');
 
             // ยอดเงิน
@@ -55,8 +53,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง platform_wallets
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -261,7 +261,7 @@ class SpecialOfferManagementController extends Controller
         $offer = HotelSpecialOffer::where('hotel_id', $user->managed_hotel_id)
             ->findOrFail($id);
 
-        $offer->update(['is_active' => !$offer->is_active]);
+        $offer->update(['is_active' => ! $offer->is_active]);
 
         return response()->json([
             'success' => true,

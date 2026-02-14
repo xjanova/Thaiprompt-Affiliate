@@ -73,7 +73,7 @@ class InvestmentController extends Controller
     {
         $user = Auth::user();
 
-        if (!$plan->is_active) {
+        if (! $plan->is_active) {
             abort(404);
         }
 

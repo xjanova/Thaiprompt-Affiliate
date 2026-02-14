@@ -47,6 +47,7 @@ class TarotReadingCard extends Model
         if ($language === 'th') {
             return $this->is_reversed ? 'กลับหัว' : 'หัวตั้ง';
         }
+
         return $this->is_reversed ? 'Reversed' : 'Upright';
     }
 

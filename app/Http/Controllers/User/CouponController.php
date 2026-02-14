@@ -18,9 +18,6 @@ class CouponController extends Controller
 {
     /**
      * แสดงรายการคูปองของฉัน
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -58,9 +55,6 @@ class CouponController extends Controller
 
     /**
      * แสดงคูปองที่สามารถเก็บได้
-     *
-     * @param Request $request
-     * @return View
      */
     public function available(Request $request): View
     {
@@ -92,17 +86,13 @@ class CouponController extends Controller
 
     /**
      * เก็บคูปอง
-     *
-     * @param Request $request
-     * @param Coupon $coupon
-     * @return JsonResponse
      */
     public function collect(Request $request, Coupon $coupon): JsonResponse
     {
         $user = $request->user();
 
         // ตรวจสอบว่าคูปองเปิดให้เก็บสาธารณะ
-        if (!$coupon->is_public) {
+        if (! $coupon->is_public) {
             return response()->json([
                 'success' => false,
                 'message' => 'คูปองนี้ไม่สามารถเก็บได้',
@@ -110,7 +100,7 @@ class CouponController extends Controller
         }
 
         // ตรวจสอบว่าคูปองยังใช้ได้
-        if (!$coupon->isValid()) {
+        if (! $coupon->isValid()) {
             return response()->json([
                 'success' => false,
                 'message' => 'คูปองหมดอายุหรือไม่สามารถใช้งานได้',
@@ -120,7 +110,7 @@ class CouponController extends Controller
         // เก็บคูปอง
         $userCoupon = UserCoupon::collectCoupon($user->id, $coupon->id);
 
-        if (!$userCoupon) {
+        if (! $userCoupon) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณเก็บคูปองนี้แล้ว',
@@ -142,9 +132,6 @@ class CouponController extends Controller
 
     /**
      * ประวัติการใช้คูปอง
-     *
-     * @param Request $request
-     * @return View
      */
     public function history(Request $request): View
     {

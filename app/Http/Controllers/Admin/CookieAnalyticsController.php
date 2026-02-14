@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CookieTracking;
-use App\Models\CookieConsent;
 use App\Models\CookieAnalyticsKeyword;
+use App\Models\CookieConsent;
 use App\Models\CookieSetting;
+use App\Models\CookieTracking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +19,7 @@ class CookieAnalyticsController extends Controller
     {
         $dateRange = $request->get('range', '7days');
 
-        $startDate = match($dateRange) {
+        $startDate = match ($dateRange) {
             'today' => now()->startOfDay(),
             '7days' => now()->subDays(7),
             '30days' => now()->subDays(30),
@@ -74,13 +74,13 @@ class CookieAnalyticsController extends Controller
 
         // UTM Campaign performance
         $utmCampaigns = CookieTracking::select(
-                'utm_source',
-                'utm_medium',
-                'utm_campaign',
-                DB::raw('COUNT(*) as visitors'),
-                DB::raw('SUM(page_views) as total_page_views'),
-                DB::raw('AVG(session_duration) as avg_duration')
-            )
+            'utm_source',
+            'utm_medium',
+            'utm_campaign',
+            DB::raw('COUNT(*) as visitors'),
+            DB::raw('SUM(page_views) as total_page_views'),
+            DB::raw('AVG(session_duration) as avg_duration')
+        )
             ->where('created_at', '>=', $startDate)
             ->whereNotNull('utm_campaign')
             ->groupBy('utm_source', 'utm_medium', 'utm_campaign')
@@ -118,7 +118,7 @@ class CookieAnalyticsController extends Controller
         }
 
         if ($request->has('referrer')) {
-            $query->where('referrer_domain', 'like', '%' . $request->get('referrer') . '%');
+            $query->where('referrer_domain', 'like', '%'.$request->get('referrer').'%');
         }
 
         $visitors = $query->paginate(50);
@@ -185,7 +185,7 @@ class CookieAnalyticsController extends Controller
         $format = $request->get('format', 'csv');
         $dateRange = $request->get('range', '30days');
 
-        $startDate = match($dateRange) {
+        $startDate = match ($dateRange) {
             'today' => now()->startOfDay(),
             '7days' => now()->subDays(7),
             '30days' => now()->subDays(30),
@@ -202,21 +202,21 @@ class CookieAnalyticsController extends Controller
         }
 
         // CSV Export
-        $filename = 'cookie-analytics-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'cookie-analytics-'.now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($data) {
+        $callback = function () use ($data) {
             $file = fopen('php://output', 'w');
 
             // Headers
             fputcsv($file, [
                 'Session ID', 'IP Address', 'Country', 'Device Type', 'Browser',
                 'Referrer Domain', 'UTM Source', 'UTM Campaign', 'Page Views',
-                'Session Duration', 'Interests', 'Created At'
+                'Session Duration', 'Interests', 'Created At',
             ]);
 
             // Data

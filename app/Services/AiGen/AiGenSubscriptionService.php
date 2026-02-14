@@ -2,9 +2,9 @@
 
 namespace App\Services\AiGen;
 
-use App\Models\User;
 use App\Models\AiGenPackage;
 use App\Models\AiGenSubscription;
+use App\Models\User;
 use Carbon\Carbon;
 
 class AiGenSubscriptionService
@@ -69,7 +69,7 @@ class AiGenSubscriptionService
 
         $subscription = $this->getActiveSubscription($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return false;
         }
 
@@ -88,7 +88,7 @@ class AiGenSubscriptionService
 
         $subscription = $this->getActiveSubscription($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return false;
         }
 
@@ -110,7 +110,7 @@ class AiGenSubscriptionService
 
         $subscription = $this->getActiveSubscription($user);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'has_subscription' => false,
                 'is_admin' => false,

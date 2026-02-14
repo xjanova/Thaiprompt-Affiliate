@@ -15,8 +15,6 @@ class ForumTrophySeeder extends Seeder
 {
     /**
      * รันการ seed โทรฟี่ฟอรั่ม
-     *
-     * @return void
      */
     public function run(): void
     {

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง security_logs มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('security_logs')) {
+        if (! Schema::hasTable('security_logs')) {
             return;
         }
 

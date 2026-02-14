@@ -93,7 +93,7 @@ class ThreatIp extends Model
      */
     public function getThreatTypeBadgeColor(): string
     {
-        return match($this->threat_type) {
+        return match ($this->threat_type) {
             'proxy' => 'orange',
             'vpn' => 'yellow',
             'tor' => 'purple',
@@ -110,7 +110,7 @@ class ThreatIp extends Model
      */
     public function getThreatTypeLabel(): string
     {
-        return match($this->threat_type) {
+        return match ($this->threat_type) {
             'proxy' => '🔀 Proxy',
             'vpn' => '🔒 VPN',
             'tor' => '🧅 Tor',

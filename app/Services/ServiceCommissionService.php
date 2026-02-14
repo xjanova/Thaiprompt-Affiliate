@@ -4,10 +4,7 @@ namespace App\Services;
 
 use App\Models\MlmMember;
 use App\Models\ServiceBooking;
-use App\Models\ServiceProvider;
 use App\Models\User;
-use App\Services\MlmCommissionService;
-use App\Services\WalletService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -22,13 +19,11 @@ class ServiceCommissionService
     public function __construct(
         protected WalletService $walletService,
         protected MlmCommissionService $mlmCommissionService
-    ) {
-    }
+    ) {}
 
     /**
      * ประมวลผลการจ่ายเงินและคอมมิชชั่นเมื่อบริการเสร็จสิ้น
      *
-     * @param ServiceBooking $booking
      * @return array ผลลัพธ์การประมวลผล
      */
     public function processCompletedBooking(ServiceBooking $booking): array
@@ -74,19 +69,17 @@ class ServiceCommissionService
 
     /**
      * จ่ายเงินให้ Provider
-     *
-     * @param ServiceBooking $booking
-     * @return array|null
      */
     protected function payProvider(ServiceBooking $booking): ?array
     {
-        if (!$booking->provider) {
+        if (! $booking->provider) {
             return null;
         }
 
         $providerUser = $booking->provider->user;
-        if (!$providerUser) {
+        if (! $providerUser) {
             Log::warning('Provider user not found', ['provider_id' => $booking->provider->id]);
+
             return null;
         }
 
@@ -134,13 +127,10 @@ class ServiceCommissionService
 
     /**
      * จ่าย Cashback ให้ลูกค้า
-     *
-     * @param ServiceBooking $booking
-     * @return array|null
      */
     protected function payCustomerCashback(ServiceBooking $booking): ?array
     {
-        if (!$booking->service || $booking->service->cashback_percentage <= 0) {
+        if (! $booking->service || $booking->service->cashback_percentage <= 0) {
             return null;
         }
 
@@ -176,31 +166,29 @@ class ServiceCommissionService
                 'user_id' => $booking->user_id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * แจกจ่าย PV สำหรับ Provider (สำหรับ MLM)
-     *
-     * @param ServiceBooking $booking
-     * @return array|null
      */
     protected function distributeProviderPV(ServiceBooking $booking): ?array
     {
-        if (!$booking->provider || $booking->provider_pv_amount <= 0) {
+        if (! $booking->provider || $booking->provider_pv_amount <= 0) {
             return null;
         }
 
         $providerUser = $booking->provider->user;
-        if (!$providerUser) {
+        if (! $providerUser) {
             return null;
         }
 
         // หา MLM Member ของ Provider
         $mlmMember = MlmMember::where('user_id', $providerUser->id)->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             // ถ้า provider ไม่ได้เป็นสมาชิก MLM ให้เพิ่ม PV เข้า user โดยตรง
             $providerUser->increment('total_pv', $booking->provider_pv_amount);
 
@@ -237,22 +225,20 @@ class ServiceCommissionService
                 'provider_id' => $booking->provider->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * คำนวณและแจกจ่ายคอมมิชชั่น MLM สำหรับการจองบริการ
-     *
-     * @param ServiceBooking $booking
-     * @return array|null
      */
     protected function distributeMlmCommission(ServiceBooking $booking): ?array
     {
         // หา MLM Member ของลูกค้า
         $mlmMember = MlmMember::where('user_id', $booking->user_id)->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             // ลูกค้าไม่ได้เป็นสมาชิก MLM
             return null;
         }
@@ -295,26 +281,24 @@ class ServiceCommissionService
                 'user_id' => $booking->user_id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * จ่ายคอมมิชชั่นให้ผู้แนะนำ (Referrer)
-     *
-     * @param ServiceBooking $booking
-     * @return array|null
      */
     protected function payReferrerCommission(ServiceBooking $booking): ?array
     {
         // หา Affiliate/Referrer ของลูกค้า
         $customer = $booking->user;
-        if (!$customer || !$customer->referred_by) {
+        if (! $customer || ! $customer->referred_by) {
             return null;
         }
 
         $referrer = User::find($customer->referred_by);
-        if (!$referrer) {
+        if (! $referrer) {
             return null;
         }
 
@@ -352,15 +336,13 @@ class ServiceCommissionService
                 'referrer_id' => $referrer->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * คำนวณสรุปรายได้และค่าใช้จ่ายของการจอง
-     *
-     * @param ServiceBooking $booking
-     * @return array
      */
     public function calculateBookingSummary(ServiceBooking $booking): array
     {

@@ -10,19 +10,17 @@ return new class extends Migration
      * เพิ่มคอลัมน์ province_id ในตาราง hotels
      *
      * ⚠️ IMPORTANT: ใช้ Schema::hasColumn() เพื่อเช็คก่อนเพิ่ม
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง hotels มีอยู่หรือไม่
-        if (!Schema::hasTable('hotels')) {
+        if (! Schema::hasTable('hotels')) {
             return;
         }
 
         Schema::table('hotels', function (Blueprint $table) {
             // เพิ่ม province_id สำหรับเชื่อมโยงกับจังหวัด
-            if (!Schema::hasColumn('hotels', 'province_id')) {
+            if (! Schema::hasColumn('hotels', 'province_id')) {
                 $table->unsignedBigInteger('province_id')->nullable()->after('country');
 
                 // เพิ่ม foreign key constraint
@@ -39,12 +37,10 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ province_id
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('hotels')) {
+        if (! Schema::hasTable('hotels')) {
             return;
         }
 

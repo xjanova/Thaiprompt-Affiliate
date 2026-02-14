@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง theme_presets
      *
      * เก็บชุด preset สีและการตั้งค่าสำหรับ Arrow X Theme
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_presets
-     *
-     * @return void
      */
     public function down(): void
     {

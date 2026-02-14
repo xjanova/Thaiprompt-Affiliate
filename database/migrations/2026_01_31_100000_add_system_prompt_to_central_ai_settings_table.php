@@ -11,8 +11,6 @@ return new class extends Migration
 
     /**
      * เพิ่มคอลัมน์ system_prompt สำหรับกำหนดขอบเขตการตอบของ AI
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -26,8 +24,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ system_prompt
-     *
-     * @return void
      */
     public function down(): void
     {

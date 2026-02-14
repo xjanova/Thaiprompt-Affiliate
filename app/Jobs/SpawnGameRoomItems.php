@@ -37,11 +37,11 @@ class SpawnGameRoomItems implements ShouldQueue
 
         // ดึงห้องที่กำลัง active อยู่
         $activeRooms = GameRoom::where('game_id', function ($query) {
-                $query->select('id')
-                    ->from('games')
-                    ->where('slug', 'snake-io')
-                    ->limit(1);
-            })
+            $query->select('id')
+                ->from('games')
+                ->where('slug', 'snake-io')
+                ->limit(1);
+        })
             ->whereIn('status', ['waiting', 'in_progress'])
             ->where('current_players', '>', 0) // มีผู้เล่นอยู่
             ->get();

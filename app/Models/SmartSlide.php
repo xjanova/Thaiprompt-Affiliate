@@ -118,12 +118,12 @@ class SmartSlide extends Model
     public function getThumbnailUrl()
     {
         if ($this->thumbnail) {
-            return asset('storage/' . $this->thumbnail);
+            return asset('storage/'.$this->thumbnail);
         }
 
         // Try to get from background
-        if (!empty($this->background['image'])) {
-            return asset('storage/' . $this->background['image']);
+        if (! empty($this->background['image'])) {
+            return asset('storage/'.$this->background['image']);
         }
 
         return asset('images/default-slide.jpg');

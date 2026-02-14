@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\EmailCampaignRecipient;
 use App\Models\EmailCampaign;
+use App\Models\EmailCampaignRecipient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +18,6 @@ class EmailQueueController extends Controller
     /**
      * แสดงคิวการส่งอีเมล
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -39,7 +38,7 @@ class EmailQueueController extends Controller
 
         // กรองตามคำค้นหา (email)
         if ($request->filled('search')) {
-            $query->where('email', 'like', '%' . $request->search . '%');
+            $query->where('email', 'like', '%'.$request->search.'%');
         }
 
         $queue = $query->paginate(50);
@@ -64,13 +63,12 @@ class EmailQueueController extends Controller
     /**
      * ลองส่งใหม่สำหรับอีเมลที่ล้มเหลว
      *
-     * @param EmailCampaignRecipient $recipient
      * @return \Illuminate\Http\RedirectResponse
      */
     public function retry(EmailCampaignRecipient $recipient)
     {
         // เช็คว่าเป็นอีเมลที่ล้มเหลวหรือไม่
-        if (!$recipient->isFailed()) {
+        if (! $recipient->isFailed()) {
             return back()->with('error', 'สามารถลองส่งใหม่ได้เฉพาะอีเมลที่ล้มเหลวเท่านั้น');
         }
 
@@ -87,14 +85,13 @@ class EmailQueueController extends Controller
             return back()->with('success', 'เพิ่มเข้าคิวการส่งใหม่แล้ว!');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลองส่งใหม่สำหรับอีเมลที่ล้มเหลวทั้งหมดในแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function retryAll(EmailCampaign $campaign)
@@ -116,7 +113,8 @@ class EmailQueueController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -134,14 +132,13 @@ class EmailQueueController extends Controller
             return back()->with('success', "ล้างอีเมลที่ล้มเหลว {$deleted} รายการแล้ว!");
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียดคิว
      *
-     * @param EmailCampaignRecipient $recipient
      * @return \Illuminate\View\View
      */
     public function show(EmailCampaignRecipient $recipient)

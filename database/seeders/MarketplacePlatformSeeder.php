@@ -37,7 +37,7 @@ class MarketplacePlatformSeeder extends Seeder
             MarketplacePlatform::create($platform);
         }
 
-        $this->command->info('✅ Marketplace platforms seeded successfully: ' . count($platforms) . ' platforms');
+        $this->command->info('✅ Marketplace platforms seeded successfully: '.count($platforms).' platforms');
     }
 
     /**
@@ -53,7 +53,7 @@ class MarketplacePlatformSeeder extends Seeder
         $skipped = 0;
 
         foreach ($platforms as $platform) {
-            if (!MarketplacePlatform::where('slug', $platform['slug'])->exists()) {
+            if (! MarketplacePlatform::where('slug', $platform['slug'])->exists()) {
                 MarketplacePlatform::create($platform);
                 $this->command->info("   ➕ Added: {$platform['name']}");
                 $added++;

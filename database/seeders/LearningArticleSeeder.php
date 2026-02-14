@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\LearningArticle;
 use App\Models\LearningCategory;
 use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 
 /**
  * Seeder สำหรับบทความ Academy Knowledge
@@ -24,8 +23,9 @@ class LearningArticleSeeder extends Seeder
         // ดึง admin user
         $admin = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$admin) {
+        if (! $admin) {
             $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณาสร้างผู้ใช้ก่อน');
+
             return;
         }
 
@@ -38,8 +38,9 @@ class LearningArticleSeeder extends Seeder
         foreach ($articles as $articleData) {
             $category = LearningCategory::where('slug', $articleData['category_slug'])->first();
 
-            if (!$category) {
+            if (! $category) {
                 $this->command->warn("   ⚠️ ไม่พบหมวดหมู่: {$articleData['category_slug']} - ข้าม");
+
                 continue;
             }
 
@@ -48,6 +49,7 @@ class LearningArticleSeeder extends Seeder
             // เช็คว่ามีอยู่แล้วหรือไม่
             if (LearningArticle::where('slug', $articleData['slug'])->exists()) {
                 $skipped++;
+
                 continue;
             }
 
@@ -990,8 +992,8 @@ class LearningArticleSeeder extends Seeder
     /**
      * สร้างเนื้อหา placeholder สำหรับบทความ
      *
-     * @param string $title หัวข้อบทความ
-     * @param array $sections หัวข้อย่อย
+     * @param  string  $title  หัวข้อบทความ
+     * @param  array  $sections  หัวข้อย่อย
      * @return string HTML content
      */
     private function generatePlaceholderContent(string $title, array $sections): string
@@ -1015,7 +1017,7 @@ class LearningArticleSeeder extends Seeder
         $html .= "<p class=\"mb-0\">💡 <strong>หมายเหตุ:</strong> บทความนี้เป็นส่วนหนึ่งของ Academy Knowledge ที่สามารถอ่านได้ฟรีสำหรับสมาชิกทุกท่าน</p>\n";
         $html .= "</div>\n";
 
-        $html .= "</div>";
+        $html .= '</div>';
 
         return $html;
     }

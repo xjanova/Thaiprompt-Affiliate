@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\PlatformWallet;
 use App\Models\PlatformTransaction;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
+use App\Models\PlatformWallet;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * PlatformRevenueService
@@ -18,12 +18,11 @@ class PlatformRevenueService
     /**
      * เก็บค่า Platform Fee
      *
-     * @param float $amount จำนวนเงิน
-     * @param string $sourceType ที่มา (Order, ServiceBooking)
-     * @param int $sourceId ID ที่มา
-     * @param int|null $relatedUserId Seller/Provider ID
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $sourceType  ที่มา (Order, ServiceBooking)
+     * @param  int  $sourceId  ID ที่มา
+     * @param  int|null  $relatedUserId  Seller/Provider ID
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function collectPlatformFee(
         float $amount,
@@ -53,11 +52,10 @@ class PlatformRevenueService
     /**
      * เก็บภาษี VAT
      *
-     * @param float $amount จำนวนภาษี
-     * @param string $sourceType ที่มา
-     * @param int $sourceId ID ที่มา
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนภาษี
+     * @param  string  $sourceType  ที่มา
+     * @param  int  $sourceId  ID ที่มา
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function collectVat(
         float $amount,
@@ -85,11 +83,10 @@ class PlatformRevenueService
     /**
      * เก็บเงินเข้ากองทุน MLM Commission
      *
-     * @param float $amount จำนวนเงิน
-     * @param string $sourceType ที่มา
-     * @param int $sourceId ID ที่มา
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $sourceType  ที่มา
+     * @param  int  $sourceId  ID ที่มา
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function collectMlmPool(
         float $amount,
@@ -117,15 +114,14 @@ class PlatformRevenueService
     /**
      * บันทึกรายได้เข้ากระเป๋าที่ระบุ
      *
-     * @param string $walletSlug ชื่อ slug ของกระเป๋า (admin_shop, admin_services, etc.)
-     * @param float $amount จำนวนเงิน
-     * @param string $subType ประเภทย่อย
-     * @param string $description คำอธิบาย
-     * @param string|null $sourceType ที่มา
-     * @param int|null $sourceId ID ที่มา
-     * @param int|null $relatedUserId User ID ที่เกี่ยวข้อง
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction|null
+     * @param  string  $walletSlug  ชื่อ slug ของกระเป๋า (admin_shop, admin_services, etc.)
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $subType  ประเภทย่อย
+     * @param  string  $description  คำอธิบาย
+     * @param  string|null  $sourceType  ที่มา
+     * @param  int|null  $sourceId  ID ที่มา
+     * @param  int|null  $relatedUserId  User ID ที่เกี่ยวข้อง
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function recordIncome(
         string $walletSlug,
@@ -140,7 +136,7 @@ class PlatformRevenueService
         // ดึงกระเป๋าตาม slug
         $wallet = PlatformWallet::findBySlug($walletSlug);
 
-        if (!$wallet) {
+        if (! $wallet) {
             // ลองสร้างกระเป๋าใหม่ถ้าไม่พบ
             $wallet = match ($walletSlug) {
                 'admin_shop' => PlatformWallet::getAdminShopWallet(),
@@ -153,7 +149,7 @@ class PlatformRevenueService
             };
         }
 
-        if (!$wallet) {
+        if (! $wallet) {
             return null;
         }
 
@@ -176,12 +172,11 @@ class PlatformRevenueService
     /**
      * จ่ายคอมมิชชัน MLM จากกองทุน
      *
-     * @param float $amount จำนวนเงิน
-     * @param int $userId ผู้รับ
-     * @param string $sourceType ที่มา
-     * @param int $sourceId ID ที่มา
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return PlatformTransaction
+     * @param  float  $amount  จำนวนเงิน
+     * @param  int  $userId  ผู้รับ
+     * @param  string  $sourceType  ที่มา
+     * @param  int  $sourceId  ID ที่มา
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      */
     public function payMlmCommission(
         float $amount,
@@ -210,10 +205,6 @@ class PlatformRevenueService
 
     /**
      * ดึงสรุปรายได้ Platform
-     *
-     * @param Carbon|null $startDate
-     * @param Carbon|null $endDate
-     * @return array
      */
     public function getRevenueSummary(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
@@ -239,10 +230,6 @@ class PlatformRevenueService
 
     /**
      * ดึงสรุปรายได้แยกตามประเภท
-     *
-     * @param Carbon|null $startDate
-     * @param Carbon|null $endDate
-     * @return Collection
      */
     public function getRevenueByType(?Carbon $startDate = null, ?Carbon $endDate = null): Collection
     {
@@ -265,8 +252,7 @@ class PlatformRevenueService
     /**
      * ดึงยอดรายได้รายวัน (สำหรับ Chart)
      *
-     * @param int $days จำนวนวัน
-     * @return Collection
+     * @param  int  $days  จำนวนวัน
      */
     public function getDailyRevenue(int $days = 30): Collection
     {
@@ -283,8 +269,7 @@ class PlatformRevenueService
     /**
      * ดึงยอดรายได้รายเดือน (สำหรับ Chart)
      *
-     * @param int $months จำนวนเดือน
-     * @return Collection
+     * @param  int  $months  จำนวนเดือน
      */
     public function getMonthlyRevenue(int $months = 12): Collection
     {
@@ -300,8 +285,6 @@ class PlatformRevenueService
 
     /**
      * ดึงยอดคงเหลือทุกกระเป๋า
-     *
-     * @return Collection
      */
     public function getAllWalletBalances(): Collection
     {
@@ -312,9 +295,6 @@ class PlatformRevenueService
 
     /**
      * ดึง transactions ล่าสุด
-     *
-     * @param int $limit
-     * @return Collection
      */
     public function getRecentTransactions(int $limit = 20): Collection
     {
@@ -327,8 +307,7 @@ class PlatformRevenueService
     /**
      * ดึงสถิติรายวัน
      *
-     * @param Carbon $date วันที่ต้องการดูสถิติ
-     * @return array
+     * @param  Carbon  $date  วันที่ต้องการดูสถิติ
      */
     public function getDailyStats(Carbon $date): array
     {
@@ -369,9 +348,8 @@ class PlatformRevenueService
     /**
      * ดึงสถิติรายเดือน
      *
-     * @param int $year ปี
-     * @param int $month เดือน
-     * @return array
+     * @param  int  $year  ปี
+     * @param  int  $month  เดือน
      */
     public function getMonthlyStats(int $year, int $month): array
     {
@@ -412,8 +390,7 @@ class PlatformRevenueService
     /**
      * ดึงสถิติรายปี
      *
-     * @param int $year ปี
-     * @return array
+     * @param  int  $year  ปี
      */
     public function getYearlyStats(int $year): array
     {
@@ -471,8 +448,6 @@ class PlatformRevenueService
 
     /**
      * ดึงสถิติสำหรับ Dashboard
-     *
-     * @return array
      */
     public function getDashboardStats(): array
     {
@@ -504,11 +479,6 @@ class PlatformRevenueService
     /**
      * โอนเงินระหว่างกระเป๋า
      *
-     * @param PlatformWallet $fromWallet
-     * @param PlatformWallet $toWallet
-     * @param float $amount
-     * @param string|null $description
-     * @param int|null $processedBy
      * @return array [from_transaction, to_transaction]
      */
     public function transferBetweenWallets(

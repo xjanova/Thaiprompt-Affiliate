@@ -75,8 +75,6 @@ class MessageIntent extends Model
 
     /**
      * ความสัมพันธ์กับ MessageSentiment
-     *
-     * @return BelongsTo
      */
     public function sentiment(): BelongsTo
     {
@@ -85,8 +83,6 @@ class MessageIntent extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotKeyword
-     *
-     * @return BelongsTo
      */
     public function keyword(): BelongsTo
     {
@@ -96,8 +92,8 @@ class MessageIntent extends Model
     /**
      * Scope: ดึง intents ตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $intent ชนิด intent
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $intent  ชนิด intent
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $intent)
@@ -108,8 +104,8 @@ class MessageIntent extends Model
     /**
      * Scope: ดึง intents ตามแผนก
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $department ชื่อแผนก
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $department  ชื่อแผนก
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForDepartment($query, string $department)
@@ -120,8 +116,8 @@ class MessageIntent extends Model
     /**
      * Scope: ดึง intents ตามระดับความสำคัญ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $level ระดับความสำคัญ (LOW, NORMAL, HIGH, URGENT)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $level  ระดับความสำคัญ (LOW, NORMAL, HIGH, URGENT)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithPriority($query, string $level)
@@ -132,7 +128,7 @@ class MessageIntent extends Model
     /**
      * Scope: ดึง intents เร่งด่วน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUrgent($query)
@@ -143,8 +139,8 @@ class MessageIntent extends Model
     /**
      * Scope: ดึง intents ที่มี confidence สูง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minConfidence ค่า confidence ต่ำสุด (default: 0.85)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minConfidence  ค่า confidence ต่ำสุด (default: 0.85)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighConfidence($query, float $minConfidence = 0.85)
@@ -154,8 +150,6 @@ class MessageIntent extends Model
 
     /**
      * ความมั่นใจในรูปแบบเปอร์เซ็นต์
-     *
-     * @return int
      */
     public function getConfidencePercentageAttribute(): int
     {
@@ -164,8 +158,6 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent เป็นการร้องเรียน
-     *
-     * @return bool
      */
     public function isComplaint(): bool
     {
@@ -174,8 +166,6 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent เป็นการสอบถาม
-     *
-     * @return bool
      */
     public function isInquiry(): bool
     {
@@ -184,8 +174,6 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent เป็นการขอความช่วยเหลือ
-     *
-     * @return bool
      */
     public function isSupport(): bool
     {
@@ -194,8 +182,6 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent เป็นการซื้อสินค้า
-     *
-     * @return bool
      */
     public function isPurchase(): bool
     {
@@ -204,8 +190,6 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent เร่งด่วน
-     *
-     * @return bool
      */
     public function isUrgent(): bool
     {
@@ -214,18 +198,14 @@ class MessageIntent extends Model
 
     /**
      * ตรวจสอบว่า intent มี secondary intents
-     *
-     * @return bool
      */
     public function hasSecondaryIntents(): bool
     {
-        return !empty($this->secondary_intents) && is_array($this->secondary_intents);
+        return ! empty($this->secondary_intents) && is_array($this->secondary_intents);
     }
 
     /**
      * ดึงจำนวน secondary intents
-     *
-     * @return int
      */
     public function getSecondaryIntentCountAttribute(): int
     {
@@ -234,8 +214,6 @@ class MessageIntent extends Model
 
     /**
      * ดึง all intents (primary + secondary)
-     *
-     * @return array
      */
     public function getAllIntents(): array
     {
@@ -251,12 +229,11 @@ class MessageIntent extends Model
     /**
      * ได้รับ intent score สำหรับ intent เฉพาะ
      *
-     * @param string $intent ชื่อ intent
-     * @return float|null
+     * @param  string  $intent  ชื่อ intent
      */
     public function getIntentScore(string $intent): ?float
     {
-        if (empty($this->intent_scores) || !is_array($this->intent_scores)) {
+        if (empty($this->intent_scores) || ! is_array($this->intent_scores)) {
             return null;
         }
 
@@ -265,12 +242,10 @@ class MessageIntent extends Model
 
     /**
      * ได้รับไอคอน priority level
-     *
-     * @return string
      */
     public function getPriorityIconAttribute(): string
     {
-        return match($this->priority_level) {
+        return match ($this->priority_level) {
             'LOW' => '🟢',
             'NORMAL' => '🟡',
             'HIGH' => '🟠',
@@ -281,12 +256,10 @@ class MessageIntent extends Model
 
     /**
      * ได้รับป้ายกำกับ priority level
-     *
-     * @return string
      */
     public function getPriorityLabelAttribute(): string
     {
-        return match($this->priority_level) {
+        return match ($this->priority_level) {
             'LOW' => 'ต่ำ',
             'NORMAL' => 'ปกติ',
             'HIGH' => 'สูง',

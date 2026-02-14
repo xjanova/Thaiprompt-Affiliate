@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services;
 
-use Tests\TestCase;
 use App\Services\ComponentService;
+use Tests\TestCase;
 
 /**
  * ComponentService Unit Tests
@@ -17,7 +17,7 @@ class ComponentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new ComponentService();
+        $this->service = new ComponentService;
     }
 
     /** @test */

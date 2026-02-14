@@ -71,7 +71,7 @@ class GameRoom extends Model
      */
     public function canJoin(): bool
     {
-        return $this->status === 'waiting' && !$this->isFull();
+        return $this->status === 'waiting' && ! $this->isFull();
     }
 
     /**
@@ -102,7 +102,7 @@ class GameRoom extends Model
     public function updatePlayerCount()
     {
         $this->update([
-            'current_players' => $this->activePlayers()->count()
+            'current_players' => $this->activePlayers()->count(),
         ]);
     }
 }

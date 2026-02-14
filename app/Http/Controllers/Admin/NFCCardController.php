@@ -6,17 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\NFCCard;
 use App\Models\NFCTransaction;
 use App\Models\User;
-use App\Services\NFC\NFCCardService;
 use App\Services\NFC\NFCCardEncryptionService;
+use App\Services\NFC\NFCCardService;
 use App\Services\NfcTemplateRecordsBuilder;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class NFCCardController extends Controller
 {
     protected NFCCardService $nfcCardService;
+
     protected NFCCardEncryptionService $encryptionService;
 
     public function __construct(
@@ -98,7 +99,7 @@ class NFCCardController extends Controller
         $validated = $request->validate([
             'card_number' => 'required|string|unique:nfc_cards,card_number',
             'card_name' => 'nullable|string|max:255',
-            'card_type' => 'required|in:' . implode(',', [
+            'card_type' => 'required|in:'.implode(',', [
                 NFCCard::TYPE_STANDARD,
                 NFCCard::TYPE_PREMIUM,
                 NFCCard::TYPE_VIP,
@@ -123,7 +124,7 @@ class NFCCardController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'ไม่สามารถออกบัตรได้: ' . $e->getMessage());
+                ->with('error', 'ไม่สามารถออกบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -183,7 +184,7 @@ class NFCCardController extends Controller
 
         $validated = $request->validate([
             'card_name' => 'nullable|string|max:255',
-            'card_type' => 'required|in:' . implode(',', [
+            'card_type' => 'required|in:'.implode(',', [
                 NFCCard::TYPE_STANDARD,
                 NFCCard::TYPE_PREMIUM,
                 NFCCard::TYPE_VIP,
@@ -202,7 +203,7 @@ class NFCCardController extends Controller
         } catch (Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'ไม่สามารถอัพเดทข้อมูลได้: ' . $e->getMessage());
+                ->with('error', 'ไม่สามารถอัพเดทข้อมูลได้: '.$e->getMessage());
         }
     }
 
@@ -223,7 +224,7 @@ class NFCCardController extends Controller
                 ->route('admin.nfc-cards.index')
                 ->with('success', 'ลบบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถลบบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถลบบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -252,7 +253,6 @@ class NFCCardController extends Controller
      * 3. จับคู่บัตรกับผู้ใช้
      * 4. บันทึกข้อมูลลงฐานข้อมูล
      *
-     * @param NFCCard $nfcCard
      * @return \Illuminate\View\View
      */
     public function pairAndWrite(NFCCard $nfcCard)
@@ -289,7 +289,7 @@ class NFCCardController extends Controller
                 ->route('admin.nfc-cards.show', $nfcCard)
                 ->with('success', 'จับคู่บัตรกับผู้ใช้สำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถจับคู่บัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถจับคู่บัตรได้: '.$e->getMessage());
         }
     }
 
@@ -303,7 +303,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ยกเลิกการจับคู่บัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถยกเลิกการจับคู่ได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถยกเลิกการจับคู่ได้: '.$e->getMessage());
         }
     }
 
@@ -317,7 +317,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'เปิดใช้งานบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถเปิดใช้งานบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถเปิดใช้งานบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -331,7 +331,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ปิดการใช้งานบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถปิดการใช้งานบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถปิดการใช้งานบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -354,7 +354,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'บล็อกบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถบล็อกบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถบล็อกบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -368,7 +368,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ปลดบล็อกบัตรสำเร็จ');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถปลดบล็อกบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถปลดบล็อกบัตรได้: '.$e->getMessage());
         }
     }
 
@@ -403,11 +403,11 @@ class NFCCardController extends Controller
 
             return redirect()
                 ->route('admin.nfc-cards.show', $nfcCard)
-                ->with('success', 'เติมเงินสำเร็จ จำนวน ' . number_format($validated['amount'], 2) . ' บาท');
+                ->with('success', 'เติมเงินสำเร็จ จำนวน '.number_format($validated['amount'], 2).' บาท');
         } catch (Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'ไม่สามารถเติมเงินได้: ' . $e->getMessage());
+                ->with('error', 'ไม่สามารถเติมเงินได้: '.$e->getMessage());
         }
     }
 
@@ -454,18 +454,18 @@ class NFCCardController extends Controller
 
         $cards = $query->get();
 
-        $filename = 'nfc-cards-' . date('Y-m-d-His') . '.csv';
+        $filename = 'nfc-cards-'.date('Y-m-d-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($cards) {
             $file = fopen('php://output', 'w');
 
             // Add UTF-8 BOM
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header
             fputcsv($file, [
@@ -566,7 +566,6 @@ class NFCCardController extends Controller
     /**
      * แสดงรายการธุรกรรมทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function transactions(Request $request)
@@ -619,8 +618,6 @@ class NFCCardController extends Controller
     /**
      * พักการใช้งานบัตร
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function suspend(Request $request, NFCCard $nfcCard)
@@ -634,15 +631,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'พักการใช้งานบัตรเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถพักการใช้งานบัตรได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถพักการใช้งานบัตรได้: '.$e->getMessage());
         }
     }
 
     /**
      * อัพเดทวงเงินการใช้จ่าย
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSpendingLimits(Request $request, NFCCard $nfcCard)
@@ -662,15 +657,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'อัพเดทวงเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถอัพเดทวงเงินได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถอัพเดทวงเงินได้: '.$e->getMessage());
         }
     }
 
     /**
      * ผูกบัตรกับ Wallet
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function linkWallet(Request $request, NFCCard $nfcCard)
@@ -684,14 +677,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ผูกการ์ดกับ Wallet เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถผูกการ์ดกับ Wallet ได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถผูกการ์ดกับ Wallet ได้: '.$e->getMessage());
         }
     }
 
     /**
      * ยกเลิกการผูกบัตรกับ Wallet
      *
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unlinkWallet(NFCCard $nfcCard)
@@ -701,15 +693,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ยกเลิกการผูกการ์ดเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถยกเลิกการผูกได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถยกเลิกการผูกได้: '.$e->getMessage());
         }
     }
 
     /**
      * ตั้งค่า Auto Top-up
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\\Http\RedirectResponse
      */
     public function configureAutoTopUp(Request $request, NFCCard $nfcCard)
@@ -735,15 +725,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', $message);
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถตั้งค่า Auto Top-up ได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถตั้งค่า Auto Top-up ได้: '.$e->getMessage());
         }
     }
 
     /**
      * เปิดใช้งาน TPIX
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function enableTPIX(Request $request, NFCCard $nfcCard)
@@ -757,14 +745,13 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'เปิดใช้งาน TPIX เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถเปิดใช้งาน TPIX ได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถเปิดใช้งาน TPIX ได้: '.$e->getMessage());
         }
     }
 
     /**
      * ปิดใช้งาน TPIX
      *
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\RedirectResponse
      */
     public function disableTPIX(NFCCard $nfcCard)
@@ -774,7 +761,7 @@ class NFCCardController extends Controller
 
             return back()->with('success', 'ปิดใช้งาน TPIX เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return back()->with('error', 'ไม่สามารถปิดใช้งาน TPIX ได้: ' . $e->getMessage());
+            return back()->with('error', 'ไม่สามารถปิดใช้งาน TPIX ได้: '.$e->getMessage());
         }
     }
 
@@ -789,7 +776,6 @@ class NFCCardController extends Controller
      * - สร้าง Hash จาก Card Number + UID + Secret + Timestamp
      * - สร้าง Digital Signature
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function generateAntiCounterfeitCode(Request $request)
@@ -812,7 +798,7 @@ class NFCCardController extends Controller
                 $cardNumber,
                 $uid ?? 'NO_UID',
                 $secret,
-                $timestamp
+                $timestamp,
             ]);
 
             $antiCounterfeitCode = hash('sha256', $authData);
@@ -828,7 +814,7 @@ class NFCCardController extends Controller
                 'card_number' => $cardNumber,
                 'uid' => $uid,
                 'timestamp' => $timestamp,
-                'auth_code_hash' => substr($antiCounterfeitCode, 0, 16) . '...',
+                'auth_code_hash' => substr($antiCounterfeitCode, 0, 16).'...',
             ]);
 
             return response()->json([
@@ -836,24 +822,24 @@ class NFCCardController extends Controller
                 'code' => $antiCounterfeitCode,
                 'signature' => $signature,
                 'timestamp' => $timestamp,
-                'message' => 'สร้างรหัสป้องกันปลอมสำเร็จ'
+                'message' => 'สร้างรหัสป้องกันปลอมสำเร็จ',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to generate anti-counterfeit code', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถสร้างรหัสป้องกันปลอมได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถสร้างรหัสป้องกันปลอมได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -863,7 +849,6 @@ class NFCCardController extends Controller
      *
      * ใช้เมื่ออ่านบัตร NFC เพื่อตรวจสอบว่าเป็นบัตรแท้หรือไม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function verifyAntiCounterfeitCode(Request $request)
@@ -884,11 +869,11 @@ class NFCCardController extends Controller
             // ตรวจสอบว่ามีบัตรในระบบหรือไม่
             $card = NFCCard::where('card_number', $cardNumber)->first();
 
-            if (!$card) {
+            if (! $card) {
                 return response()->json([
                     'success' => false,
                     'verified' => false,
-                    'message' => 'ไม่พบบัตรในระบบ'
+                    'message' => 'ไม่พบบัตรในระบบ',
                 ], 404);
             }
 
@@ -941,7 +926,7 @@ class NFCCardController extends Controller
                     'signature_valid' => $signatureValid,
                     'uid_match' => $uidMatch,
                 ],
-                'message' => $verified ? 'บัตรแท้ - ตรวจสอบผ่าน' : 'บัตรไม่ถูกต้อง - ตรวจสอบไม่ผ่าน'
+                'message' => $verified ? 'บัตรแท้ - ตรวจสอบผ่าน' : 'บัตรไม่ถูกต้อง - ตรวจสอบไม่ผ่าน',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -949,18 +934,18 @@ class NFCCardController extends Controller
                 'success' => false,
                 'verified' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to verify anti-counterfeit code', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'verified' => false,
-                'message' => 'ไม่สามารถตรวจสอบได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถตรวจสอบได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -970,8 +955,6 @@ class NFCCardController extends Controller
      *
      * เรียกหลังจากเขียนข้อมูลลงบัตร NFC สำเร็จ
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveNFCUID(Request $request, NFCCard $nfcCard)
@@ -1000,14 +983,14 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'บันทึกข้อมูล NFC สำเร็จ'
+                'message' => 'บันทึกข้อมูล NFC สำเร็จ',
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to save NFC UID', [
@@ -1017,7 +1000,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1027,7 +1010,6 @@ class NFCCardController extends Controller
      *
      * Admin เท่านั้นที่สามารถล็อคบัตรได้
      *
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\JsonResponse
      */
     public function lockCard(NFCCard $nfcCard)
@@ -1071,7 +1053,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถล็อคบัตรได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถล็อคบัตรได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1081,14 +1063,13 @@ class NFCCardController extends Controller
      *
      * Admin เท่านั้นที่สามารถปลดล็อคบัตรได้
      *
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\JsonResponse
      */
     public function unlockCard(NFCCard $nfcCard)
     {
         try {
             // ตรวจสอบว่าบัตรถูกล็อคหรือไม่
-            if (!$nfcCard->is_locked) {
+            if (! $nfcCard->is_locked) {
                 return response()->json([
                     'success' => false,
                     'message' => 'บัตรไม่ได้ถูกล็อคอยู่',
@@ -1123,7 +1104,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถปลดล็อคบัตรได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถปลดล็อคบัตรได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1133,8 +1114,6 @@ class NFCCardController extends Controller
      *
      * เรียกหลังจากอ่านบัตร NFC สำเร็จ
      *
-     * @param Request $request
-     * @param NFCCard $nfcCard
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveCardInfo(Request $request, NFCCard $nfcCard)
@@ -1204,7 +1183,7 @@ class NFCCardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to save card info', [
@@ -1214,7 +1193,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1245,7 +1224,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูล templates ได้'
+                'message' => 'ไม่สามารถดึงข้อมูล templates ได้',
             ], 500);
         }
     }
@@ -1253,7 +1232,6 @@ class NFCCardController extends Controller
     /**
      * สร้าง NDEF records จาก template
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function buildTemplateRecords(Request $request)
@@ -1270,10 +1248,10 @@ class NFCCardController extends Controller
             // ดึง template
             $templates = config('nfc-templates.templates', []);
 
-            if (!isset($templates[$templateKey])) {
+            if (! isset($templates[$templateKey])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่พบ template ที่เลือก'
+                    'message' => 'ไม่พบ template ที่เลือก',
                 ], 404);
             }
 
@@ -1293,7 +1271,7 @@ class NFCCardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to build template records', [
@@ -1302,7 +1280,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถสร้าง records ได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถสร้าง records ได้: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1329,7 +1307,6 @@ class NFCCardController extends Controller
     /**
      * บันทึก Log การเขียน NFC
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveNfcWriteLog(Request $request)
@@ -1350,11 +1327,11 @@ class NFCCardController extends Controller
             // หาบัตร NFC ที่ตรงกับ UID หรือสร้างใหม่
             $nfcCard = NFCCard::where('nfc_uid', $nfcUid)->first();
 
-            if (!$nfcCard) {
+            if (! $nfcCard) {
                 // สร้างบัตรใหม่อัตโนมัติ
                 $nfcCard = NFCCard::create([
-                    'card_number' => 'NFC-' . strtoupper(substr(md5($nfcUid . time()), 0, 8)),
-                    'card_name' => 'NFC Card - ' . $template,
+                    'card_number' => 'NFC-'.strtoupper(substr(md5($nfcUid.time()), 0, 8)),
+                    'card_name' => 'NFC Card - '.$template,
                     'nfc_uid' => $nfcUid,
                     'status' => NFCCard::STATUS_ACTIVE,
                     'issued_by' => auth()->id(),
@@ -1408,7 +1385,7 @@ class NFCCardController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (Exception $e) {
             Log::error('Failed to save NFC write log', [
@@ -1418,7 +1395,7 @@ class NFCCardController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถบันทึกข้อมูลได้: ' . $e->getMessage()
+                'message' => 'ไม่สามารถบันทึกข้อมูลได้: '.$e->getMessage(),
             ], 500);
         }
     }

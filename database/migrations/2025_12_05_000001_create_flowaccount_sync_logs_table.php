@@ -1,6 +1,5 @@
 <?php
 
-use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง accounting_flowaccount_sync_logs สำหรับเก็บ log การซิงค์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -66,8 +63,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง
-     *
-     * @return void
      */
     public function down(): void
     {

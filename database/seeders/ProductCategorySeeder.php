@@ -45,7 +45,7 @@ class ProductCategorySeeder extends Seeder
             ]);
         }
 
-        $this->command->info('✅ Product categories seeded successfully: ' . count($categories) . ' categories');
+        $this->command->info('✅ Product categories seeded successfully: '.count($categories).' categories');
     }
 
     /**
@@ -61,7 +61,7 @@ class ProductCategorySeeder extends Seeder
         $skipped = 0;
 
         foreach ($categories as $index => $category) {
-            if (!ProductCategory::where('slug', $category['slug'])->exists()) {
+            if (! ProductCategory::where('slug', $category['slug'])->exists()) {
                 ProductCategory::create([
                     'name' => $category['name'],
                     'slug' => $category['slug'],

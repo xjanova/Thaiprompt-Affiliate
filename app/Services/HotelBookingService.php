@@ -2,18 +2,18 @@
 
 namespace App\Services;
 
+use App\Models\Hotel;
 use App\Models\HotelBooking;
 use App\Models\RoomType;
-use App\Models\Hotel;
 use App\Models\User;
-use App\Models\HotelSpecialOffer;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class HotelBookingService
 {
     protected $availabilityService;
+
     protected $pricingService;
 
     public function __construct(
@@ -36,7 +36,7 @@ class HotelBookingService
             $hotel = $roomType->hotel;
 
             // Validate availability
-            if (!$this->validateAvailability($roomType, $data)) {
+            if (! $this->validateAvailability($roomType, $data)) {
                 throw new Exception('Selected rooms are not available for the chosen dates.');
             }
 
@@ -137,7 +137,7 @@ class HotelBookingService
      */
     public function cancelBooking(HotelBooking $booking, $reason = null, $refundAmount = 0)
     {
-        if (!$booking->canBeCancelled()) {
+        if (! $booking->canBeCancelled()) {
             throw new Exception('This booking cannot be cancelled.');
         }
 
@@ -166,7 +166,7 @@ class HotelBookingService
      */
     public function checkIn(HotelBooking $booking)
     {
-        if (!$booking->canBeCheckedIn()) {
+        if (! $booking->canBeCheckedIn()) {
             throw new Exception('Guest cannot be checked in at this time.');
         }
 
@@ -182,7 +182,7 @@ class HotelBookingService
      */
     public function checkOut(HotelBooking $booking)
     {
-        if (!$booking->canBeCheckedOut()) {
+        if (! $booking->canBeCheckedOut()) {
             throw new Exception('Guest cannot be checked out at this time.');
         }
 
@@ -198,7 +198,7 @@ class HotelBookingService
      */
     public function modifyBooking(HotelBooking $booking, array $data)
     {
-        if (!in_array($booking->status, ['pending', 'confirmed'])) {
+        if (! in_array($booking->status, ['pending', 'confirmed'])) {
             throw new Exception('This booking cannot be modified.');
         }
 
@@ -209,7 +209,7 @@ class HotelBookingService
             $this->availabilityService->increaseAvailability($booking);
 
             // Validate new dates
-            if (!$this->validateAvailability($booking->roomType, $data)) {
+            if (! $this->validateAvailability($booking->roomType, $data)) {
                 throw new Exception('Selected dates are not available.');
             }
 
@@ -323,7 +323,7 @@ class HotelBookingService
      */
     protected function calculateOccupancyRate(Hotel $hotel, $startDate, $endDate)
     {
-        if (!$startDate || !$endDate) {
+        if (! $startDate || ! $endDate) {
             $startDate = Carbon::now()->startOfMonth();
             $endDate = Carbon::now()->endOfMonth();
         }

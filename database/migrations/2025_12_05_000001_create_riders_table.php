@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง riders
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -54,7 +52,7 @@ return new class extends Migration
                 'approved',     // อนุมัติแล้ว
                 'rejected',     // ถูกปฏิเสธ
                 'suspended',    // ถูกระงับ
-                'inactive'      // ไม่ใช้งาน
+                'inactive',      // ไม่ใช้งาน
             ])->default('pending');
             $table->enum('availability', ['online', 'offline', 'busy'])
                 ->default('offline');
@@ -98,8 +96,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง riders
-     *
-     * @return void
      */
     public function down(): void
     {

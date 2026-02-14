@@ -93,6 +93,7 @@ class PosTransactionItem extends Model
         }
 
         $taxAmount = $afterDiscount * ($this->tax_percentage / 100);
+
         return round($afterDiscount + $taxAmount, 2);
     }
 
@@ -105,6 +106,7 @@ class PosTransactionItem extends Model
         if ($this->is_tax_inclusive) {
             // Extract tax from inclusive price
             $divisor = 1 + ($this->tax_percentage / 100);
+
             return round($afterDiscount - ($afterDiscount / $divisor), 2);
         }
 

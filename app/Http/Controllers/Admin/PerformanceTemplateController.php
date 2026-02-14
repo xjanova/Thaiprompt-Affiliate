@@ -35,7 +35,7 @@ class PerformanceTemplateController extends Controller
         // TODO: Implement template storage logic
 
         return redirect()->route('admin.hrm.performance.templates.index')
-                        ->with('success', __('Performance template created successfully'));
+            ->with('success', __('Performance template created successfully'));
     }
 
     /**
@@ -66,7 +66,7 @@ class PerformanceTemplateController extends Controller
         // TODO: Implement template update logic
 
         return redirect()->route('admin.hrm.performance.templates.index')
-                        ->with('success', __('Performance template updated successfully'));
+            ->with('success', __('Performance template updated successfully'));
     }
 
     /**
@@ -77,6 +77,6 @@ class PerformanceTemplateController extends Controller
         // TODO: Implement template deletion logic
 
         return redirect()->route('admin.hrm.performance.templates.index')
-                        ->with('success', __('Performance template deleted successfully'));
+            ->with('success', __('Performance template deleted successfully'));
     }
 }

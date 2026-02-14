@@ -136,7 +136,7 @@ class HotelManagementController extends Controller
         $galleryImages = $hotel->gallery_images ?? [];
 
         // Remove image from array
-        $galleryImages = array_filter($galleryImages, function($image) use ($validated) {
+        $galleryImages = array_filter($galleryImages, function ($image) use ($validated) {
             return $image !== $validated['image_path'];
         });
 

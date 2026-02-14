@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class TPIXCurrencySeeder extends Seeder
 {
@@ -47,7 +47,7 @@ class TPIXCurrencySeeder extends Seeder
                     'confirmations_required' => 5, // 5 blocks (~10 seconds)
                     'rpc_endpoints' => json_encode([
                         'http://localhost:8545',
-                        'ws://localhost:8546'
+                        'ws://localhost:8546',
                     ]),
                     'explorer_url' => 'http://localhost:4000',
                     'explorer_tx_path' => '/tx/',
@@ -75,10 +75,10 @@ class TPIXCurrencySeeder extends Seeder
                             'erc20_support' => true,
                             'fixed_supply' => true,
                             'fast_transactions' => true,
-                            'low_fees' => true
-                        ]
+                            'low_fees' => true,
+                        ],
                     ]),
-                    'updated_at' => $now
+                    'updated_at' => $now,
                 ]);
         } else {
             $this->command->info('Creating TPIX currency...');
@@ -108,7 +108,7 @@ class TPIXCurrencySeeder extends Seeder
                 'confirmations_required' => 5, // 5 blocks (~10 seconds)
                 'rpc_endpoints' => json_encode([
                     'http://localhost:8545',
-                    'ws://localhost:8546'
+                    'ws://localhost:8546',
                 ]),
                 'explorer_url' => 'http://localhost:4000',
                 'explorer_tx_path' => '/tx/',
@@ -136,11 +136,11 @@ class TPIXCurrencySeeder extends Seeder
                         'erc20_support' => true,
                         'fixed_supply' => true,
                         'fast_transactions' => true,
-                        'low_fees' => true
-                    ]
+                        'low_fees' => true,
+                    ],
                 ]),
                 'created_at' => $now,
-                'updated_at' => $now
+                'updated_at' => $now,
             ]);
         }
 

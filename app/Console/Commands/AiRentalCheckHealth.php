@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AiRental\HealthCheckService;
 use App\Models\AiRentalDeployment;
+use App\Services\AiRental\HealthCheckService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -34,15 +34,11 @@ class AiRentalCheckHealth extends Command
 
     /**
      * Health Check Service
-     *
-     * @var HealthCheckService
      */
     protected HealthCheckService $healthCheckService;
 
     /**
      * Statistics
-     *
-     * @var array
      */
     protected array $stats = [
         'total' => 0,
@@ -56,8 +52,6 @@ class AiRentalCheckHealth extends Command
 
     /**
      * Constructor
-     *
-     * @param HealthCheckService $healthCheckService
      */
     public function __construct(HealthCheckService $healthCheckService)
     {
@@ -67,8 +61,6 @@ class AiRentalCheckHealth extends Command
 
     /**
      * Execute the command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -91,27 +83,26 @@ class AiRentalCheckHealth extends Command
             // Return exit code
             return $this->stats['unhealthy'] > 0 || $this->stats['failed'] > 0 ? 1 : 0;
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาดในการตรวจสอบ: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาดในการตรวจสอบ: '.$e->getMessage());
             Log::error('AI Rental health check failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 1;
         }
     }
 
     /**
      * ตรวจสอบ deployment เดียว
-     *
-     * @param int $deploymentId
-     * @return void
      */
     protected function checkSingleDeployment(int $deploymentId): void
     {
         $deployment = AiRentalDeployment::find($deploymentId);
 
-        if (!$deployment) {
+        if (! $deployment) {
             $this->error("❌ ไม่พบ deployment ID: {$deploymentId}");
+
             return;
         }
 
@@ -123,8 +114,6 @@ class AiRentalCheckHealth extends Command
 
     /**
      * ตรวจสอบ deployments ทั้งหมดที่ running
-     *
-     * @return void
      */
     protected function checkAllDeployments(): void
     {
@@ -134,6 +123,7 @@ class AiRentalCheckHealth extends Command
 
         if ($this->stats['total'] === 0) {
             $this->warn('⚠️  ไม่มี deployments ที่กำลัง running');
+
             return;
         }
 
@@ -158,21 +148,19 @@ class AiRentalCheckHealth extends Command
 
     /**
      * ตรวจสอบ deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     protected function checkDeployment(AiRentalDeployment $deployment): void
     {
         try {
             // ถ้าไม่ force และเคยตรวจสอบไปไม่นาน ให้ skip
-            if (!$this->option('force')) {
+            if (! $this->option('force')) {
                 $lastCheck = $deployment->healthChecks()
                     ->where('created_at', '>', now()->subMinutes(4))
                     ->first();
 
                 if ($lastCheck) {
                     $this->stats['skipped']++;
+
                     return;
                 }
             }
@@ -224,9 +212,6 @@ class AiRentalCheckHealth extends Command
 
     /**
      * แสดงสรุปผล
-     *
-     * @param \Carbon\Carbon $startTime
-     * @return void
      */
     protected function displaySummary(\Carbon\Carbon $startTime): void
     {

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บประวัติทุก action ที่เกิดขึ้นกับการจอง
      * ใช้สำหรับ audit trail และ debugging
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -58,7 +56,7 @@ return new class extends Migration
                 'cancelled',            // ยกเลิก
                 'refunded',             // คืนเงิน
                 'updated',              // แก้ไขข้อมูล
-                'reassigned'            // มอบหมายใหม่
+                'reassigned',            // มอบหมายใหม่
             ])->comment('Action ที่เกิดขึ้น');
 
             // สถานะ
@@ -87,8 +85,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_actions
-     *
-     * @return void
      */
     public function down(): void
     {

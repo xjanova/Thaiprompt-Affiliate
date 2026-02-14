@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorUserSetting extends Model
@@ -78,10 +78,10 @@ class TwoFactorUserSetting extends Model
         $codes = [];
 
         for ($i = 0; $i < $count; $i++) {
-            $codes[] = strtoupper(Str::random(4) . '-' . Str::random(4));
+            $codes[] = strtoupper(Str::random(4).'-'.Str::random(4));
         }
 
-        $this->recovery_codes = array_map(fn($code) => bcrypt($code), $codes);
+        $this->recovery_codes = array_map(fn ($code) => bcrypt($code), $codes);
         $this->recovery_codes_generated_at = now();
         $this->save();
 
@@ -93,7 +93,7 @@ class TwoFactorUserSetting extends Model
      */
     public function verifyRecoveryCode(string $code): bool
     {
-        if (!$this->recovery_codes) {
+        if (! $this->recovery_codes) {
             return false;
         }
 
@@ -123,7 +123,7 @@ class TwoFactorUserSetting extends Model
     /**
      * Add trusted device
      */
-    public function addTrustedDevice(string $fingerprint, string $name = null): void
+    public function addTrustedDevice(string $fingerprint, ?string $name = null): void
     {
         $devices = $this->trusted_devices ?? [];
 
@@ -143,13 +143,13 @@ class TwoFactorUserSetting extends Model
      */
     public function isTrustedDevice(string $fingerprint): bool
     {
-        if (!TwoFactorSetting::canRememberDevice()) {
+        if (! TwoFactorSetting::canRememberDevice()) {
             return false;
         }
 
         $devices = $this->trusted_devices ?? [];
 
-        if (!isset($devices[$fingerprint])) {
+        if (! isset($devices[$fingerprint])) {
             return false;
         }
 
@@ -160,6 +160,7 @@ class TwoFactorUserSetting extends Model
         // Check if device trust has expired
         if ($addedAt->addDays($expiryDays)->isPast()) {
             $this->removeTrustedDevice($fingerprint);
+
             return false;
         }
 
@@ -199,11 +200,12 @@ class TwoFactorUserSetting extends Model
      */
     public function isWithinGracePeriod(): bool
     {
-        if (!$this->last_verified_at) {
+        if (! $this->last_verified_at) {
             return false;
         }
 
         $gracePeriod = TwoFactorSetting::getGracePeriod();
+
         return $this->last_verified_at->addMinutes($gracePeriod)->isFuture();
     }
 
@@ -269,7 +271,7 @@ class TwoFactorUserSetting extends Model
      */
     public function generateGoogle2FASecret(): string
     {
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
         $secret = $google2fa->generateSecretKey();
 
         // เก็บ secret แบบ encrypted
@@ -284,7 +286,7 @@ class TwoFactorUserSetting extends Model
      */
     public function getGoogle2FASecret(): ?string
     {
-        if (!$this->google2fa_secret) {
+        if (! $this->google2fa_secret) {
             return null;
         }
 
@@ -300,7 +302,7 @@ class TwoFactorUserSetting extends Model
      */
     public function hasGoogle2FASecret(): bool
     {
-        return !empty($this->google2fa_secret);
+        return ! empty($this->google2fa_secret);
     }
 
     /**
@@ -310,11 +312,11 @@ class TwoFactorUserSetting extends Model
     {
         $secret = $this->getGoogle2FASecret();
 
-        if (!$secret) {
+        if (! $secret) {
             return false;
         }
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
 
         // อนุญาต window ± 1 (30 วินาทีก่อนและหลัง)
         return $google2fa->verifyKey($secret, $code, 1);
@@ -323,15 +325,15 @@ class TwoFactorUserSetting extends Model
     /**
      * สร้าง QR Code URL สำหรับ Google Authenticator
      */
-    public function getGoogle2FAQRCodeUrl(string $appName = null): ?string
+    public function getGoogle2FAQRCodeUrl(?string $appName = null): ?string
     {
         $secret = $this->getGoogle2FASecret();
 
-        if (!$secret) {
+        if (! $secret) {
             return null;
         }
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
         $appName = $appName ?? config('app.name', 'Thaiprompt');
         $email = $this->user->email ?? 'user';
 
@@ -345,18 +347,18 @@ class TwoFactorUserSetting extends Model
     /**
      * สร้าง QR Code SVG สำหรับ Google Authenticator
      */
-    public function getGoogle2FAQRCodeSVG(string $appName = null): ?string
+    public function getGoogle2FAQRCodeSVG(?string $appName = null): ?string
     {
         $qrCodeUrl = $this->getGoogle2FAQRCodeUrl($appName);
 
-        if (!$qrCodeUrl) {
+        if (! $qrCodeUrl) {
             return null;
         }
 
         // ใช้ bacon/bacon-qr-code สร้าง SVG
         $renderer = new \BaconQrCode\Renderer\ImageRenderer(
             new \BaconQrCode\Renderer\RendererStyle\RendererStyle(200),
-            new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
+            new \BaconQrCode\Renderer\Image\SvgImageBackEnd
         );
 
         $writer = new \BaconQrCode\Writer($renderer);

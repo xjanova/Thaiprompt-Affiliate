@@ -26,7 +26,7 @@ class MultiplayerController extends Controller
         $room = GameRoom::create([
             'game_id' => $game->id,
             'room_code' => GameRoom::generateRoomCode(),
-            'name' => $validated['name'] ?? 'Room ' . GameRoom::generateRoomCode(),
+            'name' => $validated['name'] ?? 'Room '.GameRoom::generateRoomCode(),
             'max_players' => $validated['max_players'] ?? 10,
         ]);
 
@@ -61,7 +61,7 @@ class MultiplayerController extends Controller
         $game = Game::where('slug', $slug)->firstOrFail();
         $room = GameRoom::where('room_code', $roomCode)->firstOrFail();
 
-        if (!$room->canJoin()) {
+        if (! $room->canJoin()) {
             return response()->json(['error' => 'Room is full or not available'], 400);
         }
 

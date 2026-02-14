@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use App\Models\AiRentalDeployment;
 use App\Models\AiRentalCloudConfig;
+use App\Models\AiRentalDeployment;
 use App\Models\AiRentalModel;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -20,14 +20,13 @@ class AiRentalDeploymentService
     /**
      * สร้าง Deployment ใหม่
      *
-     * @param User $user ผู้ใช้
-     * @param AiRentalCloudConfig $config Cloud configuration
-     * @param AiRentalModel $model AI Model ที่จะ deploy
-     * @param string $instanceType ประเภท instance (e.g., "A100-40GB")
-     * @param string|null $deploymentName ชื่อ deployment (optional)
-     * @param array $environmentVars ตัวแปร environment (optional)
-     * @param int|null $autoStopMinutes เวลาหยุดอัตโนมัติ (นาที)
-     * @return AiRentalDeployment
+     * @param  User  $user  ผู้ใช้
+     * @param  AiRentalCloudConfig  $config  Cloud configuration
+     * @param  AiRentalModel  $model  AI Model ที่จะ deploy
+     * @param  string  $instanceType  ประเภท instance (e.g., "A100-40GB")
+     * @param  string|null  $deploymentName  ชื่อ deployment (optional)
+     * @param  array  $environmentVars  ตัวแปร environment (optional)
+     * @param  int|null  $autoStopMinutes  เวลาหยุดอัตโนมัติ (นาที)
      *
      * @throws \Exception
      */
@@ -50,7 +49,7 @@ class AiRentalDeploymentService
             $autoStopMinutes
         ) {
             // สร้างชื่อ deployment (ถ้าไม่ระบุ)
-            if (!$deploymentName) {
+            if (! $deploymentName) {
                 $deploymentName = $this->generateDeploymentName($model->name);
             }
 
@@ -74,7 +73,7 @@ class AiRentalDeploymentService
             ]);
 
             // Log การสร้าง
-            Log::info("Deployment created", [
+            Log::info('Deployment created', [
                 'deployment_id' => $deployment->id,
                 'user_id' => $user->id,
                 'model' => $model->name,
@@ -90,9 +89,6 @@ class AiRentalDeploymentService
 
     /**
      * เริ่มกระบวนการ Deploy
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     protected function initiateDeployment(AiRentalDeployment $deployment): void
     {
@@ -104,7 +100,7 @@ class AiRentalDeploymentService
             // ตอนนี้ใช้ Mock data
             $this->mockDeploymentProcess($deployment);
 
-            Log::info("Deployment initiated", [
+            Log::info('Deployment initiated', [
                 'deployment_id' => $deployment->id,
             ]);
 
@@ -115,7 +111,7 @@ class AiRentalDeploymentService
                 'logs' => $this->appendLog($deployment->logs, 'error', $e->getMessage()),
             ]);
 
-            Log::error("Deployment failed", [
+            Log::error('Deployment failed', [
                 'deployment_id' => $deployment->id,
                 'error' => $e->getMessage(),
             ]);
@@ -128,14 +124,11 @@ class AiRentalDeploymentService
      * Mock Deployment Process (สำหรับทดสอบ)
      *
      * ในโปรดักชันจริงจะเรียก API ของ Cloud Provider
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     protected function mockDeploymentProcess(AiRentalDeployment $deployment): void
     {
         // สร้าง instance_id และ endpoint_url (mock)
-        $instanceId = 'inst-' . Str::random(12);
+        $instanceId = 'inst-'.Str::random(12);
         $endpointUrl = "https://api-{$instanceId}.inference.example.com/v1";
 
         // อัพเดท deployment
@@ -154,8 +147,6 @@ class AiRentalDeploymentService
     /**
      * เริ่ม Deployment (หลังจากหยุดไปแล้ว)
      *
-     * @param AiRentalDeployment $deployment
-     * @return void
      *
      * @throws \Exception
      */
@@ -178,7 +169,7 @@ class AiRentalDeploymentService
                 'logs' => $this->appendLog($deployment->logs, 'success', 'Deployment started successfully'),
             ]);
 
-            Log::info("Deployment started", [
+            Log::info('Deployment started', [
                 'deployment_id' => $deployment->id,
             ]);
 
@@ -188,7 +179,7 @@ class AiRentalDeploymentService
                 'logs' => $this->appendLog($deployment->logs, 'error', $e->getMessage()),
             ]);
 
-            Log::error("Failed to start deployment", [
+            Log::error('Failed to start deployment', [
                 'deployment_id' => $deployment->id,
                 'error' => $e->getMessage(),
             ]);
@@ -200,8 +191,6 @@ class AiRentalDeploymentService
     /**
      * หยุด Deployment
      *
-     * @param AiRentalDeployment $deployment
-     * @return void
      *
      * @throws \Exception
      */
@@ -221,7 +210,7 @@ class AiRentalDeploymentService
             // Finalize deployment (คำนวณต้นทุน)
             $this->finalizeDeployment($deployment);
 
-            Log::info("Deployment stopped", [
+            Log::info('Deployment stopped', [
                 'deployment_id' => $deployment->id,
                 'total_hours' => $deployment->total_hours,
                 'total_cost' => $deployment->total_cost,
@@ -233,7 +222,7 @@ class AiRentalDeploymentService
                 'logs' => $this->appendLog($deployment->logs, 'error', $e->getMessage()),
             ]);
 
-            Log::error("Failed to stop deployment", [
+            Log::error('Failed to stop deployment', [
                 'deployment_id' => $deployment->id,
                 'error' => $e->getMessage(),
             ]);
@@ -245,8 +234,6 @@ class AiRentalDeploymentService
     /**
      * รีสตาร์ท Deployment
      *
-     * @param AiRentalDeployment $deployment
-     * @return void
      *
      * @throws \Exception
      */
@@ -266,12 +253,12 @@ class AiRentalDeploymentService
             // เริ่มใหม่
             $this->startDeployment($deployment);
 
-            Log::info("Deployment restarted", [
+            Log::info('Deployment restarted', [
                 'deployment_id' => $deployment->id,
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Failed to restart deployment", [
+            Log::error('Failed to restart deployment', [
                 'deployment_id' => $deployment->id,
                 'error' => $e->getMessage(),
             ]);
@@ -282,9 +269,6 @@ class AiRentalDeploymentService
 
     /**
      * Finalize Deployment (คำนวณต้นทุนเมื่อหยุด)
-     *
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     public function finalizeDeployment(AiRentalDeployment $deployment): void
     {
@@ -319,9 +303,6 @@ class AiRentalDeploymentService
 
     /**
      * คำนวณต้นทุนต่อชั่วโมง
-     *
-     * @param AiRentalDeployment $deployment
-     * @return float
      */
     protected function calculateCostPerHour(AiRentalDeployment $deployment): float
     {
@@ -339,9 +320,6 @@ class AiRentalDeploymentService
 
     /**
      * ดึง multiplier สำหรับ instance type
-     *
-     * @param string $instanceType
-     * @return float
      */
     protected function getInstanceTypeMultiplier(string $instanceType): float
     {
@@ -369,9 +347,6 @@ class AiRentalDeploymentService
 
     /**
      * ดึง Logs
-     *
-     * @param AiRentalDeployment $deployment
-     * @return array
      */
     public function fetchLogs(AiRentalDeployment $deployment): array
     {
@@ -383,21 +358,17 @@ class AiRentalDeploymentService
 
     /**
      * สร้างชื่อ Deployment
-     *
-     * @param string $modelName
-     * @return string
      */
     protected function generateDeploymentName(string $modelName): string
     {
         $slug = Str::slug($modelName);
         $random = Str::random(6);
+
         return "{$slug}-{$random}";
     }
 
     /**
      * สร้าง Initial Logs
-     *
-     * @return array
      */
     protected function createInitialLogs(): array
     {
@@ -438,10 +409,7 @@ class AiRentalDeploymentService
     /**
      * เพิ่ม Log Entry
      *
-     * @param array|null $existingLogs
-     * @param string $level (info, success, warning, error)
-     * @param string $message
-     * @return array
+     * @param  string  $level  (info, success, warning, error)
      */
     protected function appendLog(?array $existingLogs, string $level, string $message): array
     {
@@ -463,9 +431,6 @@ class AiRentalDeploymentService
 
     /**
      * ตรวจสอบ Health ของ Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return array
      */
     public function checkHealth(AiRentalDeployment $deployment): array
     {
@@ -482,9 +447,6 @@ class AiRentalDeploymentService
 
     /**
      * ดึงสถิติการใช้งาน
-     *
-     * @param User $user
-     * @return array
      */
     public function getUserStats(User $user): array
     {

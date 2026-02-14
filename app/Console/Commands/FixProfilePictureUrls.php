@@ -32,8 +32,6 @@ class FixProfilePictureUrls extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -52,12 +50,13 @@ class FixProfilePictureUrls extends Command
         $users = User::whereNotNull('profile_picture')
             ->where(function ($query) {
                 $query->where('profile_picture', 'like', '/storage/%')
-                      ->orWhere('profile_picture', 'like', 'http%');
+                    ->orWhere('profile_picture', 'like', 'http%');
             })
             ->get();
 
         if ($users->isEmpty()) {
             $this->info('✅ ไม่พบ profile_picture ที่ต้องแก้ไข');
+
             return Command::SUCCESS;
         }
 
@@ -79,7 +78,7 @@ class FixProfilePictureUrls extends Command
 
             // ตรวจสอบว่าไฟล์มีอยู่จริง
             if (Storage::disk('public')->exists($path)) {
-                if (!$dryRun) {
+                if (! $dryRun) {
                     $user->profile_picture = $path;
                     $user->save();
                 }
@@ -88,7 +87,7 @@ class FixProfilePictureUrls extends Command
                 $progressBar->advance();
             } elseif ($force) {
                 // บังคับแก้ไขแม้ว่าไฟล์ไม่พบ
-                if (!$dryRun) {
+                if (! $dryRun) {
                     $user->profile_picture = $path;
                     $user->save();
                 }
@@ -122,7 +121,7 @@ class FixProfilePictureUrls extends Command
             $this->info('💡 Tip: รันคำสั่งโดยไม่ใช้ --dry-run เพื่อบันทึกการเปลี่ยนแปลง');
         }
 
-        if ($skippedCount > 0 && !$force) {
+        if ($skippedCount > 0 && ! $force) {
             $this->newLine();
             $this->warn("⚠️  มี {$skippedCount} users ที่ข้ามไปเพราะไฟล์ไม่พบ");
             $this->info('💡 Tip: ใช้ --force เพื่อบังคับแก้ไขแม้ว่าไฟล์ไม่พบ');
@@ -136,9 +135,6 @@ class FixProfilePictureUrls extends Command
 
     /**
      * แปลง URL → PATH
-     *
-     * @param string $url
-     * @return string
      */
     private function convertUrlToPath(string $url): string
     {
@@ -147,9 +143,9 @@ class FixProfilePictureUrls extends Command
             '/storage/',
             url('/storage/'),
             Storage::disk('public')->url(''),
-            config('app.url') . '/storage/',
-            'http://' . request()->getHost() . '/storage/',
-            'https://' . request()->getHost() . '/storage/',
+            config('app.url').'/storage/',
+            'http://'.request()->getHost().'/storage/',
+            'https://'.request()->getHost().'/storage/',
         ];
 
         $path = $url;

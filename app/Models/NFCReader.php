@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NFCReader extends Model
 {
@@ -40,7 +40,9 @@ class NFCReader extends Model
      * สถานะของเครื่องอ่านบัตร
      */
     const STATUS_ACTIVE = 'active';
+
     const STATUS_INACTIVE = 'inactive';
+
     const STATUS_MAINTENANCE = 'maintenance';
 
     /**
@@ -75,7 +77,7 @@ class NFCReader extends Model
      */
     public function isOnline(): bool
     {
-        if (!$this->last_heartbeat) {
+        if (! $this->last_heartbeat) {
             return false;
         }
 
@@ -127,7 +129,7 @@ class NFCReader extends Model
      */
     public function getStatusBadgeColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_ACTIVE => 'green',
             self::STATUS_INACTIVE => 'gray',
             self::STATUS_MAINTENANCE => 'yellow',
@@ -140,7 +142,7 @@ class NFCReader extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_ACTIVE => 'ใช้งานได้',
             self::STATUS_INACTIVE => 'ไม่ได้ใช้งาน',
             self::STATUS_MAINTENANCE => 'ปรับปรุง',

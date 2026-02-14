@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ใช้สำหรับ semantic similarity analysis
      * ค้นหาข้อความที่คล้ายกันและเรียนรู้จากประวัติ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -45,7 +43,7 @@ return new class extends Migration
                 'ENTITY_BASED',       // Same entities mentioned
                 'INTENT_BASED',       // Same intent/goal
                 'CONTEXTUAL',         // Similar context
-                'TOPIC_BASED'         // Same topic
+                'TOPIC_BASED',         // Same topic
             ])->index();
 
             // Related details
@@ -70,8 +68,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง message_similarities
-     *
-     * @return void
      */
     public function down(): void
     {

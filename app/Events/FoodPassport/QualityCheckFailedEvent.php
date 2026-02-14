@@ -3,9 +3,7 @@
 namespace App\Events\FoodPassport;
 
 use App\Models\QualityCheckpoint;
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -32,8 +30,8 @@ class QualityCheckFailedEvent implements ShouldBroadcast
         $product = $this->checkpoint->foodProduct;
 
         return [
-            new PrivateChannel('food-product.' . $product->id),
-            new PrivateChannel('user.' . $product->farmer_id),
+            new PrivateChannel('food-product.'.$product->id),
+            new PrivateChannel('user.'.$product->farmer_id),
             new PrivateChannel('quality-alerts'),
         ];
     }

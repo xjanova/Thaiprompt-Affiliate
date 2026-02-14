@@ -96,6 +96,7 @@ class VideoContent extends Model
         if ($this->required_watch_seconds) {
             return $this->required_watch_seconds;
         }
+
         return ($this->duration_seconds * $this->required_watch_percentage) / 100;
     }
 

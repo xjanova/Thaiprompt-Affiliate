@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 /**
  * LINE Error Log Model
@@ -46,17 +46,24 @@ class LineErrorLog extends Model
      * ระดับความรุนแรงของ Error
      */
     const SEVERITY_LOW = 'low';           // ไม่ร้ายแรง, ไม่กระทบการใช้งาน
+
     const SEVERITY_MEDIUM = 'medium';     // ปานกลาง, กระทบบางส่วน
+
     const SEVERITY_HIGH = 'high';         // ร้ายแรง, กระทบการใช้งาน
+
     const SEVERITY_CRITICAL = 'critical'; // วิกฤต, ระบบใช้งานไม่ได้
 
     /**
      * วิธีการแก้ไข Error
      */
     const RECOVERY_AUTO_RETRY = 'auto_retry';         // Retry อัตโนมัติ
+
     const RECOVERY_CIRCUIT_BREAKER = 'circuit_breaker'; // Circuit breaker
+
     const RECOVERY_FALLBACK = 'fallback';             // ใช้ fallback mechanism
+
     const RECOVERY_MANUAL = 'manual';                 // แก้ไขด้วยมือ
+
     const RECOVERY_IGNORED = 'ignored';               // เพิกเฉย
 
     /**
@@ -101,8 +108,6 @@ class LineErrorLog extends Model
 
     /**
      * ความสัมพันธ์กับ LineFailedMessage
-     *
-     * @return BelongsTo
      */
     public function failedMessage(): BelongsTo
     {
@@ -112,7 +117,7 @@ class LineErrorLog extends Model
     /**
      * Scope: ดึง errors ที่ยังไม่ได้แก้ไข
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnresolved($query)
@@ -124,7 +129,7 @@ class LineErrorLog extends Model
     /**
      * Scope: ดึง errors ที่แก้ไขแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeResolved($query)
@@ -136,8 +141,7 @@ class LineErrorLog extends Model
     /**
      * Scope: ดึง errors ตามระดับความรุนแรง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $severity
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBySeverity($query, string $severity)
@@ -148,8 +152,7 @@ class LineErrorLog extends Model
     /**
      * Scope: ดึง errors ตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $errorType
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByType($query, string $errorType)
@@ -160,9 +163,7 @@ class LineErrorLog extends Model
     /**
      * Scope: ดึง errors ที่เกิดขึ้นในช่วงเวลาที่กำหนด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param Carbon $start
-     * @param Carbon|null $end
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOccurredBetween($query, Carbon $start, ?Carbon $end = null)
@@ -178,10 +179,6 @@ class LineErrorLog extends Model
 
     /**
      * ทำเครื่องหมายว่าแก้ไขแล้ว
-     *
-     * @param string $recoveryMethod
-     * @param string|null $recoveryDetails
-     * @return void
      */
     public function markAsResolved(string $recoveryMethod, ?string $recoveryDetails = null): void
     {
@@ -198,14 +195,6 @@ class LineErrorLog extends Model
 
     /**
      * สร้าง error log จาก exception
-     *
-     * @param \Exception $exception
-     * @param string $errorType
-     * @param string $severity
-     * @param array|null $context
-     * @param int|null $failedMessageId
-     * @param string|null $lineUserId
-     * @return self
      */
     public static function createFromException(
         \Exception $exception,
@@ -235,12 +224,6 @@ class LineErrorLog extends Model
 
     /**
      * สร้าง error log แบบง่าย
-     *
-     * @param string $errorType
-     * @param string $errorMessage
-     * @param string $severity
-     * @param array|null $context
-     * @return self
      */
     public static function log(
         string $errorType,
@@ -261,8 +244,7 @@ class LineErrorLog extends Model
     /**
      * ดึง error statistics
      *
-     * @param int $days จำนวนวันย้อนหลัง
-     * @return array
+     * @param  int  $days  จำนวนวันย้อนหลัง
      */
     public static function getStatistics(int $days = 7): array
     {

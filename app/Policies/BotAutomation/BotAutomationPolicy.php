@@ -2,8 +2,8 @@
 
 namespace App\Policies\BotAutomation;
 
-use App\Models\User;
 use App\Models\BotAutomation\BotAutomation;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class BotAutomationPolicy

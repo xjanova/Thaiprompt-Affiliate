@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง game_settings สำหรับเก็บการตั้งค่าเกม
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -49,8 +47,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง game_settings
-     *
-     * @return void
      */
     public function down(): void
     {

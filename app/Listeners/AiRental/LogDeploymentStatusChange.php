@@ -35,23 +35,17 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * Audit Service
-     *
-     * @var AuditService
      */
     protected AuditService $auditService;
 
     /**
      * Monitoring Service
-     *
-     * @var MonitoringService
      */
     protected MonitoringService $monitoringService;
 
     /**
      * สร้าง listener instance
      *
-     * @param AuditService $auditService
-     * @param MonitoringService $monitoringService
      * @return void
      */
     public function __construct(
@@ -64,9 +58,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * จัดการ event
-     *
-     * @param DeploymentStatusChanged $event
-     * @return void
      */
     public function handle(DeploymentStatusChanged $event): void
     {
@@ -108,9 +99,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * สร้าง audit log
-     *
-     * @param DeploymentStatusChanged $event
-     * @return void
      */
     protected function createAuditLog(DeploymentStatusChanged $event): void
     {
@@ -141,9 +129,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * ส่ง notification
-     *
-     * @param DeploymentStatusChanged $event
-     * @return void
      */
     protected function sendStatusChangeNotification(DeploymentStatusChanged $event): void
     {
@@ -179,9 +164,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * Update metrics
-     *
-     * @param DeploymentStatusChanged $event
-     * @return void
      */
     protected function updateMetrics(DeploymentStatusChanged $event): void
     {
@@ -210,9 +192,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * จัดการเฉพาะ status
-     *
-     * @param DeploymentStatusChanged $event
-     * @return void
      */
     protected function handleSpecificStatus(DeploymentStatusChanged $event): void
     {
@@ -252,9 +231,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * ดึง alert title
-     *
-     * @param string $status
-     * @return string
      */
     protected function getAlertTitle(string $status): string
     {
@@ -269,9 +245,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * ดึง alert message
-     *
-     * @param DeploymentStatusChanged $event
-     * @return string
      */
     protected function getAlertMessage(DeploymentStatusChanged $event): string
     {
@@ -288,9 +261,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * ดึง priority จาก severity
-     *
-     * @param string $severity
-     * @return int
      */
     protected function getPriority(string $severity): int
     {
@@ -304,10 +274,6 @@ class LogDeploymentStatusChange implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลว
-     *
-     * @param DeploymentStatusChanged $event
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(DeploymentStatusChanged $event, \Throwable $exception): void
     {

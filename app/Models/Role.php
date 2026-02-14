@@ -48,9 +48,6 @@ class Role extends Model
 
     /**
      * Check if the role has a specific permission.
-     *
-     * @param string|Permission $permission
-     * @return bool
      */
     public function hasPermission(string|Permission $permission): bool
     {
@@ -63,9 +60,6 @@ class Role extends Model
 
     /**
      * Check if the role has any of the given permissions.
-     *
-     * @param array $permissions
-     * @return bool
      */
     public function hasAnyPermission(array $permissions): bool
     {
@@ -74,21 +68,16 @@ class Role extends Model
 
     /**
      * Check if the role has all of the given permissions.
-     *
-     * @param array $permissions
-     * @return bool
      */
     public function hasAllPermissions(array $permissions): bool
     {
         $count = $this->permissions()->whereIn('name', $permissions)->count();
+
         return $count === count($permissions);
     }
 
     /**
      * Grant a permission to the role.
-     *
-     * @param string|Permission $permission
-     * @return void
      */
     public function grantPermission(string|Permission $permission): void
     {
@@ -96,22 +85,19 @@ class Role extends Model
             $permission = Permission::where('name', $permission)->firstOrFail();
         }
 
-        if (!$this->hasPermission($permission)) {
+        if (! $this->hasPermission($permission)) {
             $this->permissions()->attach($permission->id);
         }
     }
 
     /**
      * Revoke a permission from the role.
-     *
-     * @param string|Permission $permission
-     * @return void
      */
     public function revokePermission(string|Permission $permission): void
     {
         if (is_string($permission)) {
             $permission = Permission::where('name', $permission)->first();
-            if (!$permission) {
+            if (! $permission) {
                 return;
             }
         }
@@ -122,13 +108,12 @@ class Role extends Model
     /**
      * Sync permissions for the role.
      *
-     * @param array $permissions Array of permission names or IDs
-     * @return void
+     * @param  array  $permissions  Array of permission names or IDs
      */
     public function syncPermissions(array $permissions): void
     {
         // If permissions are names, convert to IDs
-        if (!empty($permissions) && is_string($permissions[0])) {
+        if (! empty($permissions) && is_string($permissions[0])) {
             $permissionModels = Permission::whereIn('name', $permissions)->get();
             $permissions = $permissionModels->pluck('id')->toArray();
         }
@@ -138,8 +123,6 @@ class Role extends Model
 
     /**
      * Get all permission names for this role.
-     *
-     * @return array
      */
     public function getPermissionNames(): array
     {
@@ -148,11 +131,9 @@ class Role extends Model
 
     /**
      * Check if this role can be deleted (not a system role).
-     *
-     * @return bool
      */
     public function canDelete(): bool
     {
-        return !$this->is_system_role;
+        return ! $this->is_system_role;
     }
 }

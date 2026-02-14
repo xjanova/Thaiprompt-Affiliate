@@ -110,8 +110,6 @@ class AICoreAlert extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -120,8 +118,6 @@ class AICoreAlert extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -130,8 +126,6 @@ class AICoreAlert extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -141,7 +135,7 @@ class AICoreAlert extends Model
     /**
      * Scope: เฉพาะ alerts ที่ยังไม่อ่าน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnread($query)
@@ -152,7 +146,7 @@ class AICoreAlert extends Model
     /**
      * Scope: เฉพาะ alerts ที่ยังไม่แก้ไข
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnresolved($query)
@@ -163,8 +157,7 @@ class AICoreAlert extends Model
     /**
      * Scope: กรองตาม severity
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $severity
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSeverity($query, string $severity)
@@ -175,8 +168,7 @@ class AICoreAlert extends Model
     /**
      * Scope: กรองตาม alert type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeType($query, string $type)
@@ -187,7 +179,7 @@ class AICoreAlert extends Model
     /**
      * Scope: เฉพาะ alerts ที่หมดอายุแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExpired($query)
@@ -198,8 +190,6 @@ class AICoreAlert extends Model
 
     /**
      * ตรวจสอบว่าอ่านแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isRead(): bool
     {
@@ -208,8 +198,6 @@ class AICoreAlert extends Model
 
     /**
      * ตรวจสอบว่ารับทราบแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isAcknowledged(): bool
     {
@@ -218,8 +206,6 @@ class AICoreAlert extends Model
 
     /**
      * ตรวจสอบว่าแก้ไขแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isResolved(): bool
     {
@@ -228,8 +214,6 @@ class AICoreAlert extends Model
 
     /**
      * ตรวจสอบว่าหมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -238,8 +222,6 @@ class AICoreAlert extends Model
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @return bool
      */
     public function markAsRead(): bool
     {
@@ -255,8 +237,6 @@ class AICoreAlert extends Model
 
     /**
      * ทำเครื่องหมายว่ารับทราบแล้ว
-     *
-     * @return bool
      */
     public function acknowledge(): bool
     {
@@ -268,8 +248,6 @@ class AICoreAlert extends Model
 
     /**
      * ทำเครื่องหมายว่าแก้ไขแล้ว
-     *
-     * @return bool
      */
     public function resolve(): bool
     {
@@ -281,8 +259,6 @@ class AICoreAlert extends Model
 
     /**
      * ยกเลิก/ปิด alert
-     *
-     * @return bool
      */
     public function dismiss(): bool
     {
@@ -293,8 +269,6 @@ class AICoreAlert extends Model
 
     /**
      * เพิ่มจำนวนครั้งที่เกิด (สำหรับ alert ซ้ำ)
-     *
-     * @return bool
      */
     public function incrementOccurrence(): bool
     {
@@ -306,8 +280,6 @@ class AICoreAlert extends Model
 
     /**
      * ส่งการแจ้งเตือน
-     *
-     * @return bool
      */
     public function sendNotification(): bool
     {
@@ -322,15 +294,12 @@ class AICoreAlert extends Model
 
     /**
      * สร้าง alert ใหม่หรือเพิ่ม occurrence ถ้ามีอยู่แล้ว
-     *
-     * @param array $attributes
-     * @return static
      */
     public static function createOrIncrement(array $attributes): static
     {
         $alertKey = $attributes['alert_key'] ?? null;
 
-        if (!$alertKey) {
+        if (! $alertKey) {
             return static::create($attributes);
         }
 
@@ -340,6 +309,7 @@ class AICoreAlert extends Model
 
         if ($existing) {
             $existing->incrementOccurrence();
+
             return $existing;
         }
 

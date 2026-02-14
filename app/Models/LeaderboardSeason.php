@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class LeaderboardSeason extends Model
 {
@@ -46,7 +46,7 @@ class LeaderboardSeason extends Model
      */
     public function isActive(): bool
     {
-        return $this->status === 'active' && 
+        return $this->status === 'active' &&
                Carbon::now()->between($this->starts_at, $this->ends_at);
     }
 
@@ -82,11 +82,11 @@ class LeaderboardSeason extends Model
 
         foreach ($topPlayers as $index => $playerData) {
             $rank = $index + 1;
-            
+
             if (isset($this->rewards[$rank])) {
                 $reward = $this->rewards[$rank];
                 $user = User::find($playerData->user_id);
-                
+
                 if ($user && isset($reward['amount'])) {
                     $user->increment('wallet_balance', $reward['amount']);
                 }

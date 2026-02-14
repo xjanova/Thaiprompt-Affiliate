@@ -27,8 +27,6 @@ class OfficialShopAdminController extends Controller
 
     /**
      * Cache สำหรับ Official Seller
-     *
-     * @var User|null
      */
     protected static ?User $officialSeller = null;
 
@@ -39,8 +37,6 @@ class OfficialShopAdminController extends Controller
 
     /**
      * ดึง Official Shop Seller ID
-     *
-     * @return int
      */
     protected function getOfficialSellerId(): int
     {
@@ -49,8 +45,6 @@ class OfficialShopAdminController extends Controller
 
     /**
      * สร้างหรือดึง Official Shop Seller
-     *
-     * @return User
      */
     protected function getOrCreateOfficialSeller(): User
     {
@@ -64,7 +58,7 @@ class OfficialShopAdminController extends Controller
         // หา Official Seller จาก email
         $seller = User::where('email', $email)->first();
 
-        if (!$seller) {
+        if (! $seller) {
             // สร้าง Official Seller ใหม่ถ้าไม่มี
             $seller = User::create([
                 'name' => config('shop.official_shop.name', 'Official Shop'),
@@ -82,9 +76,6 @@ class OfficialShopAdminController extends Controller
 
     /**
      * ตรวจสอบว่าเป็นสินค้า Official Shop หรือไม่
-     *
-     * @param Product $product
-     * @return bool
      */
     protected function isOfficialProduct(Product $product): bool
     {
@@ -144,7 +135,6 @@ class OfficialShopAdminController extends Controller
     /**
      * แสดงรายการสินค้า Official Shop
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -229,7 +219,6 @@ class OfficialShopAdminController extends Controller
     /**
      * บันทึกสินค้าใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -279,7 +268,7 @@ class OfficialShopAdminController extends Controller
             $originalSlug = $validated['slug'];
             $counter = 1;
             while (Product::where('slug', $validated['slug'])->exists()) {
-                $validated['slug'] = $originalSlug . '-' . $counter;
+                $validated['slug'] = $originalSlug.'-'.$counter;
                 $counter++;
             }
 
@@ -337,27 +326,26 @@ class OfficialShopAdminController extends Controller
 
             return redirect()
                 ->route('admin.official-shop.products.index')
-                ->with('success', 'เพิ่มสินค้า Official Shop สำเร็จ: ' . $product->name);
+                ->with('success', 'เพิ่มสินค้า Official Shop สำเร็จ: '.$product->name);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียดสินค้า
      *
-     * @param Product $product
      * @return \Illuminate\View\View
      */
     public function show(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -369,13 +357,12 @@ class OfficialShopAdminController extends Controller
     /**
      * แสดงฟอร์มแก้ไขสินค้า
      *
-     * @param Product $product
      * @return \Illuminate\View\View
      */
     public function edit(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -391,21 +378,19 @@ class OfficialShopAdminController extends Controller
     /**
      * อัพเดทสินค้า
      *
-     * @param Request $request
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:product_categories,id',
-            'sku' => 'nullable|string|max:100|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|max:100|unique:products,sku,'.$product->id,
             'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
             'price' => 'required|numeric|min:0',
@@ -454,7 +439,7 @@ class OfficialShopAdminController extends Controller
                 $originalSlug = $validated['slug'];
                 $counter = 1;
                 while (Product::where('slug', $validated['slug'])->where('id', '!=', $product->id)->exists()) {
-                    $validated['slug'] = $originalSlug . '-' . $counter;
+                    $validated['slug'] = $originalSlug.'-'.$counter;
                     $counter++;
                 }
             }
@@ -519,27 +504,26 @@ class OfficialShopAdminController extends Controller
 
             return redirect()
                 ->route('admin.official-shop.products.index')
-                ->with('success', 'อัพเดทสินค้า Official Shop สำเร็จ: ' . $product->name);
+                ->with('success', 'อัพเดทสินค้า Official Shop สำเร็จ: '.$product->name);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบสินค้า
      *
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Product $product)
     {
         // ตรวจสอบว่าเป็นสินค้า Official Shop
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
@@ -565,28 +549,27 @@ class OfficialShopAdminController extends Controller
 
             return redirect()
                 ->route('admin.official-shop.products.index')
-                ->with('success', 'ลบสินค้าสำเร็จ: ' . $productName);
+                ->with('success', 'ลบสินค้าสำเร็จ: '.$productName);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * Toggle สถานะ Active/Inactive
      *
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(Product $product)
     {
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
-        $product->update(['is_active' => !$product->is_active]);
+        $product->update(['is_active' => ! $product->is_active]);
 
         $status = $product->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
 
@@ -596,16 +579,15 @@ class OfficialShopAdminController extends Controller
     /**
      * Toggle สถานะ Featured
      *
-     * @param Product $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleFeatured(Product $product)
     {
-        if (!$this->isOfficialProduct($product)) {
+        if (! $this->isOfficialProduct($product)) {
             abort(403, 'สินค้านี้ไม่ใช่สินค้าของ Official Shop');
         }
 
-        $product->update(['is_featured' => !$product->is_featured]);
+        $product->update(['is_featured' => ! $product->is_featured]);
 
         $status = $product->is_featured ? 'เพิ่มเป็น' : 'นำออกจาก';
 
@@ -615,7 +597,6 @@ class OfficialShopAdminController extends Controller
     /**
      * Import สินค้าจากที่มีอยู่ให้เป็น Official Shop
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function importToOfficial(Request $request)

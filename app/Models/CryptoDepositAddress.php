@@ -54,7 +54,8 @@ class CryptoDepositAddress extends Model
         if (strlen($this->address) <= 10) {
             return $this->address;
         }
-        return substr($this->address, 0, 6) . '...' . substr($this->address, -4);
+
+        return substr($this->address, 0, 6).'...'.substr($this->address, -4);
     }
 
     /**
@@ -97,7 +98,7 @@ class CryptoDepositAddress extends Model
     /**
      * Deactivate address
      */
-    public function deactivate(string $reason = null): void
+    public function deactivate(?string $reason = null): void
     {
         $this->update([
             'is_active' => false,
@@ -140,9 +141,10 @@ class CryptoDepositAddress extends Model
      */
     public function getExplorerUrl(): string
     {
-        if (!$this->currency) {
+        if (! $this->currency) {
             return '';
         }
+
         return $this->currency->getExplorerAddressUrl($this->address);
     }
 
@@ -162,6 +164,7 @@ class CryptoDepositAddress extends Model
                     ->generate($this->address);
 
                 $this->update(['qr_code' => $qrCode]);
+
                 return $qrCode;
             }
         } catch (\Exception $e) {
@@ -242,7 +245,7 @@ class CryptoDepositAddress extends Model
         return $query->monitored()
             ->where(function ($q) use ($minutes) {
                 $q->whereNull('last_checked_at')
-                  ->orWhere('last_checked_at', '<', now()->subMinutes($minutes));
+                    ->orWhere('last_checked_at', '<', now()->subMinutes($minutes));
             });
     }
 

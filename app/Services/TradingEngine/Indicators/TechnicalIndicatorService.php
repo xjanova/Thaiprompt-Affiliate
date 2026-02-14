@@ -19,7 +19,7 @@ class TechnicalIndicatorService
             $name = $indicator['name'] ?? null;
             $params = $indicator['params'] ?? [];
 
-            if (!$name) {
+            if (! $name) {
                 continue;
             }
 
@@ -237,7 +237,7 @@ class TechnicalIndicatorService
         // Simplified ADX calculation
         $atr = $this->calculateATR($data, $period);
 
-        if (!$atr || $atr == 0) {
+        if (! $atr || $atr == 0) {
             return null;
         }
 

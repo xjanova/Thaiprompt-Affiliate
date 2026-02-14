@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
-use App\Services\WebPService;
-use App\Services\WebPDatabaseUpdateService;
 use App\Models\WebPConversionStat;
+use App\Services\WebPDatabaseUpdateService;
+use App\Services\WebPService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,11 +19,15 @@ class ConvertImagesToWebPJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $timeout = 3600; // 1 hour
+
     public $tries = 1;
 
     protected string $directory;
+
     protected int $quality;
+
     protected bool $deleteOriginal;
+
     protected string $jobId;
 
     /**
@@ -62,7 +66,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
             $filesToProcess = [];
 
             foreach ($directories as $dir) {
-                if (!Storage::disk('public')->exists($dir)) {
+                if (! Storage::disk('public')->exists($dir)) {
                     continue;
                 }
 
@@ -84,6 +88,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
 
             if ($totalFiles === 0) {
                 $this->updateProgress(100, 'ไม่พบไฟล์ที่ต้องแปลง', 'completed');
+
                 return;
             }
 
@@ -104,7 +109,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
                     $percentage = 5 + (($processedFiles / $totalFiles) * 85); // 5% to 90%
                     $this->updateProgress(
                         $percentage,
-                        "กำลังแปลง ({$processedFiles}/{$totalFiles}): " . basename($file),
+                        "กำลังแปลง ({$processedFiles}/{$totalFiles}): ".basename($file),
                         'processing'
                     );
 
@@ -130,7 +135,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
 
                 } catch (\Exception $e) {
                     $errorFiles++;
-                    Log::error("WebP conversion error for {$file}: " . $e->getMessage());
+                    Log::error("WebP conversion error for {$file}: ".$e->getMessage());
                 }
             }
 
@@ -145,7 +150,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
                 try {
                     WebPConversionStat::incrementBatchConversion($convertedFiles);
                 } catch (\Exception $e) {
-                    Log::warning('Failed to track WebP batch conversion stat: ' . $e->getMessage());
+                    Log::warning('Failed to track WebP batch conversion stat: '.$e->getMessage());
                 }
             }
 
@@ -163,10 +168,10 @@ class ConvertImagesToWebPJob implements ShouldQueue
             );
 
         } catch (\Exception $e) {
-            Log::error('WebP Job failed: ' . $e->getMessage());
+            Log::error('WebP Job failed: '.$e->getMessage());
             $this->updateProgress(
                 0,
-                'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'failed'
             );
             throw $e;
@@ -206,7 +211,7 @@ class ConvertImagesToWebPJob implements ShouldQueue
     {
         $this->updateProgress(
             0,
-            'เกิดข้อผิดพลาด: ' . $exception->getMessage(),
+            'เกิดข้อผิดพลาด: '.$exception->getMessage(),
             'failed'
         );
     }

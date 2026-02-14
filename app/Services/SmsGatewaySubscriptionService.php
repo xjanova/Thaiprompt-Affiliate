@@ -8,8 +8,6 @@ use App\Models\SmsGatewayPricing;
 use App\Models\SmsGatewaySubscription;
 use App\Models\User;
 use App\Models\VendorStore;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 /**
  * SMS Gateway Subscription Service
@@ -93,6 +91,7 @@ class SmsGatewaySubscriptionService
     public function cancel(int $subscriptionId, ?string $reason = null): bool
     {
         $subscription = SmsGatewaySubscription::findOrFail($subscriptionId);
+
         return $subscription->cancel($reason);
     }
 
@@ -103,7 +102,7 @@ class SmsGatewaySubscriptionService
     public function isExemptFromPayment(int $storeId): bool
     {
         $store = VendorStore::find($storeId);
-        if (!$store) {
+        if (! $store) {
             return false;
         }
 
@@ -168,7 +167,7 @@ class SmsGatewaySubscriptionService
             ->latest()
             ->first();
 
-        if (!$subscription || !$subscription->pricing) {
+        if (! $subscription || ! $subscription->pricing) {
             return null;
         }
 

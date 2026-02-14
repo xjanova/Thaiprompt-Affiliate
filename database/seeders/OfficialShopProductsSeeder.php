@@ -6,8 +6,8 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * Official Shop Products Seeder
@@ -31,6 +31,7 @@ class OfficialShopProductsSeeder extends Seeder
 
         if ($categories->isEmpty()) {
             $this->command->warn('⚠️  ไม่พบ Product Category กรุณา seed ProductCategorySeeder ก่อน');
+
             return;
         }
 
@@ -203,13 +204,14 @@ class OfficialShopProductsSeeder extends Seeder
             });
 
             // ถ้าไม่เจอ ใช้ category แรก
-            if (!$category) {
+            if (! $category) {
                 $category = $categories->first();
             }
 
             // ตรวจสอบว่ามีสินค้านี้อยู่แล้วหรือไม่
             if (Product::where('sku', $productData['sku'])->exists()) {
                 $this->command->info("   ⏭️  ข้าม: {$productData['name']} (มีอยู่แล้ว)");
+
                 continue;
             }
 
@@ -239,7 +241,7 @@ class OfficialShopProductsSeeder extends Seeder
                 'view_count' => rand(100, 1000),
                 'sales_count' => rand(10, 500),
                 // ✅ ใช้ SKU แทน name เพื่อให้ URL สั้นลง (ชื่อไทยยาวเกิน URL encode)
-                'main_image_url' => 'https://via.placeholder.com/800x800.png?text=' . urlencode($productData['sku']),
+                'main_image_url' => 'https://via.placeholder.com/800x800.png?text='.urlencode($productData['sku']),
             ]);
 
             $createdCount++;
@@ -251,8 +253,6 @@ class OfficialShopProductsSeeder extends Seeder
 
     /**
      * สร้างหรือหา Official Shop Seller Account
-     *
-     * @return User
      */
     protected function getOrCreateOfficialSeller(): User
     {
@@ -260,7 +260,8 @@ class OfficialShopProductsSeeder extends Seeder
         $seller = User::where('email', 'official-shop@thaiprompt.com')->first();
 
         if ($seller) {
-            $this->command->info('   ✅ พบ Official Shop Seller: ' . $seller->name);
+            $this->command->info('   ✅ พบ Official Shop Seller: '.$seller->name);
+
             return $seller;
         }
 
@@ -273,7 +274,7 @@ class OfficialShopProductsSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        $this->command->info('   ✅ สร้าง Official Shop Seller: ' . $seller->name);
+        $this->command->info('   ✅ สร้าง Official Shop Seller: '.$seller->name);
         $this->command->warn('   ⚠️  Email: official-shop@thaiprompt.com');
         $this->command->warn('   ⚠️  Password: OfficialShop@2024');
 

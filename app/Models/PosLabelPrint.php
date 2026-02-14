@@ -36,7 +36,6 @@ use Illuminate\Support\Str;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read User $user
  * @property-read PosTransaction|null $transaction
  * @property-read LabelTemplate|null $template
@@ -111,15 +110,13 @@ class PosLabelPrint extends Model
         // สร้าง print_session_id อัตโนมัติ
         static::creating(function ($model) {
             if (empty($model->print_session_id)) {
-                $model->print_session_id = 'PS-' . Str::upper(Str::random(12));
+                $model->print_session_id = 'PS-'.Str::upper(Str::random(12));
             }
         });
     }
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -128,8 +125,6 @@ class PosLabelPrint extends Model
 
     /**
      * ความสัมพันธ์กับ PosTransaction
-     *
-     * @return BelongsTo
      */
     public function transaction(): BelongsTo
     {
@@ -138,8 +133,6 @@ class PosLabelPrint extends Model
 
     /**
      * ความสัมพันธ์กับ LabelTemplate
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -148,8 +141,6 @@ class PosLabelPrint extends Model
 
     /**
      * ความสัมพันธ์กับ PosDevice
-     *
-     * @return BelongsTo
      */
     public function device(): BelongsTo
     {
@@ -159,8 +150,7 @@ class PosLabelPrint extends Model
     /**
      * Scope สำหรับกรองตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -171,8 +161,7 @@ class PosLabelPrint extends Model
     /**
      * Scope สำหรับกรองตามสถานะ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfStatus($query, string $status)
@@ -183,7 +172,7 @@ class PosLabelPrint extends Model
     /**
      * Scope สำหรับการพิมพ์ที่สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)
@@ -194,7 +183,7 @@ class PosLabelPrint extends Model
     /**
      * Scope สำหรับการพิมพ์ที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -205,8 +194,7 @@ class PosLabelPrint extends Model
     /**
      * Scope สำหรับ batch print session
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $sessionId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBySession($query, string $sessionId)
@@ -216,44 +204,38 @@ class PosLabelPrint extends Model
 
     /**
      * ทำเครื่องหมายว่าพิมพ์สำเร็จ
-     *
-     * @return bool
      */
     public function markAsCompleted(): bool
     {
         $this->status = 'completed';
         $this->printed_at = now();
+
         return $this->save();
     }
 
     /**
      * ทำเครื่องหมายว่าพิมพ์ล้มเหลว
-     *
-     * @param string $errorMessage
-     * @return bool
      */
     public function markAsFailed(string $errorMessage): bool
     {
         $this->status = 'failed';
         $this->error_message = $errorMessage;
+
         return $this->save();
     }
 
     /**
      * ยกเลิกการพิมพ์
-     *
-     * @return bool
      */
     public function cancel(): bool
     {
         $this->status = 'cancelled';
+
         return $this->save();
     }
 
     /**
      * ตรวจสอบว่าเป็นการพิมพ์แบบ batch หรือไม่
-     *
-     * @return bool
      */
     public function isBatch(): bool
     {
@@ -262,8 +244,6 @@ class PosLabelPrint extends Model
 
     /**
      * ดึงจำนวนสินค้าทั้งหมด
-     *
-     * @return int
      */
     public function getTotalProductsAttribute(): int
     {
@@ -272,8 +252,6 @@ class PosLabelPrint extends Model
 
     /**
      * ดึงจำนวนฉลากทั้งหมดที่ต้องพิมพ์
-     *
-     * @return int
      */
     public function calculateTotalLabels(): int
     {
@@ -281,14 +259,12 @@ class PosLabelPrint extends Model
         foreach ($this->products as $product) {
             $total += $product['quantity'] ?? 1;
         }
+
         return $total;
     }
 
     /**
      * คำนวณจำนวนแผ่นที่ต้องใช้
-     *
-     * @param int $labelsPerSheet
-     * @return int
      */
     public function calculateSheets(int $labelsPerSheet): int
     {
@@ -297,8 +273,6 @@ class PosLabelPrint extends Model
 
     /**
      * ตรวจสอบว่าเป็นการพิมพ์แบบม้วนหรือไม่
-     *
-     * @return bool
      */
     public function isContinuousRoll(): bool
     {
@@ -309,12 +283,10 @@ class PosLabelPrint extends Model
 
     /**
      * ดึงชื่อประเภทการพิมพ์
-     *
-     * @return string
      */
     public function getPrintTypeNameAttribute(): string
     {
-        return match($this->print_type) {
+        return match ($this->print_type) {
             'product_label' => 'ฉลากสินค้า',
             'shipping_label' => 'ใบปะสินค้า',
             'price_tag' => 'ฉลากราคา',
@@ -326,12 +298,10 @@ class PosLabelPrint extends Model
 
     /**
      * ดึงชื่อสถานะ
-     *
-     * @return string
      */
     public function getStatusNameAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอพิมพ์',
             'printing' => 'กำลังพิมพ์',
             'completed' => 'พิมพ์สำเร็จ',
@@ -343,12 +313,10 @@ class PosLabelPrint extends Model
 
     /**
      * ดึงสีของสถานะ (สำหรับ badge)
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'warning',
             'printing' => 'info',
             'completed' => 'success',

@@ -33,15 +33,11 @@ class TranslateController extends Controller
 {
     /**
      * Translation Service
-     *
-     * @var TranslationService
      */
     protected TranslationService $translationService;
 
     /**
      * Constructor - เริ่มต้น Translation Service
-     *
-     * @param TranslationService $translationService
      */
     public function __construct(TranslationService $translationService)
     {
@@ -51,8 +47,6 @@ class TranslateController extends Controller
     /**
      * แปลข้อความจากภาษาหนึ่งไปยังอีกภาษาหนึ่ง
      *
-     * @param Request $request
-     * @return JsonResponse
      *
      * @example
      * POST /api/v1/translate
@@ -141,8 +135,6 @@ class TranslateController extends Controller
     /**
      * แปลข้อความหลายรายการพร้อมกัน (batch translation)
      *
-     * @param Request $request
-     * @return JsonResponse
      *
      * @example
      * POST /api/v1/translate/batch
@@ -213,8 +205,6 @@ class TranslateController extends Controller
     /**
      * ตรวจจับภาษาของข้อความ
      *
-     * @param Request $request
-     * @return JsonResponse
      *
      * @example
      * POST /api/v1/translate/detect
@@ -275,7 +265,6 @@ class TranslateController extends Controller
     /**
      * ดึงรายการภาษาที่รองรับ
      *
-     * @return JsonResponse
      *
      * @example
      * GET /api/v1/translate/languages
@@ -307,7 +296,6 @@ class TranslateController extends Controller
     /**
      * ตรวจสอบสถานะระบบแปลภาษา
      *
-     * @return JsonResponse
      *
      * @example
      * GET /api/v1/translate/status

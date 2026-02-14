@@ -32,11 +32,11 @@ class StakeUnlockedNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject('Stake Unlocked!')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line("Stake ของคุณปลดล็อคแล้ว!")
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('Stake ของคุณปลดล็อคแล้ว!')
             ->line("Pool: {$pool->name}")
-            ->line("จำนวน: " . number_format($this->stake->amount, 8))
-            ->line("รางวัลรอรับ: " . number_format($rewards, 8))
+            ->line('จำนวน: '.number_format($this->stake->amount, 8))
+            ->line('รางวัลรอรับ: '.number_format($rewards, 8))
             ->action('Unstake เลย', route('user.tokens.staking'))
             ->line('คุณสามารถ unstake และรับรางวัลได้แล้ว!');
     }
@@ -50,7 +50,7 @@ class StakeUnlockedNotification extends Notification implements ShouldQueue
             'pool_name' => $this->stake->pool->name,
             'amount' => $this->stake->amount,
             'rewards' => $this->stake->getUnclaimedRewards(),
-            'message' => "Your stake is now unlocked! You can unstake and claim rewards.",
+            'message' => 'Your stake is now unlocked! You can unstake and claim rewards.',
         ];
     }
 }

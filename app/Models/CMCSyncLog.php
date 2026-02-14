@@ -92,7 +92,7 @@ class CMCSyncLog extends Model
 
     public function getPriceChangeDirection(): string
     {
-        if (!$this->price_change_percent) {
+        if (! $this->price_change_percent) {
             return 'neutral';
         }
 
@@ -103,7 +103,7 @@ class CMCSyncLog extends Model
     {
         $direction = $this->getPriceChangeDirection();
 
-        return match($direction) {
+        return match ($direction) {
             'up' => 'green',
             'down' => 'red',
             default => 'gray',
@@ -112,11 +112,12 @@ class CMCSyncLog extends Model
 
     public function getFormattedPriceChange(): string
     {
-        if (!$this->price_change_percent) {
+        if (! $this->price_change_percent) {
             return '0%';
         }
 
         $sign = $this->price_change_percent > 0 ? '+' : '';
-        return $sign . number_format($this->price_change_percent, 2) . '%';
+
+        return $sign.number_format($this->price_change_percent, 2).'%';
     }
 }

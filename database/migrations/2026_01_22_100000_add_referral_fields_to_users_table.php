@@ -21,12 +21,12 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             // Referral code สำหรับแชร์ให้คนอื่นสมัคร
-            if (!Schema::hasColumn('users', 'referral_code')) {
+            if (! Schema::hasColumn('users', 'referral_code')) {
                 $table->string('referral_code', 20)->nullable()->unique()->after('email')->comment('รหัสแนะนำสมาชิก');
             }
 
             // Sponsor ID - ผู้แนะนำที่ใช้ referral code
-            if (!Schema::hasColumn('users', 'sponsor_id')) {
+            if (! Schema::hasColumn('users', 'sponsor_id')) {
                 $table->unsignedBigInteger('sponsor_id')->nullable()->after('referral_code')->comment('ID ของผู้แนะนำ');
 
                 // เพิ่ม foreign key ถ้ายังไม่มี
@@ -34,10 +34,10 @@ return new class extends Migration
             }
 
             // เพิ่ม index สำหรับ performance
-            if (!Schema::hasColumn('users', 'referral_code')) {
+            if (! Schema::hasColumn('users', 'referral_code')) {
                 $table->index('referral_code');
             }
-            if (!Schema::hasColumn('users', 'sponsor_id')) {
+            if (! Schema::hasColumn('users', 'sponsor_id')) {
                 $table->index('sponsor_id');
             }
         });

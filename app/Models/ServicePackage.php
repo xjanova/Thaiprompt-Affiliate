@@ -66,9 +66,9 @@ class ServicePackage extends Model
         'average_rating' => 'decimal:2',
     ];
 
-    //===========================================
+    // ===========================================
     // Lifecycle Hooks
-    //===========================================
+    // ===========================================
 
     protected static function boot()
     {
@@ -90,9 +90,9 @@ class ServicePackage extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * เจ้าของแพคเกจ
@@ -118,9 +118,9 @@ class ServicePackage extends Model
         return $this->hasMany(ServiceBooking::class, 'package_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะแพคเกจที่เปิดใช้งาน
@@ -144,6 +144,7 @@ class ServicePackage extends Model
     public function scopeValid($query)
     {
         $now = now();
+
         return $query->where(function ($q) use ($now) {
             $q->whereNull('valid_from')
                 ->orWhere('valid_from', '<=', $now);
@@ -164,9 +165,9 @@ class ServicePackage extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Accessors & Mutators
-    //===========================================
+    // ===========================================
 
     /**
      * รูปภาพหลัก
@@ -192,19 +193,20 @@ class ServicePackage extends Model
         if ($this->total_price <= 0) {
             return 0;
         }
+
         return (($this->total_price - $this->final_price) / $this->total_price) * 100;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Package Status
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่าแพคเกจพร้อมใช้งานหรือไม่
      */
     public function isAvailable(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -239,14 +241,12 @@ class ServicePackage extends Model
         return $this->items()->count() > 0;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Price Calculation
-    //===========================================
+    // ===========================================
 
     /**
      * คำนวณราคารวมจากรายการในแพคเกจ
-     *
-     * @return float
      */
     public function calculateTotalFromItems(): float
     {
@@ -263,9 +263,9 @@ class ServicePackage extends Model
         $this->save();
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Statistics
-    //===========================================
+    // ===========================================
 
     /**
      * เพิ่มจำนวนการซื้อ
@@ -299,9 +299,9 @@ class ServicePackage extends Model
         $this->save();
     }
 
-    //===========================================
+    // ===========================================
     // Methods - URL & Display
-    //===========================================
+    // ===========================================
 
     /**
      * URL ของแพคเกจ
@@ -316,14 +316,14 @@ class ServicePackage extends Model
      */
     public function getPromotionStatusText(): string
     {
-        if (!$this->valid_from && !$this->valid_until) {
+        if (! $this->valid_from && ! $this->valid_until) {
             return 'โปรโมชั่นถาวร';
         }
 
         $now = now();
 
         if ($this->valid_from && $this->valid_from->isFuture()) {
-            return 'เริ่ม ' . $this->valid_from->format('d/m/Y');
+            return 'เริ่ม '.$this->valid_from->format('d/m/Y');
         }
 
         if ($this->valid_until) {
@@ -334,7 +334,8 @@ class ServicePackage extends Model
             if ($daysLeft <= 7) {
                 return "เหลืออีก {$daysLeft} วัน";
             }
-            return 'ถึง ' . $this->valid_until->format('d/m/Y');
+
+            return 'ถึง '.$this->valid_until->format('d/m/Y');
         }
 
         return 'พร้อมใช้งาน';

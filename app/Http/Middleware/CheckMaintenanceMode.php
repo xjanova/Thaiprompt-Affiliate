@@ -36,15 +36,11 @@ class CheckMaintenanceMode
 
     /**
      * จัดการ request
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         // ตรวจสอบโหมด maintenance
-        if (!$this->isInMaintenanceMode()) {
+        if (! $this->isInMaintenanceMode()) {
             return $next($request);
         }
 
@@ -59,8 +55,6 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบว่าระบบอยู่ในโหมด maintenance หรือไม่
-     *
-     * @return bool
      */
     protected function isInMaintenanceMode(): bool
     {
@@ -91,9 +85,6 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบว่าสามารถ bypass maintenance mode ได้หรือไม่
-     *
-     * @param Request $request
-     * @return bool
      */
     protected function canBypass(Request $request): bool
     {
@@ -122,9 +113,6 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบว่าเป็น route ที่อนุญาตหรือไม่
-     *
-     * @param Request $request
-     * @return bool
      */
     protected function isAllowedRoute(Request $request): bool
     {
@@ -134,7 +122,7 @@ class CheckMaintenanceMode
             // รองรับ wildcard pattern
             $pattern = str_replace(['*', '/'], ['.*', '\/'], $allowedRoute);
 
-            if (preg_match('/^' . $pattern . '$/i', $path)) {
+            if (preg_match('/^'.$pattern.'$/i', $path)) {
                 return true;
             }
         }
@@ -144,9 +132,6 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบว่าเป็น Admin user หรือไม่
-     *
-     * @param Request $request
-     * @return bool
      */
     protected function isAdminUser(Request $request): bool
     {
@@ -156,7 +141,7 @@ class CheckMaintenanceMode
                 $appMaintenance = AppMaintenance::getInstance();
 
                 // ถ้าไม่อนุญาต admin ให้ข้ามไป
-                if ($appMaintenance && !$appMaintenance->allow_admin_access) {
+                if ($appMaintenance && ! $appMaintenance->allow_admin_access) {
                     return false;
                 }
             }
@@ -166,7 +151,7 @@ class CheckMaintenanceMode
 
         // ตรวจสอบว่า user เป็น admin หรือไม่
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -189,9 +174,6 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบ bypass key
-     *
-     * @param Request $request
-     * @return bool
      */
     protected function hasValidBypassKey(Request $request): bool
     {
@@ -217,14 +199,11 @@ class CheckMaintenanceMode
 
     /**
      * ตรวจสอบว่าเป็น user ที่อนุญาตหรือไม่
-     *
-     * @param Request $request
-     * @return bool
      */
     protected function isAllowedUser(Request $request): bool
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 

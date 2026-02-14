@@ -101,7 +101,7 @@ class TrainingEnrollment extends Model
      */
     public function issueCertificate()
     {
-        $this->certificate_number = 'CERT-' . date('Y') . '-' . str_pad($this->id, 6, '0', STR_PAD_LEFT);
+        $this->certificate_number = 'CERT-'.date('Y').'-'.str_pad($this->id, 6, '0', STR_PAD_LEFT);
         $this->certificate_issue_date = now();
 
         if ($this->trainingCourse->validity_months) {
@@ -141,9 +141,10 @@ class TrainingEnrollment extends Model
      */
     public function getIsCertificateExpiredAttribute()
     {
-        if (!$this->certificate_expiry_date) {
+        if (! $this->certificate_expiry_date) {
             return false;
         }
+
         return now()->greaterThan($this->certificate_expiry_date);
     }
 
@@ -152,9 +153,10 @@ class TrainingEnrollment extends Model
      */
     public function getPassFailStatusAttribute()
     {
-        if (!$this->assessment_score) {
+        if (! $this->assessment_score) {
             return 'Not assessed';
         }
+
         return $this->passed ? 'Passed' : 'Failed';
     }
 

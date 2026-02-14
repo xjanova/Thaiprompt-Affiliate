@@ -1,13 +1,13 @@
 <?php
+
 /**
  * Script แก้ไข migrations ที่มีปัญหา
  *
  * เพิ่ม hasTable check ให้กับ migrations ที่ใช้ Schema::table
  * เพื่อป้องกัน error เมื่อตารางยังไม่มี
  */
-
-$migrationsPath = __DIR__ . '/../database/migrations';
-$files = glob($migrationsPath . '/*.php');
+$migrationsPath = __DIR__.'/../database/migrations';
+$files = glob($migrationsPath.'/*.php');
 
 $fixed = 0;
 $skipped = 0;
@@ -20,12 +20,14 @@ foreach ($files as $file) {
     // ข้ามไฟล์ที่มี hasTable แล้ว
     if (strpos($content, 'hasTable') !== false) {
         $skipped++;
+
         continue;
     }
 
     // ข้ามไฟล์ที่ไม่มี Schema::table
     if (strpos($content, 'Schema::table') === false) {
         $skipped++;
+
         continue;
     }
 
@@ -34,6 +36,7 @@ foreach ($files as $file) {
 
     if (empty($matches[1])) {
         $skipped++;
+
         continue;
     }
 
@@ -42,7 +45,7 @@ foreach ($files as $file) {
 
     foreach ($tables as $table) {
         // สร้าง pattern สำหรับ Schema::table('tablename', function
-        $pattern = "/(Schema::table\s*\(\s*['\"]" . preg_quote($table, '/') . "['\"])/";
+        $pattern = "/(Schema::table\s*\(\s*['\"]".preg_quote($table, '/')."['\"])/";
 
         // ตรวจสอบว่ายังไม่มี hasTable check สำหรับตารางนี้
         if (strpos($content, "hasTable('$table')") === false && strpos($content, "hasTable(\"$table\")") === false) {
@@ -73,8 +76,8 @@ echo "\n";
 echo "=================================\n";
 echo "Fixed: $fixed files\n";
 echo "Skipped: $skipped files\n";
-if (!empty($errors)) {
-    echo "Errors: " . count($errors) . "\n";
+if (! empty($errors)) {
+    echo 'Errors: '.count($errors)."\n";
     foreach ($errors as $err) {
         echo "  - $err\n";
     }

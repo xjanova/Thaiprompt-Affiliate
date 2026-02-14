@@ -70,6 +70,7 @@ class Game extends Model
     public function getLocalizedTitleAttribute()
     {
         $locale = app()->getLocale();
+
         return $locale === 'en' && $this->title_en ? $this->title_en : $this->title;
     }
 
@@ -79,6 +80,7 @@ class Game extends Model
     public function getLocalizedDescriptionAttribute()
     {
         $locale = app()->getLocale();
+
         return $locale === 'en' && $this->description_en ? $this->description_en : $this->description;
     }
 
@@ -90,6 +92,7 @@ class Game extends Model
         if ($this->image && file_exists(public_path($this->image))) {
             return asset($this->image);
         }
+
         return null;
     }
 

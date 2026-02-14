@@ -55,7 +55,7 @@ class SoftwareCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:software_product_categories,slug,' . $softwareCategory->id,
+            'slug' => 'nullable|string|unique:software_product_categories,slug,'.$softwareCategory->id,
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:100',
             'image_url' => 'nullable|string',

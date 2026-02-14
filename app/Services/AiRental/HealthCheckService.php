@@ -2,12 +2,11 @@
 
 namespace App\Services\AiRental;
 
-use App\Models\AiRentalHealthCheck;
 use App\Models\AiRentalDeployment;
-use App\Services\CloudProviders\CloudProviderFactory;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use App\Models\AiRentalHealthCheck;
 use Exception;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Health Check Service สำหรับ AI Rental System
@@ -16,9 +15,6 @@ use Exception;
  */
 class HealthCheckService
 {
-    /**
-     * @var MonitoringService
-     */
     protected MonitoringService $monitoringService;
 
     public function __construct(MonitoringService $monitoringService)
@@ -28,10 +24,6 @@ class HealthCheckService
 
     /**
      * ทำ health check สำหรับ deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @param array $options
-     * @return AiRentalHealthCheck
      */
     public function checkDeploymentHealth(AiRentalDeployment $deployment, array $options = []): AiRentalHealthCheck
     {
@@ -100,7 +92,7 @@ class HealthCheckService
             }
 
             // ถ้า health check ล้มเหลว
-            if (!$healthCheck->is_success) {
+            if (! $healthCheck->is_success) {
                 $this->handleHealthCheckFailed($healthCheck, $deployment);
             }
 
@@ -110,7 +102,7 @@ class HealthCheckService
 
             return $healthCheck;
         } catch (Exception $e) {
-            Log::error("Health check failed with exception: " . $e->getMessage(), [
+            Log::error('Health check failed with exception: '.$e->getMessage(), [
                 'deployment_id' => $deployment->id,
                 'exception' => $e,
             ]);
@@ -138,10 +130,6 @@ class HealthCheckService
 
     /**
      * ตรวจสอบ health ผ่าน API
-     *
-     * @param string $url
-     * @param array $options
-     * @return array
      */
     protected function checkApiHealth(string $url, array $options = []): array
     {
@@ -190,9 +178,6 @@ class HealthCheckService
 
     /**
      * ตรวจสอบ health ผ่าน Ping
-     *
-     * @param string $url
-     * @return array
      */
     protected function checkPingHealth(string $url): array
     {
@@ -224,9 +209,6 @@ class HealthCheckService
 
     /**
      * ตรวจสอบ health ผ่าน WebSocket
-     *
-     * @param string $url
-     * @return array
      */
     protected function checkWebSocketHealth(string $url): array
     {
@@ -244,10 +226,6 @@ class HealthCheckService
 
     /**
      * กำหนด health status จาก status code และ response time
-     *
-     * @param int $statusCode
-     * @param float $responseTimeMs
-     * @return string
      */
     protected function determineHealthStatus(int $statusCode, float $responseTimeMs): string
     {
@@ -271,10 +249,6 @@ class HealthCheckService
 
     /**
      * จัดการเมื่อ health check ล้มเหลว
-     *
-     * @param AiRentalHealthCheck $healthCheck
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     protected function handleHealthCheckFailed(AiRentalHealthCheck $healthCheck, AiRentalDeployment $deployment): void
     {
@@ -305,10 +279,6 @@ class HealthCheckService
 
     /**
      * จัดการเมื่อ threshold ถูกเกิน
-     *
-     * @param AiRentalHealthCheck $healthCheck
-     * @param AiRentalDeployment $deployment
-     * @return void
      */
     protected function handleThresholdExceeded(AiRentalHealthCheck $healthCheck, AiRentalDeployment $deployment): void
     {
@@ -327,7 +297,7 @@ class HealthCheckService
             $exceededThresholds[] = "GPU: {$healthCheck->gpu_usage}% (threshold: {$thresholds['gpu']}%)";
         }
 
-        if (!empty($exceededThresholds)) {
+        if (! empty($exceededThresholds)) {
             $alert = $this->monitoringService->createAlert([
                 'user_id' => $deployment->user_id,
                 'deployment_id' => $deployment->id,
@@ -357,8 +327,6 @@ class HealthCheckService
 
     /**
      * ทำ health check สำหรับ deployments ทั้งหมดที่กำลัง running
-     *
-     * @return array
      */
     public function checkAllRunningDeployments(): array
     {
@@ -385,7 +353,7 @@ class HealthCheckService
                 $deployment->save();
             } catch (Exception $e) {
                 $results['failed']++;
-                Log::error("Failed to check deployment {$deployment->id}: " . $e->getMessage());
+                Log::error("Failed to check deployment {$deployment->id}: ".$e->getMessage());
             }
         }
 
@@ -397,8 +365,6 @@ class HealthCheckService
     /**
      * ดึง health check history สำหรับ deployment
      *
-     * @param int $deploymentId
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     public function getHealthCheckHistory(int $deploymentId, int $limit = 50)
@@ -411,10 +377,6 @@ class HealthCheckService
 
     /**
      * คำนวณ uptime percentage
-     *
-     * @param int $deploymentId
-     * @param int $hours
-     * @return float
      */
     public function calculateUptime(int $deploymentId, int $hours = 24): float
     {
@@ -423,9 +385,6 @@ class HealthCheckService
 
     /**
      * คำนวณเวลา check ครั้งถัดไป
-     *
-     * @param string $frequency
-     * @return \Carbon\Carbon
      */
     protected function calculateNextCheckTime(string $frequency): \Carbon\Carbon
     {
@@ -458,7 +417,7 @@ class HealthCheckService
                 $this->checkDeploymentHealth($deployment);
                 $count++;
             } catch (Exception $e) {
-                Log::error("Scheduled health check failed for deployment {$deployment->id}: " . $e->getMessage());
+                Log::error("Scheduled health check failed for deployment {$deployment->id}: ".$e->getMessage());
             }
         }
 

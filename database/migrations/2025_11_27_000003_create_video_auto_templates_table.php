@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_templates
      * เก็บเทมเพลตสำหรับสร้างวีดีโอ รวมถึงแนวเพลง, สไตล์ภาพ, และการตั้งค่า
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -102,8 +100,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_templates
-     *
-     * @return void
      */
     public function down(): void
     {

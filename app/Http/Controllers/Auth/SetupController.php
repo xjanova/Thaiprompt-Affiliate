@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * ตัวควบคุมสำหรับการติดตั้งระบบครั้งแรก
@@ -35,7 +35,6 @@ class SetupController extends Controller
     /**
      * แสดงหน้าติดตั้งระบบ (Wizard)
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function index(Request $request)
@@ -59,15 +58,13 @@ class SetupController extends Controller
 
     /**
      * ตรวจสอบสถานะระบบ
-     *
-     * @return array
      */
     protected function getSystemStatus(): array
     {
         return [
             'has_env' => File::exists(base_path('.env')),
             'has_vendor' => File::exists(base_path('vendor/autoload.php')),
-            'has_app_key' => !empty(config('app.key')),
+            'has_app_key' => ! empty(config('app.key')),
             'storage_writable' => is_writable(storage_path()),
             'bootstrap_writable' => is_writable(base_path('bootstrap/cache')),
         ];
@@ -75,8 +72,6 @@ class SetupController extends Controller
 
     /**
      * ตรวจสอบ Requirements ของระบบ
-     *
-     * @return array
      */
     protected function checkRequirements(): array
     {
@@ -124,7 +119,7 @@ class SetupController extends Controller
 
         foreach ($directories as $key => $path) {
             $requirements["dir_{$key}"] = [
-                'name' => basename($path) . ' directory',
+                'name' => basename($path).' directory',
                 'required' => 'Writable',
                 'current' => is_writable($path) ? 'Writable' : 'Not Writable',
                 'passed' => is_writable($path),
@@ -136,13 +131,12 @@ class SetupController extends Controller
 
     /**
      * ตรวจสอบการเชื่อมต่อฐานข้อมูล
-     *
-     * @return bool
      */
     protected function checkDatabaseConnection(): bool
     {
         try {
             DB::connection()->getPdo();
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -151,8 +145,6 @@ class SetupController extends Controller
 
     /**
      * ตรวจสอบว่า migrations ถูกรันแล้วหรือยัง
-     *
-     * @return bool
      */
     protected function checkMigrationsExist(): bool
     {
@@ -167,7 +159,6 @@ class SetupController extends Controller
     /**
      * ตรวจสอบการเชื่อมต่อฐานข้อมูล (API endpoint)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function testDatabase(Request $request)
@@ -203,7 +194,7 @@ class SetupController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -211,7 +202,6 @@ class SetupController extends Controller
     /**
      * บันทึกการตั้งค่าฐานข้อมูลและรัน migrations
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function saveDatabase(Request $request)
@@ -256,7 +246,7 @@ class SetupController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -281,7 +271,7 @@ class SetupController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการรัน migrations: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการรัน migrations: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -306,22 +296,19 @@ class SetupController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการรัน seeders: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการรัน seeders: '.$e->getMessage(),
             ], 422);
         }
     }
 
     /**
      * อัพเดทไฟล์ .env
-     *
-     * @param array $values
-     * @return void
      */
     protected function updateEnvFile(array $values): void
     {
         $envPath = base_path('.env');
 
-        if (!File::exists($envPath)) {
+        if (! File::exists($envPath)) {
             // Copy จาก .env.example ถ้ายังไม่มี .env
             if (File::exists(base_path('.env.example'))) {
                 File::copy(base_path('.env.example'), $envPath);
@@ -355,7 +342,6 @@ class SetupController extends Controller
     /**
      * บันทึกข้อมูล Super Admin และเสร็จสิ้นการติดตั้ง
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -390,7 +376,7 @@ class SetupController extends Controller
             // สร้างบัญชี Super Admin
             // ⚠️ IMPORTANT: ใช้ new User() แล้ว assign แบบ direct
             // เพราะ 'role' และ 'is_super_admin' อยู่ใน $guarded array
-            $user = new User();
+            $user = new User;
             $user->name = $request->name;
             $user->email = $request->email;
             $user->password = Hash::make($request->password);
@@ -414,15 +400,13 @@ class SetupController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาดในการสร้างบัญชี: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาดในการสร้างบัญชี: '.$e->getMessage())
                 ->withInput();
         }
     }
 
     /**
      * ตรวจสอบว่าติดตั้งระบบเรียบร้อยแล้วหรือไม่
-     *
-     * @return bool
      */
     protected function isSetupCompleted(): bool
     {
@@ -438,15 +422,13 @@ class SetupController extends Controller
 
     /**
      * สร้างไฟล์ flag เพื่อบอกว่าติดตั้งเสร็จแล้ว
-     *
-     * @return void
      */
     protected function createSetupCompletedFlag(): void
     {
         $storagePath = storage_path('app');
 
         // ตรวจสอบและสร้างโฟลเดอร์ถ้ายังไม่มี
-        if (!File::exists($storagePath)) {
+        if (! File::exists($storagePath)) {
             File::makeDirectory($storagePath, 0755, true);
         }
 

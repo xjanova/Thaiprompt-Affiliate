@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EmailCampaign;
-use App\Models\EmailTemplate;
 use App\Models\EmailProvider;
-use App\Models\User;
+use App\Models\EmailTemplate;
 use App\Models\Rank;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * จัดการ Email Campaign
@@ -22,7 +22,6 @@ class EmailCampaignController extends Controller
     /**
      * แสดงรายการแคมเปญทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -84,7 +83,6 @@ class EmailCampaignController extends Controller
     /**
      * บันทึกแคมเปญใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -136,20 +134,20 @@ class EmailCampaignController extends Controller
 
             return redirect()
                 ->route('admin.email.campaigns.show', $campaign)
-                ->with('success', 'สร้างแคมเปญสำเร็จ! มีผู้รับทั้งหมด ' . number_format($recipientsCount) . ' คน');
+                ->with('success', 'สร้างแคมเปญสำเร็จ! มีผู้รับทั้งหมด '.number_format($recipientsCount).' คน');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียดแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\View\View
      */
     public function show(EmailCampaign $campaign)
@@ -161,7 +159,7 @@ class EmailCampaignController extends Controller
             'provider',
             'recipients' => function ($query) {
                 $query->latest()->limit(100);
-            }
+            },
         ]);
 
         // สถิติแคมเปญ
@@ -185,13 +183,12 @@ class EmailCampaignController extends Controller
     /**
      * แสดงฟอร์มแก้ไขแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function edit(EmailCampaign $campaign)
     {
         // เช็คว่าแก้ไขได้หรือไม่
-        if (!$campaign->isEditable()) {
+        if (! $campaign->isEditable()) {
             return back()->with('error', 'ไม่สามารถแก้ไขแคมเปญที่กำลังส่งหรือส่งเสร็จแล้ว');
         }
 
@@ -211,14 +208,12 @@ class EmailCampaignController extends Controller
     /**
      * อัพเดทแคมเปญ
      *
-     * @param Request $request
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, EmailCampaign $campaign)
     {
         // เช็คว่าแก้ไขได้หรือไม่
-        if (!$campaign->isEditable()) {
+        if (! $campaign->isEditable()) {
             return back()->with('error', 'ไม่สามารถแก้ไขแคมเปญที่กำลังส่งหรือส่งเสร็จแล้ว');
         }
 
@@ -272,22 +267,22 @@ class EmailCampaignController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(EmailCampaign $campaign)
     {
         // เช็คว่าลบได้หรือไม่
-        if (!$campaign->isDeletable()) {
+        if (! $campaign->isDeletable()) {
             return back()->with('error', 'ไม่สามารถลบแคมเปญที่กำลังส่งได้');
         }
 
@@ -299,15 +294,12 @@ class EmailCampaignController extends Controller
                 ->with('success', 'ลบแคมเปญสำเร็จ!');
 
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * คำนวณจำนวนผู้รับตาม target_type
-     *
-     * @param EmailCampaign $campaign
-     * @return int
      */
     private function calculateRecipientsCount(EmailCampaign $campaign): int
     {
@@ -321,21 +313,21 @@ class EmailCampaignController extends Controller
 
             case 'by_rank':
                 // ตาม Rank
-                if (!empty($campaign->target_filters['ranks'])) {
+                if (! empty($campaign->target_filters['ranks'])) {
                     $query->whereIn('rank_id', $campaign->target_filters['ranks']);
                 }
                 break;
 
             case 'by_status':
                 // ตามสถานะ
-                if (!empty($campaign->target_filters['statuses'])) {
+                if (! empty($campaign->target_filters['statuses'])) {
                     $query->whereIn('status', $campaign->target_filters['statuses']);
                 }
                 break;
 
             case 'specific_users':
                 // เลือกเอง
-                if (!empty($campaign->target_filters['user_ids'])) {
+                if (! empty($campaign->target_filters['user_ids'])) {
                     $query->whereIn('id', $campaign->target_filters['user_ids']);
                 }
                 break;
@@ -351,13 +343,12 @@ class EmailCampaignController extends Controller
     /**
      * เริ่มส่งแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function start(EmailCampaign $campaign)
     {
         // เช็คสถานะ
-        if (!in_array($campaign->status, ['draft', 'scheduled', 'paused'])) {
+        if (! in_array($campaign->status, ['draft', 'scheduled', 'paused'])) {
             return back()->with('error', 'ไม่สามารถเริ่มส่งแคมเปญนี้ได้');
         }
 
@@ -379,14 +370,14 @@ class EmailCampaignController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * หยุดส่งแคมเปญชั่วคราว
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function pause(EmailCampaign $campaign)
@@ -403,7 +394,6 @@ class EmailCampaignController extends Controller
     /**
      * ยกเลิกแคมเปญ
      *
-     * @param EmailCampaign $campaign
      * @return \Illuminate\Http\RedirectResponse
      */
     public function cancel(EmailCampaign $campaign)

@@ -147,7 +147,7 @@ class NotificationController extends Controller
             return response()->json([
                 'success' => true,
                 'count' => $count,
-                'message' => "ลบการแจ้งเตือน {$count} รายการเรียบร้อยแล้ว"
+                'message' => "ลบการแจ้งเตือน {$count} รายการเรียบร้อยแล้ว",
             ]);
         }
 
@@ -177,7 +177,7 @@ class NotificationController extends Controller
             return response()->json([
                 'success' => true,
                 'count' => $count,
-                'message' => "ทำเครื่องหมายอ่าน {$count} รายการเรียบร้อยแล้ว"
+                'message' => "ทำเครื่องหมายอ่าน {$count} รายการเรียบร้อยแล้ว",
             ]);
         }
 
@@ -198,7 +198,7 @@ class NotificationController extends Controller
             return response()->json([
                 'success' => true,
                 'count' => $count,
-                'message' => "ลบการแจ้งเตือนที่อ่านแล้ว {$count} รายการเรียบร้อยแล้ว"
+                'message' => "ลบการแจ้งเตือนที่อ่านแล้ว {$count} รายการเรียบร้อยแล้ว",
             ]);
         }
 

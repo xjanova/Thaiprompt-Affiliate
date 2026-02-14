@@ -15,8 +15,6 @@ class FortuneResponseTemplateSeeder extends Seeder
 {
     /**
      * สร้างเทมเพลตตอบกลับเริ่มต้น
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -27,6 +25,7 @@ class FortuneResponseTemplateSeeder extends Seeder
         foreach ($templates as $templateData) {
             if (FortuneResponseTemplate::where('slug', $templateData['slug'])->exists()) {
                 $this->command->info("เทมเพลต '{$templateData['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 
@@ -39,8 +38,6 @@ class FortuneResponseTemplateSeeder extends Seeder
 
     /**
      * รายการเทมเพลตเริ่มต้น
-     *
-     * @return array
      */
     protected function getTemplates(): array
     {

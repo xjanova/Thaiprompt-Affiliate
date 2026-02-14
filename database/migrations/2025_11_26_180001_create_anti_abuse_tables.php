@@ -18,13 +18,11 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
         // 1. ตาราง Location Logs - บันทึกประวัติตำแหน่ง GPS
-        if (!Schema::hasTable('service_booking_location_logs')) {
+        if (! Schema::hasTable('service_booking_location_logs')) {
             Schema::create('service_booking_location_logs', function (Blueprint $table) {
                 $table->id();
 
@@ -77,7 +75,7 @@ return new class extends Migration
         }
 
         // 2. ตาราง User Trust Scores - คะแนนความน่าเชื่อถือ
-        if (!Schema::hasTable('user_trust_scores')) {
+        if (! Schema::hasTable('user_trust_scores')) {
             Schema::create('user_trust_scores', function (Blueprint $table) {
                 $table->id();
 
@@ -148,7 +146,7 @@ return new class extends Migration
         }
 
         // 3. ตาราง Penalties - บันทึกค่าปรับ/บทลงโทษ
-        if (!Schema::hasTable('service_booking_penalties')) {
+        if (! Schema::hasTable('service_booking_penalties')) {
             Schema::create('service_booking_penalties', function (Blueprint $table) {
                 $table->id();
 
@@ -216,7 +214,7 @@ return new class extends Migration
         }
 
         // 4. ตาราง User Blocks - Block/Blacklist
-        if (!Schema::hasTable('user_blocks')) {
+        if (! Schema::hasTable('user_blocks')) {
             Schema::create('user_blocks', function (Blueprint $table) {
                 $table->id();
 
@@ -271,8 +269,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

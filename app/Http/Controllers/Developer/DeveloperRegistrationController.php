@@ -41,7 +41,6 @@ class DeveloperRegistrationController extends Controller
     /**
      * บันทึกการลงทะเบียนนักพัฒนา
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function register(Request $request)
@@ -163,7 +162,7 @@ class DeveloperRegistrationController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -177,7 +176,7 @@ class DeveloperRegistrationController extends Controller
         $user = Auth::user();
         $developerProfile = $user->developerProfile;
 
-        if (!$developerProfile) {
+        if (! $developerProfile) {
             return redirect()
                 ->route('developer.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นนักพัฒนาก่อน');
@@ -205,7 +204,7 @@ class DeveloperRegistrationController extends Controller
         $user = Auth::user();
         $developerProfile = $user->developerProfile;
 
-        if (!$developerProfile) {
+        if (! $developerProfile) {
             return redirect()
                 ->route('developer.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นนักพัฒนาก่อน');
@@ -220,7 +219,7 @@ class DeveloperRegistrationController extends Controller
         if ($developerProfile->isRejected()) {
             return redirect()
                 ->route('developer.register')
-                ->with('error', 'บัญชีของคุณถูกปฏิเสธ: ' . $developerProfile->rejection_reason);
+                ->with('error', 'บัญชีของคุณถูกปฏิเสธ: '.$developerProfile->rejection_reason);
         }
 
         // ดึงข้อมูลสถิติ

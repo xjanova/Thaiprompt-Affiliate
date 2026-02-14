@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\TPIXToken;
 use App\Models\TPIXLiquidityPool;
+use App\Models\TPIXToken;
 use App\Services\TPIX\DEXService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class DEXApiController extends Controller
      */
     public function pools(Request $request): JsonResponse
     {
-        $cacheKey = 'dex_pools_' . md5(json_encode($request->all()));
+        $cacheKey = 'dex_pools_'.md5(json_encode($request->all()));
 
         $result = Cache::remember($cacheKey, 60, function () use ($request) {
             $query = TPIXLiquidityPool::with(['tokenA', 'tokenB'])
@@ -32,9 +32,9 @@ class DEXApiController extends Controller
 
             // Filter by token
             if ($request->token_id) {
-                $query->where(function($q) use ($request) {
+                $query->where(function ($q) use ($request) {
                     $q->where('token_a_id', $request->token_id)
-                      ->orWhere('token_b_id', $request->token_id);
+                        ->orWhere('token_b_id', $request->token_id);
                 });
             }
 
@@ -46,19 +46,19 @@ class DEXApiController extends Controller
             $pools = $query->paginate($request->get('per_page', 20));
 
             return [
-                'data' => $pools->map(function($pool) {
+                'data' => $pools->map(function ($pool) {
                     return [
                         'id' => $pool->id,
                         'pair' => $pool->pair_name,
                         'token_a' => [
                             'id' => $pool->tokenA->id,
                             'symbol' => $pool->tokenA->symbol,
-                            'logo' => $pool->tokenA->logo ? asset('storage/' . $pool->tokenA->logo) : null,
+                            'logo' => $pool->tokenA->logo ? asset('storage/'.$pool->tokenA->logo) : null,
                         ],
                         'token_b' => [
                             'id' => $pool->tokenB->id,
                             'symbol' => $pool->tokenB->symbol,
-                            'logo' => $pool->tokenB->logo ? asset('storage/' . $pool->tokenB->logo) : null,
+                            'logo' => $pool->tokenB->logo ? asset('storage/'.$pool->tokenB->logo) : null,
                         ],
                         'reserves' => [
                             'token_a' => $pool->reserve_a,
@@ -97,7 +97,7 @@ class DEXApiController extends Controller
             ->latest()
             ->limit(10)
             ->get()
-            ->map(function($swap) {
+            ->map(function ($swap) {
                 return [
                     'tx_hash' => $swap->tx_hash,
                     'direction' => $swap->swap_direction,
@@ -116,13 +116,13 @@ class DEXApiController extends Controller
                     'id' => $pool->tokenA->id,
                     'name' => $pool->tokenA->name,
                     'symbol' => $pool->tokenA->symbol,
-                    'logo' => $pool->tokenA->logo ? asset('storage/' . $pool->tokenA->logo) : null,
+                    'logo' => $pool->tokenA->logo ? asset('storage/'.$pool->tokenA->logo) : null,
                 ],
                 'token_b' => [
                     'id' => $pool->tokenB->id,
                     'name' => $pool->tokenB->name,
                     'symbol' => $pool->tokenB->symbol,
-                    'logo' => $pool->tokenB->logo ? asset('storage/' . $pool->tokenB->logo) : null,
+                    'logo' => $pool->tokenB->logo ? asset('storage/'.$pool->tokenB->logo) : null,
                 ],
                 'reserves' => [
                     'token_a' => $pool->reserve_a,
@@ -334,7 +334,7 @@ class DEXApiController extends Controller
             ->with(['pool.tokenA', 'pool.tokenB'])
             ->where('status', 'active')
             ->get()
-            ->map(function($position) {
+            ->map(function ($position) {
                 return [
                     'id' => $position->id,
                     'pool' => [
@@ -375,7 +375,7 @@ class DEXApiController extends Controller
             ->paginate($request->get('per_page', 20));
 
         return response()->json([
-            'data' => $swaps->map(function($swap) {
+            'data' => $swaps->map(function ($swap) {
                 return [
                     'id' => $swap->id,
                     'tx_hash' => $swap->tx_hash,
@@ -411,7 +411,7 @@ class DEXApiController extends Controller
         $stats = Cache::remember('dex_statistics', 300, function () {
             $pools = TPIXLiquidityPool::where('is_active', true)->get();
 
-            $totalTVL = $pools->sum(function($pool) {
+            $totalTVL = $pools->sum(function ($pool) {
                 return $pool->getTVL();
             });
 

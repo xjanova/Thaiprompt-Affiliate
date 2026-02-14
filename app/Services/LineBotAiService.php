@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Models\LineBotAiSetting;
 use App\Models\LineBotConversation;
-use App\Models\LineBotKnowledgeBase;
-use App\Models\LineRecruitmentTopicBoundary;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -21,23 +19,16 @@ class LineBotAiService
 {
     /**
      * การตั้งค่า AI
-     *
-     * @var LineBotAiSetting|null
      */
     private ?LineBotAiSetting $settings;
 
     /**
      * โหมดการรับสมัคร
-     *
-     * @var bool
      */
     private bool $recruitmentMode = false;
 
     /**
      * สร้าง instance ใหม่
-     *
-     * @param LineBotAiSetting|null $settings
-     * @param bool $recruitmentMode
      */
     public function __construct(?LineBotAiSetting $settings = null, bool $recruitmentMode = false)
     {
@@ -47,29 +38,27 @@ class LineBotAiService
 
     /**
      * สร้าง instance สำหรับโหมดรับสมัคร
-     *
-     * @return self
      */
     public static function forRecruitment(): self
     {
         $settings = LineBotAiSetting::getActiveRecruitment();
+
         return new self($settings, true);
     }
 
     /**
      * สร้างคำตอบจาก AI
      *
-     * @param string $userMessage ข้อความจากผู้ใช้
-     * @param LineBotConversation|null $conversation ประวัติการสนทนา
-     * @param array $additionalContext บริบทเพิ่มเติม
-     * @return array
+     * @param  string  $userMessage  ข้อความจากผู้ใช้
+     * @param  LineBotConversation|null  $conversation  ประวัติการสนทนา
+     * @param  array  $additionalContext  บริบทเพิ่มเติม
      */
     public function generateResponse(
         string $userMessage,
         ?LineBotConversation $conversation = null,
         array $additionalContext = []
     ): array {
-        if (!$this->settings) {
+        if (! $this->settings) {
             throw new Exception('AI settings not configured');
         }
 
@@ -80,7 +69,7 @@ class LineBotAiService
             if ($this->settings->hasTopicFiltering()) {
                 $topicCheck = $this->checkTopicBoundaries($userMessage);
 
-                if (!$topicCheck['allowed']) {
+                if (! $topicCheck['allowed']) {
                     Log::info('Topic filtered', [
                         'message' => $userMessage,
                         'blocked_topic' => $topicCheck['topic_name'] ?? 'unknown',
@@ -139,12 +128,12 @@ class LineBotAiService
     /**
      * ตรวจสอบ Topic Boundaries
      *
-     * @param string $message ข้อความที่ต้องการตรวจสอบ
+     * @param  string  $message  ข้อความที่ต้องการตรวจสอบ
      * @return array ['allowed' => bool, 'response' => string|null, 'topic_name' => string|null]
      */
     public function checkTopicBoundaries(string $message): array
     {
-        if (!$this->settings) {
+        if (! $this->settings) {
             return ['allowed' => true, 'response' => null, 'topic_name' => null];
         }
 
@@ -171,17 +160,16 @@ class LineBotAiService
     /**
      * สร้างคำตอบสำหรับการรับสมัคร
      *
-     * @param string $userMessage ข้อความจากผู้ใช้
-     * @param LineBotConversation|null $conversation ประวัติการสนทนา
-     * @param array $userInfo ข้อมูลผู้ใช้ที่เก็บแล้ว
-     * @return array
+     * @param  string  $userMessage  ข้อความจากผู้ใช้
+     * @param  LineBotConversation|null  $conversation  ประวัติการสนทนา
+     * @param  array  $userInfo  ข้อมูลผู้ใช้ที่เก็บแล้ว
      */
     public function generateRecruitmentResponse(
         string $userMessage,
         ?LineBotConversation $conversation = null,
         array $userInfo = []
     ): array {
-        if (!$this->settings) {
+        if (! $this->settings) {
             throw new Exception('AI settings not configured');
         }
 
@@ -198,14 +186,14 @@ class LineBotAiService
         // สร้าง context พิเศษสำหรับรับสมัคร
         $recruitmentContext = [];
 
-        if (!empty($userInfo)) {
-            $recruitmentContext[] = "ข้อมูลผู้ใช้ที่เก็บแล้ว:\n" . json_encode($userInfo, JSON_UNESCAPED_UNICODE);
+        if (! empty($userInfo)) {
+            $recruitmentContext[] = "ข้อมูลผู้ใช้ที่เก็บแล้ว:\n".json_encode($userInfo, JSON_UNESCAPED_UNICODE);
         }
 
         if ($this->settings->required_fields) {
             $missing = array_diff($this->settings->required_fields, array_keys($userInfo));
-            if (!empty($missing)) {
-                $recruitmentContext[] = "ข้อมูลที่ยังต้องการ: " . implode(', ', $missing);
+            if (! empty($missing)) {
+                $recruitmentContext[] = 'ข้อมูลที่ยังต้องการ: '.implode(', ', $missing);
             }
         }
 
@@ -229,7 +217,7 @@ class LineBotAiService
         }
 
         // Add additional context
-        if (!empty($additional)) {
+        if (! empty($additional)) {
             $contextParts[] = implode("\n", $additional);
         }
 
@@ -239,10 +227,9 @@ class LineBotAiService
     /**
      * สร้างข้อความสำหรับส่งให้ AI
      *
-     * @param string $userMessage ข้อความจากผู้ใช้
-     * @param LineBotConversation|null $conversation ประวัติการสนทนา
-     * @param string $context บริบทเพิ่มเติม
-     * @return array
+     * @param  string  $userMessage  ข้อความจากผู้ใช้
+     * @param  LineBotConversation|null  $conversation  ประวัติการสนทนา
+     * @param  string  $context  บริบทเพิ่มเติม
      */
     private function buildMessages(
         string $userMessage,
@@ -258,15 +245,15 @@ class LineBotAiService
             // เพิ่มคำแนะนำเกี่ยวกับสไตล์การตอบ
             $styleGuide = $this->getResponseStyleGuide();
             if ($styleGuide) {
-                $systemPrompt .= "\n\n" . $styleGuide;
+                $systemPrompt .= "\n\n".$styleGuide;
             }
         } else {
             $systemPrompt = $this->settings->system_prompt ?? 'You are a helpful assistant.';
         }
 
         // Add context to system prompt
-        if (!empty($context)) {
-            $systemPrompt .= "\n\nContext and Knowledge Base:\n" . $context;
+        if (! empty($context)) {
+            $systemPrompt .= "\n\nContext and Knowledge Base:\n".$context;
         }
 
         $messages[] = [
@@ -296,12 +283,10 @@ class LineBotAiService
 
     /**
      * รับคำแนะนำสไตล์การตอบ
-     *
-     * @return string|null
      */
     private function getResponseStyleGuide(): ?string
     {
-        if (!$this->settings->response_style) {
+        if (! $this->settings->response_style) {
             return null;
         }
 
@@ -326,7 +311,7 @@ class LineBotAiService
             'gemini' => $this->callGemini($messages),
             'postxagent' => $this->callPostXAgent($messages),
             'custom' => $this->callCustomProvider($messages),
-            default => throw new Exception('Unsupported AI provider: ' . $this->settings->provider),
+            default => throw new Exception('Unsupported AI provider: '.$this->settings->provider),
         };
     }
 
@@ -336,7 +321,7 @@ class LineBotAiService
     private function callOpenAI(array $messages): array
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->api_key,
+            'Authorization' => 'Bearer '.$this->settings->api_key,
             'Content-Type' => 'application/json',
         ])->timeout(60)->post('https://api.openai.com/v1/chat/completions', [
             'model' => $this->settings->model,
@@ -345,8 +330,8 @@ class LineBotAiService
             'max_tokens' => $this->settings->max_tokens,
         ]);
 
-        if (!$response->successful()) {
-            throw new Exception('OpenAI API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('OpenAI API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -363,7 +348,7 @@ class LineBotAiService
     private function callDeepSeek(array $messages): array
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->api_key,
+            'Authorization' => 'Bearer '.$this->settings->api_key,
             'Content-Type' => 'application/json',
         ])->timeout(60)->post('https://api.deepseek.com/v1/chat/completions', [
             'model' => $this->settings->model ?: 'deepseek-chat',
@@ -372,8 +357,8 @@ class LineBotAiService
             'max_tokens' => $this->settings->max_tokens,
         ]);
 
-        if (!$response->successful()) {
-            throw new Exception('DeepSeek API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('DeepSeek API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -413,8 +398,8 @@ class LineBotAiService
             'max_tokens' => $this->settings->max_tokens,
         ]);
 
-        if (!$response->successful()) {
-            throw new Exception('Anthropic API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Anthropic API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -452,8 +437,8 @@ class LineBotAiService
             ],
         ]);
 
-        if (!$response->successful()) {
-            throw new Exception('Gemini API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Gemini API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -469,12 +454,12 @@ class LineBotAiService
      */
     private function callCustomProvider(array $messages): array
     {
-        if (!$this->settings->api_endpoint) {
+        if (! $this->settings->api_endpoint) {
             throw new Exception('Custom API endpoint not configured');
         }
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->settings->api_key,
+            'Authorization' => 'Bearer '.$this->settings->api_key,
             'Content-Type' => 'application/json',
         ])->timeout(60)->post($this->settings->api_endpoint, [
             'messages' => $messages,
@@ -482,8 +467,8 @@ class LineBotAiService
             'max_tokens' => $this->settings->max_tokens,
         ]);
 
-        if (!$response->successful()) {
-            throw new Exception('Custom API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new Exception('Custom API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -501,14 +486,14 @@ class LineBotAiService
      * PostXAgent เป็น AI Manager ที่รองรับหลาย provider ในตัว
      * โดยจะเลือก provider ที่ดีที่สุดโดยอัตโนมัติ หรือใช้ provider ที่ระบุ
      *
-     * @param array $messages รูปแบบ OpenAI-compatible messages
-     * @return array
+     * @param  array  $messages  รูปแบบ OpenAI-compatible messages
+     *
      * @throws Exception
      */
     private function callPostXAgent(array $messages): array
     {
         // ตรวจสอบว่า PostXAgent ตั้งค่าถูกต้อง
-        if (!$this->settings->isPostXAgentConfigured()) {
+        if (! $this->settings->isPostXAgentConfigured()) {
             throw new Exception('PostXAgent not configured. Please set host and port.');
         }
 
@@ -518,7 +503,7 @@ class LineBotAiService
 
         foreach ($messages as $msg) {
             if ($msg['role'] === 'system') {
-                $systemPrompt .= $msg['content'] . "\n";
+                $systemPrompt .= $msg['content']."\n";
             } else {
                 $conversationMessages[] = $msg;
             }
@@ -548,7 +533,7 @@ class LineBotAiService
         // เพิ่ม API key ถ้ามี
         if ($this->settings->postxagent_api_key) {
             $headers['X-Api-Key'] = $this->settings->postxagent_api_key;
-            $headers['Authorization'] = 'Bearer ' . $this->settings->postxagent_api_key;
+            $headers['Authorization'] = 'Bearer '.$this->settings->postxagent_api_key;
         }
 
         // เรียก PostXAgent API
@@ -565,13 +550,13 @@ class LineBotAiService
             ->timeout($timeout)
             ->post($url, $requestBody);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             $errorBody = $response->body();
             Log::error('PostXAgent API error', [
                 'status' => $response->status(),
                 'body' => $errorBody,
             ]);
-            throw new Exception('PostXAgent API error: ' . $errorBody);
+            throw new Exception('PostXAgent API error: '.$errorBody);
         }
 
         $data = $response->json();
@@ -628,19 +613,17 @@ class LineBotAiService
 
     /**
      * Test PostXAgent connection specifically
-     *
-     * @return array
      */
     public function testPostXAgentConnection(): array
     {
-        if (!$this->settings->isPostXAgentProvider()) {
+        if (! $this->settings->isPostXAgentProvider()) {
             return [
                 'success' => false,
                 'message' => 'Provider is not PostXAgent',
             ];
         }
 
-        if (!$this->settings->isPostXAgentConfigured()) {
+        if (! $this->settings->isPostXAgentConfigured()) {
             return [
                 'success' => false,
                 'message' => 'PostXAgent not configured',
@@ -670,6 +653,7 @@ class LineBotAiService
 
             // ถ้า health check ไม่มี ลองเรียก API ปกติ
             $testResult = $this->testConnection();
+
             return $testResult;
 
         } catch (Exception $e) {

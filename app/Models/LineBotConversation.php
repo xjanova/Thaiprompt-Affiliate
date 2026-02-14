@@ -36,7 +36,7 @@ class LineBotConversation extends Model
         parent::boot();
 
         static::creating(function ($conversation) {
-            if (!$conversation->session_id) {
+            if (! $conversation->session_id) {
                 $conversation->session_id = Str::uuid();
             }
         });

@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\VideoContent;
-use App\Models\UserVideoWatch;
-use App\Models\VideoWatchSession;
-use App\Models\VideoCoin;
-use App\Models\UserVideoLevel;
 use App\Models\UserDailyStreak;
 use App\Models\UserQuestProgress;
+use App\Models\UserVideoLevel;
+use App\Models\UserVideoWatch;
+use App\Models\VideoCoin;
+use App\Models\VideoContent;
 use App\Models\VideoQuest;
+use App\Models\VideoWatchSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -100,7 +100,7 @@ class VideoWatchController extends Controller
 
         $session = VideoWatchSession::where('session_token', $request->input('session_token'))->first();
 
-        if (!$session || $session->user_id !== $request->user()->id) {
+        if (! $session || $session->user_id !== $request->user()->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid session',
@@ -136,7 +136,7 @@ class VideoWatchController extends Controller
         $user = $request->user();
         $session = VideoWatchSession::where('session_token', $request->input('session_token'))->first();
 
-        if (!$session || $session->user_id !== $user->id) {
+        if (! $session || $session->user_id !== $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid session',
@@ -149,7 +149,7 @@ class VideoWatchController extends Controller
         // Validate session (anti-cheat)
         $isValid = $session->validateSession();
 
-        if (!$isValid) {
+        if (! $isValid) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid watch session detected',
@@ -185,7 +185,7 @@ class VideoWatchController extends Controller
                 'watch_duration' => $session->watch_duration,
                 'user_watch' => $userWatch->fresh(),
                 'completed' => $userWatch->completed,
-                'can_claim_reward' => $userWatch->completed && !$userWatch->reward_claimed,
+                'can_claim_reward' => $userWatch->completed && ! $userWatch->reward_claimed,
             ],
         ]);
     }
@@ -213,7 +213,7 @@ class VideoWatchController extends Controller
             ->where('video_id', $videoId)
             ->first();
 
-        if (!$userWatch || !$userWatch->completed || $userWatch->reward_claimed) {
+        if (! $userWatch || ! $userWatch->completed || $userWatch->reward_claimed) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot claim reward',
@@ -225,13 +225,13 @@ class VideoWatchController extends Controller
             // Claim reward
             $reward = $userWatch->claimReward();
 
-            if (!$reward) {
+            if (! $reward) {
                 throw new \Exception('Failed to claim reward');
             }
 
             // Add coins
             $videoCoin = VideoCoin::firstOrCreate(['user_id' => $user->id]);
-            $videoCoin->addCoins($reward['coins'], 'earned_video', 'VideoContent', $videoId, 'Watched video: ' . $userWatch->video->title);
+            $videoCoin->addCoins($reward['coins'], 'earned_video', 'VideoContent', $videoId, 'Watched video: '.$userWatch->video->title);
 
             // Add experience
             $userLevel = UserVideoLevel::where('user_id', $user->id)->first();
@@ -254,9 +254,10 @@ class VideoWatchController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to claim reward: ' . $e->getMessage(),
+                'message' => 'Failed to claim reward: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -272,7 +273,7 @@ class VideoWatchController extends Controller
             ->get();
 
         foreach ($quests as $quest) {
-            if (!$quest->isUserEligible($user)) {
+            if (! $quest->isUserEligible($user)) {
                 continue;
             }
 
@@ -307,7 +308,7 @@ class VideoWatchController extends Controller
             ->get();
 
         foreach ($quests as $quest) {
-            if (!$quest->isUserEligible($user)) {
+            if (! $quest->isUserEligible($user)) {
                 continue;
             }
 

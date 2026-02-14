@@ -356,7 +356,7 @@ class VisualBuilderController extends Controller
      */
     public function toggle(PageSection $section)
     {
-        $section->update(['is_active' => !$section->is_active]);
+        $section->update(['is_active' => ! $section->is_active]);
 
         return response()->json([
             'success' => true,
@@ -440,7 +440,7 @@ class VisualBuilderController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to import template: ' . $e->getMessage(),
+                'message' => 'Failed to import template: '.$e->getMessage(),
             ], 500);
         }
     }

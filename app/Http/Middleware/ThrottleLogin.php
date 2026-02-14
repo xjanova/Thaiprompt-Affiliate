@@ -18,7 +18,7 @@ class ThrottleLogin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!config('ratelimit.enabled')) {
+        if (! config('ratelimit.enabled')) {
             return $next($request);
         }
 
@@ -124,7 +124,7 @@ class ThrottleLogin
                     userAgent: $request->userAgent()
                 );
             }
-        } else if ($response->status() === 200 || $response->status() === 302) {
+        } elseif ($response->status() === 200 || $response->status() === 302) {
             // Login successful, clear attempts
             Cache::forget($ipKey);
             if ($emailKey) {

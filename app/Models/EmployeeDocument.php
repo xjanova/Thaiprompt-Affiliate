@@ -55,6 +55,7 @@ class EmployeeDocument extends Model
         if ($this->expiry_date) {
             return now()->greaterThan($this->expiry_date);
         }
+
         return false;
     }
 
@@ -63,7 +64,9 @@ class EmployeeDocument extends Model
      */
     public function getFileSizeHumanAttribute()
     {
-        if (!$this->file_size) return 'Unknown';
+        if (! $this->file_size) {
+            return 'Unknown';
+        }
 
         $units = ['B', 'KB', 'MB', 'GB'];
         $size = $this->file_size;
@@ -74,6 +77,6 @@ class EmployeeDocument extends Model
             $unit++;
         }
 
-        return round($size, 2) . ' ' . $units[$unit];
+        return round($size, 2).' '.$units[$unit];
     }
 }

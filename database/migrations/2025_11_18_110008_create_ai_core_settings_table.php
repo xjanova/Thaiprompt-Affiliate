@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บการตั้งค่าต่างๆ ของระบบ AI Core
      * รองรับการตั้งค่าแบบ global และ tenant-specific
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -93,8 +91,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_settings
-     *
-     * @return void
      */
     public function down(): void
     {

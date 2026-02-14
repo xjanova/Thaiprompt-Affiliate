@@ -55,8 +55,9 @@ class ConvertImagesToWebP extends Command
         $totalErrors = 0;
 
         foreach ($directories as $dir) {
-            if (!Storage::disk('public')->exists($dir)) {
+            if (! Storage::disk('public')->exists($dir)) {
                 $this->warn("⚠️  Directory '{$dir}' does not exist. Skipping...");
+
                 continue;
             }
 
@@ -66,6 +67,7 @@ class ConvertImagesToWebP extends Command
 
             if (empty($files)) {
                 $this->warn("   No files found in {$dir}");
+
                 continue;
             }
 
@@ -76,9 +78,10 @@ class ConvertImagesToWebP extends Command
                 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
                 // Skip non-image files and already converted WebP files
-                if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+                if (! in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
                     $totalSkipped++;
                     $bar->advance();
+
                     continue;
                 }
 
@@ -86,6 +89,7 @@ class ConvertImagesToWebP extends Command
                 if ($extension === 'gif') {
                     $totalSkipped++;
                     $bar->advance();
+
                     continue;
                 }
 
@@ -122,7 +126,7 @@ class ConvertImagesToWebP extends Command
         }
 
         if ($deleteOriginal && $totalConverted > 0) {
-            $this->warn("🗑️  Original images have been deleted.");
+            $this->warn('🗑️  Original images have been deleted.');
         }
 
         return Command::SUCCESS;

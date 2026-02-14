@@ -160,7 +160,7 @@ class PosApiKey extends Model
      */
     public static function generateKey(): string
     {
-        return 'pk_' . Str::random(32);
+        return 'pk_'.Str::random(32);
     }
 
     /**
@@ -169,7 +169,7 @@ class PosApiKey extends Model
     public function isUsable(): bool
     {
         // ต้อง active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -191,7 +191,7 @@ class PosApiKey extends Model
      */
     public function getStatusText(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'ปิดใช้งาน';
         }
 
@@ -211,7 +211,7 @@ class PosApiKey extends Model
      */
     public function getStatusBadgeClass(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         }
 

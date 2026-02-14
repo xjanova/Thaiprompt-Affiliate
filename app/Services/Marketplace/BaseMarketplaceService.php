@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Log;
 abstract class BaseMarketplaceService implements MarketplaceApiInterface
 {
     protected MarketplaceAccount $account;
+
     protected Client $httpClient;
+
     protected string $baseUrl;
+
     protected array $defaultHeaders = [];
 
     public function __construct(MarketplaceAccount $account)
@@ -26,17 +29,11 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
 
     /**
      * Make HTTP request to API
-     *
-     * @param string $method
-     * @param string $endpoint
-     * @param array $params
-     * @param array $headers
-     * @return array|null
      */
     protected function makeRequest(string $method, string $endpoint, array $params = [], array $headers = []): ?array
     {
         try {
-            $url = $this->baseUrl . $endpoint;
+            $url = $this->baseUrl.$endpoint;
             $options = [
                 'headers' => array_merge($this->defaultHeaders, $headers),
             ];
@@ -56,7 +53,7 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
             $body = $response->getBody()->getContents();
             $data = json_decode($body, true);
 
-            Log::info("Marketplace API Response: Success", [
+            Log::info('Marketplace API Response: Success', [
                 'account_id' => $this->account->id,
                 'status_code' => $response->getStatusCode(),
             ]);
@@ -81,11 +78,6 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
 
     /**
      * Create sync log
-     *
-     * @param string $type
-     * @param string $status
-     * @param array $data
-     * @return MarketplaceSyncLog
      */
     protected function createSyncLog(string $type, string $status = 'running', array $data = []): MarketplaceSyncLog
     {
@@ -101,11 +93,6 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
 
     /**
      * Update sync log
-     *
-     * @param MarketplaceSyncLog $log
-     * @param string $status
-     * @param array $data
-     * @return void
      */
     protected function updateSyncLog(MarketplaceSyncLog $log, string $status, array $data = []): void
     {
@@ -121,8 +108,6 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
 
     /**
      * Check if token is expired and refresh if needed
-     *
-     * @return bool
      */
     protected function ensureValidToken(): bool
     {
@@ -135,17 +120,11 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
 
     /**
      * Normalize product data to our format
-     *
-     * @param array $rawProduct
-     * @return array
      */
     abstract protected function normalizeProduct(array $rawProduct): array;
 
     /**
      * Normalize order data to our format
-     *
-     * @param array $rawOrder
-     * @return array
      */
     abstract protected function normalizeOrder(array $rawOrder): array;
 }

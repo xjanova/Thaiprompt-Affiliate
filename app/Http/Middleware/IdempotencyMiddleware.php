@@ -28,7 +28,7 @@ class IdempotencyMiddleware
         // Get idempotency key from header
         $idempotencyKey = $request->header('Idempotency-Key');
 
-        if (!$idempotencyKey) {
+        if (! $idempotencyKey) {
             // If no key provided, generate one based on request data
             // This is a fallback, but clients should provide their own key
             $idempotencyKey = $this->generateIdempotencyKey($request);
@@ -48,7 +48,7 @@ class IdempotencyMiddleware
         // Lock to prevent concurrent requests with same key
         $lock = Cache::lock("lock:{$cacheKey}", 10); // 10 second lock
 
-        if (!$lock->get()) {
+        if (! $lock->get()) {
             return response()->json([
                 'message' => 'Duplicate request in progress. Please wait.',
             ], 409); // Conflict
@@ -89,6 +89,6 @@ class IdempotencyMiddleware
             'timestamp' => now()->format('Y-m-d H:i'), // Group by minute
         ];
 
-        return 'auto-' . hash('sha256', json_encode($data));
+        return 'auto-'.hash('sha256', json_encode($data));
     }
 }

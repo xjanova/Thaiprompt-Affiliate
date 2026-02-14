@@ -75,7 +75,7 @@ class AiGenGeneration extends Model
      */
     public function getFormattedFileSizeAttribute(): ?string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return null;
         }
 
@@ -88,7 +88,7 @@ class AiGenGeneration extends Model
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 
     /**
@@ -96,7 +96,7 @@ class AiGenGeneration extends Model
      */
     public function getFormattedDurationAttribute(): ?string
     {
-        if (!$this->duration) {
+        if (! $this->duration) {
             return null;
         }
 
@@ -107,7 +107,7 @@ class AiGenGeneration extends Model
             return sprintf('%d:%02d', $minutes, $seconds);
         }
 
-        return $seconds . 's';
+        return $seconds.'s';
     }
 
     /**
@@ -115,7 +115,8 @@ class AiGenGeneration extends Model
      */
     public function toggleFavorite(): bool
     {
-        $this->is_favorite = !$this->is_favorite;
+        $this->is_favorite = ! $this->is_favorite;
+
         return $this->save();
     }
 

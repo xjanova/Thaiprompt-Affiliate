@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง cart_items
      *
      * รายการสินค้าในตะกร้า
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -66,8 +64,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง cart_items
-     *
-     * @return void
      */
     public function down(): void
     {

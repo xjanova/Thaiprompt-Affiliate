@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -24,10 +24,15 @@ use Illuminate\Support\Facades\Log;
 class PaySolutionsProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $apiUrl;
+
     protected $merchantId;
+
     protected $apiKey;
+
     protected $secretKey;
+
     protected $testMode;
 
     public function __construct()
@@ -47,7 +52,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน (testing mode หรือ bootstrap) ให้ข้ามการโหลด config
-            Log::debug('PaySolutionsProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('PaySolutionsProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
@@ -58,12 +63,12 @@ class PaySolutionsProvider implements PaymentProviderInterface
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // Check if gateway is configured
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('PaySolutions gateway is not configured');
         }
 
         // Check if gateway is active
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('PaySolutions gateway is not active');
         }
 
@@ -83,7 +88,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
 
         // Validate payment method
         $paymentMethod = $data['paysolutions_method'] ?? 'qr';
-        if (!in_array($paymentMethod, ['qr', 'card', 'bank_transfer', 'ewallet', 'installment'])) {
+        if (! in_array($paymentMethod, ['qr', 'card', 'bank_transfer', 'ewallet', 'installment'])) {
             throw new Exception('Invalid PaySolutions payment method');
         }
 
@@ -104,7 +109,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
             // Call PaySolutions API
             $response = $this->callApi('/api/v1/payment/create', $payload);
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 throw new Exception($response['message'] ?? 'Payment creation failed');
             }
 
@@ -141,10 +146,11 @@ class PaySolutionsProvider implements PaymentProviderInterface
     {
         try {
             // SECURITY: Verify webhook signature
-            if (!$this->verifyWebhookSignature($data)) {
+            if (! $this->verifyWebhookSignature($data)) {
                 Log::warning('PaySolutions webhook signature verification failed', [
                     'transaction_id' => $transaction->transaction_id,
                 ]);
+
                 return false;
             }
 
@@ -162,6 +168,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
                     'expected' => $transaction->amount,
                     'received' => $paidAmount,
                 ]);
+
                 return false;
             }
 
@@ -177,6 +184,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -200,7 +208,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
 
             $response = $this->callApi('/api/v1/payment/refund', $payload);
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 throw new Exception($response['message'] ?? 'Refund failed');
             }
 
@@ -236,7 +244,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
 
             $response = $this->callApi('/api/v1/payment/status', $payload, 'GET');
 
-            if (!$response['success']) {
+            if (! $response['success']) {
                 throw new Exception($response['message'] ?? 'Status check failed');
             }
 
@@ -336,7 +344,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
     protected function callApi(string $endpoint, array $payload, string $method = 'POST'): array
     {
         try {
-            $url = $this->apiUrl . $endpoint;
+            $url = $this->apiUrl.$endpoint;
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
@@ -351,7 +359,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
             }
 
             if ($response->failed()) {
-                throw new Exception('PaySolutions API request failed: ' . $response->body());
+                throw new Exception('PaySolutions API request failed: '.$response->body());
             }
 
             return $response->json();
@@ -361,7 +369,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
@@ -371,7 +379,7 @@ class PaySolutionsProvider implements PaymentProviderInterface
     protected function getPaymentDescription(PaymentTransaction $transaction): string
     {
         if ($transaction->type === 'order_payment' && $transaction->order) {
-            return 'Payment for Order #' . $transaction->order->order_number;
+            return 'Payment for Order #'.$transaction->order->order_number;
         }
 
         if ($transaction->type === 'wallet_topup') {

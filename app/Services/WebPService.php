@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\WebPConversionStat;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
-use App\Models\WebPConversionStat;
+use Intervention\Image\ImageManager;
 
 class WebPService
 {
@@ -15,15 +15,15 @@ class WebPService
     public function __construct()
     {
         // Use GD driver (can switch to Imagick if available)
-        $this->imageManager = new ImageManager(new Driver());
+        $this->imageManager = new ImageManager(new Driver);
     }
 
     /**
      * Convert and save an uploaded image to WebP format
      *
-     * @param UploadedFile $file The uploaded file
-     * @param string $directory The storage directory (e.g., 'branding', 'avatars')
-     * @param int $quality Quality of WebP conversion (0-100)
+     * @param  UploadedFile  $file  The uploaded file
+     * @param  string  $directory  The storage directory (e.g., 'branding', 'avatars')
+     * @param  int  $quality  Quality of WebP conversion (0-100)
      * @return array ['path' => storage path, 'url' => public URL, 'original_extension' => original file extension]
      */
     public function convertAndStore(UploadedFile $file, string $directory, int $quality = 85): array
@@ -34,9 +34,10 @@ class WebPService
         // Skip conversion for SVG files
         if (strtolower($originalExtension) === 'svg') {
             $path = $file->store($directory, 'public');
+
             return [
                 'path' => $path,
-                'url' => '/storage/' . $path,
+                'url' => '/storage/'.$path,
                 'original_extension' => $originalExtension,
             ];
         }
@@ -46,10 +47,10 @@ class WebPService
 
         // Generate unique filename with .webp extension
         $filename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $filename = \Illuminate\Support\Str::slug($filename) . '-' . uniqid() . '.webp';
+        $filename = \Illuminate\Support\Str::slug($filename).'-'.uniqid().'.webp';
 
         // Define full path
-        $fullPath = $directory . '/' . $filename;
+        $fullPath = $directory.'/'.$filename;
 
         // Encode to WebP format
         $encoded = $image->toWebp($quality);
@@ -61,12 +62,12 @@ class WebPService
         try {
             WebPConversionStat::incrementUploadConversion(1);
         } catch (\Exception $e) {
-            \Log::warning('Failed to track WebP conversion stat: ' . $e->getMessage());
+            \Log::warning('Failed to track WebP conversion stat: '.$e->getMessage());
         }
 
         return [
             'path' => $fullPath,
-            'url' => '/storage/' . $fullPath,
+            'url' => '/storage/'.$fullPath,
             'original_extension' => $originalExtension,
         ];
     }
@@ -74,15 +75,15 @@ class WebPService
     /**
      * Convert an existing image file to WebP
      *
-     * @param string $path The storage path of the existing image (relative to storage/app/public)
-     * @param int $quality Quality of WebP conversion (0-100)
-     * @param bool $deleteOriginal Whether to delete the original file after conversion
+     * @param  string  $path  The storage path of the existing image (relative to storage/app/public)
+     * @param  int  $quality  Quality of WebP conversion (0-100)
+     * @param  bool  $deleteOriginal  Whether to delete the original file after conversion
      * @return array|null ['path' => new storage path, 'url' => public URL] or null if conversion failed
      */
     public function convertExistingImage(string $path, int $quality = 85, bool $deleteOriginal = false): ?array
     {
         // Check if file exists
-        if (!Storage::disk('public')->exists($path)) {
+        if (! Storage::disk('public')->exists($path)) {
             return null;
         }
 
@@ -93,12 +94,12 @@ class WebPService
         if (in_array($extension, ['webp', 'svg'])) {
             return [
                 'path' => $path,
-                'url' => '/storage/' . $path,
+                'url' => '/storage/'.$path,
             ];
         }
 
         // Skip non-image files
-        if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
+        if (! in_array($extension, ['jpg', 'jpeg', 'png', 'gif'])) {
             return null;
         }
 
@@ -125,10 +126,11 @@ class WebPService
 
             return [
                 'path' => $newPath,
-                'url' => '/storage/' . $newPath,
+                'url' => '/storage/'.$newPath,
             ];
         } catch (\Exception $e) {
-            \Log::error('WebP conversion failed for ' . $path . ': ' . $e->getMessage());
+            \Log::error('WebP conversion failed for '.$path.': '.$e->getMessage());
+
             return null;
         }
     }
@@ -137,7 +139,7 @@ class WebPService
      * Get WebP version of an image path (if it exists)
      * This is useful for checking if a WebP version already exists
      *
-     * @param string $path The original image path
+     * @param  string  $path  The original image path
      * @return string|null The WebP path if it exists, null otherwise
      */
     public function getWebPPath(string $path): ?string
@@ -161,7 +163,7 @@ class WebPService
     /**
      * Get the public URL for an image, preferring WebP if available
      *
-     * @param string $path The storage path
+     * @param  string  $path  The storage path
      * @return string The public URL
      */
     public function getPublicUrl(string $path): string
@@ -178,6 +180,6 @@ class WebPService
         // Try to get WebP version
         $webpPath = $this->getWebPPath($path);
 
-        return '/storage/' . ($webpPath ?? $path);
+        return '/storage/'.($webpPath ?? $path);
     }
 }

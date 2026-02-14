@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MarketplaceProduct;
-use App\Models\MarketplacePlatform;
 use App\Models\MarketplaceAccount;
+use App\Models\MarketplacePlatform;
+use App\Models\MarketplaceProduct;
 use Illuminate\Http\Request;
 
 /**
@@ -18,7 +18,6 @@ class MarketplaceProductController extends Controller
     /**
      * แสดงรายการสินค้า Marketplace ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -97,7 +96,6 @@ class MarketplaceProductController extends Controller
     /**
      * แสดงรายละเอียดสินค้า
      *
-     * @param MarketplaceProduct $product
      * @return \Illuminate\View\View
      */
     public function show(MarketplaceProduct $product)
@@ -120,8 +118,6 @@ class MarketplaceProductController extends Controller
     /**
      * แก้ไขสถานะสินค้า
      *
-     * @param Request $request
-     * @param MarketplaceProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, MarketplaceProduct $product)
@@ -143,7 +139,6 @@ class MarketplaceProductController extends Controller
     /**
      * ลบสินค้า
      *
-     * @param MarketplaceProduct $product
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(MarketplaceProduct $product)
@@ -159,7 +154,6 @@ class MarketplaceProductController extends Controller
     /**
      * เปิด/ปิดสถานะสินค้าหลายรายการ
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkAction(Request $request)

@@ -5,8 +5,8 @@ namespace App\Jobs\FoodPassport;
 use App\Models\CarbonCredit;
 use App\Models\User;
 use App\Notifications\FoodPassport\CarbonCreditIssuedNotification;
-use App\Notifications\FoodPassport\CarbonCreditTradedNotification;
 use App\Notifications\FoodPassport\CarbonCreditRetiredNotification;
+use App\Notifications\FoodPassport\CarbonCreditTradedNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -57,15 +57,16 @@ class SendCarbonCreditNotificationJob implements ShouldQueue
         $userId = $this->recipientUserId ?? $this->credit->user_id;
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             Log::warning('Cannot send notification: User not found', [
                 'user_id' => $userId,
             ]);
+
             return;
         }
 
         // Send appropriate notification based on type
-        match($this->notificationType) {
+        match ($this->notificationType) {
             'credit_issued' => $this->sendCreditIssuedNotification($user),
             'credit_sold' => $this->sendCreditTradedNotification($user, 'sold'),
             'credit_purchased' => $this->sendCreditTradedNotification($user, 'purchased'),

@@ -71,8 +71,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTest
-     *
-     * @return BelongsTo
      */
     public function abTest(): BelongsTo
     {
@@ -81,8 +79,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTestResult
-     *
-     * @return HasMany
      */
     public function results(): HasMany
     {
@@ -91,8 +87,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * คำนวณ conversion rate
-     *
-     * @return float
      */
     public function calculateConversionRate(): float
     {
@@ -105,8 +99,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * คำนวณ average response time
-     *
-     * @return float
      */
     public function calculateAverageResponseTime(): float
     {
@@ -122,8 +114,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * คำนวณ satisfaction score เฉลี่ย
-     *
-     * @return float
      */
     public function calculateAverageSatisfaction(): float
     {
@@ -136,8 +126,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * Refresh metrics จากผลลัพธ์
-     *
-     * @return void
      */
     public function refreshMetrics(): void
     {
@@ -153,8 +141,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * ได้ชื่อปลายทาง (Variant A / Variant B)
-     *
-     * @return string
      */
     public function getVariantLabel(): string
     {
@@ -163,8 +149,6 @@ class KeywordABTestVariant extends Model
 
     /**
      * ได้สถิติโดยละเอียด
-     *
-     * @return array
      */
     public function getDetailedStats(): array
     {

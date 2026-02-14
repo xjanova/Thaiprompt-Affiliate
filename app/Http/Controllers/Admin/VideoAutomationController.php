@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\VideoAutoSetting;
-use App\Models\VideoAutoPlatform;
-use App\Models\VideoAutoTemplate;
-use App\Models\VideoAutoProject;
 use App\Models\VideoAutoJob;
-use App\Models\VideoAutoSchedule;
+use App\Models\VideoAutoPlatform;
+use App\Models\VideoAutoProject;
 use App\Models\VideoAutoPublishHistory;
-use App\Services\VideoAutomation\VideoAutomationService;
-use App\Services\VideoAutomation\SunoApiService;
+use App\Models\VideoAutoSchedule;
+use App\Models\VideoAutoSetting;
+use App\Models\VideoAutoTemplate;
 use App\Services\VideoAutomation\FreepikApiService;
+use App\Services\VideoAutomation\SunoApiService;
+use App\Services\VideoAutomation\VideoAutomationService;
 use App\Services\VideoAutomation\VideoCreatorService;
 use App\Services\VideoAutomation\YouTubeApiService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -30,8 +30,6 @@ class VideoAutomationController extends Controller
 {
     /**
      * Video Automation Service
-     *
-     * @var VideoAutomationService
      */
     protected VideoAutomationService $automationService;
 
@@ -40,7 +38,7 @@ class VideoAutomationController extends Controller
      */
     public function __construct()
     {
-        $this->automationService = new VideoAutomationService();
+        $this->automationService = new VideoAutomationService;
     }
 
     // =========================================
@@ -83,8 +81,6 @@ class VideoAutomationController extends Controller
 
     /**
      * ดึงสถิติ Dashboard (API)
-     *
-     * @return JsonResponse
      */
     public function getDashboardStats(): JsonResponse
     {
@@ -130,9 +126,6 @@ class VideoAutomationController extends Controller
 
     /**
      * บันทึก Settings
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSettings(Request $request): JsonResponse
     {
@@ -156,25 +149,21 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ทดสอบการเชื่อมต่อ API
-     *
-     * @param Request $request
-     * @param string $apiType
-     * @return JsonResponse
      */
     public function testApiConnection(Request $request, string $apiType): JsonResponse
     {
         $result = match ($apiType) {
-            'suno' => (new SunoApiService())->testConnection(),
-            'freepik' => (new FreepikApiService())->testConnection(),
-            'ffmpeg' => (new VideoCreatorService())->testConnection(),
-            'youtube' => (new YouTubeApiService())->testConnection(),
+            'suno' => (new SunoApiService)->testConnection(),
+            'freepik' => (new FreepikApiService)->testConnection(),
+            'ffmpeg' => (new VideoCreatorService)->testConnection(),
+            'youtube' => (new YouTubeApiService)->testConnection(),
             default => ['success' => false, 'message' => 'API ไม่รู้จัก'],
         };
 
@@ -203,9 +192,6 @@ class VideoAutomationController extends Controller
 
     /**
      * บันทึก Platform
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function savePlatform(Request $request): JsonResponse
     {
@@ -236,16 +222,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ Platform
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deletePlatform(int $id): JsonResponse
     {
@@ -261,7 +244,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -269,12 +252,11 @@ class VideoAutomationController extends Controller
     /**
      * เชื่อมต่อ YouTube
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function connectYouTube(Request $request)
     {
-        $youtubeService = new YouTubeApiService();
+        $youtubeService = new YouTubeApiService;
         $redirectUri = route('admin.video-automation.youtube.callback');
         $authUrl = $youtubeService->getAuthorizationUrl($redirectUri);
 
@@ -284,24 +266,23 @@ class VideoAutomationController extends Controller
     /**
      * YouTube OAuth Callback
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function youtubeCallback(Request $request)
     {
         $code = $request->get('code');
 
-        if (!$code) {
+        if (! $code) {
             return redirect()->route('admin.video-automation.platforms')
                 ->with('error', 'ไม่ได้รับ authorization code');
         }
 
         try {
-            $youtubeService = new YouTubeApiService();
+            $youtubeService = new YouTubeApiService;
             $redirectUri = route('admin.video-automation.youtube.callback');
             $result = $youtubeService->exchangeCodeForToken($code, $redirectUri);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 throw new \Exception($result['error']);
             }
 
@@ -315,9 +296,9 @@ class VideoAutomationController extends Controller
                     'channel_id' => $channel['id'] ?? null,
                 ],
                 [
-                    'name' => 'YouTube - ' . ($channel['snippet']['title'] ?? 'Unknown'),
+                    'name' => 'YouTube - '.($channel['snippet']['title'] ?? 'Unknown'),
                     'channel_name' => $channel['snippet']['title'] ?? null,
-                    'channel_url' => 'https://youtube.com/channel/' . ($channel['id'] ?? ''),
+                    'channel_url' => 'https://youtube.com/channel/'.($channel['id'] ?? ''),
                     'access_token' => $data['access_token'],
                     'refresh_token' => $data['refresh_token'] ?? null,
                     'token_expires_at' => now()->addSeconds($data['expires_in'] ?? 3600),
@@ -332,7 +313,7 @@ class VideoAutomationController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->route('admin.video-automation.platforms')
-                ->with('error', 'เชื่อมต่อล้มเหลว: ' . $e->getMessage());
+                ->with('error', 'เชื่อมต่อล้มเหลว: '.$e->getMessage());
         }
     }
 
@@ -343,7 +324,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายการ Templates
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function templates(Request $request)
@@ -395,9 +375,6 @@ class VideoAutomationController extends Controller
 
     /**
      * บันทึก Template ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function storeTemplate(Request $request): JsonResponse
     {
@@ -435,7 +412,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -443,7 +420,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Template
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function editTemplate(int $id)
@@ -458,16 +434,12 @@ class VideoAutomationController extends Controller
             'transitions' => VideoAutoTemplate::TRANSITIONS,
             'resolutions' => VideoAutoTemplate::VIDEO_RESOLUTIONS,
             'platforms' => VideoAutoPlatform::active()->get(),
-            'pageTitle' => 'แก้ไขเทมเพลต: ' . $template->name,
+            'pageTitle' => 'แก้ไขเทมเพลต: '.$template->name,
         ]);
     }
 
     /**
      * อัพเดท Template
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function updateTemplate(Request $request, int $id): JsonResponse
     {
@@ -503,16 +475,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ Template
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deleteTemplate(int $id): JsonResponse
     {
@@ -528,7 +497,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -540,7 +509,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายการ Projects
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function projects(Request $request)
@@ -588,9 +556,6 @@ class VideoAutomationController extends Controller
 
     /**
      * บันทึก Project ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function storeProject(Request $request): JsonResponse
     {
@@ -659,7 +624,7 @@ class VideoAutomationController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -667,7 +632,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายละเอียด Project
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function showProject(int $id)
@@ -677,25 +641,22 @@ class VideoAutomationController extends Controller
 
         return view('admin.video-automation.projects.show', [
             'project' => $project,
-            'pageTitle' => 'โปรเจกต์: ' . $project->name,
+            'pageTitle' => 'โปรเจกต์: '.$project->name,
         ]);
     }
 
     /**
      * เริ่มรัน Project
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function runProject(int $id): JsonResponse
     {
         try {
             $project = VideoAutoProject::findOrFail($id);
 
-            if (!in_array($project->status, ['draft', 'failed'])) {
+            if (! in_array($project->status, ['draft', 'failed'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่สามารถเริ่มโปรเจกต์ที่มีสถานะ ' . $project->status_label,
+                    'message' => 'ไม่สามารถเริ่มโปรเจกต์ที่มีสถานะ '.$project->status_label,
                 ], 400);
             }
 
@@ -723,16 +684,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ Project
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deleteProject(int $id): JsonResponse
     {
@@ -748,7 +706,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -760,7 +718,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายการ Jobs
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function jobs(Request $request)
@@ -789,9 +746,6 @@ class VideoAutomationController extends Controller
 
     /**
      * ดึง logs ของ Job
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function getJobLogs(int $id): JsonResponse
     {
@@ -805,16 +759,13 @@ class VideoAutomationController extends Controller
 
     /**
      * Retry Job ที่ล้มเหลว
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function retryJob(int $id): JsonResponse
     {
         try {
             $job = VideoAutoJob::findOrFail($id);
 
-            if (!$job->can_retry) {
+            if (! $job->can_retry) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถ retry job นี้ได้',
@@ -834,7 +785,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -861,9 +812,6 @@ class VideoAutomationController extends Controller
 
     /**
      * บันทึก Schedule
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSchedule(Request $request): JsonResponse
     {
@@ -906,16 +854,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ Schedule
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deleteSchedule(int $id): JsonResponse
     {
@@ -931,7 +876,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -943,7 +888,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายการประวัติการโพสต์
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function publishHistory(Request $request)
@@ -1016,7 +960,6 @@ class VideoAutomationController extends Controller
     /**
      * แสดงรายละเอียดประวัติการโพสต์
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function showPublishHistory(int $id)
@@ -1026,16 +969,12 @@ class VideoAutomationController extends Controller
 
         return view('admin.video-automation.publish-history.show', [
             'history' => $history,
-            'pageTitle' => 'รายละเอียดการโพสต์: ' . Str::limit($history->title, 30),
+            'pageTitle' => 'รายละเอียดการโพสต์: '.Str::limit($history->title, 30),
         ]);
     }
 
     /**
      * อัพเดท engagement ของการโพสต์
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function updatePublishEngagement(Request $request, int $id): JsonResponse
     {
@@ -1059,16 +998,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบประวัติการโพสต์
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deletePublishHistory(int $id): JsonResponse
     {
@@ -1084,7 +1020,7 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1093,9 +1029,6 @@ class VideoAutomationController extends Controller
      * ลบไฟล์ต้นฉบับของการโพสต์
      *
      * ⚠️ จะลบได้ต่อเมื่อโพสต์สำเร็จเท่านั้น!
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deletePublishSourceFiles(int $id): JsonResponse
     {
@@ -1110,7 +1043,7 @@ class VideoAutomationController extends Controller
             }
 
             // ⚠️ ตรวจสอบว่าโพสต์สำเร็จหรือไม่
-            if (!$history->canDeleteSourceFiles()) {
+            if (! $history->canDeleteSourceFiles()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถลบไฟล์ได้ - ต้องโพสต์สำเร็จก่อน (มี Post ID และ URL)',
@@ -1119,7 +1052,7 @@ class VideoAutomationController extends Controller
 
             $result = $history->deleteSourceFiles();
 
-            if (!$result) {
+            if (! $result) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่สามารถลบไฟล์ได้ - กรุณาตรวจสอบสถานะการโพสต์',
@@ -1134,15 +1067,13 @@ class VideoAutomationController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงสถิติประวัติการโพสต์ (API)
-     *
-     * @return JsonResponse
      */
     public function getPublishStats(): JsonResponse
     {

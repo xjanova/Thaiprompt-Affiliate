@@ -33,8 +33,6 @@ class SmsCheckerCleanupCommand extends Command
 
     /**
      * รันคำสั่ง
-     *
-     * @return int
      */
     public function handle(SmsPaymentService $service): int
     {

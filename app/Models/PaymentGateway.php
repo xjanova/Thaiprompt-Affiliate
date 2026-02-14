@@ -72,12 +72,13 @@ class PaymentGateway extends Model
             }
 
             // Ensure we have a string value
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 Log::warning('Credentials value is not a string', [
                     'gateway_id' => $this->id ?? null,
                     'gateway_code' => $this->code ?? 'unknown',
                     'type' => gettype($value),
                 ]);
+
                 return null;
             }
 
@@ -93,6 +94,7 @@ class PaymentGateway extends Model
                         'gateway_code' => $this->code ?? 'unknown',
                         'json_error' => json_last_error_msg(),
                     ]);
+
                     return null;
                 }
 
@@ -106,6 +108,7 @@ class PaymentGateway extends Model
                             'gateway_id' => $this->id ?? null,
                             'gateway_code' => $this->code ?? 'unknown',
                         ]);
+
                         return $plainData;
                     }
                 } catch (\Exception $jsonException) {
@@ -117,6 +120,7 @@ class PaymentGateway extends Model
                     'gateway_code' => $this->code ?? 'unknown',
                     'error' => $e->getMessage(),
                 ]);
+
                 return null;
             }
         } catch (\Throwable $e) {
@@ -127,6 +131,7 @@ class PaymentGateway extends Model
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }
@@ -138,6 +143,7 @@ class PaymentGateway extends Model
     {
         if ($value === null) {
             $this->attributes['credentials'] = null;
+
             return;
         }
 
@@ -163,12 +169,13 @@ class PaymentGateway extends Model
             }
 
             // Ensure we have a string value
-            if (!is_string($value)) {
+            if (! is_string($value)) {
                 Log::warning('Test credentials value is not a string', [
                     'gateway_id' => $this->id ?? null,
                     'gateway_code' => $this->code ?? 'unknown',
                     'type' => gettype($value),
                 ]);
+
                 return null;
             }
 
@@ -184,6 +191,7 @@ class PaymentGateway extends Model
                         'gateway_code' => $this->code ?? 'unknown',
                         'json_error' => json_last_error_msg(),
                     ]);
+
                     return null;
                 }
 
@@ -197,6 +205,7 @@ class PaymentGateway extends Model
                             'gateway_id' => $this->id ?? null,
                             'gateway_code' => $this->code ?? 'unknown',
                         ]);
+
                         return $plainData;
                     }
                 } catch (\Exception $jsonException) {
@@ -208,6 +217,7 @@ class PaymentGateway extends Model
                     'gateway_code' => $this->code ?? 'unknown',
                     'error' => $e->getMessage(),
                 ]);
+
                 return null;
             }
         } catch (\Throwable $e) {
@@ -218,6 +228,7 @@ class PaymentGateway extends Model
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return null;
         }
     }
@@ -229,6 +240,7 @@ class PaymentGateway extends Model
     {
         if ($value === null) {
             $this->attributes['test_credentials'] = null;
+
             return;
         }
 
@@ -310,6 +322,7 @@ class PaymentGateway extends Model
                 'key' => $key,
                 'error' => $e->getMessage(),
             ]);
+
             return $default;
         } catch (\Throwable $e) {
             Log::error('Critical exception in getCredential method', [
@@ -319,6 +332,7 @@ class PaymentGateway extends Model
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return $default;
         }
     }
@@ -349,6 +363,7 @@ class PaymentGateway extends Model
                 'gateway_code' => $this->code ?? 'unknown',
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         } catch (\Throwable $e) {
             Log::error('Critical exception in isConfigured method', [
@@ -357,6 +372,7 @@ class PaymentGateway extends Model
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return false;
         }
     }
@@ -366,7 +382,7 @@ class PaymentGateway extends Model
      */
     public function getRequiredFields(): array
     {
-        return match($this->code) {
+        return match ($this->code) {
             'promptpay' => ['promptpay_id', 'promptpay_name'],
             'bank_transfer' => ['bank_name', 'account_number', 'account_name'],
             'stripe' => ['api_key', 'secret_key'],
@@ -390,7 +406,7 @@ class PaymentGateway extends Model
             return 'gray';
         }
 
-        if (!$this->is_available) {
+        if (! $this->is_available) {
             return 'red';
         }
 
@@ -398,7 +414,7 @@ class PaymentGateway extends Model
             return 'green';
         }
 
-        if ($this->is_active && !$this->isConfigured()) {
+        if ($this->is_active && ! $this->isConfigured()) {
             return 'yellow';
         }
 
@@ -414,7 +430,7 @@ class PaymentGateway extends Model
             return 'Coming Soon';
         }
 
-        if (!$this->is_available) {
+        if (! $this->is_available) {
             return 'Unavailable';
         }
 
@@ -422,7 +438,7 @@ class PaymentGateway extends Model
             return 'Active';
         }
 
-        if ($this->is_active && !$this->isConfigured()) {
+        if ($this->is_active && ! $this->isConfigured()) {
             return 'Incomplete';
         }
 
@@ -434,7 +450,7 @@ class PaymentGateway extends Model
      */
     public function getCategoryLabelAttribute(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'bank' => 'ธนาคาร',
             'e-wallet' => 'กระเป๋าเงินอิเล็กทรอนิกส์',
             'crypto' => 'สกุลเงินดิจิทัล',
@@ -456,7 +472,7 @@ class PaymentGateway extends Model
             ];
         }
 
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'Gateway is not properly configured',

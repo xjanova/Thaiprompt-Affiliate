@@ -15,6 +15,7 @@ class ScrapeSourcesJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 300; // 5 minutes
+
     public int $tries = 3;
 
     /**
@@ -32,7 +33,7 @@ class ScrapeSourcesJob implements ShouldQueue
 
             Log::info("Scraped {$successCount}/{$totalCount} sources successfully");
         } catch (\Exception $e) {
-            Log::error('Failed to scrape sources: ' . $e->getMessage());
+            Log::error('Failed to scrape sources: '.$e->getMessage());
             throw $e;
         }
     }

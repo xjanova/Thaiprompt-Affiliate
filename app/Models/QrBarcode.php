@@ -48,7 +48,7 @@ class QrBarcode extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            if (!$model->short_url) {
+            if (! $model->short_url) {
                 $model->short_url = static::generateUniqueShortUrl();
             }
         });
@@ -160,6 +160,6 @@ class QrBarcode extends Model
      */
     public function getDisplayNameAttribute()
     {
-        return $this->title ?: ($this->type === 'qrcode' ? 'QR Code' : 'Barcode') . ' #' . $this->id;
+        return $this->title ?: ($this->type === 'qrcode' ? 'QR Code' : 'Barcode').' #'.$this->id;
     }
 }

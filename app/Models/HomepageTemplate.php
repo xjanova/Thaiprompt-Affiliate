@@ -118,7 +118,7 @@ class HomepageTemplate extends Model
     /**
      * Scope: ดึงเฉพาะ templates ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -129,7 +129,7 @@ class HomepageTemplate extends Model
     /**
      * Scope: ดึงเฉพาะ templates ฟรี
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFree($query)
@@ -140,7 +140,7 @@ class HomepageTemplate extends Model
     /**
      * Scope: ดึงเฉพาะ templates Premium
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePremium($query)
@@ -151,8 +151,7 @@ class HomepageTemplate extends Model
     /**
      * Scope: ดึงตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfCategory($query, string $category)
@@ -163,7 +162,7 @@ class HomepageTemplate extends Model
     /**
      * Scope: เรียงตามความนิยม
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query)
@@ -173,8 +172,6 @@ class HomepageTemplate extends Model
 
     /**
      * เพิ่มจำนวนการใช้งาน
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -183,8 +180,6 @@ class HomepageTemplate extends Model
 
     /**
      * ดึงข้อมูล sections จากเทมเพลต
-     *
-     * @return array
      */
     public function getSectionsData(): array
     {
@@ -193,8 +188,6 @@ class HomepageTemplate extends Model
 
     /**
      * นำเข้า sections จากเทมเพลตไปยังหน้าแรก
-     *
-     * @return \Illuminate\Support\Collection
      */
     public function importToHomepage(): \Illuminate\Support\Collection
     {
@@ -204,7 +197,7 @@ class HomepageTemplate extends Model
         foreach ($sectionsData as $order => $sectionData) {
             // สร้าง section
             $section = HomepageSection::create([
-                'name' => $sectionData['name'] ?? "Section " . ($order + 1),
+                'name' => $sectionData['name'] ?? 'Section '.($order + 1),
                 'type' => $sectionData['type'] ?? 'custom',
                 'order' => $order,
                 'is_active' => $sectionData['is_active'] ?? true,
@@ -229,7 +222,7 @@ class HomepageTemplate extends Model
             ]);
 
             // สร้าง elements ใน section
-            if (!empty($sectionData['elements'])) {
+            if (! empty($sectionData['elements'])) {
                 foreach ($sectionData['elements'] as $elemOrder => $elemData) {
                     $section->elements()->create([
                         'name' => $elemData['name'] ?? null,
@@ -295,8 +288,6 @@ class HomepageTemplate extends Model
 
     /**
      * แปลงเป็น array สำหรับ API response
-     *
-     * @return array
      */
     public function toApiArray(): array
     {

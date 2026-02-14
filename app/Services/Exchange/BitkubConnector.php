@@ -21,7 +21,7 @@ class BitkubConnector extends BaseExchangeConnector
         $response = $this->makeRequest('GET', '/api/market/ticker', ['sym' => $symbol]);
 
         $ticker = $response[$symbol] ?? null;
-        if (!$ticker) {
+        if (! $ticker) {
             throw new \Exception("Symbol {$symbol} not found");
         }
 
@@ -56,7 +56,7 @@ class BitkubConnector extends BaseExchangeConnector
         ]);
 
         if ($response['s'] !== 'ok') {
-            throw new \Exception("Failed to fetch OHLCV data");
+            throw new \Exception('Failed to fetch OHLCV data');
         }
 
         $candles = [];
@@ -168,12 +168,13 @@ class BitkubConnector extends BaseExchangeConnector
                 'sd' => 'buy', // Will be determined by order history
             ], true);
 
-            return !isset($response['error']);
+            return ! isset($response['error']);
         } catch (\Exception $e) {
-            Log::error("Failed to cancel Bitkub order", [
+            Log::error('Failed to cancel Bitkub order', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -249,11 +250,13 @@ class BitkubConnector extends BaseExchangeConnector
         try {
             $this->setAccount($account);
             $this->makeRequest('POST', '/api/market/balances', [], true);
+
             return true;
         } catch (\Exception $e) {
-            Log::error("Bitkub connection test failed", [
+            Log::error('Bitkub connection test failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -264,6 +267,7 @@ class BitkubConnector extends BaseExchangeConnector
     protected function generateSignature(array $params, string $secret): string
     {
         $jsonPayload = json_encode($params);
+
         return hash_hmac('sha256', $jsonPayload, $secret);
     }
 
@@ -273,7 +277,7 @@ class BitkubConnector extends BaseExchangeConnector
     protected function makeRequest(string $method, string $endpoint, array $params = [], bool $signed = false): array
     {
         try {
-            $url = $this->baseUrl . $endpoint;
+            $url = $this->baseUrl.$endpoint;
             $headers = [];
 
             if ($signed && $this->account) {
@@ -281,7 +285,7 @@ class BitkubConnector extends BaseExchangeConnector
                 $params['ts'] = $timestamp;
 
                 $jsonPayload = json_encode($params);
-                $signature = hash_hmac('sha256', $timestamp . 'POST' . $endpoint . $jsonPayload, $this->account->api_secret);
+                $signature = hash_hmac('sha256', $timestamp.'POST'.$endpoint.$jsonPayload, $this->account->api_secret);
 
                 $headers = [
                     'Accept' => 'application/json',
@@ -306,10 +310,9 @@ class BitkubConnector extends BaseExchangeConnector
                 return $response->json();
             }
 
-            throw new \Exception("Bitkub API error: " . $response->body());
-
+            throw new \Exception('Bitkub API error: '.$response->body());
         } catch (\Exception $e) {
-            Log::error("Bitkub API request failed", [
+            Log::error('Bitkub API request failed', [
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
             ]);
@@ -328,11 +331,13 @@ class BitkubConnector extends BaseExchangeConnector
         // Handle common patterns
         if (str_ends_with($symbol, 'THB')) {
             $base = substr($symbol, 0, -3);
+
             return "THB_{$base}";
         }
 
         if (str_starts_with($symbol, 'THB')) {
             $base = substr($symbol, 3);
+
             return "THB_{$base}";
         }
 

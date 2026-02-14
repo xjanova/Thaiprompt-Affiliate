@@ -46,7 +46,6 @@ class ServiceCategoryController extends Controller
     /**
      * บันทึกหมวดหมู่ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -78,7 +77,6 @@ class ServiceCategoryController extends Controller
     /**
      * แสดงรายละเอียดหมวดหมู่
      *
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\View\View
      */
     public function show(ServiceCategory $serviceCategory)
@@ -87,36 +85,33 @@ class ServiceCategoryController extends Controller
 
         return view('admin.service-categories.show', [
             'category' => $serviceCategory,
-            'pageTitle' => 'หมวดหมู่: ' . $serviceCategory->name,
+            'pageTitle' => 'หมวดหมู่: '.$serviceCategory->name,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไข
      *
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\View\View
      */
     public function edit(ServiceCategory $serviceCategory)
     {
         return view('admin.service-categories.edit', [
             'category' => $serviceCategory,
-            'pageTitle' => 'แก้ไขหมวดหมู่: ' . $serviceCategory->name,
+            'pageTitle' => 'แก้ไขหมวดหมู่: '.$serviceCategory->name,
         ]);
     }
 
     /**
      * อัพเดทหมวดหมู่
      *
-     * @param Request $request
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, ServiceCategory $serviceCategory)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:service_categories,slug,' . $serviceCategory->id,
+            'slug' => 'required|string|max:255|unique:service_categories,slug,'.$serviceCategory->id,
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:10',
             'image' => 'nullable|string|max:500',
@@ -136,7 +131,6 @@ class ServiceCategoryController extends Controller
     /**
      * ลบหมวดหมู่
      *
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(ServiceCategory $serviceCategory)
@@ -158,12 +152,11 @@ class ServiceCategoryController extends Controller
     /**
      * เปลี่ยนสถานะ active/inactive
      *
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(ServiceCategory $serviceCategory)
     {
-        $serviceCategory->is_active = !$serviceCategory->is_active;
+        $serviceCategory->is_active = ! $serviceCategory->is_active;
         $serviceCategory->save();
 
         return response()->json([
@@ -176,12 +169,11 @@ class ServiceCategoryController extends Controller
     /**
      * เปลี่ยนสถานะ featured
      *
-     * @param ServiceCategory $serviceCategory
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleFeatured(ServiceCategory $serviceCategory)
     {
-        $serviceCategory->is_featured = !$serviceCategory->is_featured;
+        $serviceCategory->is_featured = ! $serviceCategory->is_featured;
         $serviceCategory->save();
 
         return response()->json([
@@ -194,7 +186,6 @@ class ServiceCategoryController extends Controller
     /**
      * จัดเรียงลำดับ (Drag & Drop)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function reorder(Request $request)

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -21,10 +21,10 @@ class UserController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
-                  ->orWhere('email', 'like', '%'.$search.'%')
-                  ->orWhere('member_number', 'like', '%'.$search.'%');
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('member_number', 'like', '%'.$search.'%');
             });
         }
 
@@ -49,6 +49,7 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
+
         return view('admin.users.create', compact('roles'));
     }
 
@@ -85,6 +86,7 @@ class UserController extends Controller
     public function show(User $user)
     {
         $user->load(['mlmMembers', 'mlmCommissions']);
+
         return view('admin.users.show', compact('user'));
     }
 
@@ -99,6 +101,7 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         $roles = Role::all();
+
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
@@ -136,7 +139,7 @@ class UserController extends Controller
         $validated['role'] = $role->name;
 
         // Set default theme if not provided
-        if (!isset($validated['menu_theme_preference'])) {
+        if (! isset($validated['menu_theme_preference'])) {
             $validated['menu_theme_preference'] = $user->menu_theme_preference ?? 'millennium';
         }
 
@@ -174,6 +177,7 @@ class UserController extends Controller
         $this->authorize('changePermissions', $user);
 
         $availablePermissions = User::availablePermissions();
+
         return view('admin.users.permissions', compact('user', 'availablePermissions'));
     }
 
@@ -189,7 +193,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string', 'in:' . implode(',', User::availablePermissions())],
+            'permissions.*' => ['string', 'in:'.implode(',', User::availablePermissions())],
         ]);
 
         $user->permissions = $validated['permissions'] ?? [];
@@ -249,6 +253,6 @@ class UserController extends Controller
         $user->member_number = User::generateMemberNumber();
         $user->save();
 
-        return back()->with('success', 'สร้างเลขสมาชิกสำเร็จ: ' . $user->member_number);
+        return back()->with('success', 'สร้างเลขสมาชิกสำเร็จ: '.$user->member_number);
     }
 }

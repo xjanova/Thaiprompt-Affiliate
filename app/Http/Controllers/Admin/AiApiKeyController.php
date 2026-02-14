@@ -7,8 +7,8 @@ use App\Models\AiApiKey;
 use App\Models\AiApiKeySetting;
 use App\Models\AiApiKeyUsageLog;
 use App\Services\AiApiKeyPoolService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -81,7 +81,7 @@ class AiApiKeyController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'provider' => 'required|string|in:' . implode(',', array_keys(AiApiKey::PROVIDERS)),
+            'provider' => 'required|string|in:'.implode(',', array_keys(AiApiKey::PROVIDERS)),
             'api_key' => 'required|string|min:10',
             'priority' => 'nullable|integer|min:0|max:100',
             'tokens_limit_daily' => 'nullable|integer|min:0',
@@ -206,7 +206,7 @@ class AiApiKeyController extends Controller
     public function updateSettings(Request $request, string $provider): JsonResponse
     {
         $validated = $request->validate([
-            'rotation_mode' => 'required|string|in:' . implode(',', array_keys(AiApiKey::ROTATION_MODES)),
+            'rotation_mode' => 'required|string|in:'.implode(',', array_keys(AiApiKey::ROTATION_MODES)),
             'max_consecutive_errors' => 'nullable|integer|min:1|max:10',
             'disable_duration_minutes' => 'nullable|integer|min:1|max:1440',
             'auto_disable_on_limit' => 'nullable|boolean',
@@ -299,7 +299,7 @@ class AiApiKeyController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'API Key ไม่สามารถใช้งานได้: ' . $e->getMessage(),
+                'message' => 'API Key ไม่สามารถใช้งานได้: '.$e->getMessage(),
             ], 400);
         }
     }
@@ -343,7 +343,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGrokApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->get('https://api.x.ai/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -359,7 +359,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGroqApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->get('https://api.groq.com/openai/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -375,7 +375,7 @@ class AiApiKeyController extends Controller
      */
     protected function testOpenAiApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->get('https://api.openai.com/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -391,7 +391,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGeminiApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client;
         $response = $client->get("https://generativelanguage.googleapis.com/v1/models?key={$apiKey}", [
             'timeout' => 10,
         ]);

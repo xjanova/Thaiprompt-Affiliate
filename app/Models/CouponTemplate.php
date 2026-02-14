@@ -88,9 +88,9 @@ class CouponTemplate extends Model
     {
         switch ($this->discount_type) {
             case 'percentage':
-                return $this->discount_value . '%';
+                return $this->discount_value.'%';
             case 'fixed':
-                return '฿' . number_format($this->discount_value);
+                return '฿'.number_format($this->discount_value);
             case 'free_shipping':
                 return 'ส่งฟรี';
             default:

@@ -13,19 +13,17 @@ return new class extends Migration
      * เพิ่ม column deleted_at ในตาราง line_signup_rewards
      *
      * เพิ่ม SoftDelete support ถ้ายังไม่มี
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
         Schema::table('line_signup_rewards', function (Blueprint $table) {
             // เช็คว่ามี column deleted_at หรือยัง
-            if (!Schema::hasColumn('line_signup_rewards', 'deleted_at')) {
+            if (! Schema::hasColumn('line_signup_rewards', 'deleted_at')) {
                 $table->softDeletes()->after('updated_at');
             }
         });
@@ -33,8 +31,6 @@ return new class extends Migration
 
     /**
      * ลบ column deleted_at
-     *
-     * @return void
      */
     public function down(): void
     {

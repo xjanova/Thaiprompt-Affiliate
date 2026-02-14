@@ -18,7 +18,7 @@ class CashbackSettingController extends Controller
     public function __construct()
     {
         $this->middleware(['auth', 'role:admin,super_admin']);
-        $this->cashbackService = new CashbackService(new WalletService());
+        $this->cashbackService = new CashbackService(new WalletService);
     }
 
     /**
@@ -42,11 +42,11 @@ class CashbackSettingController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
-                  ->orWhereHas('product', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('product', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -168,7 +168,7 @@ class CashbackSettingController extends Controller
     public function toggleActive(CashbackSetting $cashback)
     {
         $cashback->update([
-            'is_active' => !$cashback->is_active,
+            'is_active' => ! $cashback->is_active,
         ]);
 
         $status = $cashback->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';

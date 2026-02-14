@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\NFCTransaction;
 use App\Models\NFCCard;
 use App\Models\NFCReader;
-use Illuminate\Http\Request;
+use App\Models\NFCTransaction;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class NFCTransactionController extends Controller
 {
@@ -136,18 +136,18 @@ class NFCTransactionController extends Controller
 
         $transactions = $query->get();
 
-        $filename = 'nfc-transactions-' . date('Y-m-d-His') . '.csv';
+        $filename = 'nfc-transactions-'.date('Y-m-d-His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($transactions) {
             $file = fopen('php://output', 'w');
 
             // Add UTF-8 BOM
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header
             fputcsv($file, [

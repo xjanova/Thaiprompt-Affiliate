@@ -22,8 +22,6 @@ class LineSignupFlowSeeder extends Seeder
      * - ชื่อ: ใช้ LINE displayName
      * - รูปโปรไฟล์: ใช้ LINE pictureUrl
      * - เบอร์โทร/อีเมล: ค่อยเพิ่มภายหลังในระบบ
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -33,6 +31,7 @@ class LineSignupFlowSeeder extends Seeder
         if ($existingFlows > 0) {
             $this->command->warn('⚠️  LINE Signup Flows already exist!');
             $this->command->info('   Skipping to preserve your custom configurations.');
+
             return;
         }
 

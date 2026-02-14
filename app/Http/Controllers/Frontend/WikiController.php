@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
-use App\Models\User;
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
+use App\Models\MlmMember;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -34,10 +33,10 @@ class WikiController extends Controller
         // Load the appropriate content file
         $contentPath = resource_path("views/frontend/wiki/content/{$category}.blade.php");
 
-        if (!File::exists($contentPath)) {
+        if (! File::exists($contentPath)) {
             return response()->json([
                 'error' => 'Content not found',
-                'message' => "หมวดหมู่ {$category} ไม่พบในระบบ"
+                'message' => "หมวดหมู่ {$category} ไม่พบในระบบ",
             ], 404);
         }
 
@@ -49,7 +48,7 @@ class WikiController extends Controller
             'category' => $category,
             'section' => $section,
             'content' => $content,
-            'stats' => $stats
+            'stats' => $stats,
         ]);
     }
 
@@ -172,7 +171,7 @@ class WikiController extends Controller
 
         try {
             // ตรวจสอบว่าตารางมีอยู่หรือไม่
-            if (!Schema::hasTable('windows_ui_settings')) {
+            if (! Schema::hasTable('windows_ui_settings')) {
                 return $defaultRgb;
             }
 
@@ -182,7 +181,8 @@ class WikiController extends Controller
                 'accent_rgb' => \App\Models\WindowsUiSetting::get('accent_rgb', $defaultRgb['accent_rgb']),
             ];
         } catch (\Exception $e) {
-            Log::warning('Wiki: ไม่สามารถดึง Windows UI RGB ได้: ' . $e->getMessage());
+            Log::warning('Wiki: ไม่สามารถดึง Windows UI RGB ได้: '.$e->getMessage());
+
             return $defaultRgb;
         }
     }
@@ -220,7 +220,8 @@ class WikiController extends Controller
 
             return $defaultStats;
         } catch (\Exception $e) {
-            Log::warning('Wiki: ไม่สามารถดึงสถิติฐานข้อมูลได้: ' . $e->getMessage());
+            Log::warning('Wiki: ไม่สามารถดึงสถิติฐานข้อมูลได้: '.$e->getMessage());
+
             return $defaultStats;
         }
     }
@@ -237,7 +238,7 @@ class WikiController extends Controller
         return response()->json([
             'success' => true,
             'query' => $query,
-            'results' => []
+            'results' => [],
         ]);
     }
 }

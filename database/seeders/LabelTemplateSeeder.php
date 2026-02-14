@@ -16,8 +16,6 @@ class LabelTemplateSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล Template ฉลากเริ่มต้น
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -507,6 +505,6 @@ class LabelTemplateSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Seed Template ฉลากสำเร็จ! จำนวน ' . count($templates) . ' รายการ');
+        $this->command->info('✅ Seed Template ฉลากสำเร็จ! จำนวน '.count($templates).' รายการ');
     }
 }

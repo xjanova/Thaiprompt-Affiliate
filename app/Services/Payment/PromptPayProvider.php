@@ -3,8 +3,8 @@
 namespace App\Services\Payment;
 
 use App\Models\PaymentBankAccount;
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -26,7 +26,7 @@ class PromptPayProvider implements PaymentProviderInterface
             $this->gateway = PaymentGateway::findByCode('promptpay');
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('PromptPayProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('PromptPayProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
 
@@ -37,7 +37,7 @@ class PromptPayProvider implements PaymentProviderInterface
                 ->orderByDesc('is_default')
                 ->first();
         } catch (\Exception $e) {
-            Log::debug('PromptPayProvider: Cannot load bank account - ' . $e->getMessage());
+            Log::debug('PromptPayProvider: Cannot load bank account - '.$e->getMessage());
             $this->bankAccount = null;
         }
     }
@@ -45,9 +45,6 @@ class PromptPayProvider implements PaymentProviderInterface
     /**
      * Validate PromptPay payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
@@ -77,10 +74,6 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * Process PromptPay payment
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      */
     public function process(PaymentTransaction $transaction, array $data): array
     {
@@ -96,7 +89,7 @@ class PromptPayProvider implements PaymentProviderInterface
             ?? 'phone'; // phone, citizen_id, ewallet
 
         // สร้าง reference number
-        $refNo = 'PP-' . strtoupper(substr($transaction->transaction_id, -8));
+        $refNo = 'PP-'.strtoupper(substr($transaction->transaction_id, -8));
 
         // สร้าง QR Code
         $qrData = $this->generatePromptPayQRCode($transaction, $refNo, $promptPayId, $promptPayType);
@@ -124,10 +117,6 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * Verify PromptPay payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -144,9 +133,11 @@ class PromptPayProvider implements PaymentProviderInterface
                             'expected' => $transaction->amount,
                             'received' => $paidAmount,
                         ]);
+
                         return false;
                     }
                 }
+
                 return true;
             }
         }
@@ -156,10 +147,6 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * Refund PromptPay payment
-     *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
     {
@@ -179,18 +166,13 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * Generate PromptPay QR Code
-     *
-     * @param PaymentTransaction $transaction
-     * @param string $refNo
-     * @param string $promptPayId
-     * @param string $type
-     * @return string
      */
     protected function generatePromptPayQRCode(PaymentTransaction $transaction, string $refNo, string $promptPayId, string $type): string
     {
         // ตรวจสอบว่ามี PromptPay ID หรือไม่
         if (empty($promptPayId)) {
             Log::warning('PromptPay ID not configured');
+
             return $this->generateMockQRCode($transaction, $refNo);
         }
 
@@ -203,7 +185,7 @@ class PromptPayProvider implements PaymentProviderInterface
             $cleanId = preg_replace('/[\s\-]/', '', $promptPayId);
 
             // Determine payload format ID based on type
-            $payloadFormatId = match($type) {
+            $payloadFormatId = match ($type) {
                 'citizen_id' => '02', // National ID
                 'ewallet' => '03',    // E-Wallet
                 default => '01',      // Phone number
@@ -230,16 +212,13 @@ class PromptPayProvider implements PaymentProviderInterface
             Log::error('Failed to generate PromptPay QR', [
                 'error' => $e->getMessage(),
             ]);
+
             return $this->generateMockQRCode($transaction, $refNo);
         }
     }
 
     /**
      * Generate mock QR code (fallback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param string $refNo
-     * @return string
      */
     protected function generateMockQRCode(PaymentTransaction $transaction, string $refNo): string
     {
@@ -258,9 +237,6 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * Mask PromptPay ID for display
-     *
-     * @param string $id
-     * @return string
      */
     protected function maskPromptPayId(string $id): string
     {
@@ -268,14 +244,11 @@ class PromptPayProvider implements PaymentProviderInterface
             return str_repeat('*', strlen($id));
         }
 
-        return substr($id, 0, 3) . str_repeat('*', strlen($id) - 6) . substr($id, -3);
+        return substr($id, 0, 3).str_repeat('*', strlen($id) - 6).substr($id, -3);
     }
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {
@@ -291,8 +264,6 @@ class PromptPayProvider implements PaymentProviderInterface
      * ดึงข้อมูลบัญชี PromptPay สำหรับแสดงผล
      *
      * ใช้ PaymentBankAccount ก่อน ถ้าไม่มีจึง fallback ไป PaymentGateway
-     *
-     * @return array
      */
     public function getAccountInfo(): array
     {
@@ -307,7 +278,7 @@ class PromptPayProvider implements PaymentProviderInterface
             ];
         }
 
-        if (!$this->gateway) {
+        if (! $this->gateway) {
             return [];
         }
 
@@ -323,8 +294,6 @@ class PromptPayProvider implements PaymentProviderInterface
 
     /**
      * ดึงบัญชีธนาคารที่เปิดใช้ SMS Checker สำหรับ matching
-     *
-     * @return PaymentBankAccount|null
      */
     public function getSmsCheckerAccount(): ?PaymentBankAccount
     {

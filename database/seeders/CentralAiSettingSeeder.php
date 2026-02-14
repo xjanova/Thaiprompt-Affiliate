@@ -14,8 +14,6 @@ class CentralAiSettingSeeder extends Seeder
 {
     /**
      * รัน seeder
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class CentralAiSettingSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่ (idempotent)
         if (CentralAiSetting::where('is_active', true)->exists()) {
             $this->command->info('⚠️  ข้อมูล Central AI Settings มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

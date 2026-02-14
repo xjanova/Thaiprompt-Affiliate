@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class IpIntelligenceService
@@ -64,7 +64,7 @@ class IpIntelligenceService
                 }
             }
         } catch (\Exception $e) {
-            Log::warning("Failed to fetch IP info for {$ip}: " . $e->getMessage());
+            Log::warning("Failed to fetch IP info for {$ip}: ".$e->getMessage());
         }
 
         // Fallback data
@@ -96,7 +96,7 @@ class IpIntelligenceService
      */
     public static function getCountryFlag(?string $countryCode): string
     {
-        if (!$countryCode || strlen($countryCode) !== 2) {
+        if (! $countryCode || strlen($countryCode) !== 2) {
             return '🏴';
         }
 
@@ -105,7 +105,7 @@ class IpIntelligenceService
         $firstLetter = mb_chr(ord($countryCode[0]) + 127397);
         $secondLetter = mb_chr(ord($countryCode[1]) + 127397);
 
-        return $firstLetter . $secondLetter;
+        return $firstLetter.$secondLetter;
     }
 
     /**
@@ -141,7 +141,7 @@ class IpIntelligenceService
                 }
             }
         } catch (\Exception $e) {
-            Log::debug("VPN detection failed for {$ip}: " . $e->getMessage());
+            Log::debug("VPN detection failed for {$ip}: ".$e->getMessage());
         }
 
         return ['is_vpn' => false, 'is_proxy' => false, 'is_tor' => false];

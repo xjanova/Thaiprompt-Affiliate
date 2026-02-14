@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AiGenProvider;
 use App\Models\AiGenPackage;
+use App\Models\AiGenProvider;
 use App\Models\AiGenQuota;
 use App\Models\AiGenSubscription;
 use App\Models\AiGenUsageLog;
 use App\Services\AiGen\AiGenProviderFactory;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class AiGenAdminController extends Controller
@@ -104,7 +104,7 @@ class AiGenAdminController extends Controller
         ]);
 
         try {
-            if (!isset($validated['slug'])) {
+            if (! isset($validated['slug'])) {
                 $validated['slug'] = Str::slug($validated['name']);
             }
 
@@ -130,7 +130,7 @@ class AiGenAdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:ai_gen_providers,slug,' . $providerId,
+            'slug' => 'nullable|string|max:255|unique:ai_gen_providers,slug,'.$providerId,
             'type' => 'nullable|in:image,video,both',
             'description' => 'nullable|string',
             'logo_url' => 'nullable|url',
@@ -200,14 +200,14 @@ class AiGenAdminController extends Controller
             $provider = AiGenProvider::findOrFail($providerId);
             $instance = AiGenProviderFactory::createFromModel($provider);
 
-            if (!$instance) {
+            if (! $instance) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Provider implementation not found',
                 ], 404);
             }
 
-            if (!method_exists($instance, 'testConnection')) {
+            if (! method_exists($instance, 'testConnection')) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Test connection not implemented for this provider',
@@ -269,7 +269,7 @@ class AiGenAdminController extends Controller
         ]);
 
         try {
-            if (!isset($validated['slug'])) {
+            if (! isset($validated['slug'])) {
                 $validated['slug'] = Str::slug($validated['name']);
             }
 
@@ -295,7 +295,7 @@ class AiGenAdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:ai_gen_packages,slug,' . $packageId,
+            'slug' => 'nullable|string|max:255|unique:ai_gen_packages,slug,'.$packageId,
             'description' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|size:3',
@@ -381,7 +381,7 @@ class AiGenAdminController extends Controller
     /**
      * Create or update quota.
      */
-    public function saveQuota(Request $request, int $quotaId = null): JsonResponse
+    public function saveQuota(Request $request, ?int $quotaId = null): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',

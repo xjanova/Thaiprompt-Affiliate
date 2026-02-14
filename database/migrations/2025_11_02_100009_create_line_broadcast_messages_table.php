@@ -14,6 +14,7 @@ return new class extends Migration
         // Skip if table already exists (from SQL import)
         if (Schema::hasTable('line_broadcast_messages')) {
             echo "Table line_broadcast_messages already exists, skipping...\n";
+
             return;
         }
 

@@ -60,7 +60,7 @@ class CoinControlRule extends Model
      */
     public function checkConditions(array $context): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -69,25 +69,25 @@ class CoinControlRule extends Model
             $operator = $condition['operator'] ?? '=';
             $value = $condition['value'] ?? null;
 
-            if (!$field || !isset($context[$field])) {
+            if (! $field || ! isset($context[$field])) {
                 continue;
             }
 
             $contextValue = $context[$field];
 
-            $result = match($operator) {
+            $result = match ($operator) {
                 '=' => $contextValue == $value,
                 '!=' => $contextValue != $value,
                 '>' => $contextValue > $value,
                 '<' => $contextValue < $value,
                 '>=' => $contextValue >= $value,
                 '<=' => $contextValue <= $value,
-                'in' => in_array($contextValue, (array)$value),
-                'not_in' => !in_array($contextValue, (array)$value),
+                'in' => in_array($contextValue, (array) $value),
+                'not_in' => ! in_array($contextValue, (array) $value),
                 default => false,
             };
 
-            if (!$result) {
+            if (! $result) {
                 return false;
             }
         }

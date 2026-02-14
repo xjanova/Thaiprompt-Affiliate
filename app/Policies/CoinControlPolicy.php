@@ -26,7 +26,7 @@ class CoinControlPolicy
     public function mint(User $user, TPIXToken $token): bool
     {
         // Only if token is mintable
-        if (!$token->is_mintable) {
+        if (! $token->is_mintable) {
             return false;
         }
 
@@ -40,7 +40,7 @@ class CoinControlPolicy
     public function burn(User $user, TPIXToken $token): bool
     {
         // Only if token is burnable
-        if (!$token->is_burnable) {
+        if (! $token->is_burnable) {
             return false;
         }
 
@@ -54,7 +54,7 @@ class CoinControlPolicy
     public function freezeAddress(User $user, TPIXToken $token): bool
     {
         // Only if token is freezable
-        if (!$token->is_freezable) {
+        if (! $token->is_freezable) {
             return false;
         }
 
@@ -68,7 +68,7 @@ class CoinControlPolicy
     public function unfreezeAddress(User $user, TPIXToken $token): bool
     {
         // Only if token is freezable
-        if (!$token->is_freezable) {
+        if (! $token->is_freezable) {
             return false;
         }
 
@@ -82,7 +82,7 @@ class CoinControlPolicy
     public function pause(User $user, TPIXToken $token): bool
     {
         // Only if token is pausable
-        if (!$token->is_pausable) {
+        if (! $token->is_pausable) {
             return false;
         }
 
@@ -96,7 +96,7 @@ class CoinControlPolicy
     public function unpause(User $user, TPIXToken $token): bool
     {
         // Only if token is pausable
-        if (!$token->is_pausable) {
+        if (! $token->is_pausable) {
             return false;
         }
 

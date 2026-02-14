@@ -19,13 +19,11 @@ class AdminUsersSeeder extends Seeder
 
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!$this->requireTable('users', 'AdminUsersSeeder')) {
+        if (! $this->requireTable('users', 'AdminUsersSeeder')) {
             return;
         }
 

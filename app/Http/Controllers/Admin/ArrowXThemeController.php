@@ -3,17 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ThemeSetting;
 use App\Models\ThemeColor;
-use App\Models\ThemeRgbEffect;
-use App\Models\ThemeTypography;
-use App\Models\ThemeComponent;
 use App\Models\ThemePreset;
+use App\Models\ThemeRgbEffect;
+use App\Models\ThemeSetting;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 
 /**
  * ArrowXThemeController
@@ -24,8 +22,6 @@ class ArrowXThemeController extends Controller
 {
     /**
      * แสดงหน้า Dashboard ของ Arrow X Theme
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -33,11 +29,11 @@ class ArrowXThemeController extends Controller
             'color',
             'typography',
             'rgbEffects',
-            'components'
+            'components',
         ])->where('is_active', true)->first();
 
         // ถ้ายังไม่มี theme setting ให้สร้างใหม่
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             $themeSetting = $this->createDefaultTheme();
         }
 
@@ -49,8 +45,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * แสดงหน้าตั้งค่าหลัก (General Settings)
-     *
-     * @return View
      */
     public function generalSettings(): View
     {
@@ -64,10 +58,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * บันทึกการตั้งค่าหลัก
-     *
-     * @param Request $request
-     * @param \App\Services\ImageUploadService $imageUploadService
-     * @return RedirectResponse
      */
     public function updateGeneralSettings(Request $request, \App\Services\ImageUploadService $imageUploadService): RedirectResponse
     {
@@ -172,7 +162,7 @@ class ArrowXThemeController extends Controller
 
         // Log columns ที่ถูกข้าม (ถ้ามี)
         $skippedColumns = array_diff_key($validated, $safeData);
-        if (!empty($skippedColumns)) {
+        if (! empty($skippedColumns)) {
             \Log::warning('Theme Settings: บางคอลัมน์ถูกข้ามเพราะยังไม่มีในตาราง (รัน migration ก่อน)', [
                 'skipped_columns' => array_keys($skippedColumns),
                 'hint' => 'รัน: php artisan migrate --force',
@@ -190,7 +180,7 @@ class ArrowXThemeController extends Controller
             $compilerService->compile($themeSetting);
         } catch (\Exception $e) {
             // Log error but don't fail the update
-            \Log::warning('Failed to clear/recompile theme cache: ' . $e->getMessage());
+            \Log::warning('Failed to clear/recompile theme cache: '.$e->getMessage());
         }
 
         return redirect()
@@ -200,8 +190,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * แสดงหน้าตั้งค่าสี (Color Settings)
-     *
-     * @return View
      */
     public function colorSettings(): View
     {
@@ -217,9 +205,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * บันทึกการตั้งค่าสี
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function updateColorSettings(Request $request): RedirectResponse
     {
@@ -256,8 +241,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * แสดงหน้าตั้งค่า RGB Effects
-     *
-     * @return View
      */
     public function rgbEffects(): View
     {
@@ -273,9 +256,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * สร้าง RGB Effect ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function storeRgbEffect(Request $request): RedirectResponse
     {
@@ -307,10 +287,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * อัปเดท RGB Effect
-     *
-     * @param Request $request
-     * @param ThemeRgbEffect $rgbEffect
-     * @return RedirectResponse
      */
     public function updateRgbEffect(Request $request, ThemeRgbEffect $rgbEffect): RedirectResponse
     {
@@ -340,9 +316,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * ลบ RGB Effect
-     *
-     * @param ThemeRgbEffect $rgbEffect
-     * @return RedirectResponse
      */
     public function destroyRgbEffect(ThemeRgbEffect $rgbEffect): RedirectResponse
     {
@@ -355,8 +328,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * แสดงหน้าตั้งค่า Typography
-     *
-     * @return View
      */
     public function typography(): View
     {
@@ -372,9 +343,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * บันทึกการตั้งค่า Typography
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function updateTypography(Request $request): RedirectResponse
     {
@@ -410,9 +378,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * Upload Logo
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function uploadLogo(Request $request): RedirectResponse
     {
@@ -424,7 +389,7 @@ class ArrowXThemeController extends Controller
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $filename = 'arrow-x-logo-' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'arrow-x-logo-'.time().'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('theme/logos', $filename, 'public');
 
             $themeSetting->update(['logo_path' => $path]);
@@ -437,9 +402,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * Upload Favicon
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function uploadFavicon(Request $request): RedirectResponse
     {
@@ -451,7 +413,7 @@ class ArrowXThemeController extends Controller
 
         if ($request->hasFile('favicon')) {
             $file = $request->file('favicon');
-            $filename = 'arrow-x-favicon-' . time() . '.' . $file->getClientOriginalExtension();
+            $filename = 'arrow-x-favicon-'.time().'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('theme/favicons', $filename, 'public');
 
             $themeSetting->update(['favicon_path' => $path]);
@@ -464,8 +426,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * สร้าง Default Theme (ถ้ายังไม่มี)
-     *
-     * @return ThemeSetting
      */
     private function createDefaultTheme(): ThemeSetting
     {
@@ -536,9 +496,6 @@ class ArrowXThemeController extends Controller
      * Apply theme preset
      *
      * ใช้ theme preset ที่เลือกไปกับ theme setting ที่ active อยู่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function applyPreset(Request $request): RedirectResponse
     {
@@ -599,8 +556,6 @@ class ArrowXThemeController extends Controller
 
     /**
      * Compile theme และ refresh cache
-     *
-     * @return RedirectResponse
      */
     public function compileTheme(): RedirectResponse
     {
@@ -608,7 +563,7 @@ class ArrowXThemeController extends Controller
             $compilerService = app(\App\Services\ThemeCompilerService::class);
             $themeSetting = ThemeSetting::active();
 
-            if (!$themeSetting) {
+            if (! $themeSetting) {
                 return redirect()->back()->with('error', 'ไม่พบ active theme');
             }
 
@@ -620,14 +575,12 @@ class ArrowXThemeController extends Controller
 
             return redirect()->back()->with('success', "Compile สำเร็จ! (CSS: {$cssSize} bytes, JS: {$jsSize} bytes)");
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Compile ล้มเหลว: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Compile ล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * Clear theme cache
-     *
-     * @return RedirectResponse
      */
     public function clearCache(): RedirectResponse
     {
@@ -637,14 +590,12 @@ class ArrowXThemeController extends Controller
 
             return redirect()->back()->with('success', 'ล้าง cache สำเร็จ!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'ล้าง cache ล้มเหลว: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ล้าง cache ล้มเหลว: '.$e->getMessage());
         }
     }
 
     /**
      * Compile theme เป็น static files
-     *
-     * @return RedirectResponse
      */
     public function compileToFiles(): RedirectResponse
     {
@@ -652,7 +603,7 @@ class ArrowXThemeController extends Controller
             $compilerService = app(\App\Services\ThemeCompilerService::class);
             $themeSetting = ThemeSetting::active();
 
-            if (!$themeSetting) {
+            if (! $themeSetting) {
                 return redirect()->back()->with('error', 'ไม่พบ active theme');
             }
 
@@ -660,7 +611,7 @@ class ArrowXThemeController extends Controller
 
             return redirect()->back()->with('success', 'สร้าง static files สำเร็จ!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'สร้าง static files ล้มเหลว: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'สร้าง static files ล้มเหลว: '.$e->getMessage());
         }
     }
 }

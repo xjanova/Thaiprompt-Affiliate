@@ -10,13 +10,11 @@ return new class extends Migration
      * เพิ่ม ENUM values ใหม่ในคอลัมน์ type ของตาราง platform_wallets
      * - admin_shop: รายได้ร้านแอดมิน
      * - admin_services: รายได้บริการแอดมิน
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตารางมีอยู่
-        if (!Schema::hasTable('platform_wallets')) {
+        if (! Schema::hasTable('platform_wallets')) {
             return;
         }
 
@@ -43,12 +41,10 @@ return new class extends Migration
 
     /**
      * ลบ ENUM values ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('platform_wallets')) {
+        if (! Schema::hasTable('platform_wallets')) {
             return;
         }
 

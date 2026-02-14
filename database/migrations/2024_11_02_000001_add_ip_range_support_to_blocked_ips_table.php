@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง blocked_ips มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('blocked_ips')) {
+        if (! Schema::hasTable('blocked_ips')) {
             return;
         }
 

@@ -18,8 +18,6 @@ class StoreLineRichMenuRequest extends FormRequest
 {
     /**
      * ตรวจสอบว่า user มีสิทธิ์ทำ request นี้หรือไม่
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -88,9 +86,6 @@ class StoreLineRichMenuRequest extends FormRequest
 
     /**
      * Custom validator ตรวจสอบขนาดภาพตามมาตรฐาน LINE
-     *
-     * @param Validator $validator
-     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -109,9 +104,6 @@ class StoreLineRichMenuRequest extends FormRequest
      * - Half size: 2500 x 843 px
      * - File size: max 1 MB
      * - Format: JPG, PNG
-     *
-     * @param Validator $validator
-     * @return void
      */
     protected function validateImageDimensions(Validator $validator): void
     {
@@ -123,6 +115,7 @@ class StoreLineRichMenuRequest extends FormRequest
 
         if ($imageInfo === false) {
             $validator->errors()->add('image', 'ไม่สามารถอ่านข้อมูลรูปภาพได้');
+
             return;
         }
 
@@ -136,8 +129,9 @@ class StoreLineRichMenuRequest extends FormRequest
 
         $required = $requiredDimensions[$size] ?? null;
 
-        if (!$required) {
+        if (! $required) {
             $validator->errors()->add('size', 'ขนาด Rich Menu ไม่ถูกต้อง');
+
             return;
         }
 
@@ -168,6 +162,7 @@ class StoreLineRichMenuRequest extends FormRequest
                     $actualRatio
                 )
             );
+
             return;
         }
 
@@ -198,10 +193,11 @@ class StoreLineRichMenuRequest extends FormRequest
                     '❌ ภาพมีขนาดเล็กเกินไป! (%dx%d px) ต้องการอย่างน้อย %dx%d px',
                     $width,
                     $height,
-                    (int)($requiredWidth * 0.5),
-                    (int)($requiredHeight * 0.5)
+                    (int) ($requiredWidth * 0.5),
+                    (int) ($requiredHeight * 0.5)
                 )
             );
+
             return;
         }
 

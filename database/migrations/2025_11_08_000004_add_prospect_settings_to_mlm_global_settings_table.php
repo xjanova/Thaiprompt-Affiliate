@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_global_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_global_settings')) {
+        if (! Schema::hasTable('mlm_global_settings')) {
             return;
         }
 

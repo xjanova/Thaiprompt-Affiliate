@@ -30,7 +30,6 @@ class LineConnectionsController extends Controller
     /**
      * แสดงรายการผู้ใช้ที่เชื่อมต่อ LINE
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -76,7 +75,7 @@ class LineConnectionsController extends Controller
             $query->where('line_linked_at', '>=', $request->input('date_from'));
         }
         if ($request->filled('date_to')) {
-            $query->where('line_linked_at', '<=', $request->input('date_to') . ' 23:59:59');
+            $query->where('line_linked_at', '<=', $request->input('date_to').' 23:59:59');
         }
 
         // เรียงลำดับ
@@ -111,19 +110,18 @@ class LineConnectionsController extends Controller
     /**
      * ตัดการเชื่อมต่อ LINE ของผู้ใช้
      *
-     * @param Request $request
-     * @param User $user
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function disconnect(Request $request, User $user)
     {
-        if (!$user->line_user_id) {
+        if (! $user->line_user_id) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ผู้ใช้นี้ไม่ได้เชื่อมต่อ LINE',
                 ], 400);
             }
+
             return back()->with('error', 'ผู้ใช้นี้ไม่ได้เชื่อมต่อ LINE');
         }
 
@@ -177,18 +175,17 @@ class LineConnectionsController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ตัดการเชื่อมต่อ LINE หลายคนพร้อมกัน (Bulk disconnect)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkDisconnect(Request $request)
@@ -207,8 +204,9 @@ class LineConnectionsController extends Controller
             try {
                 $user = User::find($userId);
 
-                if (!$user || !$user->line_user_id) {
+                if (! $user || ! $user->line_user_id) {
                     $failedCount++;
+
                     continue;
                 }
 
@@ -233,7 +231,7 @@ class LineConnectionsController extends Controller
 
             } catch (\Exception $e) {
                 $failedCount++;
-                $errors[] = "User ID {$userId}: " . $e->getMessage();
+                $errors[] = "User ID {$userId}: ".$e->getMessage();
             }
         }
 
@@ -249,7 +247,7 @@ class LineConnectionsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "ตัดการเชื่อมต่อสำเร็จ {$successCount} รายการ" .
+            'message' => "ตัดการเชื่อมต่อสำเร็จ {$successCount} รายการ".
                 ($failedCount > 0 ? ", ล้มเหลว {$failedCount} รายการ" : ''),
             'success_count' => $successCount,
             'failed_count' => $failedCount,
@@ -260,7 +258,6 @@ class LineConnectionsController extends Controller
     /**
      * Export รายการผู้ใช้ที่เชื่อมต่อ LINE
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -285,12 +282,12 @@ class LineConnectionsController extends Controller
             $query->where('line_linked_at', '>=', $request->input('date_from'));
         }
         if ($request->filled('date_to')) {
-            $query->where('line_linked_at', '<=', $request->input('date_to') . ' 23:59:59');
+            $query->where('line_linked_at', '<=', $request->input('date_to').' 23:59:59');
         }
 
         $users = $query->orderBy('line_linked_at', 'desc')->get();
 
-        $filename = 'line_connections_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'line_connections_'.now()->format('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -301,7 +298,7 @@ class LineConnectionsController extends Controller
             $file = fopen('php://output', 'w');
 
             // UTF-8 BOM for Excel
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Headers
             fputcsv($file, [
@@ -340,12 +337,11 @@ class LineConnectionsController extends Controller
     /**
      * แสดงรายละเอียดผู้ใช้
      *
-     * @param User $user
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(User $user)
     {
-        if (!$user->line_user_id) {
+        if (! $user->line_user_id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ผู้ใช้นี้ไม่ได้เชื่อมต่อ LINE',

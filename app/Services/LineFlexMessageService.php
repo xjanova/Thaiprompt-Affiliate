@@ -19,9 +19,13 @@ class LineFlexMessageService
 {
     // Brand colors
     private const PRIMARY_COLOR = '#FF6B6B';
+
     private const SUCCESS_COLOR = '#51CF66';
+
     private const WARNING_COLOR = '#FFD43B';
+
     private const INFO_COLOR = '#339AF0';
+
     private const GRAY_COLOR = '#ADB5BD';
 
     /**
@@ -275,7 +279,7 @@ class LineFlexMessageService
         foreach ($suggestions as $index => $suggestion) {
             $suggestionContents[] = [
                 'type' => 'text',
-                'text' => ($index + 1) . '. ' . $suggestion,
+                'text' => ($index + 1).'. '.$suggestion,
                 'size' => 'sm',
                 'color' => '#666666',
                 'wrap' => true,
@@ -284,7 +288,7 @@ class LineFlexMessageService
 
         return [
             'type' => 'flex',
-            'altText' => '⚠️ ' . $error,
+            'altText' => '⚠️ '.$error,
             'contents' => [
                 'type' => 'bubble',
                 'body' => [
@@ -364,7 +368,7 @@ class LineFlexMessageService
      */
     public function createQuickReplies(string $step): array
     {
-        $replies = match($step) {
+        $replies = match ($step) {
             'name' => [
                 ['label' => '✏️ แก้ไขชื่อ', 'text' => 'แก้ไขชื่อ'],
                 ['label' => '❓ ช่วยเหลือ', 'text' => 'ช่วยเหลือ'],
@@ -394,7 +398,7 @@ class LineFlexMessageService
         };
 
         return [
-            'items' => array_map(fn($reply) => [
+            'items' => array_map(fn ($reply) => [
                 'type' => 'action',
                 'action' => [
                     'type' => 'message',
@@ -575,7 +579,7 @@ class LineFlexMessageService
      */
     private function getStepName(string $step): string
     {
-        return match($step) {
+        return match ($step) {
             'name' => '📝 กรอกชื่อ-นามสกุล',
             'username' => '👤 ตั้งชื่อผู้ใช้',
             'email' => '📧 กรอกอีเมล',

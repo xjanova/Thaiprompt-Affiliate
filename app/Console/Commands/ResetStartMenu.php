@@ -52,7 +52,6 @@ class ResetStartMenu extends Command
     /**
      * Reset menu for specific type
      *
-     * @param string $type
      * @return void
      */
     protected function resetMenuType(string $type)

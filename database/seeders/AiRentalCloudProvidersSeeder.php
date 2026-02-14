@@ -15,8 +15,6 @@ class AiRentalCloudProvidersSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -222,6 +220,7 @@ class AiRentalCloudProvidersSeeder extends Seeder
 
             if ($existing) {
                 $this->command->info("   ⏭️  {$providerData['name']} มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

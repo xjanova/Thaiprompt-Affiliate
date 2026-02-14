@@ -14,8 +14,6 @@ return new class extends Migration
      * - commissions: ข้อมูล affiliate commissions
      *
      * หมายเหตุ: ระบบ MLM จะครอบคลุมฟังก์ชันทั้งหมดของระบบ Affiliate
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -28,8 +26,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations (สร้างตารางกลับ - ไม่แนะนำ เนื่องจากจะไม่มีข้อมูล)
-     *
-     * @return void
      */
     public function down(): void
     {

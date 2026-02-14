@@ -14,15 +14,12 @@ class RgbEffectService
 {
     /**
      * สร้าง CSS สำหรับ RGB Effects ทั้งหมด
-     *
-     * @param ThemeSetting|null $themeSetting
-     * @return string
      */
     public function generateAllEffectsCss(?ThemeSetting $themeSetting = null): string
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             return '';
         }
 
@@ -44,9 +41,6 @@ class RgbEffectService
 
     /**
      * สร้าง CSS สำหรับ Effect เดียว
-     *
-     * @param ThemeRgbEffect $effect
-     * @return string
      */
     public function generateEffectCss(ThemeRgbEffect $effect): string
     {
@@ -55,7 +49,7 @@ class RgbEffectService
         $keyframes = $this->generateKeyframes($effect);
 
         $css = "/* {$effect->effect_name} */\n";
-        $css .= $keyframes . "\n";
+        $css .= $keyframes."\n";
 
         // Generate CSS rule based on trigger state
         $triggerSelector = $this->getTriggerSelector($selector, $effect->trigger_state);
@@ -73,16 +67,13 @@ class RgbEffectService
             $css .= "    position: relative;\n";
         }
 
-        $css .= "}";
+        $css .= '}';
 
         return $css;
     }
 
     /**
      * สร้าง CSS @keyframes
-     *
-     * @param ThemeRgbEffect $effect
-     * @return string
      */
     protected function generateKeyframes(ThemeRgbEffect $effect): string
     {
@@ -133,7 +124,7 @@ class RgbEffectService
                 $keyframes .= $this->generateRainbowKeyframes($colors);
         }
 
-        $keyframes .= "}";
+        $keyframes .= '}';
 
         return $keyframes;
     }
@@ -166,7 +157,7 @@ class RgbEffectService
         $color = $colors[0] ?? '#FF0000';
         $translateY = 10 * $intensity;
 
-        return "    0%, 100% { transform: translateY(0); box-shadow: 0 0 20px {$color}; }\n" .
+        return "    0%, 100% { transform: translateY(0); box-shadow: 0 0 20px {$color}; }\n".
                "    50% { transform: translateY(-{$translateY}px); box-shadow: 0 10px 30px {$color}; }\n";
     }
 
@@ -177,7 +168,7 @@ class RgbEffectService
     {
         $maxBlur = $blurRadius * (1 + $intensity);
 
-        return "    0%, 100% { box-shadow: 0 0 {$blurRadius}px {$color}; }\n" .
+        return "    0%, 100% { box-shadow: 0 0 {$blurRadius}px {$color}; }\n".
                "    50% { box-shadow: 0 0 {$maxBlur}px {$color}; }\n";
     }
 
@@ -188,7 +179,7 @@ class RgbEffectService
     {
         $maxBlur = $blurRadius * 3 * $intensity;
 
-        return "    0%, 100% { box-shadow: 0 0 {$blurRadius}px {$color}; filter: brightness(1); }\n" .
+        return "    0%, 100% { box-shadow: 0 0 {$blurRadius}px {$color}; filter: brightness(1); }\n".
                "    50% { box-shadow: 0 0 {$maxBlur}px {$color}; filter: brightness(1.2); }\n";
     }
 
@@ -199,7 +190,7 @@ class RgbEffectService
     {
         $minOpacity = 1 - (0.5 * $intensity);
 
-        return "    0%, 100% { opacity: 1; }\n" .
+        return "    0%, 100% { opacity: 1; }\n".
                "    50% { opacity: {$minOpacity}; }\n";
     }
 
@@ -210,8 +201,8 @@ class RgbEffectService
     {
         $gradient = implode(', ', $colors);
 
-        return "    0% { background-position: 0% 50%; }\n" .
-               "    50% { background-position: 100% 50%; }\n" .
+        return "    0% { background-position: 0% 50%; }\n".
+               "    50% { background-position: 100% 50%; }\n".
                "    100% { background-position: 0% 50%; }\n";
     }
 
@@ -220,7 +211,7 @@ class RgbEffectService
      */
     protected function generateRotateKeyframes(array $colors): string
     {
-        return "    0% { transform: rotate(0deg); }\n" .
+        return "    0% { transform: rotate(0deg); }\n".
                "    100% { transform: rotate(360deg); }\n";
     }
 
@@ -231,7 +222,7 @@ class RgbEffectService
     {
         $brightness = 1 + (0.5 * $intensity);
 
-        return "    0%, 100% { filter: brightness(1); }\n" .
+        return "    0%, 100% { filter: brightness(1); }\n".
                "    50% { filter: brightness({$brightness}); background: {$color}22; }\n";
     }
 
@@ -296,20 +287,17 @@ class RgbEffectService
      */
     protected function getAnimationName(ThemeRgbEffect $effect): string
     {
-        return 'arrow-x-rgb-' . $effect->id . '-' . $effect->animation_type;
+        return 'arrow-x-rgb-'.$effect->id.'-'.$effect->animation_type;
     }
 
     /**
      * สร้าง JavaScript สำหรับ RGB Effects (ถ้าต้องการ dynamic control)
-     *
-     * @param ThemeSetting|null $themeSetting
-     * @return string
      */
     public function generateAllEffectsJs(?ThemeSetting $themeSetting = null): string
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             return '';
         }
 

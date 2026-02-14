@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\LeaveType;
 use App\Models\Department;
+use App\Models\LeaveType;
 use App\Models\Position;
+use Illuminate\Database\Seeder;
 
 class HrmSeeder extends Seeder
 {
@@ -310,8 +310,9 @@ class HrmSeeder extends Seeder
         $finance = Department::where('code', 'FIN')->first();
         $sales = Department::where('code', 'SALES')->first();
 
-        if (!$hr || !$it || !$finance || !$sales) {
+        if (! $hr || ! $it || ! $finance || ! $sales) {
             $this->command->warn('! Departments not found, skipping position seeding');
+
             return;
         }
 

@@ -94,7 +94,6 @@ class StarUpgradeController extends Controller
     /**
      * ดำเนินการอัพเกรดดาว
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function upgrade(Request $request)
@@ -106,7 +105,7 @@ class StarUpgradeController extends Controller
         $user = auth()->user();
         $videoLevel = $user->videoLevel;
 
-        if (!$videoLevel) {
+        if (! $videoLevel) {
             return back()->with('error', 'ยังไม่ได้เริ่มต้นระบบ Video Rewards');
         }
 
@@ -129,7 +128,6 @@ class StarUpgradeController extends Controller
     /**
      * หน้าประวัติการอัพเกรดดาว
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function history(Request $request)
@@ -162,7 +160,6 @@ class StarUpgradeController extends Controller
     /**
      * API: ตรวจสอบว่าอัพเกรดได้หรือไม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function checkUpgrade(Request $request)
@@ -174,7 +171,7 @@ class StarUpgradeController extends Controller
         $user = auth()->user();
         $videoLevel = $user->videoLevel;
 
-        if (!$videoLevel) {
+        if (! $videoLevel) {
             return response()->json([
                 'success' => false,
                 'can_upgrade' => false,

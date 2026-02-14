@@ -15,6 +15,7 @@ class GameController extends Controller
     public function index()
     {
         $games = Game::ordered()->get();
+
         return view('admin.games.index', compact('games'));
     }
 
@@ -50,9 +51,9 @@ class GameController extends Controller
         // Handle image upload
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
+            $imageName = time().'_'.$image->getClientOriginalName();
             $image->move(public_path('images/games'), $imageName);
-            $validated['image'] = 'images/games/' . $imageName;
+            $validated['image'] = 'images/games/'.$imageName;
         }
 
         $validated['is_active'] = $request->has('is_active');
@@ -109,9 +110,9 @@ class GameController extends Controller
             }
 
             $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
+            $imageName = time().'_'.$image->getClientOriginalName();
             $image->move(public_path('images/games'), $imageName);
-            $validated['image'] = 'images/games/' . $imageName;
+            $validated['image'] = 'images/games/'.$imageName;
         }
 
         $validated['is_active'] = $request->has('is_active');
@@ -158,7 +159,7 @@ class GameController extends Controller
      */
     public function toggleActive(Game $game)
     {
-        $game->update(['is_active' => !$game->is_active]);
+        $game->update(['is_active' => ! $game->is_active]);
 
         return redirect()->back()
             ->with('success', 'สถานะเกมถูกเปลี่ยนเรียบร้อยแล้ว');

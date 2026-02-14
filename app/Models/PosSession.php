@@ -152,7 +152,7 @@ class PosSession extends Model
 
     public function generateSessionCode(): string
     {
-        return 'SES-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        return 'SES-'.date('Ymd').'-'.strtoupper(substr(md5(uniqid()), 0, 6));
     }
 
     /**

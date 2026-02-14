@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\MarketplaceCommission;
 use App\Models\MarketplacePlatform;
-use App\Models\MarketplaceAccount;
 use App\Models\User;
 use App\Services\Marketplace\MarketplaceCommissionService;
 use Illuminate\Http\Request;
@@ -21,7 +20,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * แสดงรายการคอมมิชชั่นทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -97,7 +95,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * แสดงรายละเอียดคอมมิชชั่น
      *
-     * @param MarketplaceCommission $commission
      * @return \Illuminate\View\View
      */
     public function show(MarketplaceCommission $commission)
@@ -110,13 +107,12 @@ class MarketplaceCommissionController extends Controller
     /**
      * อนุมัติคอมมิชชั่น
      *
-     * @param MarketplaceCommission $commission
      * @return \Illuminate\Http\JsonResponse
      */
     public function approve(MarketplaceCommission $commission)
     {
         try {
-            $commissionService = new MarketplaceCommissionService();
+            $commissionService = new MarketplaceCommissionService;
             $commissionService->approveCommission($commission);
 
             return response()->json([
@@ -131,7 +127,7 @@ class MarketplaceCommissionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'อนุมัติคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'อนุมัติคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -139,13 +135,12 @@ class MarketplaceCommissionController extends Controller
     /**
      * จ่ายคอมมิชชั่น (โอนเข้า Wallet)
      *
-     * @param MarketplaceCommission $commission
      * @return \Illuminate\Http\JsonResponse
      */
     public function pay(MarketplaceCommission $commission)
     {
         try {
-            $commissionService = new MarketplaceCommissionService();
+            $commissionService = new MarketplaceCommissionService;
             $commissionService->payCommission($commission);
 
             return response()->json([
@@ -160,7 +155,7 @@ class MarketplaceCommissionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'จ่ายคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'จ่ายคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -168,8 +163,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * ปฏิเสธคอมมิชชั่น
      *
-     * @param Request $request
-     * @param MarketplaceCommission $commission
      * @return \Illuminate\Http\JsonResponse
      */
     public function reject(Request $request, MarketplaceCommission $commission)
@@ -198,7 +191,7 @@ class MarketplaceCommissionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'ปฏิเสธคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'ปฏิเสธคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -206,7 +199,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * อนุมัติคอมมิชชั่นหลายรายการ
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkApprove(Request $request)
@@ -217,7 +209,7 @@ class MarketplaceCommissionController extends Controller
         ]);
 
         try {
-            $commissionService = new MarketplaceCommissionService();
+            $commissionService = new MarketplaceCommissionService;
             $count = 0;
 
             foreach ($validated['ids'] as $id) {
@@ -239,7 +231,7 @@ class MarketplaceCommissionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'อนุมัติคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'อนุมัติคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -247,7 +239,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * จ่ายคอมมิชชั่นหลายรายการ
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function bulkPay(Request $request)
@@ -258,7 +249,7 @@ class MarketplaceCommissionController extends Controller
         ]);
 
         try {
-            $commissionService = new MarketplaceCommissionService();
+            $commissionService = new MarketplaceCommissionService;
             $count = 0;
 
             foreach ($validated['ids'] as $id) {
@@ -280,7 +271,7 @@ class MarketplaceCommissionController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'จ่ายคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'จ่ายคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -288,7 +279,6 @@ class MarketplaceCommissionController extends Controller
     /**
      * ลบคอมมิชชั่น (เฉพาะที่ยังไม่จ่าย)
      *
-     * @param MarketplaceCommission $commission
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(MarketplaceCommission $commission)

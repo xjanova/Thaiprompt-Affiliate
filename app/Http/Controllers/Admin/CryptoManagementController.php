@@ -10,11 +10,11 @@ use App\Models\CryptoWithdrawalRequest;
 use App\Services\Crypto\DepositDetectionService;
 use App\Services\Crypto\WithdrawalProcessingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CryptoManagementController extends Controller
 {
     protected WithdrawalProcessingService $withdrawalService;
+
     protected DepositDetectionService $depositService;
 
     public function __construct(
@@ -74,8 +74,8 @@ class CryptoManagementController extends Controller
         $currencyStats = CryptoCurrency::withCount([
             'transactions' => function ($q) {
                 $q->where('status', 'confirmed')
-                  ->where('created_at', '>=', now()->subDays(30));
-            }
+                    ->where('created_at', '>=', now()->subDays(30));
+            },
         ])->get();
 
         // Daily volume chart data (last 30 days)
@@ -139,7 +139,7 @@ class CryptoManagementController extends Controller
 
             return back()->with('success', 'อนุมัติและดำเนินการถอนเงินสำเร็จ');
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -159,7 +159,7 @@ class CryptoManagementController extends Controller
 
             return back()->with('success', 'ปฏิเสธคำขอถอนเงินสำเร็จ');
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -187,7 +187,7 @@ class CryptoManagementController extends Controller
         }
 
         if ($request->has('tx_hash')) {
-            $query->where('tx_hash', 'like', '%' . $request->tx_hash . '%');
+            $query->where('tx_hash', 'like', '%'.$request->tx_hash.'%');
         }
 
         $transactions = $query->orderBy('created_at', 'desc')->paginate(50);
@@ -272,7 +272,7 @@ class CryptoManagementController extends Controller
                 "สแกนเสร็จสิ้น: ตรวจพบ {$results['detected']} รายการ, ประมวลผล {$results['processed']} รายการ"
             );
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -288,7 +288,7 @@ class CryptoManagementController extends Controller
                 "ประมวลผลเสร็จสิ้น: อนุมัติ {$results['approved']} รายการ, ส่ง {$results['sent']} รายการ"
             );
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 

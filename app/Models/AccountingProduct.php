@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class AccountingProduct extends Model
 {
@@ -56,7 +55,7 @@ class AccountingProduct extends Model
         $prefix = $type === 'product' ? 'PRD' : 'SRV';
         $count = self::where('user_id', $userId)->where('type', $type)->count() + 1;
 
-        return $prefix . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return $prefix.str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -88,7 +87,7 @@ class AccountingProduct extends Model
      */
     public function getPriceWithTaxAttribute(): float
     {
-        if (!$this->is_taxable) {
+        if (! $this->is_taxable) {
             return $this->price;
         }
 

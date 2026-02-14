@@ -15,6 +15,7 @@ class AnalyzeTrendDataJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 600; // 10 minutes
+
     public int $tries = 3;
 
     /**
@@ -38,7 +39,7 @@ class AnalyzeTrendDataJob implements ShouldQueue
 
             Log::info('Updated trend scores for all keywords');
         } catch (\Exception $e) {
-            Log::error('Failed to analyze trend data: ' . $e->getMessage());
+            Log::error('Failed to analyze trend data: '.$e->getMessage());
             throw $e;
         }
     }

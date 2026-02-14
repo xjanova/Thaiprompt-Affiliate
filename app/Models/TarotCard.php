@@ -54,8 +54,7 @@ class TarotCard extends Model
     /**
      * ดึงคำทำนายสำหรับหมวดเฉพาะ
      *
-     * @param int $categoryId ID หมวดหมู่
-     * @return TarotCardInterpretation|null
+     * @param  int  $categoryId  ID หมวดหมู่
      */
     public function getInterpretationForCategory(int $categoryId): ?TarotCardInterpretation
     {
@@ -80,6 +79,7 @@ class TarotCard extends Model
     public function getName(string $language = 'th'): string
     {
         $nameField = "name_{$language}";
+
         return $this->$nameField ?? $this->name_en;
     }
 
@@ -89,6 +89,7 @@ class TarotCard extends Model
     public function getKeywords(string $language = 'th'): array
     {
         $keywordsField = "keywords_{$language}";
+
         return $this->$keywordsField ?? $this->keywords_en ?? [];
     }
 
@@ -141,7 +142,7 @@ class TarotCard extends Model
     public function getImageUrlAttribute($value)
     {
         // ถ้าไม่มีค่า ใช้ default
-        if (!$value) {
+        if (! $value) {
             return asset('images/tarot/default-card.svg');
         }
 
@@ -159,7 +160,7 @@ class TarotCard extends Model
         // ถ้าเป็น path แบบไม่มี / นำหน้า (เช่น tarot/cards/xxx.webp)
         // แปลงเป็น storage URL
         if (str_starts_with($value, 'tarot/')) {
-            return asset('storage/' . $value);
+            return asset('storage/'.$value);
         }
 
         // ถ้าเป็น path แบบเดิม (เช่น /images/tarot/xxx.png)

@@ -31,15 +31,12 @@ class GenerateSoftwareLicense implements ShouldQueue
 
     /**
      * จัดการ event
-     *
-     * @param SoftwarePurchased $event
-     * @return void
      */
     public function handle(SoftwarePurchased $event): void
     {
         try {
             // ข้อมูล product ต้องมี license
-            if (!$event->product->requires_license) {
+            if (! $event->product->requires_license) {
                 return;
             }
 

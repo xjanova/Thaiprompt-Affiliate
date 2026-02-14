@@ -292,8 +292,6 @@ class VideoAutoProject extends Model
 
     /**
      * เทมเพลตที่ใช้
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -302,8 +300,6 @@ class VideoAutoProject extends Model
 
     /**
      * ผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -312,8 +308,6 @@ class VideoAutoProject extends Model
 
     /**
      * Jobs ที่เกี่ยวข้อง
-     *
-     * @return HasMany
      */
     public function jobs(): HasMany
     {
@@ -322,8 +316,6 @@ class VideoAutoProject extends Model
 
     /**
      * Logs ที่เกี่ยวข้อง
-     *
-     * @return HasMany
      */
     public function logs(): HasMany
     {
@@ -332,8 +324,6 @@ class VideoAutoProject extends Model
 
     /**
      * ประวัติการโพสต์
-     *
-     * @return HasMany
      */
     public function publishHistory(): HasMany
     {
@@ -347,8 +337,8 @@ class VideoAutoProject extends Model
     /**
      * Scope: กรองตาม status
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|array  $status
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStatus($query, $status)
@@ -363,7 +353,7 @@ class VideoAutoProject extends Model
     /**
      * Scope: รอดำเนินการ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -374,7 +364,7 @@ class VideoAutoProject extends Model
     /**
      * Scope: กำลังทำงาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInProgress($query)
@@ -385,7 +375,7 @@ class VideoAutoProject extends Model
     /**
      * Scope: รอโพสตามตารางเวลา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeScheduledForNow($query)
@@ -401,8 +391,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึงข้อมูล status
-     *
-     * @return array|null
      */
     public function getStatusInfoAttribute(): ?array
     {
@@ -411,8 +399,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึง label ของ status
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -421,8 +407,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึงสีของ status
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
@@ -431,8 +415,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึง icon ของ status
-     *
-     * @return string
      */
     public function getStatusIconAttribute(): string
     {
@@ -441,8 +423,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึง label ของ current step
-     *
-     * @return string|null
      */
     public function getCurrentStepLabelAttribute(): ?string
     {
@@ -451,8 +431,6 @@ class VideoAutoProject extends Model
 
     /**
      * ตรวจสอบว่าสามารถ retry ได้หรือไม่
-     *
-     * @return bool
      */
     public function getCanRetryAttribute(): bool
     {
@@ -461,8 +439,6 @@ class VideoAutoProject extends Model
 
     /**
      * ตรวจสอบว่าสร้างเสร็จแล้วหรือยัง
-     *
-     * @return bool
      */
     public function getIsCompletedAttribute(): bool
     {
@@ -471,12 +447,10 @@ class VideoAutoProject extends Model
 
     /**
      * คำนวณขนาดไฟล์แบบ human readable
-     *
-     * @return string|null
      */
     public function getVideoSizeHumanAttribute(): ?string
     {
-        if (!$this->video_size) {
+        if (! $this->video_size) {
             return null;
         }
 
@@ -489,17 +463,15 @@ class VideoAutoProject extends Model
             $unitIndex++;
         }
 
-        return round($size, 2) . ' ' . $units[$unitIndex];
+        return round($size, 2).' '.$units[$unitIndex];
     }
 
     /**
      * คำนวณเวลาทำงานแบบ human readable
-     *
-     * @return string|null
      */
     public function getProcessingTimeHumanAttribute(): ?string
     {
-        if (!$this->processing_time) {
+        if (! $this->processing_time) {
             return null;
         }
 
@@ -519,10 +491,6 @@ class VideoAutoProject extends Model
 
     /**
      * อัพเดท status
-     *
-     * @param string $status
-     * @param string|null $step
-     * @return void
      */
     public function updateStatus(string $status, ?string $step = null): void
     {
@@ -534,7 +502,7 @@ class VideoAutoProject extends Model
         }
 
         // บันทึกเวลาตาม status
-        if ($status === 'generating' && !$this->started_at) {
+        if ($status === 'generating' && ! $this->started_at) {
             $this->started_at = now();
         } elseif (in_array($status, ['completed', 'published', 'failed'])) {
             $this->completed_at = now();
@@ -553,10 +521,6 @@ class VideoAutoProject extends Model
 
     /**
      * อัพเดท progress
-     *
-     * @param int $progress
-     * @param string|null $message
-     * @return void
      */
     public function updateProgress(int $progress, ?string $message = null): void
     {
@@ -571,9 +535,6 @@ class VideoAutoProject extends Model
 
     /**
      * บันทึก error
-     *
-     * @param string $error
-     * @return void
      */
     public function recordError(string $error): void
     {
@@ -584,12 +545,10 @@ class VideoAutoProject extends Model
 
     /**
      * Retry การทำงาน
-     *
-     * @return bool
      */
     public function retry(): bool
     {
-        if (!$this->can_retry) {
+        if (! $this->can_retry) {
             return false;
         }
 
@@ -608,8 +567,6 @@ class VideoAutoProject extends Model
 
     /**
      * ยกเลิกโปรเจกต์
-     *
-     * @return void
      */
     public function cancel(): void
     {
@@ -624,11 +581,6 @@ class VideoAutoProject extends Model
 
     /**
      * บันทึกผลการโพส
-     *
-     * @param string $platform
-     * @param bool $success
-     * @param array $result
-     * @return void
      */
     public function recordPublishResult(string $platform, bool $success, array $result): void
     {
@@ -651,10 +603,6 @@ class VideoAutoProject extends Model
 
     /**
      * สร้าง project จาก template
-     *
-     * @param VideoAutoTemplate $template
-     * @param array $overrides
-     * @return static
      */
     public static function createFromTemplate(VideoAutoTemplate $template, array $overrides = []): static
     {
@@ -662,7 +610,7 @@ class VideoAutoProject extends Model
 
         $data = array_merge([
             'template_id' => $template->id,
-            'name' => $overrides['name'] ?? 'โปรเจกต์ใหม่ ' . now()->format('Y-m-d H:i'),
+            'name' => $overrides['name'] ?? 'โปรเจกต์ใหม่ '.now()->format('Y-m-d H:i'),
             'status' => 'draft',
             // Music
             'music_genre' => $template->music_genre,
@@ -696,8 +644,6 @@ class VideoAutoProject extends Model
 
     /**
      * เพิ่ม publish count
-     *
-     * @return void
      */
     public function incrementPublishCount(): void
     {
@@ -711,8 +657,7 @@ class VideoAutoProject extends Model
      *
      * ⚠️ จะลบได้ต่อเมื่อมีการโพสต์ YouTube สำเร็จแล้วเท่านั้น!
      *
-     * @param bool $force บังคับลบแม้ยังไม่โพสต์สำเร็จ
-     * @return bool
+     * @param  bool  $force  บังคับลบแม้ยังไม่โพสต์สำเร็จ
      */
     public function deleteSourceFiles(bool $force = false): bool
     {
@@ -721,7 +666,7 @@ class VideoAutoProject extends Model
         }
 
         // ⚠️ ตรวจสอบว่าโพสต์ YouTube สำเร็จแล้ว (ยกเว้น force)
-        if (!$force && !$this->hasSuccessfulYouTubePublish()) {
+        if (! $force && ! $this->hasSuccessfulYouTubePublish()) {
             return false;
         }
 
@@ -729,7 +674,7 @@ class VideoAutoProject extends Model
 
         // ลบไฟล์เพลง
         if ($this->generated_music_path) {
-            $path = storage_path('app/public/' . $this->generated_music_path);
+            $path = storage_path('app/public/'.$this->generated_music_path);
             if (file_exists($path)) {
                 unlink($path);
                 $deleted[] = 'music';
@@ -741,7 +686,7 @@ class VideoAutoProject extends Model
             foreach ($this->generated_images as $image) {
                 $imagePath = $image['path'] ?? $image;
                 if (is_string($imagePath)) {
-                    $fullPath = storage_path('app/public/' . $imagePath);
+                    $fullPath = storage_path('app/public/'.$imagePath);
                     if (file_exists($fullPath)) {
                         unlink($fullPath);
                     }
@@ -752,7 +697,7 @@ class VideoAutoProject extends Model
 
         // ลบวีดีโอ
         if ($this->generated_video_path) {
-            $path = storage_path('app/public/' . $this->generated_video_path);
+            $path = storage_path('app/public/'.$this->generated_video_path);
             if (file_exists($path)) {
                 unlink($path);
                 $deleted[] = 'video';
@@ -769,8 +714,6 @@ class VideoAutoProject extends Model
 
     /**
      * ตรวจสอบว่ามีการโพสต์ YouTube สำเร็จหรือไม่
-     *
-     * @return bool
      */
     public function hasSuccessfulYouTubePublish(): bool
     {
@@ -784,8 +727,6 @@ class VideoAutoProject extends Model
 
     /**
      * ตรวจสอบว่าสามารถลบไฟล์ต้นฉบับได้หรือไม่
-     *
-     * @return bool
      */
     public function canDeleteSourceFiles(): bool
     {
@@ -795,7 +736,7 @@ class VideoAutoProject extends Model
         }
 
         // ต้องมีการโพสต์ YouTube สำเร็จ
-        if (!$this->hasSuccessfulYouTubePublish()) {
+        if (! $this->hasSuccessfulYouTubePublish()) {
             return false;
         }
 
@@ -804,8 +745,6 @@ class VideoAutoProject extends Model
 
     /**
      * ดึง URL ของ thumbnail
-     *
-     * @return string|null
      */
     public function getThumbnailFullUrlAttribute(): ?string
     {
@@ -814,11 +753,11 @@ class VideoAutoProject extends Model
         }
 
         if ($this->thumbnail_path) {
-            return asset('storage/' . $this->thumbnail_path);
+            return asset('storage/'.$this->thumbnail_path);
         }
 
         if ($this->video_thumbnail) {
-            return asset('storage/' . $this->video_thumbnail);
+            return asset('storage/'.$this->video_thumbnail);
         }
 
         return null;

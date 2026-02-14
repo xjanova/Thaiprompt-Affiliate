@@ -88,7 +88,7 @@ class Coupon extends Model
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -118,6 +118,7 @@ class Coupon extends Model
                 if ($this->max_discount) {
                     $discount = min($discount, $this->max_discount);
                 }
+
                 return $discount;
 
             case 'fixed':

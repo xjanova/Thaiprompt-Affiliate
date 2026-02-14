@@ -22,6 +22,7 @@ class FortuneTellingSettingSeeder extends Seeder
         // ✅ ตรวจสอบก่อนสร้าง (idempotent)
         if (FortuneTellingSetting::count() > 0) {
             $this->command->info('ข้อมูลการตั้งค่ามีอยู่แล้ว ข้าม...');
+
             return;
         }
 

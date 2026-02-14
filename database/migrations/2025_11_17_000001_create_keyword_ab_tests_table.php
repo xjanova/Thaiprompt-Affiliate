@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง keyword_ab_tests สำหรับเก็บข้อมูล A/B test
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -18,7 +16,7 @@ return new class extends Migration
             return;
         }
 
-Schema::create('keyword_ab_tests', function (Blueprint $table) {
+        Schema::create('keyword_ab_tests', function (Blueprint $table) {
             $table->id();
 
             // ⚠️ ใช้ unsignedBigInteger แทน foreignId()->constrained()
@@ -70,8 +68,6 @@ Schema::create('keyword_ab_tests', function (Blueprint $table) {
 
     /**
      * ลบตาราง keyword_ab_tests
-     *
-     * @return void
      */
     public function down(): void
     {

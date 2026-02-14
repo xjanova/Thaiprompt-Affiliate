@@ -65,8 +65,6 @@ class AccountingFlowaccountSyncLog extends Model
 
     /**
      * ความสัมพันธ์กับ Connection
-     *
-     * @return BelongsTo
      */
     public function connection(): BelongsTo
     {
@@ -76,8 +74,7 @@ class AccountingFlowaccountSyncLog extends Model
     /**
      * Scope สำหรับกรองตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -88,7 +85,7 @@ class AccountingFlowaccountSyncLog extends Model
     /**
      * Scope สำหรับกรองเฉพาะที่สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuccessful($query)
@@ -99,7 +96,7 @@ class AccountingFlowaccountSyncLog extends Model
     /**
      * Scope สำหรับกรองเฉพาะที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -110,9 +107,7 @@ class AccountingFlowaccountSyncLog extends Model
     /**
      * Scope สำหรับกรองตามวันที่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $startDate
-     * @param string|null $endDate
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDateRange($query, string $startDate, ?string $endDate = null)
@@ -128,8 +123,6 @@ class AccountingFlowaccountSyncLog extends Model
 
     /**
      * ดึง label สำหรับ type
-     *
-     * @return string
      */
     public function getTypeLabelAttribute(): string
     {
@@ -150,8 +143,6 @@ class AccountingFlowaccountSyncLog extends Model
 
     /**
      * ดึง label สำหรับ action
-     *
-     * @return string
      */
     public function getActionLabelAttribute(): string
     {
@@ -168,8 +159,6 @@ class AccountingFlowaccountSyncLog extends Model
 
     /**
      * ดึง badge class สำหรับ status
-     *
-     * @return string
      */
     public function getStatusBadgeAttribute(): string
     {

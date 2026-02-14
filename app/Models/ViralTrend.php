@@ -57,6 +57,7 @@ class ViralTrend extends Model
     public function calculateVelocity(): float
     {
         $hoursSinceStart = max(1, now()->diffInHours($this->started_at));
+
         return round($this->total_mentions / $hoursSinceStart, 2);
     }
 
@@ -72,7 +73,7 @@ class ViralTrend extends Model
             ->orderBy('snapshot_at', 'desc')
             ->first();
 
-        if (!$previousSnapshot) {
+        if (! $previousSnapshot) {
             $status = 'rising';
         } else {
             $previousVelocity = $previousSnapshot->mention_count /
@@ -82,7 +83,7 @@ class ViralTrend extends Model
                 $status = 'rising';
             } elseif ($currentVelocity < $previousVelocity * 0.8) {
                 $status = 'declining';
-            } elseif (!$this->peak_at && $previousVelocity > $currentVelocity) {
+            } elseif (! $this->peak_at && $previousVelocity > $currentVelocity) {
                 $status = 'peaked';
                 $this->peak_at = now();
             } else {
@@ -173,7 +174,7 @@ class ViralTrend extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'rising' => 'green',
             'peaked' => 'yellow',
             'stable' => 'blue',

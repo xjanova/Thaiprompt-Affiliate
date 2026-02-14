@@ -8,8 +8,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class GenerateProductQRCodeJob implements ShouldQueue
@@ -17,6 +17,7 @@ class GenerateProductQRCodeJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 60;
 
     /**
@@ -33,7 +34,7 @@ class GenerateProductQRCodeJob implements ShouldQueue
     {
         try {
             // Generate QR code content
-            $qrContent = config('app.url') . '/food-passport/' . $this->product->food_passport_id;
+            $qrContent = config('app.url').'/food-passport/'.$this->product->food_passport_id;
 
             // Generate QR code image
             $qrCode = QrCode::format('png')
@@ -43,7 +44,7 @@ class GenerateProductQRCodeJob implements ShouldQueue
                 ->generate($qrContent);
 
             // Store QR code
-            $filename = 'qr-codes/' . $this->product->food_passport_id . '.png';
+            $filename = 'qr-codes/'.$this->product->food_passport_id.'.png';
             Storage::disk('public')->put($filename, $qrCode);
 
             // Update product with QR code URL

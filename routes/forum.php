@@ -12,11 +12,11 @@
  * - รายงาน
  */
 
-use App\Http\Controllers\Forum\ForumController;
 use App\Http\Controllers\Forum\ForumCategoryController;
-use App\Http\Controllers\Forum\ForumThreadController;
+use App\Http\Controllers\Forum\ForumController;
 use App\Http\Controllers\Forum\ForumPostController;
 use App\Http\Controllers\Forum\ForumReportController;
+use App\Http\Controllers\Forum\ForumThreadController;
 use Illuminate\Support\Facades\Route;
 
 /*

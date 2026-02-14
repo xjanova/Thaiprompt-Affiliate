@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -24,14 +24,12 @@ class LanguageSwitcherController extends Controller
     /**
      * เปลี่ยนภาษา
      *
-     * @param Request $request
-     * @param string $lang ISO language code
-     * @return RedirectResponse
+     * @param  string  $lang  ISO language code
      */
     public function switch(Request $request, string $lang): RedirectResponse
     {
         // ตรวจสอบว่าภาษารองรับหรือไม่
-        if (!in_array($lang, self::SUPPORTED_LANGUAGES)) {
+        if (! in_array($lang, self::SUPPORTED_LANGUAGES)) {
             return redirect()->back()->with('error', 'ภาษาไม่รองรับ');
         }
 
@@ -53,9 +51,6 @@ class LanguageSwitcherController extends Controller
 
     /**
      * ดึงภาษาปัจจุบัน
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
      */
     public function current(Request $request): \Illuminate\Http\JsonResponse
     {

@@ -19,8 +19,7 @@ class KeywordABTestService
     /**
      * สร้าง A/B test ใหม่
      *
-     * @param array $data ข้อมูล test
-     * @return KeywordABTest
+     * @param  array  $data  ข้อมูล test
      *
      * @throws \Exception
      */
@@ -64,7 +63,7 @@ class KeywordABTestService
             // Log creation
             activity()
                 ->performedOn($test)
-                ->log('สร้าง A/B test ใหม่: ' . $test->test_name);
+                ->log('สร้าง A/B test ใหม่: '.$test->test_name);
 
             return $test->fresh(['variants']);
         });
@@ -73,9 +72,7 @@ class KeywordABTestService
     /**
      * เริ่มทดสอบ
      *
-     * @param KeywordABTest $test
-     * @param \Carbon\Carbon|null $startTime
-     * @return KeywordABTest
+     * @param  \Carbon\Carbon|null  $startTime
      */
     public function startTest(KeywordABTest $test, $startTime = null): KeywordABTest
     {
@@ -86,7 +83,7 @@ class KeywordABTestService
 
         activity()
             ->performedOn($test)
-            ->log('เริ่มการทดสอบ: ' . $test->test_name);
+            ->log('เริ่มการทดสอบ: '.$test->test_name);
 
         return $test;
     }
@@ -94,9 +91,7 @@ class KeywordABTestService
     /**
      * หยุดทดสอบ
      *
-     * @param KeywordABTest $test
-     * @param string $reason เหตุผล
-     * @return KeywordABTest
+     * @param  string  $reason  เหตุผล
      */
     public function pauseTest(KeywordABTest $test, string $reason = ''): KeywordABTest
     {
@@ -104,16 +99,13 @@ class KeywordABTestService
 
         activity()
             ->performedOn($test)
-            ->log('หยุดการทดสอบ' . ($reason ? ': ' . $reason : ''));
+            ->log('หยุดการทดสอบ'.($reason ? ': '.$reason : ''));
 
         return $test;
     }
 
     /**
      * จบการทดสอบ
-     *
-     * @param KeywordABTest $test
-     * @return KeywordABTest
      */
     public function completeTest(KeywordABTest $test): KeywordABTest
     {
@@ -131,7 +123,7 @@ class KeywordABTestService
 
             activity()
                 ->performedOn($test)
-                ->log('จบการทดสอบ - ผู้ชนะ: ' . ($results['winner'] ?? 'ไม่ได้กำหนด'));
+                ->log('จบการทดสอบ - ผู้ชนะ: '.($results['winner'] ?? 'ไม่ได้กำหนด'));
 
             return $test;
         });
@@ -142,7 +134,6 @@ class KeywordABTestService
      *
      * เลือก variant A หรือ B โดยอิงจากเปอร์เซ็นต์
      *
-     * @param KeywordABTest $test
      * @return string variant_a หรือ variant_b
      */
     public function selectVariant(KeywordABTest $test): string
@@ -155,9 +146,7 @@ class KeywordABTestService
     /**
      * บันทึกผลการทดสอบ
      *
-     * @param KeywordABTest $test
-     * @param array $data ข้อมูลผล
-     * @return KeywordABTestResult
+     * @param  array  $data  ข้อมูลผล
      */
     public function recordResult(KeywordABTest $test, array $data): KeywordABTestResult
     {
@@ -186,16 +175,13 @@ class KeywordABTestService
 
     /**
      * วิเคราะห์ผลลัพธ์และกำหนด winner
-     *
-     * @param KeywordABTest $test
-     * @return array
      */
     public function analyzeResults(KeywordABTest $test): array
     {
         $variantA = $test->variantA();
         $variantB = $test->variantB();
 
-        if (!$variantA || !$variantB) {
+        if (! $variantA || ! $variantB) {
             return [
                 'winner' => null,
                 'winner_confidence' => 0,
@@ -238,9 +224,7 @@ class KeywordABTestService
     /**
      * ได้ค่า metric สำหรับ variant
      *
-     * @param KeywordABTestVariant $variant
-     * @param string $criterion เกณฑ์
-     * @return float
+     * @param  string  $criterion  เกณฑ์
      */
     private function getMetricValue(KeywordABTestVariant $variant, string $criterion): float
     {
@@ -257,12 +241,6 @@ class KeywordABTestService
 
     /**
      * คำนวณความมั่นใจทางสถิติ (Chi-square test)
-     *
-     * @param KeywordABTest $test
-     * @param KeywordABTestVariant $variantA
-     * @param KeywordABTestVariant $variantB
-     * @param string $criterion
-     * @return float
      */
     private function calculateStatisticalConfidence(
         KeywordABTest $test,
@@ -306,11 +284,6 @@ class KeywordABTestService
 
     /**
      * ได้ reason text สำหรับผู้ชนะ
-     *
-     * @param string $criterion
-     * @param string $winner
-     * @param float $difference
-     * @return string
      */
     private function getWinnerReason(string $criterion, string $winner, float $difference): string
     {
@@ -327,9 +300,6 @@ class KeywordABTestService
 
     /**
      * ได้สรุปผล A/B test
-     *
-     * @param KeywordABTest $test
-     * @return array
      */
     public function getTestSummary(KeywordABTest $test): array
     {
@@ -362,9 +332,6 @@ class KeywordABTestService
 
     /**
      * ได้รายการทดสอบทั้งหมด
-     *
-     * @param int $limit
-     * @return Collection
      */
     public function getAllTests(int $limit = 20): Collection
     {
@@ -377,8 +344,6 @@ class KeywordABTestService
 
     /**
      * ได้ active tests เท่านั้น
-     *
-     * @return Collection
      */
     public function getActiveTests(): Collection
     {
@@ -390,8 +355,6 @@ class KeywordABTestService
 
     /**
      * ได้ completed tests เท่านั้น
-     *
-     * @return Collection
      */
     public function getCompletedTests(): Collection
     {
@@ -403,8 +366,6 @@ class KeywordABTestService
 
     /**
      * ได้สถิติสำหรับ dashboard
-     *
-     * @return array
      */
     public function getDashboardStats(): array
     {
@@ -447,8 +408,6 @@ class KeywordABTestService
 
     /**
      * ได้ recommendations สำหรับการปรับปรุง
-     *
-     * @return array
      */
     public function getRecommendations(): array
     {
@@ -471,7 +430,7 @@ class KeywordABTestService
         // ตรวจสอบ tests ที่ไม่มี samples เพียงพอ
         $insufficientSamples = KeywordABTest::active()
             ->get()
-            ->filter(fn ($test) => !$test->hasSufficientSamples())
+            ->filter(fn ($test) => ! $test->hasSufficientSamples())
             ->count();
 
         if ($insufficientSamples > 0) {
@@ -503,14 +462,12 @@ class KeywordABTestService
     /**
      * Apply winner variant ให้เป็น keyword หลัก
      *
-     * @param KeywordABTest $test
-     * @return LineBotKeyword
      *
      * @throws \Exception
      */
     public function applyWinner(KeywordABTest $test): LineBotKeyword
     {
-        if (!$test->winner) {
+        if (! $test->winner) {
             throw new \Exception('ยังไม่มี winner สำหรับ test นี้');
         }
 
@@ -528,7 +485,7 @@ class KeywordABTestService
             // Log the change
             activity()
                 ->performedOn($keyword)
-                ->log('นำไปใช้ ' . $winnerVariant->getVariantLabel() . ' จาก A/B test: ' . $test->test_name);
+                ->log('นำไปใช้ '.$winnerVariant->getVariantLabel().' จาก A/B test: '.$test->test_name);
 
             return $keyword;
         });

@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
@@ -181,7 +181,7 @@ class VideoMissionCompletion extends Model
 
         // สร้าง session token อัตโนมัติ
         static::creating(function ($model) {
-            if (!$model->session_token) {
+            if (! $model->session_token) {
                 $model->session_token = static::generateSessionToken();
             }
 
@@ -193,7 +193,7 @@ class VideoMissionCompletion extends Model
             $model->completion_year = $now->year;
 
             // ตั้งค่า started_at
-            if (!$model->started_at) {
+            if (! $model->started_at) {
                 $model->started_at = $now;
             }
         });
@@ -203,8 +203,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -213,8 +211,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ความสัมพันธ์กับ VideoMission
-     *
-     * @return BelongsTo
      */
     public function mission(): BelongsTo
     {
@@ -223,8 +219,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ความสัมพันธ์กับ Admin ที่ verify
-     *
-     * @return BelongsTo
      */
     public function verifier(): BelongsTo
     {
@@ -233,8 +227,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ความสัมพันธ์กับ Admin ที่ reject
-     *
-     * @return BelongsTo
      */
     public function rejecter(): BelongsTo
     {
@@ -321,8 +313,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ดึงสถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -341,8 +331,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ดึงสี status
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
@@ -361,8 +349,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ดึง icon status
-     *
-     * @return string
      */
     public function getStatusIconAttribute(): string
     {
@@ -381,27 +367,25 @@ class VideoMissionCompletion extends Model
 
     /**
      * ดึงรางวัลรวม
-     *
-     * @return string
      */
     public function getRewardSummaryAttribute(): string
     {
         $rewards = [];
 
         if ($this->reward_money > 0) {
-            $rewards[] = '฿' . number_format($this->reward_money, 2);
+            $rewards[] = '฿'.number_format($this->reward_money, 2);
         }
         if ($this->reward_coins > 0) {
-            $rewards[] = number_format($this->reward_coins) . ' Coins';
+            $rewards[] = number_format($this->reward_coins).' Coins';
         }
         if ($this->reward_points > 0) {
-            $rewards[] = number_format($this->reward_points) . ' แต้ม';
+            $rewards[] = number_format($this->reward_points).' แต้ม';
         }
         if ($this->reward_tpix > 0) {
-            $rewards[] = number_format($this->reward_tpix, 4) . ' TPIX';
+            $rewards[] = number_format($this->reward_tpix, 4).' TPIX';
         }
         if ($this->reward_exp > 0) {
-            $rewards[] = number_format($this->reward_exp) . ' EXP';
+            $rewards[] = number_format($this->reward_exp).' EXP';
         }
 
         return implode(' + ', $rewards) ?: '-';
@@ -409,57 +393,51 @@ class VideoMissionCompletion extends Model
 
     /**
      * ดึงเวลาที่ดูในรูปแบบอ่านง่าย
-     *
-     * @return string
      */
     public function getWatchedTimeFormattedAttribute(): string
     {
         $seconds = $this->watched_seconds;
 
         if ($seconds < 60) {
-            return $seconds . ' วินาที';
+            return $seconds.' วินาที';
         }
 
         $minutes = floor($seconds / 60);
         $remainingSeconds = $seconds % 60;
 
         if ($remainingSeconds > 0) {
-            return $minutes . ':' . str_pad($remainingSeconds, 2, '0', STR_PAD_LEFT);
+            return $minutes.':'.str_pad($remainingSeconds, 2, '0', STR_PAD_LEFT);
         }
 
-        return $minutes . ' นาที';
+        return $minutes.' นาที';
     }
 
     /**
      * ดึงระยะเวลาที่ใช้ทำภารกิจ
-     *
-     * @return string|null
      */
     public function getDurationAttribute(): ?string
     {
-        if (!$this->started_at || !$this->completed_at) {
+        if (! $this->started_at || ! $this->completed_at) {
             return null;
         }
 
         $diff = $this->started_at->diff($this->completed_at);
 
         if ($diff->h > 0) {
-            return $diff->h . ' ชม. ' . $diff->i . ' นาที';
+            return $diff->h.' ชม. '.$diff->i.' นาที';
         }
 
         if ($diff->i > 0) {
-            return $diff->i . ' นาที ' . $diff->s . ' วินาที';
+            return $diff->i.' นาที '.$diff->s.' วินาที';
         }
 
-        return $diff->s . ' วินาที';
+        return $diff->s.' วินาที';
     }
 
     // ==================== METHODS ====================
 
     /**
      * สร้าง session token
-     *
-     * @return string
      */
     public static function generateSessionToken(): string
     {
@@ -469,9 +447,8 @@ class VideoMissionCompletion extends Model
     /**
      * อัพเดท heartbeat
      *
-     * @param int $currentPosition ตำแหน่งปัจจุบันในวิดีโอ (วินาที)
-     * @param float $playbackSpeed ความเร็วในการเล่น
-     * @return void
+     * @param  int  $currentPosition  ตำแหน่งปัจจุบันในวิดีโอ (วินาที)
+     * @param  float  $playbackSpeed  ความเร็วในการเล่น
      */
     public function recordHeartbeat(int $currentPosition, float $playbackSpeed = 1.0): void
     {
@@ -489,9 +466,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * อัพเดทเวลาที่ดูไป
-     *
-     * @param int $currentPosition
-     * @return void
      */
     public function updateWatchedSeconds(int $currentPosition): void
     {
@@ -499,14 +473,14 @@ class VideoMissionCompletion extends Model
         $segments = $this->watch_segments ?? [];
         $lastSegmentEnd = 0;
 
-        if (!empty($segments)) {
+        if (! empty($segments)) {
             $lastSegment = end($segments);
             $lastSegmentEnd = $lastSegment['end'] ?? 0;
         }
 
         // ถ้าตำแหน่งใหม่ต่อเนื่องจากที่เดิม
         if ($currentPosition >= $lastSegmentEnd) {
-            if (!empty($segments)) {
+            if (! empty($segments)) {
                 $segments[count($segments) - 1]['end'] = $currentPosition;
             } else {
                 $segments[] = ['start' => 0, 'end' => $currentPosition];
@@ -536,8 +510,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึกการสลับ tab
-     *
-     * @return void
      */
     public function recordTabSwitch(): void
     {
@@ -555,8 +527,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึกการหยุดวิดีโอ
-     *
-     * @return void
      */
     public function recordPause(): void
     {
@@ -566,8 +536,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึกการเล่นต่อ
-     *
-     * @return void
      */
     public function recordResume(): void
     {
@@ -576,10 +544,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึกการกระโดดข้าม (seek)
-     *
-     * @param int $fromPosition
-     * @param int $toPosition
-     * @return void
      */
     public function recordSeek(int $fromPosition, int $toPosition): void
     {
@@ -606,8 +570,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึกการหลุด focus
-     *
-     * @return void
      */
     public function recordFocusLost(): void
     {
@@ -624,8 +586,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * บันทึก interaction (click, mouse move, etc.)
-     *
-     * @return void
      */
     public function recordInteraction(): void
     {
@@ -641,9 +601,8 @@ class VideoMissionCompletion extends Model
     /**
      * บันทึกการพยายามโกง (DevTools, speed change, etc.)
      *
-     * @param string $type ประเภทการโกง
-     * @param array $details รายละเอียดเพิ่มเติม
-     * @return void
+     * @param  string  $type  ประเภทการโกง
+     * @param  array  $details  รายละเอียดเพิ่มเติม
      */
     public function recordCheatAttempt(string $type, array $details = []): void
     {
@@ -668,9 +627,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * นับจำนวน devtools_detected (การโกงที่ตรวจพบจริง) ของ user
-     *
-     * @param int $userId
-     * @return int
      */
     public static function countUserDevToolsDetected(int $userId): int
     {
@@ -694,14 +650,13 @@ class VideoMissionCompletion extends Model
     /**
      * ตรวจสอบว่า user ถูกแบนจากระบบ video missions หรือไม่
      *
-     * @param int $userId
      * @return array ['banned' => bool, 'reason' => string|null, 'banned_at' => \Carbon\Carbon|null]
      */
     public static function checkUserVideoMissionBan(int $userId): array
     {
         $user = \App\Models\User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return ['banned' => true, 'reason' => 'ไม่พบผู้ใช้', 'banned_at' => null];
         }
 
@@ -719,16 +674,12 @@ class VideoMissionCompletion extends Model
 
     /**
      * แบน user จากระบบ video missions
-     *
-     * @param int $userId
-     * @param string $reason
-     * @return bool
      */
     public static function banUserFromVideoMissions(int $userId, string $reason): bool
     {
         $user = \App\Models\User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -742,8 +693,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ทำเครื่องหมายว่าดูจบ
-     *
-     * @return void
      */
     public function markCompleted(): void
     {
@@ -813,9 +762,8 @@ class VideoMissionCompletion extends Model
     /**
      * ยืนยันการทำภารกิจ
      *
-     * @param int|null $verifierId ID ของ Admin ที่ verify
-     * @param string|null $notes หมายเหตุ
-     * @return bool
+     * @param  int|null  $verifierId  ID ของ Admin ที่ verify
+     * @param  string|null  $notes  หมายเหตุ
      */
     public function verify(?int $verifierId = null, ?string $notes = null): bool
     {
@@ -823,12 +771,13 @@ class VideoMissionCompletion extends Model
         $suspiciousScore = $this->calculateSuspiciousScore();
 
         // ถ้าน่าสงสัยมาก ไม่ให้ผ่าน auto
-        if ($suspiciousScore >= 70 && !$verifierId) {
+        if ($suspiciousScore >= 70 && ! $verifierId) {
             $this->update([
                 'is_suspicious' => true,
                 'verification_score' => $suspiciousScore,
                 'verification_notes' => 'ต้องรอ Admin ตรวจสอบ - คะแนนน่าสงสัยสูง',
             ]);
+
             return false;
         }
 
@@ -848,9 +797,8 @@ class VideoMissionCompletion extends Model
     /**
      * ปฏิเสธการทำภารกิจ
      *
-     * @param int|null $rejecterId ID ของ Admin ที่ reject
-     * @param string|null $reason เหตุผล
-     * @return void
+     * @param  int|null  $rejecterId  ID ของ Admin ที่ reject
+     * @param  string|null  $reason  เหตุผล
      */
     public function reject(?int $rejecterId = null, ?string $reason = null): void
     {
@@ -865,8 +813,7 @@ class VideoMissionCompletion extends Model
     /**
      * ให้รางวัล
      *
-     * @param float $multiplier ตัวคูณรางวัล
-     * @return bool
+     * @param  float  $multiplier  ตัวคูณรางวัล
      */
     public function giveRewards(float $multiplier = 1.0): bool
     {
@@ -879,7 +826,7 @@ class VideoMissionCompletion extends Model
         }
 
         $mission = $this->mission;
-        if (!$mission) {
+        if (! $mission) {
             return false;
         }
 
@@ -907,8 +854,7 @@ class VideoMissionCompletion extends Model
     /**
      * ตรวจสอบว่า session ยังใช้ได้หรือไม่ (ไม่ expired)
      *
-     * @param int $timeoutMinutes timeout (นาที)
-     * @return bool
+     * @param  int  $timeoutMinutes  timeout (นาที)
      */
     public function isSessionValid(int $timeoutMinutes = 30): bool
     {
@@ -916,7 +862,7 @@ class VideoMissionCompletion extends Model
             return false;
         }
 
-        if (!$this->last_heartbeat_at) {
+        if (! $this->last_heartbeat_at) {
             // ถ้ายังไม่มี heartbeat ใช้ started_at
             $lastActivity = $this->started_at ?? $this->created_at;
         } else {
@@ -928,8 +874,6 @@ class VideoMissionCompletion extends Model
 
     /**
      * ทำให้ session หมดอายุ
-     *
-     * @return void
      */
     public function expire(): void
     {

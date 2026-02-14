@@ -15,7 +15,7 @@ class AiGenProviderFactory
             ->where('is_active', true)
             ->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return null;
         }
 
@@ -29,7 +29,7 @@ class AiGenProviderFactory
     {
         $className = self::getProviderClassName($provider->slug);
 
-        if (!class_exists($className)) {
+        if (! class_exists($className)) {
             return null;
         }
 
@@ -43,7 +43,8 @@ class AiGenProviderFactory
     {
         // Convert slug to class name (e.g., 'freepik' -> 'FreepikProvider')
         $className = str_replace('-', '', ucwords($slug, '-'));
-        return __NAMESPACE__ . '\\' . $className . 'Provider';
+
+        return __NAMESPACE__.'\\'.$className.'Provider';
     }
 
     /**
@@ -76,6 +77,7 @@ class AiGenProviderFactory
     public static function isAvailable(string $providerSlug): bool
     {
         $instance = self::create($providerSlug);
+
         return $instance && $instance->isConfigured();
     }
 }

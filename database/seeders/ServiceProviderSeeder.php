@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\ServiceProvider;
 use App\Models\ServiceArea;
+use App\Models\ServiceProvider;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -268,8 +268,6 @@ class ServiceProviderSeeder extends Seeder
 
     /**
      * สร้างข้อมูลผู้ให้บริการตัวอย่าง
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -278,8 +276,9 @@ class ServiceProviderSeeder extends Seeder
         // หา owner (admin user)
         $owner = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->command->error('❌ ไม่พบ User สำหรับเป็น owner');
+
             return;
         }
 
@@ -291,6 +290,7 @@ class ServiceProviderSeeder extends Seeder
             $existing = ServiceProvider::where('email', $providerData['email'])->first();
             if ($existing) {
                 $this->command->warn("  ⚠️  ผู้ให้บริการ '{$providerData['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

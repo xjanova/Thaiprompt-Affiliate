@@ -38,7 +38,7 @@ trait SafeMigration
      */
     protected function safeAddColumn(Blueprint $table, string $tableName, string $columnName, callable $definition): void
     {
-        if (!Schema::hasColumn($tableName, $columnName)) {
+        if (! Schema::hasColumn($tableName, $columnName)) {
             $definition($table);
         }
     }
@@ -57,7 +57,7 @@ trait SafeMigration
             }
         }
 
-        if (!empty($existingColumns)) {
+        if (! empty($existingColumns)) {
             Schema::table($tableName, function (Blueprint $table) use ($existingColumns) {
                 $table->dropColumn($existingColumns);
             });
@@ -67,12 +67,12 @@ trait SafeMigration
     /**
      * เพิ่ม index อย่างปลอดภัย - จะไม่ error ถ้า index มีอยู่แล้ว
      */
-    protected function safeAddIndex(string $tableName, string|array $columns, string $indexName = null, string $type = 'index'): void
+    protected function safeAddIndex(string $tableName, string|array $columns, ?string $indexName = null, string $type = 'index'): void
     {
         $columns = is_array($columns) ? $columns : [$columns];
         $indexName = $indexName ?? $this->generateIndexName($tableName, $columns, $type);
 
-        if (!$this->indexExists($tableName, $indexName)) {
+        if (! $this->indexExists($tableName, $indexName)) {
             Schema::table($tableName, function (Blueprint $table) use ($columns, $indexName, $type) {
                 switch ($type) {
                     case 'unique':
@@ -104,11 +104,11 @@ trait SafeMigration
     /**
      * เพิ่ม foreign key อย่างปลอดภัย
      */
-    protected function safeAddForeign(string $tableName, string $column, string $foreignTable, string $foreignColumn = 'id', string $constraintName = null): void
+    protected function safeAddForeign(string $tableName, string $column, string $foreignTable, string $foreignColumn = 'id', ?string $constraintName = null): void
     {
         $constraintName = $constraintName ?? "{$tableName}_{$column}_foreign";
 
-        if (!$this->foreignKeyExists($tableName, $constraintName)) {
+        if (! $this->foreignKeyExists($tableName, $constraintName)) {
             Schema::table($tableName, function (Blueprint $table) use ($column, $foreignTable, $foreignColumn, $constraintName) {
                 $table->foreign($column, $constraintName)
                     ->references($foreignColumn)
@@ -133,44 +133,45 @@ trait SafeMigration
     /**
      * เช็คว่า index มีอยู่หรือไม่
      *
-     * Laravel 11 compatible - ไม่ใช้ Doctrine DBAL
+     * Laravel 11 compatible - ใช้ Schema::getIndexes() รองรับทุก database driver
      */
     protected function indexExists(string $tableName, string $indexName): bool
     {
-        $connection = Schema::getConnection();
-        $databaseName = $connection->getDatabaseName();
+        try {
+            $indexes = Schema::getIndexes($tableName);
 
-        // ใช้ raw SQL query แทน Doctrine
-        $indexes = $connection->select(
-            "SELECT DISTINCT INDEX_NAME
-             FROM INFORMATION_SCHEMA.STATISTICS
-             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?",
-            [$databaseName, $tableName, $indexName]
-        );
+            foreach ($indexes as $index) {
+                if ($index['name'] === $indexName) {
+                    return true;
+                }
+            }
 
-        return !empty($indexes);
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
      * เช็คว่า foreign key มีอยู่หรือไม่
      *
-     * Laravel 11 compatible - ไม่ใช้ Doctrine DBAL
+     * Laravel 11 compatible - ใช้ Schema::getForeignKeys() รองรับทุก database driver
      */
     protected function foreignKeyExists(string $tableName, string $constraintName): bool
     {
-        $connection = Schema::getConnection();
-        $databaseName = $connection->getDatabaseName();
+        try {
+            $foreignKeys = Schema::getForeignKeys($tableName);
 
-        // ใช้ raw SQL query แทน Doctrine
-        $foreignKeys = $connection->select(
-            "SELECT CONSTRAINT_NAME
-             FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
-             AND CONSTRAINT_TYPE = 'FOREIGN KEY' AND CONSTRAINT_NAME = ?",
-            [$databaseName, $tableName, $constraintName]
-        );
+            foreach ($foreignKeys as $foreignKey) {
+                if ($foreignKey['name'] === $constraintName) {
+                    return true;
+                }
+            }
 
-        return !empty($foreignKeys);
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -178,13 +179,13 @@ trait SafeMigration
      */
     protected function generateIndexName(string $tableName, array $columns, string $type): string
     {
-        $suffix = match($type) {
+        $suffix = match ($type) {
             'unique' => 'unique',
             'fulltext' => 'fulltext',
             default => 'index',
         };
 
-        return strtolower($tableName . '_' . implode('_', $columns) . '_' . $suffix);
+        return strtolower($tableName.'_'.implode('_', $columns).'_'.$suffix);
     }
 
     /**
@@ -202,7 +203,7 @@ trait SafeMigration
      */
     protected function safeRenameColumn(string $tableName, string $from, string $to): void
     {
-        if (Schema::hasColumn($tableName, $from) && !Schema::hasColumn($tableName, $to)) {
+        if (Schema::hasColumn($tableName, $from) && ! Schema::hasColumn($tableName, $to)) {
             Schema::table($tableName, function (Blueprint $table) use ($from, $to) {
                 $table->renameColumn($from, $to);
             });
@@ -214,7 +215,7 @@ trait SafeMigration
      */
     protected function safeCreateTable(string $tableName, callable $callback): void
     {
-        if (!Schema::hasTable($tableName)) {
+        if (! Schema::hasTable($tableName)) {
             Schema::create($tableName, $callback);
         }
     }

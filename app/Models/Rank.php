@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Rank extends Model
 {
@@ -141,6 +140,7 @@ class Rank extends Model
     public function getDisplayNameAttribute(): string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->name_th ? $this->name_th : $this->name;
     }
 
@@ -150,6 +150,7 @@ class Rank extends Model
     public function getDisplayDescriptionAttribute(): ?string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->description_th ? $this->description_th : $this->description;
     }
 
@@ -158,7 +159,7 @@ class Rank extends Model
      */
     public function getIconUrlAttribute(): ?string
     {
-        if (!$this->icon) {
+        if (! $this->icon) {
             return null;
         }
 
@@ -179,12 +180,13 @@ class Rank extends Model
      */
     public function isIconEmoji(): bool
     {
-        if (!$this->icon) {
+        if (! $this->icon) {
             return false;
         }
 
         // Emoji pattern - ตรวจสอบว่ามี emoji character หรือไม่
         $emojiPattern = '/[\x{1F300}-\x{1F9FF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}]/u';
+
         return preg_match($emojiPattern, $this->icon) === 1;
     }
 
@@ -193,7 +195,7 @@ class Rank extends Model
      */
     public function isIconFontAwesome(): bool
     {
-        if (!$this->icon) {
+        if (! $this->icon) {
             return false;
         }
 
@@ -206,7 +208,7 @@ class Rank extends Model
      */
     public function isIconImage(): bool
     {
-        if (!$this->icon) {
+        if (! $this->icon) {
             return false;
         }
 
@@ -218,16 +220,18 @@ class Rank extends Model
         // ตรวจสอบ extension
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
         $extension = strtolower(pathinfo($this->icon, PATHINFO_EXTENSION));
+
         return in_array($extension, $imageExtensions);
     }
 
     /**
      * ดึง icon type สำหรับการ render
+     *
      * @return string 'emoji'|'fontawesome'|'image'|'none'
      */
     public function getIconTypeAttribute(): string
     {
-        if (!$this->icon) {
+        if (! $this->icon) {
             return 'none';
         }
 
@@ -271,7 +275,7 @@ class Rank extends Model
      */
     public function getBadgeIconUrlAttribute(): ?string
     {
-        if (!$this->badge_icon) {
+        if (! $this->badge_icon) {
             return null;
         }
 
@@ -288,7 +292,7 @@ class Rank extends Model
      */
     public function getAvatarFrameUrlAttribute(): ?string
     {
-        if (!$this->avatar_frame) {
+        if (! $this->avatar_frame) {
             return null;
         }
 
@@ -296,7 +300,7 @@ class Rank extends Model
             return $this->avatar_frame;
         }
 
-        return asset('storage/' . $this->avatar_frame);
+        return asset('storage/'.$this->avatar_frame);
     }
 
     /**
@@ -304,7 +308,7 @@ class Rank extends Model
      */
     public function hasCustomFrame(): bool
     {
-        return !empty($this->avatar_frame);
+        return ! empty($this->avatar_frame);
     }
 
     /**
@@ -387,7 +391,7 @@ class Rank extends Model
     /**
      * ดึงเปอร์เซ็นต์คอมมิชชันสำหรับชั้นลูกทีมที่ระบุ
      *
-     * @param int $downlineLevel ระดับลูกทีม (1 = ลูกตรง, 2 = ลูกของลูก, ...)
+     * @param  int  $downlineLevel  ระดับลูกทีม (1 = ลูกตรง, 2 = ลูกของลูก, ...)
      * @return float เปอร์เซ็นต์คอมมิชชัน
      */
     public function getDownlineCommissionRate(int $downlineLevel): float
@@ -411,12 +415,11 @@ class Rank extends Model
     /**
      * ตรวจสอบว่าผู้ใช้มีสิทธิพิเศษที่ระบุหรือไม่
      *
-     * @param string $privilege รหัสสิทธิพิเศษ
-     * @return bool
+     * @param  string  $privilege  รหัสสิทธิพิเศษ
      */
     public function hasPrivilege(string $privilege): bool
     {
-        if (!$this->privileges) {
+        if (! $this->privileges) {
             return false;
         }
 
@@ -425,15 +428,13 @@ class Rank extends Model
 
     /**
      * ดึงรายการสิทธิพิเศษทั้งหมดพร้อมคำอธิบาย
-     *
-     * @return array
      */
     public function getPrivilegesWithDescriptions(): array
     {
         $allPrivileges = self::getAvailablePrivileges();
         $result = [];
 
-        if (!$this->privileges) {
+        if (! $this->privileges) {
             return $result;
         }
 
@@ -448,8 +449,6 @@ class Rank extends Model
 
     /**
      * รายการสิทธิพิเศษที่มีในระบบ
-     *
-     * @return array
      */
     public static function getAvailablePrivileges(): array
     {
@@ -529,8 +528,6 @@ class Rank extends Model
 
     /**
      * ดึงระดับเริ่มต้น (Bronze)
-     *
-     * @return Rank|null
      */
     public static function getDefaultRank(): ?Rank
     {
@@ -541,8 +538,6 @@ class Rank extends Model
 
     /**
      * ดึงระดับสูงสุด (Legend)
-     *
-     * @return Rank|null
      */
     public static function getTopTierRank(): ?Rank
     {
@@ -562,7 +557,7 @@ class Rank extends Model
     /**
      * คำนวณคอมมิชชันรวมสำหรับยอดขายที่กำหนด
      *
-     * @param float $saleAmount ยอดขาย
+     * @param  float  $saleAmount  ยอดขาย
      * @return float จำนวนคอมมิชชัน
      */
     public function calculateCommission(float $saleAmount): float

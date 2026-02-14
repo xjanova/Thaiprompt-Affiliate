@@ -23,8 +23,9 @@ class MlmGlobalSettingSeeder extends Seeder
     {
         $setting = MlmGlobalSetting::first();
 
-        if (!$setting) {
+        if (! $setting) {
             $this->command->warn('⚠️  No MLM Global Settings found. Please run MLM seeders first.');
+
             return;
         }
 
@@ -37,9 +38,10 @@ class MlmGlobalSettingSeeder extends Seeder
             'require_line_verification',
         ]);
 
-        if (!$hasProspectColumns) {
+        if (! $hasProspectColumns) {
             $this->command->warn('⚠️  Prospect columns not found. Please run migration: 2025_11_08_000004_add_prospect_settings_to_mlm_global_settings_table');
             $this->command->info('💡 Skipping MlmGlobalSettingSeeder...');
+
             return;
         }
 
@@ -66,7 +68,7 @@ class MlmGlobalSettingSeeder extends Seeder
             }
         }
 
-        if (!empty($updates)) {
+        if (! empty($updates)) {
             $setting->update($updates);
             $this->command->info("✅ Updated {$updated} MLM Global Settings with default values.");
         }

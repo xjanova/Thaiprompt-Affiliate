@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง app_banners มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('app_banners')) {
+        if (! Schema::hasTable('app_banners')) {
             return;
         }
 

@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_settings
      * เก็บการตั้งค่าระบบ Video Automation รวมถึง API keys
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -49,8 +47,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_settings
-     *
-     * @return void
      */
     public function down(): void
     {

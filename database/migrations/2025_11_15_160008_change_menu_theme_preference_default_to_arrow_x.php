@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration: เปลี่ยน default value ของ menu_theme_preference เป็น arrow-x
@@ -15,24 +15,22 @@ return new class extends Migration
     /**
      * เปลี่ยน default value ของ menu_theme_preference เป็น arrow-x
      * และอัพเดทผู้ใช้ที่มีอยู่แล้วให้ใช้ arrow-x ทั้งหมด
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 
         // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
-        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+        if (! Schema::hasColumn('users', 'menu_theme_preference')) {
             return;
         }
 
         // อัพเดทผู้ใช้ทั้งหมดให้ใช้ arrow-x
         DB::table('users')->update([
-            'menu_theme_preference' => 'arrow-x'
+            'menu_theme_preference' => 'arrow-x',
         ]);
 
         // เปลี่ยน default value ของคอลัมน์เป็น arrow-x
@@ -45,18 +43,16 @@ return new class extends Migration
 
     /**
      * ย้อนกลับการเปลี่ยนแปลง
-     *
-     * @return void
      */
     public function down(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 
         // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
-        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+        if (! Schema::hasColumn('users', 'menu_theme_preference')) {
             return;
         }
 

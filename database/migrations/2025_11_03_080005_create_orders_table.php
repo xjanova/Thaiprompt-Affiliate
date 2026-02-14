@@ -26,7 +26,7 @@ return new class extends Migration
                 'delivered',        // ส่งถึงแล้ว
                 'completed',        // สำเร็จ
                 'cancelled',        // ยกเลิก
-                'refunded'          // คืนเงิน
+                'refunded',          // คืนเงิน
             ])->default('pending');
 
             // Pricing

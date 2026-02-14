@@ -34,7 +34,7 @@ return new class extends Migration
                 'in_progress',  // กำลังสมัคร (กรอกข้อมูล)
                 'completed',    // สมัครเสร็จแล้ว
                 'expired',      // หมดอายุ
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('pending');
 
             // ข้อมูลการล็อก

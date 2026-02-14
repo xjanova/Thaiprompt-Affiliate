@@ -131,8 +131,6 @@ class StarUpgradePrice extends Model
 
     /**
      * ประวัติการอัพเกรดมาดาวนี้
-     *
-     * @return HasMany
      */
     public function upgradeHistory(): HasMany
     {
@@ -145,8 +143,6 @@ class StarUpgradePrice extends Model
 
     /**
      * ชื่อที่แสดง
-     *
-     * @return string
      */
     public function getDisplayNameAttribute(): string
     {
@@ -155,8 +151,6 @@ class StarUpgradePrice extends Model
 
     /**
      * คำอธิบายที่แสดง
-     *
-     * @return string|null
      */
     public function getDisplayDescriptionAttribute(): ?string
     {
@@ -165,8 +159,6 @@ class StarUpgradePrice extends Model
 
     /**
      * ข้อมูลสีดาว
-     *
-     * @return array
      */
     public function getStarColorInfoAttribute(): array
     {
@@ -175,8 +167,6 @@ class StarUpgradePrice extends Model
 
     /**
      * ชื่อสีดาว
-     *
-     * @return string
      */
     public function getStarColorNameAttribute(): string
     {
@@ -185,8 +175,6 @@ class StarUpgradePrice extends Model
 
     /**
      * Hex สีดาว
-     *
-     * @return string
      */
     public function getStarColorHexAttribute(): string
     {
@@ -195,8 +183,6 @@ class StarUpgradePrice extends Model
 
     /**
      * Gradient class
-     *
-     * @return string
      */
     public function getGradientClassAttribute(): string
     {
@@ -205,8 +191,6 @@ class StarUpgradePrice extends Model
 
     /**
      * Background class
-     *
-     * @return string
      */
     public function getBgClassAttribute(): string
     {
@@ -215,12 +199,10 @@ class StarUpgradePrice extends Model
 
     /**
      * แสดงดาว (HTML)
-     *
-     * @return string
      */
     public function getStarsHtmlAttribute(): string
     {
-        $starSvg = '<svg class="w-5 h-5" style="color: ' . $this->star_color_hex . '" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>';
+        $starSvg = '<svg class="w-5 h-5" style="color: '.$this->star_color_hex.'" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>';
 
         return str_repeat($starSvg, $this->stars);
     }
@@ -259,9 +241,6 @@ class StarUpgradePrice extends Model
 
     /**
      * ดึงราคาตามจำนวนดาว
-     *
-     * @param int $stars
-     * @return self|null
      */
     public static function getByStars(int $stars): ?self
     {
@@ -281,9 +260,8 @@ class StarUpgradePrice extends Model
     /**
      * คำนวณราคาอัพเกรดจากดาวปัจจุบัน
      *
-     * @param int $currentStars ดาวปัจจุบัน
-     * @param int $targetStars ดาวที่ต้องการ
-     * @return float|null
+     * @param  int  $currentStars  ดาวปัจจุบัน
+     * @param  int  $targetStars  ดาวที่ต้องการ
      */
     public static function calculateUpgradePrice(int $currentStars, int $targetStars): ?float
     {
@@ -292,7 +270,7 @@ class StarUpgradePrice extends Model
         }
 
         $targetPrice = static::getByStars($targetStars);
-        if (!$targetPrice || !$targetPrice->is_active) {
+        if (! $targetPrice || ! $targetPrice->is_active) {
             return null;
         }
 

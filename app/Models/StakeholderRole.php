@@ -130,7 +130,7 @@ class StakeholderRole extends Model
     {
         $score = $this->reputation_score;
 
-        return match(true) {
+        return match (true) {
             $score >= 4.5 => 'Excellent',
             $score >= 4.0 => 'Very Good',
             $score >= 3.5 => 'Good',

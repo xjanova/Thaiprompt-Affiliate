@@ -3,13 +3,13 @@
 namespace App\Services\AiRental;
 
 use App\Models\AiRentalAlert;
-use App\Models\AiRentalDeployment;
 use App\Models\AiRentalBudgetLimit;
+use App\Models\AiRentalDeployment;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
-use Exception;
 
 /**
  * Monitoring Service สำหรับ AI Rental System
@@ -20,9 +20,6 @@ class MonitoringService
 {
     /**
      * สร้าง alert ใหม่
-     *
-     * @param array $data
-     * @return AiRentalAlert
      */
     public function createAlert(array $data): AiRentalAlert
     {
@@ -51,7 +48,7 @@ class MonitoringService
             ]);
 
             // ส่ง notification อัตโนมัติ (ถ้าไม่ระบุ auto_send เป็น false)
-            if (!isset($data['auto_send']) || $data['auto_send'] === true) {
+            if (! isset($data['auto_send']) || $data['auto_send'] === true) {
                 $this->sendAlert($alert);
             }
 
@@ -62,7 +59,7 @@ class MonitoringService
 
             return $alert;
         } catch (Exception $e) {
-            Log::error('Failed to create alert: ' . $e->getMessage(), [
+            Log::error('Failed to create alert: '.$e->getMessage(), [
                 'data' => $data,
                 'exception' => $e,
             ]);
@@ -72,9 +69,6 @@ class MonitoringService
 
     /**
      * ส่ง alert notification
-     *
-     * @param AiRentalAlert $alert
-     * @return bool
      */
     public function sendAlert(AiRentalAlert $alert): bool
     {
@@ -82,19 +76,19 @@ class MonitoringService
             $channels = $alert->notification_channels ?? ['email'];
 
             // ส่งผ่าน Email
-            if (in_array('email', $channels) && !$alert->email_sent) {
+            if (in_array('email', $channels) && ! $alert->email_sent) {
                 $this->sendEmailAlert($alert);
                 $alert->email_sent = true;
             }
 
             // ส่งผ่าน Push Notification
-            if (in_array('push', $channels) && !$alert->push_sent) {
+            if (in_array('push', $channels) && ! $alert->push_sent) {
                 $this->sendPushAlert($alert);
                 $alert->push_sent = true;
             }
 
             // ส่งผ่าน Webhook
-            if (in_array('webhook', $channels) && !$alert->webhook_sent) {
+            if (in_array('webhook', $channels) && ! $alert->webhook_sent) {
                 $this->sendWebhookAlert($alert);
                 $alert->webhook_sent = true;
             }
@@ -104,23 +98,21 @@ class MonitoringService
             $alert->status = 'sent';
             $alert->save();
 
-            Log::info("Alert sent: {$alert->id} via " . implode(', ', $channels));
+            Log::info("Alert sent: {$alert->id} via ".implode(', ', $channels));
 
             return true;
         } catch (Exception $e) {
-            Log::error('Failed to send alert: ' . $e->getMessage(), [
+            Log::error('Failed to send alert: '.$e->getMessage(), [
                 'alert_id' => $alert->id,
                 'exception' => $e,
             ]);
+
             return false;
         }
     }
 
     /**
      * ส่ง email alert
-     *
-     * @param AiRentalAlert $alert
-     * @return void
      */
     protected function sendEmailAlert(AiRentalAlert $alert): void
     {
@@ -134,15 +126,12 @@ class MonitoringService
                 'alert_id' => $alert->id,
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to send email alert: ' . $e->getMessage());
+            Log::error('Failed to send email alert: '.$e->getMessage());
         }
     }
 
     /**
      * ส่ง push notification alert
-     *
-     * @param AiRentalAlert $alert
-     * @return void
      */
     protected function sendPushAlert(AiRentalAlert $alert): void
     {
@@ -158,15 +147,12 @@ class MonitoringService
                 'alert_id' => $alert->id,
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to send push alert: ' . $e->getMessage());
+            Log::error('Failed to send push alert: '.$e->getMessage());
         }
     }
 
     /**
      * ส่ง webhook alert
-     *
-     * @param AiRentalAlert $alert
-     * @return void
      */
     protected function sendWebhookAlert(AiRentalAlert $alert): void
     {
@@ -174,22 +160,16 @@ class MonitoringService
             // TODO: Get webhook URLs from user settings
             // TODO: Send POST request to webhook URLs
 
-            Log::info("Webhook alert sent", [
+            Log::info('Webhook alert sent', [
                 'alert_id' => $alert->id,
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to send webhook alert: ' . $e->getMessage());
+            Log::error('Failed to send webhook alert: '.$e->getMessage());
         }
     }
 
     /**
      * สร้าง cost warning alert
-     *
-     * @param User $user
-     * @param AiRentalBudgetLimit $budget
-     * @param float $currentSpending
-     * @param int $threshold
-     * @return AiRentalAlert
      */
     public function createCostWarningAlert(
         User $user,
@@ -229,10 +209,6 @@ class MonitoringService
 
     /**
      * สร้าง deployment failed alert
-     *
-     * @param AiRentalDeployment $deployment
-     * @param string $errorMessage
-     * @return AiRentalAlert
      */
     public function createDeploymentFailedAlert(
         AiRentalDeployment $deployment,
@@ -243,7 +219,7 @@ class MonitoringService
             'deployment_id' => $deployment->id,
             'alert_type' => 'deployment_failed',
             'severity' => 'error',
-            'title' => "❌ Deployment ล้มเหลว",
+            'title' => '❌ Deployment ล้มเหลว',
             'message' => "Deployment '{$deployment->deployment_name}' เกิดข้อผิดพลาด",
             'description' => $errorMessage,
             'alert_data' => [
@@ -262,10 +238,6 @@ class MonitoringService
 
     /**
      * สร้าง health check failed alert
-     *
-     * @param AiRentalDeployment $deployment
-     * @param array $healthData
-     * @return AiRentalAlert
      */
     public function createHealthCheckFailedAlert(
         AiRentalDeployment $deployment,
@@ -276,7 +248,7 @@ class MonitoringService
             'deployment_id' => $deployment->id,
             'alert_type' => 'health_check_failed',
             'severity' => 'warning',
-            'title' => "⚕️ Health Check ล้มเหลว",
+            'title' => '⚕️ Health Check ล้มเหลว',
             'message' => "Deployment '{$deployment->deployment_name}' health check ล้มเหลว",
             'description' => $healthData['error_message'] ?? 'Unknown error',
             'alert_data' => $healthData,
@@ -291,9 +263,6 @@ class MonitoringService
     /**
      * ดึง alerts สำหรับ user (พร้อมกรอง)
      *
-     * @param int $userId
-     * @param array $filters
-     * @param int $perPage
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getUserAlerts(int $userId, array $filters = [], int $perPage = 15)
@@ -333,8 +302,6 @@ class MonitoringService
     /**
      * ทำเครื่องหมายหลาย alerts เป็นอ่านแล้ว
      *
-     * @param array $alertIds
-     * @param int $userId
      * @return int จำนวน alerts ที่อัพเดท
      */
     public function markAlertsAsRead(array $alertIds, int $userId): int
@@ -350,17 +317,12 @@ class MonitoringService
 
     /**
      * Resolve alert
-     *
-     * @param int $alertId
-     * @param int $userId
-     * @param string|null $note
-     * @return bool
      */
     public function resolveAlert(int $alertId, int $userId, ?string $note = null): bool
     {
         $alert = AiRentalAlert::forUser($userId)->find($alertId);
 
-        if (!$alert) {
+        if (! $alert) {
             return false;
         }
 
@@ -390,9 +352,6 @@ class MonitoringService
 
     /**
      * ดึง alert summary สำหรับ user
-     *
-     * @param int $userId
-     * @return array
      */
     public function getAlertSummary(int $userId): array
     {
@@ -415,9 +374,6 @@ class MonitoringService
 
     /**
      * คำนวณ severity สำหรับ cost warning
-     *
-     * @param int $threshold
-     * @return string
      */
     protected function getCostWarningSeverity(int $threshold): string
     {
@@ -428,14 +384,12 @@ class MonitoringService
         } elseif ($threshold >= 50) {
             return 'warning';
         }
+
         return 'info';
     }
 
     /**
      * คำนวณ priority สำหรับ cost warning
-     *
-     * @param int $threshold
-     * @return int
      */
     protected function getCostWarningPriority(int $threshold): int
     {
@@ -446,6 +400,7 @@ class MonitoringService
         } elseif ($threshold >= 50) {
             return 3;
         }
+
         return 5; // Normal
     }
 }

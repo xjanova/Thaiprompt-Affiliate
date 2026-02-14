@@ -163,8 +163,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * Job ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function job(): BelongsTo
     {
@@ -173,8 +171,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * โปรเจกต์ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function project(): BelongsTo
     {
@@ -188,8 +184,8 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: กรองตาม level
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array $level
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|array  $level
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeLevel($query, $level)
@@ -204,7 +200,7 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: กรองเฉพาะ errors
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeErrors($query)
@@ -215,7 +211,7 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: กรองเฉพาะ API calls
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeApiCalls($query)
@@ -226,8 +222,7 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: กรองตาม API service
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $service
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForService($query, string $service)
@@ -238,7 +233,7 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: เรียงตามเวลาล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeLatest($query)
@@ -249,9 +244,9 @@ class VideoAutoJobLog extends Model
     /**
      * Scope: กรองตามช่วงเวลา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param \Carbon\Carbon $from
-     * @param \Carbon\Carbon|null $to
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \Carbon\Carbon  $from
+     * @param  \Carbon\Carbon|null  $to
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBetween($query, $from, $to = null)
@@ -271,8 +266,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ดึงข้อมูล level
-     *
-     * @return array|null
      */
     public function getLevelInfoAttribute(): ?array
     {
@@ -281,8 +274,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ดึง label ของ level
-     *
-     * @return string
      */
     public function getLevelLabelAttribute(): string
     {
@@ -291,8 +282,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ดึงสีของ level
-     *
-     * @return string
      */
     public function getLevelColorAttribute(): string
     {
@@ -301,8 +290,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ดึง icon ของ level
-     *
-     * @return string
      */
     public function getLevelIconAttribute(): string
     {
@@ -311,8 +298,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ตรวจสอบว่าเป็น error หรือไม่
-     *
-     * @return bool
      */
     public function getIsErrorAttribute(): bool
     {
@@ -321,22 +306,18 @@ class VideoAutoJobLog extends Model
 
     /**
      * ตรวจสอบว่าเป็น API call หรือไม่
-     *
-     * @return bool
      */
     public function getIsApiCallAttribute(): bool
     {
-        return !empty($this->api_service);
+        return ! empty($this->api_service);
     }
 
     /**
      * คำนวณ memory แบบ human readable
-     *
-     * @return string|null
      */
     public function getMemoryUsageHumanAttribute(): ?string
     {
-        if (!$this->memory_usage) {
+        if (! $this->memory_usage) {
             return null;
         }
 
@@ -349,35 +330,31 @@ class VideoAutoJobLog extends Model
             $unitIndex++;
         }
 
-        return round($size, 2) . ' ' . $units[$unitIndex];
+        return round($size, 2).' '.$units[$unitIndex];
     }
 
     /**
      * คำนวณ API response time แบบ human readable
-     *
-     * @return string|null
      */
     public function getApiResponseTimeHumanAttribute(): ?string
     {
-        if (!$this->api_response_time) {
+        if (! $this->api_response_time) {
             return null;
         }
 
         if ($this->api_response_time >= 1000) {
-            return round($this->api_response_time / 1000, 2) . ' วินาที';
+            return round($this->api_response_time / 1000, 2).' วินาที';
         }
 
-        return $this->api_response_time . ' ms';
+        return $this->api_response_time.' ms';
     }
 
     /**
      * ตรวจสอบว่า API call สำเร็จหรือไม่
-     *
-     * @return bool|null
      */
     public function getApiSuccessAttribute(): ?bool
     {
-        if (!$this->api_status_code) {
+        if (! $this->api_status_code) {
             return null;
         }
 
@@ -390,12 +367,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * สร้าง log ใหม่
-     *
-     * @param int $jobId
-     * @param string $level
-     * @param string $message
-     * @param array $options
-     * @return static
      */
     public static function make(int $jobId, string $level, string $message, array $options = []): static
     {
@@ -408,11 +379,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * สร้าง info log
-     *
-     * @param int $jobId
-     * @param string $message
-     * @param array $context
-     * @return static
      */
     public static function info(int $jobId, string $message, array $context = []): static
     {
@@ -421,11 +387,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * สร้าง error log
-     *
-     * @param int $jobId
-     * @param string $message
-     * @param array $context
-     * @return static
      */
     public static function error(int $jobId, string $message, array $context = []): static
     {
@@ -434,9 +395,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ดึง summary ของ logs
-     *
-     * @param int $jobId
-     * @return array
      */
     public static function getSummary(int $jobId): array
     {
@@ -449,9 +407,6 @@ class VideoAutoJobLog extends Model
 
     /**
      * ลบ logs เก่า
-     *
-     * @param int $days
-     * @return int
      */
     public static function pruneOld(int $days = 30): int
     {

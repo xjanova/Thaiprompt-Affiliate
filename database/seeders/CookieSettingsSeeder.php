@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\CookieSetting;
+use Illuminate\Database\Seeder;
 
 class CookieSettingsSeeder extends Seeder
 {
@@ -16,7 +16,7 @@ class CookieSettingsSeeder extends Seeder
         $existingSettingsCount = CookieSetting::whereIn('key', [
             'cookie_banner_enabled',
             'cookie_banner_title',
-            'cookie_banner_description'
+            'cookie_banner_description',
         ])->count();
 
         if ($existingSettingsCount > 0) {
@@ -39,7 +39,7 @@ class CookieSettingsSeeder extends Seeder
             CookieSetting::create($setting);
         }
 
-        $this->command->info('✅ Cookie settings seeded successfully: ' . count($settings) . ' settings');
+        $this->command->info('✅ Cookie settings seeded successfully: '.count($settings).' settings');
     }
 
     /**
@@ -55,7 +55,7 @@ class CookieSettingsSeeder extends Seeder
         $skipped = 0;
 
         foreach ($settings as $setting) {
-            if (!CookieSetting::where('key', $setting['key'])->exists()) {
+            if (! CookieSetting::where('key', $setting['key'])->exists()) {
                 CookieSetting::create($setting);
                 $this->command->info("   ➕ Added: {$setting['key']}");
                 $added++;

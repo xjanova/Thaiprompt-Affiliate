@@ -12,11 +12,7 @@ class QuotationCalculatorService
     /**
      * คำนวณราคาใบเสนอราคาจาก selections
      *
-     * @param SoftwareProduct $product
-     * @param array $selections Format: ['option_id' => [value_id1, value_id2, ...]]
-     * @param float $taxRate
-     * @param float $discountPercentage
-     * @return array
+     * @param  array  $selections  Format: ['option_id' => [value_id1, value_id2, ...]]
      */
     public function calculate(SoftwareProduct $product, array $selections, float $taxRate = 7, float $discountPercentage = 0): array
     {
@@ -28,18 +24,18 @@ class QuotationCalculatorService
 
         foreach ($selections as $optionId => $valueIds) {
             $option = $product->options()->find($optionId);
-            if (!$option) {
+            if (! $option) {
                 continue;
             }
 
             // Convert single value to array
-            if (!is_array($valueIds)) {
+            if (! is_array($valueIds)) {
                 $valueIds = [$valueIds];
             }
 
             foreach ($valueIds as $valueId) {
                 $optionValue = $option->values()->find($valueId);
-                if (!$optionValue) {
+                if (! $optionValue) {
                     continue;
                 }
 

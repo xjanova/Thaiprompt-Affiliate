@@ -58,9 +58,9 @@ class VendorFeatureUsage extends Model
      */
     public function scopeNotExpired($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->whereNull('expires_at')
-              ->orWhere('expires_at', '>', now());
+                ->orWhere('expires_at', '>', now());
         });
     }
 
@@ -69,7 +69,7 @@ class VendorFeatureUsage extends Model
      */
     public function isValid(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -114,6 +114,7 @@ class VendorFeatureUsage extends Model
     public function deactivate(): bool
     {
         $this->is_active = false;
+
         return $this->save();
     }
 }

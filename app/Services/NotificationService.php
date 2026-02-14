@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\Notification;
-use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class NotificationService
 {
@@ -42,7 +42,7 @@ class NotificationService
                 'color' => $color ?? $this->getDefaultColor($type),
             ]);
         } catch (Exception $e) {
-            Log::error('Failed to create notification: ' . $e->getMessage());
+            Log::error('Failed to create notification: '.$e->getMessage());
             throw $e;
         }
     }
@@ -79,7 +79,7 @@ class NotificationService
             $user,
             'deposit',
             'เติมเงินสำเร็จ',
-            "คุณได้เติมเงินเข้ากระเป๋าเงินจำนวน " . number_format($amount, 2) . " $currency",
+            'คุณได้เติมเงินเข้ากระเป๋าเงินจำนวน '.number_format($amount, 2)." $currency",
             ['amount' => $amount, 'currency' => $currency],
             route('user.wallet.index'),
             'ดูกระเป๋าเงิน',
@@ -197,7 +197,7 @@ class NotificationService
             $user,
             'transfer',
             'รับเงินโอน',
-            "คุณได้รับเงินโอนจาก {$fromUser->name} จำนวน " . number_format($amount, 2) . " $currency",
+            "คุณได้รับเงินโอนจาก {$fromUser->name} จำนวน ".number_format($amount, 2)." $currency",
             [
                 'amount' => $amount,
                 'currency' => $currency,
@@ -222,7 +222,7 @@ class NotificationService
             $user,
             'commission',
             'ได้รับคอมมิชชั่น',
-            "คุณได้รับคอมมิชชั่นจำนวน " . number_format($amount, 2) . " $currency",
+            'คุณได้รับคอมมิชชั่นจำนวน '.number_format($amount, 2)." $currency",
             ['amount' => $amount, 'currency' => $currency],
             route('user.wallet.transactions'),
             'ดูธุรกรรม',
@@ -283,7 +283,7 @@ class NotificationService
                 $commission,
                 'commission',
                 'คอมมิชชันรออนุมัติ',
-                "มีคอมมิชชันใหม่รออนุมัติจาก {$commission->user->name} จำนวน " . number_format($commission->amount, 2) . " บาท",
+                "มีคอมมิชชันใหม่รออนุมัติจาก {$commission->user->name} จำนวน ".number_format($commission->amount, 2).' บาท',
                 [
                     'user_name' => $commission->user->name,
                     'amount' => $commission->amount,
@@ -412,7 +412,7 @@ class NotificationService
             $commission,
             'commission',
             'คอมมิชชันได้รับการอนุมัติ',
-            "คอมมิชชันของคุณจำนวน " . number_format($commission->amount, 2) . " บาท ได้รับการอนุมัติแล้ว",
+            'คอมมิชชันของคุณจำนวน '.number_format($commission->amount, 2).' บาท ได้รับการอนุมัติแล้ว',
             [
                 'amount' => $commission->amount,
                 'type' => $commission->type,
@@ -462,7 +462,7 @@ class NotificationService
             $kycVerification,
             'kyc',
             'การยืนยันตัวตนสำเร็จ',
-            "การยืนยันตัวตนของคุณได้รับการอนุมัติแล้ว บัญชีของคุณได้รับการยืนยันแล้ว",
+            'การยืนยันตัวตนของคุณได้รับการอนุมัติแล้ว บัญชีของคุณได้รับการยืนยันแล้ว',
             [
                 'verification_type' => $kycVerification->verification_type ?? 'standard',
             ],
@@ -533,7 +533,7 @@ class NotificationService
      */
     protected function getDefaultIcon(string $type): string
     {
-        return match($type) {
+        return match ($type) {
             'deposit' => '💵',
             'withdrawal' => '💸',
             'transfer' => '📤',
@@ -554,7 +554,7 @@ class NotificationService
      */
     protected function getDefaultColor(string $type): string
     {
-        return match($type) {
+        return match ($type) {
             'deposit' => 'green',
             'withdrawal' => 'blue',
             'transfer' => 'blue',
@@ -676,14 +676,14 @@ class NotificationService
                     'color' => $color ?? $this->getDefaultColor($type),
                     'scheduled_at' => $scheduledAt,
                     'is_scheduled' => $isScheduled,
-                    'is_sent' => !$isScheduled,
+                    'is_sent' => ! $isScheduled,
                 ]);
                 $count++;
             }
 
             return $count;
         } catch (Exception $e) {
-            Log::error('Failed to broadcast notification: ' . $e->getMessage());
+            Log::error('Failed to broadcast notification: '.$e->getMessage());
             throw $e;
         }
     }
@@ -717,9 +717,8 @@ class NotificationService
     /**
      * แจ้งเตือน: มีคำขอย้ายทีมใหม่ (ถึงแม่ทีมเดิม)
      *
-     * @param User $sponsor แม่ทีมเดิม
-     * @param array $requestData ข้อมูลคำขอ
-     * @return Notification
+     * @param  User  $sponsor  แม่ทีมเดิม
+     * @param  array  $requestData  ข้อมูลคำขอ
      */
     public function notifyTeamTransferRequest(User $sponsor, array $requestData): Notification
     {
@@ -745,9 +744,7 @@ class NotificationService
     /**
      * แจ้งเตือน: คำขออนุมัติแล้ว (ถึงสมาชิก)
      *
-     * @param User $member สมาชิก
-     * @param array $requestData
-     * @return Notification
+     * @param  User  $member  สมาชิก
      */
     public function notifyTeamTransferApproved(User $member, array $requestData): Notification
     {
@@ -770,9 +767,7 @@ class NotificationService
     /**
      * แจ้งเตือน: คำขอถูกปฏิเสธ (ถึงสมาชิก)
      *
-     * @param User $member สมาชิก
-     * @param array $requestData
-     * @return Notification
+     * @param  User  $member  สมาชิก
      */
     public function notifyTeamTransferRejected(User $member, array $requestData): Notification
     {
@@ -798,8 +793,7 @@ class NotificationService
     /**
      * แจ้งเตือน: ชำระเงินแล้ว (ถึง Admin)
      *
-     * @param array $admins รายการ admin users
-     * @param array $requestData
+     * @param  array  $admins  รายการ admin users
      * @return int จำนวนการแจ้งเตือนที่ส่ง
      */
     public function notifyTeamTransferPaid(array $admins, array $requestData): int
@@ -825,15 +819,14 @@ class NotificationService
             );
             $count++;
         }
+
         return $count;
     }
 
     /**
      * แจ้งเตือน: ย้ายทีมสำเร็จ (ถึงสมาชิก)
      *
-     * @param User $member สมาชิก
-     * @param array $requestData
-     * @return Notification
+     * @param  User  $member  สมาชิก
      */
     public function notifyTeamTransferCompletedToMember(User $member, array $requestData): Notification
     {
@@ -859,9 +852,7 @@ class NotificationService
     /**
      * แจ้งเตือน: ลูกทีมย้ายออก (ถึงแม่ทีมเดิม)
      *
-     * @param User $oldSponsor แม่ทีมเดิม
-     * @param array $requestData
-     * @return Notification
+     * @param  User  $oldSponsor  แม่ทีมเดิม
      */
     public function notifyTeamMemberLeft(User $oldSponsor, array $requestData): Notification
     {
@@ -887,9 +878,7 @@ class NotificationService
     /**
      * แจ้งเตือน: ลูกทีมใหม่เข้าร่วม (ถึงแม่ทีมใหม่)
      *
-     * @param User $newSponsor แม่ทีมใหม่
-     * @param array $requestData
-     * @return Notification
+     * @param  User  $newSponsor  แม่ทีมใหม่
      */
     public function notifyNewTeamMember(User $newSponsor, array $requestData): Notification
     {
@@ -915,10 +904,8 @@ class NotificationService
     /**
      * แจ้งเตือน: คำขอถูกยกเลิก (ถึงสมาชิก + แม่ทีม)
      *
-     * @param User $member สมาชิก
-     * @param User $sponsor แม่ทีมเดิม
-     * @param array $requestData
-     * @return array
+     * @param  User  $member  สมาชิก
+     * @param  User  $sponsor  แม่ทีมเดิม
      */
     public function notifyTeamTransferCancelled(User $member, User $sponsor, array $requestData): array
     {

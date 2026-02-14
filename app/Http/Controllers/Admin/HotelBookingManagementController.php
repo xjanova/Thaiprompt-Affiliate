@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\HotelBooking;
 use App\Models\Hotel;
+use App\Models\HotelBooking;
 use App\Services\HotelBookingService;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class HotelBookingManagementController extends Controller
 {
@@ -87,7 +87,7 @@ class HotelBookingManagementController extends Controller
             'user',
             'affiliate',
             'paymentTransaction',
-            'review'
+            'review',
         ])->findOrFail($id);
 
         return view('admin.hotels.bookings.show', compact('booking'));

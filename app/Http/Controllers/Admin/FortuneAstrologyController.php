@@ -56,7 +56,7 @@ class FortuneAstrologyController extends Controller
         ]);
 
         try {
-            $chartService = new FortuneChartService();
+            $chartService = new FortuneChartService;
             $chartUrl = $chartService->generateBirthChartSvg(
                 $request->birth_date,
                 $request->name,
@@ -69,6 +69,7 @@ class FortuneAstrologyController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Astrology: preview chart failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -94,7 +95,7 @@ class FortuneAstrologyController extends Controller
                 4 => 'พฤหัสบดี', 5 => 'ศุกร์', 6 => 'เสาร์',
             ];
 
-            $chartService = new FortuneChartService();
+            $chartService = new FortuneChartService;
             $positions = $chartService->calculatePlanetPositions($dayOfWeek);
 
             // ข้อมูลเจ้าชนะ
@@ -116,11 +117,13 @@ class FortuneAstrologyController extends Controller
                 'lucky_color' => $chaochana['lucky_color'] ?? '',
                 'planet_positions' => collect($positions)->map(function ($planets, $houseNum) {
                     $house = FortuneChartService::HOUSES[$houseNum] ?? null;
+
                     return [
                         'house_number' => $houseNum,
                         'house_name' => $house['name'] ?? "ภพ $houseNum",
                         'planets' => collect($planets)->map(function ($pKey) {
                             $p = FortuneChartService::PLANETS[$pKey] ?? null;
+
                             return $p ? [
                                 'key' => $pKey,
                                 'name' => $p['name'],
@@ -133,6 +136,7 @@ class FortuneAstrologyController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Astrology: test calculation failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),

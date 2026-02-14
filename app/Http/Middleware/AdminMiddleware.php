@@ -16,7 +16,7 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // ตรวจสอบว่า user ล็อกอินหรือยัง
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
 
@@ -24,7 +24,7 @@ class AdminMiddleware
 
         // ตรวจสอบว่าเป็น super admin หรือ admin role
         // ✅ แก้ไข: ใช้ role field แทน is_admin ที่ไม่มีอยู่จริง
-        if (!$user->is_super_admin && $user->role !== 'admin') {
+        if (! $user->is_super_admin && $user->role !== 'admin') {
             abort(403, 'ไม่มีสิทธิ์เข้าถึง ต้องเป็น Admin เท่านั้น');
         }
 

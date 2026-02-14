@@ -4,15 +4,15 @@ namespace App\Jobs;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Services\FortuneAIService;
 use App\Services\FacebookWebhookService;
+use App\Services\FortuneAIService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Exception;
 use Throwable;
 
 /**
@@ -74,7 +74,7 @@ class ProcessFortuneTelling implements ShouldQueue
     /**
      * สร้าง job instance ใหม่
      *
-     * @param array $data ข้อมูลจาก Facebook webhook
+     * @param  array  $data  ข้อมูลจาก Facebook webhook
      */
     public function __construct(array $data)
     {
@@ -87,9 +87,6 @@ class ProcessFortuneTelling implements ShouldQueue
      *
      * ประมวลผลคำทำนายและส่งผลกลับ
      *
-     * @param FortuneAIService $aiService
-     * @param FacebookWebhookService $facebookService
-     * @return void
      * @throws Exception
      */
     public function handle(FortuneAIService $aiService, FacebookWebhookService $facebookService): void
@@ -107,7 +104,7 @@ class ProcessFortuneTelling implements ShouldQueue
             ]);
 
             // ส่ง typing indicator ขณะ AI กำลังประมวลผล (Messenger only)
-            if (!$isComment && $fromId) {
+            if (! $isComment && $fromId) {
                 $facebookService->sendTypingIndicator($fromId);
             }
 
@@ -136,7 +133,7 @@ class ProcessFortuneTelling implements ShouldQueue
 
             // ใช้วันเกิดที่ผู้ใช้พิมพ์ หรือ fallback จาก Facebook profile
             $birthDate = $this->data['birth_date'] ?? null;
-            if (empty($birthDate) && !empty($userProfile['birth_date_formatted'])) {
+            if (empty($birthDate) && ! empty($userProfile['birth_date_formatted'])) {
                 $birthDate = $userProfile['birth_date_formatted'];
                 Log::info('ใช้วันเกิดจาก Facebook profile', ['birth_date' => $birthDate]);
             }
@@ -156,7 +153,7 @@ class ProcessFortuneTelling implements ShouldQueue
             $reading = $this->saveReading($aiResponse, $userProfile, $userPosts);
 
             // ปิด typing indicator
-            if (!$isComment && $fromId) {
+            if (! $isComment && $fromId) {
                 $facebookService->sendTypingIndicator($fromId, false);
             }
 
@@ -164,7 +161,7 @@ class ProcessFortuneTelling implements ShouldQueue
             $this->sendResponse($facebookService, $reading, $aiResponse['response']);
 
             // หลังส่งคำทำนายเชิงลึกฟรี ส่ง quick replies แนะนำสมัครสมาชิก
-            if ($isDeep && $settings->isTryBeforeBuyEnabled() && !$isComment && $fromId) {
+            if ($isDeep && $settings->isTryBeforeBuyEnabled() && ! $isComment && $fromId) {
                 $tryBeforeBuyMsg = $settings->getTryBeforeBuyMessage();
                 $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
@@ -174,11 +171,11 @@ class ProcessFortuneTelling implements ShouldQueue
             }
 
             // ส่งข้อความชวนเพื่อนมาดูดวง (ทุกประเภท, เฉพาะ Messenger)
-            if (!$isComment && $fromId) {
+            if (! $isComment && $fromId) {
                 $userName = $this->data['facebook_user_name'] ?? $userProfile['name'] ?? '';
                 $referMsg = "✨ ชอบคำทำนายไหมคะ?\n";
                 $referMsg .= "📲 ส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันสิคะ! แค่แชร์เพจเราให้เพื่อน แล้วบอกให้พิมพ์ \"ดูดวง\" ได้เลย 🔮\n";
-                $referMsg .= "🌟 ยิ่งบอกวันเกิดด้วย ยิ่งแม่นค่ะ!";
+                $referMsg .= '🌟 ยิ่งบอกวันเกิดด้วย ยิ่งแม่นค่ะ!';
 
                 $facebookService->sendQuickReplies($fromId, $referMsg, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวงอีก', 'payload' => 'FORTUNE_BASIC'],
@@ -198,7 +195,7 @@ class ProcessFortuneTelling implements ShouldQueue
 
         } catch (Exception $e) {
             // ปิด typing indicator ถ้า error
-            if (!$isComment && $fromId) {
+            if (! $isComment && $fromId) {
                 $facebookService->sendTypingIndicator($fromId, false);
             }
 
@@ -224,10 +221,9 @@ class ProcessFortuneTelling implements ShouldQueue
     /**
      * บันทึกผลการทำนายลงฐานข้อมูล
      *
-     * @param array $aiResponse ผลลัพธ์จาก AI
-     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้
-     * @param array|null $userPosts ข้อมูลโพสล่าสุดของผู้ใช้
-     * @return FortuneReading
+     * @param  array  $aiResponse  ผลลัพธ์จาก AI
+     * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @param  array|null  $userPosts  ข้อมูลโพสล่าสุดของผู้ใช้
      */
     protected function saveReading(array $aiResponse, ?array $userProfile, ?array $userPosts): FortuneReading
     {
@@ -265,10 +261,7 @@ class ProcessFortuneTelling implements ShouldQueue
      * - รูปภาพ (ถ้ามี reading_image_url)
      * - ตอบในคอมเมนต์หรือ Messenger ตามการตั้งค่า
      *
-     * @param FacebookWebhookService $facebookService
-     * @param FortuneReading $reading
-     * @param string $response คำตอบจาก AI
-     * @return void
+     * @param  string  $response  คำตอบจาก AI
      */
     protected function sendResponse(FacebookWebhookService $facebookService, FortuneReading $reading, string $response): void
     {
@@ -279,14 +272,11 @@ class ProcessFortuneTelling implements ShouldQueue
 
     /**
      * ส่งข้อความ error กลับเมื่อ job ล้มเหลว
-     *
-     * @param FacebookWebhookService $facebookService
-     * @return void
      */
     protected function sendErrorResponse(FacebookWebhookService $facebookService): void
     {
         $message = "😔 ขออภัย ขณะนี้ระบบมีปัญหา\n\n";
-        $message .= "กรุณาลองใหม่อีกครั้งในภายหลัง";
+        $message .= 'กรุณาลองใหม่อีกครั้งในภายหลัง';
 
         try {
             $isComment = $this->data['is_comment'] ?? ($this->data['reply_type'] === 'comment');
@@ -305,9 +295,6 @@ class ProcessFortuneTelling implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลว (หลัง retry หมดทุกครั้ง)
-     *
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(Throwable $exception): void
     {
@@ -321,27 +308,24 @@ class ProcessFortuneTelling implements ShouldQueue
 
     /**
      * กำหนดชื่อของ job สำหรับ monitoring
-     *
-     * @return string
      */
     public function displayName(): string
     {
         $userId = $this->data['facebook_user_id'] ?? 'unknown';
         $type = ($this->data['is_deep'] ?? false) ? 'deep' : 'basic';
+
         return "ProcessFortuneTelling[{$userId}:{$type}]";
     }
 
     /**
      * Tags สำหรับ job monitoring (Horizon)
-     *
-     * @return array
      */
     public function tags(): array
     {
         return [
             'fortune-telling',
-            'type:' . (($this->data['is_deep'] ?? false) ? 'deep' : 'basic'),
-            'facebook:' . ($this->data['facebook_user_id'] ?? 'unknown'),
+            'type:'.(($this->data['is_deep'] ?? false) ? 'deep' : 'basic'),
+            'facebook:'.($this->data['facebook_user_id'] ?? 'unknown'),
         ];
     }
 }

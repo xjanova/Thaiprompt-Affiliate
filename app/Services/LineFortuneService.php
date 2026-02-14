@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Log;
 class LineFortuneService implements MessagingPlatformInterface
 {
     protected FortuneTellingSetting $settings;
+
     protected string $channelAccessToken;
+
     protected string $channelSecret;
 
     /**
@@ -60,7 +62,7 @@ class LineFortuneService implements MessagingPlatformInterface
         ];
 
         // ถ้ามี quick replies
-        if (!empty($options['quick_replies'])) {
+        if (! empty($options['quick_replies'])) {
             $messages[0]['quickReply'] = [
                 'items' => $this->buildQuickReplyItems($options['quick_replies']),
             ];
@@ -116,10 +118,11 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->get(self::API_ENDPOINT . "/profile/{$userId}");
+                ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
                 $data = $response->json();
+
                 return [
                     'id' => $data['userId'] ?? $userId,
                     'name' => $data['displayName'] ?? null,
@@ -134,6 +137,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'user_id' => $userId,
                 'status' => $response->status(),
             ]);
+
             return null;
 
         } catch (\Exception $e) {
@@ -141,6 +145,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -159,7 +164,7 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function getMessageText(array $event): ?string
     {
-        if (!$this->isMessageEvent($event)) {
+        if (! $this->isMessageEvent($event)) {
             return null;
         }
 
@@ -181,9 +186,9 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * สร้าง Flex Message สำหรับคำทำนาย
      *
-     * @param string $prediction คำทำนาย
-     * @param string $userName ชื่อผู้ใช้
-     * @param string|null $billRef เลขที่บิล
+     * @param  string  $prediction  คำทำนาย
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string|null  $billRef  เลขที่บิล
      * @return array Flex Message content
      */
     public function buildFortuneFlexMessage(string $prediction, string $userName, ?string $billRef = null): array
@@ -291,8 +296,8 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * สร้าง Flex Message สำหรับเสนอดูดวงละเอียด (Upsell)
      *
-     * @param string $userName ชื่อผู้ใช้
-     * @param float $price ราคา
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  float  $price  ราคา
      * @return array Flex Message content
      */
     public function buildUpsellFlexMessage(string $userName, float $price): array
@@ -399,10 +404,10 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * สร้าง Flex Message สำหรับแสดงบัญชีธนาคาร
      *
-     * @param array $bankAccounts รายการบัญชีธนาคาร
-     * @param float $amount ยอดเงินที่ต้องโอน
-     * @param string $expiresAt เวลาหมดอายุ
-     * @param string|null $billRef เลขที่บิล
+     * @param  array  $bankAccounts  รายการบัญชีธนาคาร
+     * @param  float  $amount  ยอดเงินที่ต้องโอน
+     * @param  string  $expiresAt  เวลาหมดอายุ
+     * @param  string|null  $billRef  เลขที่บิล
      * @return array Flex Message content
      */
     public function buildPaymentFlexMessage(array $bankAccounts, float $amount, string $expiresAt, ?string $billRef = null): array
@@ -442,7 +447,7 @@ class LineFortuneService implements MessagingPlatformInterface
         $headerContents = [
             [
                 'type' => 'text',
-                'text' => "฿" . number_format($amount, 2),
+                'text' => '฿'.number_format($amount, 2),
                 'color' => '#FFFFFF',
                 'size' => 'xxl',
                 'weight' => 'bold',
@@ -630,25 +635,25 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * ส่งข้อความผ่าน LINE Messaging API (Push)
      *
-     * @param string $to LINE User ID
-     * @param array $messages รายการข้อความ
-     * @return bool
+     * @param  string  $to  LINE User ID
+     * @param  array  $messages  รายการข้อความ
      */
     protected function pushMessage(string $to, array $messages): bool
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->post(self::API_ENDPOINT . '/message/push', [
+                ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('LINE Push Message Error', [
                     'to' => $to,
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
@@ -659,6 +664,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'to' => $to,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -666,24 +672,24 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * ตอบกลับข้อความ (Reply)
      *
-     * @param string $replyToken Reply token จาก webhook
-     * @param array $messages รายการข้อความ
-     * @return bool
+     * @param  string  $replyToken  Reply token จาก webhook
+     * @param  array  $messages  รายการข้อความ
      */
     public function replyMessage(string $replyToken, array $messages): bool
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->post(self::API_ENDPOINT . '/message/reply', [
+                ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('LINE Reply Message Error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
@@ -693,15 +699,13 @@ class LineFortuneService implements MessagingPlatformInterface
             Log::error('LINE Reply Message Exception', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * สร้าง Quick Reply Items สำหรับ LINE
-     *
-     * @param array $quickReplies
-     * @return array
      */
     protected function buildQuickReplyItems(array $quickReplies): array
     {
@@ -724,13 +728,13 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * ตรวจสอบ Signature จาก LINE Webhook
      *
-     * @param string $body Request body
-     * @param string $signature X-Line-Signature header
-     * @return bool
+     * @param  string  $body  Request body
+     * @param  string  $signature  X-Line-Signature header
      */
     public function verifySignature(string $body, string $signature): bool
     {
         $hash = base64_encode(hash_hmac('sha256', $body, $this->channelSecret, true));
+
         return hash_equals($hash, $signature);
     }
 
@@ -752,14 +756,14 @@ class LineFortuneService implements MessagingPlatformInterface
 
             // เรียก API เพื่อดึงข้อมูล Bot
             $response = Http::withToken($this->channelAccessToken)
-                ->get(self::API_ENDPOINT . '/info');
+                ->get(self::API_ENDPOINT.'/info');
 
             if ($response->successful()) {
                 $botInfo = $response->json();
 
                 return [
                     'success' => true,
-                    'message' => 'เชื่อมต่อสำเร็จ! Bot: ' . ($botInfo['displayName'] ?? 'Unknown'),
+                    'message' => 'เชื่อมต่อสำเร็จ! Bot: '.($botInfo['displayName'] ?? 'Unknown'),
                     'data' => [
                         'bot_info' => $botInfo,
                     ],
@@ -786,7 +790,7 @@ class LineFortuneService implements MessagingPlatformInterface
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }

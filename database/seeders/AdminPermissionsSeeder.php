@@ -23,13 +23,11 @@ class AdminPermissionsSeeder extends Seeder
      * Run the database seeds.
      *
      * สร้าง permissions ใหม่สำหรับทุก modules
-     *
-     * @return void
      */
     public function run(): void
     {
         // ตรวจสอบว่าตาราง permissions มีอยู่หรือไม่
-        if (!$this->requireTable('permissions', 'AdminPermissionsSeeder')) {
+        if (! $this->requireTable('permissions', 'AdminPermissionsSeeder')) {
             return;
         }
 
@@ -43,7 +41,7 @@ class AdminPermissionsSeeder extends Seeder
             // ตรวจสอบว่า permission มีอยู่แล้วหรือไม่
             $exists = Permission::where('name', $permission['name'])->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 Permission::create([
                     'name' => $permission['name'],
                     'display_name' => $permission['display_name'],
@@ -67,8 +65,6 @@ class AdminPermissionsSeeder extends Seeder
 
     /**
      * รายการ permissions ทั้งหมด
-     *
-     * @return array
      */
     private function getPermissions(): array
     {
@@ -343,8 +339,6 @@ class AdminPermissionsSeeder extends Seeder
 
     /**
      * กำหนด permissions ให้กับ roles
-     *
-     * @return void
      */
     private function assignPermissionsToRoles(): void
     {
@@ -360,7 +354,7 @@ class AdminPermissionsSeeder extends Seeder
                 ->toArray();
 
             $newPermissions = $allPermissions->filter(function ($permission) use ($existingPermissionIds) {
-                return !in_array($permission->id, $existingPermissionIds);
+                return ! in_array($permission->id, $existingPermissionIds);
             });
 
             if ($newPermissions->isNotEmpty()) {
@@ -406,7 +400,7 @@ class AdminPermissionsSeeder extends Seeder
                 ->toArray();
 
             $newPermissions = $permissions->filter(function ($permission) use ($existingPermissionIds) {
-                return !in_array($permission->id, $existingPermissionIds);
+                return ! in_array($permission->id, $existingPermissionIds);
             });
 
             if ($newPermissions->isNotEmpty()) {

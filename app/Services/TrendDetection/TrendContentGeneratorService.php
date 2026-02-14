@@ -2,9 +2,9 @@
 
 namespace App\Services\TrendDetection;
 
-use App\Models\ViralTrend;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
+use App\Models\ViralTrend;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Log;
 
@@ -21,7 +21,7 @@ class TrendContentGeneratorService
     ): array {
         try {
             // Get AI provider and model
-            if (!$aiProvider || !$aiModel) {
+            if (! $aiProvider || ! $aiModel) {
                 $defaultProvider = $this->getDefaultProvider();
                 $aiProvider = $aiProvider ?? $defaultProvider['provider'];
                 $aiModel = $aiModel ?? $defaultProvider['model'];
@@ -31,7 +31,7 @@ class TrendContentGeneratorService
             $aiService = AiServiceFactory::create($aiProvider, $aiModel);
 
             // Generate content based on type
-            $content = match($contentType) {
+            $content = match ($contentType) {
                 'blog' => $this->generateBlogPost($trend, $aiService),
                 'social' => $this->generateSocialPost($trend, $aiService),
                 'summary' => $this->generateSummary($trend, $aiService),
@@ -58,7 +58,7 @@ class TrendContentGeneratorService
                 ],
             ];
         } catch (\Exception $e) {
-            Log::error("Failed to generate content for trend {$trend->id}: " . $e->getMessage());
+            Log::error("Failed to generate content for trend {$trend->id}: ".$e->getMessage());
 
             return [
                 'success' => false,
@@ -224,7 +224,7 @@ class TrendContentGeneratorService
         }
 
         if ($keyword->related_keywords) {
-            $context .= "คีย์เวิร์ดที่เกี่ยวข้อง: " . implode(', ', $keyword->related_keywords) . "\n";
+            $context .= 'คีย์เวิร์ดที่เกี่ยวข้อง: '.implode(', ', $keyword->related_keywords)."\n";
         }
 
         return $context;
@@ -256,7 +256,7 @@ class TrendContentGeneratorService
      */
     protected function getSocialPlatformInstructions(string $platform): array
     {
-        return match($platform) {
+        return match ($platform) {
             'facebook' => [
                 'ความยาว 40-80 คำ',
                 'เน้นการสร้าง engagement',
@@ -290,7 +290,7 @@ class TrendContentGeneratorService
             ->orderBy('priority', 'desc')
             ->first();
 
-        if (!$provider) {
+        if (! $provider) {
             throw new \Exception('No active AI provider found');
         }
 
@@ -299,7 +299,7 @@ class TrendContentGeneratorService
             ->orderBy('priority', 'desc')
             ->first();
 
-        if (!$model) {
+        if (! $model) {
             throw new \Exception('No active AI model found');
         }
 
@@ -314,6 +314,7 @@ class TrendContentGeneratorService
         if (preg_match('/^#\s*(.+)$/m', $text, $matches)) {
             return trim($matches[1]);
         }
+
         return null;
     }
 
@@ -326,7 +327,7 @@ class TrendContentGeneratorService
         $text = preg_replace('/^#.+$/m', '', $text); // Remove headers
         $text = trim($text);
 
-        return mb_substr($text, 0, $length) . '...';
+        return mb_substr($text, 0, $length).'...';
     }
 
     /**
@@ -348,7 +349,7 @@ class TrendContentGeneratorService
      */
     protected function generateSeoTitle(ViralTrend $trend): string
     {
-        return mb_substr($trend->title . " - เทรนด์ไวรัล " . date('Y'), 0, 60);
+        return mb_substr($trend->title.' - เทรนด์ไวรัล '.date('Y'), 0, 60);
     }
 
     /**
@@ -364,11 +365,11 @@ class TrendContentGeneratorService
      */
     protected function generateHashtags(ViralTrend $trend, string $platform): array
     {
-        $hashtags = ['#' . str_replace(' ', '', $trend->keyword->keyword)];
+        $hashtags = ['#'.str_replace(' ', '', $trend->keyword->keyword)];
 
         if ($trend->keyword->related_keywords) {
             foreach (array_slice($trend->keyword->related_keywords, 0, 4) as $keyword) {
-                $hashtags[] = '#' . str_replace(' ', '', $keyword);
+                $hashtags[] = '#'.str_replace(' ', '', $keyword);
             }
         }
 
@@ -402,7 +403,7 @@ class TrendContentGeneratorService
             return trim($matches[1]);
         }
 
-        return 'Trending Now: ' . date('F Y');
+        return 'Trending Now: '.date('F Y');
     }
 
     /**

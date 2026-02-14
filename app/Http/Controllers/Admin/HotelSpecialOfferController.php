@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\HotelSpecialOffer;
 use App\Models\Hotel;
+use App\Models\HotelSpecialOffer;
 use App\Models\RoomType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class HotelSpecialOfferController extends Controller
 {
@@ -114,7 +113,7 @@ class HotelSpecialOfferController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to create special offer: ' . $e->getMessage());
+                ->with('error', 'Failed to create special offer: '.$e->getMessage());
         }
     }
 
@@ -155,7 +154,7 @@ class HotelSpecialOfferController extends Controller
         $validated = $request->validate([
             'hotel_id' => 'required|exists:hotels,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:hotel_special_offers,code,' . $id,
+            'code' => 'required|string|max:50|unique:hotel_special_offers,code,'.$id,
             'description' => 'nullable|string',
             'discount_type' => 'required|in:percentage,fixed,free_nights',
             'discount_value' => 'required_if:discount_type,percentage,fixed|numeric|min:0',
@@ -199,7 +198,7 @@ class HotelSpecialOfferController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update special offer: ' . $e->getMessage());
+                ->with('error', 'Failed to update special offer: '.$e->getMessage());
         }
     }
 
@@ -222,7 +221,7 @@ class HotelSpecialOfferController extends Controller
                 ->route('admin.hotels.special-offers.index')
                 ->with('success', 'Special offer deleted successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete special offer: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete special offer: '.$e->getMessage());
         }
     }
 
@@ -232,7 +231,7 @@ class HotelSpecialOfferController extends Controller
     public function toggleStatus($id)
     {
         $offer = HotelSpecialOffer::findOrFail($id);
-        $offer->update(['is_active' => !$offer->is_active]);
+        $offer->update(['is_active' => ! $offer->is_active]);
 
         return back()->with('success', 'Offer status updated.');
     }
@@ -243,7 +242,7 @@ class HotelSpecialOfferController extends Controller
     public function toggleFeatured($id)
     {
         $offer = HotelSpecialOffer::findOrFail($id);
-        $offer->update(['is_featured' => !$offer->is_featured]);
+        $offer->update(['is_featured' => ! $offer->is_featured]);
 
         return back()->with('success', 'Featured status updated.');
     }

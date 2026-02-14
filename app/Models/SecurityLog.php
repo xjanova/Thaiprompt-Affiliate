@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\AutoBanService;
+use App\Services\IpIntelligenceService;
+use App\Services\UserAgentParser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Services\IpIntelligenceService;
-use App\Services\UserAgentParser;
-use App\Services\AutoBanService;
 
 class SecurityLog extends Model
 {
@@ -296,10 +296,10 @@ class SecurityLog extends Model
      */
     public function scopeVpnOrProxy($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->where('is_vpn', true)
-              ->orWhere('is_proxy', true)
-              ->orWhere('is_tor', true);
+                ->orWhere('is_proxy', true)
+                ->orWhere('is_tor', true);
         });
     }
 
@@ -363,7 +363,7 @@ class SecurityLog extends Model
     /**
      * Get timeline data for charts
      */
-    public static function getTimeline(string $eventType = null, int $days = 30): array
+    public static function getTimeline(?string $eventType = null, int $days = 30): array
     {
         $query = static::selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->where('created_at', '>=', now()->subDays($days))
@@ -377,4 +377,3 @@ class SecurityLog extends Model
         return $query->pluck('count', 'date')->toArray();
     }
 }
-

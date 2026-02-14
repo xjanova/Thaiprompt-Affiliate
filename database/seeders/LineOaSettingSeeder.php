@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\LineOaSetting;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class LineOaSettingSeeder extends Seeder
 {
@@ -26,6 +25,7 @@ class LineOaSettingSeeder extends Seeder
             $this->command->warn('⚠️  LINE OA settings already exist!');
             $this->command->info('   Skipping to preserve your LINE configuration.');
             $this->command->info('   If you need to reset, please delete existing settings manually.');
+
             return;
         }
 

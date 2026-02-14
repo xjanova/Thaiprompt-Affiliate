@@ -11,17 +11,15 @@ return new class extends Migration
      *
      * เหตุผล: ค่า model_size_bytes ของโมเดลขนาดใหญ่ (เช่น Llama 3.1 405B = 869GB)
      * เกินค่าสูงสุดของ integer (2,147,483,647) จึงต้องใช้ bigInteger แทน
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตารางและคอลัมน์มีอยู่
-        if (!Schema::hasTable('huggingface_trending_models')) {
+        if (! Schema::hasTable('huggingface_trending_models')) {
             return;
         }
 
-        if (!Schema::hasColumn('huggingface_trending_models', 'model_size_bytes')) {
+        if (! Schema::hasColumn('huggingface_trending_models', 'model_size_bytes')) {
             return;
         }
 
@@ -38,16 +36,14 @@ return new class extends Migration
      * Rollback - เปลี่ยนกลับเป็น integer
      *
      * หมายเหตุ: การ rollback อาจทำให้ข้อมูลสูญหายหากมีค่าเกิน integer max
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('huggingface_trending_models')) {
+        if (! Schema::hasTable('huggingface_trending_models')) {
             return;
         }
 
-        if (!Schema::hasColumn('huggingface_trending_models', 'model_size_bytes')) {
+        if (! Schema::hasColumn('huggingface_trending_models', 'model_size_bytes')) {
             return;
         }
 

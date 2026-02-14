@@ -16,13 +16,11 @@ return new class extends Migration
      * - is_default: ระบุว่าเป็น template ต้นฉบับจาก seeder หรือไม่
      * - original_template_key: template key ต้นฉบับ (สำหรับ duplicate)
      * - category: หมวดหมู่ของ template
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_templates มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_templates')) {
+        if (! Schema::hasTable('line_signup_templates')) {
             return;
         }
 
@@ -30,7 +28,7 @@ return new class extends Migration
             // ✅ ใช้ SafeMigration trait เพื่อความปลอดภัย
 
             // เพิ่มคอลัมน์ is_default - ระบุว่าเป็น template ต้นฉบับหรือไม่
-            $this->safeAddColumn($table, 'line_signup_templates', 'is_default', function($table) {
+            $this->safeAddColumn($table, 'line_signup_templates', 'is_default', function ($table) {
                 $table->boolean('is_default')
                     ->default(false)
                     ->after('is_active')
@@ -38,7 +36,7 @@ return new class extends Migration
             });
 
             // เพิ่มคอลัมน์ original_template_key - สำหรับ template ที่ duplicate มา
-            $this->safeAddColumn($table, 'line_signup_templates', 'original_template_key', function($table) {
+            $this->safeAddColumn($table, 'line_signup_templates', 'original_template_key', function ($table) {
                 $table->string('original_template_key')
                     ->nullable()
                     ->after('is_default')
@@ -46,7 +44,7 @@ return new class extends Migration
             });
 
             // เพิ่มคอลัมน์ category - หมวดหมู่ของ template
-            $this->safeAddColumn($table, 'line_signup_templates', 'category', function($table) {
+            $this->safeAddColumn($table, 'line_signup_templates', 'category', function ($table) {
                 $table->string('category')
                     ->nullable()
                     ->after('original_template_key')
@@ -61,8 +59,6 @@ return new class extends Migration
 
     /**
      * ลบฟีลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

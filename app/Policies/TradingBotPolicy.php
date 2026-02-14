@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\TradingBot;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TradingBotPolicy
@@ -26,7 +26,7 @@ class TradingBotPolicy
         // Check if user has active subscription
         $subscription = $user->tradingBotSubscription()->active()->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return false;
         }
 

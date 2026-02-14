@@ -74,6 +74,7 @@ class OtpSetting extends Model
     public static function isEnabled(): bool
     {
         $settings = self::getActive();
+
         return $settings && $settings->enabled;
     }
 

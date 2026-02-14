@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\MlmMember;
 use App\Models\MlmTeamTransferRequest;
 use App\Models\User;
-use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -20,26 +19,15 @@ use Illuminate\Support\Facades\Notification;
  * 2. แม่ทีมเก่าอนุมัติ → status: approved
  * 3. สมาชิกชำระเงิน → status: paid
  * 4. Admin ดำเนินการย้าย → status: completed
- *
- * @package App\Services
  */
 class MlmTeamTransferService
 {
-    /**
-     * @var NotificationService
-     */
     protected NotificationService $notificationService;
 
-    /**
-     * @var LineService
-     */
     protected LineService $lineService;
 
     /**
      * Constructor
-     *
-     * @param NotificationService $notificationService
-     * @param LineService $lineService
      */
     public function __construct(
         NotificationService $notificationService,
@@ -52,10 +40,9 @@ class MlmTeamTransferService
     /**
      * สร้างคำขอย้ายทีมใหม่
      *
-     * @param MlmMember $member สมาชิกที่ขอย้าย
-     * @param MlmMember $newSponsor แม่ทีมใหม่
-     * @param array $data ข้อมูลเพิ่มเติม
-     * @return MlmTeamTransferRequest
+     * @param  MlmMember  $member  สมาชิกที่ขอย้าย
+     * @param  MlmMember  $newSponsor  แม่ทีมใหม่
+     * @param  array  $data  ข้อมูลเพิ่มเติม
      *
      * @throws \Exception
      */
@@ -101,9 +88,6 @@ class MlmTeamTransferService
     /**
      * ตรวจสอบความถูกต้องของคำขอย้ายทีม
      *
-     * @param MlmMember $member
-     * @param MlmMember $newSponsor
-     * @return void
      *
      * @throws \Exception
      */
@@ -143,16 +127,13 @@ class MlmTeamTransferService
 
     /**
      * ตรวจสอบว่า $potential_downline เป็นลูกทีมของ $member หรือไม่
-     *
-     * @param MlmMember $member
-     * @param MlmMember $potentialDownline
-     * @return bool
      */
     protected function isDownline(MlmMember $member, MlmMember $potentialDownline): bool
     {
         // ตรวจสอบจาก unilevel_path
         if ($potentialDownline->unilevel_path) {
             $path = explode('/', $potentialDownline->unilevel_path);
+
             return in_array($member->id, $path);
         }
 
@@ -162,9 +143,7 @@ class MlmTeamTransferService
     /**
      * อนุมัติคำขอย้ายทีม (โดยแม่ทีมเก่า)
      *
-     * @param MlmTeamTransferRequest $request
-     * @param User $approver แม่ทีมเก่า (user)
-     * @return MlmTeamTransferRequest
+     * @param  User  $approver  แม่ทีมเก่า (user)
      *
      * @throws \Exception
      */
@@ -173,12 +152,12 @@ class MlmTeamTransferService
         User $approver
     ): MlmTeamTransferRequest {
         // ตรวจสอบว่าเป็นแม่ทีมเก่าหรือไม่
-        if (!$request->isOldSponsor($approver->id)) {
+        if (! $request->isOldSponsor($approver->id)) {
             throw new \Exception('คุณไม่ใช่แม่ทีมเก่าของสมาชิกนี้');
         }
 
         // ตรวจสอบว่าสามารถอนุมัติได้หรือไม่
-        if (!$request->canBeApproved()) {
+        if (! $request->canBeApproved()) {
             throw new \Exception('ไม่สามารถอนุมัติคำขอนี้ได้');
         }
 
@@ -205,10 +184,8 @@ class MlmTeamTransferService
     /**
      * ปฏิเสธคำขอย้ายทีม (โดยแม่ทีมเก่า)
      *
-     * @param MlmTeamTransferRequest $request
-     * @param User $rejecter แม่ทีมเก่า (user)
-     * @param string|null $reason เหตุผล
-     * @return MlmTeamTransferRequest
+     * @param  User  $rejecter  แม่ทีมเก่า (user)
+     * @param  string|null  $reason  เหตุผล
      *
      * @throws \Exception
      */
@@ -218,12 +195,12 @@ class MlmTeamTransferService
         ?string $reason = null
     ): MlmTeamTransferRequest {
         // ตรวจสอบว่าเป็นแม่ทีมเก่าหรือไม่
-        if (!$request->isOldSponsor($rejecter->id)) {
+        if (! $request->isOldSponsor($rejecter->id)) {
             throw new \Exception('คุณไม่ใช่แม่ทีมเก่าของสมาชิกนี้');
         }
 
         // ตรวจสอบว่าสามารถปฏิเสธได้หรือไม่
-        if (!$request->canBeRejected()) {
+        if (! $request->canBeRejected()) {
             throw new \Exception('ไม่สามารถปฏิเสธคำขอนี้ได้');
         }
 
@@ -252,9 +229,7 @@ class MlmTeamTransferService
     /**
      * ชำระค่าธรรมเนียมการย้ายทีม
      *
-     * @param MlmTeamTransferRequest $request
-     * @param User $payer ผู้ชำระเงิน
-     * @return MlmTeamTransferRequest
+     * @param  User  $payer  ผู้ชำระเงิน
      *
      * @throws \Exception
      */
@@ -268,7 +243,7 @@ class MlmTeamTransferService
         }
 
         // ตรวจสอบว่าสามารถชำระเงินได้หรือไม่
-        if (!$request->canBePaid()) {
+        if (! $request->canBePaid()) {
             throw new \Exception('ไม่สามารถชำระเงินคำขอนี้ได้');
         }
 
@@ -316,10 +291,8 @@ class MlmTeamTransferService
     /**
      * ดำเนินการย้ายทีม (โดย Admin)
      *
-     * @param MlmTeamTransferRequest $request
-     * @param User $admin Admin ที่ดำเนินการ
-     * @param string|null $notes หมายเหตุ
-     * @return MlmTeamTransferRequest
+     * @param  User  $admin  Admin ที่ดำเนินการ
+     * @param  string|null  $notes  หมายเหตุ
      *
      * @throws \Exception
      */
@@ -329,7 +302,7 @@ class MlmTeamTransferService
         ?string $notes = null
     ): MlmTeamTransferRequest {
         // ตรวจสอบว่าสามารถดำเนินการได้หรือไม่
-        if (!$request->canBeProcessed()) {
+        if (! $request->canBeProcessed()) {
             throw new \Exception('ไม่สามารถดำเนินการคำขอนี้ได้');
         }
 
@@ -363,7 +336,7 @@ class MlmTeamTransferService
             $member->update([
                 'unilevel_sponsor_id' => $request->new_unilevel_sponsor_id,
                 'unilevel_level' => $request->newSponsor->unilevel_level + 1,
-                'unilevel_path' => $request->newSponsor->unilevel_path . '/' . $request->newSponsor->id,
+                'unilevel_path' => $request->newSponsor->unilevel_path.'/'.$request->newSponsor->id,
                 'binary_parent_id' => $request->new_binary_parent_id,
                 'binary_position' => $request->new_binary_position,
             ]);
@@ -403,9 +376,6 @@ class MlmTeamTransferService
     /**
      * ตรวจสอบว่าตำแหน่ง binary ว่างหรือไม่
      *
-     * @param MlmMember $parent
-     * @param string $position
-     * @return void
      *
      * @throws \Exception
      */
@@ -422,9 +392,6 @@ class MlmTeamTransferService
 
     /**
      * อัพเดท binary path หลังจากย้ายทีม
-     *
-     * @param MlmMember $member
-     * @return void
      */
     protected function updateBinaryPath(MlmMember $member): void
     {
@@ -445,9 +412,7 @@ class MlmTeamTransferService
     /**
      * ยกเลิกคำขอย้ายทีม
      *
-     * @param MlmTeamTransferRequest $request
-     * @param User $user ผู้ยกเลิก
-     * @return MlmTeamTransferRequest
+     * @param  User  $user  ผู้ยกเลิก
      *
      * @throws \Exception
      */
@@ -461,7 +426,7 @@ class MlmTeamTransferService
         }
 
         // ตรวจสอบว่าสามารถยกเลิกได้หรือไม่
-        if (!$request->canBeCancelled()) {
+        if (! $request->canBeCancelled()) {
             throw new \Exception('ไม่สามารถยกเลิกคำขอนี้ได้');
         }
 
@@ -497,9 +462,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนขออนุมัติไปยังแม่ทีมเก่า
-     *
-     * @param MlmTeamTransferRequest $request
-     * @return void
      */
     protected function sendApprovalNotification(MlmTeamTransferRequest $request): void
     {
@@ -519,10 +481,10 @@ class MlmTeamTransferService
 
             // ส่ง LINE direct message (ถ้ามี LINE user ID)
             $lineMessage = sprintf(
-                "🔔 มีคำขอย้ายทีมใหม่\n\n" .
-                "สมาชิก: %s (รหัส: %s)\n" .
-                "ขอย้ายไปยังแม่ทีมใหม่: %s\n\n" .
-                "กรุณาพิจารณาอนุมัติคำขอนี้",
+                "🔔 มีคำขอย้ายทีมใหม่\n\n".
+                "สมาชิก: %s (รหัส: %s)\n".
+                "ขอย้ายไปยังแม่ทีมใหม่: %s\n\n".
+                'กรุณาพิจารณาอนุมัติคำขอนี้',
                 $request->user->name,
                 $request->member->member_code,
                 $request->newSponsor->user->name ?? 'N/A'
@@ -539,9 +501,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนว่าคำขอได้รับการอนุมัติแล้ว
-     *
-     * @param MlmTeamTransferRequest $request
-     * @return void
      */
     protected function sendApprovedNotification(MlmTeamTransferRequest $request): void
     {
@@ -561,11 +520,11 @@ class MlmTeamTransferService
 
             // ส่ง LINE direct message
             $lineMessage = sprintf(
-                "✅ คำขอย้ายทีมได้รับการอนุมัติ\n\n" .
-                "แม่ทีมเก่า: %s\n" .
-                "แม่ทีมใหม่: %s\n" .
-                "ค่าธรรมเนียม: %s บาท\n\n" .
-                "กรุณาชำระค่าธรรมเนียมเพื่อดำเนินการต่อ",
+                "✅ คำขอย้ายทีมได้รับการอนุมัติ\n\n".
+                "แม่ทีมเก่า: %s\n".
+                "แม่ทีมใหม่: %s\n".
+                "ค่าธรรมเนียม: %s บาท\n\n".
+                'กรุณาชำระค่าธรรมเนียมเพื่อดำเนินการต่อ',
                 $request->oldSponsor->user->name ?? 'N/A',
                 $request->newSponsor->user->name ?? 'N/A',
                 number_format($request->transfer_fee, 2)
@@ -581,9 +540,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนว่าคำขอถูกปฏิเสธ
-     *
-     * @param MlmTeamTransferRequest $request
-     * @return void
      */
     protected function sendRejectedNotification(MlmTeamTransferRequest $request): void
     {
@@ -602,10 +558,10 @@ class MlmTeamTransferService
 
             // ส่ง LINE direct message
             $lineMessage = sprintf(
-                "❌ คำขอย้ายทีมถูกปฏิเสธ\n\n" .
-                "แม่ทีมเก่า: %s\n" .
-                "เหตุผล: %s\n\n" .
-                "หากต้องการข้อมูลเพิ่มเติม กรุณาติดต่อแม่ทีมของคุณ",
+                "❌ คำขอย้ายทีมถูกปฏิเสธ\n\n".
+                "แม่ทีมเก่า: %s\n".
+                "เหตุผล: %s\n\n".
+                'หากต้องการข้อมูลเพิ่มเติม กรุณาติดต่อแม่ทีมของคุณ',
                 $request->oldSponsor->user->name ?? 'N/A',
                 $request->rejection_reason ?? 'ไม่ระบุเหตุผล'
             );
@@ -620,9 +576,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนไปยัง Admin ว่ามีการชำระเงินแล้ว
-     *
-     * @param MlmTeamTransferRequest $request
-     * @return void
      */
     protected function sendPaidNotificationToAdmin(MlmTeamTransferRequest $request): void
     {
@@ -647,12 +600,12 @@ class MlmTeamTransferService
 
             // ส่ง LINE direct message to admin
             $lineMessage = sprintf(
-                "💰 การย้ายทีม - ชำระเงินแล้ว\n\n" .
-                "สมาชิก: %s (รหัส: %s)\n" .
-                "ค่าธรรมเนียม: %s บาท\n" .
-                "จาก: %s\n" .
-                "ไปยัง: %s\n\n" .
-                "กรุณาดำเนินการตรวจสอบและอนุมัติ",
+                "💰 การย้ายทีม - ชำระเงินแล้ว\n\n".
+                "สมาชิก: %s (รหัส: %s)\n".
+                "ค่าธรรมเนียม: %s บาท\n".
+                "จาก: %s\n".
+                "ไปยัง: %s\n\n".
+                'กรุณาดำเนินการตรวจสอบและอนุมัติ',
                 $request->user->name,
                 $request->member->member_code,
                 number_format($request->transfer_fee, 2),
@@ -670,9 +623,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนว่าการย้ายทีมเสร็จสมบูรณ์
-     *
-     * @param MlmTeamTransferRequest $request
-     * @return void
      */
     protected function sendCompletedNotifications(MlmTeamTransferRequest $request): void
     {
@@ -705,10 +655,10 @@ class MlmTeamTransferService
 
             // 1. ข้อความสำหรับสมาชิก
             $memberLineMessage = sprintf(
-                "🎉 การย้ายทีมเสร็จสมบูรณ์\n\n" .
-                "คุณได้ย้ายจากทีมของ %s\n" .
-                "ไปยังทีมของ %s เรียบร้อยแล้ว\n\n" .
-                "ขอบคุณที่ใช้บริการ!",
+                "🎉 การย้ายทีมเสร็จสมบูรณ์\n\n".
+                "คุณได้ย้ายจากทีมของ %s\n".
+                "ไปยังทีมของ %s เรียบร้อยแล้ว\n\n".
+                'ขอบคุณที่ใช้บริการ!',
                 $oldSponsor->name,
                 $newSponsor->name
             );
@@ -716,10 +666,10 @@ class MlmTeamTransferService
 
             // 2. ข้อความสำหรับแม่ทีมเก่า
             $oldSponsorLineMessage = sprintf(
-                "👋 สมาชิกย้ายออกจากทีม\n\n" .
-                "สมาชิก: %s (รหัส: %s)\n" .
-                "ได้ย้ายไปยังทีมของ %s แล้ว\n\n" .
-                "ขอบคุณสำหรับการดูแล",
+                "👋 สมาชิกย้ายออกจากทีม\n\n".
+                "สมาชิก: %s (รหัส: %s)\n".
+                "ได้ย้ายไปยังทีมของ %s แล้ว\n\n".
+                'ขอบคุณสำหรับการดูแล',
                 $member->name,
                 $request->member->member_code,
                 $newSponsor->name
@@ -728,11 +678,11 @@ class MlmTeamTransferService
 
             // 3. ข้อความสำหรับแม่ทีมใหม่
             $newSponsorLineMessage = sprintf(
-                "🎊 สมาชิกใหม่เข้าร่วมทีม\n\n" .
-                "สมาชิก: %s (รหัส: %s)\n" .
-                "ได้ย้ายจากทีมของ %s\n" .
-                "มาเป็นสมาชิกในทีมของคุณแล้ว\n\n" .
-                "ยินดีต้อนรับสู่ทีม!",
+                "🎊 สมาชิกใหม่เข้าร่วมทีม\n\n".
+                "สมาชิก: %s (รหัส: %s)\n".
+                "ได้ย้ายจากทีมของ %s\n".
+                "มาเป็นสมาชิกในทีมของคุณแล้ว\n\n".
+                'ยินดีต้อนรับสู่ทีม!',
                 $member->name,
                 $request->member->member_code,
                 $oldSponsor->name
@@ -749,8 +699,8 @@ class MlmTeamTransferService
     /**
      * ส่ง LINE message ไปยัง user (ถ้ามี LINE user ID)
      *
-     * @param User $user ผู้ใช้ที่จะส่ง
-     * @param string $message ข้อความที่จะส่ง
+     * @param  User  $user  ผู้ใช้ที่จะส่ง
+     * @param  string  $message  ข้อความที่จะส่ง
      * @return bool สำเร็จหรือไม่
      */
     protected function sendLineMessage(User $user, string $message): bool
@@ -761,6 +711,7 @@ class MlmTeamTransferService
                 'user_id' => $user->id,
                 'user_name' => $user->name,
             ]);
+
             return false;
         }
 
@@ -790,6 +741,7 @@ class MlmTeamTransferService
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -797,8 +749,8 @@ class MlmTeamTransferService
     /**
      * ส่ง LINE message ไปยังหลาย users
      *
-     * @param array $users รายการผู้ใช้
-     * @param string $message ข้อความที่จะส่ง
+     * @param  array  $users  รายการผู้ใช้
+     * @param  string  $message  ข้อความที่จะส่ง
      * @return int จำนวนที่ส่งสำเร็จ
      */
     protected function sendLineMessageToMultipleUsers(array $users, string $message): int
@@ -820,13 +772,13 @@ class MlmTeamTransferService
      * ฟีเจอร์นี้ให้ Admin สามารถย้ายสมาชิก MLM ไปยังทีมใหม่ได้โดยตรง
      * รองรับทั้ง Unilevel และ Binary plan
      *
-     * @param MlmMember $member สมาชิกที่จะย้าย
-     * @param array $transferData ข้อมูลการย้าย
-     *   - new_unilevel_sponsor_id (int|null): ID ของ sponsor ใหม่ใน Unilevel
-     *   - new_binary_parent_id (int|null): ID ของ parent ใหม่ใน Binary
-     *   - new_binary_position (string|null): ตำแหน่งใหม่ใน Binary ('left' หรือ 'right')
-     *   - admin_notes (string|null): หมายเหตุจาก Admin
-     * @param User $admin Admin ที่ดำเนินการ
+     * @param  MlmMember  $member  สมาชิกที่จะย้าย
+     * @param  array  $transferData  ข้อมูลการย้าย
+     *                               - new_unilevel_sponsor_id (int|null): ID ของ sponsor ใหม่ใน Unilevel
+     *                               - new_binary_parent_id (int|null): ID ของ parent ใหม่ใน Binary
+     *                               - new_binary_position (string|null): ตำแหน่งใหม่ใน Binary ('left' หรือ 'right')
+     *                               - admin_notes (string|null): หมายเหตุจาก Admin
+     * @param  User  $admin  Admin ที่ดำเนินการ
      * @return array ผลลัพธ์การย้าย
      *
      * @throws \Exception
@@ -858,14 +810,14 @@ class MlmTeamTransferService
             ];
 
             // ย้าย Unilevel (ถ้ามีการระบุ)
-            if (!empty($transferData['new_unilevel_sponsor_id'])) {
+            if (! empty($transferData['new_unilevel_sponsor_id'])) {
                 $newSponsor = MlmMember::findOrFail($transferData['new_unilevel_sponsor_id']);
 
                 $member->update([
                     'unilevel_sponsor_id' => $newSponsor->id,
                     'unilevel_level' => $newSponsor->unilevel_level + 1,
                     'unilevel_path' => $newSponsor->unilevel_path
-                        ? $newSponsor->unilevel_path . '/' . $newSponsor->id
+                        ? $newSponsor->unilevel_path.'/'.$newSponsor->id
                         : (string) $newSponsor->id,
                 ]);
 
@@ -876,7 +828,7 @@ class MlmTeamTransferService
             }
 
             // ย้าย Binary (ถ้ามีการระบุ)
-            if (!empty($transferData['new_binary_parent_id']) && !empty($transferData['new_binary_position'])) {
+            if (! empty($transferData['new_binary_parent_id']) && ! empty($transferData['new_binary_position'])) {
                 $newBinaryParent = MlmMember::findOrFail($transferData['new_binary_parent_id']);
 
                 $member->update([
@@ -925,19 +877,16 @@ class MlmTeamTransferService
     /**
      * ตรวจสอบความถูกต้องสำหรับ Admin Direct Transfer
      *
-     * @param MlmMember $member
-     * @param array $transferData
-     * @return void
      *
      * @throws \Exception
      */
     protected function validateAdminDirectTransfer(MlmMember $member, array $transferData): void
     {
         // ตรวจสอบว่ามีการระบุอย่างน้อย 1 อย่าง (Unilevel หรือ Binary)
-        $hasUnilevel = !empty($transferData['new_unilevel_sponsor_id']);
-        $hasBinary = !empty($transferData['new_binary_parent_id']) && !empty($transferData['new_binary_position']);
+        $hasUnilevel = ! empty($transferData['new_unilevel_sponsor_id']);
+        $hasBinary = ! empty($transferData['new_binary_parent_id']) && ! empty($transferData['new_binary_position']);
 
-        if (!$hasUnilevel && !$hasBinary) {
+        if (! $hasUnilevel && ! $hasBinary) {
             throw new \Exception('กรุณาระบุ Sponsor ใหม่ (Unilevel) หรือ Parent ใหม่ (Binary) อย่างน้อย 1 อย่าง');
         }
 
@@ -952,7 +901,7 @@ class MlmTeamTransferService
 
             // ตรวจสอบว่า sponsor ใหม่มีอยู่จริง
             $newSponsor = MlmMember::find($newSponsorId);
-            if (!$newSponsor) {
+            if (! $newSponsor) {
                 throw new \Exception('ไม่พบ Sponsor ใหม่ที่ระบุ (Unilevel)');
             }
 
@@ -979,12 +928,12 @@ class MlmTeamTransferService
 
             // ตรวจสอบว่า parent ใหม่มีอยู่จริง
             $newBinaryParent = MlmMember::find($newBinaryParentId);
-            if (!$newBinaryParent) {
+            if (! $newBinaryParent) {
                 throw new \Exception('ไม่พบ Binary Parent ใหม่ที่ระบุ');
             }
 
             // ตรวจสอบ position
-            if (!in_array($newBinaryPosition, ['left', 'right'])) {
+            if (! in_array($newBinaryPosition, ['left', 'right'])) {
                 throw new \Exception('ตำแหน่ง Binary ต้องเป็น left หรือ right เท่านั้น');
             }
 
@@ -1012,16 +961,13 @@ class MlmTeamTransferService
 
     /**
      * ตรวจสอบว่า $potential_downline เป็นลูกทีม Binary ของ $member หรือไม่
-     *
-     * @param MlmMember $member
-     * @param MlmMember $potentialDownline
-     * @return bool
      */
     protected function isBinaryDownline(MlmMember $member, MlmMember $potentialDownline): bool
     {
         // ตรวจสอบจาก binary_path
         if ($potentialDownline->binary_path) {
             $path = explode('/', $potentialDownline->binary_path);
+
             return in_array($member->id, $path);
         }
 
@@ -1032,7 +978,9 @@ class MlmTeamTransferService
                 return true;
             }
             $current = $current->binaryParent;
-            if (!$current) break;
+            if (! $current) {
+                break;
+            }
         }
 
         return false;
@@ -1040,9 +988,6 @@ class MlmTeamTransferService
 
     /**
      * อัพเดท unilevel path ของลูกทีมทั้งหมด (recursive)
-     *
-     * @param MlmMember $member
-     * @return void
      */
     protected function updateUnilevelDescendantPaths(MlmMember $member): void
     {
@@ -1052,7 +997,7 @@ class MlmTeamTransferService
         foreach ($children as $child) {
             // สร้าง path ใหม่
             $newPath = $member->unilevel_path
-                ? $member->unilevel_path . '/' . $member->id
+                ? $member->unilevel_path.'/'.$member->id
                 : (string) $member->id;
 
             $child->update([
@@ -1067,9 +1012,6 @@ class MlmTeamTransferService
 
     /**
      * อัพเดท binary path ของลูกทีม Binary ทั้งหมด (recursive)
-     *
-     * @param MlmMember $member
-     * @return void
      */
     protected function updateBinaryDescendantPaths(MlmMember $member): void
     {
@@ -1087,11 +1029,6 @@ class MlmTeamTransferService
 
     /**
      * ส่งการแจ้งเตือนสำหรับ Admin Direct Transfer
-     *
-     * @param MlmMember $member
-     * @param array $results
-     * @param User $admin
-     * @return void
      */
     protected function sendAdminDirectTransferNotifications(
         MlmMember $member,
@@ -1100,7 +1037,7 @@ class MlmTeamTransferService
     ): void {
         try {
             $memberUser = $member->user;
-            if (!$memberUser) {
+            if (! $memberUser) {
                 return;
             }
 
@@ -1117,11 +1054,11 @@ class MlmTeamTransferService
 
             // ส่ง LINE notification
             $lineMessage = sprintf(
-                "📢 แจ้งเตือนการย้ายทีมโดย Admin\n\n" .
-                "สมาชิก: %s (รหัส: %s)\n" .
-                "การย้าย: %s\n" .
-                "ดำเนินการโดย: %s\n\n" .
-                "หากมีข้อสงสัย กรุณาติดต่อทีมงาน",
+                "📢 แจ้งเตือนการย้ายทีมโดย Admin\n\n".
+                "สมาชิก: %s (รหัส: %s)\n".
+                "การย้าย: %s\n".
+                "ดำเนินการโดย: %s\n\n".
+                'หากมีข้อสงสัย กรุณาติดต่อทีมงาน',
                 $memberUser->name,
                 $member->member_code,
                 implode("\n", $transferTypes),
@@ -1141,7 +1078,6 @@ class MlmTeamTransferService
     /**
      * ดึงข้อมูล Binary Children ที่ว่างของ member
      *
-     * @param MlmMember $member
      * @return array ตำแหน่งที่ว่าง ['left' => bool, 'right' => bool]
      */
     public function getAvailableBinaryPositions(MlmMember $member): array
@@ -1155,17 +1091,17 @@ class MlmTeamTransferService
             ->exists();
 
         return [
-            'left' => !$leftOccupied,
-            'right' => !$rightOccupied,
+            'left' => ! $leftOccupied,
+            'right' => ! $rightOccupied,
         ];
     }
 
     /**
      * ค้นหาสมาชิกสำหรับ autocomplete
      *
-     * @param string $search คำค้นหา (ชื่อ, อีเมล, member_code)
-     * @param int|null $excludeId ID ที่ต้องการยกเว้น
-     * @param int $limit จำนวนผลลัพธ์สูงสุด
+     * @param  string  $search  คำค้นหา (ชื่อ, อีเมล, member_code)
+     * @param  int|null  $excludeId  ID ที่ต้องการยกเว้น
+     * @param  int  $limit  จำนวนผลลัพธ์สูงสุด
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function searchMembersForTransfer(

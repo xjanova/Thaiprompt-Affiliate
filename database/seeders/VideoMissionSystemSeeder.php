@@ -2,11 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Rank;
 use App\Models\VideoMission;
 use App\Models\VideoMissionRankLimit;
-use App\Models\Rank;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * VideoMissionSystemSeeder
@@ -18,8 +17,6 @@ class VideoMissionSystemSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้นสำหรับระบบภารกิจดูคลิป
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -36,8 +33,6 @@ class VideoMissionSystemSeeder extends Seeder
 
     /**
      * สร้าง Rank Limits สำหรับทุก Rank
-     *
-     * @return void
      */
     private function seedRankLimits(): void
     {
@@ -47,6 +42,7 @@ class VideoMissionSystemSeeder extends Seeder
 
         if ($ranks->isEmpty()) {
             $this->command->warn('   ⚠️ ไม่พบ Rank ในระบบ - ข้าม Rank Limits');
+
             return;
         }
 
@@ -87,8 +83,6 @@ class VideoMissionSystemSeeder extends Seeder
 
     /**
      * สร้างภารกิจตัวอย่าง
-     *
-     * @return void
      */
     private function seedDemoMissions(): void
     {
@@ -97,6 +91,7 @@ class VideoMissionSystemSeeder extends Seeder
         // ตรวจสอบว่ามีภารกิจอยู่แล้วหรือไม่
         if (VideoMission::count() > 0) {
             $this->command->info('   ⏩ มีภารกิจอยู่แล้ว - ข้าม');
+
             return;
         }
 
@@ -230,6 +225,6 @@ class VideoMissionSystemSeeder extends Seeder
             ]));
         }
 
-        $this->command->info('   ✓ สร้างภารกิจตัวอย่าง ' . count($missions) . ' รายการเรียบร้อย');
+        $this->command->info('   ✓ สร้างภารกิจตัวอย่าง '.count($missions).' รายการเรียบร้อย');
     }
 }

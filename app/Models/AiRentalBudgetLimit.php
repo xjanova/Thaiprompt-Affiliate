@@ -143,8 +143,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -153,8 +151,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ความสัมพันธ์กับ Cloud Config
-     *
-     * @return BelongsTo
      */
     public function cloudConfig(): BelongsTo
     {
@@ -163,8 +159,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ความสัมพันธ์กับ Deployment
-     *
-     * @return BelongsTo
      */
     public function deployment(): BelongsTo
     {
@@ -174,7 +168,7 @@ class AiRentalBudgetLimit extends Model
     /**
      * Scope: Budget limits ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -186,7 +180,7 @@ class AiRentalBudgetLimit extends Model
     /**
      * Scope: Budget limits ที่เกินแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExceeded($query)
@@ -197,8 +191,7 @@ class AiRentalBudgetLimit extends Model
     /**
      * Scope: Budget limits สำหรับ user
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -208,21 +201,18 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * คำนวณเปอร์เซ็นต์ของค่าใช้จ่าย
-     *
-     * @return float
      */
     public function getSpendingPercentage(): float
     {
         if ($this->limit_amount == 0) {
             return 0;
         }
+
         return ($this->current_spending / $this->limit_amount) * 100;
     }
 
     /**
      * ตรวจสอบว่าเกิน budget หรือยัง
-     *
-     * @return bool
      */
     public function isExceeded(): bool
     {
@@ -231,9 +221,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ตรวจสอบว่าใกล้เกิน budget หรือยัง (ตาม threshold)
-     *
-     * @param int $threshold
-     * @return bool
      */
     public function isNearLimit(int $threshold = 90): bool
     {
@@ -242,9 +229,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * เพิ่มค่าใช้จ่าย
-     *
-     * @param float $amount
-     * @return bool
      */
     public function addSpending(float $amount): bool
     {
@@ -268,9 +252,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ตรวจสอบและ trigger thresholds
-     *
-     * @param float $oldSpending
-     * @return void
      */
     protected function checkThresholds(float $oldSpending): void
     {
@@ -278,7 +259,7 @@ class AiRentalBudgetLimit extends Model
         $newPercentage = $this->getSpendingPercentage();
 
         // Threshold 1
-        if ($newPercentage >= $this->warning_threshold_1 && !$this->threshold_1_triggered) {
+        if ($newPercentage >= $this->warning_threshold_1 && ! $this->threshold_1_triggered) {
             $this->threshold_1_triggered = true;
             $this->threshold_1_triggered_at = now();
             $this->total_alerts_sent++;
@@ -286,7 +267,7 @@ class AiRentalBudgetLimit extends Model
         }
 
         // Threshold 2
-        if ($newPercentage >= $this->warning_threshold_2 && !$this->threshold_2_triggered) {
+        if ($newPercentage >= $this->warning_threshold_2 && ! $this->threshold_2_triggered) {
             $this->threshold_2_triggered = true;
             $this->threshold_2_triggered_at = now();
             $this->total_alerts_sent++;
@@ -294,7 +275,7 @@ class AiRentalBudgetLimit extends Model
         }
 
         // Threshold 3
-        if ($newPercentage >= $this->warning_threshold_3 && !$this->threshold_3_triggered) {
+        if ($newPercentage >= $this->warning_threshold_3 && ! $this->threshold_3_triggered) {
             $this->threshold_3_triggered = true;
             $this->threshold_3_triggered_at = now();
             $this->total_alerts_sent++;
@@ -304,8 +285,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * รีเซ็ต budget (สำหรับ budget แบบ period)
-     *
-     * @return bool
      */
     public function reset(): bool
     {
@@ -334,8 +313,6 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ตั้งค่า period ตาม budget_type
-     *
-     * @return void
      */
     protected function setPeriod(): void
     {
@@ -358,11 +335,9 @@ class AiRentalBudgetLimit extends Model
 
     /**
      * ตรวจสอบว่า period หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isPeriodExpired(): bool
     {
-        return !is_null($this->period_end) && $this->period_end < now();
+        return ! is_null($this->period_end) && $this->period_end < now();
     }
 }

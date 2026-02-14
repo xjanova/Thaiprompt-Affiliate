@@ -81,7 +81,7 @@ class FortuneCategoriesController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
-            'slug' => 'nullable|string|max:100|unique:fortune_categories,slug,' . $category->id,
+            'slug' => 'nullable|string|max:100|unique:fortune_categories,slug,'.$category->id,
             'icon' => 'nullable|string|max:50',
             'color' => 'required|string|max:20',
             'description' => 'nullable|string',

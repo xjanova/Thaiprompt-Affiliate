@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-
 /**
  * Enhanced Validation Service
  *
@@ -25,7 +22,6 @@ class ValidationService
      * - +66812345678 (international format)
      * - 66812345678 (without +)
      *
-     * @param string $phone
      * @return array ['valid' => bool, 'formatted' => string|null, 'errors' => array]
      */
     public function validateThaiPhone(string $phone): array
@@ -37,7 +33,7 @@ class ValidationService
         if (preg_match('/^0([6-9]\d{8})$/', $cleaned, $matches)) {
             return [
                 'valid' => true,
-                'formatted' => '0' . $matches[1],
+                'formatted' => '0'.$matches[1],
                 'type' => 'mobile',
                 'errors' => [],
             ];
@@ -47,7 +43,7 @@ class ValidationService
         if (preg_match('/^\+?66([6-9]\d{8})$/', $cleaned, $matches)) {
             return [
                 'valid' => true,
-                'formatted' => '0' . $matches[1],
+                'formatted' => '0'.$matches[1],
                 'type' => 'mobile',
                 'errors' => [],
             ];
@@ -57,7 +53,7 @@ class ValidationService
         if (preg_match('/^0([2-5]\d{7,8})$/', $cleaned, $matches)) {
             return [
                 'valid' => true,
-                'formatted' => '0' . $matches[1],
+                'formatted' => '0'.$matches[1],
                 'type' => 'landline',
                 'errors' => [],
             ];
@@ -75,9 +71,6 @@ class ValidationService
      * Validate Thai national ID card number
      *
      * Uses checksum algorithm to verify Thai ID card validity
-     *
-     * @param string $idCard
-     * @return array
      */
     public function validateThaiIdCard(string $idCard): array
     {
@@ -85,7 +78,7 @@ class ValidationService
         $cleaned = preg_replace('/[\s\-]/', '', $idCard);
 
         // Must be exactly 13 digits
-        if (!preg_match('/^\d{13}$/', $cleaned)) {
+        if (! preg_match('/^\d{13}$/', $cleaned)) {
             return [
                 'valid' => false,
                 'formatted' => null,
@@ -96,11 +89,11 @@ class ValidationService
         // Validate checksum using Thai ID card algorithm
         $sum = 0;
         for ($i = 0; $i < 12; $i++) {
-            $sum += (int)$cleaned[$i] * (13 - $i);
+            $sum += (int) $cleaned[$i] * (13 - $i);
         }
 
         $checksum = (11 - ($sum % 11)) % 10;
-        $lastDigit = (int)$cleaned[12];
+        $lastDigit = (int) $cleaned[12];
 
         if ($checksum !== $lastDigit) {
             return [
@@ -131,16 +124,14 @@ class ValidationService
     /**
      * Validate email address
      *
-     * @param string $email
-     * @param bool $checkMxRecord Check if MX record exists
-     * @return array
+     * @param  bool  $checkMxRecord  Check if MX record exists
      */
     public function validateEmail(string $email, bool $checkMxRecord = false): array
     {
         $email = trim(strtolower($email));
 
         // Basic email validation
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return [
                 'valid' => false,
                 'formatted' => null,
@@ -158,11 +149,11 @@ class ValidationService
             'yahooo.com' => 'yahoo.com',
         ];
 
-        list($localPart, $domain) = explode('@', $email);
+        [$localPart, $domain] = explode('@', $email);
 
         $suggestion = null;
         if (isset($commonTypos[$domain])) {
-            $suggestion = $localPart . '@' . $commonTypos[$domain];
+            $suggestion = $localPart.'@'.$commonTypos[$domain];
         }
 
         // Check MX record if requested
@@ -171,7 +162,7 @@ class ValidationService
             $mxRecordExists = checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
         }
 
-        if (!$mxRecordExists) {
+        if (! $mxRecordExists) {
             return [
                 'valid' => false,
                 'formatted' => $email,
@@ -192,9 +183,7 @@ class ValidationService
     /**
      * Validate Thai name (supports Thai and English)
      *
-     * @param string $name
-     * @param string $type 'thai' or 'english' or 'both'
-     * @return array
+     * @param  string  $type  'thai' or 'english' or 'both'
      */
     public function validateThaiName(string $name, string $type = 'both'): array
     {
@@ -221,14 +210,14 @@ class ValidationService
         // Check for English characters
         $hasEnglish = preg_match('/[a-zA-Z]/', $name);
 
-        if ($type === 'thai' && !$hasThai) {
+        if ($type === 'thai' && ! $hasThai) {
             return [
                 'valid' => false,
                 'errors' => ['กรุณากรอกชื่อเป็นภาษาไทย'],
             ];
         }
 
-        if ($type === 'english' && !$hasEnglish) {
+        if ($type === 'english' && ! $hasEnglish) {
             return [
                 'valid' => false,
                 'errors' => ['กรุณากรอกชื่อเป็นภาษาอังกฤษ'],
@@ -254,9 +243,6 @@ class ValidationService
 
     /**
      * Validate Thai address
-     *
-     * @param string $address
-     * @return array
      */
     public function validateThaiAddress(string $address): array
     {
@@ -286,15 +272,12 @@ class ValidationService
 
     /**
      * Validate Thai postal code
-     *
-     * @param string $postalCode
-     * @return array
      */
     public function validateThaiPostalCode(string $postalCode): array
     {
         $cleaned = preg_replace('/\s/', '', $postalCode);
 
-        if (!preg_match('/^\d{5}$/', $cleaned)) {
+        if (! preg_match('/^\d{5}$/', $cleaned)) {
             return [
                 'valid' => false,
                 'formatted' => null,
@@ -312,10 +295,9 @@ class ValidationService
     /**
      * Validate date of birth
      *
-     * @param string $date Format: Y-m-d or d/m/Y
-     * @param int $minAge Minimum age required
-     * @param int $maxAge Maximum age allowed
-     * @return array
+     * @param  string  $date  Format: Y-m-d or d/m/Y
+     * @param  int  $minAge  Minimum age required
+     * @param  int  $maxAge  Maximum age allowed
      */
     public function validateDateOfBirth(string $date, int $minAge = 13, int $maxAge = 120): array
     {
@@ -331,7 +313,7 @@ class ValidationService
                 }
             }
 
-            if (!$dateObj) {
+            if (! $dateObj) {
                 return [
                     'valid' => false,
                     'errors' => ['รูปแบบวันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ วัน/เดือน/ปี'],
@@ -339,7 +321,7 @@ class ValidationService
             }
 
             // Calculate age
-            $today = new \DateTime();
+            $today = new \DateTime;
             $age = $today->diff($dateObj)->y;
 
             // Check if date is in the future
@@ -384,9 +366,7 @@ class ValidationService
     /**
      * Comprehensive validation for multiple fields
      *
-     * @param array $data
-     * @param array $rules Format: ['field' => 'rule1|rule2']
-     * @return array
+     * @param  array  $rules  Format: ['field' => 'rule1|rule2']
      */
     public function validateMultiple(array $data, array $rules): array
     {
@@ -400,13 +380,15 @@ class ValidationService
             foreach ($fieldRules as $rule) {
                 if ($rule === 'required' && empty($value)) {
                     $errors[$field][] = "กรุณากรอก {$field}";
+
                     continue 2; // Skip to next field
                 }
 
                 if ($rule === 'thai_phone') {
                     $result = $this->validateThaiPhone($value);
-                    if (!$result['valid']) {
+                    if (! $result['valid']) {
                         $errors[$field] = $result['errors'];
+
                         continue 2;
                     }
                     $validated[$field] = $result['formatted'];
@@ -414,8 +396,9 @@ class ValidationService
 
                 if ($rule === 'thai_id') {
                     $result = $this->validateThaiIdCard($value);
-                    if (!$result['valid']) {
+                    if (! $result['valid']) {
                         $errors[$field] = $result['errors'];
+
                         continue 2;
                     }
                     $validated[$field] = $result['formatted'];
@@ -423,8 +406,9 @@ class ValidationService
 
                 if ($rule === 'email') {
                     $result = $this->validateEmail($value);
-                    if (!$result['valid']) {
+                    if (! $result['valid']) {
                         $errors[$field] = $result['errors'];
+
                         continue 2;
                     }
                     $validated[$field] = $result['formatted'];
@@ -432,8 +416,9 @@ class ValidationService
 
                 if ($rule === 'thai_name') {
                     $result = $this->validateThaiName($value);
-                    if (!$result['valid']) {
+                    if (! $result['valid']) {
                         $errors[$field] = $result['errors'];
+
                         continue 2;
                     }
                     $validated[$field] = $result['formatted'];
@@ -441,7 +426,7 @@ class ValidationService
             }
 
             // If no errors, use original value if not already validated
-            if (!isset($errors[$field]) && !isset($validated[$field])) {
+            if (! isset($errors[$field]) && ! isset($validated[$field])) {
                 $validated[$field] = $value;
             }
         }

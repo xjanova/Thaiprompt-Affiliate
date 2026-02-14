@@ -282,9 +282,6 @@ class AiContentTemplate extends Model
 
     /**
      * สร้าง Prompt จาก Template และ Variables
-     *
-     * @param array $variables
-     * @return string
      */
     public function buildPrompt(array $variables): string
     {

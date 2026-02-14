@@ -19,21 +19,15 @@ class GoogleMapsController extends Controller
 {
     /**
      * Constructor
-     *
-     * @param GoogleMapsService $mapsService
      */
     public function __construct(
         protected GoogleMapsService $mapsService
-    ) {
-    }
+    ) {}
 
     /**
      * Reverse Geocode: แปลงพิกัด GPS → ที่อยู่
      *
      * POST /api/v1/maps/reverse-geocode
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function reverseGeocode(Request $request): JsonResponse
     {
@@ -65,9 +59,6 @@ class GoogleMapsController extends Controller
      * Forward Geocode: แปลงที่อยู่ → พิกัด GPS
      *
      * POST /api/v1/maps/geocode
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function geocode(Request $request): JsonResponse
     {
@@ -95,9 +86,6 @@ class GoogleMapsController extends Controller
      * คำนวณเส้นทางและระยะทาง
      *
      * POST /api/v1/maps/directions
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDirections(Request $request): JsonResponse
     {
@@ -135,9 +123,6 @@ class GoogleMapsController extends Controller
      * คำนวณระยะทางหลายจุดพร้อมกัน (Distance Matrix)
      *
      * POST /api/v1/maps/distance-matrix
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDistanceMatrix(Request $request): JsonResponse
     {
@@ -175,9 +160,6 @@ class GoogleMapsController extends Controller
      * ค้นหาสถานที่ใกล้เคียง
      *
      * POST /api/v1/maps/search-nearby
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchNearby(Request $request): JsonResponse
     {
@@ -214,9 +196,6 @@ class GoogleMapsController extends Controller
      * ดูรายละเอียดสถานที่จาก Place ID
      *
      * GET /api/v1/maps/place/{placeId}
-     *
-     * @param string $placeId
-     * @return JsonResponse
      */
     public function getPlaceDetails(string $placeId): JsonResponse
     {
@@ -240,8 +219,6 @@ class GoogleMapsController extends Controller
      * ตรวจสอบสถานะ Google Maps API
      *
      * GET /api/v1/maps/status
-     *
-     * @return JsonResponse
      */
     public function getStatus(): JsonResponse
     {

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PerformanceGoal;
 use App\Models\Employee;
+use App\Models\PerformanceGoal;
 use Illuminate\Http\Request;
 
 class PerformanceGoalController extends Controller
@@ -19,13 +19,13 @@ class PerformanceGoalController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('goal_title', 'like', '%'.$search.'%')
-                  ->orWhere('goal_description', 'like', '%'.$search.'%')
-                  ->orWhereHas('employee', function($eq) use ($search) {
-                      $eq->where('first_name', 'like', '%'.$search.'%')
-                         ->orWhere('last_name', 'like', '%'.$search.'%');
-                  });
+                    ->orWhere('goal_description', 'like', '%'.$search.'%')
+                    ->orWhereHas('employee', function ($eq) use ($search) {
+                        $eq->where('first_name', 'like', '%'.$search.'%')
+                            ->orWhere('last_name', 'like', '%'.$search.'%');
+                    });
             });
         }
 
@@ -83,7 +83,7 @@ class PerformanceGoalController extends Controller
         PerformanceGoal::create($validated);
 
         return redirect()->route('admin.hrm.performance.goals.index')
-                        ->with('success', __('Performance goal created successfully'));
+            ->with('success', __('Performance goal created successfully'));
     }
 
     /**
@@ -132,7 +132,7 @@ class PerformanceGoalController extends Controller
         $goal->update($validated);
 
         return redirect()->route('admin.hrm.performance.goals.index')
-                        ->with('success', __('Performance goal updated successfully'));
+            ->with('success', __('Performance goal updated successfully'));
     }
 
     /**
@@ -143,6 +143,6 @@ class PerformanceGoalController extends Controller
         $goal->delete();
 
         return redirect()->route('admin.hrm.performance.goals.index')
-                        ->with('success', __('Performance goal deleted successfully'));
+            ->with('success', __('Performance goal deleted successfully'));
     }
 }

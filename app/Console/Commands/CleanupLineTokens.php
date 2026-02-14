@@ -45,9 +45,10 @@ class CleanupLineTokens extends Command
 
         $this->info('🧹 Starting LINE token cleanup...');
 
-        if (!$this->option('force') && !$isDryRun) {
-            if (!$this->confirm('This will verify and remove expired LINE tokens. Continue?')) {
+        if (! $this->option('force') && ! $isDryRun) {
+            if (! $this->confirm('This will verify and remove expired LINE tokens. Continue?')) {
                 $this->warn('❌ Cleanup cancelled.');
+
                 return 1;
             }
         }
@@ -56,7 +57,8 @@ class CleanupLineTokens extends Command
             // Count how many tokens exist
             $count = \App\Models\User::whereNotNull('line_access_token')->count();
             $this->info("ℹ️  Found {$count} users with LINE tokens");
-            $this->info("ℹ️  Would verify each token with LINE API and remove expired ones");
+            $this->info('ℹ️  Would verify each token with LINE API and remove expired ones');
+
             return 0;
         }
 
@@ -67,6 +69,7 @@ class CleanupLineTokens extends Command
 
         if ($totalUsers === 0) {
             $this->info('ℹ️  No LINE tokens found to cleanup.');
+
             return 0;
         }
 
@@ -77,7 +80,7 @@ class CleanupLineTokens extends Command
         $cleaned = 0;
         foreach ($usersWithTokens as $user) {
             // Verify token
-            if (!$tokenService->verifyToken($user)) {
+            if (! $tokenService->verifyToken($user)) {
                 // Token is expired or invalid, remove it
                 $tokenService->revokeAccessToken($user);
                 $cleaned++;

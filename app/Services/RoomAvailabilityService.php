@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\RoomType;
-use App\Models\RoomAvailability;
 use App\Models\HotelBooking;
+use App\Models\RoomAvailability;
+use App\Models\RoomType;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 

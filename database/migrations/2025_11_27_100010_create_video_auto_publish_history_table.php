@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_publish_history
      * เก็บประวัติการโพสต์วีดีโอไปยัง Social Media
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -37,7 +35,7 @@ return new class extends Migration
                 'twitter',
                 'threads',
                 'line_voom',
-                'other'
+                'other',
             ])->index()->comment('Platform ที่โพสต์');
 
             $table->string('platform_account')->nullable()->comment('บัญชีที่ใช้โพสต์');
@@ -63,7 +61,7 @@ return new class extends Migration
                 'processing',   // Platform กำลังประมวลผล
                 'published',    // โพสต์สำเร็จ
                 'failed',       // โพสต์ล้มเหลว
-                'deleted'       // ถูกลบจาก Platform
+                'deleted',       // ถูกลบจาก Platform
             ])->default('pending')->index();
 
             $table->string('platform_post_id')->nullable()->comment('ID ของโพสต์บน Platform');
@@ -131,8 +129,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_publish_history
-     *
-     * @return void
      */
     public function down(): void
     {

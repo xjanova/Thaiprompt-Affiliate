@@ -91,7 +91,7 @@ class LanguageSettingController extends Controller
 
             return redirect()
                 ->back()
-                ->with('error', 'Failed to update language settings: ' . $e->getMessage());
+                ->with('error', 'Failed to update language settings: '.$e->getMessage());
         }
     }
 
@@ -132,7 +132,7 @@ class LanguageSettingController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update language: ' . $e->getMessage(),
+                'message' => 'Failed to update language: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -145,7 +145,7 @@ class LanguageSettingController extends Controller
         $language = LanguageSetting::where('code', $code)->firstOrFail();
 
         try {
-            $language->is_enabled = !$language->is_enabled;
+            $language->is_enabled = ! $language->is_enabled;
             $language->save();
 
             return response()->json([
@@ -156,7 +156,7 @@ class LanguageSettingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to toggle language: ' . $e->getMessage(),
+                'message' => 'Failed to toggle language: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -188,7 +188,7 @@ class LanguageSettingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reorder languages: ' . $e->getMessage(),
+                'message' => 'Failed to reorder languages: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -243,7 +243,7 @@ class LanguageSettingController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update switcher settings: ' . $e->getMessage(),
+                'message' => 'Failed to update switcher settings: '.$e->getMessage(),
             ], 500);
         }
     }

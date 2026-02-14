@@ -15,8 +15,6 @@ class SmsCheckerSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้นสำหรับ SMS Checker
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -25,6 +23,7 @@ class SmsCheckerSeeder extends Seeder
         // ตรวจสอบว่ามี device อยู่แล้วหรือไม่
         if (SmsCheckerDevice::where('device_id', 'SMSCHK-TESTDEV1')->exists()) {
             $this->command->info('ข้อมูล SMS Checker Device มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

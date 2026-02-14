@@ -44,7 +44,7 @@ class ProductJourneyResource extends JsonResource
             ],
 
             // Transport
-            'transport' => $this->when($this->transport_method, fn() => [
+            'transport' => $this->when($this->transport_method, fn () => [
                 'method' => $this->transport_method,
                 'distance_km' => $this->distance_km,
                 'fuel_type' => $this->fuel_type,

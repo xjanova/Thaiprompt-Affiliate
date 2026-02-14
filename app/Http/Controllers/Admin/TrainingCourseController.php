@@ -18,10 +18,10 @@ class TrainingCourseController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('course_name', 'like', '%'.$search.'%')
-                  ->orWhere('course_code', 'like', '%'.$search.'%')
-                  ->orWhere('course_description', 'like', '%'.$search.'%');
+                    ->orWhere('course_code', 'like', '%'.$search.'%')
+                    ->orWhere('course_description', 'like', '%'.$search.'%');
             });
         }
 
@@ -77,7 +77,7 @@ class TrainingCourseController extends Controller
         TrainingCourse::create($validated);
 
         return redirect()->route('admin.hrm.training.courses.index')
-                        ->with('success', __('Training course created successfully'));
+            ->with('success', __('Training course created successfully'));
     }
 
     /**
@@ -123,7 +123,7 @@ class TrainingCourseController extends Controller
         $course->update($validated);
 
         return redirect()->route('admin.hrm.training.courses.index')
-                        ->with('success', __('Training course updated successfully'));
+            ->with('success', __('Training course updated successfully'));
     }
 
     /**
@@ -134,6 +134,6 @@ class TrainingCourseController extends Controller
         $course->delete();
 
         return redirect()->route('admin.hrm.training.courses.index')
-                        ->with('success', __('Training course deleted successfully'));
+            ->with('success', __('Training course deleted successfully'));
     }
 }

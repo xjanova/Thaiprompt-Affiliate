@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\CarbonCredit;
 use App\Models\FoodProduct;
 use App\Models\ProductJourney;
 use App\Models\QualityCheckpoint;
-use App\Models\CarbonCredit;
 use Illuminate\Support\Facades\Log;
 
 class BlockchainRecordService
@@ -43,7 +43,7 @@ class BlockchainRecordService
             ]);
 
             // Return a temporary hash for development
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -76,7 +76,7 @@ class BlockchainRecordService
                 'error' => $e->getMessage(),
             ]);
 
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -110,7 +110,7 @@ class BlockchainRecordService
                 'error' => $e->getMessage(),
             ]);
 
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -144,7 +144,7 @@ class BlockchainRecordService
                 'error' => $e->getMessage(),
             ]);
 
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -178,7 +178,7 @@ class BlockchainRecordService
                 'error' => $e->getMessage(),
             ]);
 
-            return '0x' . bin2hex(random_bytes(32));
+            return '0x'.bin2hex(random_bytes(32));
         }
     }
 
@@ -211,7 +211,7 @@ class BlockchainRecordService
             // TODO: Implement actual IPFS upload
             // For now, return a mock IPFS hash
             $content = file_get_contents($filePath);
-            $hash = 'Qm' . substr(hash('sha256', $content), 0, 44);
+            $hash = 'Qm'.substr(hash('sha256', $content), 0, 44);
 
             Log::info('File uploaded to IPFS', [
                 'file' => $filePath,
@@ -276,7 +276,7 @@ class BlockchainRecordService
         ]);
 
         // Generate mock transaction hash
-        return '0x' . bin2hex(random_bytes(32));
+        return '0x'.bin2hex(random_bytes(32));
     }
 
     /**
@@ -295,7 +295,7 @@ class BlockchainRecordService
         return [
             'transactionHash' => $hash,
             'status' => '0x1', // Success
-            'blockNumber' => '0x' . dechex(rand(1000000, 9999999)),
+            'blockNumber' => '0x'.dechex(rand(1000000, 9999999)),
         ];
     }
 
@@ -305,6 +305,7 @@ class BlockchainRecordService
     protected function generateMetadataHash($model): string
     {
         $data = json_encode($model->toArray());
+
         return hash('sha256', $data);
     }
 
@@ -324,6 +325,6 @@ class BlockchainRecordService
 
         $baseUrl = $explorers[$network] ?? $explorers['bsc'];
 
-        return $baseUrl . $hash;
+        return $baseUrl.$hash;
     }
 }

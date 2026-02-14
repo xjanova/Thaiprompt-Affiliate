@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Rank;
-use App\Models\User;
 use App\Services\RankingService;
 use Illuminate\Http\Request;
 
@@ -26,7 +25,7 @@ class RankController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $ranks
+            'data' => $ranks,
         ]);
     }
 
@@ -36,7 +35,7 @@ class RankController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $rank
+            'data' => $rank,
         ]);
     }
 
@@ -57,7 +56,7 @@ class RankController extends Controller
                 'rank_points' => $user->rank_points,
                 'progress' => $progress,
                 'next_rank' => $user->currentRank?->next_rank,
-            ]
+            ],
         ]);
     }
 
@@ -68,7 +67,7 @@ class RankController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $leaderboard
+            'data' => $leaderboard,
         ]);
     }
 
@@ -79,7 +78,7 @@ class RankController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $eligibility
+            'data' => $eligibility,
         ]);
     }
 
@@ -94,7 +93,7 @@ class RankController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Promotion request submitted successfully',
-            'data' => $promotion
+            'data' => $promotion,
         ]);
     }
 }

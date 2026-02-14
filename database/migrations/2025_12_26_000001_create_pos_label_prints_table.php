@@ -16,8 +16,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง pos_label_prints
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,7 +48,7 @@ return new class extends Migration
                 'shipping_label',   // ใบปะสินค้า
                 'price_tag',        // ฉลากราคา
                 'barcode_only',     // barcode อย่างเดียว
-                'custom'            // กำหนดเอง
+                'custom',            // กำหนดเอง
             ])->default('product_label');
 
             // ข้อมูลสินค้าที่พิมพ์ (JSON Array)
@@ -100,7 +98,7 @@ return new class extends Migration
                 'printing',     // กำลังพิมพ์
                 'completed',    // พิมพ์สำเร็จ
                 'failed',       // พิมพ์ล้มเหลว
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('pending');
 
             $table->timestamp('printed_at')->nullable(); // วันเวลาที่พิมพ์
@@ -127,8 +125,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง pos_label_prints
-     *
-     * @return void
      */
     public function down(): void
     {

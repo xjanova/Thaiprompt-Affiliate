@@ -71,7 +71,7 @@ class MlmPackage extends Model
     public function scopeAvailableForNewMembers($query)
     {
         return $query->where('is_active', true)
-                     ->where('is_available_for_new_members', true);
+            ->where('is_available_for_new_members', true);
     }
 
     /**
@@ -95,7 +95,7 @@ class MlmPackage extends Model
      */
     public function canUpgradeTo($packageId)
     {
-        if (!$this->can_upgrade) {
+        if (! $this->can_upgrade) {
             return false;
         }
 
@@ -111,7 +111,7 @@ class MlmPackage extends Model
      */
     public function getAvailableUpgrades()
     {
-        if (!$this->can_upgrade) {
+        if (! $this->can_upgrade) {
             return collect();
         }
 
@@ -119,7 +119,7 @@ class MlmPackage extends Model
             ->where('price', '>', $this->price)
             ->ordered();
 
-        if (!empty($this->upgrade_options)) {
+        if (! empty($this->upgrade_options)) {
             $query->whereIn('id', $this->upgrade_options);
         }
 

@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Models\ApiEndpoint;
 use App\Models\ApiKey;
-use App\Models\ApiUsageLog;
 use App\Models\ApiQuota;
+use App\Models\ApiUsageLog;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,41 +22,45 @@ class ApiAccessControl
         // ดึง API key จาก header
         $apiKeyValue = $request->header('X-API-Key') ?? $request->bearerToken();
 
-        if (!$apiKeyValue) {
+        if (! $apiKeyValue) {
             return $this->errorResponse('API key is required', 401);
         }
 
         // ตรวจสอบ API key
         $apiKey = ApiKey::verify($apiKeyValue);
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return $this->errorResponse('Invalid or expired API key', 401);
         }
 
         // ตรวจสอบ IP address
-        if (!$apiKey->isIpAllowed($request->ip())) {
+        if (! $apiKey->isIpAllowed($request->ip())) {
             $this->logUsage($apiKey, $request, 403, $startTime, 'IP not allowed');
+
             return $this->errorResponse('IP address not allowed', 403);
         }
 
         // ตรวจสอบว่า endpoint นี้เปิดใช้งานหรือไม่
         $endpoint = $this->findEndpoint($request);
 
-        if ($endpoint && !$endpoint->is_active) {
+        if ($endpoint && ! $endpoint->is_active) {
             $this->logUsage($apiKey, $request, 403, $startTime, 'Endpoint disabled', $endpoint->id);
+
             return $this->errorResponse('This API endpoint is currently disabled', 403);
         }
 
         // ตรวจสอบว่า API key สามารถเข้าถึง endpoint นี้ได้หรือไม่
-        if ($endpoint && !$apiKey->canAccessEndpoint($endpoint->id)) {
+        if ($endpoint && ! $apiKey->canAccessEndpoint($endpoint->id)) {
             $this->logUsage($apiKey, $request, 403, $startTime, 'Access denied', $endpoint->id);
+
             return $this->errorResponse('Access denied to this endpoint', 403);
         }
 
         // ตรวจสอบ scope (สำหรับ write operations)
         if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-            if (!$apiKey->hasScope('write')) {
+            if (! $apiKey->hasScope('write')) {
                 $this->logUsage($apiKey, $request, 403, $startTime, 'Write permission required', $endpoint?->id);
+
                 return $this->errorResponse('Write permission required', 403);
             }
         }
@@ -64,6 +68,7 @@ class ApiAccessControl
         // ตรวจสอบโควต้ารายเดือน
         if ($apiKey->isQuotaExceeded()) {
             $this->logUsage($apiKey, $request, 429, $startTime, 'Monthly quota exceeded', $endpoint?->id);
+
             return $this->errorResponse('Monthly quota exceeded', 429);
         }
 
@@ -71,6 +76,7 @@ class ApiAccessControl
         $rateLimitCheck = $this->checkRateLimits($apiKey, $endpoint);
         if ($rateLimitCheck !== true) {
             $this->logUsage($apiKey, $request, 429, $startTime, $rateLimitCheck, $endpoint?->id);
+
             return $this->errorResponse($rateLimitCheck, 429);
         }
 

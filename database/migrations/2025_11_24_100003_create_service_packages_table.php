@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง service_packages - แพคเกจบริการ
      *
      * แพคเกจที่รวมบริการ + สินค้า เช่น นวด 1 ชม. + โลชั่น + น้ำมันหอมระเหย
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -64,8 +62,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_packages
-     *
-     * @return void
      */
     public function down(): void
     {

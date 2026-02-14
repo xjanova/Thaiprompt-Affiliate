@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง ranks มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('ranks')) {
+        if (! Schema::hasTable('ranks')) {
             return;
         }
 

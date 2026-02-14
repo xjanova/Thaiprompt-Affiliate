@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง services - บริการแต่ละประเภท
      *
      * เก็บรายละเอียดบริการ เช่น นวดไทย 1 ชม., นวดน้ำมัน 2 ชม., delivery อาหาร
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -86,8 +84,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง services
-     *
-     * @return void
      */
     public function down(): void
     {

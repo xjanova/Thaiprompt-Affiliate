@@ -34,7 +34,7 @@ class AiKnowledgeChunk extends Model
      */
     public function cosineSimilarity(array $queryEmbedding): float
     {
-        if (!$this->embedding || empty($this->embedding)) {
+        if (! $this->embedding || empty($this->embedding)) {
             return 0.0;
         }
 
@@ -43,7 +43,7 @@ class AiKnowledgeChunk extends Model
         $magnitudeB = 0.0;
 
         foreach ($this->embedding as $i => $value) {
-            if (!isset($queryEmbedding[$i])) {
+            if (! isset($queryEmbedding[$i])) {
                 continue;
             }
 

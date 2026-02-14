@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 /**
  * Fortune Billing Controller
@@ -21,7 +20,6 @@ class FortuneBillingController extends Controller
     /**
      * แสดง Dashboard บิลดูดวง + สถิติรายได้
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -70,7 +68,6 @@ class FortuneBillingController extends Controller
     /**
      * แสดงหน้าจัดการบิลลอย (floating bills)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function floatingBills(Request $request)
@@ -117,8 +114,6 @@ class FortuneBillingController extends Controller
     /**
      * Assign บิลลอยให้ผู้ใช้
      *
-     * @param Request $request
-     * @param FortuneReading $reading
      * @return \Illuminate\Http\RedirectResponse
      */
     public function assignToUser(Request $request, FortuneReading $reading)
@@ -127,7 +122,7 @@ class FortuneBillingController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
-        if (!$reading->is_floating) {
+        if (! $reading->is_floating) {
             return back()->with('error', 'บิลนี้ไม่ใช่บิลลอย');
         }
 
@@ -144,8 +139,6 @@ class FortuneBillingController extends Controller
     /**
      * ยืนยันการชำระเงินด้วยตนเอง (Manual confirm)
      *
-     * @param Request $request
-     * @param FortuneReading $reading
      * @return \Illuminate\Http\RedirectResponse
      */
     public function manualConfirm(Request $request, FortuneReading $reading)
@@ -164,7 +157,7 @@ class FortuneBillingController extends Controller
             'amount_paid' => $request->amount,
             'paid_at' => now(),
             'conversation_status' => FortuneReading::STATUS_PAID,
-            'sender_info' => 'Manual: ' . ($request->note ?? 'Admin confirmed'),
+            'sender_info' => 'Manual: '.($request->note ?? 'Admin confirmed'),
         ]);
 
         return back()->with('success', 'ยืนยันการชำระเงินสำเร็จ');
@@ -173,12 +166,11 @@ class FortuneBillingController extends Controller
     /**
      * ยกเลิกบิล (Void)
      *
-     * @param FortuneReading $reading
      * @return \Illuminate\Http\RedirectResponse
      */
     public function void(FortuneReading $reading)
     {
-        if (!$reading->is_paid) {
+        if (! $reading->is_paid) {
             return back()->with('error', 'ไม่สามารถยกเลิกบิลที่ยังไม่ได้ชำระ');
         }
 
@@ -187,7 +179,7 @@ class FortuneBillingController extends Controller
             'amount_paid' => 0,
             'paid_at' => null,
             'conversation_status' => FortuneReading::STATUS_BASIC_DONE,
-            'sender_info' => 'Voided at ' . now()->format('Y-m-d H:i:s'),
+            'sender_info' => 'Voided at '.now()->format('Y-m-d H:i:s'),
         ]);
 
         return back()->with('success', 'ยกเลิกบิลสำเร็จ');
@@ -196,7 +188,6 @@ class FortuneBillingController extends Controller
     /**
      * Export รายงานรายได้เป็น CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function exportRevenue(Request $request)
@@ -211,7 +202,7 @@ class FortuneBillingController extends Controller
             ->orderBy('paid_at', 'desc')
             ->get();
 
-        $filename = 'fortune_revenue_' . $dateFrom . '_to_' . $dateTo . '.csv';
+        $filename = 'fortune_revenue_'.$dateFrom.'_to_'.$dateTo.'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -222,7 +213,7 @@ class FortuneBillingController extends Controller
             $file = fopen('php://output', 'w');
 
             // BOM สำหรับ UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header
             fputcsv($file, [
@@ -261,7 +252,6 @@ class FortuneBillingController extends Controller
     /**
      * API: ดึงสถิติรายได้
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function statsApi(Request $request)
@@ -281,10 +271,6 @@ class FortuneBillingController extends Controller
 
     /**
      * คำนวณสถิติรายได้
-     *
-     * @param string $dateFrom
-     * @param string $dateTo
-     * @return array
      */
     protected function calculateStats(string $dateFrom, string $dateTo): array
     {
@@ -377,9 +363,6 @@ class FortuneBillingController extends Controller
 
     /**
      * ดึงรายได้รายวัน
-     *
-     * @param int $days
-     * @return array
      */
     protected function getDailyRevenue(int $days): array
     {

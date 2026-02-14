@@ -76,8 +76,9 @@ class Position extends Model
     public function getSalaryRangeAttribute()
     {
         if ($this->min_salary && $this->max_salary) {
-            return number_format($this->min_salary, 2) . ' - ' . number_format($this->max_salary, 2);
+            return number_format($this->min_salary, 2).' - '.number_format($this->max_salary, 2);
         }
+
         return 'Not specified';
     }
 
@@ -98,6 +99,7 @@ class Position extends Model
         if ($store) {
             return $query->where('store_id', $store->id);
         }
+
         return $query->whereNull('store_id');
     }
 }

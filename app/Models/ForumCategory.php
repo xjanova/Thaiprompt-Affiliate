@@ -28,7 +28,6 @@ use Illuminate\Support\Str;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read ForumCategory|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection|ForumCategory[] $children
  * @property-read \Illuminate\Database\Eloquent\Collection|ForumThread[] $threads
@@ -93,9 +92,9 @@ class ForumCategory extends Model
                 $category->slug = Str::slug($category->name);
 
                 // ตรวจสอบ slug ซ้ำ
-                $count = static::where('slug', 'like', $category->slug . '%')->count();
+                $count = static::where('slug', 'like', $category->slug.'%')->count();
                 if ($count > 0) {
-                    $category->slug .= '-' . ($count + 1);
+                    $category->slug .= '-'.($count + 1);
                 }
             }
         });
@@ -103,8 +102,6 @@ class ForumCategory extends Model
 
     /**
      * ความสัมพันธ์กับหมวดหมู่หลัก
-     *
-     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -113,8 +110,6 @@ class ForumCategory extends Model
 
     /**
      * ความสัมพันธ์กับหมวดหมู่ย่อย
-     *
-     * @return HasMany
      */
     public function children(): HasMany
     {
@@ -125,8 +120,6 @@ class ForumCategory extends Model
 
     /**
      * ความสัมพันธ์กับกระทู้
-     *
-     * @return HasMany
      */
     public function threads(): HasMany
     {
@@ -136,7 +129,7 @@ class ForumCategory extends Model
     /**
      * Scope: หมวดหมู่ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -147,7 +140,7 @@ class ForumCategory extends Model
     /**
      * Scope: หมวดหมู่หลัก (ไม่มี parent)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeParentCategories($query)
@@ -158,7 +151,7 @@ class ForumCategory extends Model
     /**
      * Scope: เรียงตาม display_order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -168,8 +161,6 @@ class ForumCategory extends Model
 
     /**
      * อัปเดตสถิติ
-     *
-     * @return void
      */
     public function updateStats(): void
     {
@@ -182,8 +173,6 @@ class ForumCategory extends Model
 
     /**
      * ดึง URL ของหมวดหมู่
-     *
-     * @return string
      */
     public function getUrlAttribute(): string
     {
@@ -192,14 +181,13 @@ class ForumCategory extends Model
 
     /**
      * ดึง gradient class
-     *
-     * @return string
      */
     public function getGradientClassAttribute(): string
     {
         if ($this->gradient_from && $this->gradient_to) {
             return "from-{$this->gradient_from} to-{$this->gradient_to}";
         }
+
         return 'from-blue-500 to-purple-600';
     }
 }

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 class Web3Service
 {
     protected string $rpcUrl;
+
     protected int $chainId;
 
     public function __construct()
@@ -33,7 +34,7 @@ class Web3Service
                 'id' => time(),
             ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception("RPC call failed: {$response->body()}");
         }
 
@@ -52,6 +53,7 @@ class Web3Service
     public function getBlockNumber(): int
     {
         $result = $this->rpcCall('eth_blockNumber');
+
         return hexdec($result['result']);
     }
 
@@ -61,6 +63,7 @@ class Web3Service
     public function getBalance(string $address): string
     {
         $result = $this->rpcCall('eth_getBalance', [$address, 'latest']);
+
         return $result['result'];
     }
 
@@ -70,6 +73,7 @@ class Web3Service
     public function getTransaction(string $txHash): ?array
     {
         $result = $this->rpcCall('eth_getTransactionByHash', [$txHash]);
+
         return $result['result'];
     }
 
@@ -79,6 +83,7 @@ class Web3Service
     public function getTransactionReceipt(string $txHash): ?array
     {
         $result = $this->rpcCall('eth_getTransactionReceipt', [$txHash]);
+
         return $result['result'];
     }
 
@@ -88,6 +93,7 @@ class Web3Service
     public function sendRawTransaction(string $signedTx): string
     {
         $result = $this->rpcCall('eth_sendRawTransaction', [$signedTx]);
+
         return $result['result'];
     }
 
@@ -97,6 +103,7 @@ class Web3Service
     public function estimateGas(array $transaction): string
     {
         $result = $this->rpcCall('eth_estimateGas', [$transaction]);
+
         return $result['result'];
     }
 
@@ -106,6 +113,7 @@ class Web3Service
     public function getGasPrice(): string
     {
         $result = $this->rpcCall('eth_gasPrice');
+
         return $result['result'];
     }
 
@@ -115,6 +123,7 @@ class Web3Service
     public function getTransactionCount(string $address, string $block = 'latest'): int
     {
         $result = $this->rpcCall('eth_getTransactionCount', [$address, $block]);
+
         return hexdec($result['result']);
     }
 
@@ -124,6 +133,7 @@ class Web3Service
     public function call(array $transaction, string $block = 'latest'): string
     {
         $result = $this->rpcCall('eth_call', [$transaction, $block]);
+
         return $result['result'];
     }
 
@@ -141,9 +151,9 @@ class Web3Service
         // Build transaction
         $transaction = [
             'from' => $address,
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x'.dechex($nonce),
             'gasPrice' => $this->getGasPrice(),
-            'gas' => '0x' . dechex(5000000), // 5M gas limit
+            'gas' => '0x'.dechex(5000000), // 5M gas limit
             'data' => $bytecode,
             'chainId' => $this->chainId,
         ];
@@ -192,9 +202,9 @@ class Web3Service
         $transaction = [
             'from' => $address,
             'to' => $contractAddress,
-            'nonce' => '0x' . dechex($nonce),
+            'nonce' => '0x'.dechex($nonce),
             'gasPrice' => $this->getGasPrice(),
-            'gas' => '0x' . dechex(300000),
+            'gas' => '0x'.dechex(300000),
             'data' => $data,
             'chainId' => $this->chainId,
         ];
@@ -259,7 +269,7 @@ class Web3Service
         // Encode parameters (ABI encoding)
         // This requires proper ABI encoding library
 
-        return '0x' . $selector;
+        return '0x'.$selector;
     }
 
     /**
@@ -311,9 +321,11 @@ class Web3Service
     {
         try {
             $this->getBlockNumber();
+
             return true;
         } catch (\Exception $e) {
-            Log::error('TPIX node health check failed: ' . $e->getMessage());
+            Log::error('TPIX node health check failed: '.$e->getMessage());
+
             return false;
         }
     }
@@ -327,7 +339,7 @@ class Web3Service
             'chain_id' => $this->chainId,
             'rpc_url' => $this->rpcUrl,
             'block_number' => $this->getBlockNumber(),
-            'gas_price' => $this->weiToTPIX($this->getGasPrice()) . ' TPIX',
+            'gas_price' => $this->weiToTPIX($this->getGasPrice()).' TPIX',
             'is_healthy' => $this->isNodeHealthy(),
         ];
     }

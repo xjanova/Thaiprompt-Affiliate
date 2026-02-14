@@ -3,11 +3,10 @@
 namespace App\Services;
 
 use App\Helpers\MlmRetentionHelper;
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -29,7 +28,7 @@ class MlmUnilevelService
      * ถ้า sponsor มีลูกตรงถึง max_width แล้ว จะหาตำแหน่งใน subtree
      * โดยใช้ BFS (เติมเต็มชั้นก่อนไปชั้นถัดไป)
      *
-     * @param MlmMember $sponsor ผู้แนะนำ (sponsor)
+     * @param  MlmMember  $sponsor  ผู้แนะนำ (sponsor)
      * @return array ['sponsor_id' => int, 'level' => int, 'path' => string]|null
      */
     public function findUnilevelPlacement(MlmMember $sponsor): ?array
@@ -44,11 +43,12 @@ class MlmUnilevelService
         }
 
         // ถ้าปิด auto spillover → คืนค่า null (ไม่สามารถวางได้)
-        if (!$autoSpillover) {
+        if (! $autoSpillover) {
             Log::warning('Unilevel placement failed - width limit reached and spillover disabled', [
                 'sponsor_id' => $sponsor->id,
                 'max_width' => $maxWidth,
             ]);
+
             return null;
         }
 
@@ -58,11 +58,6 @@ class MlmUnilevelService
 
     /**
      * หาตำแหน่ง spillover ด้วย BFS (เติมเต็มชั้นก่อนไปชั้นถัดไป)
-     *
-     * @param MlmMember $sponsor
-     * @param int $maxWidth
-     * @param int $maxDepth
-     * @return array|null
      */
     protected function findSpilloverPlacement(MlmMember $sponsor, int $maxWidth, int $maxDepth): ?array
     {
@@ -111,9 +106,6 @@ class MlmUnilevelService
 
     /**
      * นับจำนวนลูกตรงของ member
-     *
-     * @param MlmMember $member
-     * @return int
      */
     protected function getDirectChildrenCount(MlmMember $member): int
     {
@@ -122,16 +114,13 @@ class MlmUnilevelService
 
     /**
      * สร้างผลลัพธ์ placement
-     *
-     * @param MlmMember $targetSponsor
-     * @return array
      */
     protected function createPlacementResult(MlmMember $targetSponsor): array
     {
         return [
             'sponsor_id' => $targetSponsor->id,
             'level' => $targetSponsor->unilevel_level + 1,
-            'path' => $targetSponsor->unilevel_path . '/' . $targetSponsor->id,
+            'path' => $targetSponsor->unilevel_path.'/'.$targetSponsor->id,
         ];
     }
 
@@ -162,17 +151,18 @@ class MlmUnilevelService
         while ($currentMember && $currentLevel < $maxDepth && $currentLevel < count($levels)) {
             $sponsor = $currentMember->unilevelSponsor;
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 break;
             }
 
             // Check if sponsor is qualified
-            if (!$this->isQualifiedForCommission($sponsor, $currentLevel + 1)) {
+            if (! $this->isQualifiedForCommission($sponsor, $currentLevel + 1)) {
                 // Compression: skip inactive members if enabled
-                if (!$compressionEnabled) {
+                if (! $compressionEnabled) {
                     $currentLevel++;
                 }
                 $currentMember = $sponsor;
+
                 continue;
             }
 
@@ -243,11 +233,11 @@ class MlmUnilevelService
      * Get unilevel downline tree
      * ใช้ค่าจาก Global Settings แทน per-plan settings
      *
-     * @param MlmMember $member สมาชิกที่ต้องการดูสายงาน
-     * @param int|null $maxDepth ความลึกสูงสุด
+     * @param  MlmMember  $member  สมาชิกที่ต้องการดูสายงาน
+     * @param  int|null  $maxDepth  ความลึกสูงสุด
      * @return array ข้อมูล node รวม root member พร้อม children
      */
-    public function getUnilevelTree(MlmMember $member, int $maxDepth = null)
+    public function getUnilevelTree(MlmMember $member, ?int $maxDepth = null)
     {
         $maxDepth = $maxDepth ?? MlmGlobalSetting::get('unilevel_max_depth', 10);
 
@@ -258,9 +248,6 @@ class MlmUnilevelService
     /**
      * Build unilevel tree recursively - รวม root member พร้อม children
      *
-     * @param MlmMember $member
-     * @param int $currentDepth
-     * @param int $maxDepth
      * @return array
      */
     protected function buildUnilevelNodeWithChildren(MlmMember $member, int $currentDepth, int $maxDepth)
@@ -306,6 +293,7 @@ class MlmUnilevelService
 
     /**
      * Build unilevel tree recursively (Legacy - แค่ children)
+     *
      * @deprecated ใช้ buildUnilevelNodeWithChildren แทน
      */
     protected function buildUnilevelTreeRecursive(MlmMember $member, int $currentDepth, int $maxDepth)
@@ -356,8 +344,8 @@ class MlmUnilevelService
             $members = MlmMember::where('mlm_plan_id', $plan->id)
                 ->where('unilevel_level', $level)
                 ->where(function ($q) use ($member) {
-                    $q->where('unilevel_path', 'like', $member->id . '/%')
-                      ->orWhere('unilevel_path', 'like', '%/' . $member->id . '/%');
+                    $q->where('unilevel_path', 'like', $member->id.'/%')
+                        ->orWhere('unilevel_path', 'like', '%/'.$member->id.'/%');
                 })
                 ->get();
 
@@ -379,7 +367,7 @@ class MlmUnilevelService
     {
         $levels = MlmGlobalSetting::get('unilevel_levels', []);
 
-        if (empty($levels) || !isset($levels[0])) {
+        if (empty($levels) || ! isset($levels[0])) {
             return 0;
         }
 

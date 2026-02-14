@@ -1,9 +1,7 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use App\Models\LineSignupFlow;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -17,8 +15,6 @@ return new class extends Migration
      * 4. success - สมัครสำเร็จ + ส่งลิงก์ LINE Login
      *
      * ลบออก: phone, email, full_name, address, completion
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -120,8 +116,6 @@ return new class extends Migration
 
     /**
      * คืนค่า flow เดิม
-     *
-     * @return void
      */
     public function down(): void
     {

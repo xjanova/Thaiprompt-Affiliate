@@ -30,15 +30,14 @@ class WindowsUiSetting extends Model
     /**
      * Get setting value by key
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function get(string $key, $default = null)
     {
         $setting = self::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -48,9 +47,7 @@ class WindowsUiSetting extends Model
     /**
      * Set setting value
      *
-     * @param string $key
-     * @param mixed $value
-     * @param string $type
+     * @param  mixed  $value
      * @return WindowsUiSetting
      */
     public static function set(string $key, $value, string $type = 'string')
@@ -72,8 +69,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get all settings as key-value pairs
-     *
-     * @return array
      */
     public static function getAll(): array
     {
@@ -90,13 +85,13 @@ class WindowsUiSetting extends Model
     /**
      * Cast value based on type
      *
-     * @param mixed $value
-     * @param string $type
+     * @param  mixed  $value
+     * @param  string  $type
      * @return mixed
      */
     protected static function castValue($value, $type)
     {
-        return match($type) {
+        return match ($type) {
             'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'integer' => (int) $value,
             'float' => (float) $value,
@@ -108,8 +103,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get Start Menu items
-     *
-     * @return array
      */
     public static function getStartMenuItems(): array
     {
@@ -118,8 +111,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get Taskbar Apps
-     *
-     * @return array
      */
     public static function getTaskbarApps(): array
     {
@@ -128,8 +119,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get System Tray Icons
-     *
-     * @return array
      */
     public static function getSystemTrayIcons(): array
     {
@@ -138,8 +127,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get RGB Settings
-     *
-     * @return array
      */
     public static function getRgbSettings(): array
     {
@@ -153,8 +140,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Get Taskbar Settings
-     *
-     * @return array
      */
     public static function getTaskbarSettings(): array
     {
@@ -168,8 +153,6 @@ class WindowsUiSetting extends Model
 
     /**
      * Check if spaceship theme is enabled
-     *
-     * @return bool
      */
     public static function isSpaceshipTheme(): bool
     {

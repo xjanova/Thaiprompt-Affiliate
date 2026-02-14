@@ -55,8 +55,7 @@ class GameSetting extends Model
     /**
      * ดึงค่า setting ตาม key
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function get(string $key, $default = null)
@@ -67,7 +66,7 @@ class GameSetting extends Model
                 ->where('is_active', true)
                 ->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
@@ -79,11 +78,7 @@ class GameSetting extends Model
     /**
      * ตั้งค่า setting
      *
-     * @param string $key
-     * @param mixed $value
-     * @param string $type
-     * @param string $group
-     * @return self
+     * @param  mixed  $value
      */
     public static function set(string $key, $value, string $type = 'string', string $group = 'general'): self
     {
@@ -109,8 +104,7 @@ class GameSetting extends Model
     /**
      * แปลงค่าตาม type
      *
-     * @param string|null $value
-     * @param string $type
+     * @param  string|null  $value
      * @return mixed
      */
     protected static function castValue($value, string $type)
@@ -130,9 +124,7 @@ class GameSetting extends Model
     /**
      * แปลงค่าเป็น string สำหรับเก็บ
      *
-     * @param mixed $value
-     * @param string $type
-     * @return string
+     * @param  mixed  $value
      */
     protected static function toString($value, string $type): string
     {
@@ -150,7 +142,6 @@ class GameSetting extends Model
     /**
      * ดึง settings ทั้งหมดในกลุ่ม
      *
-     * @param string $group
      * @return \Illuminate\Support\Collection
      */
     public static function getGroup(string $group)
@@ -167,8 +158,6 @@ class GameSetting extends Model
 
     /**
      * ล้าง cache ทั้งหมด
-     *
-     * @return void
      */
     public static function clearCache(): void
     {

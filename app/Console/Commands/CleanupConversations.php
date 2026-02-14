@@ -58,6 +58,7 @@ class CleanupConversations extends Command
                 ->count();
 
             $this->info("ℹ️  Found {$activeCount} active conversations to check");
+
             return 0;
         }
 
@@ -107,7 +108,7 @@ class CleanupConversations extends Command
                 ['Active conversations', $stats['active']],
                 ['Expired conversations', $stats['expired']],
                 ['Avg completion time', $this->formatDuration($stats['avg_duration'] ?? 0)],
-                ['Avg progress', round($stats['avg_progress'] ?? 0, 1) . '%'],
+                ['Avg progress', round($stats['avg_progress'] ?? 0, 1).'%'],
             ]
         );
 
@@ -127,8 +128,8 @@ class CleanupConversations extends Command
             foreach ($recentExpired as $prospect) {
                 $tableData[] = [
                     'ID' => $prospect->id,
-                    'LINE User' => substr($prospect->line_user_id ?? 'N/A', 0, 12) . '...',
-                    'Progress' => $prospect->conversation_progress_percent . '%',
+                    'LINE User' => substr($prospect->line_user_id ?? 'N/A', 0, 12).'...',
+                    'Progress' => $prospect->conversation_progress_percent.'%',
                     'Messages' => $prospect->conversation_message_count,
                     'Expired At' => $prospect->conversation_updated_at?->diffForHumans(),
                 ];
@@ -148,7 +149,7 @@ class CleanupConversations extends Command
      */
     private function formatDuration(?float $seconds): string
     {
-        if (!$seconds) {
+        if (! $seconds) {
             return 'N/A';
         }
 

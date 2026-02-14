@@ -43,7 +43,7 @@ class WindowsUiSeeder extends Seeder
         $allSettings = $this->getAllSettings();
 
         foreach ($allSettings as $key => $config) {
-            if (!WindowsUiSetting::where('key', $key)->exists()) {
+            if (! WindowsUiSetting::where('key', $key)->exists()) {
                 WindowsUiSetting::set($key, $config['value'], $config['type']);
                 $this->command->info("   ✅ Added: {$key}");
                 $added++;

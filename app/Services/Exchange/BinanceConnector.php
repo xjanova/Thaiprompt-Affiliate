@@ -204,6 +204,7 @@ class BinanceConnector extends BaseExchangeConnector
         try {
             $this->setAccount($account);
             $this->makeRequest('GET', '/api/v3/account', [], true);
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -216,6 +217,7 @@ class BinanceConnector extends BaseExchangeConnector
     protected function generateSignature(array $params, string $secret): string
     {
         $queryString = http_build_query($params);
+
         return hash_hmac('sha256', $queryString, $secret);
     }
 
@@ -224,8 +226,8 @@ class BinanceConnector extends BaseExchangeConnector
      */
     protected function signRequest(array $params): array
     {
-        if (!$this->account) {
-            throw new \Exception("Trading account not set");
+        if (! $this->account) {
+            throw new \Exception('Trading account not set');
         }
 
         $params['timestamp'] = now()->timestamp * 1000;
@@ -242,7 +244,7 @@ class BinanceConnector extends BaseExchangeConnector
     protected function makeRequest(string $method, string $endpoint, array $params = [], bool $signed = false): array
     {
         try {
-            $url = $this->baseUrl . $endpoint;
+            $url = $this->baseUrl.$endpoint;
 
             if ($signed && $this->account) {
                 $params = $this->signRequest($params);
@@ -264,8 +266,7 @@ class BinanceConnector extends BaseExchangeConnector
                 return $response->json();
             }
 
-            throw new \Exception("Binance API error: " . $response->body());
-
+            throw new \Exception('Binance API error: '.$response->body());
         } catch (\Exception $e) {
             throw $e;
         }

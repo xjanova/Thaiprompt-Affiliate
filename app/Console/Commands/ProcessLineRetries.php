@@ -19,8 +19,6 @@ use Illuminate\Console\Command;
  * Cron Setup:
  * - ทุกนาที: * * * * * php artisan line:process-retries >> /dev/null 2>&1
  * - ทุก 5 นาที: *\/5 * * * * php artisan line:process-retries
- *
- * @package App\Console\Commands
  */
 class ProcessLineRetries extends Command
 {
@@ -43,15 +41,11 @@ class ProcessLineRetries extends Command
 
     /**
      * LineAutoRetryService instance
-     *
-     * @var LineAutoRetryService
      */
     protected LineAutoRetryService $retryService;
 
     /**
      * Constructor
-     *
-     * @param LineAutoRetryService $retryService
      */
     public function __construct(LineAutoRetryService $retryService)
     {
@@ -61,8 +55,6 @@ class ProcessLineRetries extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -76,6 +68,7 @@ class ProcessLineRetries extends Command
 
         if ($limit <= 0) {
             $this->error('❌ Limit ต้องมากกว่า 0');
+
             return Command::FAILURE;
         }
 
@@ -86,7 +79,7 @@ class ProcessLineRetries extends Command
             $successCount = $this->retryService->retryPendingMessages($limit);
 
             $this->newLine();
-            $this->info("✅ ประมวลผลเสร็จสิ้น:");
+            $this->info('✅ ประมวลผลเสร็จสิ้น:');
             $this->line("   - Retry สำเร็จ: {$successCount} ข้อความ");
 
             // แสดงสถิติ
@@ -107,8 +100,8 @@ class ProcessLineRetries extends Command
 
         } catch (\Exception $e) {
             $this->newLine();
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
-            $this->line('   Stack trace: ' . $e->getTraceAsString());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
+            $this->line('   Stack trace: '.$e->getTraceAsString());
 
             return Command::FAILURE;
         }
@@ -116,8 +109,6 @@ class ProcessLineRetries extends Command
 
     /**
      * แสดงสถิติการ retry
-     *
-     * @return void
      */
     protected function displayStatistics(): void
     {
@@ -131,15 +122,15 @@ class ProcessLineRetries extends Command
                 ['Metric', 'Value'],
                 [
                     ['Total Failed Messages', number_format($stats['total'])],
-                    ['Succeeded', number_format($stats['succeeded']) . ' (' . $stats['success_rate'] . '%)'],
-                    ['Abandoned', number_format($stats['abandoned']) . ' (' . $stats['abandonment_rate'] . '%)'],
+                    ['Succeeded', number_format($stats['succeeded']).' ('.$stats['success_rate'].'%)'],
+                    ['Abandoned', number_format($stats['abandoned']).' ('.$stats['abandonment_rate'].'%)'],
                     ['Still Pending', number_format($stats['pending'])],
                     ['Avg Retry Count', $stats['avg_retry_count']],
                 ]
             );
 
             // แสดง error types ถ้ามี
-            if (!empty($stats['by_error_type'])) {
+            if (! empty($stats['by_error_type'])) {
                 $this->newLine();
                 $this->line('🔍 Error Types:');
 
@@ -152,14 +143,12 @@ class ProcessLineRetries extends Command
             }
 
         } catch (\Exception $e) {
-            $this->warn('⚠️  ไม่สามารถดึงสถิติได้: ' . $e->getMessage());
+            $this->warn('⚠️  ไม่สามารถดึงสถิติได้: '.$e->getMessage());
         }
     }
 
     /**
      * ทำการ cleanup ข้อความเก่า
-     *
-     * @return void
      */
     protected function performCleanup(): void
     {
@@ -167,6 +156,7 @@ class ProcessLineRetries extends Command
 
         if ($days <= 0) {
             $this->warn('⚠️  Cleanup days ต้องมากกว่า 0, ข้าม cleanup...');
+
             return;
         }
 
@@ -178,7 +168,7 @@ class ProcessLineRetries extends Command
             $this->info("✅ ลบข้อความเก่าแล้ว: {$deletedCount} รายการ");
 
         } catch (\Exception $e) {
-            $this->error('❌ Cleanup ล้มเหลว: ' . $e->getMessage());
+            $this->error('❌ Cleanup ล้มเหลว: '.$e->getMessage());
         }
     }
 }

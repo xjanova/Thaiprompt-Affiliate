@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\MlmRetentionHelper;
+use App\Http\Controllers\Controller;
 use App\Services\MlmCalculationService;
 use App\Services\MlmGenealogyService;
 use App\Services\MlmPvService;
@@ -13,14 +13,16 @@ use Illuminate\Support\Facades\Auth;
 class MlmDashboardController extends Controller
 {
     protected $calculationService;
+
     protected $genealogyService;
+
     protected $pvService;
 
     public function __construct()
     {
-        $this->calculationService = new MlmCalculationService();
-        $this->genealogyService = new MlmGenealogyService();
-        $this->pvService = new MlmPvService();
+        $this->calculationService = new MlmCalculationService;
+        $this->genealogyService = new MlmGenealogyService;
+        $this->pvService = new MlmPvService;
     }
 
     public function index()
@@ -28,7 +30,7 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan', 'rank')->first();
 
-        if (!$member) {
+        if (! $member) {
             return redirect()->route('user.dashboard')
                 ->with('info', 'You are not enrolled in any MLM plan yet.');
         }
@@ -99,7 +101,7 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
-        if (!$member) {
+        if (! $member) {
             return redirect()->route('user.mlm.dashboard')
                 ->with('error', 'You are not enrolled in any MLM plan yet.');
         }
@@ -114,7 +116,7 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
-        if (!$member) {
+        if (! $member) {
             return redirect()->route('user.mlm.dashboard')
                 ->with('error', 'You are not enrolled in any MLM plan yet.');
         }
@@ -132,7 +134,7 @@ class MlmDashboardController extends Controller
         $member = $user->mlmMembers()->with('plan')->first();
 
         // ถ้าไม่ได้เป็น MLM member ให้แสดงหน้าแนะนำแทนที่จะ redirect
-        if (!$member) {
+        if (! $member) {
             return view('user.mlm.team', [
                 'member' => null,
                 'directReferrals' => collect([]),
@@ -226,7 +228,6 @@ class MlmDashboardController extends Controller
      * API สำหรับดึงข้อมูลผังสายงาน MLM (Binary/Unilevel Tree Data)
      * ใช้สำหรับ mlm-genealogy-premium.js
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function genealogyData(Request $request)
@@ -234,7 +235,7 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
-        if (!$member) {
+        if (! $member) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณยังไม่ได้เป็นสมาชิก MLM',
@@ -285,7 +286,7 @@ class MlmDashboardController extends Controller
         $user = Auth::user();
         $member = $user->mlmMembers()->with('plan')->first();
 
-        if (!$member) {
+        if (! $member) {
             return redirect()->route('user.mlm.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
         }
@@ -332,7 +333,6 @@ class MlmDashboardController extends Controller
      * ⚠️ IMPORTANT: ฟังก์ชันนี้ใช้ค่าจาก MlmGlobalSetting เท่านั้น
      * ไม่ใช้ค่าจาก MlmPlan (per-plan settings) เพื่อความเป็นเอกภาพ
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function previewCalculation(Request $request)

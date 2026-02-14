@@ -89,6 +89,7 @@ class CloudflarePurgeCache extends Command
 
         if ($dryRun) {
             $this->info('✅ DRY RUN: จะ purge cache ทั้งหมด');
+
             return Command::SUCCESS;
         }
 
@@ -101,6 +102,7 @@ class CloudflarePurgeCache extends Command
 
             if ($response->successful() && $response->json('success')) {
                 $this->info('✅ Purge cache ทั้งหมดสำเร็จ!');
+
                 return Command::SUCCESS;
             } else {
                 $errors = $response->json('errors', []);
@@ -108,10 +110,12 @@ class CloudflarePurgeCache extends Command
                 foreach ($errors as $error) {
                     $this->error("   - {$error['message']}");
                 }
+
                 return Command::FAILURE;
             }
         } catch (\Exception $e) {
             $this->error("❌ Error: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }
@@ -122,7 +126,7 @@ class CloudflarePurgeCache extends Command
     protected function purgeUrls(string $zoneId, string $apiToken, array $urls, bool $dryRun): int
     {
         $this->line('   Mode: Purge Specific URLs');
-        $this->line('   URLs: ' . count($urls));
+        $this->line('   URLs: '.count($urls));
 
         foreach ($urls as $url) {
             $this->line("   - {$url}");
@@ -130,6 +134,7 @@ class CloudflarePurgeCache extends Command
 
         if ($dryRun) {
             $this->info('✅ DRY RUN: จะ purge URLs ด้านบน');
+
             return Command::SUCCESS;
         }
 
@@ -142,6 +147,7 @@ class CloudflarePurgeCache extends Command
 
             if ($response->successful() && $response->json('success')) {
                 $this->info('✅ Purge URLs สำเร็จ!');
+
                 return Command::SUCCESS;
             } else {
                 $errors = $response->json('errors', []);
@@ -149,10 +155,12 @@ class CloudflarePurgeCache extends Command
                 foreach ($errors as $error) {
                     $this->error("   - {$error['message']}");
                 }
+
                 return Command::FAILURE;
             }
         } catch (\Exception $e) {
             $this->error("❌ Error: {$e->getMessage()}");
+
             return Command::FAILURE;
         }
     }

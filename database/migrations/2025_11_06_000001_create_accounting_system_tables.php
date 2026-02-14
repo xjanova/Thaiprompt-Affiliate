@@ -65,7 +65,7 @@ return new class extends Migration
                 'current_liability', 'long_term_liability',
                 'owner_equity',
                 'revenue', 'other_revenue',
-                'cost_of_goods_sold', 'operating_expense', 'other_expense'
+                'cost_of_goods_sold', 'operating_expense', 'other_expense',
             ]);
             $table->foreignId('parent_id')->nullable()->constrained('accounting_chart_of_accounts')->nullOnDelete();
             $table->integer('level')->default(1);

@@ -15,9 +15,9 @@ class ComponentService
     /**
      * Render component แบบ dynamic
      *
-     * @param string $component ชื่อ component (e.g., 'arrow-x.button')
-     * @param array $props Props สำหรับ component
-     * @param string|null $slot เนื้อหาภายใน component
+     * @param  string  $component  ชื่อ component (e.g., 'arrow-x.button')
+     * @param  array  $props  Props สำหรับ component
+     * @param  string|null  $slot  เนื้อหาภายใน component
      * @return string HTML ที่ render แล้ว
      */
     public function render(string $component, array $props = [], ?string $slot = null): string
@@ -38,7 +38,7 @@ class ComponentService
             }
         }
 
-        $tag .= ">";
+        $tag .= '>';
 
         // เพิ่ม slot content
         if ($slot !== null) {
@@ -54,9 +54,8 @@ class ComponentService
     /**
      * Render button component
      *
-     * @param string $text ข้อความปุ่ม
-     * @param array $options ตัวเลือก
-     * @return string
+     * @param  string  $text  ข้อความปุ่ม
+     * @param  array  $options  ตัวเลือก
      */
     public function button(string $text, array $options = []): string
     {
@@ -66,9 +65,8 @@ class ComponentService
     /**
      * Render badge component
      *
-     * @param string $text ข้อความ badge
-     * @param array $options ตัวเลือก
-     * @return string
+     * @param  string  $text  ข้อความ badge
+     * @param  array  $options  ตัวเลือก
      */
     public function badge(string $text, array $options = []): string
     {
@@ -78,24 +76,23 @@ class ComponentService
     /**
      * Render alert component
      *
-     * @param string $message ข้อความแจ้งเตือน
-     * @param string $type ประเภท (success/warning/error/info)
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @return string
+     * @param  string  $message  ข้อความแจ้งเตือน
+     * @param  string  $type  ประเภท (success/warning/error/info)
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      */
     public function alert(string $message, string $type = 'info', array $options = []): string
     {
         $props = array_merge(['type' => $type], $options);
+
         return $this->render('arrow-x.alert', $props, $message);
     }
 
     /**
      * Render stat card component
      *
-     * @param string $title หัวข้อ
-     * @param string $value ค่าสถิติ
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @return string
+     * @param  string  $title  หัวข้อ
+     * @param  string  $value  ค่าสถิติ
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      */
     public function statCard(string $title, string $value, array $options = []): string
     {
@@ -110,34 +107,34 @@ class ComponentService
     /**
      * Render form input component
      *
-     * @param string $name ชื่อ input
-     * @param array $options ตัวเลือก
-     * @return string
+     * @param  string  $name  ชื่อ input
+     * @param  array  $options  ตัวเลือก
      */
     public function input(string $name, array $options = []): string
     {
         $props = array_merge(['name' => $name], $options);
+
         return $this->render('arrow-x.form.input', $props);
     }
 
     /**
      * Render table component
      *
-     * @param array $headers หัวตาราง
-     * @param string $rows HTML ของแถวข้อมูล
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @return string
+     * @param  array  $headers  หัวตาราง
+     * @param  string  $rows  HTML ของแถวข้อมูล
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      */
     public function table(array $headers, string $rows, array $options = []): string
     {
         $props = array_merge(['headers' => $headers], $options);
+
         return $this->render('arrow-x.table', $props, $rows);
     }
 
     /**
      * สร้าง component config สำหรับ JavaScript
      *
-     * @param array $components รายการ components
+     * @param  array  $components  รายการ components
      * @return string JSON config
      */
     public function generateJsConfig(array $components = []): string
@@ -162,21 +159,18 @@ class ComponentService
     /**
      * ตรวจสอบว่า component มีอยู่จริงหรือไม่
      *
-     * @param string $component ชื่อ component
-     * @return bool
+     * @param  string  $component  ชื่อ component
      */
     public function exists(string $component): bool
     {
         // แปลง component name เป็น view path
-        $viewPath = 'components.' . str_replace('.', '/', $component);
+        $viewPath = 'components.'.str_replace('.', '/', $component);
 
         return View::exists($viewPath);
     }
 
     /**
      * ดึงรายการ components ทั้งหมด
-     *
-     * @return array
      */
     public function getAvailableComponents(): array
     {
@@ -217,9 +211,8 @@ class ComponentService
     /**
      * สร้าง preview HTML สำหรับ component
      *
-     * @param string $component ชื่อ component
-     * @param array $variants ตัวอย่าง variants
-     * @return string
+     * @param  string  $component  ชื่อ component
+     * @param  array  $variants  ตัวอย่าง variants
      */
     public function generatePreview(string $component, array $variants = []): string
     {
@@ -232,14 +225,14 @@ class ComponentService
         } else {
             // Multiple variants
             foreach ($variants as $label => $props) {
-                $html .= "<div>";
+                $html .= '<div>';
                 $html .= "<p class='text-sm text-gray-600 mb-2'>{$label}</p>";
                 $html .= $this->render($component, $props, $label);
-                $html .= "</div>";
+                $html .= '</div>';
             }
         }
 
-        $html .= "</div>";
+        $html .= '</div>';
 
         return $html;
     }

@@ -23,15 +23,10 @@ use Illuminate\Support\Facades\Log;
  */
 class TarotCommissionService
 {
-    /**
-     * @var WalletService
-     */
     protected WalletService $walletService;
 
     /**
      * Constructor
-     *
-     * @param WalletService $walletService
      */
     public function __construct(WalletService $walletService)
     {
@@ -41,9 +36,9 @@ class TarotCommissionService
     /**
      * ประมวลผลการชำระเงินและแบ่งคอมมิชชั่น
      *
-     * @param TarotReading $reading การอ่านไพ่ที่ต้องการประมวลผล
-     * @param string $paymentMethod วิธีการชำระเงิน (wallet, promptpay, credit_card, bank_transfer)
-     * @param int|null $paymentTransactionId ID ของ payment transaction
+     * @param  TarotReading  $reading  การอ่านไพ่ที่ต้องการประมวลผล
+     * @param  string  $paymentMethod  วิธีการชำระเงิน (wallet, promptpay, credit_card, bank_transfer)
+     * @param  int|null  $paymentTransactionId  ID ของ payment transaction
      * @return array ['success' => bool, 'message' => string, 'data' => array]
      */
     public function processPayment(TarotReading $reading, string $paymentMethod, ?int $paymentTransactionId = null): array
@@ -71,7 +66,7 @@ class TarotCommissionService
                 // 2. หักเงินจาก Wallet (ถ้าชำระผ่าน wallet)
                 if ($paymentMethod === 'wallet' && $user) {
                     $deductResult = $this->deductFromWallet($user, $amount, $reading);
-                    if (!$deductResult['success']) {
+                    if (! $deductResult['success']) {
                         throw new \Exception($deductResult['message']);
                     }
                 }
@@ -128,7 +123,7 @@ class TarotCommissionService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'data' => [],
             ];
         }
@@ -137,42 +132,41 @@ class TarotCommissionService
     /**
      * คำนวณค่าบริการแพลตฟอร์ม
      *
-     * @param float $amount ยอดเงิน
-     * @param TarotReadingCategory $category หมวดหมู่
-     * @return float
+     * @param  float  $amount  ยอดเงิน
+     * @param  TarotReadingCategory  $category  หมวดหมู่
      */
     public function calculatePlatformFee(float $amount, TarotReadingCategory $category): float
     {
         $feePercentage = $category->platform_fee_percentage ?? 10.00;
+
         return round(($amount * $feePercentage) / 100, 2);
     }
 
     /**
      * คำนวณ PV
      *
-     * @param float $amount ยอดเงิน
-     * @param TarotReadingCategory $category หมวดหมู่
-     * @return float
+     * @param  float  $amount  ยอดเงิน
+     * @param  TarotReadingCategory  $category  หมวดหมู่
      */
     public function calculatePvAmount(float $amount, TarotReadingCategory $category): float
     {
         $pvPercentage = $category->pv_percentage ?? 10.00;
+
         return round(($amount * $pvPercentage) / 100, 2);
     }
 
     /**
      * หักเงินจาก Wallet ของผู้ใช้
      *
-     * @param User $user ผู้ใช้
-     * @param float $amount ยอดเงิน
-     * @param TarotReading $reading การอ่านไพ่
-     * @return array
+     * @param  User  $user  ผู้ใช้
+     * @param  float  $amount  ยอดเงิน
+     * @param  TarotReading  $reading  การอ่านไพ่
      */
     protected function deductFromWallet(User $user, float $amount, TarotReading $reading): array
     {
         $wallet = $user->wallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return [
                 'success' => false,
                 'message' => 'ไม่พบ Wallet ของผู้ใช้',
@@ -182,7 +176,7 @@ class TarotCommissionService
         if ($wallet->balance < $amount) {
             return [
                 'success' => false,
-                'message' => 'ยอดเงินใน Wallet ไม่เพียงพอ (ต้องการ ฿' . number_format($amount, 2) . ' มี ฿' . number_format($wallet->balance, 2) . ')',
+                'message' => 'ยอดเงินใน Wallet ไม่เพียงพอ (ต้องการ ฿'.number_format($amount, 2).' มี ฿'.number_format($wallet->balance, 2).')',
             ];
         }
 
@@ -192,7 +186,7 @@ class TarotCommissionService
                 $wallet,
                 $amount,
                 'tarot_reading',
-                'ค่าบริการทำนายไพ่ทาโร่ต์ #' . $reading->id,
+                'ค่าบริการทำนายไพ่ทาโร่ต์ #'.$reading->id,
                 [
                     'reading_id' => $reading->id,
                     'category' => $reading->category->name_th ?? 'ไม่ระบุ',
@@ -206,7 +200,7 @@ class TarotCommissionService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถหักเงินได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถหักเงินได้: '.$e->getMessage(),
             ];
         }
     }
@@ -214,9 +208,9 @@ class TarotCommissionService
     /**
      * แบ่งคอมมิชชั่นให้ upline
      *
-     * @param TarotReading $reading การอ่านไพ่
-     * @param User $user ผู้ใช้ที่ซื้อบริการ
-     * @param float $pvAmount PV ที่จะแบ่ง
+     * @param  TarotReading  $reading  การอ่านไพ่
+     * @param  User  $user  ผู้ใช้ที่ซื้อบริการ
+     * @param  float  $pvAmount  PV ที่จะแบ่ง
      * @return array รายการคอมมิชชั่นที่แบ่งไป
      */
     protected function distributeCommissions(TarotReading $reading, User $user, float $pvAmount): array
@@ -226,11 +220,12 @@ class TarotCommissionService
         // หา MLM Member ของผู้ใช้
         $mlmMember = MlmMember::where('user_id', $user->id)->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             Log::info('User is not MLM member, no commission distribution', [
                 'user_id' => $user->id,
                 'reading_id' => $reading->id,
             ]);
+
             return $commissions;
         }
 
@@ -254,7 +249,7 @@ class TarotCommissionService
         while ($level <= $maxLevels && $currentMember->sponsor_id) {
             $sponsor = MlmMember::find($currentMember->sponsor_id);
 
-            if (!$sponsor || !$sponsor->user) {
+            if (! $sponsor || ! $sponsor->user) {
                 break;
             }
 
@@ -308,18 +303,17 @@ class TarotCommissionService
     /**
      * เพิ่มคอมมิชชั่นเข้า Wallet ของ upline
      *
-     * @param User $user ผู้รับคอมมิชชั่น
-     * @param float $amount จำนวนคอมมิชชั่น
-     * @param TarotReading $reading การอ่านไพ่
-     * @param int $level ระดับ MLM
-     * @return void
+     * @param  User  $user  ผู้รับคอมมิชชั่น
+     * @param  float  $amount  จำนวนคอมมิชชั่น
+     * @param  TarotReading  $reading  การอ่านไพ่
+     * @param  int  $level  ระดับ MLM
      */
     protected function addCommissionToWallet(User $user, float $amount, TarotReading $reading, int $level): void
     {
         try {
             $wallet = $user->wallet;
 
-            if (!$wallet) {
+            if (! $wallet) {
                 // สร้าง wallet ใหม่ถ้ายังไม่มี
                 $wallet = Wallet::create([
                     'user_id' => $user->id,
@@ -351,9 +345,6 @@ class TarotCommissionService
 
     /**
      * คำนวณรายได้สุทธิของระบบ (หลังหักคอมมิชชั่น)
-     *
-     * @param TarotReading $reading
-     * @return float
      */
     public function calculateNetRevenue(TarotReading $reading): float
     {
@@ -368,9 +359,7 @@ class TarotCommissionService
     /**
      * ดึงสรุปคอมมิชชั่นของผู้ใช้
      *
-     * @param int $userId
-     * @param string|null $period today|week|month|all
-     * @return array
+     * @param  string|null  $period  today|week|month|all
      */
     public function getUserCommissionSummary(int $userId, ?string $period = 'all'): array
     {

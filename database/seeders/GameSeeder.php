@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Game;
+use Illuminate\Database\Seeder;
 
 class GameSeeder extends Seeder
 {
@@ -19,8 +18,8 @@ class GameSeeder extends Seeder
                 'name' => '3D Navigation',
                 'title' => '3D Navigation',
                 'title_en' => '3D Navigation',
-                'description' => 'สำรวจโลก 3D ที่สวยงาม' . "\n" . 'ด้วยระบบนำทางที่ทันสมัย',
-                'description_en' => 'Explore beautiful 3D world' . "\n" . 'With modern navigation system',
+                'description' => 'สำรวจโลก 3D ที่สวยงาม'."\n".'ด้วยระบบนำทางที่ทันสมัย',
+                'description_en' => 'Explore beautiful 3D world'."\n".'With modern navigation system',
                 'icon' => '🧭',
                 'url' => route('demo.3d-navigation'),
                 'primary_color' => '#00ffff',
@@ -35,8 +34,8 @@ class GameSeeder extends Seeder
                 'name' => 'Space Shooter',
                 'title' => 'Space Shooter',
                 'title_en' => 'Space Shooter',
-                'description' => 'ยิงยานอวกาศศัตรู' . "\n" . 'ในสงครามอวกาศที่ตื่นเต้น',
-                'description_en' => 'Shoot enemy spaceships' . "\n" . 'In exciting space war',
+                'description' => 'ยิงยานอวกาศศัตรู'."\n".'ในสงครามอวกาศที่ตื่นเต้น',
+                'description_en' => 'Shoot enemy spaceships'."\n".'In exciting space war',
                 'icon' => '🚀',
                 'url' => route('demo.space-shooter'),
                 'primary_color' => '#ff00ff',
@@ -51,8 +50,8 @@ class GameSeeder extends Seeder
                 'name' => 'Loading Demo',
                 'title' => 'Loading Demo',
                 'title_en' => 'Loading Demo',
-                'description' => 'ชมเอฟเฟกต์การโหลด' . "\n" . 'ที่สวยงามและทันสมัย',
-                'description_en' => 'Watch loading effects' . "\n" . 'Beautiful and modern',
+                'description' => 'ชมเอฟเฟกต์การโหลด'."\n".'ที่สวยงามและทันสมัย',
+                'description_en' => 'Watch loading effects'."\n".'Beautiful and modern',
                 'icon' => '⚡',
                 'url' => route('demo.loading'),
                 'primary_color' => '#ffff00',
@@ -67,8 +66,8 @@ class GameSeeder extends Seeder
                 'name' => 'Tetris',
                 'title' => 'Tetris',
                 'title_en' => 'Tetris',
-                'description' => 'เกมเตตริสคลาสสิค' . "\n" . 'พร้อมเสียงและบันทึกคะแนน!',
-                'description_en' => 'Classic Tetris game' . "\n" . 'With sound and leaderboard!',
+                'description' => 'เกมเตตริสคลาสสิค'."\n".'พร้อมเสียงและบันทึกคะแนน!',
+                'description_en' => 'Classic Tetris game'."\n".'With sound and leaderboard!',
                 'icon' => '🎮',
                 'url' => '/games/tetris',
                 'thumbnail' => null,
@@ -98,6 +97,6 @@ class GameSeeder extends Seeder
         }
 
         $this->command->info('✅ Game seeder completed successfully!');
-        $this->command->info('📊 Created ' . count($games) . ' games');
+        $this->command->info('📊 Created '.count($games).' games');
     }
 }

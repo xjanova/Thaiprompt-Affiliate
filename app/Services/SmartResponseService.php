@@ -2,9 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\MlmProspect;
 use App\Models\LineSignupFlow;
-use Illuminate\Support\Facades\Log;
+use App\Models\MlmProspect;
 
 /**
  * Smart Response Service
@@ -26,9 +25,6 @@ class SmartResponseService
     /**
      * Generate smart response based on user message and context
      *
-     * @param MlmProspect $prospect
-     * @param string $userMessage
-     * @param string $currentStep
      * @return array ['message' => string, 'quick_replies' => array, 'metadata' => array]
      */
     public function generateResponse(MlmProspect $prospect, string $userMessage, string $currentStep): array
@@ -43,7 +39,7 @@ class SmartResponseService
         $sentiment = $this->aiService->analyzeSentiment($userMessage);
 
         // Generate appropriate response based on intent
-        $response = match($intent['intent']) {
+        $response = match ($intent['intent']) {
             'ask_help' => $this->generateHelpResponse($prospect, $currentStep),
             'confused' => $this->generateClarificationResponse($prospect, $currentStep),
             'restart' => $this->generateRestartResponse($prospect),
@@ -64,16 +60,12 @@ class SmartResponseService
 
     /**
      * Generate help response
-     *
-     * @param MlmProspect $prospect
-     * @param string $currentStep
-     * @return array
      */
     private function generateHelpResponse(MlmProspect $prospect, string $currentStep): array
     {
         $step = LineSignupFlow::getByStepKey($currentStep);
 
-        if (!$step) {
+        if (! $step) {
             return [
                 'message' => "ฉันช่วยอะไรได้บ้างคะ? 😊\n\nพิมพ์ 'เริ่มใหม่' เพื่อเริ่มต้นใหม่",
                 'quick_replies' => ['เริ่มใหม่', 'ช่วยเหลือ'],
@@ -92,16 +84,12 @@ class SmartResponseService
 
     /**
      * Generate clarification response when user is confused
-     *
-     * @param MlmProspect $prospect
-     * @param string $currentStep
-     * @return array
      */
     private function generateClarificationResponse(MlmProspect $prospect, string $currentStep): array
     {
         $step = LineSignupFlow::getByStepKey($currentStep);
 
-        if (!$step) {
+        if (! $step) {
             return $this->generateHelpResponse($prospect, $currentStep);
         }
 
@@ -124,8 +112,8 @@ class SmartResponseService
 
         // First time confusion
         $message = "ขออธิบายเพิ่มเติมค่ะ 😊\n\n";
-        $message .= $step->message_text . "\n\n";
-        $message .= "📝 ตัวอย่าง: " . $this->getExampleForStep($step);
+        $message .= $step->message_text."\n\n";
+        $message .= '📝 ตัวอย่าง: '.$this->getExampleForStep($step);
 
         return [
             'message' => $message,
@@ -136,9 +124,6 @@ class SmartResponseService
 
     /**
      * Generate restart confirmation response
-     *
-     * @param MlmProspect $prospect
-     * @return array
      */
     private function generateRestartResponse(MlmProspect $prospect): array
     {
@@ -151,7 +136,7 @@ class SmartResponseService
             $message .= "⚠️ ข้อมูลที่กรอกไปแล้ว {$progress}% จะถูกล้าง\n\n";
         }
 
-        $message .= "ยืนยันการเริ่มใหม่หรือไม่?";
+        $message .= 'ยืนยันการเริ่มใหม่หรือไม่?';
 
         return [
             'message' => $message,
@@ -162,15 +147,12 @@ class SmartResponseService
 
     /**
      * Generate cancel confirmation response
-     *
-     * @param MlmProspect $prospect
-     * @return array
      */
     private function generateCancelResponse(MlmProspect $prospect): array
     {
         $message = "เสียใจด้วยค่ะที่คุณต้องการยกเลิก 😢\n\n";
         $message .= "หากคุณเปลี่ยนใจ สามารถกลับมาสมัครได้ทุกเมื่อค่ะ\n\n";
-        $message .= "ต้องการยกเลิกจริงๆ หรือไม่?";
+        $message .= 'ต้องการยกเลิกจริงๆ หรือไม่?';
 
         return [
             'message' => $message,
@@ -181,17 +163,12 @@ class SmartResponseService
 
     /**
      * Generate standard response for current step
-     *
-     * @param MlmProspect $prospect
-     * @param string $currentStep
-     * @param array $sentiment
-     * @return array
      */
     private function generateStandardResponse(MlmProspect $prospect, string $currentStep, array $sentiment): array
     {
         $step = LineSignupFlow::getByStepKey($currentStep);
 
-        if (!$step) {
+        if (! $step) {
             return [
                 'message' => 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง',
                 'quick_replies' => [],
@@ -220,15 +197,11 @@ class SmartResponseService
 
     /**
      * Enhance message with personality based on sentiment
-     *
-     * @param string $message
-     * @param array $sentiment
-     * @return string
      */
     private function enhanceWithPersonality(string $message, array $sentiment): string
     {
         // Add appropriate emoji based on sentiment
-        $emoji = match($sentiment['sentiment']) {
+        $emoji = match ($sentiment['sentiment']) {
             'positive' => '😊',
             'negative' => '🤔',
             default => '✨',
@@ -236,7 +209,7 @@ class SmartResponseService
 
         // Add friendly tone if sentiment is negative
         if ($sentiment['sentiment'] === 'negative') {
-            $message = "เข้าใจค่ะ " . $emoji . "\n\n" . $message;
+            $message = 'เข้าใจค่ะ '.$emoji."\n\n".$message;
         }
 
         return $message;
@@ -244,10 +217,6 @@ class SmartResponseService
 
     /**
      * Personalize message with user data
-     *
-     * @param string $message
-     * @param MlmProspect $prospect
-     * @return string
      */
     private function personalizeMessage(string $message, MlmProspect $prospect): string
     {
@@ -261,9 +230,6 @@ class SmartResponseService
 
     /**
      * Get help text for specific step
-     *
-     * @param LineSignupFlow $step
-     * @return string
      */
     private function getHelpTextForStep(LineSignupFlow $step): string
     {
@@ -279,27 +245,21 @@ class SmartResponseService
 
     /**
      * Get simplified explanation for confused users
-     *
-     * @param LineSignupFlow $step
-     * @return string
      */
     private function getSimplifiedExplanation(LineSignupFlow $step): string
     {
         $simple = [
-            'name' => "แค่พิมพ์ชื่อของคุณมาได้เลยค่ะ เช่น: สมชาย ใจดี",
-            'phone' => "พิมพ์เบอร์มือถือ 10 หลัก เช่น: 0812345678",
-            'email' => "พิมพ์อีเมลของคุณ เช่น: somchai@gmail.com",
-            'address' => "พิมพ์ที่อยู่บ้านของคุณมาค่ะ",
+            'name' => 'แค่พิมพ์ชื่อของคุณมาได้เลยค่ะ เช่น: สมชาย ใจดี',
+            'phone' => 'พิมพ์เบอร์มือถือ 10 หลัก เช่น: 0812345678',
+            'email' => 'พิมพ์อีเมลของคุณ เช่น: somchai@gmail.com',
+            'address' => 'พิมพ์ที่อยู่บ้านของคุณมาค่ะ',
         ];
 
-        return $simple[$step->step_key] ?? "กรุณากรอกข้อมูลตามที่ขอ";
+        return $simple[$step->step_key] ?? 'กรุณากรอกข้อมูลตามที่ขอ';
     }
 
     /**
      * Get example for step
-     *
-     * @param LineSignupFlow $step
-     * @return string
      */
     private function getExampleForStep(LineSignupFlow $step): string
     {
@@ -315,9 +275,6 @@ class SmartResponseService
 
     /**
      * Get quick replies for step
-     *
-     * @param LineSignupFlow $step
-     * @return array
      */
     private function getQuickRepliesForStep(LineSignupFlow $step): array
     {
@@ -332,20 +289,17 @@ class SmartResponseService
 
     /**
      * Generate encouragement message
-     *
-     * @param MlmProspect $prospect
-     * @return string
      */
     public function generateEncouragement(MlmProspect $prospect): string
     {
         $progress = $prospect->conversation_progress_percent ?? 0;
 
         $messages = [
-            0 => "เริ่มกันเลยค่ะ! 💪",
-            25 => "ดีมากค่ะ! ทำไปแล้ว 25% 🎉",
-            50 => "เยี่ยมเลย! ครึ่งทางแล้ว 🌟",
-            75 => "เกือบถึงเป้าแล้ว! เหลืออีกนิดเดียว 🚀",
-            90 => "ใกล้เสร็จแล้ว! สู้ๆ ค่ะ 💯",
+            0 => 'เริ่มกันเลยค่ะ! 💪',
+            25 => 'ดีมากค่ะ! ทำไปแล้ว 25% 🎉',
+            50 => 'เยี่ยมเลย! ครึ่งทางแล้ว 🌟',
+            75 => 'เกือบถึงเป้าแล้ว! เหลืออีกนิดเดียว 🚀',
+            90 => 'ใกล้เสร็จแล้ว! สู้ๆ ค่ะ 💯',
         ];
 
         // Find closest milestone
@@ -356,14 +310,11 @@ class SmartResponseService
             }
         }
 
-        return $messages[$closestMilestone] ?? "ทำได้ดีมากค่ะ! 👏";
+        return $messages[$closestMilestone] ?? 'ทำได้ดีมากค่ะ! 👏';
     }
 
     /**
      * Generate completion celebration message
-     *
-     * @param MlmProspect $prospect
-     * @return string
      */
     public function generateCompletionMessage(MlmProspect $prospect): string
     {
@@ -376,7 +327,7 @@ class SmartResponseService
         $message .= "⏱️ ใช้เวลา: {$stats['conversation_duration']} นาที\n";
         $message .= "💬 ข้อความทั้งหมด: {$stats['total_messages']} ข้อความ\n\n";
         $message .= "ขอบคุณที่เลือกเข้าร่วมกับเราค่ะ! 🙏\n";
-        $message .= "เรายินดีต้อนรับคุณสู่ครอบครัว! 🏠❤️";
+        $message .= 'เรายินดีต้อนรับคุณสู่ครอบครัว! 🏠❤️';
 
         return $message;
     }

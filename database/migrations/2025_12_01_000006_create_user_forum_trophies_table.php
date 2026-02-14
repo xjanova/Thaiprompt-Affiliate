@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง user_forum_trophies (pivot table)
      * เก็บโทรฟี่ที่ผู้ใช้ได้รับ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -53,8 +51,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง user_forum_trophies
-     *
-     * @return void
      */
     public function down(): void
     {

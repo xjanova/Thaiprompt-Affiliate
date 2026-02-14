@@ -13,6 +13,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('ai_usage_logs')) {
             echo "Table 'ai_usage_logs' already exists, skipping creation.\n";
+
             return;
         }
 

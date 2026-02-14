@@ -4,7 +4,6 @@ namespace App\Services\BotAutomation;
 
 use App\Models\BotAutomation\BotSupportConversation;
 use App\Models\BotAutomation\BotSupportMessage;
-use App\Models\BotAutomation\BotAutomation;
 use App\Services\AI\AiService;
 use Illuminate\Support\Facades\Log;
 
@@ -40,13 +39,14 @@ class BotSupportService
         ]);
 
         // Generate AI response if bot-handled
-        if ($conversation->is_ai_handled && !$conversation->requires_human) {
+        if ($conversation->is_ai_handled && ! $conversation->requires_human) {
             try {
                 $aiResponse = $this->generateAiResponse($conversation, $message);
 
                 // Check confidence score
                 if ($aiResponse['confidence'] < 70) {
                     $conversation->flagForHuman();
+
                     return [
                         'requires_human' => true,
                         'message' => 'เราจะมีเจ้าหน้าที่ติดต่อกลับในเร็วๆ นี้',
@@ -70,7 +70,7 @@ class BotSupportService
                     'confidence' => $aiResponse['confidence'],
                 ];
             } catch (\Exception $e) {
-                Log::error("AI support response failed", [
+                Log::error('AI support response failed', [
                     'conversation_id' => $conversation->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -99,8 +99,8 @@ class BotSupportService
         $automation = $conversation->automation;
         $botProfile = $automation->aiBotProfile;
 
-        if (!$botProfile) {
-            throw new \Exception("AI bot profile not configured");
+        if (! $botProfile) {
+            throw new \Exception('AI bot profile not configured');
         }
 
         // Get conversation history
@@ -108,7 +108,7 @@ class BotSupportService
             ->orderBy('created_at', 'asc')
             ->limit(10)
             ->get()
-            ->map(fn($msg) => [
+            ->map(fn ($msg) => [
                 'role' => $msg->sender_type === 'customer' ? 'user' : 'assistant',
                 'content' => $msg->message,
             ])
@@ -147,7 +147,7 @@ class BotSupportService
         $basePrompt = "คุณเป็น AI Support Assistant ที่เป็นมิตรและช่วยเหลือดี มีหน้าที่ตอบคำถามและแก้ไขปัญหาของลูกค้า\n\n";
         $basePrompt .= "หมวดหมู่: {$category}\n";
         $basePrompt .= "ระดับความสำคัญ: {$conversation->priority}\n\n";
-        $basePrompt .= "กรุณาตอบคำถามอย่างชัดเจน กระชับ และเป็นมิตร หากไม่แน่ใจในคำตอบ ให้แจ้งว่าจะให้เจ้าหน้าที่ติดต่อกลับ";
+        $basePrompt .= 'กรุณาตอบคำถามอย่างชัดเจน กระชับ และเป็นมิตร หากไม่แน่ใจในคำตอบ ให้แจ้งว่าจะให้เจ้าหน้าที่ติดต่อกลับ';
 
         return $basePrompt;
     }
@@ -185,7 +185,7 @@ class BotSupportService
     {
         $conversation->assignToAgent($agentId);
 
-        Log::info("Support conversation assigned to agent", [
+        Log::info('Support conversation assigned to agent', [
             'conversation_id' => $conversation->id,
             'agent_id' => $agentId,
         ]);
@@ -198,7 +198,7 @@ class BotSupportService
     {
         $conversation->resolve();
 
-        Log::info("Support conversation resolved", [
+        Log::info('Support conversation resolved', [
             'conversation_id' => $conversation->id,
             'resolution_time' => $conversation->resolution_time_minutes,
         ]);
@@ -207,7 +207,7 @@ class BotSupportService
     /**
      * Get support statistics
      */
-    public function getStatistics(int $automationId = null): array
+    public function getStatistics(?int $automationId = null): array
     {
         $query = BotSupportConversation::query();
 

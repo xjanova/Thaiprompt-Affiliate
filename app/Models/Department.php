@@ -118,6 +118,7 @@ class Department extends Model
         if ($store) {
             return $query->where('store_id', $store->id);
         }
+
         return $query->whereNull('store_id');
     }
 }

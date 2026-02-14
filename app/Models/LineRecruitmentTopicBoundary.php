@@ -83,8 +83,6 @@ class LineRecruitmentTopicBoundary extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotAiSetting
-     *
-     * @return BelongsTo
      */
     public function aiSetting(): BelongsTo
     {
@@ -94,7 +92,7 @@ class LineRecruitmentTopicBoundary extends Model
     /**
      * Scope: เฉพาะที่ใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -105,7 +103,7 @@ class LineRecruitmentTopicBoundary extends Model
     /**
      * Scope: เฉพาะหัวข้อที่อนุญาต
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAllowed($query)
@@ -116,7 +114,7 @@ class LineRecruitmentTopicBoundary extends Model
     /**
      * Scope: เฉพาะหัวข้อที่ห้าม
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBlocked($query)
@@ -127,7 +125,7 @@ class LineRecruitmentTopicBoundary extends Model
     /**
      * Scope: เรียงตามลำดับความสำคัญ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByPriority($query)
@@ -138,8 +136,7 @@ class LineRecruitmentTopicBoundary extends Model
     /**
      * ตรวจสอบว่าข้อความตรงกับ keywords หรือไม่
      *
-     * @param string $message ข้อความที่ต้องการตรวจสอบ
-     * @return bool
+     * @param  string  $message  ข้อความที่ต้องการตรวจสอบ
      */
     public function matchesMessage(string $message): bool
     {
@@ -160,8 +157,6 @@ class LineRecruitmentTopicBoundary extends Model
 
     /**
      * เพิ่มจำนวนครั้งที่ถูกตรวจจับ
-     *
-     * @return void
      */
     public function incrementHitCount(): void
     {
@@ -170,8 +165,6 @@ class LineRecruitmentTopicBoundary extends Model
 
     /**
      * ตรวจสอบว่าเป็นหัวข้อที่อนุญาตหรือไม่
-     *
-     * @return bool
      */
     public function isAllowed(): bool
     {
@@ -180,8 +173,6 @@ class LineRecruitmentTopicBoundary extends Model
 
     /**
      * ตรวจสอบว่าเป็นหัวข้อที่ห้ามหรือไม่
-     *
-     * @return bool
      */
     public function isBlocked(): bool
     {
@@ -190,12 +181,10 @@ class LineRecruitmentTopicBoundary extends Model
 
     /**
      * รับข้อความตอบกลับ หรือข้อความเริ่มต้น
-     *
-     * @return string
      */
     public function getResponseOrDefault(): string
     {
-        if (!empty($this->response_message)) {
+        if (! empty($this->response_message)) {
             return $this->response_message;
         }
 

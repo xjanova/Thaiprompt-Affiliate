@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง service_areas - พื้นที่ให้บริการ
      *
      * กำหนดพื้นที่ที่สามารถให้บริการได้ เช่น กรุงเทพมหานคร, นนทบุรี
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -61,8 +59,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_areas
-     *
-     * @return void
      */
     public function down(): void
     {

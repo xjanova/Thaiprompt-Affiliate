@@ -17,17 +17,17 @@ return new class extends Migration
     {
         Schema::table('fortune_readings', function (Blueprint $table) {
             // เพิ่ม platform field (facebook, line, etc.)
-            if (!Schema::hasColumn('fortune_readings', 'platform')) {
+            if (! Schema::hasColumn('fortune_readings', 'platform')) {
                 $table->string('platform', 20)->default('facebook')->after('response_type');
             }
 
             // เพิ่ม platform_user_id (สำหรับเก็บ user ID ของแต่ละ platform)
-            if (!Schema::hasColumn('fortune_readings', 'platform_user_id')) {
+            if (! Schema::hasColumn('fortune_readings', 'platform_user_id')) {
                 $table->string('platform_user_id', 100)->nullable()->after('platform');
             }
 
             // เพิ่ม index
-            if (!Schema::hasColumn('fortune_readings', 'platform')) {
+            if (! Schema::hasColumn('fortune_readings', 'platform')) {
                 $table->index(['platform', 'platform_user_id'], 'fortune_platform_user_idx');
             }
         });

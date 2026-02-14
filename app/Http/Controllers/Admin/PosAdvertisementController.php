@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PosAdvertisement;
-use App\Models\VendorStore;
 use App\Models\PosDevice;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,8 +21,8 @@ class PosAdvertisementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('promotion_code', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('promotion_code', 'like', "%{$search}%");
             });
         }
 
@@ -195,10 +195,11 @@ class PosAdvertisementController extends Controller
     public function toggleStatus(PosAdvertisement $advertisement)
     {
         $advertisement->update([
-            'is_active' => !$advertisement->is_active,
+            'is_active' => ! $advertisement->is_active,
         ]);
 
         $status = $advertisement->is_active ? 'activated' : 'deactivated';
+
         return back()->with('success', "Advertisement {$status} successfully!");
     }
 
@@ -229,7 +230,7 @@ class PosAdvertisementController extends Controller
     public function duplicate(PosAdvertisement $advertisement)
     {
         $newAd = $advertisement->replicate();
-        $newAd->title = $advertisement->title . ' (Copy)';
+        $newAd->title = $advertisement->title.' (Copy)';
         $newAd->is_active = false;
         $newAd->view_count = 0;
         $newAd->click_count = 0;
@@ -249,7 +250,7 @@ class PosAdvertisementController extends Controller
         $advertisements = PosAdvertisement::withCount([
             'posTransactions as conversion_count' => function ($query) use ($dateFrom, $dateTo) {
                 $query->whereBetween('transaction_date', [$dateFrom, $dateTo]);
-            }
+            },
         ])->get();
 
         $totalViews = $advertisements->sum('view_count');

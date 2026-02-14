@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ใช้สำหรับ context-aware intent recognition
      * จดจำประวัติการสนทนาและ context แบบเรียลไทม์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -40,7 +38,7 @@ return new class extends Migration
                 'FEEDBACK',           // Feedback on resolution
                 'NEW_TOPIC',          // New topic in conversation
                 'CONTINUATION',       // Continuing previous topic
-                'CLARIFICATION'       // Clarifying something
+                'CLARIFICATION',       // Clarifying something
             ])->index();
 
             // Related messages
@@ -69,7 +67,7 @@ return new class extends Migration
                 'IMPROVING',
                 'DECLINING',
                 'STABLE',
-                'VOLATILE'
+                'VOLATILE',
             ])->nullable();
 
             // Prediction & recommendations
@@ -89,8 +87,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง message_contexts
-     *
-     * @return void
      */
     public function down(): void
     {

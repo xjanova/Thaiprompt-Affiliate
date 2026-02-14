@@ -15,8 +15,6 @@ class WalletSettingSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลเริ่มต้น Wallet Settings
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -30,6 +28,7 @@ class WalletSettingSeeder extends Seeder
             // ตรวจสอบว่ามีอยู่แล้วหรือไม่
             if (WalletSetting::where('key', $setting['key'])->exists()) {
                 $skipped++;
+
                 continue;
             }
 
@@ -49,8 +48,6 @@ class WalletSettingSeeder extends Seeder
 
     /**
      * ดึงการตั้งค่าเริ่มต้น
-     *
-     * @return array
      */
     protected function getDefaultSettings(): array
     {

@@ -72,16 +72,17 @@ class OfficialShopWarning extends Model
      * สถานะ
      */
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_IMPROVED = 'improved';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_REMOVED = 'removed';
 
     // ===== Relationships =====
 
     /**
      * รายการใน Official Shop
-     *
-     * @return BelongsTo
      */
     public function officialShopProduct(): BelongsTo
     {
@@ -90,8 +91,6 @@ class OfficialShopWarning extends Model
 
     /**
      * สินค้า
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -100,8 +99,6 @@ class OfficialShopWarning extends Model
 
     /**
      * ร้านค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -110,8 +107,6 @@ class OfficialShopWarning extends Model
 
     /**
      * Admin ที่ดำเนินการ
-     *
-     * @return BelongsTo
      */
     public function resolvedByAdmin(): BelongsTo
     {
@@ -151,11 +146,7 @@ class OfficialShopWarning extends Model
     /**
      * สร้างการเตือนใหม่
      *
-     * @param OfficialShopProduct $ospProduct
-     * @param float $currentScore
-     * @param float $requiredScore
-     * @param int $warningDays จำนวนวันให้ปรับปรุง (default 3)
-     * @return self
+     * @param  int  $warningDays  จำนวนวันให้ปรับปรุง (default 3)
      */
     public static function createWarning(
         OfficialShopProduct $ospProduct,
@@ -175,7 +166,7 @@ class OfficialShopWarning extends Model
         $scoreDiff = $requiredScore - $currentScore;
         $message = "สินค้าของท่านมีคะแนน {$currentScore} คะแนน ต่ำกว่าเกณฑ์ขั้นต่ำ {$requiredScore} คะแนน ";
         $message .= "กรุณาปรับปรุงให้ได้คะแนนเพิ่มอีก {$scoreDiff} คะแนน ภายใน {$warningDays} วัน ";
-        $message .= "มิฉะนั้นสินค้าจะถูกถอดออกจาก Official Shop โดยอัตโนมัติ";
+        $message .= 'มิฉะนั้นสินค้าจะถูกถอดออกจาก Official Shop โดยอัตโนมัติ';
 
         return self::create([
             'official_shop_product_id' => $ospProduct->id,
@@ -192,9 +183,6 @@ class OfficialShopWarning extends Model
 
     /**
      * ปรับปรุงสำเร็จ
-     *
-     * @param float $newScore
-     * @return bool
      */
     public function markAsImproved(float $newScore): bool
     {
@@ -211,8 +199,6 @@ class OfficialShopWarning extends Model
 
     /**
      * หมดเวลาปรับปรุง
-     *
-     * @return bool
      */
     public function markAsExpired(): bool
     {
@@ -225,10 +211,6 @@ class OfficialShopWarning extends Model
 
     /**
      * ถูกถอดออกแล้ว
-     *
-     * @param int|null $adminId
-     * @param string|null $note
-     * @return bool
      */
     public function markAsRemoved(?int $adminId = null, ?string $note = null): bool
     {
@@ -244,8 +226,6 @@ class OfficialShopWarning extends Model
 
     /**
      * เวลาคงเหลือ
-     *
-     * @return string
      */
     public function getTimeRemainingAttribute(): string
     {
@@ -262,8 +242,6 @@ class OfficialShopWarning extends Model
 
     /**
      * สถานะแสดงผล
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -278,8 +256,6 @@ class OfficialShopWarning extends Model
 
     /**
      * สีสถานะ
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {

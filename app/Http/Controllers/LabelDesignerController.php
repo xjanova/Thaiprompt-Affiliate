@@ -32,8 +32,6 @@ class LabelDesignerController extends Controller
 {
     /**
      * แสดงหน้า Label Designer หลัก
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -75,9 +73,6 @@ class LabelDesignerController extends Controller
 
     /**
      * แสดงหน้าออกแบบฉลากใหม่
-     *
-     * @param Request $request
-     * @return View
      */
     public function create(Request $request): View
     {
@@ -108,9 +103,6 @@ class LabelDesignerController extends Controller
 
     /**
      * บันทึกฉลากใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
     {
@@ -169,9 +161,6 @@ class LabelDesignerController extends Controller
 
     /**
      * แสดงฉลากสำหรับแก้ไข
-     *
-     * @param int $id
-     * @return View
      */
     public function edit(int $id): View
     {
@@ -191,16 +180,12 @@ class LabelDesignerController extends Controller
             'label' => $label,
             'paperSizes' => $paperSizes,
             'templates' => $templates,
-            'pageTitle' => 'แก้ไขฉลาก: ' . $label->name,
+            'pageTitle' => 'แก้ไขฉลาก: '.$label->name,
         ]);
     }
 
     /**
      * อัปเดตฉลาก
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function update(Request $request, int $id): JsonResponse
     {
@@ -249,9 +234,6 @@ class LabelDesignerController extends Controller
 
     /**
      * ลบฉลาก
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
     {
@@ -268,9 +250,6 @@ class LabelDesignerController extends Controller
 
     /**
      * สลับสถานะรายการโปรด
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function toggleFavorite(int $id): JsonResponse
     {
@@ -288,9 +267,6 @@ class LabelDesignerController extends Controller
 
     /**
      * โคลนฉลาก
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function duplicate(int $id): JsonResponse
     {
@@ -308,9 +284,6 @@ class LabelDesignerController extends Controller
 
     /**
      * ดึงรายการฉลากของ user
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function myLabels(Request $request): JsonResponse
     {
@@ -328,7 +301,7 @@ class LabelDesignerController extends Controller
 
         // ค้นหา
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         // เรียงลำดับ
@@ -347,9 +320,6 @@ class LabelDesignerController extends Controller
 
     /**
      * ดึงรายการ templates
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function templates(Request $request): JsonResponse
     {
@@ -377,7 +347,7 @@ class LabelDesignerController extends Controller
 
         // ค้นหา
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         // เรียงลำดับ
@@ -395,9 +365,6 @@ class LabelDesignerController extends Controller
 
     /**
      * ดึงรายการขนาดกระดาษ
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function paperSizes(Request $request): JsonResponse
     {
@@ -419,9 +386,6 @@ class LabelDesignerController extends Controller
 
     /**
      * สร้างบาร์โค้ด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function generateBarcode(Request $request): JsonResponse
     {
@@ -462,9 +426,6 @@ class LabelDesignerController extends Controller
 
     /**
      * สร้าง QR Code
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function generateQrcode(Request $request): JsonResponse
     {
@@ -501,10 +462,6 @@ class LabelDesignerController extends Controller
 
     /**
      * บันทึกการพิมพ์
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function recordPrint(Request $request, int $id): JsonResponse
     {
@@ -524,8 +481,6 @@ class LabelDesignerController extends Controller
     /**
      * Export ฉลากเป็น PDF
      *
-     * @param Request $request
-     * @param int $id
      * @return mixed
      */
     public function exportPdf(Request $request, int $id)
@@ -545,8 +500,6 @@ class LabelDesignerController extends Controller
 
     /**
      * ดึงรายการรูปแบบบาร์โค้ดที่รองรับ
-     *
-     * @return JsonResponse
      */
     public function barcodeFormats(): JsonResponse
     {
@@ -617,10 +570,6 @@ class LabelDesignerController extends Controller
 
     /**
      * สร้าง template จากฉลากที่มีอยู่
-     *
-     * @param Request $request
-     * @param int $labelId
-     * @return JsonResponse
      */
     public function createTemplateFromLabel(Request $request, int $labelId): JsonResponse
     {

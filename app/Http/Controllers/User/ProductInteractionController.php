@@ -25,9 +25,6 @@ class ProductInteractionController extends Controller
 {
     /**
      * แสดงหน้ารายการโปรด (Wishlist)
-     *
-     * @param Request $request
-     * @return View
      */
     public function wishlist(Request $request): View
     {
@@ -54,9 +51,6 @@ class ProductInteractionController extends Controller
 
     /**
      * แสดงสินค้าที่ดูล่าสุด
-     *
-     * @param Request $request
-     * @return View
      */
     public function recentlyViewed(Request $request): View
     {
@@ -71,9 +65,6 @@ class ProductInteractionController extends Controller
 
     /**
      * แสดงร้านค้าที่ติดตาม
-     *
-     * @param Request $request
-     * @return View
      */
     public function followingStores(Request $request): View
     {
@@ -92,10 +83,6 @@ class ProductInteractionController extends Controller
 
     /**
      * Toggle ถูกใจสินค้า
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function toggleLike(Request $request, Product $product): JsonResponse
     {
@@ -111,10 +98,6 @@ class ProductInteractionController extends Controller
 
     /**
      * Toggle รายการโปรด
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function toggleFavorite(Request $request, Product $product): JsonResponse
     {
@@ -137,10 +120,6 @@ class ProductInteractionController extends Controller
 
     /**
      * อัพเดทรายการโปรด
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function updateFavorite(Request $request, Product $product): JsonResponse
     {
@@ -155,7 +134,7 @@ class ProductInteractionController extends Controller
             ->where('product_id', $product->id)
             ->first();
 
-        if (!$favorite) {
+        if (! $favorite) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบสินค้าในรายการโปรด',
@@ -172,10 +151,6 @@ class ProductInteractionController extends Controller
 
     /**
      * Toggle ติดตามร้านค้า
-     *
-     * @param Request $request
-     * @param VendorStore $store
-     * @return JsonResponse
      */
     public function toggleFollow(Request $request, VendorStore $store): JsonResponse
     {
@@ -197,10 +172,6 @@ class ProductInteractionController extends Controller
 
     /**
      * อัพเดทการตั้งค่าการติดตามร้านค้า
-     *
-     * @param Request $request
-     * @param VendorStore $store
-     * @return JsonResponse
      */
     public function updateFollowSettings(Request $request, VendorStore $store): JsonResponse
     {
@@ -212,7 +183,7 @@ class ProductInteractionController extends Controller
 
         $updated = StoreFollower::updateSettings($request->user()->id, $store->id, $settings);
 
-        if (!$updated) {
+        if (! $updated) {
             return response()->json([
                 'success' => false,
                 'message' => 'คุณยังไม่ได้ติดตามร้านค้านี้',
@@ -227,10 +198,6 @@ class ProductInteractionController extends Controller
 
     /**
      * ดึงสถานะการโต้ตอบของผู้ใช้กับสินค้า
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function getProductStatus(Request $request, Product $product): JsonResponse
     {
@@ -247,10 +214,6 @@ class ProductInteractionController extends Controller
 
     /**
      * ดึงสถานะการติดตามร้านค้า
-     *
-     * @param Request $request
-     * @param VendorStore $store
-     * @return JsonResponse
      */
     public function getStoreStatus(Request $request, VendorStore $store): JsonResponse
     {

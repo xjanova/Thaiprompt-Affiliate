@@ -72,7 +72,7 @@ class CategoryManagementController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:learning_categories,slug,' . $category->id,
+            'slug' => 'nullable|string|unique:learning_categories,slug,'.$category->id,
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:7',

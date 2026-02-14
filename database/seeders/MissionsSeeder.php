@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Game;
 use App\Models\GameMission;
-use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class MissionsSeeder extends Seeder
 {
@@ -13,8 +12,9 @@ class MissionsSeeder extends Seeder
     {
         $snakeGame = Game::where('slug', 'snake-io')->first();
 
-        if (!$snakeGame) {
+        if (! $snakeGame) {
             $this->command->info('Snake.io game not found. Please run GamesSeeder first.');
+
             return;
         }
 

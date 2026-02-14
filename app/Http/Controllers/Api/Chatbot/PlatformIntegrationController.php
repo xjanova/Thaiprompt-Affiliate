@@ -32,6 +32,7 @@ class PlatformIntegrationController extends Controller
         // Add connection status to each integration
         $integrations->transform(function ($integration) {
             $integration->connection_status = $integration->getConnectionStatus();
+
             return $integration;
         });
 

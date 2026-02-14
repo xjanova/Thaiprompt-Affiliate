@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // User Daily Streaks - ติดตาม streak การล็อกอินรายวัน
-        if (!Schema::hasTable('user_daily_streaks')) {
+        if (! Schema::hasTable('user_daily_streaks')) {
             Schema::create('user_daily_streaks', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -29,7 +29,7 @@ return new class extends Migration
         }
 
         // Daily Reward Claims - บันทึกการรับรางวัลรายวัน
-        if (!Schema::hasTable('daily_reward_claims')) {
+        if (! Schema::hasTable('daily_reward_claims')) {
             Schema::create('daily_reward_claims', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -46,7 +46,7 @@ return new class extends Migration
         }
 
         // Game Missions - ภารกิจในเกม
-        if (!Schema::hasTable('game_missions')) {
+        if (! Schema::hasTable('game_missions')) {
             Schema::create('game_missions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('game_id')->constrained()->onDelete('cascade');
@@ -70,7 +70,7 @@ return new class extends Migration
         }
 
         // User Mission Progress - ติดตามความคืบหน้าภารกิจ
-        if (!Schema::hasTable('user_mission_progress')) {
+        if (! Schema::hasTable('user_mission_progress')) {
             Schema::create('user_mission_progress', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');

@@ -68,7 +68,6 @@ class ForumController extends Controller
     /**
      * ค้นหากระทู้
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function search(Request $request)

@@ -19,8 +19,6 @@ class ProvinceSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลจังหวัดไทยทั้ง 77 จังหวัด
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -34,6 +32,7 @@ class ProvinceSeeder extends Seeder
             // ตรวจสอบว่ามีอยู่แล้วหรือไม่ (idempotent)
             if (Province::where('code', $province['code'])->exists()) {
                 $skipped++;
+
                 continue;
             }
 
@@ -46,8 +45,6 @@ class ProvinceSeeder extends Seeder
 
     /**
      * ดึงข้อมูลจังหวัดไทยทั้ง 77 จังหวัด
-     *
-     * @return array
      */
     private function getProvinces(): array
     {

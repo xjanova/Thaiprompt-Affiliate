@@ -23,7 +23,6 @@ class RiderJobController extends Controller
     /**
      * แสดงรายการงานทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -94,7 +93,6 @@ class RiderJobController extends Controller
     /**
      * แสดงรายละเอียดงาน
      *
-     * @param RiderJob $job
      * @return \Illuminate\View\View
      */
     public function show(RiderJob $job)
@@ -109,15 +107,13 @@ class RiderJobController extends Controller
         return view('admin.rider-jobs.show', [
             'job' => $job,
             'locationHistory' => $locationHistory,
-            'pageTitle' => 'รายละเอียดงาน: #' . $job->job_number,
+            'pageTitle' => 'รายละเอียดงาน: #'.$job->job_number,
         ]);
     }
 
     /**
      * ยกเลิกงาน
      *
-     * @param Request $request
-     * @param RiderJob $job
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function cancel(Request $request, RiderJob $job)
@@ -134,6 +130,7 @@ class RiderJobController extends Controller
                     'message' => 'ไม่สามารถยกเลิกงานที่เสร็จสิ้นหรือถูกยกเลิกแล้วได้',
                 ], 400);
             }
+
             return redirect()->back()->with('error', 'ไม่สามารถยกเลิกงานที่เสร็จสิ้นหรือถูกยกเลิกแล้วได้');
         }
 
@@ -169,19 +166,17 @@ class RiderJobController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * มอบหมายงานให้ไรเดอร์ใหม่
      *
-     * @param Request $request
-     * @param RiderJob $job
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function reassign(Request $request, RiderJob $job)
@@ -198,17 +193,19 @@ class RiderJobController extends Controller
                     'message' => 'ไม่สามารถมอบหมายงานที่เสร็จสิ้นหรือถูกยกเลิกแล้วได้',
                 ], 400);
             }
+
             return redirect()->back()->with('error', 'ไม่สามารถมอบหมายงานที่เสร็จสิ้นหรือถูกยกเลิกแล้วได้');
         }
 
         $newRider = Rider::find($request->rider_id);
-        if (!$newRider || $newRider->status !== 'approved') {
+        if (! $newRider || $newRider->status !== 'approved') {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไรเดอร์ไม่พร้อมให้บริการ',
                 ], 400);
             }
+
             return redirect()->back()->with('error', 'ไรเดอร์ไม่พร้อมให้บริการ');
         }
 
@@ -238,7 +235,7 @@ class RiderJobController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'มอบหมายงานให้ ' . $newRider->full_name . ' เรียบร้อย',
+                    'message' => 'มอบหมายงานให้ '.$newRider->full_name.' เรียบร้อย',
                 ]);
             }
 
@@ -249,18 +246,17 @@ class RiderJobController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงสถิติรายวัน/รายเดือน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function statistics(Request $request)

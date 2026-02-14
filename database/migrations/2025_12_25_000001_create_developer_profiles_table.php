@@ -14,8 +14,6 @@ return new class extends Migration
      * - ข้อมูล KYC (Facebook, LINE, Phone, Company)
      * - สถานะการอนุมัติ
      * - การตั้งค่าค่าคอมมิชชั่น
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -94,8 +92,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง developer_profiles
-     *
-     * @return void
      */
     public function down(): void
     {

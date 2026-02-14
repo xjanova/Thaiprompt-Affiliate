@@ -105,7 +105,7 @@ class ProductJourney extends Model
      */
     public function isCompleted(): bool
     {
-        return !is_null($this->departed_at);
+        return ! is_null($this->departed_at);
     }
 
     /**
@@ -113,7 +113,7 @@ class ProductJourney extends Model
      */
     public function getFormattedDurationAttribute(): string
     {
-        if (!$this->duration_hours) {
+        if (! $this->duration_hours) {
             return 'In progress';
         }
 

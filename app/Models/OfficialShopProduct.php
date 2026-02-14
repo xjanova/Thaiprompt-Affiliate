@@ -82,22 +82,24 @@ class OfficialShopProduct extends Model
      * ประเภทการคัดเลือก
      */
     public const TYPE_AI_FEATURED = 'ai_featured';
+
     public const TYPE_NEW_PRODUCT = 'new_product';
+
     public const TYPE_BEST_SELLER = 'best_seller';
 
     /**
      * ประเภทกรอบ
      */
     public const BADGE_GOLD = 'gold';
+
     public const BADGE_NEW = 'new';
+
     public const BADGE_BESTSELLER = 'bestseller';
 
     // ===== Relationships =====
 
     /**
      * สินค้าต้นทาง
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -106,8 +108,6 @@ class OfficialShopProduct extends Model
 
     /**
      * ร้านค้าเจ้าของสินค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -116,8 +116,6 @@ class OfficialShopProduct extends Model
 
     /**
      * การแจ้งเตือน
-     *
-     * @return HasMany
      */
     public function warnings(): HasMany
     {
@@ -190,12 +188,6 @@ class OfficialShopProduct extends Model
 
     /**
      * เพิ่มสินค้าเข้า Official Shop
-     *
-     * @param Product $product
-     * @param string $selectionType
-     * @param float $aiScore
-     * @param array|null $scoreBreakdown
-     * @return self
      */
     public static function addProduct(
         Product $product,
@@ -258,9 +250,6 @@ class OfficialShopProduct extends Model
 
     /**
      * ถอดสินค้าออกจาก Official Shop
-     *
-     * @param string|null $reason
-     * @return bool
      */
     public function removeFromOfficialShop(?string $reason = null): bool
     {
@@ -277,7 +266,7 @@ class OfficialShopProduct extends Model
                 ->active()
                 ->exists();
 
-            if (!$otherEntries) {
+            if (! $otherEntries) {
                 $this->product?->update([
                     'is_in_official_shop' => false,
                     'official_shop_badge' => null,
@@ -292,10 +281,6 @@ class OfficialShopProduct extends Model
 
     /**
      * ตรวจสอบว่าสินค้านี้อยู่ใน Official Shop หรือไม่
-     *
-     * @param int $productId
-     * @param string|null $selectionType
-     * @return bool
      */
     public static function isInOfficialShop(int $productId, ?string $selectionType = null): bool
     {
@@ -311,7 +296,6 @@ class OfficialShopProduct extends Model
     /**
      * ดึงสินค้า Featured สำหรับแสดงหน้าบ้าน
      *
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getFeaturedProducts(int $limit = 20)
@@ -329,7 +313,6 @@ class OfficialShopProduct extends Model
     /**
      * ดึงสินค้าใหม่ที่กำลังโปรโมท
      *
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getNewPromotionProducts(int $limit = 10)
@@ -346,7 +329,6 @@ class OfficialShopProduct extends Model
     /**
      * ดึงสินค้าขายดีเดือนนี้
      *
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getBestSellerProducts(int $limit = 10)
@@ -363,8 +345,6 @@ class OfficialShopProduct extends Model
 
     /**
      * สถานะกรอบแสดงผล
-     *
-     * @return string
      */
     public function getBadgeLabelAttribute(): string
     {
@@ -378,12 +358,10 @@ class OfficialShopProduct extends Model
 
     /**
      * ตรวจสอบว่าหมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function getIsExpiredAttribute(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return false;
         }
 
@@ -392,12 +370,10 @@ class OfficialShopProduct extends Model
 
     /**
      * เวลาคงเหลือก่อนหมดอายุ
-     *
-     * @return string|null
      */
     public function getTimeRemainingAttribute(): ?string
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return null;
         }
 

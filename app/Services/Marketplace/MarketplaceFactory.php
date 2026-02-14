@@ -11,8 +11,6 @@ class MarketplaceFactory
     /**
      * Create marketplace service instance based on platform
      *
-     * @param MarketplaceAccount $account
-     * @return MarketplaceApiInterface
      * @throws Exception
      */
     public static function create(MarketplaceAccount $account): MarketplaceApiInterface
@@ -23,9 +21,6 @@ class MarketplaceFactory
     /**
      * Create marketplace service by platform
      *
-     * @param MarketplacePlatform $platform
-     * @param MarketplaceAccount $account
-     * @return MarketplaceApiInterface
      * @throws Exception
      */
     public static function createByPlatform(MarketplacePlatform $platform, MarketplaceAccount $account): MarketplaceApiInterface
@@ -41,8 +36,6 @@ class MarketplaceFactory
     /**
      * Get service class name for platform
      *
-     * @param string $platformSlug
-     * @return string
      * @throws Exception
      */
     public static function getServiceClass(string $platformSlug): string

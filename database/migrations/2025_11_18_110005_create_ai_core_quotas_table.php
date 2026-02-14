@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บข้อมูลโควต้าแบบละเอียด
      * แยกตาม period และ feature เพื่อการจัดการที่ยืดหยุ่น
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -81,8 +79,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_quotas
-     *
-     * @return void
      */
     public function down(): void
     {

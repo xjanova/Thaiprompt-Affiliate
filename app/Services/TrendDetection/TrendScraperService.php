@@ -2,8 +2,8 @@
 
 namespace App\Services\TrendDetection;
 
-use App\Models\TrendSource;
 use App\Models\TrendData;
+use App\Models\TrendSource;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\DomCrawler\Crawler;
@@ -16,7 +16,7 @@ class TrendScraperService
     public function scrape(TrendSource $source): array
     {
         try {
-            $data = match($source->type) {
+            $data = match ($source->type) {
                 'web' => $this->scrapeWeb($source),
                 'api' => $this->scrapeApi($source),
                 'rss' => $this->scrapeRss($source),
@@ -32,7 +32,7 @@ class TrendScraperService
                 'count' => count($data),
             ];
         } catch (\Exception $e) {
-            Log::error("Failed to scrape source {$source->id}: " . $e->getMessage());
+            Log::error("Failed to scrape source {$source->id}: ".$e->getMessage());
 
             return [
                 'success' => false,
@@ -52,7 +52,7 @@ class TrendScraperService
             ->withHeaders($this->getHeaders($source))
             ->get($source->url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception("Failed to fetch URL: HTTP {$response->status()}");
         }
 
@@ -77,15 +77,15 @@ class TrendScraperService
                 ];
 
                 // Make URL absolute
-                if ($item['url'] && !str_starts_with($item['url'], 'http')) {
-                    $baseUrl = parse_url($source->url, PHP_URL_SCHEME) . '://' .
+                if ($item['url'] && ! str_starts_with($item['url'], 'http')) {
+                    $baseUrl = parse_url($source->url, PHP_URL_SCHEME).'://'.
                                parse_url($source->url, PHP_URL_HOST);
-                    $item['url'] = $baseUrl . $item['url'];
+                    $item['url'] = $baseUrl.$item['url'];
                 }
 
                 $items[] = $this->createTrendData($source, $item);
             } catch (\Exception $e) {
-                Log::warning("Failed to parse item: " . $e->getMessage());
+                Log::warning('Failed to parse item: '.$e->getMessage());
             }
         });
 
@@ -108,13 +108,13 @@ class TrendScraperService
             $request->withToken($config['bearer_token']);
         }
 
-        $response = match(strtoupper($method)) {
+        $response = match (strtoupper($method)) {
             'POST' => $request->post($source->url, $params),
             'PUT' => $request->put($source->url, $params),
             default => $request->get($source->url, $params),
         };
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception("API request failed: HTTP {$response->status()}");
         }
 
@@ -141,7 +141,7 @@ class TrendScraperService
     {
         $response = Http::timeout(30)->get($source->url);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception("Failed to fetch RSS feed: HTTP {$response->status()}");
         }
 
@@ -149,7 +149,7 @@ class TrendScraperService
         $items = [];
 
         if ($xml === false) {
-            throw new \Exception("Invalid RSS feed");
+            throw new \Exception('Invalid RSS feed');
         }
 
         foreach ($xml->channel->item as $item) {
@@ -209,6 +209,7 @@ class TrendScraperService
     {
         try {
             $element = $node->filter($selector);
+
             return $element->count() > 0 ? trim($element->text()) : null;
         } catch (\Exception $e) {
             return null;
@@ -222,6 +223,7 @@ class TrendScraperService
     {
         try {
             $element = $node->filter($selector);
+
             return $element->count() > 0 ? $element->attr($attribute) : null;
         } catch (\Exception $e) {
             return null;
@@ -234,7 +236,7 @@ class TrendScraperService
     protected function extractNumber(Crawler $node, string $selector): int
     {
         $text = $this->extractText($node, $selector);
-        if (!$text) {
+        if (! $text) {
             return 0;
         }
 

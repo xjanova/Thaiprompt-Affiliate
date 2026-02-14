@@ -71,38 +71,47 @@ class LineSignupSetting extends Model
      * Setting groups
      */
     const GROUP_SIGNUP = 'signup';
+
     const GROUP_OTP = 'otp';
+
     const GROUP_VALIDATION = 'validation';
+
     const GROUP_REWARDS = 'rewards';
+
     const GROUP_GAMIFICATION = 'gamification';
+
     const GROUP_INTEGRATION = 'integration';
+
     const GROUP_SESSION = 'session';
+
     const GROUP_GENERAL = 'general';
 
     /**
      * Setting types
      */
     const TYPE_STRING = 'string';
+
     const TYPE_BOOLEAN = 'boolean';
+
     const TYPE_INTEGER = 'integer';
+
     const TYPE_JSON = 'json';
 
     /**
      * ดึงค่า setting โดยใช้ cache
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function get(string $key, $default = null)
     {
         return Cache::remember(
-            self::CACHE_PREFIX . $key,
+            self::CACHE_PREFIX.$key,
             self::CACHE_TTL,
             function () use ($key, $default) {
                 $setting = self::where('key', $key)->first();
 
-                if (!$setting) {
+                if (! $setting) {
                     return $default;
                 }
 
@@ -114,12 +123,7 @@ class LineSignupSetting extends Model
     /**
      * บันทึกค่า setting และ clear cache
      *
-     * @param string $key
-     * @param mixed $value
-     * @param string $type
-     * @param string $group
-     * @param string|null $description
-     * @return self
+     * @param  mixed  $value
      */
     public static function set(
         string $key,
@@ -143,23 +147,20 @@ class LineSignupSetting extends Model
         );
 
         // Clear cache
-        Cache::forget(self::CACHE_PREFIX . $key);
+        Cache::forget(self::CACHE_PREFIX.$key);
 
         return $setting;
     }
 
     /**
      * ลบ setting และ clear cache
-     *
-     * @param string $key
-     * @return bool
      */
     public static function remove(string $key): bool
     {
         $deleted = self::where('key', $key)->delete();
 
         if ($deleted) {
-            Cache::forget(self::CACHE_PREFIX . $key);
+            Cache::forget(self::CACHE_PREFIX.$key);
         }
 
         return (bool) $deleted;
@@ -167,9 +168,6 @@ class LineSignupSetting extends Model
 
     /**
      * ดึงค่าทั้งหมดในกลุ่ม
-     *
-     * @param string $group
-     * @return array
      */
     public static function getGroup(string $group): array
     {
@@ -185,15 +183,13 @@ class LineSignupSetting extends Model
 
     /**
      * Clear cache ทั้งหมด
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
         $settings = self::all();
 
         foreach ($settings as $setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
         }
     }
 
@@ -215,9 +211,7 @@ class LineSignupSetting extends Model
     /**
      * แปลงค่าเป็น string สำหรับเก็บใน database
      *
-     * @param mixed $value
-     * @param string $type
-     * @return string|null
+     * @param  mixed  $value
      */
     protected static function castToString($value, string $type): ?string
     {
@@ -240,12 +234,12 @@ class LineSignupSetting extends Model
 
         // Clear cache เมื่อมีการแก้ไข
         static::updated(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
         });
 
         // Clear cache เมื่อมีการลบ
         static::deleted(function ($setting) {
-            Cache::forget(self::CACHE_PREFIX . $setting->key);
+            Cache::forget(self::CACHE_PREFIX.$setting->key);
         });
     }
 }

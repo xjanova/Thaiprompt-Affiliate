@@ -51,16 +51,17 @@ class DistributeROI extends Command
             if (isset($result['success']) && is_numeric($result['success'])) {
                 $this->info("✓ Successfully distributed ROI to {$result['success']} positions");
                 $this->info("✗ Failed: {$result['failed']} positions");
-                $this->info("Total amount distributed: ฿" . number_format($result['total_amount'], 2));
+                $this->info('Total amount distributed: ฿'.number_format($result['total_amount'], 2));
 
-                if (!empty($result['errors'])) {
+                if (! empty($result['errors'])) {
                     $this->warn('Errors encountered:');
                     foreach ($result['errors'] as $error) {
                         $this->error("Position #{$error['position_id']}: {$error['error']}");
                     }
                 }
             } else {
-                $this->error('ROI distribution failed: ' . ($result['error'] ?? 'Unknown error'));
+                $this->error('ROI distribution failed: '.($result['error'] ?? 'Unknown error'));
+
                 return 1;
             }
 
@@ -91,9 +92,9 @@ class DistributeROI extends Command
                 ['Metric', 'Value'],
                 [
                     ['Total Active Positions', number_format($stats['total_active_positions'])],
-                    ['Total Staked Amount', '฿' . number_format($stats['total_staked_amount'], 2)],
-                    ['Total ROI Distributed', '฿' . number_format($stats['total_roi_distributed'], 2)],
-                    ['Total ROI Pending', '฿' . number_format($stats['total_roi_pending'], 2)],
+                    ['Total Staked Amount', '฿'.number_format($stats['total_staked_amount'], 2)],
+                    ['Total ROI Distributed', '฿'.number_format($stats['total_roi_distributed'], 2)],
+                    ['Total ROI Pending', '฿'.number_format($stats['total_roi_pending'], 2)],
                     ['Distributions Today', number_format($stats['distributions_today'])],
                     ['Total Investors', number_format($stats['total_investors'])],
                 ]
@@ -105,7 +106,7 @@ class DistributeROI extends Command
 
             return 0;
         } catch (\Exception $e) {
-            $this->error('An error occurred: ' . $e->getMessage());
+            $this->error('An error occurred: '.$e->getMessage());
             Log::error('ROI Distribution Command Failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

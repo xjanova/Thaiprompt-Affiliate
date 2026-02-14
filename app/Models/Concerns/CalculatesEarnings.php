@@ -20,18 +20,15 @@ use App\Models\MlmProductPv;
  * 6. หัก VAT
  * 7. หัก MLM Commission (คำนวณจาก PV)
  * = รายได้สุทธิ
- *
- * @package App\Models\Concerns
  */
 trait CalculatesEarnings
 {
     /**
      * คำนวณรายได้สุทธิแบบ Real-time
      *
-     * @param float|null $quantity จำนวน (default: 1)
-     * @param float|null $sellerPromotion ส่วนลดจากผู้ขาย (บาท)
-     * @param float|null $platformPromotion ส่วนลดจากระบบ (บาท)
-     * @return array
+     * @param  float|null  $quantity  จำนวน (default: 1)
+     * @param  float|null  $sellerPromotion  ส่วนลดจากผู้ขาย (บาท)
+     * @param  float|null  $platformPromotion  ส่วนลดจากระบบ (บาท)
      */
     public function calculateNetEarnings(
         ?float $quantity = 1,
@@ -133,7 +130,7 @@ trait CalculatesEarnings
 
             // ต้นทุนและกำไร
             'cost_price' => round($costPrice, 2),
-            'has_cost_price' => !empty($this->cost_price),
+            'has_cost_price' => ! empty($this->cost_price),
             'net_profit' => round($netProfit, 2),
             'profit_margin' => $costPrice > 0 ? round(($netProfit / $salePrice) * 100, 2) : null,
         ];
@@ -141,9 +138,6 @@ trait CalculatesEarnings
 
     /**
      * คำนวณ MLM Commission จาก PV
-     *
-     * @param float $quantity
-     * @return array
      */
     protected function calculateMlmCommission(float $quantity = 1): array
     {
@@ -206,8 +200,6 @@ trait CalculatesEarnings
 
     /**
      * ดึงค่า PV ของสินค้า/บริการ
-     *
-     * @return float
      */
     protected function getPvValue(): float
     {
@@ -239,8 +231,6 @@ trait CalculatesEarnings
 
     /**
      * ได้ข้อมูลสรุปแบบย่อสำหรับแสดงใน UI
-     *
-     * @return array
      */
     public function getEarningsSummary(): array
     {

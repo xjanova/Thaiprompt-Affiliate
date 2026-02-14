@@ -19,14 +19,13 @@ use Illuminate\Support\Facades\Log;
  * - รองรับ TPIX และ Auto Top-up
  *
  * @version 1.0.0
+ *
  * @since 2025-11-22
  */
 class NFCCardSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -34,8 +33,9 @@ class NFCCardSeeder extends Seeder
 
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่ (idempotent)
         if (NFCCard::count() > 0) {
-            $this->command->warn('⚠️  มีข้อมูล NFC Cards อยู่แล้ว (' . NFCCard::count() . ' การ์ด)');
+            $this->command->warn('⚠️  มีข้อมูล NFC Cards อยู่แล้ว ('.NFCCard::count().' การ์ด)');
             $this->command->info('💡 ข้ามการ seed เพื่อป้องกันข้อมูลซ้ำ');
+
             return;
         }
 
@@ -44,10 +44,11 @@ class NFCCardSeeder extends Seeder
 
         if ($users->isEmpty()) {
             $this->command->error('❌ ไม่พบ users ในระบบ กรุณารัน UserSeeder ก่อน');
+
             return;
         }
 
-        $this->command->info('👥 พบ ' . $users->count() . ' users');
+        $this->command->info('👥 พบ '.$users->count().' users');
 
         $totalCards = 0;
         $totalTransactions = 0;
@@ -80,10 +81,6 @@ class NFCCardSeeder extends Seeder
 
     /**
      * สร้างบัตรสำหรับ user
-     *
-     * @param User $user
-     * @param int $index
-     * @return NFCCard
      */
     protected function createCardForUser(User $user, int $index): NFCCard
     {
@@ -97,7 +94,7 @@ class NFCCardSeeder extends Seeder
         $type = $this->weightedRandom($cardTypes);
 
         // สร้างเลขบัตร 16 หลัก (เริ่มด้วย 5899 สำหรับ NFC)
-        $cardNumber = '5899' . str_pad(rand(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
+        $cardNumber = '5899'.str_pad(rand(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
 
         // กำหนดสถานะ
         $statuses = [
@@ -119,7 +116,7 @@ class NFCCardSeeder extends Seeder
         $card = NFCCard::create([
             'user_id' => $user->id,
             'card_number' => $cardNumber,
-            'card_name' => $type['name'] . ' #' . $index,
+            'card_name' => $type['name'].' #'.$index,
             'card_type' => $type['type'],
             'balance' => $type['balance'],
             'status' => $statusConfig['status'],
@@ -135,7 +132,7 @@ class NFCCardSeeder extends Seeder
                 'card_type' => $type['type'],
                 'issued_date' => now()->toDateString(),
             ])),
-            'encryption_key_hash' => hash('sha256', $cardNumber . config('app.key')),
+            'encryption_key_hash' => hash('sha256', $cardNumber.config('app.key')),
             'card_signature' => hash_hmac('sha256', $cardNumber, config('app.key')),
             'encryption_version' => 1,
 
@@ -159,7 +156,7 @@ class NFCCardSeeder extends Seeder
 
             // TPIX support (30% รองรับ TPIX)
             'supports_tpix' => rand(1, 100) <= 30,
-            'tpix_wallet_address' => rand(1, 100) <= 30 ? '0x' . bin2hex(random_bytes(20)) : null,
+            'tpix_wallet_address' => rand(1, 100) <= 30 ? '0x'.bin2hex(random_bytes(20)) : null,
 
             // Auto top-up (50% เปิด auto top-up)
             'auto_topup_enabled' => $walletId && rand(1, 100) <= 50,
@@ -175,7 +172,6 @@ class NFCCardSeeder extends Seeder
     /**
      * สร้าง transactions ตัวอย่างสำหรับบัตร
      *
-     * @param NFCCard $card
      * @return int จำนวน transactions ที่สร้าง
      */
     protected function createTransactionsForCard(NFCCard $card): int
@@ -217,7 +213,7 @@ class NFCCardSeeder extends Seeder
             ];
 
             // สร้าง transaction ID แบบ unique (ใช้ card_id + index + microtime เพื่อป้องกันซ้ำ)
-            $uniqueTransactionId = 'NFC' . now()->format('YmdHis') . $card->id . str_pad($i, 3, '0', STR_PAD_LEFT) . rand(100, 999);
+            $uniqueTransactionId = 'NFC'.now()->format('YmdHis').$card->id.str_pad($i, 3, '0', STR_PAD_LEFT).rand(100, 999);
 
             // สร้าง transaction
             NFCTransaction::create([
@@ -238,7 +234,7 @@ class NFCCardSeeder extends Seeder
                 ],
                 'created_at' => now()->subDays(rand(1, 30)),
                 // ✅ เพิ่ม encryption verification fields ที่จำเป็น
-                'card_data_hash' => hash('sha256', json_encode($transactionData) . config('app.key')),
+                'card_data_hash' => hash('sha256', json_encode($transactionData).config('app.key')),
                 'encryption_verified' => true,
                 'verification_signature' => hash_hmac('sha256', json_encode($transactionData), config('app.key')),
             ]);
@@ -251,9 +247,6 @@ class NFCCardSeeder extends Seeder
 
     /**
      * สุ่มค่าแบบ weighted random
-     *
-     * @param array $items
-     * @return mixed
      */
     protected function weightedRandom(array $items): mixed
     {
@@ -273,8 +266,6 @@ class NFCCardSeeder extends Seeder
 
     /**
      * สุ่มสถานที่
-     *
-     * @return string
      */
     protected function randomLocation(): string
     {
@@ -296,18 +287,14 @@ class NFCCardSeeder extends Seeder
 
     /**
      * สุ่ม IP address
-     *
-     * @return string
      */
     protected function randomIP(): string
     {
-        return rand(1, 255) . '.' . rand(0, 255) . '.' . rand(0, 255) . '.' . rand(1, 255);
+        return rand(1, 255).'.'.rand(0, 255).'.'.rand(0, 255).'.'.rand(1, 255);
     }
 
     /**
      * สุ่มชื่อร้านค้า
-     *
-     * @return string
      */
     protected function randomMerchant(): string
     {
@@ -329,8 +316,6 @@ class NFCCardSeeder extends Seeder
 
     /**
      * สุ่มหมวดหมู่
-     *
-     * @return string
      */
     protected function randomCategory(): string
     {

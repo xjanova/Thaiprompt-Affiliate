@@ -22,7 +22,7 @@ return new class extends Migration
                 'blocks',
                 'blocked_by',
                 'parent',
-                'child'
+                'child',
             ])->default('related');
 
             $table->text('note')->nullable();

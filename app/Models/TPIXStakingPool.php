@@ -58,13 +58,13 @@ class TPIXStakingPool extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('starts_at')
-                  ->orWhere('starts_at', '<=', now());
+                    ->orWhere('starts_at', '<=', now());
             })
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('ends_at')
-                  ->orWhere('ends_at', '>=', now());
+                    ->orWhere('ends_at', '>=', now());
             });
     }
 
@@ -84,7 +84,7 @@ class TPIXStakingPool extends Model
      */
     public function isActiveNow(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -101,7 +101,7 @@ class TPIXStakingPool extends Model
 
     public function canStake(string $amount): bool
     {
-        if (!$this->isActiveNow()) {
+        if (! $this->isActiveNow()) {
             return false;
         }
 
@@ -120,8 +120,8 @@ class TPIXStakingPool extends Model
     {
         // Simple APY calculation
         // Reward = (Amount × APY × Days) / (365 × 100)
-        $apy = (string)$this->apy;
-        $days = (string)$durationDays;
+        $apy = (string) $this->apy;
+        $days = (string) $durationDays;
 
         $reward = bcmul($amount, $apy, 8);
         $reward = bcmul($reward, $days, 8);
@@ -132,12 +132,12 @@ class TPIXStakingPool extends Model
 
     public function getDailyRewardRate(): string
     {
-        return bcdiv((string)$this->apy, '365', 8);
+        return bcdiv((string) $this->apy, '365', 8);
     }
 
     public function getFilledPercentage(): float
     {
-        if (!$this->max_stake_amount || $this->max_stake_amount == 0) {
+        if (! $this->max_stake_amount || $this->max_stake_amount == 0) {
             return 0;
         }
 

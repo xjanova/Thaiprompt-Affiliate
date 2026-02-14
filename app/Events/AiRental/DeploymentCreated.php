@@ -23,23 +23,19 @@ class DeploymentCreated
 
     /**
      * Deployment ที่ถูกสร้าง
-     *
-     * @var AiRentalDeployment
      */
     public AiRentalDeployment $deployment;
 
     /**
      * ข้อมูลเพิ่มเติมเกี่ยวกับการสร้าง
-     *
-     * @var array
      */
     public array $metadata;
 
     /**
      * สร้าง event instance
      *
-     * @param AiRentalDeployment $deployment Deployment ที่ถูกสร้าง
-     * @param array $metadata ข้อมูลเพิ่มเติม (optional)
+     * @param  AiRentalDeployment  $deployment  Deployment ที่ถูกสร้าง
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม (optional)
      * @return void
      *
      * @example
@@ -61,8 +57,6 @@ class DeploymentCreated
 
     /**
      * ดึงข้อมูล deployment
-     *
-     * @return AiRentalDeployment
      */
     public function getDeployment(): AiRentalDeployment
     {
@@ -71,8 +65,6 @@ class DeploymentCreated
 
     /**
      * ดึง metadata
-     *
-     * @return array
      */
     public function getMetadata(): array
     {
@@ -91,8 +83,6 @@ class DeploymentCreated
 
     /**
      * แปลง event เป็น array
-     *
-     * @return array
      */
     public function toArray(): array
     {

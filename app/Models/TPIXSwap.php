@@ -85,6 +85,7 @@ class TPIXSwap extends Model
         if (bccomp($this->amount_in, '0', 8) === 0) {
             return '0';
         }
+
         return bcdiv($this->amount_out, $this->amount_in, 8);
     }
 
@@ -182,6 +183,7 @@ class TPIXSwap extends Model
     public function getExplorerUrlAttribute(): string
     {
         $explorerUrl = config('tpix.explorer_url', 'http://localhost:4000');
+
         return "{$explorerUrl}/tx/{$this->tx_hash}";
     }
 
@@ -190,7 +192,7 @@ class TPIXSwap extends Model
      */
     public function getActualSlippageAttribute(): ?float
     {
-        if (!$this->min_amount_out || bccomp($this->min_amount_out, '0', 8) === 0) {
+        if (! $this->min_amount_out || bccomp($this->min_amount_out, '0', 8) === 0) {
             return null;
         }
 

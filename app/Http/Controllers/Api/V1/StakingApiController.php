@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\TPIXStakingPool;
 use App\Models\TPIXStake;
+use App\Models\TPIXStakingPool;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -123,7 +123,7 @@ class StakingApiController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if (!$stake) {
+            if (! $stake) {
                 return response()->json([
                     'success' => true,
                     'data' => null,
@@ -195,7 +195,7 @@ class StakingApiController extends Controller
                 ->where('token_id', $pool->token_id)
                 ->first();
 
-            if (!$balance || $balance->amount < $request->amount) {
+            if (! $balance || $balance->amount < $request->amount) {
                 throw new \Exception('Insufficient balance');
             }
 
@@ -240,6 +240,7 @@ class StakingApiController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Staking failed',
@@ -329,6 +330,7 @@ class StakingApiController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Unstaking failed',
@@ -401,6 +403,7 @@ class StakingApiController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Claiming failed',
@@ -449,7 +452,7 @@ class StakingApiController extends Controller
             $summary = [
                 'total_staked_thb' => $stakes->where('status', 'active')->sum('amount_thb'),
                 'total_staked_count' => $stakes->where('status', 'active')->count(),
-                'total_rewards_thb' => $stakes->sum(fn($s) => $s['rewards_earned'] * ($s['pool']['token']['price_thb'] ?? 0)),
+                'total_rewards_thb' => $stakes->sum(fn ($s) => $s['rewards_earned'] * ($s['pool']['token']['price_thb'] ?? 0)),
                 'total_rewards_tokens' => $stakes->sum('rewards_earned'),
                 'active_stakes' => $stakes->where('status', 'active')->count(),
                 'active_pools' => $stakes->where('status', 'active')->pluck('pool.id')->unique()->count(),
@@ -486,7 +489,7 @@ class StakingApiController extends Controller
                     return [
                         'user' => [
                             'id' => $stake->user->id,
-                            'username' => $stake->user->username ?? 'User #' . $stake->user->id,
+                            'username' => $stake->user->username ?? 'User #'.$stake->user->id,
                         ],
                         'type' => $stake->status === 'active' ? 'stake' : 'unstake',
                         'amount' => (float) $stake->staked_amount,
@@ -527,7 +530,7 @@ class StakingApiController extends Controller
      */
     private function calculateAPY(float $baseAPY, int $lockDays): float
     {
-        return match($lockDays) {
+        return match ($lockDays) {
             0 => $baseAPY * 0.5,
             7 => $baseAPY * 0.7,
             30 => $baseAPY * 0.9,
@@ -548,7 +551,7 @@ class StakingApiController extends Controller
 
         // Calculate time elapsed in years
         $secondsElapsed = $now->diffInSeconds($lastClaim);
-        $yearsElapsed = bcdiv((string)$secondsElapsed, '31536000', 18); // 365 * 24 * 60 * 60
+        $yearsElapsed = bcdiv((string) $secondsElapsed, '31536000', 18); // 365 * 24 * 60 * 60
 
         // Calculate rewards: staked_amount * APY * time_elapsed
         $apyDecimal = bcdiv($stake->apy, '100', 18);

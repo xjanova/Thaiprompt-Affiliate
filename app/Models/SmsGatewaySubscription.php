@@ -119,21 +119,22 @@ class SmsGatewaySubscription extends Model
 
     public function getDaysUntilExpiryAttribute(): int
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return 0;
         }
+
         return max(0, (int) now()->diffInDays($this->expires_at, false));
     }
 
     public function getFormattedPriceAttribute(): string
     {
-        return '฿' . number_format($this->price, 0);
+        return '฿'.number_format($this->price, 0);
     }
 
     /**
      * ยกเลิก subscription (ปิด auto_renew, ยังใช้ได้จนหมดอายุ)
      */
-    public function cancel(string $reason = null): bool
+    public function cancel(?string $reason = null): bool
     {
         $this->status = 'cancelled';
         $this->cancelled_at = now();
@@ -180,7 +181,7 @@ class SmsGatewaySubscription extends Model
 
         // เช็ค Official Shop owner
         $store = VendorStore::find($storeId);
-        if (!$store) {
+        if (! $store) {
             return false;
         }
 

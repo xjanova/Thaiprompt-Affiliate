@@ -75,8 +75,6 @@ class MessageEntity extends Model
 
     /**
      * ความสัมพันธ์กับ MessageSentiment
-     *
-     * @return BelongsTo
      */
     public function sentiment(): BelongsTo
     {
@@ -85,8 +83,6 @@ class MessageEntity extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotKeyword
-     *
-     * @return BelongsTo
      */
     public function keyword(): BelongsTo
     {
@@ -96,7 +92,7 @@ class MessageEntity extends Model
     /**
      * Scope: ดึงเฉพาะ primary entities
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePrimary($query)
@@ -107,8 +103,8 @@ class MessageEntity extends Model
     /**
      * Scope: ดึง entities ตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type ประเภท entity
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $type  ประเภท entity
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -119,8 +115,8 @@ class MessageEntity extends Model
     /**
      * Scope: ดึง entities ที่มี confidence สูง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minConfidence ค่า confidence ต่ำสุด (default: 0.8)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minConfidence  ค่า confidence ต่ำสุด (default: 0.8)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighConfidence($query, float $minConfidence = 0.8)
@@ -131,8 +127,8 @@ class MessageEntity extends Model
     /**
      * Scope: ดึง entities ตามแหล่งที่มา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $source แหล่งที่มา
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $source  แหล่งที่มา
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFromSource($query, string $source)
@@ -142,8 +138,6 @@ class MessageEntity extends Model
 
     /**
      * หาชื่อที่แสดง หากไม่มีให้ใช้ entity_value
-     *
-     * @return string
      */
     public function getDisplayValueAttribute(): string
     {
@@ -152,8 +146,6 @@ class MessageEntity extends Model
 
     /**
      * ความเชื่อมั่นในรูปแบบเปอร์เซ็นต์
-     *
-     * @return int
      */
     public function getConfidencePercentageAttribute(): int
     {
@@ -162,8 +154,6 @@ class MessageEntity extends Model
 
     /**
      * ความยาวของ entity text
-     *
-     * @return int
      */
     public function getEntityLengthAttribute(): int
     {
@@ -176,8 +166,6 @@ class MessageEntity extends Model
 
     /**
      * ตรวจสอบว่า entity นี้เป็นชนิด PRODUCT
-     *
-     * @return bool
      */
     public function isProduct(): bool
     {
@@ -186,8 +174,6 @@ class MessageEntity extends Model
 
     /**
      * ตรวจสอบว่า entity นี้เป็นชนิด ISSUE
-     *
-     * @return bool
      */
     public function isIssue(): bool
     {
@@ -196,8 +182,6 @@ class MessageEntity extends Model
 
     /**
      * ตรวจสอบว่า entity นี้เป็นชนิด LOCATION
-     *
-     * @return bool
      */
     public function isLocation(): bool
     {
@@ -206,8 +190,6 @@ class MessageEntity extends Model
 
     /**
      * ตรวจสอบว่า entity นี้เป็นชนิด QUANTITY
-     *
-     * @return bool
      */
     public function isQuantity(): bool
     {
@@ -216,8 +198,6 @@ class MessageEntity extends Model
 
     /**
      * ตรวจสอบว่า entity นี้มี confidence สูง
-     *
-     * @return bool
      */
     public function hasHighConfidence(): bool
     {

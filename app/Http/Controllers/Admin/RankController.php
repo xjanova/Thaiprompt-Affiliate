@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Rank;
-use App\Models\RankRequirement;
 use App\Models\RankBonus;
 use App\Models\RankPromotion;
+use App\Models\RankRequirement;
 use App\Models\User;
 use App\Services\RankingService;
 use Illuminate\Http\Request;
@@ -95,6 +95,7 @@ class RankController extends Controller
         $this->authorize('update', $rank);
 
         $rank->load(['requirements', 'bonuses']);
+
         return view('admin.ranks.edit', compact('rank'));
     }
 
@@ -114,7 +115,7 @@ class RankController extends Controller
             'name_th' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'description_th' => 'nullable|string',
-            'level' => 'required|integer|unique:ranks,level,' . $rank->id,
+            'level' => 'required|integer|unique:ranks,level,'.$rank->id,
             'icon' => 'nullable|string|max:255',
             'color' => 'required|string',
             'badge_icon' => 'nullable|string|max:10',
@@ -477,7 +478,7 @@ class RankController extends Controller
 
         $validated = $request->validate([
             'privileges' => 'nullable|array',
-            'privileges.*' => 'string|in:' . implode(',', array_keys(Rank::getAvailablePrivileges())),
+            'privileges.*' => 'string|in:'.implode(',', array_keys(Rank::getAvailablePrivileges())),
         ]);
 
         $rank->update([

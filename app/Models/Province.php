@@ -90,8 +90,6 @@ class Province extends Model
 
     /**
      * โรงแรมในจังหวัดนี้
-     *
-     * @return HasMany
      */
     public function hotels(): HasMany
     {
@@ -134,7 +132,7 @@ class Province extends Model
     {
         return $query->where(function ($q) use ($keyword) {
             $q->where('name_th', 'LIKE', "%{$keyword}%")
-              ->orWhere('name_en', 'LIKE', "%{$keyword}%");
+                ->orWhere('name_en', 'LIKE', "%{$keyword}%");
         });
     }
 
@@ -147,7 +145,7 @@ class Province extends Model
      */
     public function getFullNameAttribute(): string
     {
-        return $this->name_th . ' (' . $this->name_en . ')';
+        return $this->name_th.' ('.$this->name_en.')';
     }
 
     /**
@@ -173,8 +171,8 @@ class Province extends Model
     /**
      * คำนวณระยะทางจากพิกัดที่ระบุ (กิโลเมตร)
      *
-     * @param float $latitude ละติจูด
-     * @param float $longitude ลองจิจูด
+     * @param  float  $latitude  ละติจูด
+     * @param  float  $longitude  ลองจิจูด
      * @return float ระยะทางเป็นกิโลเมตร
      */
     public function distanceFrom(float $latitude, float $longitude): float
@@ -199,9 +197,9 @@ class Province extends Model
     /**
      * ดึงจังหวัดใกล้เคียงจากพิกัด GPS
      *
-     * @param float $latitude ละติจูด
-     * @param float $longitude ลองจิจูด
-     * @param int $limit จำนวนที่ต้องการ
+     * @param  float  $latitude  ละติจูด
+     * @param  float  $longitude  ลองจิจูด
+     * @param  int  $limit  จำนวนที่ต้องการ
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getNearbyProvinces(float $latitude, float $longitude, int $limit = 5)
@@ -223,9 +221,8 @@ class Province extends Model
     /**
      * ดึงจังหวัดที่ใกล้ที่สุด
      *
-     * @param float $latitude ละติจูด
-     * @param float $longitude ลองจิจูด
-     * @return Province|null
+     * @param  float  $latitude  ละติจูด
+     * @param  float  $longitude  ลองจิจูด
      */
     public static function getNearestProvince(float $latitude, float $longitude): ?Province
     {

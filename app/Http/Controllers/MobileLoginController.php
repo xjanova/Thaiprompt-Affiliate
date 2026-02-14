@@ -25,16 +25,13 @@ class MobileLoginController extends Controller
 
     /**
      * แสดงหน้า Mobile Login
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function show(Request $request): View|RedirectResponse
     {
         $loginToken = $request->get('token');
         $state = $request->get('state');
 
-        if (!$loginToken || !$state) {
+        if (! $loginToken || ! $state) {
             return view('auth.mobile-login-error', [
                 'error' => 'invalid_request',
                 'message' => 'ลิงก์ไม่ถูกต้อง กรุณาเปิดจากแอพใหม่อีกครั้ง',
@@ -48,7 +45,7 @@ class MobileLoginController extends Controller
             ->whereNull('used_at')
             ->first();
 
-        if (!$mobileAuthToken) {
+        if (! $mobileAuthToken) {
             return view('auth.mobile-login-error', [
                 'error' => 'invalid_token',
                 'message' => 'Token ไม่ถูกต้องหรือหมดอายุ กรุณาลองใหม่',
@@ -58,6 +55,7 @@ class MobileLoginController extends Controller
         // ตรวจสอบ expiry
         if ($mobileAuthToken->isLoginTokenExpired()) {
             $mobileAuthToken->delete();
+
             return view('auth.mobile-login-error', [
                 'error' => 'expired',
                 'message' => 'ลิงก์หมดอายุแล้ว กรุณาเปิดจากแอพใหม่อีกครั้ง',
@@ -84,9 +82,6 @@ class MobileLoginController extends Controller
 
     /**
      * ดำเนินการ Login
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function login(Request $request): View|RedirectResponse
     {
@@ -98,7 +93,7 @@ class MobileLoginController extends Controller
         ]);
 
         // ตรวจสอบ credentials
-        if (!Auth::attempt([
+        if (! Auth::attempt([
             'email' => $request->email,
             'password' => $request->password,
         ])) {
@@ -130,9 +125,6 @@ class MobileLoginController extends Controller
 
     /**
      * อนุมัติให้แอพเข้าถึง (หลัง login หรือถ้า login อยู่แล้ว)
-     *
-     * @param Request $request
-     * @return View|RedirectResponse
      */
     public function authorize(Request $request): View|RedirectResponse
     {
@@ -145,7 +137,7 @@ class MobileLoginController extends Controller
         $state = $request->state;
 
         Log::info('Mobile authorize - starting', [
-            'token_prefix' => substr($loginToken, 0, 10) . '...',
+            'token_prefix' => substr($loginToken, 0, 10).'...',
             'state' => $state,
             'user_id' => Auth::id(),
             'is_authenticated' => Auth::check(),
@@ -158,9 +150,9 @@ class MobileLoginController extends Controller
             ->whereNull('used_at')
             ->first();
 
-        if (!$mobileAuthToken) {
+        if (! $mobileAuthToken) {
             Log::warning('Mobile authorize - token not found', [
-                'token_hash_prefix' => substr($loginTokenHash, 0, 10) . '...',
+                'token_hash_prefix' => substr($loginTokenHash, 0, 10).'...',
                 'state' => $state,
             ]);
 
@@ -200,7 +192,7 @@ class MobileLoginController extends Controller
         ]);
 
         // Redirect กลับแอพ
-        $redirectUrl = 'thaiprompt://auth?' . http_build_query([
+        $redirectUrl = 'thaiprompt://auth?'.http_build_query([
             'code' => $authCode,
             'state' => $state,
         ]);
@@ -214,9 +206,6 @@ class MobileLoginController extends Controller
 
     /**
      * ปฏิเสธการ authorize
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function deny(Request $request): RedirectResponse
     {
@@ -231,7 +220,7 @@ class MobileLoginController extends Controller
         }
 
         // Redirect กลับแอพพร้อม error
-        $redirectUrl = 'thaiprompt://auth?' . http_build_query([
+        $redirectUrl = 'thaiprompt://auth?'.http_build_query([
             'error' => 'access_denied',
             'state' => $state,
         ]);

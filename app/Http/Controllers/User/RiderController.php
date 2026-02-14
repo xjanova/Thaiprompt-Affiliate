@@ -8,7 +8,6 @@ use App\Models\RiderJob;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * RiderController - จัดการไรเดอร์สำหรับ User
@@ -33,7 +32,7 @@ class RiderController extends Controller
         $rider = Rider::where('user_id', $user->id)->first();
 
         // ถ้ายังไม่ได้สมัคร ไปหน้าสมัคร
-        if (!$rider) {
+        if (! $rider) {
             return redirect()->route('user.rider.register');
         }
 
@@ -94,7 +93,6 @@ class RiderController extends Controller
     /**
      * บันทึกการสมัครไรเดอร์
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function submitRegistration(Request $request)
@@ -168,7 +166,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return redirect()->route('user.rider.register');
         }
 
@@ -193,7 +191,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return redirect()->route('user.rider.register');
         }
 
@@ -206,7 +204,6 @@ class RiderController extends Controller
     /**
      * อัพโหลดเอกสาร
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function uploadDocument(Request $request)
@@ -219,10 +216,11 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'ไม่พบข้อมูลไรเดอร์'], 404);
             }
+
             return redirect()->route('user.rider.register');
         }
 
@@ -257,7 +255,6 @@ class RiderController extends Controller
     /**
      * รายการงาน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function jobs(Request $request)
@@ -265,7 +262,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider || $rider->status !== 'approved') {
+        if (! $rider || $rider->status !== 'approved') {
             return redirect()->route('user.rider.status');
         }
 
@@ -288,7 +285,6 @@ class RiderController extends Controller
     /**
      * รายละเอียดงาน
      *
-     * @param RiderJob $job
      * @return \Illuminate\View\View
      */
     public function showJob(RiderJob $job)
@@ -296,13 +292,13 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider || $job->rider_id !== $rider->id) {
+        if (! $rider || $job->rider_id !== $rider->id) {
             abort(403, 'ไม่มีสิทธิ์เข้าถึง');
         }
 
         return view('user.rider.job-detail', [
             'job' => $job,
-            'pageTitle' => 'รายละเอียดงาน #' . $job->job_number,
+            'pageTitle' => 'รายละเอียดงาน #'.$job->job_number,
         ]);
     }
 
@@ -316,7 +312,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider || $rider->status !== 'approved') {
+        if (! $rider || $rider->status !== 'approved') {
             return redirect()->route('user.rider.status');
         }
 
@@ -354,7 +350,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return redirect()->route('user.rider.register');
         }
 
@@ -367,7 +363,6 @@ class RiderController extends Controller
     /**
      * อัพเดทตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)
@@ -383,7 +378,7 @@ class RiderController extends Controller
         $user = Auth::user();
         $rider = Rider::where('user_id', $user->id)->first();
 
-        if (!$rider) {
+        if (! $rider) {
             return redirect()->route('user.rider.register');
         }
 

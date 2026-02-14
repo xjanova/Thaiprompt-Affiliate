@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ServiceBooking;
+use App\Models\ServiceBookingLocationLog;
 use App\Models\ServiceProvider;
 use App\Models\User;
-use App\Models\ServiceBookingLocationLog;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 /**
  * GPS Monitoring Controller
@@ -32,7 +31,6 @@ class GpsMonitoringController extends Controller
     /**
      * ดึงข้อมูล GPS สำหรับแสดงบนแผนที่
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getData(Request $request)
@@ -56,7 +54,7 @@ class GpsMonitoringController extends Controller
         }
 
         if ($limit !== 'all') {
-            $bookingsQuery->limit((int)$limit);
+            $bookingsQuery->limit((int) $limit);
         }
 
         $bookings = $bookingsQuery->latest('updated_at')->get();
@@ -123,7 +121,7 @@ class GpsMonitoringController extends Controller
     /**
      * ดึง providers ที่ online
      *
-     * @param \Illuminate\Support\Collection $bookings
+     * @param  \Illuminate\Support\Collection  $bookings
      * @return array
      */
     private function getOnlineProviders($bookings)
@@ -150,7 +148,7 @@ class GpsMonitoringController extends Controller
     /**
      * ดึง users ที่กำลัง share location
      *
-     * @param \Illuminate\Support\Collection $bookings
+     * @param  \Illuminate\Support\Collection  $bookings
      * @return array
      */
     private function getActiveUsers($bookings)
@@ -176,7 +174,7 @@ class GpsMonitoringController extends Controller
     /**
      * ดึง service locations
      *
-     * @param \Illuminate\Support\Collection $bookings
+     * @param  \Illuminate\Support\Collection  $bookings
      * @return array
      */
     private function getServiceLocations($bookings)
@@ -202,7 +200,7 @@ class GpsMonitoringController extends Controller
     /**
      * ดึงเส้นทาง
      *
-     * @param \Illuminate\Support\Collection $bookings
+     * @param  \Illuminate\Support\Collection  $bookings
      * @return array
      */
     private function getRoutes($bookings)
@@ -211,16 +209,20 @@ class GpsMonitoringController extends Controller
         $routes = [];
 
         foreach ($bookings as $booking) {
-            if (!$booking->provider || !$booking->provider->current_latitude) continue;
+            if (! $booking->provider || ! $booking->provider->current_latitude) {
+                continue;
+            }
 
             $serviceLocation = $booking->locations->where('type', 'service')->first();
-            if (!$serviceLocation || !$serviceLocation->latitude) continue;
+            if (! $serviceLocation || ! $serviceLocation->latitude) {
+                continue;
+            }
 
             $routes[] = [
                 'booking_id' => $booking->id,
                 'path' => [
-                    ['lat' => (float)$booking->provider->current_latitude, 'lng' => (float)$booking->provider->current_longitude],
-                    ['lat' => (float)$serviceLocation->latitude, 'lng' => (float)$serviceLocation->longitude],
+                    ['lat' => (float) $booking->provider->current_latitude, 'lng' => (float) $booking->provider->current_longitude],
+                    ['lat' => (float) $serviceLocation->latitude, 'lng' => (float) $serviceLocation->longitude],
                 ],
             ];
         }
@@ -231,7 +233,7 @@ class GpsMonitoringController extends Controller
     /**
      * คำนวณสถิติ
      *
-     * @param \Illuminate\Support\Collection $bookings
+     * @param  \Illuminate\Support\Collection  $bookings
      * @return array
      */
     private function calculateStats($bookings)
@@ -266,7 +268,7 @@ class GpsMonitoringController extends Controller
     /**
      * กำหนด start time ตาม time range
      *
-     * @param string $timeRange
+     * @param  string  $timeRange
      * @return Carbon|null
      */
     private function getStartTime($timeRange)
@@ -292,8 +294,6 @@ class GpsMonitoringController extends Controller
     /**
      * ดูประวัติ GPS ของ booking ใดๆ
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function getBookingHistory(Request $request, ServiceBooking $booking)
@@ -314,8 +314,8 @@ class GpsMonitoringController extends Controller
 
         foreach ($logs as $log) {
             $point = [
-                'lat' => (float)$log->latitude,
-                'lng' => (float)$log->longitude,
+                'lat' => (float) $log->latitude,
+                'lng' => (float) $log->longitude,
                 'timestamp' => $log->recorded_at,
                 'accuracy' => $log->accuracy,
             ];
@@ -345,7 +345,6 @@ class GpsMonitoringController extends Controller
     /**
      * Playback ประวัติการเดินทาง
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\View\View
      */
     public function playback(ServiceBooking $booking)

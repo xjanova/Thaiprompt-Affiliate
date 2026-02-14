@@ -48,6 +48,7 @@ class RecordQualityOnBlockchainJob implements ShouldQueue
                 'checkpoint_id' => $this->checkpoint->id,
                 'hash' => $this->checkpoint->blockchain_hash,
             ]);
+
             return;
         }
 
@@ -58,7 +59,7 @@ class RecordQualityOnBlockchainJob implements ShouldQueue
 
         try {
             $product = $this->checkpoint->foodProduct;
-            if (!$product) {
+            if (! $product) {
                 throw new \Exception('Product not found for quality checkpoint');
             }
 
@@ -99,7 +100,7 @@ class RecordQualityOnBlockchainJob implements ShouldQueue
                     $this->checkpoint->overall_result,
                     (int) $this->checkpoint->pass_score,
                     "ipfs://{$ipfsHash}",
-                    $checkpointData['timestamp']
+                    $checkpointData['timestamp'],
                 ]
             );
 

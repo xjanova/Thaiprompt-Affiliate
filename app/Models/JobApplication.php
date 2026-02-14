@@ -88,7 +88,7 @@ class JobApplication extends Model
 
         static::creating(function ($application) {
             if (empty($application->application_number)) {
-                $application->application_number = 'APP-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+                $application->application_number = 'APP-'.date('Ymd').'-'.strtoupper(substr(uniqid(), -6));
             }
         });
     }
@@ -122,7 +122,7 @@ class JobApplication extends Model
      */
     public function getFullNameAttribute()
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     /**
@@ -196,7 +196,7 @@ class JobApplication extends Model
      */
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'new' => 'bg-blue-100 text-blue-800',
             'reviewing' => 'bg-yellow-100 text-yellow-800',
             'shortlisted' => 'bg-purple-100 text-purple-800',

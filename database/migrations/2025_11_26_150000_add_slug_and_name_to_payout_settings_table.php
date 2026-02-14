@@ -25,55 +25,53 @@ return new class extends Migration
 {
     /**
      * รัน migrations
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง payout_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('payout_settings')) {
+        if (! Schema::hasTable('payout_settings')) {
             return;
         }
 
         Schema::table('payout_settings', function (Blueprint $table) {
             // เพิ่มคอลัมน์ใหม่ที่ seeder ต้องการ
-            if (!Schema::hasColumn('payout_settings', 'slug')) {
+            if (! Schema::hasColumn('payout_settings', 'slug')) {
                 $table->string('slug')->nullable()->unique()->after('id');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'name')) {
+            if (! Schema::hasColumn('payout_settings', 'name')) {
                 $table->string('name')->nullable()->after('slug');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'earning_type')) {
+            if (! Schema::hasColumn('payout_settings', 'earning_type')) {
                 $table->string('earning_type')->nullable()->after('name');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'payout_mode')) {
+            if (! Schema::hasColumn('payout_settings', 'payout_mode')) {
                 $table->string('payout_mode')->default('manual')->after('earning_type');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'min_payout')) {
+            if (! Schema::hasColumn('payout_settings', 'min_payout')) {
                 $table->decimal('min_payout', 15, 2)->default(100)->after('payout_mode');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'max_payout')) {
+            if (! Schema::hasColumn('payout_settings', 'max_payout')) {
                 $table->decimal('max_payout', 15, 2)->nullable()->after('min_payout');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'fee_fixed')) {
+            if (! Schema::hasColumn('payout_settings', 'fee_fixed')) {
                 $table->decimal('fee_fixed', 15, 2)->default(0)->after('max_payout');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'fee_percentage')) {
+            if (! Schema::hasColumn('payout_settings', 'fee_percentage')) {
                 $table->decimal('fee_percentage', 5, 2)->default(0)->after('fee_fixed');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'requires_approval')) {
+            if (! Schema::hasColumn('payout_settings', 'requires_approval')) {
                 $table->boolean('requires_approval')->default(true)->after('fee_percentage');
             }
 
-            if (!Schema::hasColumn('payout_settings', 'schedule')) {
+            if (! Schema::hasColumn('payout_settings', 'schedule')) {
                 $table->json('schedule')->nullable()->after('requires_approval');
             }
         });
@@ -81,8 +79,6 @@ return new class extends Migration
 
     /**
      * ย้อนกลับ migrations
-     *
-     * @return void
      */
     public function down(): void
     {

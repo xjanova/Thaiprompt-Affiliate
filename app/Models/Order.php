@@ -68,7 +68,7 @@ class Order extends Model
 
         static::creating(function ($order) {
             if (empty($order->order_number)) {
-                $order->order_number = 'ORD-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $order->order_number = 'ORD-'.date('Ymd').'-'.strtoupper(\Illuminate\Support\Str::random(6));
             }
         });
     }
@@ -229,7 +229,7 @@ class Order extends Model
     /**
      * Mark as paid
      */
-    public function markAsPaid(string $paymentReference = null): void
+    public function markAsPaid(?string $paymentReference = null): void
     {
         $this->payment_status = 'paid';
         $this->status = 'paid';
@@ -253,9 +253,9 @@ class Order extends Model
      * Mark as shipped with tracking info
      */
     public function markAsShipped(
-        string $trackingNumber = null,
-        string $shippingProvider = null,
-        int $shippingProviderId = null
+        ?string $trackingNumber = null,
+        ?string $shippingProvider = null,
+        ?int $shippingProviderId = null
     ): void {
         $this->status = 'shipped';
         $this->shipped_at = now();
@@ -311,7 +311,7 @@ class Order extends Model
      */
     public function getTrackingUrlAttribute(): ?string
     {
-        if (!$this->tracking_number) {
+        if (! $this->tracking_number) {
             return null;
         }
 
@@ -331,6 +331,7 @@ class Order extends Model
         ];
 
         $provider = strtolower($this->shipping_provider ?? '');
+
         return $trackingUrls[$provider] ?? null;
     }
 
@@ -356,7 +357,7 @@ class Order extends Model
     /**
      * Cancel order
      */
-    public function cancel(string $reason = null): void
+    public function cancel(?string $reason = null): void
     {
         $this->status = 'cancelled';
         $this->cancellation_reason = $reason;

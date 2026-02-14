@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\EarningsLedger;
 use App\Models\Order;
 use App\Models\Refund;
-use App\Models\EarningsLedger;
+use App\Models\User;
 use App\Models\WalletDebt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -22,13 +22,8 @@ class DebtCollectionService
     /**
      * สร้างหนี้จาก Refund
      *
-     * @param int $userId
-     * @param float $amount
-     * @param string $sourceType เช่น 'Refund', 'Order'
-     * @param int $sourceId
-     * @param string $reason
-     * @param int|null $createdBy Admin ID
-     * @return WalletDebt|null
+     * @param  string  $sourceType  เช่น 'Refund', 'Order'
+     * @param  int|null  $createdBy  Admin ID
      */
     public function createDebtFromRefund(
         int $userId,
@@ -50,6 +45,7 @@ class DebtCollectionService
             // ถ้ามีเงินพอ → หักจาก wallet โดยตรง
             if ($availableBalance >= $amount) {
                 $this->deductFromWallet($user, $amount, $sourceType, $sourceId, $reason);
+
                 return null; // ไม่ต้องสร้างหนี้
             }
 
@@ -92,14 +88,11 @@ class DebtCollectionService
 
     /**
      * ดึงยอดเงินที่ถอนได้
-     *
-     * @param int $userId
-     * @return float
      */
     protected function getAvailableBalance(int $userId): float
     {
         $user = User::find($userId);
-        if (!$user || !$user->wallet) {
+        if (! $user || ! $user->wallet) {
             return 0;
         }
 
@@ -108,16 +101,10 @@ class DebtCollectionService
 
     /**
      * หักเงินจาก Wallet
-     *
-     * @param User $user
-     * @param float $amount
-     * @param string $sourceType
-     * @param int $sourceId
-     * @param string $reason
      */
     protected function deductFromWallet(User $user, float $amount, string $sourceType, int $sourceId, string $reason): void
     {
-        if (!$user->wallet) {
+        if (! $user->wallet) {
             return;
         }
 
@@ -139,11 +126,6 @@ class DebtCollectionService
 
     /**
      * หักหนี้จากรายได้ใหม่
-     *
-     * @param int $userId
-     * @param float $earningAmount
-     * @param int|null $earningId
-     * @return array
      */
     public function collectDebtFromEarning(int $userId, float $earningAmount, ?int $earningId = null): array
     {
@@ -175,11 +157,6 @@ class DebtCollectionService
 
     /**
      * Process Refund และสร้างหนี้ (ถ้าจำเป็น)
-     *
-     * @param Order $order
-     * @param float $refundAmount
-     * @param int|null $adminId
-     * @return array
      */
     public function processRefund(Order $order, float $refundAmount, ?int $adminId = null): array
     {
@@ -251,11 +228,6 @@ class DebtCollectionService
 
     /**
      * ยกเว้นหนี้ (โดย Admin)
-     *
-     * @param WalletDebt $debt
-     * @param int $waivedBy
-     * @param string $reason
-     * @return WalletDebt
      */
     public function waiveDebt(WalletDebt $debt, int $waivedBy, string $reason): WalletDebt
     {
@@ -280,9 +252,6 @@ class DebtCollectionService
 
     /**
      * ยกเลิกหนี้
-     *
-     * @param WalletDebt $debt
-     * @return WalletDebt
      */
     public function cancelDebt(WalletDebt $debt): WalletDebt
     {
@@ -302,13 +271,6 @@ class DebtCollectionService
 
     /**
      * สร้างหนี้ด้วยตนเอง (Admin)
-     *
-     * @param int $userId
-     * @param float $amount
-     * @param string $reason
-     * @param int $createdBy
-     * @param int $priority
-     * @return WalletDebt
      */
     public function createManualDebt(
         int $userId,
@@ -344,9 +306,6 @@ class DebtCollectionService
 
     /**
      * ดึงสถิติหนี้
-     *
-     * @param array $filters
-     * @return array
      */
     public function getDebtStats(array $filters = []): array
     {
@@ -396,8 +355,7 @@ class DebtCollectionService
     /**
      * คำนวณอัตราการเก็บหนี้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return float
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      */
     protected function calculateCollectionRate($query): float
     {
@@ -414,8 +372,6 @@ class DebtCollectionService
     /**
      * ดึงรายการหนี้
      *
-     * @param array $filters
-     * @param int $perPage
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getDebts(array $filters = [], int $perPage = 15)
@@ -447,9 +403,6 @@ class DebtCollectionService
 
     /**
      * ดึงหนี้ของ User
-     *
-     * @param int $userId
-     * @return array
      */
     public function getUserDebtSummary(int $userId): array
     {
@@ -468,8 +421,6 @@ class DebtCollectionService
 
     /**
      * Batch process - เก็บหนี้จาก pending earnings
-     *
-     * @return array
      */
     public function batchCollectDebts(): array
     {

@@ -82,6 +82,7 @@ class VendorMarketingCampaign extends Model
     {
         $this->status = 'running';
         $this->started_at = now();
+
         return $this->save();
     }
 
@@ -92,6 +93,7 @@ class VendorMarketingCampaign extends Model
     {
         $this->status = 'completed';
         $this->ended_at = now();
+
         return $this->save();
     }
 
@@ -101,6 +103,7 @@ class VendorMarketingCampaign extends Model
     public function cancel(): bool
     {
         $this->status = 'cancelled';
+
         return $this->save();
     }
 
@@ -145,11 +148,12 @@ class VendorMarketingCampaign extends Model
      */
     public function getRoiAttribute(): ?float
     {
-        if (!$this->budget || $this->budget == 0) {
+        if (! $this->budget || $this->budget == 0) {
             return null;
         }
 
         $profit = $this->revenue_generated - $this->spent;
+
         return round(($profit / $this->spent) * 100, 2);
     }
 
@@ -158,7 +162,7 @@ class VendorMarketingCampaign extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'gray',
             'scheduled' => 'blue',
             'running' => 'green',
@@ -173,7 +177,7 @@ class VendorMarketingCampaign extends Model
      */
     public function getTypeDisplayAttribute(): string
     {
-        return match($this->campaign_type) {
+        return match ($this->campaign_type) {
             'email' => 'อีเมล',
             'line_broadcast' => 'LINE Broadcast',
             'discount' => 'ส่วนลด',

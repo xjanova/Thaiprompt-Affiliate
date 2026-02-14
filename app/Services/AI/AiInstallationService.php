@@ -4,18 +4,19 @@ namespace App\Services\AI;
 
 use App\Models\AiInstallationLog;
 use App\Models\AiProvider;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class AiInstallationService
 {
     private SystemRequirementsChecker $requirementsChecker;
+
     private ModelRecommendationService $recommendationService;
 
     public function __construct()
     {
-        $this->requirementsChecker = new SystemRequirementsChecker();
-        $this->recommendationService = new ModelRecommendationService();
+        $this->requirementsChecker = new SystemRequirementsChecker;
+        $this->recommendationService = new ModelRecommendationService;
     }
 
     /**
@@ -43,9 +44,9 @@ class AiInstallationService
             'started_at' => now(),
         ]);
 
-        $log->appendLog('เริ่มต้นการติดตั้ง ' . $installationType);
-        $log->appendLog('โมเดล: ' . $modelId);
-        $log->appendLog('Quantization: ' . $quantization);
+        $log->appendLog('เริ่มต้นการติดตั้ง '.$installationType);
+        $log->appendLog('โมเดล: '.$modelId);
+        $log->appendLog('Quantization: '.$quantization);
 
         return $log;
     }
@@ -68,19 +69,19 @@ class AiInstallationService
             );
 
             $systemInfo = $this->requirementsChecker->checkAll();
-            $log->appendLog('RAM: ' . $systemInfo['ram']['available_gb'] . ' GB available');
-            $log->appendLog('CPU: ' . $systemInfo['cpu']['cores'] . ' cores');
+            $log->appendLog('RAM: '.$systemInfo['ram']['available_gb'].' GB available');
+            $log->appendLog('CPU: '.$systemInfo['cpu']['cores'].' cores');
 
             if ($systemInfo['gpu']['available']) {
-                $log->appendLog('GPU: ' . $systemInfo['gpu']['gpus'][0]['name']);
-                $log->appendLog('VRAM: ' . $systemInfo['gpu']['gpus'][0]['memory_total_gb'] . ' GB');
+                $log->appendLog('GPU: '.$systemInfo['gpu']['gpus'][0]['name']);
+                $log->appendLog('VRAM: '.$systemInfo['gpu']['gpus'][0]['memory_total_gb'].' GB');
             } else {
                 $log->appendLog('GPU: ไม่พบ - จะใช้ CPU inference');
             }
 
-            if (!$systemInfo['overall_status']['ready']) {
+            if (! $systemInfo['overall_status']['ready']) {
                 $errors = implode(', ', $systemInfo['overall_status']['errors']);
-                throw new \Exception('ระบบไม่พร้อม: ' . $errors);
+                throw new \Exception('ระบบไม่พร้อม: '.$errors);
             }
 
             // Step 2: ตรวจสอบและติดตั้ง Ollama
@@ -92,7 +93,7 @@ class AiInstallationService
 
             $ollamaInstalled = $this->ensureOllamaInstalled($log);
 
-            if (!$ollamaInstalled) {
+            if (! $ollamaInstalled) {
                 throw new \Exception('ไม่สามารถติดตั้ง Ollama ได้');
             }
 
@@ -100,12 +101,12 @@ class AiInstallationService
             $log->updateProgress(
                 AiInstallationLog::STATUS_DOWNLOADING,
                 30,
-                'กำลังดาวน์โหลดโมเดล ' . $modelId
+                'กำลังดาวน์โหลดโมเดล '.$modelId
             );
 
             $modelDownloaded = $this->downloadModel($log, $modelId, $quantization);
 
-            if (!$modelDownloaded) {
+            if (! $modelDownloaded) {
                 throw new \Exception('ไม่สามารถดาวน์โหลดโมเดลได้');
             }
 
@@ -127,7 +128,7 @@ class AiInstallationService
 
             $testResult = $this->testModelConnection($log, $modelId);
 
-            if (!$testResult) {
+            if (! $testResult) {
                 throw new \Exception('ไม่สามารถเชื่อมต่อกับโมเดลได้');
             }
 
@@ -142,7 +143,7 @@ class AiInstallationService
             return true;
         } catch (\Exception $e) {
             $log->markFailed($e->getMessage());
-            $log->appendLog('ERROR: ' . $e->getMessage());
+            $log->appendLog('ERROR: '.$e->getMessage());
             Log::error('DeepSeek installation failed', [
                 'log_id' => $log->id,
                 'error' => $e->getMessage(),
@@ -161,13 +162,13 @@ class AiInstallationService
         // ตรวจสอบว่ามี ollama อยู่แล้วหรือไม่
         $result = Process::run('which ollama');
 
-        if ($result->successful() && !empty(trim($result->output()))) {
-            $log->appendLog('Ollama ติดตั้งอยู่แล้วที่: ' . trim($result->output()));
+        if ($result->successful() && ! empty(trim($result->output()))) {
+            $log->appendLog('Ollama ติดตั้งอยู่แล้วที่: '.trim($result->output()));
 
             // ตรวจสอบ version
             $versionResult = Process::run('ollama --version');
             if ($versionResult->successful()) {
-                $log->appendLog('Ollama version: ' . trim($versionResult->output()));
+                $log->appendLog('Ollama version: '.trim($versionResult->output()));
             }
 
             return true;
@@ -177,17 +178,19 @@ class AiInstallationService
 
         // ติดตั้ง Ollama
         $installScript = 'curl -fsSL https://ollama.com/install.sh | sh';
-        $log->appendLog('รัน: ' . $installScript);
+        $log->appendLog('รัน: '.$installScript);
 
         $result = Process::timeout(600)->run($installScript);
 
         if ($result->successful()) {
             $log->appendLog('ติดตั้ง Ollama สำเร็จ');
             $log->appendLog($result->output());
+
             return true;
         } else {
             $log->appendLog('ERROR: ติดตั้ง Ollama ไม่สำเร็จ');
             $log->appendLog($result->errorOutput());
+
             return false;
         }
     }
@@ -203,12 +206,12 @@ class AiInstallationService
         // แปลง model ID และ quantization เป็น Ollama model name
         $ollamaModelName = $this->convertToOllamaModelName($modelId, $quantization);
 
-        $log->appendLog('กำลังดาวน์โหลด: ' . $ollamaModelName);
+        $log->appendLog('กำลังดาวน์โหลด: '.$ollamaModelName);
         $log->appendLog('การดาวน์โหลดอาจใช้เวลานาน กรุณารอ...');
 
         // รัน ollama pull ใน background และติดตาม progress
-        $command = 'ollama pull ' . $ollamaModelName;
-        $log->appendLog('รัน: ' . $command);
+        $command = 'ollama pull '.$ollamaModelName;
+        $log->appendLog('รัน: '.$command);
 
         // TODO: ในการใช้งานจริง ควรรันใน background job และติดตาม progress
         // ตอนนี้จะรันแบบ synchronous เพื่อความง่าย
@@ -229,6 +232,7 @@ class AiInstallationService
         } else {
             $log->appendLog('ERROR: ดาวน์โหลดโมเดลไม่สำเร็จ');
             $log->appendLog($result->errorOutput());
+
             return false;
         }
     }
@@ -248,10 +252,10 @@ class AiInstallationService
         $settings = $this->recommendationService->getOptimalSettings($modelId, $systemInfo);
 
         $log->appendLog('การตั้งค่าที่แนะนำ:');
-        $log->appendLog('- Use GPU: ' . ($settings['use_gpu'] ? 'Yes' : 'No'));
-        $log->appendLog('- Threads: ' . $settings['threads']);
-        $log->appendLog('- Context Size: ' . $settings['context_size']);
-        $log->appendLog('- Batch Size: ' . $settings['batch_size']);
+        $log->appendLog('- Use GPU: '.($settings['use_gpu'] ? 'Yes' : 'No'));
+        $log->appendLog('- Threads: '.$settings['threads']);
+        $log->appendLog('- Context Size: '.$settings['context_size']);
+        $log->appendLog('- Batch Size: '.$settings['batch_size']);
 
         // บันทึก config
         $log->config = array_merge($log->config, [
@@ -280,29 +284,33 @@ class AiInstallationService
             $log->appendLog($result->output());
 
             if (str_contains($result->output(), $ollamaModelName)) {
-                $log->appendLog('✓ พบโมเดล ' . $ollamaModelName);
+                $log->appendLog('✓ พบโมเดล '.$ollamaModelName);
 
                 // ทดสอบรันโมเดล
                 $testPrompt = 'สวัสดี ตอบกลับด้วยคำว่า "พร้อมใช้งาน"';
-                $command = 'ollama run ' . $ollamaModelName . ' "' . $testPrompt . '"';
+                $command = 'ollama run '.$ollamaModelName.' "'.$testPrompt.'"';
 
                 $log->appendLog('ทดสอบรันโมเดล...');
                 $result = Process::timeout(120)->run($command);
 
                 if ($result->successful()) {
                     $log->appendLog('✓ โมเดลทำงานปกติ');
-                    $log->appendLog('Response: ' . substr($result->output(), 0, 200));
+                    $log->appendLog('Response: '.substr($result->output(), 0, 200));
+
                     return true;
                 } else {
                     $log->appendLog('✗ โมเดลไม่สามารถตอบกลับได้');
+
                     return false;
                 }
             } else {
-                $log->appendLog('✗ ไม่พบโมเดล ' . $ollamaModelName . ' ในรายการ');
+                $log->appendLog('✗ ไม่พบโมเดล '.$ollamaModelName.' ในรายการ');
+
                 return false;
             }
         } else {
             $log->appendLog('ERROR: ไม่สามารถเรียก ollama list ได้');
+
             return false;
         }
     }
@@ -324,7 +332,7 @@ class AiInstallationService
 
             // เพิ่มโมเดลเข้าไปในรายการ installed_models
             $installedModels = $provider->config['installed_models'] ?? [];
-            if (!in_array($modelId, $installedModels)) {
+            if (! in_array($modelId, $installedModels)) {
                 $installedModels[] = $modelId;
             }
 
@@ -396,7 +404,7 @@ class AiInstallationService
                 }
             }
 
-            if (!$modelExists) {
+            if (! $modelExists) {
                 return [
                     'success' => false,
                     'message' => 'ไม่พบโมเดลนี้ในระบบ',
@@ -407,7 +415,7 @@ class AiInstallationService
             // ตรวจสอบว่า Ollama กำลังรันอยู่หรือไม่
             $ollamaStatus = $this->checkOllamaStatus();
 
-            if (!$ollamaStatus['running']) {
+            if (! $ollamaStatus['running']) {
                 return [
                     'success' => false,
                     'message' => 'Ollama ไม่ได้รันอยู่ กรุณาเริ่ม Ollama Service ก่อน',
@@ -417,9 +425,9 @@ class AiInstallationService
 
             // เช็คว่ามี bot ที่กำลังใช้โมเดลนี้อยู่หรือไม่
             $activeBots = \App\Models\AiBotProfile::where('is_active', true)
-                ->whereHas('model', function($query) use ($modelId) {
+                ->whereHas('model', function ($query) use ($modelId) {
                     // ตรวจสอบว่า model_identifier มีชื่อโมเดลที่คล้ายกัน
-                    $query->where('model_identifier', 'LIKE', '%' . explode(':', $modelId)[0] . '%');
+                    $query->where('model_identifier', 'LIKE', '%'.explode(':', $modelId)[0].'%');
                 })
                 ->count();
 
@@ -434,7 +442,7 @@ class AiInstallationService
 
             // ลบโมเดล
             Log::info('Executing ollama rm command', ['model_id' => $modelId]);
-            $result = Process::timeout(60)->run('ollama rm ' . $modelId);
+            $result = Process::timeout(60)->run('ollama rm '.$modelId);
 
             if ($result->successful()) {
                 Log::info('Model uninstalled successfully', ['model_id' => $modelId]);
@@ -455,7 +463,7 @@ class AiInstallationService
 
                 return [
                     'success' => false,
-                    'message' => 'ไม่สามารถถอนการติดตั้งได้: ' . $result->errorOutput(),
+                    'message' => 'ไม่สามารถถอนการติดตั้งได้: '.$result->errorOutput(),
                     'code' => 'UNINSTALL_FAILED',
                 ];
             }
@@ -468,7 +476,7 @@ class AiInstallationService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'code' => 'EXCEPTION',
             ];
         }
@@ -488,8 +496,8 @@ class AiInstallationService
                 $installedModels = $provider->config['installed_models'];
 
                 // ลบโมเดลออกจาก array
-                $installedModels = array_filter($installedModels, function($model) use ($modelId) {
-                    return !str_contains($model, $modelId) && !str_contains($modelId, $model);
+                $installedModels = array_filter($installedModels, function ($model) use ($modelId) {
+                    return ! str_contains($model, $modelId) && ! str_contains($modelId, $model);
                 });
 
                 $config = $provider->config;
@@ -571,7 +579,7 @@ class AiInstallationService
         try {
             // ตรวจสอบว่าติดตั้งหรือไม่
             $result = Process::run('which ollama');
-            if ($result->successful() && !empty(trim($result->output()))) {
+            if ($result->successful() && ! empty(trim($result->output()))) {
                 $status['installed'] = true;
 
                 // ตรวจสอบ version

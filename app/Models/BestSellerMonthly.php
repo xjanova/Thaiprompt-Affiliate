@@ -70,8 +70,6 @@ class BestSellerMonthly extends Model
 
     /**
      * สินค้า
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -80,8 +78,6 @@ class BestSellerMonthly extends Model
 
     /**
      * ร้านค้า
-     *
-     * @return BelongsTo
      */
     public function store(): BelongsTo
     {
@@ -129,10 +125,7 @@ class BestSellerMonthly extends Model
     /**
      * คำนวณและอัพเดทสินค้าขายดีรายเดือน
      *
-     * @param int|null $month
-     * @param int|null $year
-     * @param int $limit จำนวนที่ต้องการแสดง
-     * @return array
+     * @param  int  $limit  จำนวนที่ต้องการแสดง
      */
     public static function calculateBestSellers(?int $month = null, ?int $year = null, int $limit = 10): array
     {
@@ -234,7 +227,6 @@ class BestSellerMonthly extends Model
     /**
      * ดึงสินค้าขายดีเดือนนี้
      *
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getThisMonthBestSellers(int $limit = 10)
@@ -250,9 +242,6 @@ class BestSellerMonthly extends Model
     /**
      * ดึงสินค้าขายดีของเดือนที่ระบุ
      *
-     * @param int $month
-     * @param int $year
-     * @param int $limit
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getBestSellersForPeriod(int $month, int $year, int $limit = 10)
@@ -269,8 +258,6 @@ class BestSellerMonthly extends Model
 
     /**
      * ชื่อเดือน (ภาษาไทย)
-     *
-     * @return string
      */
     public function getMonthNameAttribute(): string
     {
@@ -294,8 +281,6 @@ class BestSellerMonthly extends Model
 
     /**
      * ชื่อเดือน/ปี แสดงผล
-     *
-     * @return string
      */
     public function getPeriodLabelAttribute(): string
     {
@@ -304,8 +289,6 @@ class BestSellerMonthly extends Model
 
     /**
      * อันดับแสดงผล
-     *
-     * @return string
      */
     public function getRankLabelAttribute(): string
     {

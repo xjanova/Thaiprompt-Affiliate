@@ -26,9 +26,6 @@ class PosTerminalController extends Controller
 {
     /**
      * หน้าแสดงรายการ POS Terminals ทั้งหมด
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -40,9 +37,9 @@ class PosTerminalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('product_key', 'like', "%{$search}%")
-                  ->orWhere('device_name', 'like', "%{$search}%")
-                  ->orWhere('device_id', 'like', "%{$search}%")
-                  ->orWhereHas('shop', fn($q) => $q->where('name', 'like', "%{$search}%"));
+                    ->orWhere('device_name', 'like', "%{$search}%")
+                    ->orWhere('device_id', 'like', "%{$search}%")
+                    ->orWhereHas('shop', fn ($q) => $q->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -62,7 +59,7 @@ class PosTerminalController extends Controller
             if ($request->online === 'online') {
                 $query->where('last_sync_at', '>=', $threshold);
             } else {
-                $query->where(fn($q) => $q->whereNull('last_sync_at')
+                $query->where(fn ($q) => $q->whereNull('last_sync_at')
                     ->orWhere('last_sync_at', '<', $threshold));
             }
         }
@@ -81,22 +78,16 @@ class PosTerminalController extends Controller
 
     /**
      * หน้าแสดงรายละเอียด Terminal
-     *
-     * @param PosTerminal $terminal
-     * @return View
      */
     public function show(PosTerminal $terminal): View
     {
-        $terminal->load(['shop', 'apiKey', 'dailyReports' => fn($q) => $q->latest()->limit(30)]);
+        $terminal->load(['shop', 'apiKey', 'dailyReports' => fn ($q) => $q->latest()->limit(30)]);
 
         return view('admin.pos-terminals.show', compact('terminal'));
     }
 
     /**
      * หน้าจัดการ API Keys
-     *
-     * @param Request $request
-     * @return View
      */
     public function apiKeys(Request $request): View
     {
@@ -108,8 +99,8 @@ class PosTerminalController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('key', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%")
-                  ->orWhereHas('shop', fn($q) => $q->where('name', 'like', "%{$search}%"));
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhereHas('shop', fn ($q) => $q->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -132,7 +123,6 @@ class PosTerminalController extends Controller
     /**
      * สร้าง API Key ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function createApiKey(Request $request)
@@ -166,8 +156,6 @@ class PosTerminalController extends Controller
     /**
      * บล็อก API Key
      *
-     * @param Request $request
-     * @param PosApiKey $apiKey
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function blockApiKey(Request $request, PosApiKey $apiKey)
@@ -202,7 +190,6 @@ class PosTerminalController extends Controller
     /**
      * ปลดบล็อก API Key
      *
-     * @param PosApiKey $apiKey
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function unblockApiKey(Request $request, PosApiKey $apiKey)
@@ -232,8 +219,6 @@ class PosTerminalController extends Controller
     /**
      * บล็อก Terminal
      *
-     * @param Request $request
-     * @param PosTerminal $terminal
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function blockTerminal(Request $request, PosTerminal $terminal)
@@ -258,8 +243,6 @@ class PosTerminalController extends Controller
     /**
      * ปลดบล็อก Terminal
      *
-     * @param Request $request
-     * @param PosTerminal $terminal
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function unblockTerminal(Request $request, PosTerminal $terminal)
@@ -283,9 +266,6 @@ class PosTerminalController extends Controller
 
     /**
      * ดึงสถานะ Online/Offline แบบ Real-time (สำหรับ AJAX polling)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getOnlineStatus(Request $request): JsonResponse
     {
@@ -294,7 +274,7 @@ class PosTerminalController extends Controller
         $terminals = PosTerminal::select('id', 'product_key', 'last_sync_at', 'status', 'is_verified')
             ->with(['apiKey:id,is_blocked'])
             ->get()
-            ->map(fn($t) => [
+            ->map(fn ($t) => [
                 'id' => $t->id,
                 'product_key' => $t->product_key,
                 'status' => $t->status,
@@ -314,8 +294,6 @@ class PosTerminalController extends Controller
 
     /**
      * Dashboard สำหรับดูภาพรวม POS
-     *
-     * @return View
      */
     public function dashboard(): View
     {
@@ -361,8 +339,6 @@ class PosTerminalController extends Controller
 
     /**
      * ดึงสถิติภาพรวม
-     *
-     * @return array
      */
     private function getStats(): array
     {

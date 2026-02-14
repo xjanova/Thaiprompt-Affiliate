@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง fortune_response_templates
      * เก็บเทมเพลตการตอบกลับคำทำนาย (รองรับรูปภาพ + placeholders)
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง fortune_response_templates
-     *
-     * @return void
      */
     public function down(): void
     {

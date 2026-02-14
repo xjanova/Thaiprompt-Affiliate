@@ -117,13 +117,13 @@ class LineSignupFlow extends Model
         $operator = $condition['operator'] ?? '==';
         $value = $condition['value'] ?? null;
 
-        if (!$field || !isset($data[$field])) {
+        if (! $field || ! isset($data[$field])) {
             return false;
         }
 
         $fieldValue = $data[$field];
 
-        return match($operator) {
+        return match ($operator) {
             '==' => $fieldValue == $value,
             '===' => $fieldValue === $value,
             '!=' => $fieldValue != $value,
@@ -133,7 +133,7 @@ class LineSignupFlow extends Model
             '<' => $fieldValue < $value,
             '<=' => $fieldValue <= $value,
             'in' => in_array($fieldValue, (array) $value),
-            'not_in' => !in_array($fieldValue, (array) $value),
+            'not_in' => ! in_array($fieldValue, (array) $value),
             'contains' => str_contains($fieldValue, $value),
             default => false,
         };
@@ -149,13 +149,13 @@ class LineSignupFlow extends Model
         // Basic validation based on input_type
         switch ($this->input_type) {
             case 'phone':
-                if (!preg_match('/^[0-9]{9,10}$/', $input)) {
+                if (! preg_match('/^[0-9]{9,10}$/', $input)) {
                     $errors[] = 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (9-10 หลัก)';
                 }
                 break;
 
             case 'email':
-                if (!filter_var($input, FILTER_VALIDATE_EMAIL)) {
+                if (! filter_var($input, FILTER_VALIDATE_EMAIL)) {
                     $errors[] = 'กรุณากรอกอีเมลให้ถูกต้อง';
                 }
                 break;
@@ -170,8 +170,8 @@ class LineSignupFlow extends Model
         // Custom validation rules
         if ($this->validation_rules) {
             foreach ($this->validation_rules as $rule => $params) {
-                if (!$this->applyValidationRule($rule, $input, $params)) {
-                    $errors[] = $this->validation_error_message ?? "ข้อมูลไม่ถูกต้อง";
+                if (! $this->applyValidationRule($rule, $input, $params)) {
+                    $errors[] = $this->validation_error_message ?? 'ข้อมูลไม่ถูกต้อง';
                 }
             }
         }
@@ -187,8 +187,8 @@ class LineSignupFlow extends Model
      */
     private function applyValidationRule(string $rule, string $input, $params): bool
     {
-        return match($rule) {
-            'required' => !empty($input),
+        return match ($rule) {
+            'required' => ! empty($input),
             'min_length' => strlen($input) >= $params,
             'max_length' => strlen($input) <= $params,
             'regex' => preg_match($params, $input) === 1,
@@ -215,7 +215,7 @@ class LineSignupFlow extends Model
      */
     public function getQuickReplyStructure(): ?array
     {
-        if (!$this->quick_reply_options) {
+        if (! $this->quick_reply_options) {
             return null;
         }
 

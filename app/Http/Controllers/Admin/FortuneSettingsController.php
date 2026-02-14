@@ -51,12 +51,12 @@ class FortuneSettingsController extends Controller
 
         // กราฟ 7 วัน
         $dailyData = FortuneReading::select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as revenue'),
-                DB::raw('SUM(CASE WHEN reading_type = "basic" THEN 1 ELSE 0 END) as basic_count'),
-                DB::raw('SUM(CASE WHEN reading_type = "deep" THEN 1 ELSE 0 END) as deep_count')
-            )
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as revenue'),
+            DB::raw('SUM(CASE WHEN reading_type = "basic" THEN 1 ELSE 0 END) as basic_count'),
+            DB::raw('SUM(CASE WHEN reading_type = "deep" THEN 1 ELSE 0 END) as deep_count')
+        )
             ->where('created_at', '>=', $weekAgo)
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
@@ -83,8 +83,8 @@ class FortuneSettingsController extends Controller
 
         // Top 5 ผู้ใช้บ่อย
         $topUsers = FortuneReading::select('facebook_user_id', 'facebook_user_name',
-                DB::raw('COUNT(*) as reading_count'),
-                DB::raw('MAX(created_at) as last_reading'))
+            DB::raw('COUNT(*) as reading_count'),
+            DB::raw('MAX(created_at) as last_reading'))
             ->groupBy('facebook_user_id', 'facebook_user_name')
             ->orderByDesc('reading_count')
             ->limit(5)
@@ -110,7 +110,7 @@ class FortuneSettingsController extends Controller
         $aiStatus = [
             'provider' => $settings->getActualAIProvider(),
             'model' => $settings->getActualAIModel(),
-            'has_key' => !empty($settings->getActualAIApiKey()),
+            'has_key' => ! empty($settings->getActualAIApiKey()),
             'enabled' => $settings->is_enabled,
         ];
 
@@ -223,7 +223,7 @@ class FortuneSettingsController extends Controller
             'use_global_ai_settings', 'comment_engagement_enabled',
         ];
         foreach ($checkboxFields as $field) {
-            if (!$request->has($field)) {
+            if (! $request->has($field)) {
                 $validated[$field] = false;
             }
         }
@@ -282,16 +282,16 @@ class FortuneSettingsController extends Controller
 
         $checks['ai_config'] = [
             'label' => 'การตั้งค่า AI',
-            'status' => !empty($aiApiKey) ? 'ok' : 'error',
+            'status' => ! empty($aiApiKey) ? 'ok' : 'error',
             'details' => [
                 'provider' => $aiProvider,
                 'model' => $aiModel,
-                'has_api_key' => !empty($aiApiKey),
-                'api_key_prefix' => $aiApiKey ? mb_substr($aiApiKey, 0, 8) . '...' : 'ไม่มี',
+                'has_api_key' => ! empty($aiApiKey),
+                'api_key_prefix' => $aiApiKey ? mb_substr($aiApiKey, 0, 8).'...' : 'ไม่มี',
                 'use_global' => $useGlobal,
             ],
-            'message' => !empty($aiApiKey)
-                ? "ใช้ {$aiProvider} / {$aiModel}" . ($useGlobal ? ' (จากระบบหลัก)' : '')
+            'message' => ! empty($aiApiKey)
+                ? "ใช้ {$aiProvider} / {$aiModel}".($useGlobal ? ' (จากระบบหลัก)' : '')
                 : "ไม่พบ API Key สำหรับ {$aiProvider}",
             'fix' => empty($aiApiKey)
                 ? 'ตั้งค่า API Key ในส่วน "การตั้งค่า AI Provider" ด้านล่าง หรือเปิดใช้ "ใช้การตั้งค่า AI จากระบบหลัก"'
@@ -300,7 +300,7 @@ class FortuneSettingsController extends Controller
 
         // 2. ตรวจสอบ API Key Pool
         try {
-            $poolService = new \App\Services\AiApiKeyPoolService();
+            $poolService = new \App\Services\AiApiKeyPoolService;
             $poolKey = $poolService->getKey($aiProvider);
             $checks['api_pool'] = [
                 'label' => 'API Key Pool',
@@ -313,7 +313,7 @@ class FortuneSettingsController extends Controller
             $checks['api_pool'] = [
                 'label' => 'API Key Pool',
                 'status' => 'warning',
-                'message' => 'Pool ไม่พร้อม: ' . mb_substr($e->getMessage(), 0, 100),
+                'message' => 'Pool ไม่พร้อม: '.mb_substr($e->getMessage(), 0, 100),
             ];
         }
 
@@ -327,7 +327,7 @@ class FortuneSettingsController extends Controller
                 'message' => $testResult['message'],
                 'details' => $testResult['debug'] ?? [],
                 'preview' => isset($testResult['preview']) ? mb_substr($testResult['preview'], 0, 200) : null,
-                'fix' => !($testResult['success'] ?? false)
+                'fix' => ! ($testResult['success'] ?? false)
                     ? 'ตรวจสอบ API Key ว่าถูกต้องและยังไม่หมดอายุ แล้วกด "ตรวจเช็คทั้งหมด" อีกครั้ง'
                     : null,
             ];
@@ -335,7 +335,7 @@ class FortuneSettingsController extends Controller
             $checks['ai_connection'] = [
                 'label' => 'การเชื่อมต่อ AI',
                 'status' => 'error',
-                'message' => 'เชื่อมต่อ AI ไม่ได้: ' . mb_substr($e->getMessage(), 0, 200),
+                'message' => 'เชื่อมต่อ AI ไม่ได้: '.mb_substr($e->getMessage(), 0, 200),
                 'fix' => 'ตรวจสอบ API Key และ Provider ว่าตั้งค่าถูกต้อง',
             ];
         }
@@ -343,27 +343,37 @@ class FortuneSettingsController extends Controller
         // 4. ตรวจสอบ Facebook Configuration
         $hasFacebook = $settings->hasFacebookConfigured();
         $fbMissing = [];
-        if (empty($settings->facebook_app_id)) $fbMissing[] = 'App ID';
-        if (empty($settings->facebook_app_secret)) $fbMissing[] = 'App Secret';
-        if (empty($settings->facebook_page_id)) $fbMissing[] = 'Page ID';
-        if (empty($settings->facebook_page_token)) $fbMissing[] = 'Page Token';
-        if (empty($settings->facebook_verify_token)) $fbMissing[] = 'Verify Token';
+        if (empty($settings->facebook_app_id)) {
+            $fbMissing[] = 'App ID';
+        }
+        if (empty($settings->facebook_app_secret)) {
+            $fbMissing[] = 'App Secret';
+        }
+        if (empty($settings->facebook_page_id)) {
+            $fbMissing[] = 'Page ID';
+        }
+        if (empty($settings->facebook_page_token)) {
+            $fbMissing[] = 'Page Token';
+        }
+        if (empty($settings->facebook_verify_token)) {
+            $fbMissing[] = 'Verify Token';
+        }
 
         $checks['facebook'] = [
             'label' => 'Facebook Messenger',
             'status' => $hasFacebook ? 'ok' : 'error',
             'message' => $hasFacebook
-                ? 'ตั้งค่า Facebook ครบถ้วน (Page ID: ***' . mb_substr($settings->facebook_page_id ?? '', -4) . ')'
-                : 'ยังตั้งค่า Facebook ไม่ครบ - ขาด: ' . implode(', ', $fbMissing),
+                ? 'ตั้งค่า Facebook ครบถ้วน (Page ID: ***'.mb_substr($settings->facebook_page_id ?? '', -4).')'
+                : 'ยังตั้งค่า Facebook ไม่ครบ - ขาด: '.implode(', ', $fbMissing),
             'details' => [
-                'has_app_id' => !empty($settings->facebook_app_id),
-                'has_app_secret' => !empty($settings->facebook_app_secret),
-                'has_page_id' => !empty($settings->facebook_page_id),
-                'has_page_token' => !empty($settings->facebook_page_token),
-                'has_verify_token' => !empty($settings->facebook_verify_token),
+                'has_app_id' => ! empty($settings->facebook_app_id),
+                'has_app_secret' => ! empty($settings->facebook_app_secret),
+                'has_page_id' => ! empty($settings->facebook_page_id),
+                'has_page_token' => ! empty($settings->facebook_page_token),
+                'has_verify_token' => ! empty($settings->facebook_verify_token),
             ],
-            'fix' => !$hasFacebook
-                ? 'กรอกค่า ' . implode(', ', $fbMissing) . ' ในส่วน "การตั้งค่า Facebook" ด้านล่าง'
+            'fix' => ! $hasFacebook
+                ? 'กรอกค่า '.implode(', ', $fbMissing).' ในส่วน "การตั้งค่า Facebook" ด้านล่าง'
                 : null,
         ];
 
@@ -383,7 +393,7 @@ class FortuneSettingsController extends Controller
                 $count = $exists ? \DB::table($table)->count() : 0;
                 $dbChecks[$table] = ['exists' => $exists, 'count' => $count];
 
-                if (!$exists) {
+                if (! $exists) {
                     if (in_array($table, $requiredTables)) {
                         $missingRequired[] = $table;
                     } else {
@@ -406,14 +416,14 @@ class FortuneSettingsController extends Controller
         $dbFix = null;
         $hasPendingMigrations = false;
 
-        if (!empty($missingRequired)) {
+        if (! empty($missingRequired)) {
             $dbStatus = 'error';
-            $dbMessage = 'ตารางหลักหาย: ' . implode(', ', $missingRequired);
+            $dbMessage = 'ตารางหลักหาย: '.implode(', ', $missingRequired);
             $dbFix = 'กดปุ่ม "แก้ไขฐานข้อมูล" ด้านล่างเพื่อรัน migration อัตโนมัติ';
             $hasPendingMigrations = true;
-        } elseif (!empty($missingOptional)) {
+        } elseif (! empty($missingOptional)) {
             $dbStatus = 'warning';
-            $dbMessage = 'ตารางเสริมหาย: ' . implode(', ', $missingOptional) . ' (ระบบดูดวงหลักยังใช้ได้)';
+            $dbMessage = 'ตารางเสริมหาย: '.implode(', ', $missingOptional).' (ระบบดูดวงหลักยังใช้ได้)';
             $dbFix = 'กดปุ่ม "แก้ไขฐานข้อมูล" เพื่อสร้างตารางเสริมที่ขาดหายไป';
             $hasPendingMigrations = true;
         }
@@ -435,7 +445,7 @@ class FortuneSettingsController extends Controller
             'message' => $isEnabled
                 ? 'บริการเปิดอยู่ - บอทพร้อมตอบข้อความ'
                 : '⚠️ บริการปิดอยู่! บอทจะไม่ตอบข้อความใดๆ',
-            'fix' => !$isEnabled
+            'fix' => ! $isEnabled
                 ? 'เปิดสวิตช์ "เปิดใช้งาน" ในการตั้งค่าด้านบน'
                 : null,
         ];
@@ -461,7 +471,7 @@ class FortuneSettingsController extends Controller
                 $fbService = new \App\Services\FacebookWebhookService($settings);
                 // ทดสอบ API ด้วย Messaging Feature Review (ไม่ส่งข้อความจริง)
                 $testResponse = \Illuminate\Support\Facades\Http::timeout(15)
-                    ->get("https://graph.facebook.com/v21.0/me", [
+                    ->get('https://graph.facebook.com/v21.0/me', [
                         'fields' => 'id,name',
                         'access_token' => $settings->facebook_page_token,
                     ]);
@@ -492,15 +502,15 @@ class FortuneSettingsController extends Controller
                 $checks['facebook_token'] = [
                     'label' => 'Facebook Token',
                     'status' => 'error',
-                    'message' => 'ทดสอบ Facebook Token ไม่ได้: ' . mb_substr($e->getMessage(), 0, 200),
+                    'message' => 'ทดสอบ Facebook Token ไม่ได้: '.mb_substr($e->getMessage(), 0, 200),
                     'fix' => 'ตรวจสอบ Page Access Token และ internet connection',
                 ];
             }
         }
 
         // 9. สรุปสถานะรวม
-        $hasError = collect($checks)->contains(fn($c) => $c['status'] === 'error');
-        $hasWarning = collect($checks)->contains(fn($c) => $c['status'] === 'warning');
+        $hasError = collect($checks)->contains(fn ($c) => $c['status'] === 'error');
+        $hasWarning = collect($checks)->contains(fn ($c) => $c['status'] === 'warning');
 
         return response()->json([
             'overall' => $hasError ? 'error' : ($hasWarning ? 'warning' : 'ok'),
@@ -521,7 +531,7 @@ class FortuneSettingsController extends Controller
             $output = \Artisan::output();
 
             // ตรวจสอบผลลัพธ์
-            $hasChanges = !str_contains($output, 'Nothing to migrate');
+            $hasChanges = ! str_contains($output, 'Nothing to migrate');
 
             return response()->json([
                 'success' => true,
@@ -534,7 +544,7 @@ class FortuneSettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'รัน migration ไม่สำเร็จ: ' . mb_substr($e->getMessage(), 0, 300),
+                'message' => 'รัน migration ไม่สำเร็จ: '.mb_substr($e->getMessage(), 0, 300),
             ], 500);
         }
     }
@@ -590,7 +600,7 @@ class FortuneSettingsController extends Controller
                 'debug' => [
                     'provider' => $settings->getActualAIProvider(),
                     'model' => $settings->getActualAIModel(),
-                    'has_api_key' => !empty($settings->getActualAIApiKey()),
+                    'has_api_key' => ! empty($settings->getActualAIApiKey()),
                 ],
             ], 500);
         }
@@ -608,7 +618,7 @@ class FortuneSettingsController extends Controller
             'test_message' => $message,
             'provider' => $settings->getActualAIProvider(),
             'model' => $settings->getActualAIModel(),
-            'has_api_key' => !empty($settings->getActualAIApiKey()),
+            'has_api_key' => ! empty($settings->getActualAIApiKey()),
             'use_global_ai_settings' => $settings->use_global_ai_settings,
         ];
 
@@ -657,7 +667,7 @@ class FortuneSettingsController extends Controller
             'comment_engagement_enabled' => $settings->comment_engagement_enabled,
             'comment_engagement_mode' => $settings->comment_engagement_mode ?? 'ai',
             'queue_connection' => config('queue.default'),
-            'facebook_page_id' => $settings->facebook_page_id ? '***' . substr($settings->facebook_page_id, -4) : null,
+            'facebook_page_id' => $settings->facebook_page_id ? '***'.substr($settings->facebook_page_id, -4) : null,
         ];
 
         // ตรวจสอบตาราง fortune_comment_engagements
@@ -721,7 +731,6 @@ class FortuneSettingsController extends Controller
      *
      * สร้างใน payment_bank_accounts แล้ว auto-select ใน fortune settings
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function storeBankAccount(Request $request)
@@ -750,7 +759,7 @@ class FortuneSettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'เพิ่มบัญชี ' . $account->bank_name . ' สำเร็จ',
+            'message' => 'เพิ่มบัญชี '.$account->bank_name.' สำเร็จ',
             'account' => [
                 'id' => $account->id,
                 'bank_code' => $account->bank_code,
@@ -766,8 +775,6 @@ class FortuneSettingsController extends Controller
     /**
      * แก้ไขบัญชีธนาคาร (AJAX)
      *
-     * @param Request $request
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateBankAccount(Request $request, PaymentBankAccount $account)
@@ -787,7 +794,7 @@ class FortuneSettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดทบัญชี ' . $account->bank_name . ' สำเร็จ',
+            'message' => 'อัพเดทบัญชี '.$account->bank_name.' สำเร็จ',
             'account' => [
                 'id' => $account->id,
                 'bank_code' => $account->bank_code,
@@ -805,7 +812,6 @@ class FortuneSettingsController extends Controller
      *
      * ลบจาก payment_bank_accounts และ remove จาก fortune_bank_account_ids
      *
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function deleteBankAccount(PaymentBankAccount $account)
@@ -815,9 +821,9 @@ class FortuneSettingsController extends Controller
         // Remove จาก fortune_bank_account_ids
         $settings = FortuneTellingSetting::getSettings();
         $currentIds = $settings->fortune_bank_account_ids ?? [];
-        $currentIds = array_values(array_filter($currentIds, fn($id) => $id != $account->id));
+        $currentIds = array_values(array_filter($currentIds, fn ($id) => $id != $account->id));
         $settings->update([
-            'fortune_bank_account_ids' => !empty($currentIds) ? $currentIds : null,
+            'fortune_bank_account_ids' => ! empty($currentIds) ? $currentIds : null,
         ]);
 
         // Soft delete บัญชี
@@ -825,7 +831,7 @@ class FortuneSettingsController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ลบบัญชี ' . $bankName . ' สำเร็จ',
+            'message' => 'ลบบัญชี '.$bankName.' สำเร็จ',
         ]);
     }
 }

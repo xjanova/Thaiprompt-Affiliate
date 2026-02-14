@@ -14,20 +14,13 @@ use Illuminate\Support\Facades\Auth;
  * AcademyController - ศูนย์การเรียนรู้สำหรับผู้ใช้
  *
  * จัดการการแสดงคอร์ส บทเรียน และติดตามความก้าวหน้าการเรียน
- *
- * @package App\Http\Controllers\User
  */
 class AcademyController extends Controller
 {
-    /**
-     * @var CourseProgressionService
-     */
     protected CourseProgressionService $progressionService;
 
     /**
      * Constructor
-     *
-     * @param CourseProgressionService $progressionService
      */
     public function __construct(CourseProgressionService $progressionService)
     {
@@ -123,7 +116,7 @@ class AcademyController extends Controller
     /**
      * แสดงบทความในหมวดหมู่
      *
-     * @param string $slug Slug ของหมวดหมู่
+     * @param  string  $slug  Slug ของหมวดหมู่
      * @return \Illuminate\View\View
      */
     public function category($slug)
@@ -149,7 +142,7 @@ class AcademyController extends Controller
                     'article' => $article,
                     'progress' => $progress,
                     'can_access' => $accessInfo['can_access'],
-                    'is_locked' => !$accessInfo['can_access'],
+                    'is_locked' => ! $accessInfo['can_access'],
                     'lock_reason' => $accessInfo['reason'] ?? null,
                     'requirements' => $accessInfo['requirements'] ?? [],
                     'quiz_passed' => $quizResult['passed'] ?? false,
@@ -175,7 +168,7 @@ class AcademyController extends Controller
     /**
      * แสดงบทความ/บทเรียน
      *
-     * @param string $slug Slug ของบทความ
+     * @param  string  $slug  Slug ของบทความ
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function article($slug)
@@ -190,7 +183,7 @@ class AcademyController extends Controller
         // ตรวจสอบสิทธิ์การเข้าถึง
         $accessInfo = $this->progressionService->canAccessArticle($user, $article);
 
-        if (!$accessInfo['can_access']) {
+        if (! $accessInfo['can_access']) {
             // ถ้าไม่มีสิทธิ์ แสดงหน้าแจ้งเตือน
             return view('user.academy.locked', [
                 'article' => $article,
@@ -251,8 +244,7 @@ class AcademyController extends Controller
     /**
      * จบบทความ/บทเรียน
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function complete(Request $request, $slug)
@@ -267,7 +259,7 @@ class AcademyController extends Controller
         if ($article->require_quiz_pass) {
             $quizResult = $this->progressionService->checkQuizPassForArticle($user, $article);
 
-            if (!$quizResult['passed']) {
+            if (! $quizResult['passed']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'คุณต้องผ่านแบบทดสอบก่อนจึงจะเรียนจบได้',
@@ -280,7 +272,7 @@ class AcademyController extends Controller
         // จบคอร์สและให้รางวัล
         $result = $this->progressionService->completeArticle($user, $article);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'],
@@ -302,8 +294,7 @@ class AcademyController extends Controller
     /**
      * อัพเดท progress ของบทความ
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateProgress(Request $request, $slug)

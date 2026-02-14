@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\InvestmentPlan;
 use App\Models\StakingPosition;
-use App\Models\RoiDistribution;
 use App\Models\User;
 use App\Models\Wallet;
 use Exception;
@@ -34,7 +33,7 @@ class InvestmentService
 
             // Validate investment
             $validation = $this->validateInvestment($user, $plan, $amount);
-            if (!$validation['success']) {
+            if (! $validation['success']) {
                 return $validation;
             }
 
@@ -85,7 +84,7 @@ class InvestmentService
             $transaction = $this->walletService->withdrawal(
                 $wallet,
                 $amount,
-                'การลงทุนในแผน ' . $plan->display_name,
+                'การลงทุนในแผน '.$plan->display_name,
                 StakingPosition::class,
                 $position->id,
                 [
@@ -130,7 +129,7 @@ class InvestmentService
     protected function validateInvestment(User $user, InvestmentPlan $plan, float $amount): array
     {
         // Check if plan is active
-        if (!$plan->is_active) {
+        if (! $plan->is_active) {
             return [
                 'success' => false,
                 'message' => 'แผนการลงทุนนี้ไม่พร้อมใช้งาน',
@@ -139,7 +138,7 @@ class InvestmentService
         }
 
         // Check if user can invest in this plan
-        if (!$plan->canUserInvest($user)) {
+        if (! $plan->canUserInvest($user)) {
             $reasons = [];
 
             if ($plan->requires_kyc && $user->kyc_status !== 'verified') {
@@ -147,7 +146,7 @@ class InvestmentService
             }
 
             if ($plan->required_rank_id) {
-                $reasons[] = 'ต้องมีแรงค์ขั้นต่ำ: ' . $plan->requiredRank->name;
+                $reasons[] = 'ต้องมีแรงค์ขั้นต่ำ: '.$plan->requiredRank->name;
             }
 
             if ($plan->max_investors && $plan->current_investors >= $plan->max_investors) {
@@ -156,7 +155,7 @@ class InvestmentService
 
             return [
                 'success' => false,
-                'message' => 'คุณไม่สามารถลงทุนในแผนนี้ได้: ' . implode(', ', $reasons),
+                'message' => 'คุณไม่สามารถลงทุนในแผนนี้ได้: '.implode(', ', $reasons),
                 'error' => 'cannot_invest',
             ];
         }
@@ -165,7 +164,7 @@ class InvestmentService
         if ($amount < $plan->min_amount) {
             return [
                 'success' => false,
-                'message' => 'จำนวนเงินต่ำกว่าขั้นต่ำ (' . number_format($plan->min_amount, 2) . ' บาท)',
+                'message' => 'จำนวนเงินต่ำกว่าขั้นต่ำ ('.number_format($plan->min_amount, 2).' บาท)',
                 'error' => 'amount_too_low',
             ];
         }
@@ -173,7 +172,7 @@ class InvestmentService
         if ($plan->max_amount && $amount > $plan->max_amount) {
             return [
                 'success' => false,
-                'message' => 'จำนวนเงินสูงกว่าสูงสุด (' . number_format($plan->max_amount, 2) . ' บาท)',
+                'message' => 'จำนวนเงินสูงกว่าสูงสุด ('.number_format($plan->max_amount, 2).' บาท)',
                 'error' => 'amount_too_high',
             ];
         }
@@ -186,7 +185,7 @@ class InvestmentService
      */
     protected function getRankBonusMultiplier(User $user): float
     {
-        if (!$user->current_rank_id || !$user->currentRank) {
+        if (! $user->current_rank_id || ! $user->currentRank) {
             return 1.00;
         }
 
@@ -203,13 +202,13 @@ class InvestmentService
      */
     protected function payReferralBonus(StakingPosition $position, float $bonusRate): void
     {
-        if (!$position->referrer_id) {
+        if (! $position->referrer_id) {
             return;
         }
 
         try {
             $referrer = User::find($position->referrer_id);
-            if (!$referrer) {
+            if (! $referrer) {
                 return;
             }
 
@@ -220,7 +219,7 @@ class InvestmentService
             $this->walletService->deposit(
                 $referrerWallet,
                 $bonusAmount,
-                'โบนัสแนะนำเพื่อนจากการลงทุน #' . $position->position_number,
+                'โบนัสแนะนำเพื่อนจากการลงทุน #'.$position->position_number,
                 StakingPosition::class,
                 $position->id,
                 [
@@ -297,7 +296,7 @@ class InvestmentService
             DB::beginTransaction();
 
             // Check if can withdraw
-            if (!$position->canWithdraw()) {
+            if (! $position->canWithdraw()) {
                 return [
                     'success' => false,
                     'message' => 'ไม่สามารถถอนเงินได้ในขณะนี้',
@@ -320,7 +319,7 @@ class InvestmentService
             $transaction = $this->walletService->deposit(
                 $wallet,
                 $withdrawalData['net_amount'],
-                'ถอนเงินจากการลงทุน #' . $position->position_number,
+                'ถอนเงินจากการลงทุน #'.$position->position_number,
                 StakingPosition::class,
                 $position->id,
                 [

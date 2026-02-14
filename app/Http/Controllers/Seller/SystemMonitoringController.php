@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
-use App\Services\SystemMonitoringService;
 use App\Models\VendorStore;
-use Illuminate\Http\Request;
+use App\Services\SystemMonitoringService;
 use Illuminate\Support\Facades\Auth;
 
 class SystemMonitoringController extends Controller
@@ -25,7 +24,7 @@ class SystemMonitoringController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')
                 ->with('error', 'Store not found.');
         }
@@ -52,7 +51,7 @@ class SystemMonitoringController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['error' => 'Store not found'], 404);
         }
 
@@ -80,7 +79,7 @@ class SystemMonitoringController extends Controller
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return response()->json(['error' => 'Store not found'], 404);
         }
 

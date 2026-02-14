@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AiRentalDeployment;
 use App\Models\AiRentalCloudConfig;
+use App\Models\AiRentalDeployment;
 use App\Models\AiRentalModel;
 use App\Services\AiRentalDeploymentService;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 /**
  * Deployment Management Controller
@@ -22,15 +22,11 @@ class AiRentalDeploymentController extends Controller
 {
     /**
      * Deployment Service
-     *
-     * @var AiRentalDeploymentService
      */
     protected AiRentalDeploymentService $deploymentService;
 
     /**
      * Constructor
-     *
-     * @param AiRentalDeploymentService $deploymentService
      */
     public function __construct(AiRentalDeploymentService $deploymentService)
     {
@@ -39,9 +35,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * แสดงรายการ Deployments
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -95,8 +88,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * แสดงฟอร์มสร้าง Deployment ใหม่
-     *
-     * @return View|RedirectResponse
      */
     public function create(): View|RedirectResponse
     {
@@ -126,9 +117,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * บันทึก Deployment ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function store(Request $request): RedirectResponse
     {
@@ -178,9 +166,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * แสดงรายละเอียด Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return View
      */
     public function show(AiRentalDeployment $deployment): View
     {
@@ -191,7 +176,7 @@ class AiRentalDeploymentController extends Controller
         $deployment->load([
             'cloudConfig.cloudProvider',
             'model',
-            'user'
+            'user',
         ]);
 
         // คำนวณ metrics
@@ -210,9 +195,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ลบ Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return RedirectResponse
      */
     public function destroy(AiRentalDeployment $deployment): RedirectResponse
     {
@@ -245,9 +227,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * เริ่ม Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return RedirectResponse
      */
     public function start(AiRentalDeployment $deployment): RedirectResponse
     {
@@ -255,7 +234,7 @@ class AiRentalDeploymentController extends Controller
         $this->authorize('update', $deployment);
 
         // เช็คว่าหยุดอยู่หรือไม่
-        if (!in_array($deployment->status, ['stopped', 'failed'])) {
+        if (! in_array($deployment->status, ['stopped', 'failed'])) {
             return redirect()
                 ->back()
                 ->with('error', 'Deployment นี้ไม่สามารถเริ่มได้ในขณะนี้');
@@ -278,9 +257,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * หยุด Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return RedirectResponse
      */
     public function stop(AiRentalDeployment $deployment): RedirectResponse
     {
@@ -311,9 +287,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * รีสตาร์ท Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return RedirectResponse
      */
     public function restart(AiRentalDeployment $deployment): RedirectResponse
     {
@@ -344,9 +317,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ดู Logs
-     *
-     * @param AiRentalDeployment $deployment
-     * @return View
      */
     public function logs(AiRentalDeployment $deployment): View
     {
@@ -364,9 +334,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ดึง Logs แบบ real-time (AJAX)
-     *
-     * @param AiRentalDeployment $deployment
-     * @return JsonResponse
      */
     public function fetchLogs(AiRentalDeployment $deployment): JsonResponse
     {
@@ -394,10 +361,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * อัพเดท Status (Background job callback)
-     *
-     * @param Request $request
-     * @param AiRentalDeployment $deployment
-     * @return JsonResponse
      */
     public function updateStatus(Request $request, AiRentalDeployment $deployment): JsonResponse
     {
@@ -416,12 +379,12 @@ class AiRentalDeploymentController extends Controller
             ]);
 
             // ถ้า status เป็น running ให้บันทึก deployed_at
-            if ($validated['status'] === 'running' && !$deployment->deployed_at) {
+            if ($validated['status'] === 'running' && ! $deployment->deployed_at) {
                 $deployment->update(['deployed_at' => now()]);
             }
 
             // ถ้า status เป็น stopped ให้บันทึก stopped_at และคำนวณต้นทุน
-            if ($validated['status'] === 'stopped' && !$deployment->stopped_at) {
+            if ($validated['status'] === 'stopped' && ! $deployment->stopped_at) {
                 $this->deploymentService->finalizeDeployment($deployment);
             }
 
@@ -441,9 +404,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * แสดงหน้า Test Deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @return View
      */
     public function test(AiRentalDeployment $deployment): View
     {
@@ -458,9 +418,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * แสดงหน้า Analytics Dashboard
-     *
-     * @param Request $request
-     * @return View
      */
     public function analytics(Request $request): View
     {
@@ -517,6 +474,7 @@ class AiRentalDeploymentController extends Controller
                     'stopped' => "Deployment '{$deployment->name}' was stopped",
                     'failed' => "Deployment '{$deployment->name}' failed",
                 ];
+
                 return [
                     'message' => $statusMessages[$deployment->status] ?? "Deployment '{$deployment->name}' created",
                     'time' => $deployment->updated_at->diffForHumans(),
@@ -535,8 +493,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ดึงสถิติแบบ Real-time (API)
-     *
-     * @return JsonResponse
      */
     public function getStats(): JsonResponse
     {
@@ -561,9 +517,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ดึงข้อมูล Chart แบบ Real-time (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getChartData(Request $request): JsonResponse
     {
@@ -615,13 +568,10 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * ดึงสีสำหรับ status
-     *
-     * @param string $status
-     * @return string
      */
     protected function getStatusColor(string $status): string
     {
-        return match($status) {
+        return match ($status) {
             'running' => 'green',
             'starting' => 'blue',
             'stopping' => 'yellow',
@@ -633,8 +583,6 @@ class AiRentalDeploymentController extends Controller
 
     /**
      * สร้าง Mock Logs (สำหรับทดสอบ)
-     *
-     * @return array
      */
     protected function getMockLogs(): array
     {

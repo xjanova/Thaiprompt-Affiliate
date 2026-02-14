@@ -2,11 +2,10 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoPlatform;
 use App\Models\VideoAutoJob;
+use App\Models\VideoAutoPlatform;
 use App\Models\VideoAutoProject;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Social Publisher Service
@@ -17,8 +16,6 @@ class SocialPublisherService
 {
     /**
      * YouTube Service (lazy loaded)
-     *
-     * @var YouTubeApiService|null
      */
     protected ?YouTubeApiService $youtubeService = null;
 
@@ -35,13 +32,11 @@ class SocialPublisherService
 
     /**
      * ดึง YouTube service แบบ lazy loading
-     *
-     * @return YouTubeApiService
      */
     protected function getYouTubeService(): YouTubeApiService
     {
         if ($this->youtubeService === null) {
-            $this->youtubeService = new YouTubeApiService();
+            $this->youtubeService = new YouTubeApiService;
         }
 
         return $this->youtubeService;
@@ -50,9 +45,9 @@ class SocialPublisherService
     /**
      * โพสวีดีโอไปยังทุก platform ที่ตั้งค่าไว้
      *
-     * @param VideoAutoProject $project โปรเจกต์
-     * @param array $options ตัวเลือกเพิ่มเติม
-     * @param VideoAutoJob|null $job Job สำหรับ logging
+     * @param  VideoAutoProject  $project  โปรเจกต์
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
+     * @param  VideoAutoJob|null  $job  Job สำหรับ logging
      * @return array{success: bool, results: array}
      */
     public function publishToAll(VideoAutoProject $project, array $options = [], ?VideoAutoJob $job = null): array
@@ -75,7 +70,7 @@ class SocialPublisherService
             $current++;
             $job?->updateProgress(
                 (int) (($current / $total) * 100),
-                "กำลังโพสไปยัง " . ucfirst($platformType) . "..."
+                'กำลังโพสไปยัง '.ucfirst($platformType).'...'
             );
 
             $result = $this->publishToPlatform($project, $platformType, $job);
@@ -93,8 +88,8 @@ class SocialPublisherService
         }
 
         // ตรวจสอบว่าทุก platform สำเร็จหรือไม่
-        $allSuccess = collect($results)->every(fn($r) => $r['success']);
-        $anySuccess = collect($results)->contains(fn($r) => $r['success']);
+        $allSuccess = collect($results)->every(fn ($r) => $r['success']);
+        $anySuccess = collect($results)->contains(fn ($r) => $r['success']);
 
         // อัพเดท status ของ project
         if ($anySuccess) {
@@ -110,11 +105,6 @@ class SocialPublisherService
 
     /**
      * โพสวีดีโอไปยัง platform ที่ระบุ
-     *
-     * @param VideoAutoProject $project
-     * @param string $platformType
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function publishToPlatform(
         VideoAutoProject $project,
@@ -141,21 +131,17 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง YouTube
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToYouTube(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
         $videoPath = $project->generated_video_path;
 
-        if (!$videoPath || !file_exists($videoPath)) {
+        if (! $videoPath || ! file_exists($videoPath)) {
             // ลองหา path จาก storage
-            $videoPath = storage_path('app/public/' . $project->generated_video_path);
+            $videoPath = storage_path('app/public/'.$project->generated_video_path);
         }
 
-        if (!file_exists($videoPath)) {
+        if (! file_exists($videoPath)) {
             return [
                 'success' => false,
                 'error' => 'ไม่พบไฟล์วีดีโอ',
@@ -176,10 +162,6 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง Facebook
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToFacebook(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -188,7 +170,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ Facebook',
@@ -196,9 +178,9 @@ class SocialPublisherService
         }
 
         try {
-            $videoPath = storage_path('app/public/' . $project->generated_video_path);
+            $videoPath = storage_path('app/public/'.$project->generated_video_path);
 
-            if (!file_exists($videoPath)) {
+            if (! file_exists($videoPath)) {
                 return [
                     'success' => false,
                     'error' => 'ไม่พบไฟล์วีดีโอ',
@@ -216,7 +198,7 @@ class SocialPublisherService
                 'file_size' => filesize($videoPath),
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('ไม่สามารถเริ่ม upload session ได้');
             }
 
@@ -228,7 +210,7 @@ class SocialPublisherService
             $startOffset = 0;
             $fileHandle = fopen($videoPath, 'rb');
 
-            while (!feof($fileHandle)) {
+            while (! feof($fileHandle)) {
                 $chunk = fread($fileHandle, 10 * 1024 * 1024); // 10 MB
 
                 $response = Http::attach('video_file_chunk', $chunk, 'video.mp4')
@@ -265,8 +247,7 @@ class SocialPublisherService
                 ];
             }
 
-            throw new \Exception('อัปโหลดไม่สำเร็จ: ' . $response->body());
-
+            throw new \Exception('อัปโหลดไม่สำเร็จ: '.$response->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
             $job?->logError('โพส Facebook ล้มเหลว', ['error' => $e->getMessage()]);
@@ -280,10 +261,6 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง Instagram
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToInstagram(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -292,7 +269,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ Instagram',
@@ -314,7 +291,7 @@ class SocialPublisherService
                 'share_to_feed' => true,
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('ไม่สามารถสร้าง media container ได้');
             }
 
@@ -360,8 +337,7 @@ class SocialPublisherService
                 ];
             }
 
-            throw new \Exception('Publish ล้มเหลว: ' . $publishResponse->body());
-
+            throw new \Exception('Publish ล้มเหลว: '.$publishResponse->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
             $job?->logError('โพส Instagram ล้มเหลว', ['error' => $e->getMessage()]);
@@ -375,10 +351,6 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง TikTok
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToTikTok(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -387,7 +359,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ TikTok',
@@ -401,7 +373,7 @@ class SocialPublisherService
             // TikTok Content Posting API
             // Step 1: Initialize upload
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
+                'Authorization' => 'Bearer '.$accessToken,
                 'Content-Type' => 'application/json',
             ])->post('https://open.tiktokapis.com/v2/post/publish/video/init/', [
                 'post_info' => [
@@ -417,8 +389,8 @@ class SocialPublisherService
                 ],
             ]);
 
-            if (!$response->successful()) {
-                throw new \Exception('ไม่สามารถเริ่ม upload ได้: ' . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('ไม่สามารถเริ่ม upload ได้: '.$response->body());
             }
 
             $publishId = $response->json('data.publish_id');
@@ -432,7 +404,7 @@ class SocialPublisherService
                 $attempt++;
 
                 $statusResponse = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Authorization' => 'Bearer '.$accessToken,
                 ])->post('https://open.tiktokapis.com/v2/post/publish/status/fetch/', [
                     'publish_id' => $publishId,
                 ]);
@@ -453,7 +425,6 @@ class SocialPublisherService
             }
 
             throw new \Exception('Timeout: รอนานเกินไป');
-
         } catch (\Exception $e) {
             $platform?->recordPost(false);
             $job?->logError('โพส TikTok ล้มเหลว', ['error' => $e->getMessage()]);
@@ -467,10 +438,6 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง Twitter/X
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToTwitter(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -479,7 +446,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ Twitter/X',
@@ -499,10 +466,6 @@ class SocialPublisherService
 
     /**
      * โพสไปยัง Threads
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToThreads(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -511,7 +474,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ Threads',
@@ -534,10 +497,6 @@ class SocialPublisherService
      *
      * Lemon8 เป็น platform จาก ByteDance (เจ้าเดียวกับ TikTok)
      * รองรับการโพสวีดีโอและรูปภาพ พร้อมแคปชัน
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToLemon8(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -546,7 +505,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ Lemon8',
@@ -560,7 +519,7 @@ class SocialPublisherService
             // Lemon8 API (คล้าย TikTok Content Posting API)
             // ใช้ ByteDance Open Platform
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
+                'Authorization' => 'Bearer '.$accessToken,
                 'Content-Type' => 'application/json',
             ])->post('https://open.lemon8.com/v2/post/publish/video/init/', [
                 'post_info' => [
@@ -574,8 +533,8 @@ class SocialPublisherService
                 ],
             ]);
 
-            if (!$response->successful()) {
-                throw new \Exception('ไม่สามารถเริ่ม upload ได้: ' . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('ไม่สามารถเริ่ม upload ได้: '.$response->body());
             }
 
             $publishId = $response->json('data.publish_id');
@@ -589,7 +548,7 @@ class SocialPublisherService
                 $attempt++;
 
                 $statusResponse = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Authorization' => 'Bearer '.$accessToken,
                 ])->post('https://open.lemon8.com/v2/post/publish/status/fetch/', [
                     'publish_id' => $publishId,
                 ]);
@@ -613,7 +572,6 @@ class SocialPublisherService
             }
 
             throw new \Exception('Timeout: รอนานเกินไป');
-
         } catch (\Exception $e) {
             $platform?->recordPost(false);
             $job?->logError('โพส Lemon8 ล้มเหลว', ['error' => $e->getMessage()]);
@@ -630,10 +588,6 @@ class SocialPublisherService
      *
      * LINE VOOM เป็น platform วีดีโอสั้นของ LINE
      * ใช้ LINE Messaging API หรือ LINE Official Account API
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     protected function publishToLineVoom(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -642,7 +596,7 @@ class SocialPublisherService
             ->connected()
             ->first();
 
-        if (!$platform) {
+        if (! $platform) {
             return [
                 'success' => false,
                 'error' => 'ยังไม่ได้เชื่อมต่อ LINE VOOM',
@@ -656,14 +610,14 @@ class SocialPublisherService
             // LINE Content API สำหรับ LINE VOOM
             // ใช้ LINE Official Account API
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
+                'Authorization' => 'Bearer '.$accessToken,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/voom/post', [
                 'type' => 'video',
                 'originalContentUrl' => $videoUrl,
                 'previewImageUrl' => $project->thumbnail_url ?? $project->video_thumbnail ?? '',
                 'caption' => [
-                    'text' => ($project->video_title ?: $project->name) . "\n\n" . ($project->video_description ?: ''),
+                    'text' => ($project->video_title ?: $project->name)."\n\n".($project->video_description ?: ''),
                 ],
                 'visibility' => 'public',
             ]);
@@ -680,8 +634,7 @@ class SocialPublisherService
                 ];
             }
 
-            throw new \Exception('Publish ล้มเหลว: ' . $response->body());
-
+            throw new \Exception('Publish ล้มเหลว: '.$response->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
             $job?->logError('โพส LINE VOOM ล้มเหลว', ['error' => $e->getMessage()]);
@@ -695,8 +648,6 @@ class SocialPublisherService
 
     /**
      * ตรวจสอบสถานะการเชื่อมต่อทุก platform
-     *
-     * @return array
      */
     public function checkAllConnections(): array
     {

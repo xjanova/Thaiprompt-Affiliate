@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceCategory;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -19,7 +18,6 @@ class ServiceController extends Controller
     /**
      * แสดงรายการบริการทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -60,7 +58,6 @@ class ServiceController extends Controller
     /**
      * แสดงรายการบริการที่ถูกบล็อก
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function blocked(Request $request)
@@ -71,10 +68,10 @@ class ServiceController extends Controller
         // ค้นหา
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('block_reason', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('block_reason', 'like', "%{$search}%");
             });
         }
 
@@ -111,7 +108,6 @@ class ServiceController extends Controller
     /**
      * บันทึกบริการใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -153,7 +149,6 @@ class ServiceController extends Controller
     /**
      * แสดงรายละเอียดบริการ
      *
-     * @param Service $service
      * @return \Illuminate\View\View
      */
     public function show(Service $service)
@@ -163,14 +158,13 @@ class ServiceController extends Controller
 
         return view('admin.services.show', [
             'service' => $service,
-            'pageTitle' => 'บริการ: ' . $service->name,
+            'pageTitle' => 'บริการ: '.$service->name,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไข
      *
-     * @param Service $service
      * @return \Illuminate\View\View
      */
     public function edit(Service $service)
@@ -180,15 +174,13 @@ class ServiceController extends Controller
         return view('admin.services.edit', [
             'service' => $service,
             'categories' => $categories,
-            'pageTitle' => 'แก้ไขบริการ: ' . $service->name,
+            'pageTitle' => 'แก้ไขบริการ: '.$service->name,
         ]);
     }
 
     /**
      * อัพเดทบริการ
      *
-     * @param Request $request
-     * @param Service $service
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, Service $service)
@@ -196,7 +188,7 @@ class ServiceController extends Controller
         $validated = $request->validate([
             'category_id' => 'required|exists:service_categories,id',
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:services,slug,' . $service->id,
+            'slug' => 'required|string|max:255|unique:services,slug,'.$service->id,
             'description' => 'nullable|string',
             'base_price' => 'required|numeric|min:0',
             'duration_minutes' => 'required|integer|min:1',
@@ -222,7 +214,6 @@ class ServiceController extends Controller
     /**
      * ลบบริการ
      *
-     * @param Service $service
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Service $service)
@@ -244,12 +235,11 @@ class ServiceController extends Controller
     /**
      * เปลี่ยนสถานะ active/inactive
      *
-     * @param Service $service
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(Service $service)
     {
-        $service->is_active = !$service->is_active;
+        $service->is_active = ! $service->is_active;
         $service->save();
 
         return response()->json([
@@ -262,12 +252,11 @@ class ServiceController extends Controller
     /**
      * เปลี่ยนสถานะ featured
      *
-     * @param Service $service
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleFeatured(Service $service)
     {
-        $service->is_featured = !$service->is_featured;
+        $service->is_featured = ! $service->is_featured;
         $service->save();
 
         return response()->json([
@@ -280,8 +269,6 @@ class ServiceController extends Controller
     /**
      * คำนวณราคาตัวอย่างตามระยะทาง
      *
-     * @param Request $request
-     * @param Service $service
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculatePrice(Request $request, Service $service)
@@ -304,8 +291,6 @@ class ServiceController extends Controller
     /**
      * บล็อกบริการ (Admin)
      *
-     * @param Request $request
-     * @param Service $service
      * @return \Illuminate\Http\RedirectResponse
      */
     public function blockService(Request $request, Service $service)
@@ -342,14 +327,13 @@ class ServiceController extends Controller
             return redirect()->back()->with('success', 'บล็อกบริการเรียบร้อยแล้ว และแจ้งเตือนผู้ให้บริการแล้ว');
 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปลดบล็อกบริการ (Admin)
      *
-     * @param Service $service
      * @return \Illuminate\Http\RedirectResponse
      */
     public function unblockService(Service $service)
@@ -380,7 +364,7 @@ class ServiceController extends Controller
             return redirect()->back()->with('success', 'ปลดบล็อกบริการเรียบร้อยแล้ว และแจ้งเตือนผู้ให้บริการแล้ว');
 
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

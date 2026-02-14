@@ -91,7 +91,7 @@ class PageSectionService
 
         $newSection = $section->replicate();
         $newSection->order = $maxOrder + 1;
-        $newSection->name = ($section->name ?? 'Section') . ' (Copy)';
+        $newSection->name = ($section->name ?? 'Section').' (Copy)';
         $newSection->save();
 
         $this->pageBuilderService->clearCache($page);
@@ -119,6 +119,7 @@ class PageSectionService
                 $section->update(['order' => $section->order - 1]);
 
                 $this->pageBuilderService->clearCache($page);
+
                 return true;
             }
 
@@ -142,6 +143,7 @@ class PageSectionService
                 $section->update(['order' => $section->order + 1]);
 
                 $this->pageBuilderService->clearCache($page);
+
                 return true;
             }
 
@@ -154,7 +156,7 @@ class PageSectionService
      */
     public function toggleVisibility(PageBuilderSection $section): PageBuilderSection
     {
-        $section->update(['is_visible' => !$section->is_visible]);
+        $section->update(['is_visible' => ! $section->is_visible]);
 
         $this->pageBuilderService->clearCache($section->pageBuilder);
 
@@ -166,7 +168,7 @@ class PageSectionService
      */
     public function toggleActive(PageBuilderSection $section): PageBuilderSection
     {
-        $section->update(['is_active' => !$section->is_active]);
+        $section->update(['is_active' => ! $section->is_active]);
 
         $this->pageBuilderService->clearCache($section->pageBuilder);
 
@@ -183,7 +185,7 @@ class PageSectionService
             ->each(function ($section) use ($settings) {
                 $currentSettings = $section->settings ?? [];
                 $section->update([
-                    'settings' => array_merge($currentSettings, $settings)
+                    'settings' => array_merge($currentSettings, $settings),
                 ]);
             })
             ->count();
@@ -194,7 +196,7 @@ class PageSectionService
             ->get()
             ->pluck('pageBuilder')
             ->unique('id')
-            ->each(fn($page) => $this->pageBuilderService->clearCache($page));
+            ->each(fn ($page) => $this->pageBuilderService->clearCache($page));
 
         return $updated;
     }

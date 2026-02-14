@@ -87,8 +87,6 @@ class AICoreUsageLog extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -97,8 +95,6 @@ class AICoreUsageLog extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -107,8 +103,6 @@ class AICoreUsageLog extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -118,7 +112,7 @@ class AICoreUsageLog extends Model
     /**
      * Scope: เฉพาะ logs ที่สำเร็จ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSuccess($query)
@@ -129,7 +123,7 @@ class AICoreUsageLog extends Model
     /**
      * Scope: เฉพาะ logs ที่ล้มเหลว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFailed($query)
@@ -140,9 +134,9 @@ class AICoreUsageLog extends Model
     /**
      * Scope: กรองตามช่วงเวลา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param \Carbon\Carbon $from
-     * @param \Carbon\Carbon|null $to
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \Carbon\Carbon  $from
+     * @param  \Carbon\Carbon|null  $to
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDateRange($query, $from, $to = null)
@@ -158,8 +152,6 @@ class AICoreUsageLog extends Model
 
     /**
      * ตรวจสอบว่าการใช้งานสำเร็จหรือไม่
-     *
-     * @return bool
      */
     public function isSuccess(): bool
     {
@@ -168,8 +160,6 @@ class AICoreUsageLog extends Model
 
     /**
      * ตรวจสอบว่าการใช้งานล้มเหลวหรือไม่
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {

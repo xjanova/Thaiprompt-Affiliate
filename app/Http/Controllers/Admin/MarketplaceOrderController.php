@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\MarketplaceAccount;
 use App\Models\MarketplaceOrder;
 use App\Models\MarketplacePlatform;
-use App\Models\MarketplaceAccount;
 use App\Services\Marketplace\MarketplaceCommissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,6 @@ class MarketplaceOrderController extends Controller
     /**
      * แสดงรายการออเดอร์ Marketplace ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -96,7 +95,6 @@ class MarketplaceOrderController extends Controller
     /**
      * แสดงรายละเอียดออเดอร์
      *
-     * @param MarketplaceOrder $order
      * @return \Illuminate\View\View
      */
     public function show(MarketplaceOrder $order)
@@ -116,13 +114,12 @@ class MarketplaceOrderController extends Controller
     /**
      * คำนวณคอมมิชชั่นสำหรับออเดอร์
      *
-     * @param MarketplaceOrder $order
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculateCommission(MarketplaceOrder $order)
     {
         try {
-            $commissionService = new MarketplaceCommissionService();
+            $commissionService = new MarketplaceCommissionService;
             $commissions = $commissionService->calculateCommissions($order);
 
             return response()->json([
@@ -141,7 +138,7 @@ class MarketplaceOrderController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'คำนวณคอมมิชชั่นล้มเหลว: ' . $e->getMessage(),
+                'message' => 'คำนวณคอมมิชชั่นล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -149,8 +146,6 @@ class MarketplaceOrderController extends Controller
     /**
      * อัพเดทสถานะออเดอร์
      *
-     * @param Request $request
-     * @param MarketplaceOrder $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateStatus(Request $request, MarketplaceOrder $order)
@@ -164,7 +159,7 @@ class MarketplaceOrderController extends Controller
         // ถ้าออเดอร์ completed และยังไม่มีคอมมิชชั่น ให้คำนวณคอมมิชชั่น
         if ($validated['order_status'] === 'completed' && $order->commission_status === 'pending') {
             try {
-                $commissionService = new MarketplaceCommissionService();
+                $commissionService = new MarketplaceCommissionService;
                 $commissionService->calculateCommissions($order);
                 $order->update(['commission_status' => 'calculated']);
             } catch (\Exception $e) {
@@ -182,7 +177,6 @@ class MarketplaceOrderController extends Controller
     /**
      * ลบออเดอร์
      *
-     * @param MarketplaceOrder $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(MarketplaceOrder $order)

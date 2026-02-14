@@ -107,6 +107,7 @@ class LineWebhookThrottle
 
         // Get user ID from first event
         $firstEvent = $events[0];
+
         return $firstEvent['source']['userId'] ?? null;
     }
 

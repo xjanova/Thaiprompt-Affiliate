@@ -67,7 +67,7 @@ return new class extends Migration
                 'offer_accepted',
                 'offer_rejected',
                 'rejected',
-                'withdrawn'
+                'withdrawn',
             ])->default('new');
 
             // Interview Details

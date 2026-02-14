@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Redis;
 class TokenCacheService
 {
     const CACHE_TTL_SHORT = 60; // 1 minute
+
     const CACHE_TTL_MEDIUM = 300; // 5 minutes
+
     const CACHE_TTL_LONG = 3600; // 1 hour
 
     /**
@@ -29,7 +31,7 @@ class TokenCacheService
      */
     public function getTokenList(array $filters = []): array
     {
-        $key = 'token_list:' . md5(json_encode($filters));
+        $key = 'token_list:'.md5(json_encode($filters));
 
         return Cache::remember($key, self::CACHE_TTL_SHORT, function () use ($filters) {
             return TPIXToken::where('status', 'active')

@@ -100,23 +100,31 @@ class PayoutSetting extends Model
      * ประเภทการจ่าย
      */
     const TYPE_SELLER = 'seller';
+
     const TYPE_MLM = 'mlm';
+
     const TYPE_SERVICE = 'service';
 
     /**
      * โหมดการจ่าย
      */
     const MODE_MANUAL = 'manual';
+
     const MODE_AUTO_SCHEDULE = 'auto_schedule';
+
     const MODE_REALTIME = 'realtime';
+
     const MODE_HYBRID = 'hybrid';
 
     /**
      * ความถี่
      */
     const FREQ_DAILY = 'daily';
+
     const FREQ_WEEKLY = 'weekly';
+
     const FREQ_BIWEEKLY = 'biweekly';
+
     const FREQ_MONTHLY = 'monthly';
 
     /**
@@ -197,9 +205,9 @@ class PayoutSetting extends Model
      */
     public static function clearCache(): void
     {
-        Cache::forget('payout_setting_' . self::TYPE_SELLER);
-        Cache::forget('payout_setting_' . self::TYPE_MLM);
-        Cache::forget('payout_setting_' . self::TYPE_SERVICE);
+        Cache::forget('payout_setting_'.self::TYPE_SELLER);
+        Cache::forget('payout_setting_'.self::TYPE_MLM);
+        Cache::forget('payout_setting_'.self::TYPE_SERVICE);
     }
 
     /**
@@ -235,7 +243,7 @@ class PayoutSetting extends Model
     public function needsApproval(float $amount, ?User $user = null): bool
     {
         // ถ้าปิด require_approval ไม่ต้องอนุมัติ
-        if (!$this->require_approval) {
+        if (! $this->require_approval) {
             return false;
         }
 

@@ -61,7 +61,7 @@ class CashbackSetting extends Model
     public function scopeForProduct($query, int $productId)
     {
         return $query->where('type', 'product')
-                    ->where('product_id', $productId);
+            ->where('product_id', $productId);
     }
 
     /**
@@ -70,9 +70,9 @@ class CashbackSetting extends Model
     public static function getGlobalSetting(): ?self
     {
         return self::active()
-                  ->global()
-                  ->orderBy('created_at', 'desc')
-                  ->first();
+            ->global()
+            ->orderBy('created_at', 'desc')
+            ->first();
     }
 
     /**
@@ -81,8 +81,8 @@ class CashbackSetting extends Model
     public static function getProductSetting(int $productId): ?self
     {
         return self::active()
-                  ->forProduct($productId)
-                  ->first();
+            ->forProduct($productId)
+            ->first();
     }
 
     /**
@@ -113,7 +113,7 @@ class CashbackSetting extends Model
      */
     public function qualifiesForCashback(float $amount): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -130,8 +130,8 @@ class CashbackSetting extends Model
     public function getFormattedValueAttribute(): string
     {
         return $this->value_type === 'percentage'
-            ? $this->value . '%'
-            : '฿' . number_format($this->value, 2);
+            ? $this->value.'%'
+            : '฿'.number_format($this->value, 2);
     }
 
     /**
@@ -139,7 +139,7 @@ class CashbackSetting extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'global' => 'ทั่วไป',
             'product' => 'เฉพาะสินค้า',
             default => 'ไม่ระบุ',
@@ -151,7 +151,7 @@ class CashbackSetting extends Model
      */
     public function getValueTypeLabelAttribute(): string
     {
-        return match($this->value_type) {
+        return match ($this->value_type) {
             'percentage' => 'เปอร์เซ็นต์',
             'fixed' => 'ค่าคงที่',
             default => 'ไม่ระบุ',

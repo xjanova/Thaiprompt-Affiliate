@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AICoreTenant;
 use App\Models\AICoreFeature;
+use App\Models\AICoreTenant;
 use App\Services\AICoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -66,7 +66,6 @@ class AICoreTenantController extends Controller
     /**
      * บันทึก Tenant ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -110,14 +109,13 @@ class AICoreTenantController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียด Tenant
      *
-     * @param AICoreTenant $tenant
      * @return \Illuminate\View\View
      */
     public function show(AICoreTenant $tenant)
@@ -149,7 +147,6 @@ class AICoreTenantController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Tenant
      *
-     * @param AICoreTenant $tenant
      * @return \Illuminate\View\View
      */
     public function edit(AICoreTenant $tenant)
@@ -169,15 +166,13 @@ class AICoreTenantController extends Controller
     /**
      * อัปเดต Tenant
      *
-     * @param Request $request
-     * @param AICoreTenant $tenant
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, AICoreTenant $tenant)
     {
         $validated = $request->validate([
             'user_id' => 'nullable|exists:users,id',
-            'tenant_key' => 'required|string|max:100|unique:ai_core_tenants,tenant_key,' . $tenant->id,
+            'tenant_key' => 'required|string|max:100|unique:ai_core_tenants,tenant_key,'.$tenant->id,
             'tenant_name' => 'required|string|max:255',
             'tenant_type' => 'required|in:user,organization,reseller',
             'status' => 'required|in:active,suspended,trial,expired',
@@ -206,14 +201,13 @@ class AICoreTenantController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบ Tenant
      *
-     * @param AICoreTenant $tenant
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(AICoreTenant $tenant)
@@ -224,27 +218,26 @@ class AICoreTenantController extends Controller
 
             return redirect()
                 ->route('admin.ai-core.tenants.index')
-                ->with('success', 'ลบ Tenant สำเร็จ: ' . $tenantName);
+                ->with('success', 'ลบ Tenant สำเร็จ: '.$tenantName);
         } catch (\Exception $e) {
             Log::error('AI Core: ลบ tenant ล้มเหลว', [
                 'tenant_id' => $tenant->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เปิด/ปิดใช้งาน Tenant
      *
-     * @param AICoreTenant $tenant
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggle(AICoreTenant $tenant)
     {
         try {
-            $tenant->update(['is_enabled' => !$tenant->is_enabled]);
+            $tenant->update(['is_enabled' => ! $tenant->is_enabled]);
 
             return response()->json([
                 'success' => true,
@@ -254,7 +247,7 @@ class AICoreTenantController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -262,7 +255,6 @@ class AICoreTenantController extends Controller
     /**
      * แสดงหน้าจัดการ Feature Access ของ Tenant
      *
-     * @param AICoreTenant $tenant
      * @return \Illuminate\View\View
      */
     public function features(AICoreTenant $tenant)
@@ -286,9 +278,6 @@ class AICoreTenantController extends Controller
     /**
      * เปิดใช้งาน Feature สำหรับ Tenant
      *
-     * @param Request $request
-     * @param AICoreTenant $tenant
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function enableFeature(Request $request, AICoreTenant $tenant, AICoreFeature $feature)
@@ -308,11 +297,11 @@ class AICoreTenantController extends Controller
                 'is_trial' => $validated['is_trial'] ?? false,
             ];
 
-            if (!empty($validated['trial_days'])) {
+            if (! empty($validated['trial_days'])) {
                 $config['trial_ends_at'] = now()->addDays($validated['trial_days']);
             }
 
-            if (!empty($validated['access_days'])) {
+            if (! empty($validated['access_days'])) {
                 $config['access_ends_at'] = now()->addDays($validated['access_days']);
             }
 
@@ -323,7 +312,7 @@ class AICoreTenantController extends Controller
             );
 
             if ($result['success']) {
-                return back()->with('success', 'เปิดใช้งาน Feature สำเร็จ: ' . $feature->feature_name);
+                return back()->with('success', 'เปิดใช้งาน Feature สำเร็จ: '.$feature->feature_name);
             }
 
             return back()->with('error', $result['message']);
@@ -334,15 +323,13 @@ class AICoreTenantController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปิดใช้งาน Feature สำหรับ Tenant
      *
-     * @param AICoreTenant $tenant
-     * @param AICoreFeature $feature
      * @return \Illuminate\Http\RedirectResponse
      */
     public function disableFeature(AICoreTenant $tenant, AICoreFeature $feature)
@@ -354,7 +341,7 @@ class AICoreTenantController extends Controller
             );
 
             if ($result['success']) {
-                return back()->with('success', 'ปิดใช้งาน Feature สำเร็จ: ' . $feature->feature_name);
+                return back()->with('success', 'ปิดใช้งาน Feature สำเร็จ: '.$feature->feature_name);
             }
 
             return back()->with('error', $result['message']);
@@ -365,7 +352,7 @@ class AICoreTenantController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

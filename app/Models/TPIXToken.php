@@ -198,7 +198,7 @@ class TPIXToken extends Model
 
     public function getMarketCapUsdAttribute()
     {
-        if (!$this->current_price_tpix) {
+        if (! $this->current_price_tpix) {
             return null;
         }
 
@@ -206,7 +206,8 @@ class TPIXToken extends Model
         $tpixPriceUsd = 20; // Example: 20 USD per TPIX
 
         $marketCapTpix = bcmul($this->circulating_supply, $this->current_price_tpix, 8);
-        return bcmul($marketCapTpix, (string)$tpixPriceUsd, 2);
+
+        return bcmul($marketCapTpix, (string) $tpixPriceUsd, 2);
     }
 
     public function isOwner($userId)
@@ -231,7 +232,7 @@ class TPIXToken extends Model
 
     public function isDeployed()
     {
-        return !empty($this->contract_address) && in_array($this->status, ['deployed', 'verified', 'active']);
+        return ! empty($this->contract_address) && in_array($this->status, ['deployed', 'verified', 'active']);
     }
 
     /**
@@ -240,7 +241,7 @@ class TPIXToken extends Model
     public static function generateReferralCode()
     {
         do {
-            $code = 'TK-' . strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
+            $code = 'TK-'.strtoupper(substr(md5(uniqid(rand(), true)), 0, 8));
         } while (self::where('referral_code', $code)->exists());
 
         return $code;

@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\CryptoCurrency;
+use Illuminate\Database\Seeder;
 
 class CryptoCurrencySeeder extends Seeder
 {
@@ -38,7 +38,7 @@ class CryptoCurrencySeeder extends Seeder
             CryptoCurrency::create($currency);
         }
 
-        $this->command->info('✅ Cryptocurrencies seeded successfully: ' . count($currencies) . ' currencies');
+        $this->command->info('✅ Cryptocurrencies seeded successfully: '.count($currencies).' currencies');
     }
 
     /**
@@ -54,7 +54,7 @@ class CryptoCurrencySeeder extends Seeder
         $skipped = 0;
 
         foreach ($currencies as $currency) {
-            if (!CryptoCurrency::where('code', $currency['code'])->exists()) {
+            if (! CryptoCurrency::where('code', $currency['code'])->exists()) {
                 CryptoCurrency::create($currency);
                 $this->command->info("   ➕ Added: {$currency['name']} ({$currency['code']})");
                 $added++;

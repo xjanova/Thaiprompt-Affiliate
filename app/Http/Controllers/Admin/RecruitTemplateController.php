@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\RecruitTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 /**
  * Admin Controller สำหรับจัดการ Recruit Templates
@@ -50,7 +49,6 @@ class RecruitTemplateController extends Controller
     /**
      * บันทึกเทมเพลตใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -102,14 +100,13 @@ class RecruitTemplateController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียดเทมเพลต
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\View\View
      */
     public function show(RecruitTemplate $recruitTemplate)
@@ -118,29 +115,26 @@ class RecruitTemplateController extends Controller
 
         return view('admin.recruit-templates.show', [
             'template' => $recruitTemplate,
-            'pageTitle' => 'รายละเอียดเทมเพลต: ' . $recruitTemplate->title,
+            'pageTitle' => 'รายละเอียดเทมเพลต: '.$recruitTemplate->title,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไขเทมเพลต
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\View\View
      */
     public function edit(RecruitTemplate $recruitTemplate)
     {
         return view('admin.recruit-templates.edit', [
             'template' => $recruitTemplate,
-            'pageTitle' => 'แก้ไขเทมเพลต: ' . $recruitTemplate->title,
+            'pageTitle' => 'แก้ไขเทมเพลต: '.$recruitTemplate->title,
         ]);
     }
 
     /**
      * อัพเดทเทมเพลต
      *
-     * @param Request $request
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, RecruitTemplate $recruitTemplate)
@@ -193,14 +187,13 @@ class RecruitTemplateController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบเทมเพลต (Soft Delete)
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(RecruitTemplate $recruitTemplate)
@@ -230,14 +223,13 @@ class RecruitTemplateController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ตั้งค่าเป็นเทมเพลต default
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function setDefault(RecruitTemplate $recruitTemplate)
@@ -253,20 +245,19 @@ class RecruitTemplateController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * Toggle สถานะ active/inactive
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(RecruitTemplate $recruitTemplate)
     {
         try {
-            $recruitTemplate->is_active = !$recruitTemplate->is_active;
+            $recruitTemplate->is_active = ! $recruitTemplate->is_active;
             $recruitTemplate->save();
 
             $status = $recruitTemplate->is_active ? 'เปิด' : 'ปิด';
@@ -279,34 +270,33 @@ class RecruitTemplateController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ดูตัวอย่างเทมเพลต
      *
-     * @param RecruitTemplate $recruitTemplate
      * @return \Illuminate\View\View
      */
     public function preview(RecruitTemplate $recruitTemplate)
     {
         // จำลองข้อมูล User สำหรับ preview
-        $mockUser = new \stdClass();
+        $mockUser = new \stdClass;
         $mockUser->id = 0;
         $mockUser->name = 'สมชาย ใจดี';
         $mockUser->email = 'demo@example.com';
         $mockUser->profile_picture_url = 'https://ui-avatars.com/api/?name=S&background=667eea&color=fff&size=200';
 
         // จำลองข้อมูล MLM Member
-        $mockMlmMember = new \stdClass();
+        $mockMlmMember = new \stdClass;
         $mockMlmMember->id = 0;
         $mockMlmMember->member_code = 'DEMO001';
         $mockMlmMember->user_id = 0;
         $mockMlmMember->user = $mockUser;
 
         // จำลองข้อมูล Customization
-        $mockCustomization = new \stdClass();
+        $mockCustomization = new \stdClass;
         $mockCustomization->id = 0;
         $mockCustomization->user_id = 0;
         $mockCustomization->template_id = $recruitTemplate->id;
@@ -323,36 +313,44 @@ class RecruitTemplateController extends Controller
         $mockCustomization->template = $recruitTemplate;
 
         // เพิ่ม mock methods ที่ view ต้องการ
-        $mockCustomization->getDisplayName = function() use ($mockCustomization, $mockUser) {
+        $mockCustomization->getDisplayName = function () use ($mockCustomization, $mockUser) {
             return $mockCustomization->custom_name ?: $mockUser->name;
         };
-        $mockCustomization->getDisplayImage = function() use ($mockCustomization, $mockUser) {
+        $mockCustomization->getDisplayImage = function () use ($mockCustomization, $mockUser) {
             return $mockCustomization->custom_image ?: $mockUser->profile_picture_url;
         };
 
         // แปลง stdClass เป็น object ที่เรียก method ได้
-        $customizationWrapper = new class($mockCustomization) {
+        $customizationWrapper = new class($mockCustomization)
+        {
             private $data;
 
-            public function __construct($data) {
+            public function __construct($data)
+            {
                 $this->data = $data;
             }
 
-            public function __get($name) {
+            public function __get($name)
+            {
                 return $this->data->$name ?? null;
             }
 
-            public function __isset($name) {
+            public function __isset($name)
+            {
                 return isset($this->data->$name);
             }
 
-            public function getDisplayName() {
+            public function getDisplayName()
+            {
                 $callable = $this->data->getDisplayName;
+
                 return $callable();
             }
 
-            public function getDisplayImage() {
+            public function getDisplayImage()
+            {
                 $callable = $this->data->getDisplayImage;
+
                 return $callable();
             }
         };
@@ -361,7 +359,7 @@ class RecruitTemplateController extends Controller
         $mockLineSettings = null;
 
         // URL สำหรับสมัคร (demo)
-        $registerUrl = route('register') . '?ref=DEMO001';
+        $registerUrl = route('register').'?ref=DEMO001';
 
         // จำลอง Lead Lock (null เพราะไม่มี tracking ใน preview)
         $leadLock = null;

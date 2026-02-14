@@ -4,16 +4,14 @@ namespace App\Services\Crypto;
 
 use App\Models\CryptoCurrency;
 use App\Models\CryptoExchangeRate;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class CryptoPriceService
 {
     /**
      * Update exchange rates for all active currencies
-     *
-     * @return array
      */
     public function updateAllRates(): array
     {
@@ -45,9 +43,6 @@ class CryptoPriceService
 
     /**
      * Update exchange rate for specific currency
-     *
-     * @param CryptoCurrency $currency
-     * @return CryptoExchangeRate|null
      */
     public function updateRate(CryptoCurrency $currency): ?CryptoExchangeRate
     {
@@ -65,16 +60,16 @@ class CryptoPriceService
         }
 
         // Fallback to Binance
-        if (!$priceData && $currency->binance_symbol) {
+        if (! $priceData && $currency->binance_symbol) {
             $priceData = $this->fetchFromBinance($currency->binance_symbol);
         }
 
         // Fallback to manual if both APIs fail and fallback is enabled
-        if (!$priceData && $currency->price_source === 'both' && $currency->manual_price_thb) {
+        if (! $priceData && $currency->price_source === 'both' && $currency->manual_price_thb) {
             return $this->createManualRate($currency);
         }
 
-        if (!$priceData) {
+        if (! $priceData) {
             throw new \Exception('Failed to fetch price data from all sources');
         }
 
@@ -109,14 +104,11 @@ class CryptoPriceService
 
     /**
      * Create manual rate from currency settings
-     *
-     * @param CryptoCurrency $currency
-     * @return CryptoExchangeRate
      */
     private function createManualRate(CryptoCurrency $currency): CryptoExchangeRate
     {
-        if (!$currency->manual_price_thb) {
-            throw new \Exception('Manual price not set for currency: ' . $currency->code);
+        if (! $currency->manual_price_thb) {
+            throw new \Exception('Manual price not set for currency: '.$currency->code);
         }
 
         $spreadMultiplier = 1 + ($currency->exchange_fee_percentage / 100);
@@ -139,9 +131,6 @@ class CryptoPriceService
 
     /**
      * Fetch price from CoinGecko API
-     *
-     * @param string $coinGeckoId
-     * @return array|null
      */
     private function fetchFromCoinGecko(string $coinGeckoId): ?array
     {
@@ -155,13 +144,13 @@ class CryptoPriceService
                     'include_market_cap' => 'true',
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
             $data = $response->json();
 
-            if (!isset($data[$coinGeckoId]['thb'])) {
+            if (! isset($data[$coinGeckoId]['thb'])) {
                 return null;
             }
 
@@ -181,6 +170,7 @@ class CryptoPriceService
                 'coin_id' => $coinGeckoId,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -188,8 +178,7 @@ class CryptoPriceService
     /**
      * Fetch price from Binance API
      *
-     * @param string $symbol (e.g., BTCUSDT)
-     * @return array|null
+     * @param  string  $symbol  (e.g., BTCUSDT)
      */
     private function fetchFromBinance(string $symbol): ?array
     {
@@ -200,7 +189,7 @@ class CryptoPriceService
                     'symbol' => $symbol,
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -209,7 +198,7 @@ class CryptoPriceService
             // Get USDT/THB rate
             $usdtThbRate = $this->getUSDTTHBRate();
 
-            if (!$usdtThbRate) {
+            if (! $usdtThbRate) {
                 return null;
             }
 
@@ -232,14 +221,13 @@ class CryptoPriceService
                 'symbol' => $symbol,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * Get USDT to THB conversion rate
-     *
-     * @return float|null
      */
     private function getUSDTTHBRate(): ?float
     {
@@ -264,6 +252,7 @@ class CryptoPriceService
                 Log::warning('Failed to get USDT/THB rate', [
                     'error' => $e->getMessage(),
                 ]);
+
                 return 33.0; // Fallback
             }
         });
@@ -271,10 +260,6 @@ class CryptoPriceService
 
     /**
      * Get current rate for currency (with caching)
-     *
-     * @param CryptoCurrency $currency
-     * @param bool $forceRefresh
-     * @return CryptoExchangeRate|null
      */
     public function getCurrentRate(CryptoCurrency $currency, bool $forceRefresh = false): ?CryptoExchangeRate
     {
@@ -288,7 +273,7 @@ class CryptoPriceService
             $rate = CryptoExchangeRate::getCurrentRate($currency->id);
 
             // If no rate or expired, update it
-            if (!$rate || $rate->isExpired()) {
+            if (! $rate || $rate->isExpired()) {
                 try {
                     $rate = $this->updateRate($currency);
                 } catch (\Exception $e) {
@@ -296,6 +281,7 @@ class CryptoPriceService
                         'currency' => $currency->code,
                         'error' => $e->getMessage(),
                     ]);
+
                     return null;
                 }
             }
@@ -307,16 +293,13 @@ class CryptoPriceService
     /**
      * Convert crypto amount to THB
      *
-     * @param CryptoCurrency $currency
-     * @param float $cryptoAmount
-     * @param string $type ('buy' or 'sell')
-     * @return float|null
+     * @param  string  $type  ('buy' or 'sell')
      */
     public function convertToTHB(CryptoCurrency $currency, float $cryptoAmount, string $type = 'sell'): ?float
     {
         $rate = $this->getCurrentRate($currency);
 
-        if (!$rate) {
+        if (! $rate) {
             return null;
         }
 
@@ -330,16 +313,13 @@ class CryptoPriceService
     /**
      * Convert THB to crypto amount
      *
-     * @param CryptoCurrency $currency
-     * @param float $thbAmount
-     * @param string $type ('buy' or 'sell')
-     * @return float|null
+     * @param  string  $type  ('buy' or 'sell')
      */
     public function convertToCrypto(CryptoCurrency $currency, float $thbAmount, string $type = 'buy'): ?float
     {
         $rate = $this->getCurrentRate($currency);
 
-        if (!$rate) {
+        if (! $rate) {
             return null;
         }
 
@@ -352,10 +332,6 @@ class CryptoPriceService
 
     /**
      * Get price chart data (placeholder for future implementation)
-     *
-     * @param CryptoCurrency $currency
-     * @param string $timeframe
-     * @return array
      */
     public function getPriceChart(CryptoCurrency $currency, string $timeframe = '24h'): array
     {
@@ -367,11 +343,8 @@ class CryptoPriceService
     /**
      * Calculate exchange preview
      *
-     * @param CryptoCurrency $currency
-     * @param float $amount
-     * @param string $fromCurrency ('THB' or crypto code)
-     * @param string $type ('buy' or 'sell')
-     * @return array|null
+     * @param  string  $fromCurrency  ('THB' or crypto code)
+     * @param  string  $type  ('buy' or 'sell')
      */
     public function calculateExchangePreview(
         CryptoCurrency $currency,
@@ -381,7 +354,7 @@ class CryptoPriceService
     ): ?array {
         $rate = $this->getCurrentRate($currency);
 
-        if (!$rate) {
+        if (! $rate) {
             return null;
         }
 

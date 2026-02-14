@@ -15,14 +15,12 @@ return new class extends Migration
 {
     /**
      * เพิ่ม barcode field
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
             // เช็คว่าคอลัมน์ barcode มีอยู่แล้วหรือยัง
-            if (!Schema::hasColumn('products', 'barcode')) {
+            if (! Schema::hasColumn('products', 'barcode')) {
                 $table->string('barcode')->nullable()->after('sku');
                 $table->index('barcode', 'products_barcode_idx');
             }
@@ -31,8 +29,6 @@ return new class extends Migration
 
     /**
      * ลบ barcode field
-     *
-     * @return void
      */
     public function down(): void
     {

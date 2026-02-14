@@ -336,8 +336,6 @@ class HomepageElement extends Model
 
     /**
      * ความสัมพันธ์กับ section
-     *
-     * @return BelongsTo
      */
     public function section(): BelongsTo
     {
@@ -347,7 +345,7 @@ class HomepageElement extends Model
     /**
      * Scope: ดึงเฉพาะ elements ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -358,7 +356,7 @@ class HomepageElement extends Model
     /**
      * Scope: เรียงตาม order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -369,8 +367,7 @@ class HomepageElement extends Model
     /**
      * Scope: ดึงตามประเภท
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -380,9 +377,6 @@ class HomepageElement extends Model
 
     /**
      * สร้าง CSS style string สำหรับ element
-     *
-     * @param bool $isDarkMode
-     * @return string
      */
     public function getStyleString(bool $isDarkMode = false): string
     {
@@ -390,7 +384,7 @@ class HomepageElement extends Model
 
         // Position
         if ($this->position_type === 'absolute') {
-            $styles[] = "position: absolute";
+            $styles[] = 'position: absolute';
 
             // Transform based on anchor
             $translateX = $this->anchor_x === 'center' ? '-50%' : ($this->anchor_x === 'right' ? '-100%' : '0');
@@ -472,9 +466,6 @@ class HomepageElement extends Model
 
     /**
      * ดึงเนื้อหาตามภาษา
-     *
-     * @param string $locale
-     * @return string|null
      */
     public function getLocalizedContent(string $locale = 'th'): ?string
     {
@@ -487,9 +478,6 @@ class HomepageElement extends Model
 
     /**
      * ดึง URL รูปภาพตาม mode
-     *
-     * @param bool $isDarkMode
-     * @return string|null
      */
     public function getImageUrl(bool $isDarkMode = false): ?string
     {
@@ -502,8 +490,6 @@ class HomepageElement extends Model
 
     /**
      * แปลงเป็น array สำหรับ API response
-     *
-     * @return array
      */
     public function toApiArray(): array
     {

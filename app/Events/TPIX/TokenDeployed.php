@@ -23,7 +23,7 @@ class TokenDeployed implements ShouldBroadcast
 
     public function broadcastOn(): Channel
     {
-        return new PrivateChannel('user.' . $this->token->creator_id);
+        return new PrivateChannel('user.'.$this->token->creator_id);
     }
 
     public function broadcastWith(): array

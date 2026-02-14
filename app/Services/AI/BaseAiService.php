@@ -2,16 +2,17 @@
 
 namespace App\Services\AI;
 
-use App\Models\AiProvider;
-use App\Models\AiModel;
 use App\Models\AiConversation;
-use App\Models\AiMessage;
+use App\Models\AiModel;
+use App\Models\AiProvider;
 use App\Models\AiUsageLog;
 
 abstract class BaseAiService
 {
     protected AiProvider $provider;
+
     protected AiModel $model;
+
     protected array $config;
 
     public function __construct(AiProvider $provider, AiModel $model)
@@ -24,8 +25,8 @@ abstract class BaseAiService
     /**
      * ส่ง chat completion request
      *
-     * @param array $messages รูปแบบ [['role' => 'user', 'content' => '...'], ...]
-     * @param array $options ตัวเลือกเพิ่มเติม (temperature, max_tokens, etc.)
+     * @param  array  $messages  รูปแบบ [['role' => 'user', 'content' => '...'], ...]
+     * @param  array  $options  ตัวเลือกเพิ่มเติม (temperature, max_tokens, etc.)
      * @return array ['content' => string, 'tokens' => int, 'finish_reason' => string]
      */
     abstract public function chat(array $messages, array $options = []): array;
@@ -33,17 +34,13 @@ abstract class BaseAiService
     /**
      * ส่ง completion request แบบ streaming
      *
-     * @param array $messages
-     * @param array $options
-     * @param callable $callback function($chunk) - เรียกทุกครั้งที่ได้ chunk ใหม่
-     * @return array
+     * @param  callable  $callback  function($chunk) - เรียกทุกครั้งที่ได้ chunk ใหม่
      */
     abstract public function chatStream(array $messages, array $options, callable $callback): array;
 
     /**
      * สร้าง embeddings
      *
-     * @param string $text
      * @return array vector embeddings
      */
     abstract public function createEmbedding(string $text): array;
@@ -126,7 +123,7 @@ abstract class BaseAiService
      */
     protected function hasApiKey(): bool
     {
-        return !empty($this->config['api_key']);
+        return ! empty($this->config['api_key']);
     }
 
     /**

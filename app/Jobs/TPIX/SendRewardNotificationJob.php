@@ -16,6 +16,7 @@ class SendRewardNotificationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 30;
 
     protected int $rewardId;
@@ -31,8 +32,9 @@ class SendRewardNotificationJob implements ShouldQueue
         try {
             $reward = TPIXReferralReward::with(['user', 'token'])->find($this->rewardId);
 
-            if (!$reward || !$reward->user) {
+            if (! $reward || ! $reward->user) {
                 Log::error("Reward or user not found for notification: {$this->rewardId}");
+
                 return;
             }
 
@@ -41,7 +43,7 @@ class SendRewardNotificationJob implements ShouldQueue
             Log::info("Referral reward notification sent to user {$reward->user_id}");
 
         } catch (\Exception $e) {
-            Log::error("Failed to send reward notification: " . $e->getMessage());
+            Log::error('Failed to send reward notification: '.$e->getMessage());
             throw $e;
         }
     }

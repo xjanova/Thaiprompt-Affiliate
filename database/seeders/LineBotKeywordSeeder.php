@@ -17,8 +17,6 @@ class LineBotKeywordSeeder extends Seeder
      * - Support: ปัญหาการใช้งาน
      * - Product: คำถามเกี่ยวกับสินค้า
      * - Custom: คำตอบที่กำหนดเอง
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -28,6 +26,7 @@ class LineBotKeywordSeeder extends Seeder
         if ($existingCount > 0) {
             $this->command->warn('⚠️  LINE Bot Keywords already exist!');
             $this->command->info('   Skipping to preserve custom keywords.');
+
             return;
         }
 

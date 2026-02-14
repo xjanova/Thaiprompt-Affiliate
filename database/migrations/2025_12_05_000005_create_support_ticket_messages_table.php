@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง support_ticket_messages
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง support_ticket_messages
-     *
-     * @return void
      */
     public function down(): void
     {

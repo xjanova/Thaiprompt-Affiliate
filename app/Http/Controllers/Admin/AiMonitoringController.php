@@ -12,7 +12,7 @@ class AiMonitoringController extends Controller
 
     public function __construct()
     {
-        $this->monitoringService = new AiMonitoringService();
+        $this->monitoringService = new AiMonitoringService;
     }
 
     /**

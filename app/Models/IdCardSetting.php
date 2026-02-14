@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * IdCardSetting Model
@@ -117,7 +116,7 @@ class IdCardSetting extends Model
     /**
      * Scope สำหรับดึง settings ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -128,23 +127,19 @@ class IdCardSetting extends Model
     /**
      * Scope สำหรับดึง settings ตาม rank level
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int|null $rankLevel
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForRank($query, ?int $rankLevel)
     {
         return $query->where(function ($q) use ($rankLevel) {
             $q->where('rank_level', $rankLevel)
-              ->orWhereNull('rank_level');
+                ->orWhereNull('rank_level');
         });
     }
 
     /**
      * ดึงการตั้งค่าที่ active สำหรับ rank ที่ระบุ
-     *
-     * @param int $rankLevel
-     * @return self|null
      */
     public static function getActiveSettingsForRank(int $rankLevel): ?self
     {
@@ -154,7 +149,7 @@ class IdCardSetting extends Model
             ->first();
 
         // ถ้าไม่พบ ใช้ค่า default (rank_level = null)
-        if (!$settings) {
+        if (! $settings) {
             $settings = self::active()
                 ->whereNull('rank_level')
                 ->where('is_default', true)
@@ -166,8 +161,6 @@ class IdCardSetting extends Model
 
     /**
      * ดึงตำแหน่งเริ่มต้นสำหรับองค์ประกอบทั้งหมด
-     *
-     * @return array
      */
     public static function getDefaultPositions(): array
     {
@@ -185,9 +178,6 @@ class IdCardSetting extends Model
 
     /**
      * ดึง gradient เริ่มต้นสำหรับแต่ละ rank
-     *
-     * @param int $rankLevel
-     * @return array
      */
     public static function getDefaultGradientForRank(int $rankLevel): array
     {
@@ -207,8 +197,6 @@ class IdCardSetting extends Model
 
     /**
      * รวม settings กับตำแหน่งเริ่มต้น
-     *
-     * @return array
      */
     public function getMergedPositions(): array
     {
@@ -228,8 +216,6 @@ class IdCardSetting extends Model
 
     /**
      * แปลงเป็น CSS background
-     *
-     * @return string
      */
     public function getBackgroundCss(): string
     {
@@ -239,13 +225,14 @@ class IdCardSetting extends Model
 
             case 'image':
                 $overlay = $this->overlay_color && $this->overlay_opacity > 0
-                    ? "linear-gradient({$this->overlay_color}".($this->overlay_opacity / 100).", {$this->overlay_color}".($this->overlay_opacity / 100)."), "
+                    ? "linear-gradient({$this->overlay_color}".($this->overlay_opacity / 100).", {$this->overlay_color}".($this->overlay_opacity / 100).'), '
                     : '';
+
                 return "background: {$overlay}url('{$this->background_image}') center/cover no-repeat;";
 
             case 'gradient':
             default:
-                if (!$this->background_gradient) {
+                if (! $this->background_gradient) {
                     return 'background: linear-gradient(to bottom right, #8B5CF6, #EC4899);';
                 }
 
@@ -264,7 +251,8 @@ class IdCardSetting extends Model
                 $dir = $directionMap[$direction] ?? 'to bottom right';
 
                 $colors = array_filter([$g['from'] ?? null, $g['via'] ?? null, $g['to'] ?? null]);
-                return "background: linear-gradient({$dir}, " . implode(', ', $colors) . ");";
+
+                return "background: linear-gradient({$dir}, ".implode(', ', $colors).');';
         }
     }
 }

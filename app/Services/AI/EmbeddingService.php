@@ -2,27 +2,30 @@
 
 namespace App\Services\AI;
 
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class EmbeddingService
 {
     private AiProvider $provider;
+
     private AiModel $model;
+
     private string $endpoint;
+
     private string $apiKey;
 
     public function __construct(?AiProvider $provider = null)
     {
         // Use OpenAI by default for embeddings
-        if (!$provider) {
+        if (! $provider) {
             $provider = AiProvider::where('name', 'openai')
                 ->where('is_active', true)
                 ->first();
 
-            if (!$provider) {
+            if (! $provider) {
                 throw new \Exception('OpenAI provider not found or not active');
             }
         }
@@ -37,7 +40,7 @@ class EmbeddingService
             ->where('is_active', true)
             ->first();
 
-        if (!$this->model) {
+        if (! $this->model) {
             // Fallback to text-embedding-3-small
             $this->model = new AiModel([
                 'model_identifier' => 'text-embedding-3-small',
@@ -50,7 +53,6 @@ class EmbeddingService
     /**
      * Create embedding for a single text
      *
-     * @param string $text
      * @return array ['success' => bool, 'embedding' => array, 'dimension' => int, 'tokens' => int]
      */
     public function createEmbedding(string $text): array
@@ -64,7 +66,7 @@ class EmbeddingService
 
             return [
                 'success' => false,
-                'error' => 'Provider not supported for embeddings: ' . $this->provider->name,
+                'error' => 'Provider not supported for embeddings: '.$this->provider->name,
             ];
         } catch (\Exception $e) {
             Log::error('Embedding creation failed', [
@@ -82,9 +84,6 @@ class EmbeddingService
 
     /**
      * Create embeddings for multiple texts (batch)
-     *
-     * @param array $texts
-     * @return array
      */
     public function createEmbeddings(array $texts): array
     {
@@ -124,16 +123,16 @@ class EmbeddingService
     private function createOpenAiEmbedding(string $text): array
     {
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Authorization' => 'Bearer '.$this->apiKey,
             'Content-Type' => 'application/json',
-        ])->timeout(30)->post($this->endpoint . '/embeddings', [
+        ])->timeout(30)->post($this->endpoint.'/embeddings', [
             'model' => $this->model->model_identifier,
             'input' => $text,
             'encoding_format' => 'float',
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception('OpenAI API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('OpenAI API error: '.$response->body());
         }
 
         $data = $response->json();
@@ -153,13 +152,13 @@ class EmbeddingService
     {
         $ollamaEndpoint = 'http://localhost:11434';
 
-        $response = Http::timeout(30)->post($ollamaEndpoint . '/api/embeddings', [
+        $response = Http::timeout(30)->post($ollamaEndpoint.'/api/embeddings', [
             'model' => 'nomic-embed-text', // Or any embedding model installed locally
             'prompt' => $text,
         ]);
 
-        if (!$response->successful()) {
-            throw new \Exception('Ollama API error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Ollama API error: '.$response->body());
         }
 
         $data = $response->json();

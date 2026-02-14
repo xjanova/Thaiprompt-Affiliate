@@ -9,19 +9,17 @@ return new class extends Migration
     /**
      * เพิ่มคอลัมน์ currency_id, balance, และ address ให้กับตาราง crypto_wallets
      * เพื่อรองรับการใช้งานใน TPIXWalletController
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง crypto_wallets มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('crypto_wallets')) {
+        if (! Schema::hasTable('crypto_wallets')) {
             return;
         }
 
         Schema::table('crypto_wallets', function (Blueprint $table) {
             // ตรวจสอบและเพิ่มคอลัมน์ currency_id
-            if (!Schema::hasColumn('crypto_wallets', 'currency_id')) {
+            if (! Schema::hasColumn('crypto_wallets', 'currency_id')) {
                 $table->foreignId('currency_id')
                     ->nullable()
                     ->after('user_id')
@@ -31,7 +29,7 @@ return new class extends Migration
             }
 
             // ตรวจสอบและเพิ่มคอลัมน์ balance
-            if (!Schema::hasColumn('crypto_wallets', 'balance')) {
+            if (! Schema::hasColumn('crypto_wallets', 'balance')) {
                 $table->decimal('balance', 36, 18)
                     ->default(0)
                     ->after('wallet_type')
@@ -39,7 +37,7 @@ return new class extends Migration
             }
 
             // ตรวจสอบและเพิ่มคอลัมน์ address
-            if (!Schema::hasColumn('crypto_wallets', 'address')) {
+            if (! Schema::hasColumn('crypto_wallets', 'address')) {
                 $table->string('address', 255)
                     ->nullable()
                     ->after('balance')
@@ -50,7 +48,7 @@ return new class extends Migration
             }
 
             // เพิ่ม index เพื่อเพิ่มประสิทธิภาพ query
-            if (!Schema::hasColumn('crypto_wallets', 'currency_id')) {
+            if (! Schema::hasColumn('crypto_wallets', 'currency_id')) {
                 $table->index(['user_id', 'currency_id'], 'user_currency_idx');
             }
         });
@@ -58,8 +56,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

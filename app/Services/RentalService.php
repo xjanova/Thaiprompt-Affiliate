@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\AiBotProfile;
 use App\Models\BotRental;
-use App\Models\RentalTransaction;
 use App\Models\OwnerEarning;
+use App\Models\RentalTransaction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,14 +15,11 @@ class RentalService
     /**
      * Rent a bot (monthly subscription)
      *
-     * @param AiBotProfile $bot
-     * @param User $renter
-     * @param string $paymentMethod
      * @return array ['success' => bool, 'rental' => BotRental|null, 'transaction' => RentalTransaction|null]
      */
     public function rentMonthly(AiBotProfile $bot, User $renter, string $paymentMethod = 'wallet'): array
     {
-        if (!$bot->is_rentable || !$bot->rental_price_per_month) {
+        if (! $bot->is_rentable || ! $bot->rental_price_per_month) {
             return [
                 'success' => false,
                 'error' => 'Bot is not available for rental',
@@ -78,7 +75,7 @@ class RentalService
                 'period_end' => $rental->end_date,
                 'payment_method' => $paymentMethod,
                 'status' => 'completed',
-                'description' => 'Monthly subscription for ' . $bot->name,
+                'description' => 'Monthly subscription for '.$bot->name,
             ]);
 
             // Record owner earning
@@ -121,21 +118,17 @@ class RentalService
 
             return [
                 'success' => false,
-                'error' => 'Failed to process rental: ' . $e->getMessage(),
+                'error' => 'Failed to process rental: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Rent a bot (per-message)
-     *
-     * @param AiBotProfile $bot
-     * @param User $renter
-     * @return array
      */
     public function rentPerMessage(AiBotProfile $bot, User $renter): array
     {
-        if (!$bot->is_rentable || !$bot->rental_price_per_message) {
+        if (! $bot->is_rentable || ! $bot->rental_price_per_message) {
             return [
                 'success' => false,
                 'error' => 'Bot is not available for per-message rental',
@@ -188,17 +181,13 @@ class RentalService
 
             return [
                 'success' => false,
-                'error' => 'Failed to create rental: ' . $e->getMessage(),
+                'error' => 'Failed to create rental: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Charge for message usage (per-message rental)
-     *
-     * @param BotRental $rental
-     * @param int $messageCount
-     * @return array
      */
     public function chargeMessageUsage(BotRental $rental, int $messageCount = 1): array
     {
@@ -267,17 +256,13 @@ class RentalService
 
             return [
                 'success' => false,
-                'error' => 'Failed to charge: ' . $e->getMessage(),
+                'error' => 'Failed to charge: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * Cancel rental
-     *
-     * @param BotRental $rental
-     * @param string $reason
-     * @return array
      */
     public function cancelRental(BotRental $rental, string $reason = ''): array
     {
@@ -306,7 +291,7 @@ class RentalService
 
             return [
                 'success' => false,
-                'error' => 'Failed to cancel rental: ' . $e->getMessage(),
+                'error' => 'Failed to cancel rental: '.$e->getMessage(),
             ];
         }
     }
@@ -314,9 +299,7 @@ class RentalService
     /**
      * Get owner earnings summary
      *
-     * @param User $owner
-     * @param string|null $month Format: YYYY-MM
-     * @return array
+     * @param  string|null  $month  Format: YYYY-MM
      */
     public function getOwnerEarningsSummary(User $owner, ?string $month = null): array
     {
@@ -345,10 +328,6 @@ class RentalService
 
     /**
      * Check if user can rent a bot
-     *
-     * @param AiBotProfile $bot
-     * @param User $user
-     * @return bool
      */
     public function canUserRentBot(AiBotProfile $bot, User $user): bool
     {
@@ -358,12 +337,12 @@ class RentalService
         }
 
         // Bot must be rentable
-        if (!$bot->is_rentable) {
+        if (! $bot->is_rentable) {
             return false;
         }
 
         // Bot must be active
-        if (!$bot->is_active) {
+        if (! $bot->is_active) {
             return false;
         }
 

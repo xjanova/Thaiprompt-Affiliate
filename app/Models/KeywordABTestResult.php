@@ -67,8 +67,6 @@ class KeywordABTestResult extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTest
-     *
-     * @return BelongsTo
      */
     public function abTest(): BelongsTo
     {
@@ -77,8 +75,6 @@ class KeywordABTestResult extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTestVariant
-     *
-     * @return BelongsTo
      */
     public function variant(): BelongsTo
     {
@@ -127,12 +123,10 @@ class KeywordABTestResult extends Model
 
     /**
      * ได้ satisfaction คะแนน 0-100
-     *
-     * @return int
      */
     public function getSatisfactionScore(): int
     {
-        if (!$this->satisfaction) {
+        if (! $this->satisfaction) {
             return 0;
         }
 
@@ -142,8 +136,6 @@ class KeywordABTestResult extends Model
 
     /**
      * ได้ response time เป็น seconds
-     *
-     * @return float
      */
     public function getResponseTimeInSeconds(): float
     {
@@ -152,8 +144,6 @@ class KeywordABTestResult extends Model
 
     /**
      * ได้ satisfaction เป็นข้อความ
-     *
-     * @return string
      */
     public function getSatisfactionLabel(): string
     {

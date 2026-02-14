@@ -19,8 +19,6 @@ class ServiceUnblockedNotification extends Notification implements ShouldQueue
 
     /**
      * สร้าง notification instance
-     *
-     * @param Service $service
      */
     public function __construct(Service $service)
     {
@@ -30,8 +28,7 @@ class ServiceUnblockedNotification extends Notification implements ShouldQueue
     /**
      * ช่องทางการส่ง notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function via($notifiable): array
     {
@@ -41,15 +38,14 @@ class ServiceUnblockedNotification extends Notification implements ShouldQueue
     /**
      * Email notification
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
      */
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('✅ บริการของคุณถูกปลดบล็อกแล้ว')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line('บริการ "' . $this->service->name . '" ของคุณถูกปลดบล็อกโดยผู้ดูแลระบบแล้ว')
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('บริการ "'.$this->service->name.'" ของคุณถูกปลดบล็อกโดยผู้ดูแลระบบแล้ว')
             ->line('คุณสามารถเปิดใช้งานบริการเพื่อแสดงในระบบได้ตามปกติ')
             ->line('หากมีข้อสงสัย กรุณาติดต่อผู้ดูแลระบบ')
             ->action('จัดการบริการ', route('admin.services.edit', $this->service))
@@ -59,8 +55,7 @@ class ServiceUnblockedNotification extends Notification implements ShouldQueue
     /**
      * Database notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function toArray($notifiable): array
     {
@@ -70,7 +65,7 @@ class ServiceUnblockedNotification extends Notification implements ShouldQueue
             'service_name' => $this->service->name,
             'unblocked_at' => $this->service->unblocked_at,
             'unblocked_by' => $this->service->unblocked_by,
-            'message' => 'บริการ "' . $this->service->name . '" ถูกปลดบล็อกแล้ว คุณสามารถเปิดใช้งานได้ตามปกติ',
+            'message' => 'บริการ "'.$this->service->name.'" ถูกปลดบล็อกแล้ว คุณสามารถเปิดใช้งานได้ตามปกติ',
             'action_url' => route('admin.services.edit', $this->service),
         ];
     }

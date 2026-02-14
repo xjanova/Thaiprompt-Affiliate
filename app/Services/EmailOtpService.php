@@ -3,9 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Email OTP Verification Service
@@ -38,9 +37,7 @@ class EmailOtpService
     /**
      * Generate and send OTP to email
      *
-     * @param string $email
-     * @param string $purpose 'signup', 'login', 'reset_password'
-     * @return array
+     * @param  string  $purpose  'signup', 'login', 'reset_password'
      */
     public function sendOtp(string $email, string $purpose = 'signup'): array
     {
@@ -49,6 +46,7 @@ class EmailOtpService
         // Check cooldown
         if ($this->isOnCooldown($email)) {
             $remainingSeconds = $this->getRemainingCooldown($email);
+
             return [
                 'success' => false,
                 'message' => "กรุณารอ {$remainingSeconds} วินาที ก่อนขอรหัส OTP ใหม่",
@@ -95,11 +93,6 @@ class EmailOtpService
 
     /**
      * Verify OTP code
-     *
-     * @param string $email
-     * @param string $otpCode
-     * @param string $purpose
-     * @return array
      */
     public function verifyOtp(string $email, string $otpCode, string $purpose = 'signup'): array
     {
@@ -109,7 +102,7 @@ class EmailOtpService
         // Check if OTP exists
         $storedData = $this->getStoredOtp($email);
 
-        if (!$storedData) {
+        if (! $storedData) {
             return [
                 'valid' => false,
                 'message' => 'ไม่พบรหัส OTP หรือหมดอายุแล้ว กรุณาขอรหัสใหม่',
@@ -177,22 +170,16 @@ class EmailOtpService
 
     /**
      * Check if email is verified
-     *
-     * @param string $email
-     * @return bool
      */
     public function isVerified(string $email): bool
     {
         $email = strtolower(trim($email));
+
         return Cache::has("otp_verified:{$email}");
     }
 
     /**
      * Resend OTP
-     *
-     * @param string $email
-     * @param string $purpose
-     * @return array
      */
     public function resendOtp(string $email, string $purpose = 'signup'): array
     {
@@ -205,21 +192,14 @@ class EmailOtpService
 
     /**
      * Generate random OTP code
-     *
-     * @return string
      */
     private function generateOtp(): string
     {
-        return str_pad((string)random_int(0, 999999), self::OTP_LENGTH, '0', STR_PAD_LEFT);
+        return str_pad((string) random_int(0, 999999), self::OTP_LENGTH, '0', STR_PAD_LEFT);
     }
 
     /**
      * Store OTP in cache
-     *
-     * @param string $email
-     * @param string $otp
-     * @param string $purpose
-     * @return void
      */
     private function storeOtp(string $email, string $otp, string $purpose): void
     {
@@ -235,9 +215,6 @@ class EmailOtpService
 
     /**
      * Get stored OTP data
-     *
-     * @param string $email
-     * @return array|null
      */
     private function getStoredOtp(string $email): ?array
     {
@@ -246,9 +223,6 @@ class EmailOtpService
 
     /**
      * Clear OTP from cache
-     *
-     * @param string $email
-     * @return void
      */
     private function clearOtp(string $email): void
     {
@@ -258,9 +232,6 @@ class EmailOtpService
 
     /**
      * Mark email as verified
-     *
-     * @param string $email
-     * @return void
      */
     private function markAsVerified(string $email): void
     {
@@ -270,7 +241,6 @@ class EmailOtpService
     /**
      * Increment verification attempts
      *
-     * @param string $email
      * @return int Current attempt count
      */
     private function incrementAttempts(string $email): int
@@ -278,14 +248,12 @@ class EmailOtpService
         $key = "otp_attempts:{$email}";
         $attempts = Cache::get($key, 0) + 1;
         Cache::put($key, $attempts, now()->addSeconds(self::OTP_VALIDITY));
+
         return $attempts;
     }
 
     /**
      * Check if email is on cooldown
-     *
-     * @param string $email
-     * @return bool
      */
     private function isOnCooldown(string $email): bool
     {
@@ -294,9 +262,6 @@ class EmailOtpService
 
     /**
      * Set cooldown for email
-     *
-     * @param string $email
-     * @return void
      */
     private function setCooldown(string $email): void
     {
@@ -305,14 +270,11 @@ class EmailOtpService
 
     /**
      * Get remaining cooldown time in seconds
-     *
-     * @param string $email
-     * @return int
      */
     private function getRemainingCooldown(string $email): int
     {
         $key = "otp_cooldown:{$email}";
-        if (!Cache::has($key)) {
+        if (! Cache::has($key)) {
             return 0;
         }
 
@@ -322,9 +284,6 @@ class EmailOtpService
 
     /**
      * Lockout email after too many failed attempts
-     *
-     * @param string $email
-     * @return void
      */
     private function lockoutEmail(string $email): void
     {
@@ -334,15 +293,10 @@ class EmailOtpService
 
     /**
      * Send OTP email
-     *
-     * @param string $email
-     * @param string $otp
-     * @param string $purpose
-     * @return void
      */
     private function sendOtpEmail(string $email, string $otp, string $purpose): void
     {
-        $subject = match($purpose) {
+        $subject = match ($purpose) {
             'signup' => 'ยืนยันอีเมลสำหรับการสมัครสมาชิก',
             'login' => 'รหัส OTP สำหรับเข้าสู่ระบบ',
             'reset_password' => 'รหัส OTP สำหรับรีเซ็ตรหัสผ่าน',
@@ -350,8 +304,8 @@ class EmailOtpService
         };
 
         $message = "รหัส OTP ของคุณคือ: {$otp}\n\n";
-        $message .= "รหัสนี้จะหมดอายุใน " . (self::OTP_VALIDITY / 60) . " นาที\n\n";
-        $message .= "หากคุณไม่ได้ทำการนี้ กรุณาเพิกเฉยต่ออีเมลนี้";
+        $message .= 'รหัสนี้จะหมดอายุใน '.(self::OTP_VALIDITY / 60)." นาที\n\n";
+        $message .= 'หากคุณไม่ได้ทำการนี้ กรุณาเพิกเฉยต่ออีเมลนี้';
 
         Mail::raw($message, function ($mail) use ($email, $subject) {
             $mail->to($email)
@@ -361,8 +315,6 @@ class EmailOtpService
 
     /**
      * Get OTP statistics
-     *
-     * @return array
      */
     public function getStatistics(): array
     {

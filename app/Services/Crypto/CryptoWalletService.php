@@ -2,14 +2,13 @@
 
 namespace App\Services\Crypto;
 
-use App\Models\User;
-use App\Models\CryptoWallet;
 use App\Models\CryptoAddress;
 use App\Models\CryptoCurrency;
 use App\Models\CryptoDepositAddress;
+use App\Models\CryptoWallet;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Crypt;
 
 class CryptoWalletService
 {
@@ -19,14 +18,10 @@ class CryptoWalletService
     {
         $this->hdWalletService = $hdWalletService;
     }
+
     /**
      * Create a new custodial wallet for user
      * Now uses HD Wallet system - creates master wallet and first child wallet
-     *
-     * @param User $user
-     * @param string|null $pin
-     * @param array $options
-     * @return CryptoWallet
      */
     public function createCustodialWallet(User $user, ?string $pin = null, array $options = []): CryptoWallet
     {
@@ -66,12 +61,6 @@ class CryptoWalletService
 
     /**
      * Connect external wallet (MetaMask, WalletConnect)
-     *
-     * @param User $user
-     * @param string $address
-     * @param string $network
-     * @param array $options
-     * @return CryptoWallet
      */
     public function connectExternalWallet(User $user, string $address, string $network, array $options = []): CryptoWallet
     {
@@ -83,7 +72,7 @@ class CryptoWalletService
                 'wallet_type' => 'external',
                 'name' => $options['name'] ?? 'MetaMask Wallet',
                 'status' => 'active',
-                'is_default' => !$user->cryptoWallets()->exists(),
+                'is_default' => ! $user->cryptoWallets()->exists(),
                 'is_verified' => false,
                 'device_info' => $options['device_info'] ?? null,
                 'ip_address' => request()->ip(),
@@ -128,11 +117,6 @@ class CryptoWalletService
 
     /**
      * Verify external wallet ownership with signature
-     *
-     * @param CryptoWallet $wallet
-     * @param string $signature
-     * @param string $message
-     * @return bool
      */
     public function verifyWalletOwnership(CryptoWallet $wallet, string $signature, string $message): bool
     {
@@ -149,16 +133,13 @@ class CryptoWalletService
 
     /**
      * Get or create default wallet for user
-     *
-     * @param User $user
-     * @return CryptoWallet|null
      */
     public function getOrCreateDefaultWallet(User $user): ?CryptoWallet
     {
         // First try to get default wallet
         $wallet = $user->cryptoWallets()->where('is_default', true)->first();
 
-        if (!$wallet) {
+        if (! $wallet) {
             // Auto-create custodial wallet (HD Wallet system)
             $wallet = $this->createCustodialWallet($user);
         }
@@ -168,10 +149,6 @@ class CryptoWalletService
 
     /**
      * Create additional wallet for user (derives from existing master wallet)
-     *
-     * @param User $user
-     * @param array $options
-     * @return CryptoWallet
      */
     public function createAdditionalWallet(User $user, array $options = []): CryptoWallet
     {
@@ -184,9 +161,6 @@ class CryptoWalletService
 
     /**
      * Get master wallet for user
-     *
-     * @param User $user
-     * @return CryptoWallet|null
      */
     public function getMasterWallet(User $user): ?CryptoWallet
     {
@@ -198,14 +172,13 @@ class CryptoWalletService
     /**
      * Get all child wallets for user
      *
-     * @param User $user
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getAllChildWallets(User $user)
     {
         $masterWallet = $this->getMasterWallet($user);
 
-        if (!$masterWallet) {
+        if (! $masterWallet) {
             return collect();
         }
 
@@ -214,10 +187,6 @@ class CryptoWalletService
 
     /**
      * Get wallet balance for specific currency
-     *
-     * @param CryptoWallet $wallet
-     * @param CryptoCurrency $currency
-     * @return float
      */
     public function getBalance(CryptoWallet $wallet, CryptoCurrency $currency): float
     {
@@ -228,9 +197,6 @@ class CryptoWalletService
 
     /**
      * Get all balances for wallet
-     *
-     * @param CryptoWallet $wallet
-     * @return array
      */
     public function getAllBalances(CryptoWallet $wallet): array
     {
@@ -238,7 +204,7 @@ class CryptoWalletService
 
         foreach ($wallet->cryptoAddresses as $address) {
             $code = $address->currency->code;
-            if (!isset($balances[$code])) {
+            if (! isset($balances[$code])) {
                 $balances[$code] = [
                     'currency' => $address->currency,
                     'balance' => 0,
@@ -255,13 +221,10 @@ class CryptoWalletService
 
     /**
      * Generate addresses for all active currencies
-     *
-     * @param CryptoWallet $wallet
-     * @return void
      */
     public function generateAddressesForWallet(CryptoWallet $wallet): void
     {
-        if (!$wallet->isCustodial()) {
+        if (! $wallet->isCustodial()) {
             return;
         }
 
@@ -274,11 +237,6 @@ class CryptoWalletService
 
     /**
      * Generate address for specific currency
-     *
-     * @param CryptoWallet $wallet
-     * @param CryptoCurrency $currency
-     * @param int $addressIndex
-     * @return CryptoAddress
      */
     public function generateAddressForCurrency(
         CryptoWallet $wallet,
@@ -316,22 +274,18 @@ class CryptoWalletService
 
     /**
      * Generate seed phrase (12 words BIP39)
-     *
-     * @return string
      */
     private function generateSeedPhrase(): string
     {
         // This is a placeholder - actual implementation will use BIP39 library
         // For now, return a placeholder seed phrase
         $words = ['abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident'];
+
         return implode(' ', $words);
     }
 
     /**
      * Generate placeholder address (will be replaced with real implementation)
-     *
-     * @param string $network
-     * @return string
      */
     private function generatePlaceholderAddress(string $network): string
     {
@@ -340,15 +294,15 @@ class CryptoWalletService
             case 'bsc':
             case 'polygon':
                 // EVM address format (0x + 40 hex chars)
-                return '0x' . bin2hex(random_bytes(20));
+                return '0x'.bin2hex(random_bytes(20));
 
             case 'bitcoin':
                 // Bitcoin address format (simplified)
-                return '1' . bin2hex(random_bytes(20));
+                return '1'.bin2hex(random_bytes(20));
 
             case 'tron':
                 // TRON address format
-                return 'T' . bin2hex(random_bytes(20));
+                return 'T'.bin2hex(random_bytes(20));
 
             default:
                 return bin2hex(random_bytes(32));
@@ -357,9 +311,6 @@ class CryptoWalletService
 
     /**
      * Get wallet statistics
-     *
-     * @param CryptoWallet $wallet
-     * @return array
      */
     public function getWalletStatistics(CryptoWallet $wallet): array
     {
@@ -378,10 +329,6 @@ class CryptoWalletService
 
     /**
      * Lock wallet
-     *
-     * @param CryptoWallet $wallet
-     * @param int $minutes
-     * @return void
      */
     public function lockWallet(CryptoWallet $wallet, int $minutes = 30): void
     {
@@ -396,9 +343,6 @@ class CryptoWalletService
 
     /**
      * Unlock wallet
-     *
-     * @param CryptoWallet $wallet
-     * @return void
      */
     public function unlockWallet(CryptoWallet $wallet): void
     {
@@ -412,9 +356,6 @@ class CryptoWalletService
 
     /**
      * Delete wallet (soft delete)
-     *
-     * @param CryptoWallet $wallet
-     * @return bool
      */
     public function deleteWallet(CryptoWallet $wallet): bool
     {

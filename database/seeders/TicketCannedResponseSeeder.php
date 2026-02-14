@@ -16,8 +16,9 @@ class TicketCannedResponseSeeder extends Seeder
         // Get first admin user
         $admin = User::where('is_super_admin', true)->orWhere('role', 'admin')->first();
 
-        if (!$admin) {
+        if (! $admin) {
             $this->command->warn('⚠ No admin user found. Skipping canned responses seeding.');
+
             return;
         }
 

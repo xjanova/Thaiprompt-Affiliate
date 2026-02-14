@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->
         if (auth()->user()->line_user_id) {
             return redirect()->route('provider.register');
         }
+
         return view('provider.line-required');
     })->name('line-required');
 
@@ -48,6 +49,7 @@ Route::middleware(['auth', 'verified'])->prefix('provider')->name('provider.')->
         if ($provider && $provider->verification_status === 'approved') {
             return redirect()->route('provider.bookings.index');
         }
+
         return redirect()->route('provider.register');
     });
 

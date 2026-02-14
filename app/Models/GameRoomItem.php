@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 /**
  * GameRoomItem Model
@@ -39,8 +38,11 @@ class GameRoomItem extends Model
      * ประเภทไอเทม
      */
     const TYPE_FOOD = 'food';
+
     const TYPE_POWERUP_MAGNET = 'powerup_magnet';
+
     const TYPE_POWERUP_SPEED = 'powerup_speed';
+
     const TYPE_POWERUP_MULTIPLIER = 'powerup_multiplier';
 
     /**
@@ -68,12 +70,10 @@ class GameRoomItem extends Model
 
     /**
      * ตรวจสอบว่าไอเทมหมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return false;
         }
 
@@ -82,9 +82,6 @@ class GameRoomItem extends Model
 
     /**
      * เก็บไอเทมโดยผู้เล่น
-     *
-     * @param int $playerId
-     * @return void
      */
     public function collect(int $playerId): void
     {
@@ -98,7 +95,6 @@ class GameRoomItem extends Model
     /**
      * ลบไอเทมที่หมดอายุ
      *
-     * @param int $roomId
      * @return int จำนวนไอเทมที่ถูกลบ
      */
     public static function removeExpired(int $roomId): int
@@ -111,11 +107,6 @@ class GameRoomItem extends Model
 
     /**
      * สร้างไอเทมอาหารใหม่
-     *
-     * @param int $roomId
-     * @param array $position
-     * @param int $value
-     * @return self
      */
     public static function spawnFood(int $roomId, array $position, int $value = 1): self
     {
@@ -131,11 +122,6 @@ class GameRoomItem extends Model
 
     /**
      * สร้างไอเทม powerup ใหม่
-     *
-     * @param int $roomId
-     * @param string $type
-     * @param array $position
-     * @return self
      */
     public static function spawnPowerup(int $roomId, string $type, array $position): self
     {
@@ -152,7 +138,6 @@ class GameRoomItem extends Model
     /**
      * ดึงไอเทมที่ยังไม่ถูกเก็บในห้อง
      *
-     * @param int $roomId
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getActiveItems(int $roomId)

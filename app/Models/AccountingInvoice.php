@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Str;
 
 class AccountingInvoice extends Model
 {
@@ -103,7 +102,7 @@ class AccountingInvoice extends Model
             ->whereMonth('created_at', date('m'))
             ->count() + 1;
 
-        return $prefix . $year . $month . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return $prefix.$year.$month.str_pad($count, 5, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -195,7 +194,7 @@ class AccountingInvoice extends Model
      */
     public function getDaysOverdueAttribute(): int
     {
-        if (!$this->due_date || !$this->isOverdue()) {
+        if (! $this->due_date || ! $this->isOverdue()) {
             return 0;
         }
 

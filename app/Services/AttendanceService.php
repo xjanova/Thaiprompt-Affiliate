@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Employee;
 use App\Models\AttendanceRecord;
+use App\Models\Employee;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Request;
 
@@ -19,14 +19,14 @@ class AttendanceService
 
         // Check if already checked in today
         $existingRecord = AttendanceRecord::where('employee_id', $employeeId)
-                                         ->where('date', $today)
-                                         ->first();
+            ->where('date', $today)
+            ->first();
 
         if ($existingRecord && $existingRecord->check_in) {
             throw new \Exception('Already checked in today');
         }
 
-        if (!$existingRecord) {
+        if (! $existingRecord) {
             $existingRecord = new AttendanceRecord([
                 'employee_id' => $employeeId,
                 'date' => $today,
@@ -57,10 +57,10 @@ class AttendanceService
         $today = today();
 
         $record = AttendanceRecord::where('employee_id', $employeeId)
-                                 ->where('date', $today)
-                                 ->first();
+            ->where('date', $today)
+            ->first();
 
-        if (!$record) {
+        if (! $record) {
             throw new \Exception('No check-in record found for today');
         }
 
@@ -83,7 +83,7 @@ class AttendanceService
         // Calculate overtime
         if ($employee->work_start_time && $employee->work_end_time) {
             $expectedHours = Carbon::parse($employee->work_start_time)
-                                  ->diffInHours(Carbon::parse($employee->work_end_time));
+                ->diffInHours(Carbon::parse($employee->work_end_time));
             if ($record->work_hours > $expectedHours) {
                 $record->overtime_hours = $record->work_hours - $expectedHours;
             }
@@ -100,13 +100,14 @@ class AttendanceService
     public function markAbsent($employeeId, $date, $remarks = null)
     {
         $existingRecord = AttendanceRecord::where('employee_id', $employeeId)
-                                         ->where('date', $date)
-                                         ->first();
+            ->where('date', $date)
+            ->first();
 
         if ($existingRecord) {
             $existingRecord->status = 'absent';
             $existingRecord->remarks = $remarks;
             $existingRecord->save();
+
             return $existingRecord;
         }
 
@@ -124,13 +125,14 @@ class AttendanceService
     public function markOnLeave($employeeId, $date, $remarks = null)
     {
         $existingRecord = AttendanceRecord::where('employee_id', $employeeId)
-                                         ->where('date', $date)
-                                         ->first();
+            ->where('date', $date)
+            ->first();
 
         if ($existingRecord) {
             $existingRecord->status = 'leave';
             $existingRecord->remarks = $remarks;
             $existingRecord->save();
+
             return $existingRecord;
         }
 
@@ -151,10 +153,10 @@ class AttendanceService
 
         foreach ($employees as $employee) {
             $exists = AttendanceRecord::where('employee_id', $employee->id)
-                                     ->where('date', $date)
-                                     ->exists();
+                ->where('date', $date)
+                ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 // Check if it's a weekend
                 $carbonDate = Carbon::parse($date);
                 $status = $carbonDate->isWeekend() ? 'weekend' : 'absent';
@@ -177,8 +179,8 @@ class AttendanceService
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
         $records = AttendanceRecord::where('employee_id', $employeeId)
-                                  ->whereBetween('date', [$startDate, $endDate])
-                                  ->get();
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get();
 
         return [
             'total_days' => $records->count(),
@@ -201,14 +203,14 @@ class AttendanceService
     public function getDepartmentAttendanceSummary($departmentId, $date)
     {
         $employees = Employee::where('department_id', $departmentId)
-                            ->where('employment_status', 'active')
-                            ->get();
+            ->where('employment_status', 'active')
+            ->get();
 
         $totalEmployees = $employees->count();
         $present = AttendanceRecord::where('date', $date)
-                                  ->where('status', 'present')
-                                  ->whereIn('employee_id', $employees->pluck('id'))
-                                  ->count();
+            ->where('status', 'present')
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->count();
 
         return [
             'total_employees' => $totalEmployees,

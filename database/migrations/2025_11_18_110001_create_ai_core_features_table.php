@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บ registry ของ AI features ทั้งหมดในระบบ
      * เป็นตารางหลักที่ควบคุมการเข้าถึง AI features
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_features
-     *
-     * @return void
      */
     public function down(): void
     {

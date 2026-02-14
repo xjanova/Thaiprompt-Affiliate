@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FortuneTellingSetting;
 use App\Services\FortuneChannelManager;
 use App\Services\LineFortuneService;
-use App\Models\FortuneTellingSetting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Log;
 class LineFortuneWebhookController extends Controller
 {
     protected FortuneTellingSetting $settings;
+
     protected LineFortuneService $lineService;
+
     protected FortuneChannelManager $channelManager;
 
     public function __construct()
@@ -31,15 +33,13 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle LINE Webhook
-     *
-     * @param Request $request
-     * @return Response
      */
     public function handle(Request $request): Response
     {
         // ตรวจสอบว่าเปิดใช้งาน LINE หรือไม่
-        if (!$this->settings->line_enabled) {
+        if (! $this->settings->line_enabled) {
             Log::warning('LINE Webhook: LINE is not enabled');
+
             return response('LINE is not enabled', 200);
         }
 
@@ -47,8 +47,9 @@ class LineFortuneWebhookController extends Controller
         $signature = $request->header('X-Line-Signature');
         $body = $request->getContent();
 
-        if (!$this->lineService->verifySignature($body, $signature ?? '')) {
+        if (! $this->lineService->verifySignature($body, $signature ?? '')) {
             Log::warning('LINE Webhook: Invalid signature');
+
             return response('Invalid signature', 400);
         }
 
@@ -65,8 +66,6 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle single event
-     *
-     * @param array $event
      */
     protected function handleEvent(array $event): void
     {
@@ -88,8 +87,6 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle message event
-     *
-     * @param array $event
      */
     protected function handleMessageEvent(array $event): void
     {
@@ -97,8 +94,9 @@ class LineFortuneWebhookController extends Controller
         $messageType = $event['message']['type'] ?? null;
         $replyToken = $event['replyToken'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             Log::warning('LINE Webhook: No userId in message event');
+
             return;
         }
 
@@ -110,6 +108,7 @@ class LineFortuneWebhookController extends Controller
                     'text' => "🙏 ขอบคุณที่ทักมานะคะ\n\nทางเพจรับเฉพาะข้อความเท่านั้นค่ะ\n\nพิมพ์คำถามที่อยากให้ดูดวงมาได้เลยนะคะ 🔮✨",
                 ],
             ]);
+
             return;
         }
 
@@ -137,21 +136,19 @@ class LineFortuneWebhookController extends Controller
             ]);
 
             // ส่งข้อความ error
-            $this->lineService->sendMessage($userId, "ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏");
+            $this->lineService->sendMessage($userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏');
         }
     }
 
     /**
      * Handle follow event (user add friend)
-     *
-     * @param array $event
      */
     protected function handleFollowEvent(array $event): void
     {
         $userId = $event['source']['userId'] ?? null;
         $replyToken = $event['replyToken'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             return;
         }
 
@@ -171,8 +168,6 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle unfollow event (user block/remove friend)
-     *
-     * @param array $event
      */
     protected function handleUnfollowEvent(array $event): void
     {
@@ -185,8 +180,6 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle postback event (button clicks)
-     *
-     * @param array $event
      */
     protected function handlePostbackEvent(array $event): void
     {
@@ -194,7 +187,7 @@ class LineFortuneWebhookController extends Controller
         $data = $event['postback']['data'] ?? '';
         $replyToken = $event['replyToken'] ?? null;
 
-        if (!$userId) {
+        if (! $userId) {
             return;
         }
 

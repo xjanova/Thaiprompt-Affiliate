@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Chatbot;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -58,7 +58,6 @@ class ChatbotController extends Controller
     /**
      * บันทึกบอทใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -113,8 +112,7 @@ class ChatbotController extends Controller
     /**
      * อัปเดตข้อมูลบอท
      *
-     * @param Request $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, $id)
@@ -172,7 +170,7 @@ class ChatbotController extends Controller
     /**
      * ลบบอท
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy($id)

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตะกร้าสินค้าหลักสำหรับผู้ใช้
      * รองรับระบบเติมเงิน wallet และฟีเจอร์อื่นๆ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง carts
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\TicketCategory;
 use App\Services\TicketService;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
@@ -30,7 +30,7 @@ class TicketController extends Controller
         $query = Ticket::with(['category', 'assignedTo'])
             ->where('user_id', auth()->id());
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->status($filters['status']);
         }
 
@@ -51,6 +51,7 @@ class TicketController extends Controller
     public function create()
     {
         $categories = TicketCategory::active()->ordered()->get();
+
         return view('user.tickets.create', compact('categories'));
     }
 
@@ -79,7 +80,7 @@ class TicketController extends Controller
                 ->with('success', 'สร้างตั๋วสำเร็จ! ทีมงานจะติดต่อกลับโดยเร็วที่สุด');
         } catch (Exception $e) {
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -124,7 +125,7 @@ class TicketController extends Controller
             return redirect()->route('user.tickets.show', $id)
                 ->with('success', 'ส่งข้อความเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -145,7 +146,7 @@ class TicketController extends Controller
             return redirect()->route('user.tickets.show', $id)
                 ->with('success', 'ปิดตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

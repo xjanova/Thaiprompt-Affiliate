@@ -5,8 +5,8 @@ namespace App\Console\Commands;
 use App\Models\User;
 use App\Services\LineTokenService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * Verify LINE token security implementation
@@ -50,6 +50,7 @@ class VerifyLineTokenSecurity extends Command
 
         if ($totalUsers === 0) {
             $this->info('✅ No LINE tokens found.');
+
             return 0;
         }
 
@@ -76,7 +77,7 @@ class VerifyLineTokenSecurity extends Command
             } catch (\Exception $e) {
                 // Check if it looks like a plain token (starts with typical patterns)
                 if (strlen($user->line_access_token) > 100 &&
-                    !str_contains($user->line_access_token, 'eyJ')) {
+                    ! str_contains($user->line_access_token, 'eyJ')) {
                     $plainText++;
                 } else {
                     $invalid++;
@@ -151,12 +152,15 @@ class VerifyLineTokenSecurity extends Command
 
         if ($securityScore === 100) {
             $this->info('🎉 Excellent! Your LINE token security is optimal!');
+
             return 0;
         } elseif ($securityScore >= 75) {
             $this->warn('⚠️  Good security, but there are improvements to make.');
+
             return 0;
         } else {
             $this->error('❌ Security needs improvement! Please address the issues above.');
+
             return 1;
         }
     }
@@ -169,6 +173,7 @@ class VerifyLineTokenSecurity extends Command
         if ($total === 0) {
             return '0%';
         }
-        return round(($part / $total) * 100, 1) . '%';
+
+        return round(($part / $total) * 100, 1).'%';
     }
 }

@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Seller;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\ShippingProvider;
-use App\Models\OrderTrackingHistory;
 use App\Models\OrderMessage;
+use App\Models\OrderTrackingHistory;
+use App\Models\ShippingProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -64,7 +64,7 @@ class OrderManagementController extends Controller
                 $q->where('seller_id', auth()->id())->with('product');
             },
             'user',
-            'shippingAddress'
+            'shippingAddress',
         ])
             ->whereHas('items', function ($q) {
                 $q->where('seller_id', auth()->id());
@@ -109,7 +109,7 @@ class OrderManagementController extends Controller
         $order = $orderItem->order;
         $allItems = $order->items;
 
-        if ($allItems->every(fn($item) => $item->status === $request->status)) {
+        if ($allItems->every(fn ($item) => $item->status === $request->status)) {
             $order->status = $request->status;
 
             if ($request->status === 'shipped') {
@@ -127,7 +127,7 @@ class OrderManagementController extends Controller
     /**
      * แสดงหน้าจัดการ Tracking
      *
-     * @param int $orderId
+     * @param  int  $orderId
      * @return \Illuminate\View\View
      */
     public function tracking($orderId)
@@ -189,7 +189,7 @@ class OrderManagementController extends Controller
             OrderTrackingHistory::createEntry(
                 $order,
                 'shipped',
-                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: ' . $request->tracking_number,
+                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: '.$request->tracking_number,
                 auth()->id()
             );
 
@@ -199,15 +199,15 @@ class OrderManagementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เพิ่ม Tracking History
      *
-     * @param Request $request
-     * @param int $orderId
+     * @param  int  $orderId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function addTrackingHistory(Request $request, $orderId)
@@ -252,7 +252,7 @@ class OrderManagementController extends Controller
     /**
      * ดึงข้อความของ Order (AJAX)
      *
-     * @param int $orderId
+     * @param  int  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function getMessages($orderId)
@@ -275,8 +275,7 @@ class OrderManagementController extends Controller
     /**
      * ส่งข้อความในนามของ Seller
      *
-     * @param Request $request
-     * @param int $orderId
+     * @param  int  $orderId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function sendMessage(Request $request, $orderId)
@@ -304,7 +303,7 @@ class OrderManagementController extends Controller
     /**
      * ทำเครื่องหมายข้อความว่าอ่านแล้ว
      *
-     * @param int $orderId
+     * @param  int  $orderId
      * @return \Illuminate\Http\JsonResponse
      */
     public function markMessagesRead($orderId)
@@ -341,7 +340,7 @@ class OrderManagementController extends Controller
                 $q->where('seller_id', auth()->id())->with('product');
             },
             'user',
-            'shippingAddress'
+            'shippingAddress',
         ])
             ->whereHas('items', function ($q) {
                 $q->where('seller_id', auth()->id());
@@ -359,7 +358,6 @@ class OrderManagementController extends Controller
     /**
      * แสดงคำสั่งซื้อที่รอจัดส่ง (ยังไม่มีเลขพัสดุ)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function pendingShipping(Request $request)
@@ -397,7 +395,6 @@ class OrderManagementController extends Controller
     /**
      * แสดงคำสั่งซื้อที่จัดส่งแล้ว (มีเลขพัสดุแล้ว)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function shipped(Request $request)
@@ -429,7 +426,6 @@ class OrderManagementController extends Controller
     /**
      * แสดงคำสั่งซื้อที่ส่งถึงแล้ว
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function delivered(Request $request)
@@ -467,7 +463,6 @@ class OrderManagementController extends Controller
     /**
      * แสดงข้อความทั้งหมดจากลูกค้า
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function allMessages(Request $request)
@@ -510,7 +505,6 @@ class OrderManagementController extends Controller
     /**
      * แสดงข้อความที่ยังไม่อ่าน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function unreadMessages(Request $request)

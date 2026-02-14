@@ -68,7 +68,7 @@ class ClearDataCommand extends Command
 
         // Check if specific tables requested
         $specificTables = $this->option('tables');
-        if (!empty($specificTables)) {
+        if (! empty($specificTables)) {
             return $this->clearSpecificTables($specificTables);
         }
 
@@ -94,9 +94,10 @@ class ClearDataCommand extends Command
         $this->newLine();
 
         // Confirmation
-        if (!$this->option('force')) {
-            if (!$this->confirm('Are you absolutely sure you want to continue?', false)) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('Are you absolutely sure you want to continue?', false)) {
                 $this->info('Operation cancelled.');
+
                 return self::SUCCESS;
             }
 
@@ -104,6 +105,7 @@ class ClearDataCommand extends Command
             $confirmation = $this->ask('Type "DELETE ALL DATA" to confirm');
             if ($confirmation !== 'DELETE ALL DATA') {
                 $this->error('Confirmation failed. Operation cancelled.');
+
                 return self::FAILURE;
             }
         }
@@ -135,7 +137,7 @@ class ClearDataCommand extends Command
         } catch (\Exception $e) {
             DB::rollBack();
 
-            $this->error('✗ Failed to clear data: ' . $e->getMessage());
+            $this->error('✗ Failed to clear data: '.$e->getMessage());
             $this->newLine();
 
             return self::FAILURE;
@@ -162,7 +164,7 @@ class ClearDataCommand extends Command
                     // ไม่ใช่ super admin: is_super_admin = false หรือ NULL
                     // ⚠️ ต้องเช็ค NULL แยก เพราะ MySQL: NULL != true → NULL (ไม่ใช่ TRUE)
                     $query->where('is_super_admin', false)
-                          ->orWhereNull('is_super_admin');
+                        ->orWhereNull('is_super_admin');
                 })
                 ->where('role', '!=', 'admin')  // และไม่ใช่ admin
                 ->delete();
@@ -171,7 +173,7 @@ class ClearDataCommand extends Command
             $adminCount = DB::table('users')
                 ->where(function ($query) {
                     $query->where('is_super_admin', true)
-                          ->orWhere('role', 'admin');
+                        ->orWhere('role', 'admin');
                 })
                 ->count();
 
@@ -182,7 +184,7 @@ class ClearDataCommand extends Command
             $count = DB::table('users')->count();
             DB::table('users')->truncate();
 
-            $this->line("  ✓ Cleared users table");
+            $this->line('  ✓ Cleared users table');
             $this->line("    Deleted: {$count} users");
         }
     }
@@ -214,9 +216,10 @@ class ClearDataCommand extends Command
 
         $this->newLine();
 
-        if (!$this->option('force')) {
-            if (!$this->confirm('Continue?', false)) {
+        if (! $this->option('force')) {
+            if (! $this->confirm('Continue?', false)) {
                 $this->info('Operation cancelled.');
+
                 return self::SUCCESS;
             }
         }
@@ -241,7 +244,7 @@ class ClearDataCommand extends Command
         } catch (\Exception $e) {
             DB::rollBack();
 
-            $this->error('✗ Failed to clear tables: ' . $e->getMessage());
+            $this->error('✗ Failed to clear tables: '.$e->getMessage());
 
             return self::FAILURE;
         }

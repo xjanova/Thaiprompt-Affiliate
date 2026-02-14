@@ -2,17 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class WalletTopupPackagesSeeder extends Seeder
 {
     /**
      * สร้างแพ็คเกจเติมเงิน Wallet
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -31,8 +29,9 @@ class WalletTopupPackagesSeeder extends Seeder
 
         // ✅ หา admin user สำหรับเป็น seller
         $adminUser = User::whereIn('role', ['admin', 'super_admin'])->first();
-        if (!$adminUser) {
+        if (! $adminUser) {
             $this->command->warn('ไม่พบ admin user สำหรับเป็น seller ของ topup packages');
+
             return;
         }
 
@@ -97,6 +96,7 @@ class WalletTopupPackagesSeeder extends Seeder
             $existing = Product::where('slug', $packageData['slug'])->first();
             if ($existing) {
                 $this->command->info("  ✓ {$packageData['name']} มีอยู่แล้ว");
+
                 continue;
             }
 
@@ -106,7 +106,7 @@ class WalletTopupPackagesSeeder extends Seeder
                 'category_id' => $category->id,
                 'name' => $packageData['name'],
                 'slug' => $packageData['slug'],
-                'sku' => 'TOPUP-' . strtoupper($packageData['slug']),
+                'sku' => 'TOPUP-'.strtoupper($packageData['slug']),
                 'description' => $packageData['description'],
                 'short_description' => $packageData['short_description'],
                 'price' => $packageData['price'],

@@ -96,8 +96,8 @@ class BotRentalSubscription extends Model
     public function scopeDueForRenewal($query)
     {
         return $query->where('status', 'active')
-                     ->where('auto_renew', true)
-                     ->where('next_billing_date', '<=', now());
+            ->where('auto_renew', true)
+            ->where('next_billing_date', '<=', now());
     }
 
     /**
@@ -106,7 +106,7 @@ class BotRentalSubscription extends Model
     public function isActive(): bool
     {
         return in_array($this->status, ['trial', 'active']) &&
-               (!$this->expires_at || now()->lessThan($this->expires_at));
+               (! $this->expires_at || now()->lessThan($this->expires_at));
     }
 
     /**
@@ -122,7 +122,7 @@ class BotRentalSubscription extends Model
     /**
      * Cancel subscription
      */
-    public function cancel(string $reason = null): void
+    public function cancel(?string $reason = null): void
     {
         $this->update([
             'status' => 'cancelled',
@@ -156,7 +156,7 @@ class BotRentalSubscription extends Model
      */
     protected function calculatePeriodEnd(): \Carbon\Carbon
     {
-        return match($this->billing_cycle) {
+        return match ($this->billing_cycle) {
             'monthly' => now()->addMonth(),
             'yearly' => now()->addYear(),
             default => now()->addMonth(),
@@ -189,7 +189,7 @@ class BotRentalSubscription extends Model
      */
     public static function generateSubscriptionId(): string
     {
-        return 'SUB-' . strtoupper(uniqid());
+        return 'SUB-'.strtoupper(uniqid());
     }
 
     /**
@@ -198,7 +198,7 @@ class BotRentalSubscription extends Model
     protected static function booted()
     {
         static::creating(function ($subscription) {
-            if (!$subscription->subscription_id) {
+            if (! $subscription->subscription_id) {
                 $subscription->subscription_id = self::generateSubscriptionId();
             }
         });

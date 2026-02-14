@@ -169,7 +169,7 @@ class TradingBot extends Model
      */
     public function start(): void
     {
-        if (!$this->account->canTrade() && !$this->dry_run) {
+        if (! $this->account->canTrade() && ! $this->dry_run) {
             throw new \Exception('Trading account is not enabled for trading');
         }
 
@@ -235,9 +235,12 @@ class TradingBot extends Model
     private function calculateWinRate($trades): float
     {
         $total = $trades->count();
-        if ($total == 0) return 0;
+        if ($total == 0) {
+            return 0;
+        }
 
         $winning = $trades->where('net_profit', '>', 0)->count();
+
         return ($winning / $total) * 100;
     }
 
@@ -249,7 +252,9 @@ class TradingBot extends Model
         $totalProfit = $trades->where('net_profit', '>', 0)->sum('net_profit');
         $totalLoss = abs($trades->where('net_profit', '<', 0)->sum('net_profit'));
 
-        if ($totalLoss == 0) return 0;
+        if ($totalLoss == 0) {
+            return 0;
+        }
 
         return $totalProfit / $totalLoss;
     }
@@ -259,7 +264,9 @@ class TradingBot extends Model
      */
     private function calculateROI(): float
     {
-        if ($this->allocated_capital == 0) return 0;
+        if ($this->allocated_capital == 0) {
+            return 0;
+        }
 
         return ($this->net_profit / $this->allocated_capital) * 100;
     }
@@ -341,11 +348,11 @@ class TradingBot extends Model
             return false;
         }
 
-        if (!$this->account || !$this->strategy) {
+        if (! $this->account || ! $this->strategy) {
             return false;
         }
 
-        if (!$this->dry_run && !$this->account->canTrade()) {
+        if (! $this->dry_run && ! $this->account->canTrade()) {
             return false;
         }
 

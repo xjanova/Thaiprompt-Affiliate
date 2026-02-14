@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Setting;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Google Maps Service
@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Cache;
 class GoogleMapsService
 {
     protected ?string $apiKey = null;
+
     protected string $baseUrl = 'https://maps.googleapis.com/maps/api';
+
     protected array $settings = [];
 
     /**
@@ -36,8 +38,6 @@ class GoogleMapsService
 
     /**
      * โหลดการตั้งค่าทั้งหมดจาก database
-     *
-     * @return void
      */
     protected function loadSettings(): void
     {
@@ -65,16 +65,16 @@ class GoogleMapsService
     /**
      * ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
      *
-     * @param string $feature ชื่อฟีเจอร์ (geocoding, directions, distance_matrix, places)
-     * @return bool
+     * @param  string  $feature  ชื่อฟีเจอร์ (geocoding, directions, distance_matrix, places)
      */
     protected function isFeatureEnabled(string $feature): bool
     {
-        if (!$this->settings['enabled']) {
+        if (! $this->settings['enabled']) {
             return false;
         }
 
         $key = "{$feature}_enabled";
+
         return $this->settings[$key] ?? true;
     }
 
@@ -86,7 +86,7 @@ class GoogleMapsService
     protected function ensureApiKey(): void
     {
         // ตรวจสอบว่าระบบเปิดใช้งานหรือไม่
-        if (!$this->settings['enabled']) {
+        if (! $this->settings['enabled']) {
             throw new \Exception('Google Maps service is disabled. Please enable it in settings.');
         }
 
@@ -97,8 +97,6 @@ class GoogleMapsService
 
     /**
      * ตรวจสอบว่า cache เปิดใช้งานหรือไม่
-     *
-     * @return bool
      */
     protected function isCacheEnabled(): bool
     {
@@ -118,9 +116,10 @@ class GoogleMapsService
     /**
      * Reverse geocode: Convert coordinates to address
      *
-     * @param float $lat ละติจูด
-     * @param float $lng ลองจิจูด
+     * @param  float  $lat  ละติจูด
+     * @param  float  $lng  ลองจิจูด
      * @return array ข้อมูลที่อยู่และพิกัด
+     *
      * @throws \Exception
      */
     public function reverseGeocode(float $lat, float $lng): array
@@ -128,7 +127,7 @@ class GoogleMapsService
         $this->ensureApiKey();
 
         // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
-        if (!$this->isFeatureEnabled('geocoding')) {
+        if (! $this->isFeatureEnabled('geocoding')) {
             throw new \Exception('Geocoding feature is disabled. Please enable it in settings.');
         }
 
@@ -143,7 +142,7 @@ class GoogleMapsService
                 'region' => $this->settings['region'] ?? 'TH',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('Google Maps API request failed');
             }
 
@@ -155,7 +154,7 @@ class GoogleMapsService
 
             $result = $data['results'][0] ?? null;
 
-            if (!$result) {
+            if (! $result) {
                 throw new \Exception('No results found');
             }
 
@@ -179,8 +178,9 @@ class GoogleMapsService
     /**
      * Geocode: Convert address to coordinates
      *
-     * @param string $address ที่อยู่
+     * @param  string  $address  ที่อยู่
      * @return array ข้อมูลพิกัดและที่อยู่
+     *
      * @throws \Exception
      */
     public function geocode(string $address): array
@@ -188,11 +188,11 @@ class GoogleMapsService
         $this->ensureApiKey();
 
         // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
-        if (!$this->isFeatureEnabled('geocoding')) {
+        if (! $this->isFeatureEnabled('geocoding')) {
             throw new \Exception('Geocoding feature is disabled. Please enable it in settings.');
         }
 
-        $cacheKey = "geocode:forward:" . md5($address);
+        $cacheKey = 'geocode:forward:'.md5($address);
         $cacheTTL = $this->isCacheEnabled() ? $this->getCacheTTL() : 0;
 
         $callback = function () use ($address) {
@@ -203,7 +203,7 @@ class GoogleMapsService
                 'region' => $this->settings['region'] ?? 'TH',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('Google Maps API request failed');
             }
 
@@ -215,7 +215,7 @@ class GoogleMapsService
 
             $result = $data['results'][0] ?? null;
 
-            if (!$result) {
+            if (! $result) {
                 throw new \Exception('No results found');
             }
 
@@ -239,18 +239,19 @@ class GoogleMapsService
     /**
      * Get distance and duration between two points
      *
-     * @param array $origin จุดเริ่มต้น ['lat' => float, 'lng' => float]
-     * @param array $destination จุดหมาย ['lat' => float, 'lng' => float]
-     * @param string $mode โหมดการเดินทาง (driving, walking, bicycling, transit)
+     * @param  array  $origin  จุดเริ่มต้น ['lat' => float, 'lng' => float]
+     * @param  array  $destination  จุดหมาย ['lat' => float, 'lng' => float]
+     * @param  string  $mode  โหมดการเดินทาง (driving, walking, bicycling, transit)
      * @return array ข้อมูลระยะทาง เวลา และเส้นทาง
+     *
      * @throws \Exception
      */
-    public function getDirections(array $origin, array $destination, string $mode = null): array
+    public function getDirections(array $origin, array $destination, ?string $mode = null): array
     {
         $this->ensureApiKey();
 
         // ตรวจสอบว่าฟีเจอร์เปิดใช้งานหรือไม่
-        if (!$this->isFeatureEnabled('directions')) {
+        if (! $this->isFeatureEnabled('directions')) {
             throw new \Exception('Directions feature is disabled. Please enable it in settings.');
         }
 
@@ -271,7 +272,7 @@ class GoogleMapsService
                 'language' => 'th',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('Google Maps API request failed');
             }
 
@@ -284,7 +285,7 @@ class GoogleMapsService
             $route = $data['routes'][0] ?? null;
             $leg = $route['legs'][0] ?? null;
 
-            if (!$leg) {
+            if (! $leg) {
                 throw new \Exception('No route found');
             }
 
@@ -299,7 +300,7 @@ class GoogleMapsService
                 ],
                 'start_address' => $leg['start_address'],
                 'end_address' => $leg['end_address'],
-                'steps' => collect($leg['steps'])->map(fn($step) => [
+                'steps' => collect($leg['steps'])->map(fn ($step) => [
                     'distance' => $step['distance'],
                     'duration' => $step['duration'],
                     'instruction' => $step['html_instructions'],
@@ -317,8 +318,8 @@ class GoogleMapsService
     {
         $this->ensureApiKey();
 
-        $originsStr = collect($origins)->map(fn($o) => "{$o['lat']},{$o['lng']}")->implode('|');
-        $destsStr = collect($destinations)->map(fn($d) => "{$d['lat']},{$d['lng']}")->implode('|');
+        $originsStr = collect($origins)->map(fn ($o) => "{$o['lat']},{$o['lng']}")->implode('|');
+        $destsStr = collect($destinations)->map(fn ($d) => "{$d['lat']},{$d['lng']}")->implode('|');
 
         $response = Http::get("{$this->baseUrl}/distancematrix/json", [
             'origins' => $originsStr,
@@ -328,7 +329,7 @@ class GoogleMapsService
             'language' => 'th',
         ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception('Google Maps API request failed');
         }
 
@@ -341,8 +342,8 @@ class GoogleMapsService
         return [
             'origin_addresses' => $data['origin_addresses'],
             'destination_addresses' => $data['destination_addresses'],
-            'rows' => collect($data['rows'])->map(fn($row) => [
-                'elements' => collect($row['elements'])->map(fn($el) => [
+            'rows' => collect($data['rows'])->map(fn ($row) => [
+                'elements' => collect($row['elements'])->map(fn ($el) => [
                     'status' => $el['status'],
                     'distance' => $el['distance'] ?? null,
                     'duration' => $el['duration'] ?? null,
@@ -368,7 +369,7 @@ class GoogleMapsService
                 'fields' => 'name,formatted_address,geometry,address_components,type,rating,user_ratings_total,photos',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw new \Exception('Google Maps API request failed');
             }
 
@@ -432,7 +433,7 @@ class GoogleMapsService
             'language' => 'th',
         ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             throw new \Exception('Google Maps API request failed');
         }
 
@@ -442,7 +443,7 @@ class GoogleMapsService
             throw new \Exception("Nearby search failed: {$data['status']}");
         }
 
-        return collect($data['results'])->map(fn($place) => [
+        return collect($data['results'])->map(fn ($place) => [
             'place_id' => $place['place_id'],
             'name' => $place['name'],
             'vicinity' => $place['vicinity'],
@@ -562,7 +563,7 @@ class GoogleMapsService
 
         return [
             'has_key' => true,
-            'api_key_preview' => substr($this->apiKey, 0, 10) . '...',
+            'api_key_preview' => substr($this->apiKey, 0, 10).'...',
             'apis' => $apis,
             'summary' => [
                 'total' => count($apis),
@@ -639,7 +640,7 @@ class GoogleMapsService
             $data = $response->json();
             $results['places'] = [
                 'status' => $data['status'] === 'OK' || $data['status'] === 'ZERO_RESULTS' ? 'enabled' : 'disabled',
-                'error' => !in_array($data['status'], ['OK', 'ZERO_RESULTS']) ? $data['error_message'] ?? $data['status'] : null,
+                'error' => ! in_array($data['status'], ['OK', 'ZERO_RESULTS']) ? $data['error_message'] ?? $data['status'] : null,
             ];
         } catch (\Exception $e) {
             $results['places'] = ['status' => 'error', 'error' => $e->getMessage()];

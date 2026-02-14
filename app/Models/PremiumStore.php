@@ -29,7 +29,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $featured_badge
  * @property string|null $featured_label
  * @property string|null $rejection_reason
- *
  * @property-read VendorStore $store
  * @property-read User|null $approver
  */
@@ -192,7 +191,6 @@ class PremiumStore extends Model
     /**
      * คำนวณคะแนน AI สำหรับร้านค้า
      *
-     * @param VendorStore $store
      * @return array{score: float, criteria: array}
      */
     public static function calculateAiScore(VendorStore $store): array
@@ -270,9 +268,6 @@ class PremiumStore extends Model
 
     /**
      * เสนอร้านค้าเป็น Premium โดย AI
-     *
-     * @param VendorStore $store
-     * @return static|null
      */
     public static function nominateByAi(VendorStore $store): ?static
     {

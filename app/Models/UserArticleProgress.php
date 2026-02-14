@@ -53,7 +53,7 @@ class UserArticleProgress extends Model
      */
     public function markAsStarted()
     {
-        if (!$this->started_at) {
+        if (! $this->started_at) {
             $this->started_at = now();
         }
 
@@ -104,20 +104,20 @@ class UserArticleProgress extends Model
     public function getFormattedTimeSpentAttribute()
     {
         if ($this->time_spent < 60) {
-            return $this->time_spent . ' วินาที';
+            return $this->time_spent.' วินาที';
         }
 
         $minutes = floor($this->time_spent / 60);
         $seconds = $this->time_spent % 60;
 
         if ($minutes < 60) {
-            return $minutes . ' นาที';
+            return $minutes.' นาที';
         }
 
         $hours = floor($minutes / 60);
         $remainingMinutes = $minutes % 60;
 
-        return $hours . ' ชั่วโมง ' . $remainingMinutes . ' นาที';
+        return $hours.' ชั่วโมง '.$remainingMinutes.' นาที';
     }
 
     /**

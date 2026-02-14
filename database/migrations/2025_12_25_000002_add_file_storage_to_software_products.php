@@ -17,14 +17,12 @@ return new class extends Migration
      * 2. AWS S3 (Object Storage)
      * 3. Google Drive API (Direct Upload)
      * 4. Local Server (≤10MB, .zip only)
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('software_products', function (Blueprint $table) {
             // Storage Type (url, s3, google_drive, local)
-            $this->safeAddColumn($table, 'software_products', 'storage_type', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'storage_type', function ($table) {
                 $table->enum('storage_type', ['url', 's3', 'google_drive', 'local'])
                     ->default('local')
                     ->after('is_customizable')
@@ -32,7 +30,7 @@ return new class extends Migration
             });
 
             // URL Link (for URL type)
-            $this->safeAddColumn($table, 'software_products', 'file_url', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'file_url', function ($table) {
                 $table->text('file_url')
                     ->nullable()
                     ->after('storage_type')
@@ -40,21 +38,21 @@ return new class extends Migration
             });
 
             // S3 Path (for S3 type)
-            $this->safeAddColumn($table, 'software_products', 's3_bucket', function($table) {
+            $this->safeAddColumn($table, 'software_products', 's3_bucket', function ($table) {
                 $table->string('s3_bucket')
                     ->nullable()
                     ->after('file_url')
                     ->comment('AWS S3 Bucket Name');
             });
 
-            $this->safeAddColumn($table, 'software_products', 's3_key', function($table) {
+            $this->safeAddColumn($table, 'software_products', 's3_key', function ($table) {
                 $table->string('s3_key')
                     ->nullable()
                     ->after('s3_bucket')
                     ->comment('AWS S3 Object Key (Path)');
             });
 
-            $this->safeAddColumn($table, 'software_products', 's3_region', function($table) {
+            $this->safeAddColumn($table, 'software_products', 's3_region', function ($table) {
                 $table->string('s3_region')
                     ->nullable()
                     ->after('s3_key')
@@ -62,7 +60,7 @@ return new class extends Migration
             });
 
             // Google Drive (for google_drive type)
-            $this->safeAddColumn($table, 'software_products', 'google_drive_file_id', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'google_drive_file_id', function ($table) {
                 $table->string('google_drive_file_id')
                     ->nullable()
                     ->after('s3_region')
@@ -70,7 +68,7 @@ return new class extends Migration
             });
 
             // Local Server (for local type)
-            $this->safeAddColumn($table, 'software_products', 'local_file_path', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'local_file_path', function ($table) {
                 $table->string('local_file_path')
                     ->nullable()
                     ->after('google_drive_file_id')
@@ -78,28 +76,28 @@ return new class extends Migration
             });
 
             // File Metadata
-            $this->safeAddColumn($table, 'software_products', 'file_size', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'file_size', function ($table) {
                 $table->bigInteger('file_size')
                     ->nullable()
                     ->after('local_file_path')
                     ->comment('ขนาดไฟล์ (bytes)');
             });
 
-            $this->safeAddColumn($table, 'software_products', 'file_name', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'file_name', function ($table) {
                 $table->string('file_name')
                     ->nullable()
                     ->after('file_size')
                     ->comment('ชื่อไฟล์ต้นฉบับ');
             });
 
-            $this->safeAddColumn($table, 'software_products', 'file_extension', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'file_extension', function ($table) {
                 $table->string('file_extension', 10)
                     ->nullable()
                     ->after('file_name')
                     ->comment('นามสกุลไฟล์ (เช่น zip)');
             });
 
-            $this->safeAddColumn($table, 'software_products', 'file_mime_type', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'file_mime_type', function ($table) {
                 $table->string('file_mime_type')
                     ->nullable()
                     ->after('file_extension')
@@ -107,14 +105,14 @@ return new class extends Migration
             });
 
             // Upload Metadata
-            $this->safeAddColumn($table, 'software_products', 'uploaded_at', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'uploaded_at', function ($table) {
                 $table->timestamp('uploaded_at')
                     ->nullable()
                     ->after('file_mime_type')
                     ->comment('วันที่อัพโหลดไฟล์');
             });
 
-            $this->safeAddColumn($table, 'software_products', 'uploaded_by', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'uploaded_by', function ($table) {
                 $table->foreignId('uploaded_by')
                     ->nullable()
                     ->after('uploaded_at')
@@ -124,14 +122,14 @@ return new class extends Migration
             });
 
             // Download Stats
-            $this->safeAddColumn($table, 'software_products', 'download_count', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'download_count', function ($table) {
                 $table->integer('download_count')
                     ->default(0)
                     ->after('uploaded_by')
                     ->comment('จำนวนครั้งที่ดาวน์โหลด');
             });
 
-            $this->safeAddColumn($table, 'software_products', 'last_downloaded_at', function($table) {
+            $this->safeAddColumn($table, 'software_products', 'last_downloaded_at', function ($table) {
                 $table->timestamp('last_downloaded_at')
                     ->nullable()
                     ->after('download_count')
@@ -146,8 +144,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ File Storage
-     *
-     * @return void
      */
     public function down(): void
     {

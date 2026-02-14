@@ -22,34 +22,34 @@ return new class extends Migration
     {
         Schema::table('fortune_readings', function (Blueprint $table) {
             // สถานะ conversation: new, basic_done, collecting_birthdate, collecting_questions, pending_payment, paid, completed
-            if (!Schema::hasColumn('fortune_readings', 'conversation_status')) {
+            if (! Schema::hasColumn('fortune_readings', 'conversation_status')) {
                 $table->string('conversation_status', 30)->default('new')->after('reading_type');
             }
 
             // เก็บ state ของ conversation (คำถามที่เก็บไว้, ข้อมูลอื่นๆ)
-            if (!Schema::hasColumn('fortune_readings', 'conversation_state')) {
+            if (! Schema::hasColumn('fortune_readings', 'conversation_state')) {
                 $table->json('conversation_state')->nullable()->after('conversation_status');
             }
 
             // เชื่อมกับ unique_payment_amounts table
-            if (!Schema::hasColumn('fortune_readings', 'unique_payment_amount_id')) {
+            if (! Schema::hasColumn('fortune_readings', 'unique_payment_amount_id')) {
                 $table->unsignedBigInteger('unique_payment_amount_id')->nullable()->after('sms_notification_id');
             }
 
             // คำทำนายพื้นฐาน (ฟรี) แยกจากคำทำนายละเอียด
-            if (!Schema::hasColumn('fortune_readings', 'basic_response')) {
+            if (! Schema::hasColumn('fortune_readings', 'basic_response')) {
                 $table->text('basic_response')->nullable()->after('ai_response');
             }
 
             // คำทำนายละเอียด (เสียเงิน)
-            if (!Schema::hasColumn('fortune_readings', 'deep_response')) {
+            if (! Schema::hasColumn('fortune_readings', 'deep_response')) {
                 $table->text('deep_response')->nullable()->after('basic_response');
             }
 
             // Index สำหรับค้นหา pending payments
             $indexName = 'fr_conv_status_fb_user_idx';
             $indexNames = collect(Schema::getIndexes('fortune_readings'))->pluck('name')->toArray();
-            if (!in_array($indexName, $indexNames)) {
+            if (! in_array($indexName, $indexNames)) {
                 $table->index(['conversation_status', 'facebook_user_id'], $indexName);
             }
         });

@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_projects
      * เก็บโปรเจกต์สร้างวีดีโอแต่ละรายการ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -38,7 +36,7 @@ return new class extends Migration
                 'publishing',   // กำลังโพส
                 'published',    // โพสแล้ว
                 'failed',       // ล้มเหลว
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('draft')->index();
 
             // === Music Configuration (Override Template) ===
@@ -139,8 +137,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_projects
-     *
-     * @return void
      */
     public function down(): void
     {

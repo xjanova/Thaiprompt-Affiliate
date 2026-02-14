@@ -14,7 +14,9 @@ class TurnstileHelper
      * สถานะการตั้งค่า Turnstile
      */
     public const STATUS_DISABLED = 'disabled';           // ปิดใช้งาน (ปลอดภัย)
+
     public const STATUS_ACTIVE = 'active';               // เปิดใช้งานและตั้งค่าครบ (ปลอดภัย)
+
     public const STATUS_MISCONFIGURED = 'misconfigured'; // เปิดแต่ไม่มี keys (อันตราย!)
 
     /**
@@ -29,7 +31,7 @@ class TurnstileHelper
         $secretKey = config('turnstile.secret_key', '');
 
         // ถ้าปิดใช้งาน - OK
-        if (!$enabled) {
+        if (! $enabled) {
             return self::STATUS_DISABLED;
         }
 
@@ -64,8 +66,6 @@ class TurnstileHelper
 
     /**
      * ตรวจสอบว่า Turnstile ปิดใช้งานหรือไม่
-     *
-     * @return bool
      */
     public static function isDisabled(): bool
     {
@@ -111,8 +111,6 @@ class TurnstileHelper
 
     /**
      * รับรายละเอียดการตั้งค่าทั้งหมด
-     *
-     * @return array
      */
     public static function getConfigDetails(): array
     {
@@ -121,9 +119,9 @@ class TurnstileHelper
 
         return [
             'enabled' => config('turnstile.enabled', false),
-            'site_key_configured' => !empty($siteKey),
-            'secret_key_configured' => !empty($secretKey),
-            'site_key_preview' => !empty($siteKey) ? substr($siteKey, 0, 8) . '***' : '(ไม่ได้ตั้งค่า)',
+            'site_key_configured' => ! empty($siteKey),
+            'secret_key_configured' => ! empty($secretKey),
+            'site_key_preview' => ! empty($siteKey) ? substr($siteKey, 0, 8).'***' : '(ไม่ได้ตั้งค่า)',
             'bypass_admin' => config('turnstile.bypass_admin', true),
             'theme' => config('turnstile.theme', 'auto'),
             'size' => config('turnstile.size', 'normal'),

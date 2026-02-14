@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง user_notifications
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -44,7 +42,7 @@ return new class extends Migration
                 'wallet',
                 'promotion',
                 'system',
-                'ticket'
+                'ticket',
             ])->default('general');
 
             // ไอคอนและรูปภาพ
@@ -70,8 +68,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง user_notifications
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 /**
  * CoinPurchase Model
@@ -196,8 +196,6 @@ class CoinPurchase extends Model
 
     /**
      * ผู้ซื้อ
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -206,8 +204,6 @@ class CoinPurchase extends Model
 
     /**
      * สินค้า
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -216,8 +212,6 @@ class CoinPurchase extends Model
 
     /**
      * Admin ผู้ดำเนินการ
-     *
-     * @return BelongsTo
      */
     public function processor(): BelongsTo
     {
@@ -226,8 +220,6 @@ class CoinPurchase extends Model
 
     /**
      * Admin ผู้คืนเงิน
-     *
-     * @return BelongsTo
      */
     public function refunder(): BelongsTo
     {
@@ -240,8 +232,6 @@ class CoinPurchase extends Model
 
     /**
      * ข้อมูลสถานะ
-     *
-     * @return array
      */
     public function getStatusInfoAttribute(): array
     {
@@ -250,8 +240,6 @@ class CoinPurchase extends Model
 
     /**
      * ชื่อสถานะ
-     *
-     * @return string
      */
     public function getStatusNameAttribute(): string
     {
@@ -260,8 +248,6 @@ class CoinPurchase extends Model
 
     /**
      * สีสถานะ
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
@@ -270,8 +256,6 @@ class CoinPurchase extends Model
 
     /**
      * ไอคอนสถานะ
-     *
-     * @return string
      */
     public function getStatusIconAttribute(): string
     {
@@ -280,12 +264,10 @@ class CoinPurchase extends Model
 
     /**
      * หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function getIsExpiredAttribute(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return false;
         }
 
@@ -294,19 +276,15 @@ class CoinPurchase extends Model
 
     /**
      * ใช้งานได้หรือไม่
-     *
-     * @return bool
      */
     public function getIsUsableAttribute(): bool
     {
         return $this->status === 'completed'
-            && !$this->is_expired;
+            && ! $this->is_expired;
     }
 
     /**
      * คืนเงินได้หรือไม่
-     *
-     * @return bool
      */
     public function getIsRefundableAttribute(): bool
     {
@@ -316,8 +294,6 @@ class CoinPurchase extends Model
 
     /**
      * ข้อมูลประเภทสินค้า
-     *
-     * @return array
      */
     public function getProductTypeInfoAttribute(): array
     {
@@ -326,8 +302,6 @@ class CoinPurchase extends Model
 
     /**
      * วันที่ซื้อ (ภาษาไทย)
-     *
-     * @return string
      */
     public function getPurchaseDateThaiAttribute(): string
     {
@@ -336,8 +310,6 @@ class CoinPurchase extends Model
 
     /**
      * วันหมดอายุ (ภาษาไทย)
-     *
-     * @return string|null
      */
     public function getExpiryDateThaiAttribute(): ?string
     {
@@ -346,8 +318,6 @@ class CoinPurchase extends Model
 
     /**
      * ราคาสุทธิ
-     *
-     * @return float
      */
     public function getNetPriceAttribute(): float
     {
@@ -434,37 +404,33 @@ class CoinPurchase extends Model
 
     /**
      * สร้างเลขที่ใบสั่งซื้อ
-     *
-     * @return string
      */
     public static function generateOrderNumber(): string
     {
-        $prefix = 'VC' . date('Ymd');
+        $prefix = 'VC'.date('Ymd');
         $random = strtoupper(Str::random(6));
-        return $prefix . $random;
+
+        return $prefix.$random;
     }
 
     /**
      * สร้างรหัสใช้งาน
-     *
-     * @return string
      */
     public static function generateRedemptionCode(): string
     {
-        return strtoupper(Str::random(4) . '-' . Str::random(4) . '-' . Str::random(4));
+        return strtoupper(Str::random(4).'-'.Str::random(4).'-'.Str::random(4));
     }
 
     /**
      * ทำเครื่องหมายว่าใช้งานแล้ว
      *
-     * @param string|null $note หมายเหตุ
-     * @param string|null $location สถานที่
-     * @param array|null $data ข้อมูลเพิ่มเติม
-     * @return bool
+     * @param  string|null  $note  หมายเหตุ
+     * @param  string|null  $location  สถานที่
+     * @param  array|null  $data  ข้อมูลเพิ่มเติม
      */
     public function markAsUsed(?string $note = null, ?string $location = null, ?array $data = null): bool
     {
-        if (!$this->is_usable) {
+        if (! $this->is_usable) {
             return false;
         }
 
@@ -481,12 +447,10 @@ class CoinPurchase extends Model
 
     /**
      * ทำเครื่องหมายว่าหมดอายุ
-     *
-     * @return bool
      */
     public function markAsExpired(): bool
     {
-        if (!$this->is_expired) {
+        if (! $this->is_expired) {
             return false;
         }
 
@@ -501,12 +465,11 @@ class CoinPurchase extends Model
     /**
      * ยกเลิกการสั่งซื้อ
      *
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  string|null  $reason  เหตุผล
      */
     public function cancel(?string $reason = null): bool
     {
-        if (!in_array($this->status, ['pending', 'processing'])) {
+        if (! in_array($this->status, ['pending', 'processing'])) {
             return false;
         }
 
@@ -526,14 +489,13 @@ class CoinPurchase extends Model
     /**
      * คืนเงิน
      *
-     * @param int $adminId Admin ผู้คืนเงิน
-     * @param string|null $reason เหตุผล
-     * @param float|null $amount จำนวนที่คืน (null = คืนทั้งหมด)
-     * @return bool
+     * @param  int  $adminId  Admin ผู้คืนเงิน
+     * @param  string|null  $reason  เหตุผล
+     * @param  float|null  $amount  จำนวนที่คืน (null = คืนทั้งหมด)
      */
     public function refund(int $adminId, ?string $reason = null, ?float $amount = null): bool
     {
-        if (!$this->is_refundable) {
+        if (! $this->is_refundable) {
             return false;
         }
 
@@ -550,7 +512,7 @@ class CoinPurchase extends Model
         // คืน Coins ให้ผู้ใช้
         $videoCoin = $this->user->videoCoin;
         if ($videoCoin) {
-            $videoCoin->addBalance($refundAmount, 'คืน Coins จากการคืนสินค้า #' . $this->order_number);
+            $videoCoin->addBalance($refundAmount, 'คืน Coins จากการคืนสินค้า #'.$this->order_number);
         }
 
         // คืนสต็อกให้สินค้า
@@ -564,14 +526,13 @@ class CoinPurchase extends Model
     /**
      * อัพเดทสถานะ
      *
-     * @param string $status สถานะใหม่
-     * @param string|null $note หมายเหตุ
-     * @param int|null $adminId Admin ผู้ดำเนินการ
-     * @return bool
+     * @param  string  $status  สถานะใหม่
+     * @param  string|null  $note  หมายเหตุ
+     * @param  int|null  $adminId  Admin ผู้ดำเนินการ
      */
     public function updateStatus(string $status, ?string $note = null, ?int $adminId = null): bool
     {
-        if (!isset(self::STATUSES[$status])) {
+        if (! isset(self::STATUSES[$status])) {
             return false;
         }
 
@@ -587,9 +548,7 @@ class CoinPurchase extends Model
     /**
      * ตั้งค่าข้อมูลจัดส่ง
      *
-     * @param string $trackingNumber เลขพัสดุ
-     * @param int|null $adminId
-     * @return bool
+     * @param  string  $trackingNumber  เลขพัสดุ
      */
     public function setShipped(string $trackingNumber, ?int $adminId = null): bool
     {
@@ -606,8 +565,6 @@ class CoinPurchase extends Model
 
     /**
      * ตั้งค่าได้รับสินค้าแล้ว
-     *
-     * @return bool
      */
     public function setDelivered(): bool
     {

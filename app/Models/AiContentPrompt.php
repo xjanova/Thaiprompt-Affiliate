@@ -181,9 +181,6 @@ class AiContentPrompt extends Model
 
     /**
      * สร้าง Prompt จาก Variables
-     *
-     * @param array $variables
-     * @return string
      */
     public function buildPrompt(array $variables): string
     {
@@ -207,8 +204,6 @@ class AiContentPrompt extends Model
 
     /**
      * อัพเดทคะแนนเฉลี่ย
-     *
-     * @param float $newRating
      */
     public function updateAverageRating(float $newRating): void
     {

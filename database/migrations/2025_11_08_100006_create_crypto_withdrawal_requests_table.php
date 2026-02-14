@@ -54,7 +54,7 @@ return new class extends Migration
                 'completed',         // Fully completed
                 'rejected',          // Rejected by admin
                 'cancelled',         // Cancelled by user
-                'failed'             // Transaction failed
+                'failed',             // Transaction failed
             ])->default('pending');
 
             // Approval workflow

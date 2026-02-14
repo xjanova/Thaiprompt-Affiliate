@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Accounting;
 
 use App\Http\Controllers\Controller;
-use App\Models\AccountingInvoice;
-use App\Models\AccountingExpense;
 use App\Models\AccountingContact;
+use App\Models\AccountingExpense;
+use App\Models\AccountingInvoice;
 use App\Models\AccountingProduct;
 use App\Models\AccountingSetting;
 use Illuminate\Http\Request;
@@ -31,7 +31,7 @@ class AccountingDashboardController extends Controller
             ['is_enabled' => true]
         );
 
-        if (!$settings->is_enabled) {
+        if (! $settings->is_enabled) {
             return redirect()->route('admin.accounting.setup')->with('info', 'กรุณาตั้งค่าระบบบัญชีก่อนใช้งาน');
         }
 
@@ -134,7 +134,7 @@ class AccountingDashboardController extends Controller
         );
 
         // Create default company if not exists
-        if (!$user->accountingCompanies()->exists()) {
+        if (! $user->accountingCompanies()->exists()) {
             $user->accountingCompanies()->create([
                 'name' => $user->name,
                 'email' => $user->email,

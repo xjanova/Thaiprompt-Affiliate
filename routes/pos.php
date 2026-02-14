@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Pos\PosCashierController;
 use App\Http\Controllers\Pos\PosApiController;
+use App\Http\Controllers\Pos\PosCashierController;
 use Illuminate\Support\Facades\Route;
 
 /*

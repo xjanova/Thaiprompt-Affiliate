@@ -18,23 +18,23 @@ class CheckTokenOwnership
     {
         $tokenId = $request->route('id') ?? $request->route('token');
 
-        if (!$tokenId) {
+        if (! $tokenId) {
             return response()->json(['error' => 'Token ID not found'], 400);
         }
 
         $token = TPIXToken::find($tokenId);
 
-        if (!$token) {
+        if (! $token) {
             return response()->json(['error' => 'Token not found'], 404);
         }
 
         $user = $request->user();
 
         // Check if user is owner or admin
-        if ($token->creator_id !== $user->id && !$user->hasRole('admin')) {
+        if ($token->creator_id !== $user->id && ! $user->hasRole('admin')) {
             return response()->json([
                 'error' => 'Unauthorized',
-                'message' => 'You do not own this token'
+                'message' => 'You do not own this token',
             ], 403);
         }
 

@@ -16,6 +16,7 @@ class SendFoodPassportNotificationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 60;
 
     /**
@@ -35,10 +36,11 @@ class SendFoodPassportNotificationJob implements ShouldQueue
         try {
             $user = User::find($this->userId);
 
-            if (!$user) {
+            if (! $user) {
                 Log::warning('User not found for notification', [
                     'user_id' => $this->userId,
                 ]);
+
                 return;
             }
 
@@ -75,7 +77,7 @@ class SendFoodPassportNotificationJob implements ShouldQueue
      */
     protected function buildNotification(): mixed
     {
-        return match($this->notificationType) {
+        return match ($this->notificationType) {
             'product_created' => new \App\Notifications\FoodPassport\ProductCreatedNotification($this->data),
             'journey_stage_completed' => new \App\Notifications\FoodPassport\StageCompletedNotification($this->data),
             'quality_failed' => new \App\Notifications\FoodPassport\QualityFailedNotification($this->data),

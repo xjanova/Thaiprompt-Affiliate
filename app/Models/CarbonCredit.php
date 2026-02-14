@@ -104,7 +104,7 @@ class CarbonCredit extends Model
     {
         return $this->tradeable
             && $this->status === 'active'
-            && !$this->isExpired();
+            && ! $this->isExpired();
     }
 
     /**

@@ -2,14 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\RoomType;
 use App\Models\HotelSpecialOffer;
+use App\Models\RoomType;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
 class HotelPricingService
 {
     protected $taxRate = 7; // 7% VAT
+
     protected $serviceChargeRate = 10; // 10% service charge
 
     /**
@@ -183,14 +184,14 @@ class HotelPricingService
             ->active()
             ->first();
 
-        if (!$offer) {
+        if (! $offer) {
             return 0;
         }
 
         // Validate offer
         $nights = Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut));
 
-        if (!$offer->isValid($checkIn, $checkOut, $roomType->id, $subtotal)) {
+        if (! $offer->isValid($checkIn, $checkOut, $roomType->id, $subtotal)) {
             return 0;
         }
 
@@ -232,6 +233,7 @@ class HotelPricingService
     public function setTaxRate($rate)
     {
         $this->taxRate = $rate;
+
         return $this;
     }
 
@@ -241,6 +243,7 @@ class HotelPricingService
     public function setServiceChargeRate($rate)
     {
         $this->serviceChargeRate = $rate;
+
         return $this;
     }
 

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\UnifiedReportExport;
 use App\Http\Controllers\Controller;
 use App\Services\UnifiedReportService;
-use App\Exports\UnifiedReportExport;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -25,15 +25,10 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class UnifiedReportController extends Controller
 {
-    /**
-     * @var UnifiedReportService
-     */
     protected UnifiedReportService $reportService;
 
     /**
      * สร้าง controller พร้อม inject service
-     *
-     * @param UnifiedReportService $reportService
      */
     public function __construct(UnifiedReportService $reportService)
     {
@@ -59,7 +54,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงานภาพรวมผู้บริหาร (Executive Summary)
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function executive(Request $request)
@@ -92,7 +86,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน MLM/Affiliate
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function mlm(Request $request)
@@ -117,7 +110,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน E-commerce
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function ecommerce(Request $request)
@@ -142,7 +134,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงานการเงิน/กระเป๋าเงิน
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function finance(Request $request)
@@ -167,7 +158,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน AI Bot
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function aiBot(Request $request)
@@ -192,7 +182,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงานโรงแรม
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function hotel(Request $request)
@@ -217,7 +206,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน POS
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function pos(Request $request)
@@ -242,7 +230,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน Crypto/TPIX
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function crypto(Request $request)
@@ -267,7 +254,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงาน HRM/บุคลากร
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function hrm(Request $request)
@@ -292,7 +278,6 @@ class UnifiedReportController extends Controller
     /**
      * รายงานการเรียนรู้
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function learning(Request $request)
@@ -317,7 +302,6 @@ class UnifiedReportController extends Controller
     /**
      * ข้อมูลแนวโน้ม (AJAX endpoint สำหรับกราฟ)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function trends(Request $request)
@@ -336,8 +320,7 @@ class UnifiedReportController extends Controller
     /**
      * ส่งออกรายงานเป็น Excel
      *
-     * @param Request $request
-     * @param string $type ประเภทรายงาน
+     * @param  string  $type  ประเภทรายงาน
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function export(Request $request, string $type = 'executive')
@@ -361,7 +344,7 @@ class UnifiedReportController extends Controller
             default => $this->reportService->getExecutiveSummary($period, $startDate, $endDate),
         };
 
-        $filename = "report-{$type}-" . now()->format('Y-m-d-His') . '.xlsx';
+        $filename = "report-{$type}-".now()->format('Y-m-d-His').'.xlsx';
 
         return Excel::download(new UnifiedReportExport($type, $data, $period), $filename);
     }
@@ -369,8 +352,7 @@ class UnifiedReportController extends Controller
     /**
      * ส่งออกรายงานเป็น CSV (fallback)
      *
-     * @param Request $request
-     * @param string $type ประเภทรายงาน
+     * @param  string  $type  ประเภทรายงาน
      * @return \Illuminate\Http\Response
      */
     public function exportCsv(Request $request, string $type = 'executive')
@@ -388,7 +370,7 @@ class UnifiedReportController extends Controller
             default => $this->reportService->getExecutiveSummary($period, $startDate, $endDate),
         };
 
-        $filename = "report-{$type}-" . now()->format('Y-m-d') . '.csv';
+        $filename = "report-{$type}-".now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -399,7 +381,7 @@ class UnifiedReportController extends Controller
             $file = fopen('php://output', 'w');
 
             // UTF-8 BOM สำหรับ Excel
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header ตามประเภทรายงาน
             $this->writeCsvHeaders($file, $type);
@@ -416,9 +398,7 @@ class UnifiedReportController extends Controller
     /**
      * เขียน header ของ CSV ตามประเภทรายงาน
      *
-     * @param resource $file
-     * @param string $type
-     * @return void
+     * @param  resource  $file
      */
     protected function writeCsvHeaders($file, string $type): void
     {
@@ -436,10 +416,7 @@ class UnifiedReportController extends Controller
     /**
      * เขียนข้อมูล CSV ตามประเภทรายงาน
      *
-     * @param resource $file
-     * @param array $data
-     * @param string $type
-     * @return void
+     * @param  resource  $file
      */
     protected function writeCsvData($file, array $data, string $type): void
     {
@@ -474,10 +451,7 @@ class UnifiedReportController extends Controller
     /**
      * แปลง array เป็น CSV แบบ recursive
      *
-     * @param resource $file
-     * @param array $data
-     * @param string $prefix
-     * @return void
+     * @param  resource  $file
      */
     protected function flattenArrayToCsv($file, array $data, string $prefix = ''): void
     {
@@ -502,7 +476,6 @@ class UnifiedReportController extends Controller
     /**
      * Dashboard วิเคราะห์ธุรกิจ (Business Intelligence)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function businessIntelligence(Request $request)
@@ -529,7 +502,6 @@ class UnifiedReportController extends Controller
     /**
      * เปรียบเทียบช่วงเวลา (Period Comparison)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function compare(Request $request)
@@ -572,10 +544,6 @@ class UnifiedReportController extends Controller
 
     /**
      * คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง
-     *
-     * @param float $current
-     * @param float $previous
-     * @return array
      */
     protected function calculateChange(float $current, float $previous): array
     {

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บข้อมูล budget limits และ spending controls
      * ช่วยควบคุมค่าใช้จ่ายและแจ้งเตือนเมื่อใกล้เกิน budget
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -142,8 +140,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_budget_limits
-     *
-     * @return void
      */
     public function down(): void
     {

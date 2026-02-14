@@ -92,19 +92,16 @@ class VideoLevel extends Model
 
     /**
      * ดึงข้อมูลสีดาว
-     *
-     * @return array
      */
     public function getStarColorInfoAttribute(): array
     {
         $color = $this->star_color ?? 'bronze';
+
         return self::STAR_COLORS[$color] ?? self::STAR_COLORS['bronze'];
     }
 
     /**
      * ดึงชื่อสีดาวภาษาไทย
-     *
-     * @return string
      */
     public function getStarColorNameAttribute(): string
     {
@@ -113,8 +110,6 @@ class VideoLevel extends Model
 
     /**
      * ดึงค่า hex ของสีดาว
-     *
-     * @return string
      */
     public function getStarColorHexAttribute(): string
     {
@@ -123,8 +118,6 @@ class VideoLevel extends Model
 
     /**
      * ดึง Tailwind gradient class ของสีดาว
-     *
-     * @return string
      */
     public function getStarGradientClassAttribute(): string
     {
@@ -133,8 +126,6 @@ class VideoLevel extends Model
 
     /**
      * ดึงดาวเป็น HTML (สำหรับแสดงใน view)
-     *
-     * @return string
      */
     public function getStarsHtmlAttribute(): string
     {
@@ -143,7 +134,7 @@ class VideoLevel extends Model
         $html = '';
 
         for ($i = 0; $i < $stars; $i++) {
-            $html .= '<svg class="w-5 h-5 inline-block" style="color: ' . $color . '" fill="currentColor" viewBox="0 0 20 20">
+            $html .= '<svg class="w-5 h-5 inline-block" style="color: '.$color.'" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
             </svg>';
         }
@@ -153,26 +144,23 @@ class VideoLevel extends Model
 
     /**
      * ดึงชื่อเต็ม (prefix + name)
-     *
-     * @return string
      */
     public function getFullNameAttribute(): string
     {
         if ($this->title_prefix) {
-            return $this->title_prefix . ' ' . $this->name;
+            return $this->title_prefix.' '.$this->name;
         }
+
         return $this->name;
     }
 
     /**
      * ดึง badge URL หรือ default
-     *
-     * @return string
      */
     public function getBadgeUrlAttribute(): string
     {
         if ($this->badge_image) {
-            return asset('storage/' . $this->badge_image);
+            return asset('storage/'.$this->badge_image);
         }
 
         // Default badge based on star color

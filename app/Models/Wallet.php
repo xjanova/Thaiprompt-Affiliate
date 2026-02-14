@@ -50,7 +50,7 @@ class Wallet extends Model
 
         static::creating(function ($wallet) {
             if (empty($wallet->wallet_address)) {
-                $wallet->wallet_address = 'TPW' . strtoupper(Str::random(16));
+                $wallet->wallet_address = 'TPW'.strtoupper(Str::random(16));
             }
         });
     }
@@ -85,7 +85,7 @@ class Wallet extends Model
     public function isActive(): bool
     {
         return $this->status === 'active' &&
-               (!$this->locked_until || $this->locked_until->isPast());
+               (! $this->locked_until || $this->locked_until->isPast());
     }
 
     /**
@@ -156,7 +156,7 @@ class Wallet extends Model
      */
     public function hasPIN(): bool
     {
-        return !empty($this->pin_hash);
+        return ! empty($this->pin_hash);
     }
 
     /**
@@ -164,7 +164,7 @@ class Wallet extends Model
      */
     public function verifyPIN(string $pin): bool
     {
-        if (!$this->hasPIN()) {
+        if (! $this->hasPIN()) {
             return false;
         }
 
@@ -186,7 +186,7 @@ class Wallet extends Model
      */
     public function getFormattedBalanceAttribute(): string
     {
-        return number_format($this->balance, 2) . ' ' . $this->currency;
+        return number_format($this->balance, 2).' '.$this->currency;
     }
 
     /**
@@ -194,7 +194,7 @@ class Wallet extends Model
      */
     public function getFormattedTotalIncomeAttribute(): string
     {
-        return number_format($this->total_income, 2) . ' ' . $this->currency;
+        return number_format($this->total_income, 2).' '.$this->currency;
     }
 
     /**
@@ -202,6 +202,6 @@ class Wallet extends Model
      */
     public function getFormattedTotalExpenseAttribute(): string
     {
-        return number_format($this->total_expense, 2) . ' ' . $this->currency;
+        return number_format($this->total_expense, 2).' '.$this->currency;
     }
 }

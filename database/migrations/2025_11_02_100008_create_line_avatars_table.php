@@ -14,6 +14,7 @@ return new class extends Migration
         // Skip if table already exists (from SQL import)
         if (Schema::hasTable('line_avatars')) {
             echo "Table line_avatars already exists, skipping...\n";
+
             return;
         }
 

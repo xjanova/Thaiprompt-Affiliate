@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EmailCampaign;
 use App\Models\EmailLog;
-use App\Models\EmailProvider;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * สถิติและการวิเคราะห์อีเมล
@@ -20,7 +19,6 @@ class EmailAnalyticsController extends Controller
     /**
      * แสดง Analytics Dashboard
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -61,10 +59,6 @@ class EmailAnalyticsController extends Controller
 
     /**
      * ดึงสถิติรวมทั้งหมด
-     *
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getOverallStats(string $startDate, string $endDate): array
     {
@@ -110,8 +104,6 @@ class EmailAnalyticsController extends Controller
     /**
      * ดึงสถิติแยกตาม Provider
      *
-     * @param string $startDate
-     * @param string $endDate
      * @return \Illuminate\Support\Collection
      */
     private function getProviderStats(string $startDate, string $endDate)
@@ -131,6 +123,7 @@ class EmailAnalyticsController extends Controller
                 $stat->success_rate = $stat->total > 0
                     ? round(($stat->sent / $stat->total) * 100, 2)
                     : 0;
+
                 return $stat;
             });
     }
@@ -138,8 +131,6 @@ class EmailAnalyticsController extends Controller
     /**
      * ดึงสถิติแยกตาม Campaign
      *
-     * @param string $startDate
-     * @param string $endDate
      * @return \Illuminate\Support\Collection
      */
     private function getCampaignStats(string $startDate, string $endDate)
@@ -160,10 +151,6 @@ class EmailAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูล Timeline สำหรับกราฟ
-     *
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
      */
     private function getTimelineData(string $startDate, string $endDate): array
     {
@@ -179,7 +166,7 @@ class EmailAnalyticsController extends Controller
             ->get();
 
         return [
-            'labels' => $data->pluck('date')->map(fn($d) => Carbon::parse($d)->format('d M'))->toArray(),
+            'labels' => $data->pluck('date')->map(fn ($d) => Carbon::parse($d)->format('d M'))->toArray(),
             'total' => $data->pluck('total')->toArray(),
             'sent' => $data->pluck('sent')->toArray(),
             'failed' => $data->pluck('failed')->toArray(),
@@ -189,8 +176,6 @@ class EmailAnalyticsController extends Controller
     /**
      * ดึง Top Campaigns ตาม Open Rate
      *
-     * @param string $startDate
-     * @param string $endDate
      * @return \Illuminate\Support\Collection
      */
     private function getTopCampaigns(string $startDate, string $endDate)
@@ -203,6 +188,7 @@ class EmailAnalyticsController extends Controller
             ->map(function ($campaign) {
                 $campaign->open_rate = $campaign->open_rate;
                 $campaign->click_rate = $campaign->click_rate;
+
                 return $campaign;
             });
     }
@@ -223,7 +209,6 @@ class EmailAnalyticsController extends Controller
     /**
      * Export Analytics เป็น CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -236,7 +221,7 @@ class EmailAnalyticsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $filename = 'email-analytics-' . $startDate . '-to-' . $endDate . '.csv';
+        $filename = 'email-analytics-'.$startDate.'-to-'.$endDate.'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

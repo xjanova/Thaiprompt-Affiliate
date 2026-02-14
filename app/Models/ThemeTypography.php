@@ -103,8 +103,6 @@ class ThemeTypography extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeSetting
-     *
-     * @return BelongsTo
      */
     public function themeSetting(): BelongsTo
     {

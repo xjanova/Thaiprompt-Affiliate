@@ -35,19 +35,28 @@ class AiInstallationLog extends Model
      * Installation statuses
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_DOWNLOADING = 'downloading';
+
     const STATUS_INSTALLING = 'installing';
+
     const STATUS_CONFIGURING = 'configuring';
+
     const STATUS_TESTING = 'testing';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**
      * Installation types
      */
     const TYPE_DEEPSEEK = 'deepseek';
+
     const TYPE_OLLAMA = 'ollama';
+
     const TYPE_CUSTOM = 'custom';
 
     /**
@@ -114,7 +123,7 @@ class AiInstallationLog extends Model
         $this->current_step = $step;
 
         if ($logOutput) {
-            $this->log_output .= "\n" . $logOutput;
+            $this->log_output .= "\n".$logOutput;
         }
 
         $this->save();
@@ -186,7 +195,7 @@ class AiInstallationLog extends Model
      */
     public function getDuration(): ?int
     {
-        if (!$this->started_at) {
+        if (! $this->started_at) {
             return null;
         }
 
@@ -202,7 +211,7 @@ class AiInstallationLog extends Model
     {
         $duration = $this->getDuration();
 
-        if (!$duration) {
+        if (! $duration) {
             return null;
         }
 

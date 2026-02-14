@@ -19,9 +19,9 @@ class FeaturedStoreController extends Controller
 
         $availableStores = VendorStore::where('is_active', true)
             ->where('is_verified', true)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('is_featured_home', false)
-                      ->orWhereNull('is_featured_home');
+                    ->orWhereNull('is_featured_home');
             })
             ->orderBy('rating_average', 'desc')
             ->get();

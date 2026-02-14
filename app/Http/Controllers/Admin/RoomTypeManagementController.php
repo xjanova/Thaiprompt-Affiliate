@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Hotel;
 use App\Models\RoomType;
 use App\Services\RoomAvailabilityService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class RoomTypeManagementController extends Controller
 {
@@ -102,7 +102,7 @@ class RoomTypeManagementController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to create room type: ' . $e->getMessage());
+                ->with('error', 'Failed to create room type: '.$e->getMessage());
         }
     }
 
@@ -184,7 +184,7 @@ class RoomTypeManagementController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update room type: ' . $e->getMessage());
+                ->with('error', 'Failed to update room type: '.$e->getMessage());
         }
     }
 

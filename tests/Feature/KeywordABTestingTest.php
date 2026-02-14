@@ -21,7 +21,9 @@ class KeywordABTestingTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private KeywordABTestService $abTestService;
+
     private LineBotKeyword $keyword;
 
     protected function setUp(): void
@@ -312,7 +314,7 @@ class KeywordABTestingTest extends TestCase
             KeywordABTestResult::create([
                 'ab_test_id' => $test->id,
                 'variant_id' => $variant->id,
-                'line_user_id' => 'U' . $i,
+                'line_user_id' => 'U'.$i,
                 'user_message' => 'test message',
                 'variant_served' => 'variant_a',
                 'response_time' => 200,
@@ -509,7 +511,7 @@ class KeywordABTestingTest extends TestCase
     {
         $test = $this->abTestService->createTest([
             'keyword_id' => $this->keyword->id,
-            'test_name' => 'Test variant ' . uniqid(),
+            'test_name' => 'Test variant '.uniqid(),
             'variant_a_percentage' => 50,
             'variant_b_percentage' => 50,
             'winning_criterion' => 'conversion_rate',
@@ -551,8 +553,8 @@ class KeywordABTestingTest extends TestCase
             KeywordABTestResult::create([
                 'ab_test_id' => $test->id,
                 'variant_id' => $variant->id,
-                'line_user_id' => 'U' . $test->id . '-' . $i,
-                'user_message' => 'test message ' . $i,
+                'line_user_id' => 'U'.$test->id.'-'.$i,
+                'user_message' => 'test message '.$i,
                 'variant_served' => $variantType,
                 'response_time' => rand(100, 500),
                 'matched' => true,

@@ -5,13 +5,15 @@ namespace App\Services\AI;
 class TextChunkingService
 {
     private int $chunkSize;
+
     private int $overlap;
+
     private string $separator;
 
     /**
-     * @param int $chunkSize Maximum characters per chunk (default 1000)
-     * @param int $overlap Characters to overlap between chunks (default 200)
-     * @param string $separator Primary separator for chunking (default paragraph)
+     * @param  int  $chunkSize  Maximum characters per chunk (default 1000)
+     * @param  int  $overlap  Characters to overlap between chunks (default 200)
+     * @param  string  $separator  Primary separator for chunking (default paragraph)
      */
     public function __construct(
         int $chunkSize = 1000,
@@ -26,7 +28,6 @@ class TextChunkingService
     /**
      * Split text into chunks with overlap
      *
-     * @param string $text
      * @return array Array of chunks with metadata
      */
     public function chunkText(string $text): array
@@ -55,7 +56,7 @@ class TextChunkingService
             // If paragraph alone is too long, split it further
             if ($paragraphLength > $this->chunkSize) {
                 // Save current chunk if not empty
-                if (!empty($currentChunk)) {
+                if (! empty($currentChunk)) {
                     $chunks[] = [
                         'content' => trim($currentChunk),
                         'start_position' => $currentStart,
@@ -76,13 +77,14 @@ class TextChunkingService
                     ];
                     $currentStart += mb_strlen($subChunk);
                 }
+
                 continue;
             }
 
             // Check if adding paragraph would exceed chunk size
             $potentialLength = mb_strlen($currentChunk) + mb_strlen($paragraph);
 
-            if ($potentialLength > $this->chunkSize && !empty($currentChunk)) {
+            if ($potentialLength > $this->chunkSize && ! empty($currentChunk)) {
                 // Save current chunk
                 $chunks[] = [
                     'content' => trim($currentChunk),
@@ -93,16 +95,16 @@ class TextChunkingService
 
                 // Start new chunk with overlap
                 $overlapText = $this->getOverlapText($currentChunk);
-                $currentChunk = $overlapText . $paragraph;
+                $currentChunk = $overlapText.$paragraph;
                 $currentStart += mb_strlen($currentChunk) - mb_strlen($overlapText);
             } else {
                 // Add paragraph to current chunk
-                $currentChunk .= ($currentChunk ? "\n\n" : '') . $paragraph;
+                $currentChunk .= ($currentChunk ? "\n\n" : '').$paragraph;
             }
         }
 
         // Add final chunk if not empty
-        if (!empty($currentChunk)) {
+        if (! empty($currentChunk)) {
             $chunks[] = [
                 'content' => trim($currentChunk),
                 'start_position' => $currentStart,
@@ -126,7 +128,7 @@ class TextChunkingService
         $text = preg_replace("/\n{3,}/", "\n\n", $text);
 
         // Remove excessive spaces
-        $text = preg_replace("/[ \t]+/", " ", $text);
+        $text = preg_replace("/[ \t]+/", ' ', $text);
 
         return trim($text);
     }
@@ -137,7 +139,8 @@ class TextChunkingService
     private function splitIntoParagraphs(string $text): array
     {
         $paragraphs = explode($this->separator, $text);
-        return array_filter($paragraphs, fn($p) => !empty(trim($p)));
+
+        return array_filter($paragraphs, fn ($p) => ! empty(trim($p)));
     }
 
     /**
@@ -155,7 +158,7 @@ class TextChunkingService
 
             // If single sentence is too long, split by character count
             if ($sentenceLength > $this->chunkSize) {
-                if (!empty($currentChunk)) {
+                if (! empty($currentChunk)) {
                     $chunks[] = $currentChunk;
                     $currentChunk = '';
                 }
@@ -163,23 +166,24 @@ class TextChunkingService
                 // Split by character count with word boundaries
                 $charChunks = $this->splitByCharCount($sentence);
                 $chunks = array_merge($chunks, $charChunks);
+
                 continue;
             }
 
             $potentialLength = mb_strlen($currentChunk) + $sentenceLength;
 
-            if ($potentialLength > $this->chunkSize && !empty($currentChunk)) {
+            if ($potentialLength > $this->chunkSize && ! empty($currentChunk)) {
                 $chunks[] = $currentChunk;
 
                 // Start new chunk with overlap
                 $overlapText = $this->getOverlapText($currentChunk);
-                $currentChunk = $overlapText . $sentence;
+                $currentChunk = $overlapText.$sentence;
             } else {
-                $currentChunk .= ($currentChunk ? ' ' : '') . $sentence;
+                $currentChunk .= ($currentChunk ? ' ' : '').$sentence;
             }
         }
 
-        if (!empty($currentChunk)) {
+        if (! empty($currentChunk)) {
             $chunks[] = $currentChunk;
         }
 
@@ -197,7 +201,7 @@ class TextChunkingService
 
         $sentences = [];
         for ($i = 0; $i < count($parts); $i += 2) {
-            if (isset($parts[$i]) && !empty(trim($parts[$i]))) {
+            if (isset($parts[$i]) && ! empty(trim($parts[$i]))) {
                 $sentence = $parts[$i];
                 if (isset($parts[$i + 1])) {
                     $sentence .= $parts[$i + 1];
@@ -206,7 +210,7 @@ class TextChunkingService
             }
         }
 
-        return array_filter($sentences, fn($s) => !empty($s));
+        return array_filter($sentences, fn ($s) => ! empty($s));
     }
 
     /**
@@ -223,15 +227,15 @@ class TextChunkingService
             $wordLength = mb_strlen($word);
             $potentialLength = mb_strlen($currentChunk) + $wordLength + 1;
 
-            if ($potentialLength > $this->chunkSize && !empty($currentChunk)) {
+            if ($potentialLength > $this->chunkSize && ! empty($currentChunk)) {
                 $chunks[] = $currentChunk;
                 $currentChunk = $word;
             } else {
-                $currentChunk .= ($currentChunk ? ' ' : '') . $word;
+                $currentChunk .= ($currentChunk ? ' ' : '').$word;
             }
         }
 
-        if (!empty($currentChunk)) {
+        if (! empty($currentChunk)) {
             $chunks[] = $currentChunk;
         }
 
@@ -261,7 +265,7 @@ class TextChunkingService
             $overlapText = mb_substr($overlapText, $lastSentenceEnd + 1);
         }
 
-        return trim($overlapText) . ' ';
+        return trim($overlapText).' ';
     }
 
     /**
@@ -285,6 +289,7 @@ class TextChunkingService
 
         return array_map(function ($chunk) {
             $chunk['token_count'] = $this->estimateTokens($chunk['content']);
+
             return $chunk;
         }, $chunks);
     }

@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use App\Models\BlockedIp;
 use App\Models\SecurityLog;
-use App\Models\ThreatIp;
 use App\Models\Setting;
+use App\Models\ThreatIp;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,65 +30,65 @@ class CheckBlockedIp
 
             // Check if IP is blocked manually
             if (BlockedIp::isBlocked($ip)) {
-            // Get the blocked IP record to get the reason
-            $blockedRecord = BlockedIp::where('ip_address', $ip)
-                ->where('type', 'blacklist')
-                ->where('is_active', true)
-                ->first();
+                // Get the blocked IP record to get the reason
+                $blockedRecord = BlockedIp::where('ip_address', $ip)
+                    ->where('type', 'blacklist')
+                    ->where('is_active', true)
+                    ->first();
 
-            // Log the blocked attempt
-            SecurityLog::logEvent(
-                eventType: 'blocked_ip_attempt',
-                ipAddress: $ip,
-                severity: 'high',
-                description: 'Blocked IP attempted to access the application',
-                userAgent: $request->userAgent(),
-                metadata: [
-                    'url' => $request->fullUrl(),
-                    'method' => $request->method(),
-                ]
-            );
+                // Log the blocked attempt
+                SecurityLog::logEvent(
+                    eventType: 'blocked_ip_attempt',
+                    ipAddress: $ip,
+                    severity: 'high',
+                    description: 'Blocked IP attempted to access the application',
+                    userAgent: $request->userAgent(),
+                    metadata: [
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                    ]
+                );
 
-            // Return 403 Forbidden
-            return response()->view('errors.blocked', [
-                'message' => 'Your IP address has been blocked due to security reasons.',
-                'ip' => $ip,
-                'reason' => $blockedRecord?->reason,
-            ], 403);
-        }
+                // Return 403 Forbidden
+                return response()->view('errors.blocked', [
+                    'message' => 'Your IP address has been blocked due to security reasons.',
+                    'ip' => $ip,
+                    'reason' => $blockedRecord?->reason,
+                ], 403);
+            }
 
-        // Check Threat Intelligence if enabled
-        if ($this->shouldBlockThreatIp($ip)) {
-            $threatInfo = ThreatIp::getThreatInfo($ip);
+            // Check Threat Intelligence if enabled
+            if ($this->shouldBlockThreatIp($ip)) {
+                $threatInfo = ThreatIp::getThreatInfo($ip);
 
-            // Log the blocked threat attempt
-            SecurityLog::logEvent(
-                eventType: 'threat_ip_blocked',
-                ipAddress: $ip,
-                severity: 'high',
-                description: "Threat IP blocked: {$threatInfo->threat_type} (confidence: {$threatInfo->confidence_score}%)",
-                userAgent: $request->userAgent(),
-                metadata: [
-                    'url' => $request->fullUrl(),
-                    'method' => $request->method(),
-                    'threat_type' => $threatInfo->threat_type,
-                    'threat_source' => $threatInfo->source,
-                    'confidence_score' => $threatInfo->confidence_score,
-                ]
-            );
+                // Log the blocked threat attempt
+                SecurityLog::logEvent(
+                    eventType: 'threat_ip_blocked',
+                    ipAddress: $ip,
+                    severity: 'high',
+                    description: "Threat IP blocked: {$threatInfo->threat_type} (confidence: {$threatInfo->confidence_score}%)",
+                    userAgent: $request->userAgent(),
+                    metadata: [
+                        'url' => $request->fullUrl(),
+                        'method' => $request->method(),
+                        'threat_type' => $threatInfo->threat_type,
+                        'threat_source' => $threatInfo->source,
+                        'confidence_score' => $threatInfo->confidence_score,
+                    ]
+                );
 
-            // Return 403 Forbidden
-            return response()->view('errors.blocked', [
-                'message' => 'Your IP address has been identified as a security threat and has been blocked.',
-                'ip' => $ip,
-                'reason' => "Threat Type: {$threatInfo->getThreatTypeLabel()} (Source: {$threatInfo->source})",
-            ], 403);
-        }
+                // Return 403 Forbidden
+                return response()->view('errors.blocked', [
+                    'message' => 'Your IP address has been identified as a security threat and has been blocked.',
+                    'ip' => $ip,
+                    'reason' => "Threat Type: {$threatInfo->getThreatTypeLabel()} (Source: {$threatInfo->source})",
+                ], 403);
+            }
 
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน (testing mode) ให้ข้ามการตรวจสอบและอนุญาตให้เข้าถึงได้
             // Error: could not find driver, Connection refused, etc.
-            \Log::debug('CheckBlockedIp middleware skipped: ' . $e->getMessage());
+            \Log::debug('CheckBlockedIp middleware skipped: '.$e->getMessage());
         }
 
         return $next($request);
@@ -101,13 +101,13 @@ class CheckBlockedIp
     {
         // Check if threat intelligence is enabled
         $enabled = Setting::get('threat_intelligence_enabled', 'boolean', false);
-        if (!$enabled) {
+        if (! $enabled) {
             return false;
         }
 
         // Get threat info
         $threatInfo = ThreatIp::getThreatInfo($ip);
-        if (!$threatInfo) {
+        if (! $threatInfo) {
             return false;
         }
 

@@ -18,7 +18,7 @@ class NFCVerificationController extends Controller
     /**
      * แสดงหน้าตรวจสอบบัตร NFC
      *
-     * @param string|null $cardNumber หมายเลขบัตร (optional)
+     * @param  string|null  $cardNumber  หมายเลขบัตร (optional)
      * @return \Illuminate\View\View
      */
     public function show($cardNumber = null)
@@ -37,7 +37,7 @@ class NFCVerificationController extends Controller
                     'issued_date',
                     'expiry_date',
                     'status',
-                    'nfc_written_at'
+                    'nfc_written_at',
                 ])
                 ->first();
         }
@@ -52,7 +52,6 @@ class NFCVerificationController extends Controller
     /**
      * ตรวจสอบความถูกต้องของบัตร NFC (API)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function verify(Request $request)
@@ -73,7 +72,7 @@ class NFCVerificationController extends Controller
         // ค้นหาบัตรในระบบ
         $card = NFCCard::where('card_number', $cardNumber)->first();
 
-        if (!$card) {
+        if (! $card) {
             return $this->logAndRespond(
                 null,
                 $cardNumber,
@@ -129,9 +128,9 @@ class NFCVerificationController extends Controller
         $verified = $signatureValid && $uidMatch;
         $errorMessage = null;
 
-        if (!$signatureValid) {
+        if (! $signatureValid) {
             $errorMessage = 'รหัสป้องกันปลอมไม่ถูกต้อง';
-        } elseif (!$uidMatch) {
+        } elseif (! $uidMatch) {
             $errorMessage = 'UID ของบัตรไม่ตรงกับข้อมูลในระบบ';
         }
 
@@ -156,7 +155,6 @@ class NFCVerificationController extends Controller
     /**
      * ตรวจสอบด่วน (Quick Verification) - เช็คเฉพาะ signature
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function quickVerify(Request $request)
@@ -176,7 +174,7 @@ class NFCVerificationController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$card) {
+        if (! $card) {
             return response()->json([
                 'success' => false,
                 'verified' => false,
@@ -213,15 +211,13 @@ class NFCVerificationController extends Controller
     /**
      * บันทึก log การตรวจสอบและส่ง response
      *
-     * @param int|null $cardId
-     * @param string $cardNumber
-     * @param string $verificationType
-     * @param bool $verified
-     * @param bool $signatureValid
-     * @param bool|null $uidMatch
-     * @param string|null $errorMessage
-     * @param Request $request
-     * @param array $additionalData
+     * @param  int|null  $cardId
+     * @param  string  $cardNumber
+     * @param  string  $verificationType
+     * @param  bool  $verified
+     * @param  bool  $signatureValid
+     * @param  bool|null  $uidMatch
+     * @param  string|null  $errorMessage
      * @return \Illuminate\Http\JsonResponse
      */
     protected function logAndRespond(
@@ -263,7 +259,7 @@ class NFCVerificationController extends Controller
             $response['message'] = '✅ บัตรถูกต้อง - ผ่านการตรวจสอบความถูกต้อง';
             $response['card'] = $additionalData;
         } else {
-            $response['message'] = '❌ บัตรไม่ถูกต้อง - ' . ($errorMessage ?? 'ไม่ผ่านการตรวจสอบ');
+            $response['message'] = '❌ บัตรไม่ถูกต้อง - '.($errorMessage ?? 'ไม่ผ่านการตรวจสอบ');
         }
 
         return response()->json($response);
@@ -272,15 +268,14 @@ class NFCVerificationController extends Controller
     /**
      * บันทึก log การตรวจสอบ
      *
-     * @param int|null $cardId
-     * @param string $cardNumber
-     * @param string $verificationType
-     * @param bool $verified
-     * @param bool|null $signatureValid
-     * @param bool|null $uidMatch
-     * @param string|null $errorMessage
-     * @param array|null $additionalData
-     * @param Request $request
+     * @param  int|null  $cardId
+     * @param  string  $cardNumber
+     * @param  string  $verificationType
+     * @param  bool  $verified
+     * @param  bool|null  $signatureValid
+     * @param  bool|null  $uidMatch
+     * @param  string|null  $errorMessage
+     * @param  array|null  $additionalData
      * @return void
      */
     protected function logVerification(
@@ -295,7 +290,7 @@ class NFCVerificationController extends Controller
         Request $request
     ) {
         // ดึงข้อมูล User Agent
-        $agent = new Agent();
+        $agent = new Agent;
         $agent->setUserAgent($request->userAgent());
 
         // เตรียม metadata
@@ -326,14 +321,14 @@ class NFCVerificationController extends Controller
     /**
      * แสดงสถิติการตรวจสอบ (สำหรับ Admin)
      *
-     * @param string $cardNumber
+     * @param  string  $cardNumber
      * @return \Illuminate\Http\JsonResponse
      */
     public function statistics($cardNumber)
     {
         $card = NFCCard::where('card_number', $cardNumber)->first();
 
-        if (!$card) {
+        if (! $card) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบบัตรในระบบ',

@@ -15,6 +15,7 @@ class NotificationTemplateController extends Controller
     public function index()
     {
         $templates = NotificationTemplate::orderBy('created_at', 'desc')->paginate(20);
+
         return view('admin.notification-templates.index', compact('templates'));
     }
 
@@ -75,6 +76,7 @@ class NotificationTemplateController extends Controller
     public function show($id)
     {
         $template = NotificationTemplate::findOrFail($id);
+
         return view('admin.notification-templates.show', compact('template'));
     }
 
@@ -84,6 +86,7 @@ class NotificationTemplateController extends Controller
     public function edit($id)
     {
         $template = NotificationTemplate::findOrFail($id);
+
         return view('admin.notification-templates.edit', compact('template'));
     }
 
@@ -152,7 +155,7 @@ class NotificationTemplateController extends Controller
     {
         $template = NotificationTemplate::findOrFail($id);
         $template->update([
-            'is_active' => !$template->is_active,
+            'is_active' => ! $template->is_active,
         ]);
 
         return redirect()

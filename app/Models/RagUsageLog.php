@@ -63,7 +63,7 @@ class RagUsageLog extends Model
      */
     public function getChunks()
     {
-        if (!$this->chunk_ids) {
+        if (! $this->chunk_ids) {
             return collect();
         }
 

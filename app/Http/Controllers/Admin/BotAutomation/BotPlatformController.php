@@ -64,7 +64,6 @@ class BotPlatformController extends Controller
     /**
      * แสดงรายละเอียดและการตั้งค่าของ platform connection
      *
-     * @param BotPlatformConnection $connection
      * @return \Illuminate\View\View
      */
     public function show(BotPlatformConnection $connection)
@@ -77,7 +76,6 @@ class BotPlatformController extends Controller
     /**
      * แสดงฟอร์มแก้ไขการตั้งค่า platform connection
      *
-     * @param BotPlatformConnection $connection
      * @return \Illuminate\View\View
      */
     public function edit(BotPlatformConnection $connection)
@@ -88,8 +86,6 @@ class BotPlatformController extends Controller
     /**
      * อัพเดทการตั้งค่า platform connection
      *
-     * @param Request $request
-     * @param BotPlatformConnection $connection
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, BotPlatformConnection $connection)
@@ -150,7 +146,6 @@ class BotPlatformController extends Controller
     /**
      * รีเฟรช token สำหรับแต่ละ platform
      *
-     * @param BotPlatformConnection $connection
      * @return \Illuminate\Http\RedirectResponse
      */
     public function refreshToken(BotPlatformConnection $connection)
@@ -186,15 +181,12 @@ class BotPlatformController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * รีเฟรช Facebook/Instagram token
-     *
-     * @param BotPlatformConnection $connection
-     * @return array
      */
     protected function refreshFacebookToken(BotPlatformConnection $connection): array
     {
@@ -204,7 +196,7 @@ class BotPlatformController extends Controller
         }
 
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new \GuzzleHttp\Client;
             $response = $client->post('https://graph.facebook.com/v18.0/oauth/access_token', [
                 'form_params' => [
                     'grant_type' => 'fb_exchange_token',
@@ -222,15 +214,12 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 5184000), // 60 days default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Facebook API error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Facebook API error: '.$e->getMessage()];
         }
     }
 
     /**
      * รีเฟรช LINE token
-     *
-     * @param BotPlatformConnection $connection
-     * @return array
      */
     protected function refreshLineToken(BotPlatformConnection $connection): array
     {
@@ -240,7 +229,7 @@ class BotPlatformController extends Controller
         }
 
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new \GuzzleHttp\Client;
             $response = $client->post('https://api.line.me/oauth2/v2.1/token', [
                 'form_params' => [
                     'grant_type' => 'refresh_token',
@@ -259,15 +248,12 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 2592000), // 30 days default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'LINE API error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'LINE API error: '.$e->getMessage()];
         }
     }
 
     /**
      * รีเฟรช Twitter/X token
-     *
-     * @param BotPlatformConnection $connection
-     * @return array
      */
     protected function refreshTwitterToken(BotPlatformConnection $connection): array
     {
@@ -277,7 +263,7 @@ class BotPlatformController extends Controller
         }
 
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new \GuzzleHttp\Client;
             $response = $client->post('https://api.twitter.com/2/oauth2/token', [
                 'auth' => [
                     config('services.twitter.client_id'),
@@ -298,21 +284,18 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 7200), // 2 hours default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Twitter API error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Twitter API error: '.$e->getMessage()];
         }
     }
 
     /**
      * รีเฟรช Telegram token
-     *
-     * @param BotPlatformConnection $connection
-     * @return array
      */
     protected function refreshTelegramToken(BotPlatformConnection $connection): array
     {
         // Telegram Bot tokens ไม่หมดอายุ - เพียงแค่ตรวจสอบว่า token ยังใช้งานได้
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new \GuzzleHttp\Client;
             $response = $client->get("https://api.telegram.org/bot{$connection->access_token}/getMe");
 
             $data = json_decode($response->getBody(), true);
@@ -326,15 +309,12 @@ class BotPlatformController extends Controller
 
             return ['success' => false, 'message' => 'Token ไม่ถูกต้อง'];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Telegram API error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Telegram API error: '.$e->getMessage()];
         }
     }
 
     /**
      * รีเฟรช WhatsApp Business token
-     *
-     * @param BotPlatformConnection $connection
-     * @return array
      */
     protected function refreshWhatsAppToken(BotPlatformConnection $connection): array
     {
@@ -348,10 +328,11 @@ class BotPlatformController extends Controller
     public function toggle(BotPlatformConnection $connection)
     {
         $connection->update([
-            'is_active' => !$connection->is_active,
+            'is_active' => ! $connection->is_active,
         ]);
 
         $status = $connection->is_active ? 'activated' : 'deactivated';
+
         return back()->with('success', "Platform connection {$status} successfully");
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\AiRentalDeployment;
+use App\Models\User;
 
 /**
  * AI Rental Deployment Policy
@@ -14,10 +14,6 @@ class AiRentalDeploymentPolicy
 {
     /**
      * ดู Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function view(User $user, AiRentalDeployment $deployment): bool
     {
@@ -27,9 +23,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * สร้าง Deployment
-     *
-     * @param User $user
-     * @return bool
      */
     public function create(User $user): bool
     {
@@ -39,10 +32,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * แก้ไข Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function update(User $user, AiRentalDeployment $deployment): bool
     {
@@ -52,10 +41,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * ลบ Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function delete(User $user, AiRentalDeployment $deployment): bool
     {
@@ -65,10 +50,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * Start Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function start(User $user, AiRentalDeployment $deployment): bool
     {
@@ -77,10 +58,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * Stop Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function stop(User $user, AiRentalDeployment $deployment): bool
     {
@@ -89,10 +66,6 @@ class AiRentalDeploymentPolicy
 
     /**
      * Restart Deployment
-     *
-     * @param User $user
-     * @param AiRentalDeployment $deployment
-     * @return bool
      */
     public function restart(User $user, AiRentalDeployment $deployment): bool
     {

@@ -17,14 +17,12 @@ return new class extends Migration
      *
      * Migration นี้สร้างเพื่อแก้ไขกรณีที่ migration ก่อนหน้าไม่ได้รัน
      * หรือรันไม่สำเร็จ ทำให้ไม่สามารถเพิ่มสินค้าในร้านทางการได้
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
             // เพิ่มคอลัมน์ customer_cashback ถ้ายังไม่มี
-            if (!Schema::hasColumn('products', 'customer_cashback')) {
+            if (! Schema::hasColumn('products', 'customer_cashback')) {
                 $table->decimal('customer_cashback', 10, 2)
                     ->default(0)
                     ->after('commission_rate')
@@ -32,7 +30,7 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ cashback_percentage ถ้ายังไม่มี
-            if (!Schema::hasColumn('products', 'cashback_percentage')) {
+            if (! Schema::hasColumn('products', 'cashback_percentage')) {
                 $table->decimal('cashback_percentage', 5, 2)
                     ->default(0)
                     ->after('customer_cashback')
@@ -40,7 +38,7 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ pv_value ถ้ายังไม่มี
-            if (!Schema::hasColumn('products', 'pv_value')) {
+            if (! Schema::hasColumn('products', 'pv_value')) {
                 $table->decimal('pv_value', 10, 2)
                     ->default(0)
                     ->after('cashback_percentage')
@@ -48,7 +46,7 @@ return new class extends Migration
             }
 
             // เพิ่มคอลัมน์ vat_percentage ถ้ายังไม่มี
-            if (!Schema::hasColumn('products', 'vat_percentage')) {
+            if (! Schema::hasColumn('products', 'vat_percentage')) {
                 $table->decimal('vat_percentage', 5, 2)
                     ->default(7.00)
                     ->after('pv_value')
@@ -62,8 +60,6 @@ return new class extends Migration
      *
      * หมายเหตุ: ไม่ลบคอลัมน์เพราะอาจมีข้อมูลอยู่แล้ว
      * และ migration ก่อนหน้าอาจเป็นผู้สร้างคอลัมน์เหล่านี้
-     *
-     * @return void
      */
     public function down(): void
     {

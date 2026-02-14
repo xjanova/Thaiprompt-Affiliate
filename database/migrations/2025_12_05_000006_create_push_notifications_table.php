@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง push_notifications
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -46,7 +44,7 @@ return new class extends Migration
                 'wallet',       // กระเป๋าเงิน
                 'promotion',    // โปรโมชั่น
                 'system',       // ระบบ
-                'ticket'        // Ticket
+                'ticket',        // Ticket
             ])->default('general');
 
             // การจัดกลุ่มเป้าหมาย
@@ -55,7 +53,7 @@ return new class extends Migration
                 'all_users',    // ผู้ใช้ทั้งหมด
                 'riders',       // ไรเดอร์ทั้งหมด
                 'sellers',      // ผู้ขายทั้งหมด
-                'segment'       // กลุ่มที่กำหนด
+                'segment',       // กลุ่มที่กำหนด
             ])->default('individual');
 
             // ไอคอนและรูปภาพ
@@ -70,7 +68,7 @@ return new class extends Migration
                 'pending',      // รอส่ง
                 'sent',         // ส่งแล้ว
                 'failed',       // ส่งไม่สำเร็จ
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('pending');
             $table->text('error_message')->nullable();
 
@@ -92,8 +90,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง push_notifications
-     *
-     * @return void
      */
     public function down(): void
     {

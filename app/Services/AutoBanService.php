@@ -5,9 +5,9 @@ namespace App\Services;
 use App\Models\BlockedIp;
 use App\Models\SecurityLog;
 use App\Notifications\IpAutoBannedNotification;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class AutoBanService
 {
@@ -17,7 +17,7 @@ class AutoBanService
     public static function checkAndBan(string $ip, string $eventType): bool
     {
         // Check if auto-ban is enabled
-        if (!config('autoban.enabled')) {
+        if (! config('autoban.enabled')) {
             return false;
         }
 
@@ -39,7 +39,7 @@ class AutoBanService
         // Get appropriate config based on event type
         $config = self::getConfigForEventType($eventType);
 
-        if (!$config || !$config['enabled']) {
+        if (! $config || ! $config['enabled']) {
             return false;
         }
 
@@ -145,7 +145,8 @@ class AutoBanService
             return true;
 
         } catch (\Exception $e) {
-            Log::error("Failed to auto-ban IP {$ip}: " . $e->getMessage());
+            Log::error("Failed to auto-ban IP {$ip}: ".$e->getMessage());
+
             return false;
         }
     }
@@ -155,7 +156,7 @@ class AutoBanService
      */
     protected static function sendNotifications(string $ip, string $eventType, int $violations, array $ipInfo, Carbon $expiresAt): void
     {
-        if (!config('autoban.notifications.enabled')) {
+        if (! config('autoban.notifications.enabled')) {
             return;
         }
 
@@ -185,7 +186,7 @@ class AutoBanService
             }
 
         } catch (\Exception $e) {
-            Log::error("Failed to send auto-ban notifications: " . $e->getMessage());
+            Log::error('Failed to send auto-ban notifications: '.$e->getMessage());
         }
     }
 
@@ -225,7 +226,7 @@ class AutoBanService
         try {
             \Illuminate\Support\Facades\Http::post($webhookUrl, $message);
         } catch (\Exception $e) {
-            Log::error("Failed to send Slack notification: " . $e->getMessage());
+            Log::error('Failed to send Slack notification: '.$e->getMessage());
         }
     }
 
@@ -247,9 +248,9 @@ class AutoBanService
                 ->count(),
             'currently_banned' => BlockedIp::where('type', 'blacklist')
                 ->where('is_active', true)
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('expires_at')
-                      ->orWhere('expires_at', '>', Carbon::now());
+                        ->orWhere('expires_at', '>', Carbon::now());
                 })
                 ->count(),
         ];

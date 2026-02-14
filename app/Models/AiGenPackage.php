@@ -66,6 +66,7 @@ class AiGenPackage extends Model
         if (empty($this->provider_access)) {
             return true;
         }
+
         return in_array($providerId, $this->provider_access);
     }
 
@@ -90,6 +91,6 @@ class AiGenPackage extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        return number_format($this->price, 2) . ' ' . $this->currency;
+        return number_format($this->price, 2).' '.$this->currency;
     }
 }

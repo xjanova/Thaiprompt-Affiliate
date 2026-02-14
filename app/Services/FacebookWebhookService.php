@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Models\FortuneTellingSetting;
+use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
-use App\Contracts\MessagingPlatformInterface;
+use App\Models\FortuneTellingSetting;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Facebook Webhook Service
@@ -26,6 +26,7 @@ use Exception;
 class FacebookWebhookService implements MessagingPlatformInterface
 {
     protected $settings;
+
     protected $pageAccessToken;
 
     /**
@@ -53,8 +54,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * ถ้าข้อความยาวเกิน 2000 ตัวอักษร จะแบ่งส่งหลาย messages อัตโนมัติ
      *
-     * @param string $recipientId Facebook User ID
-     * @param string $message ข้อความที่ต้องการส่ง
+     * @param  string  $recipientId  Facebook User ID
+     * @param  string  $message  ข้อความที่ต้องการส่ง
      * @return bool สำเร็จหรือไม่
      */
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
@@ -64,6 +65,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             Log::error('❌ ส่งข้อความไม่ได้: ไม่มี Page Access Token', [
                 'recipient' => $recipientId,
             ]);
+
             return false;
         }
 
@@ -78,7 +80,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         // ถ้าเป็นการส่งจาก admin / marketing → ใช้ MESSAGE_TAG + HUMAN_AGENT
         // เพื่อให้ส่งได้แม้เกิน 24 ชม. (Facebook อนุญาตภายใน 7 วัน)
-        if (!empty($options['from_admin']) || !empty($options['force_tag'])) {
+        if (! empty($options['from_admin']) || ! empty($options['force_tag'])) {
             $messagingType = 'MESSAGE_TAG';
             $messageTag = $messageTag ?? 'HUMAN_AGENT';
         }
@@ -124,7 +126,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'error_message' => $errorMsg,
                         'messaging_type' => $messagingType,
                         'tag' => $messageTag,
-                        'token_prefix' => substr($this->pageAccessToken, 0, 10) . '...',
+                        'token_prefix' => substr($this->pageAccessToken, 0, 10).'...',
                         'chunk' => $chunkIndex + 1,
                     ]);
 
@@ -135,6 +137,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         ]);
                         $messagingType = 'MESSAGE_TAG';
                         $messageTag = 'HUMAN_AGENT';
+
                         continue; // retry ด้วย tag ใหม่
                     }
 
@@ -144,6 +147,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                             'error_code' => $errorCode,
                             'message' => $errorMsg,
                         ]);
+
                         return false;
                     }
 
@@ -152,7 +156,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     }
 
                 } catch (Exception $e) {
-                    Log::error("❌ ส่งข้อความไม่สำเร็จ (ครั้งที่ {$attempt}): " . $e->getMessage(), [
+                    Log::error("❌ ส่งข้อความไม่สำเร็จ (ครั้งที่ {$attempt}): ".$e->getMessage(), [
                         'recipient' => $recipientId,
                         'chunk' => $chunkIndex + 1,
                     ]);
@@ -163,11 +167,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 }
             }
 
-            if (!$sent) {
-                Log::error('❌ ส่งข้อความล้มเหลวหลังลอง ' . $maxRetries . ' ครั้ง', [
+            if (! $sent) {
+                Log::error('❌ ส่งข้อความล้มเหลวหลังลอง '.$maxRetries.' ครั้ง', [
                     'recipient' => $recipientId,
                     'chunk_text_preview' => mb_substr($chunk, 0, 100),
                 ]);
+
                 return false;
             }
         }
@@ -176,15 +181,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
             'recipient' => $recipientId,
             'chunks' => count($chunks),
         ]);
+
         return true;
     }
 
     /**
      * ส่งรูปภาพผ่าน Messenger API
      *
-     * @param string $recipientId Facebook User ID
-     * @param string $imageUrl URL ของรูปภาพ (ต้องเป็น HTTPS public URL)
-     * @param string|null $caption ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
+     * @param  string  $recipientId  Facebook User ID
+     * @param  string  $imageUrl  URL ของรูปภาพ (ต้องเป็น HTTPS public URL)
+     * @param  string|null  $caption  ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
      * @return bool สำเร็จหรือไม่
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
@@ -208,7 +214,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ])->throw();
 
             // ส่งข้อความกำกับรูป (ถ้ามี previewUrl ใช้เป็น caption)
-            if (!empty($previewUrl)) {
+            if (! empty($previewUrl)) {
                 $this->sendMessage($recipientId, $previewUrl);
             }
 
@@ -216,12 +222,14 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'recipient' => $recipientId,
                 'image_url' => $imageUrl,
             ]);
+
             return true;
         } catch (Exception $e) {
-            Log::error('ส่งรูปภาพไม่สำเร็จ: ' . $e->getMessage(), [
+            Log::error('ส่งรูปภาพไม่สำเร็จ: '.$e->getMessage(), [
                 'recipient' => $recipientId,
                 'image_url' => $imageUrl,
             ]);
+
             return false;
         }
     }
@@ -229,9 +237,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ส่ง typing indicator (แสดงจุดสามจุดว่ากำลังพิมพ์)
      *
-     * @param string $recipientId Facebook User ID
-     * @param bool $on เปิด/ปิด typing indicator
-     * @return void
+     * @param  string  $recipientId  Facebook User ID
+     * @param  bool  $on  เปิด/ปิด typing indicator
      */
     public function sendTypingIndicator(string $recipientId, bool $on = true): void
     {
@@ -244,17 +251,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ]);
         } catch (Exception $e) {
             // ไม่ต้อง throw error ถ้า typing indicator ส่งไม่ได้
-            Log::debug('ส่ง typing indicator ไม่สำเร็จ: ' . $e->getMessage());
+            Log::debug('ส่ง typing indicator ไม่สำเร็จ: '.$e->getMessage());
         }
     }
 
     /**
      * ส่งข้อความพร้อม Quick Reply buttons
      *
-     * @param string $recipientId Facebook User ID
-     * @param string $message ข้อความหลัก
-     * @param array $quickReplies ปุ่ม quick reply [['title' => 'ข้อความ', 'payload' => 'DATA']]
-     * @return bool
+     * @param  string  $recipientId  Facebook User ID
+     * @param  string  $message  ข้อความหลัก
+     * @param  array  $quickReplies  ปุ่ม quick reply [['title' => 'ข้อความ', 'payload' => 'DATA']]
      */
     public function sendQuickReplies(string $recipientId, string $message, array $quickReplies): bool
     {
@@ -280,7 +286,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return true;
         } catch (Exception $e) {
-            Log::error('ส่ง quick replies ไม่สำเร็จ: ' . $e->getMessage());
+            Log::error('ส่ง quick replies ไม่สำเร็จ: '.$e->getMessage());
+
             // Fallback: ส่งข้อความธรรมดา
             return $this->sendMessage($recipientId, $message);
         }
@@ -289,9 +296,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ตอบกลับในคอมเมนต์
      *
-     * @param string $commentId Comment ID
-     * @param string $message ข้อความตอบกลับ
-     * @return bool
+     * @param  string  $commentId  Comment ID
+     * @param  string  $message  ข้อความตอบกลับ
      */
     public function replyToComment(string $commentId, string $message): bool
     {
@@ -303,11 +309,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ])->throw();
 
             Log::info('ตอบคอมเมนต์สำเร็จ', ['comment_id' => $commentId]);
+
             return true;
         } catch (Exception $e) {
-            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: ' . $e->getMessage(), [
+            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: '.$e->getMessage(), [
                 'comment_id' => $commentId,
             ]);
+
             return false;
         }
     }
@@ -318,9 +326,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     /**
      * ดึงข้อมูลโปรไฟล์จาก Facebook Graph API
-     *
-     * @param string $facebookUserId
-     * @return array|null
      */
     public function getUserProfile(string $facebookUserId): ?array
     {
@@ -337,7 +342,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $profile = $response->json();
 
             // ถ้าได้ birthday มา → คำนวณอายุ
-            if (!empty($profile['birthday'])) {
+            if (! empty($profile['birthday'])) {
                 try {
                     $birthDate = \Carbon\Carbon::parse($profile['birthday']);
                     $profile['age'] = $birthDate->age;
@@ -349,14 +354,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             Log::info('ดึงโปรไฟล์ผู้ใช้สำเร็จ', [
                 'user_id' => $facebookUserId,
-                'has_gender' => !empty($profile['gender']),
-                'has_birthday' => !empty($profile['birthday']),
-                'has_locale' => !empty($profile['locale']),
+                'has_gender' => ! empty($profile['gender']),
+                'has_birthday' => ! empty($profile['birthday']),
+                'has_locale' => ! empty($profile['locale']),
             ]);
 
             return $profile;
         } catch (Exception $e) {
-            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: ' . $e->getMessage());
+            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: '.$e->getMessage());
+
             return null;
         }
     }
@@ -364,9 +370,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ดึงโพสล่าสุดของผู้ใช้ (ถ้ามี permission)
      *
-     * @param string $facebookUserId
-     * @param int $limit จำนวนโพสที่ต้องการ
-     * @return array|null
+     * @param  int  $limit  จำนวนโพสที่ต้องการ
      */
     public function getUserPosts(string $facebookUserId, int $limit = 3): ?array
     {
@@ -379,9 +383,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ])->throw();
 
             $data = $response->json();
+
             return $data['data'] ?? [];
         } catch (Exception $e) {
-            Log::warning('ไม่สามารถดึงโพสของผู้ใช้ได้: ' . $e->getMessage());
+            Log::warning('ไม่สามารถดึงโพสของผู้ใช้ได้: '.$e->getMessage());
+
             return null;
         }
     }
@@ -389,7 +395,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ดึงรูปภาพจาก Messenger attachment
      *
-     * @param array $attachments Facebook message attachments array
+     * @param  array  $attachments  Facebook message attachments array
      * @return string|null URL ของรูปภาพ
      */
     public function extractImageFromAttachments(array $attachments): ?string
@@ -411,9 +417,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือไม่
      *
      * รูปแบบ: "ดูดวงละเอียด", "ดูดวงเชิงลึก", "ดูดวงแบบละเอียด", "ดูดวงdeep"
-     *
-     * @param string $message
-     * @return bool
      */
     public function isDeepReadingRequest(string $message): bool
     {
@@ -427,14 +430,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * รูปแบบ: "ดูดวง เรื่องความรัก เรื่องการเงิน เรื่องสุขภาพ"
      * หรือ: "ดูดวงละเอียด เรื่องความรัก, เรื่องการเงิน"
-     *
-     * @param string $message
-     * @return array|null
      */
     public function parseQuestions(string $message): ?array
     {
         // ตรวจสอบว่าข้อความขึ้นต้นด้วย "ดูดวง" หรือไม่
-        if (!preg_match('/^ดูดวง/u', trim($message))) {
+        if (! preg_match('/^ดูดวง/u', trim($message))) {
             return null;
         }
 
@@ -458,7 +458,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $questions = array_slice($questions, 0, 5);
         }
 
-        return !empty($questions) ? array_values($questions) : null;
+        return ! empty($questions) ? array_values($questions) : null;
     }
 
     /**
@@ -469,7 +469,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * - "วันเกิด 15-01-1997" / "วันเกิด 15 ม.ค. 40"
      * - "เกิด 15/1/40" / "เกิด 15/1/97"
      *
-     * @param string $message ข้อความจากผู้ใช้
+     * @param  string  $message  ข้อความจากผู้ใช้
      * @return string|null วันเกิดในรูปแบบ Y-m-d (ค.ศ.) หรือ null ถ้าไม่พบ
      */
     public function parseBirthDate(string $message): ?string
@@ -491,7 +491,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         // รูปแบบ: เกิด 15 มกราคม 2540
         $monthNames = implode('|', array_keys($thaiMonths));
-        if (preg_match('/(?:เกิด|วันเกิด)(?:วันที่)?\s*(\d{1,2})\s*(' . $monthNames . ')\s*(\d{2,4})/u', $message, $matches)) {
+        if (preg_match('/(?:เกิด|วันเกิด)(?:วันที่)?\s*(\d{1,2})\s*('.$monthNames.')\s*(\d{2,4})/u', $message, $matches)) {
             $day = (int) $matches[1];
             $month = $thaiMonths[$matches[2]] ?? null;
             $year = (int) $matches[3];
@@ -516,10 +516,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * แปลงวัน/เดือน/ปี เป็นรูปแบบ Y-m-d (ค.ศ.)
      *
-     * @param int $day วัน
-     * @param int $month เดือน (1-12)
-     * @param int $year ปี (พ.ศ. หรือ ค.ศ. แบบ 2 หรือ 4 หลัก)
-     * @return string|null
+     * @param  int  $day  วัน
+     * @param  int  $month  เดือน (1-12)
+     * @param  int  $year  ปี (พ.ศ. หรือ ค.ศ. แบบ 2 หรือ 4 หลัก)
      */
     protected function normalizeBirthDate(int $day, int $month, int $year): ?string
     {
@@ -551,9 +550,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     /**
      * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (พื้นฐาน) หรือยัง
-     *
-     * @param string $facebookUserId
-     * @return array
      */
     public function checkFreeLimit(string $facebookUserId): array
     {
@@ -573,9 +569,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรี (เชิงลึก) หรือยัง
      *
      * ใช้ reading_type = 'deep' แทนการเดาจาก tokens_used
-     *
-     * @param string $facebookUserId
-     * @return array
      */
     public function checkDeepFreeLimit(string $facebookUserId): array
     {
@@ -600,8 +593,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * ใช้เทมเพลต limit_exceeded ถ้ามี มิฉะนั้นใช้ข้อความจาก settings
      *
-     * @param string|null $userName ชื่อผู้ใช้
-     * @return string
+     * @param  string|null  $userName  ชื่อผู้ใช้
      */
     public function getLimitExceededMessage(?string $userName = null): string
     {
@@ -632,10 +624,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         if ($this->settings->payment_qr_image) {
             $message .= "\n📸 โอนเงินผ่าน QR Code:\n";
-            $message .= $this->settings->getPaymentQrUrl() . "\n";
+            $message .= $this->settings->getPaymentQrUrl()."\n";
         }
 
-        $message .= "\n📱 สมัครสมาชิกเพื่อใช้งานไม่จำกัด: " . url('/register');
+        $message .= "\n📱 สมัครสมาชิกเพื่อใช้งานไม่จำกัด: ".url('/register');
 
         return $message;
     }
@@ -645,8 +637,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * ใช้เทมเพลต limit_exceeded ถ้ามี มิฉะนั้นใช้ข้อความ hardcoded
      *
-     * @param string|null $userName ชื่อผู้ใช้
-     * @return string
+     * @param  string|null  $userName  ชื่อผู้ใช้
      */
     public function getDeepLimitExceededMessage(?string $userName = null): string
     {
@@ -674,9 +665,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
         } else {
             if ($this->settings->payment_qr_image) {
                 $message .= "📸 โอนเงินผ่าน QR Code:\n";
-                $message .= $this->settings->getPaymentQrUrl() . "\n\n";
+                $message .= $this->settings->getPaymentQrUrl()."\n\n";
             }
-            $message .= "📱 ชำระเงิน/สมัครสมาชิก: " . url('/register');
+            $message .= '📱 ชำระเงิน/สมัครสมาชิก: '.url('/register');
         }
 
         return $message;
@@ -685,8 +676,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ส่งข้อความต้อนรับจากเทมเพลต
      *
-     * @param string $recipientId Facebook User ID
-     * @return bool
+     * @param  string  $recipientId  Facebook User ID
      */
     public function sendWelcomeMessage(string $recipientId): bool
     {
@@ -713,18 +703,17 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         // Fallback: ข้อความต้อนรับเดิม
         return $this->sendMessage($recipientId,
-            "🔮 สวัสดีค่ะ ยินดีต้อนรับสู่ระบบดูดวง!\n\n" .
-            "พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n" .
-            "🌟 พิมพ์: \"ดูดวงละเอียด\" เพื่อรับคำทำนายเชิงลึก"
+            "🔮 สวัสดีค่ะ ยินดีต้อนรับสู่ระบบดูดวง!\n\n".
+            "พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n".
+            '🌟 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายเชิงลึก'
         );
     }
 
     /**
      * ส่งข้อความแจ้งชำระเงินจากเทมเพลต (พร้อมรูป QR Code)
      *
-     * @param string $recipientId Facebook User ID
-     * @param string|null $userName ชื่อผู้ใช้
-     * @return bool
+     * @param  string  $recipientId  Facebook User ID
+     * @param  string|null  $userName  ชื่อผู้ใช้
      */
     public function sendPaymentMessage(string $recipientId, ?string $userName = null): bool
     {
@@ -758,16 +747,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         return $this->sendMessage($recipientId,
-            "💰 กรุณาชำระเงินเพื่อใช้งานต่อ\n" .
-            "📱 สมัครสมาชิก: " . url('/register')
+            "💰 กรุณาชำระเงินเพื่อใช้งานต่อ\n".
+            '📱 สมัครสมาชิก: '.url('/register')
         );
     }
 
     /**
      * ส่งข้อความเมื่อเกิดข้อผิดพลาดจากเทมเพลต
      *
-     * @param string $recipientId Facebook User ID
-     * @return bool
+     * @param  string  $recipientId  Facebook User ID
      */
     public function sendErrorMessage(string $recipientId): bool
     {
@@ -777,9 +765,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         return $this->sendMessage($recipientId,
-            "😔 ขออภัยค่ะ ขณะนี้ระบบมีปัญหา\n" .
-            "กรุณาลองใหม่อีกครั้งในอีกสักครู่ค่ะ\n" .
-            "พิมพ์ \"ดูดวง\" เพื่อลองใหม่"
+            "😔 ขออภัยค่ะ ขณะนี้ระบบมีปัญหา\n".
+            "กรุณาลองใหม่อีกครั้งในอีกสักครู่ค่ะ\n".
+            'พิมพ์ "ดูดวง" เพื่อลองใหม่'
         );
     }
 
@@ -797,9 +785,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * 4. รูปคำทำนาย (reading_image_url) ถ้ามี
      * 5. รูปส่วนท้าย (footer_image_url เช่น QR Code) ถ้ามี
      *
-     * @param FortuneReading $reading
-     * @param string $response คำทำนายจาก AI
-     * @return bool
+     * @param  string  $response  คำทำนายจาก AI
      */
     public function sendFortuneTelling(FortuneReading $reading, string $response): bool
     {
@@ -840,7 +826,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $readingTypeLabel = $reading->isDeep() ? '🌟 คำทำนายเชิงลึก' : '🔮 คำทำนาย';
             $message = "{$readingTypeLabel}สำหรับคุณ\n\n{$response}\n\n";
             $message .= "---\n";
-            $message .= "ให้คะแนนความพึงพอใจ: " . url("/fortune/{$reading->id}/rate");
+            $message .= 'ให้คะแนนความพึงพอใจ: '.url("/fortune/{$reading->id}/rate");
         }
 
         // 1. ส่งรูปส่วนหัว (header image) ถ้ามี
@@ -882,9 +868,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * Facebook ส่ง X-Hub-Signature-256 header สำหรับ verify payload
      *
-     * @param string $payload Raw request body
-     * @param string $signature X-Hub-Signature-256 header value
-     * @return bool
+     * @param  string  $payload  Raw request body
+     * @param  string  $signature  X-Hub-Signature-256 header value
      */
     public function verifyWebhookSignature(string $payload, string $signature): bool
     {
@@ -892,11 +877,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         if (empty($appSecret) || empty($signature)) {
             Log::warning('Webhook signature verification skipped: missing app_secret or signature');
+
             return true; // อนุญาตผ่านถ้าไม่ได้ตั้งค่า (dev mode)
         }
 
         // Facebook ส่ง format: "sha256=xxxxx"
-        if (!str_starts_with($signature, 'sha256=')) {
+        if (! str_starts_with($signature, 'sha256=')) {
             return false;
         }
 
@@ -915,7 +901,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      *
      * แบ่งที่จุดสิ้นสุดบรรทัดใกล้สุดเพื่อไม่ให้ข้อความขาดกลาง
      *
-     * @param string $message ข้อความทั้งหมด
+     * @param  string  $message  ข้อความทั้งหมด
      * @return array chunks ของข้อความ
      */
     public function splitLongMessage(string $message): array
@@ -955,7 +941,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * คำนวณราศีจากวันเกิด
      *
-     * @param \Carbon\Carbon $date
+     * @param  \Carbon\Carbon  $date
      * @return string ชื่อราศี
      */
     protected function getZodiacFromDate($date): string
@@ -993,12 +979,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * สร้าง Graph API URL
      *
-     * @param string $path API path (เช่น /me/messages)
-     * @return string
+     * @param  string  $path  API path (เช่น /me/messages)
      */
     protected function graphUrl(string $path): string
     {
         $version = self::GRAPH_API_VERSION;
+
         return "https://graph.facebook.com/{$version}{$path}";
     }
 
@@ -1095,16 +1081,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return [
                 'success' => false,
-                'message' => 'ตั้งค่าไม่สำเร็จ: ' . ($error['message'] ?? 'Unknown error'),
+                'message' => 'ตั้งค่าไม่สำเร็จ: '.($error['message'] ?? 'Unknown error'),
                 'data' => $response->json(),
             ];
 
         } catch (\Exception $e) {
-            Log::error('Messenger Profile setup error: ' . $e->getMessage());
+            Log::error('Messenger Profile setup error: '.$e->getMessage());
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -1138,13 +1124,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return [
                 'success' => false,
-                'message' => 'ลบไม่สำเร็จ: ' . ($response->json('error.message') ?? 'Unknown error'),
+                'message' => 'ลบไม่สำเร็จ: '.($response->json('error.message') ?? 'Unknown error'),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -1178,13 +1164,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return [
                 'success' => false,
-                'message' => 'ดึงข้อมูลไม่สำเร็จ: ' . ($response->json('error.message') ?? 'Unknown error'),
+                'message' => 'ดึงข้อมูลไม่สำเร็จ: '.($response->json('error.message') ?? 'Unknown error'),
             ];
 
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -1209,7 +1195,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return true;
         } catch (Exception $e) {
-            Log::error('ส่ง Rich Message ไม่สำเร็จ: ' . $e->getMessage());
+            Log::error('ส่ง Rich Message ไม่สำเร็จ: '.$e->getMessage());
+
             return false;
         }
     }

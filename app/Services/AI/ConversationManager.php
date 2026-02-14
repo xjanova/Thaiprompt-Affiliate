@@ -6,12 +6,13 @@ use App\Models\AiBotProfile;
 use App\Models\AiConversation;
 use App\Models\AiMessage;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class ConversationManager
 {
     private BaseAiService $aiService;
+
     private AiBotProfile $bot;
+
     private ?RagService $ragService;
 
     public function __construct(AiBotProfile $bot)
@@ -20,7 +21,7 @@ class ConversationManager
         $this->aiService = AiServiceFactory::createFromBot($bot);
 
         // Initialize RAG service if knowledge base is enabled
-        $this->ragService = $bot->enable_knowledge_base ? new RagService() : null;
+        $this->ragService = $bot->enable_knowledge_base ? new RagService : null;
     }
 
     /**
@@ -61,11 +62,11 @@ class ConversationManager
             );
 
             // Inject RAG context before user message if found
-            if (!empty($ragResult['context'])) {
+            if (! empty($ragResult['context'])) {
                 // Insert RAG context as system message before the last user message
                 array_splice($messages, -1, 0, [[
                     'role' => 'system',
-                    'content' => $ragResult['context']
+                    'content' => $ragResult['context'],
                 ]]);
             }
         }
@@ -75,7 +76,7 @@ class ConversationManager
         $response = $this->aiService->chat($messages, $this->getAiOptions($options));
         $responseTime = (microtime(true) - $startTime) * 1000;
 
-        if (!$response['success']) {
+        if (! $response['success']) {
             // บันทึก error
             $this->aiService->logUsage(
                 $conversation,
@@ -110,7 +111,7 @@ class ConversationManager
         );
 
         // Log RAG usage if applicable
-        if ($ragResult && !empty($ragResult['chunks_used']) && $ragResult['chunks_used']->isNotEmpty()) {
+        if ($ragResult && ! empty($ragResult['chunks_used']) && $ragResult['chunks_used']->isNotEmpty()) {
             $this->ragService->logUsage(
                 $conversation,
                 $assistantMessage,
@@ -124,7 +125,7 @@ class ConversationManager
             'message' => $response['content'],
             'tokens_used' => $response['usage']['total_tokens'] ?? 0,
             'finish_reason' => $response['finish_reason'] ?? 'stop',
-            'rag_used' => $ragResult && !empty($ragResult['context']),
+            'rag_used' => $ragResult && ! empty($ragResult['context']),
             'rag_chunks' => $ragResult ? $ragResult['stats']['chunks_retrieved'] : 0,
         ];
     }
@@ -164,10 +165,10 @@ class ConversationManager
         }
 
         // ถ้ามี RAG context ให้เพิ่มเข้าไป
-        if ($this->bot->enable_knowledge_base && !empty($options['rag_context'])) {
+        if ($this->bot->enable_knowledge_base && ! empty($options['rag_context'])) {
             $messages[] = [
                 'role' => 'system',
-                'content' => "Context from knowledge base:\n" . $options['rag_context'],
+                'content' => "Context from knowledge base:\n".$options['rag_context'],
             ];
         }
 
@@ -216,7 +217,7 @@ class ConversationManager
 
         $summary = $firstMessages->pluck('content')->implode(' ');
 
-        return mb_substr($summary, 0, 50) . (mb_strlen($summary) > 50 ? '...' : '');
+        return mb_substr($summary, 0, 50).(mb_strlen($summary) > 50 ? '...' : '');
     }
 
     /**

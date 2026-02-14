@@ -107,8 +107,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -117,8 +115,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * ความสัมพันธ์กับ Cloud Provider
-     *
-     * @return BelongsTo
      */
     public function cloudProvider(): BelongsTo
     {
@@ -127,8 +123,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * ความสัมพันธ์กับ Deployments
-     *
-     * @return HasMany
      */
     public function deployments(): HasMany
     {
@@ -137,9 +131,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * Set API key (with encryption)
-     *
-     * @param string|null $value
-     * @return void
      */
     public function setApiKeyAttribute(?string $value): void
     {
@@ -148,13 +139,10 @@ class AiRentalCloudConfig extends Model
 
     /**
      * Get API key (with decryption)
-     *
-     * @param string|null $value
-     * @return string|null
      */
     public function getApiKeyAttribute(?string $value): ?string
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -167,9 +155,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * Set API secret (with encryption)
-     *
-     * @param string|null $value
-     * @return void
      */
     public function setApiSecretAttribute(?string $value): void
     {
@@ -178,13 +163,10 @@ class AiRentalCloudConfig extends Model
 
     /**
      * Get API secret (with decryption)
-     *
-     * @param string|null $value
-     * @return string|null
      */
     public function getApiSecretAttribute(?string $value): ?string
     {
-        if (!$value) {
+        if (! $value) {
             return null;
         }
 
@@ -197,18 +179,14 @@ class AiRentalCloudConfig extends Model
 
     /**
      * ตรวจสอบว่า config พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isReady(): bool
     {
-        return $this->status === 'active' && !empty($this->api_key);
+        return $this->status === 'active' && ! empty($this->api_key);
     }
 
     /**
      * ตรวจสอบว่ามี error หรือไม่
-     *
-     * @return bool
      */
     public function hasError(): bool
     {
@@ -217,8 +195,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * ตั้งเป็น config หลัก
-     *
-     * @return void
      */
     public function setAsDefault(): void
     {
@@ -234,8 +210,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * บันทึกการใช้งาน
-     *
-     * @return void
      */
     public function recordUsage(): void
     {
@@ -245,8 +219,6 @@ class AiRentalCloudConfig extends Model
 
     /**
      * เพิ่มจำนวน deployments
-     *
-     * @return void
      */
     public function incrementDeployments(): void
     {
@@ -256,9 +228,8 @@ class AiRentalCloudConfig extends Model
     /**
      * เพิ่มค่าใช้จ่าย
      *
-     * @param float $cost ค่าใช้จ่าย USD
-     * @param int $hours ชั่วโมง GPU
-     * @return void
+     * @param  float  $cost  ค่าใช้จ่าย USD
+     * @param  int  $hours  ชั่วโมง GPU
      */
     public function addCost(float $cost, int $hours = 0): void
     {
@@ -271,7 +242,7 @@ class AiRentalCloudConfig extends Model
     /**
      * Scope: เฉพาะ configs ที่พร้อมใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -282,7 +253,7 @@ class AiRentalCloudConfig extends Model
     /**
      * Scope: เฉพาะ default configs
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDefault($query)
@@ -293,8 +264,7 @@ class AiRentalCloudConfig extends Model
     /**
      * Scope: ของ user ที่ระบุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)

@@ -30,11 +30,11 @@ class TokenTransferReceivedNotification extends Notification implements ShouldQu
         $token = $this->transfer->token;
 
         return (new MailMessage)
-            ->subject('Token Received - ' . $token->symbol)
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line("คุณได้รับ Token!")
+            ->subject('Token Received - '.$token->symbol)
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('คุณได้รับ Token!')
             ->line("Token: {$token->name} ({$token->symbol})")
-            ->line("จำนวน: " . number_format($this->transfer->amount, 8) . " {$token->symbol}")
+            ->line('จำนวน: '.number_format($this->transfer->amount, 8)." {$token->symbol}")
             ->line("จาก: {$this->transfer->from_address}")
             ->action('ดูรายการ', route('user.tokens.transactions', $token->id))
             ->line('ขอบคุณที่ใช้บริการ TPIX!');

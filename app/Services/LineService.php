@@ -19,28 +19,26 @@ use Illuminate\Support\Facades\Log;
  * - User profile management
  * - Auto-retry on failure (integrated with LineAutoRetryService)
  * - Connection testing
- *
- * @package App\Services
  */
 class LineService
 {
     private ?LineOaSetting $settings;
+
     private const LINE_API_BASE = 'https://api.line.me';
+
     private const LINE_OAUTH_BASE = 'https://access.line.me/oauth2/v2.1';
 
     /**
      * Auto-retry enabled flag
      *
      * เมื่อเป็น true จะบันทึกข้อความที่ล้มเหลวและทำ auto-retry
-     *
-     * @var bool
      */
     private bool $autoRetryEnabled;
 
     /**
      * Constructor
      *
-     * @param bool $autoRetryEnabled เปิดใช้งาน auto-retry หรือไม่
+     * @param  bool  $autoRetryEnabled  เปิดใช้งาน auto-retry หรือไม่
      */
     public function __construct(bool $autoRetryEnabled = true)
     {
@@ -53,7 +51,7 @@ class LineService
      */
     public function getAuthorizationUrl(string $state, ?string $redirectUri = null): string
     {
-        if (!$this->settings) {
+        if (! $this->settings) {
             throw new Exception('LINE OA settings not configured');
         }
 
@@ -69,7 +67,7 @@ class LineService
         ];
 
         // เพิ่ม bot_prompt เฉพาะเมื่อเชื่อมกับ LINE OA แล้ว (มี channel_access_token)
-        if (!empty($this->settings->channel_access_token)) {
+        if (! empty($this->settings->channel_access_token)) {
             $params['bot_prompt'] = 'aggressive';
         }
 
@@ -77,10 +75,10 @@ class LineService
         Log::info('LINE Login authorization URL generated', [
             'client_id' => $this->settings->login_channel_id,
             'redirect_uri' => $redirectUri,
-            'has_bot_prompt' => !empty($this->settings->channel_access_token),
+            'has_bot_prompt' => ! empty($this->settings->channel_access_token),
         ]);
 
-        return self::LINE_OAUTH_BASE . "/authorize?" . http_build_query($params);
+        return self::LINE_OAUTH_BASE.'/authorize?'.http_build_query($params);
     }
 
     /**
@@ -88,14 +86,14 @@ class LineService
      */
     public function getAccessToken(string $code, ?string $redirectUri = null): array
     {
-        if (!$this->settings) {
+        if (! $this->settings) {
             throw new Exception('LINE OA settings not configured');
         }
 
         // Use custom redirect_uri from settings if available, otherwise use route
         $redirectUri = $redirectUri ?? $this->settings->redirect_uri ?? route('line.callback');
 
-        $response = Http::asForm()->post(self::LINE_OAUTH_BASE . '/token', [
+        $response = Http::asForm()->post(self::LINE_OAUTH_BASE.'/token', [
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => $redirectUri,
@@ -103,7 +101,7 @@ class LineService
             'client_secret' => $this->settings->channel_secret,
         ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('LINE token exchange failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -120,9 +118,9 @@ class LineService
     public function getUserProfile(string $accessToken): array
     {
         $response = Http::withToken($accessToken)
-            ->get(self::LINE_API_BASE . '/v2/profile');
+            ->get(self::LINE_API_BASE.'/v2/profile');
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('LINE profile fetch failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -138,7 +136,7 @@ class LineService
      */
     public function verifyToken(string $accessToken): bool
     {
-        $response = Http::get(self::LINE_OAUTH_BASE . '/verify', [
+        $response = Http::get(self::LINE_OAUTH_BASE.'/verify', [
             'access_token' => $accessToken,
         ]);
 
@@ -151,28 +149,29 @@ class LineService
      * ใช้ Channel Access Token เพื่อดึงข้อมูล profile ของ user
      * ใช้สำหรับกรณีที่ได้รับ userId จาก webhook event
      *
-     * @param string $lineUserId LINE User ID
+     * @param  string  $lineUserId  LINE User ID
      * @return array Profile data (userId, displayName, pictureUrl, statusMessage)
+     *
      * @throws Exception หากดึงข้อมูลล้มเหลว
      */
     public function getProfile(string $lineUserId): array
     {
-        if (!$this->settings || empty($this->settings->channel_access_token)) {
+        if (! $this->settings || empty($this->settings->channel_access_token)) {
             throw new Exception('LINE channel access token not configured');
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
-            ])->get(self::LINE_API_BASE . '/v2/bot/profile/' . $lineUserId);
+                'Authorization' => 'Bearer '.$this->settings->channel_access_token,
+            ])->get(self::LINE_API_BASE.'/v2/bot/profile/'.$lineUserId);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('LINE profile fetch failed (Bot API)', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'line_user_id' => $lineUserId,
                 ]);
-                throw new Exception('Failed to fetch LINE user profile: ' . $response->status());
+                throw new Exception('Failed to fetch LINE user profile: '.$response->status());
             }
 
             return $response->json();
@@ -192,25 +191,27 @@ class LineService
      * ส่งข้อความไปยัง LINE user
      * รองรับ Auto-Retry เมื่อส่งล้มเหลว
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $message ข้อความที่จะส่ง
-     * @param array $additionalMessages ข้อความเพิ่มเติม
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $message  ข้อความที่จะส่ง
+     * @param  array  $additionalMessages  ข้อความเพิ่มเติม
      * @return bool สำเร็จหรือไม่
      */
     public function sendPushMessage(string $lineUserId, string $message, array $additionalMessages = []): bool
     {
-        if (!$this->settings || !$this->settings->enable_line_messaging) {
+        if (! $this->settings || ! $this->settings->enable_line_messaging) {
             Log::warning('LINE messaging is disabled');
+
             return false;
         }
 
         if (empty($this->settings->channel_access_token)) {
             Log::error('LINE channel access token not configured');
+
             return false;
         }
 
         $messages = [
-            ['type' => 'text', 'text' => $message]
+            ['type' => 'text', 'text' => $message],
         ];
 
         // Add additional messages if provided
@@ -220,15 +221,15 @@ class LineService
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Authorization' => 'Bearer '.$this->settings->channel_access_token,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
                 'messages' => $messages,
             ]);
 
-            if (!$response->successful()) {
-                $errorMessage = 'LINE push message failed: ' . $response->status();
+            if (! $response->successful()) {
+                $errorMessage = 'LINE push message failed: '.$response->status();
 
                 Log::error($errorMessage, [
                     'status' => $response->status(),
@@ -277,20 +278,22 @@ class LineService
      * ส่ง Flex Message (Rich UI) ไปยัง LINE user
      * รองรับ Auto-Retry เมื่อส่งล้มเหลว
      *
-     * @param string $lineUserId LINE User ID
-     * @param array $flexMessage Flex Message payload
-     * @param array|null $quickReply Quick Reply payload
+     * @param  string  $lineUserId  LINE User ID
+     * @param  array  $flexMessage  Flex Message payload
+     * @param  array|null  $quickReply  Quick Reply payload
      * @return bool สำเร็จหรือไม่
      */
     public function sendFlexMessage(string $lineUserId, array $flexMessage, ?array $quickReply = null): bool
     {
-        if (!$this->settings || !$this->settings->enable_line_messaging) {
+        if (! $this->settings || ! $this->settings->enable_line_messaging) {
             Log::warning('LINE messaging is disabled');
+
             return false;
         }
 
         if (empty($this->settings->channel_access_token)) {
             Log::error('LINE channel access token not configured');
+
             return false;
         }
 
@@ -303,15 +306,15 @@ class LineService
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Authorization' => 'Bearer '.$this->settings->channel_access_token,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
                 'messages' => [$message],
             ]);
 
-            if (!$response->successful()) {
-                $errorMessage = 'LINE Flex message failed: ' . $response->status();
+            if (! $response->successful()) {
+                $errorMessage = 'LINE Flex message failed: '.$response->status();
 
                 Log::error($errorMessage, [
                     'status' => $response->status(),
@@ -365,7 +368,7 @@ class LineService
      */
     public function sendWelcomeMessage(User $user): bool
     {
-        if (!$user->line_user_id || !$this->settings) {
+        if (! $user->line_user_id || ! $this->settings) {
             return false;
         }
 
@@ -380,7 +383,7 @@ class LineService
      */
     public function sendRegistrationSuccessMessage(User $user): bool
     {
-        if (!$user->line_user_id || !$this->settings) {
+        if (! $user->line_user_id || ! $this->settings) {
             return false;
         }
 
@@ -399,7 +402,7 @@ class LineService
      */
     public function sendUserInfoCard(User $user): bool
     {
-        if (!$user->line_user_id) {
+        if (! $user->line_user_id) {
             return false;
         }
 
@@ -533,8 +536,8 @@ class LineService
     public function isConfigured(): bool
     {
         return $this->settings
-            && !empty($this->settings->login_channel_id)
-            && !empty($this->settings->channel_secret)
+            && ! empty($this->settings->login_channel_id)
+            && ! empty($this->settings->channel_secret)
             && $this->settings->is_active;
     }
 
@@ -558,12 +561,13 @@ class LineService
         ];
 
         // Test 1: Check if settings are configured
-        if (!$this->settings) {
+        if (! $this->settings) {
             $results['tests']['settings'] = [
                 'status' => 'error',
                 'message' => 'LINE OA settings not configured',
             ];
             $results['overall_status'] = 'error';
+
             return $results;
         }
 
@@ -579,6 +583,7 @@ class LineService
                 'message' => 'LINE Login Channel ID or Secret is missing',
             ];
             $results['overall_status'] = 'error';
+
             return $results;
         }
 
@@ -588,10 +593,10 @@ class LineService
         ];
 
         // Test 3: Test messaging API (if access token is configured)
-        if (!empty($this->settings->channel_access_token)) {
+        if (! empty($this->settings->channel_access_token)) {
             try {
                 $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                    'Authorization' => 'Bearer '.$this->settings->channel_access_token,
                 ])->get('https://api.line.me/v2/bot/info');
 
                 if ($response->successful()) {
@@ -607,7 +612,7 @@ class LineService
                 } else {
                     $results['tests']['messaging_api'] = [
                         'status' => 'warning',
-                        'message' => 'Messaging API connection failed: ' . $response->status(),
+                        'message' => 'Messaging API connection failed: '.$response->status(),
                         'details' => $response->body(),
                     ];
                     if ($results['overall_status'] === 'success') {
@@ -617,7 +622,7 @@ class LineService
             } catch (Exception $e) {
                 $results['tests']['messaging_api'] = [
                     'status' => 'error',
-                    'message' => 'Messaging API test failed: ' . $e->getMessage(),
+                    'message' => 'Messaging API test failed: '.$e->getMessage(),
                 ];
                 $results['overall_status'] = 'error';
             }
@@ -633,16 +638,16 @@ class LineService
 
         // Test 4: Verify LINE Login configuration
         try {
-            $authUrl = $this->getAuthorizationUrl('test_state_' . time());
+            $authUrl = $this->getAuthorizationUrl('test_state_'.time());
             $results['tests']['line_login'] = [
                 'status' => 'success',
                 'message' => 'LINE Login configuration is valid',
-                'auth_url' => substr($authUrl, 0, 100) . '...',
+                'auth_url' => substr($authUrl, 0, 100).'...',
             ];
         } catch (Exception $e) {
             $results['tests']['line_login'] = [
                 'status' => 'error',
-                'message' => 'LINE Login test failed: ' . $e->getMessage(),
+                'message' => 'LINE Login test failed: '.$e->getMessage(),
             ];
             $results['overall_status'] = 'error';
         }
@@ -656,33 +661,35 @@ class LineService
      * ส่ง Template Message (Buttons, Confirm, Carousel, Image Carousel)
      * รองรับ Auto-Retry เมื่อส่งล้มเหลว
      *
-     * @param string $lineUserId LINE User ID
-     * @param array $templateMessage Template payload
+     * @param  string  $lineUserId  LINE User ID
+     * @param  array  $templateMessage  Template payload
      * @return bool สำเร็จหรือไม่
      */
     public function sendTemplateMessage(string $lineUserId, array $templateMessage): bool
     {
-        if (!$this->settings || !$this->settings->enable_line_messaging) {
+        if (! $this->settings || ! $this->settings->enable_line_messaging) {
             Log::warning('LINE messaging is disabled');
+
             return false;
         }
 
         if (empty($this->settings->channel_access_token)) {
             Log::error('LINE channel access token not configured');
+
             return false;
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Authorization' => 'Bearer '.$this->settings->channel_access_token,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
                 'messages' => [$templateMessage],
             ]);
 
-            if (!$response->successful()) {
-                $errorMessage = 'LINE Template message failed: ' . $response->status();
+            if (! $response->successful()) {
+                $errorMessage = 'LINE Template message failed: '.$response->status();
 
                 Log::error($errorMessage, [
                     'status' => $response->status(),
@@ -731,20 +738,22 @@ class LineService
      * ส่งรูปภาพไปยัง LINE user
      * รองรับ Auto-Retry เมื่อส่งล้มเหลว
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $originalContentUrl URL รูปภาพขนาดเต็ม
-     * @param string $previewImageUrl URL รูปภาพตัวอย่าง
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $originalContentUrl  URL รูปภาพขนาดเต็ม
+     * @param  string  $previewImageUrl  URL รูปภาพตัวอย่าง
      * @return bool สำเร็จหรือไม่
      */
     public function sendImageMessage(string $lineUserId, string $originalContentUrl, string $previewImageUrl): bool
     {
-        if (!$this->settings || !$this->settings->enable_line_messaging) {
+        if (! $this->settings || ! $this->settings->enable_line_messaging) {
             Log::warning('LINE messaging is disabled');
+
             return false;
         }
 
         if (empty($this->settings->channel_access_token)) {
             Log::error('LINE channel access token not configured');
+
             return false;
         }
 
@@ -756,15 +765,15 @@ class LineService
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                'Authorization' => 'Bearer '.$this->settings->channel_access_token,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
                 'messages' => [$imageMessage],
             ]);
 
-            if (!$response->successful()) {
-                $errorMessage = 'LINE Image message failed: ' . $response->status();
+            if (! $response->successful()) {
+                $errorMessage = 'LINE Image message failed: '.$response->status();
 
                 Log::error($errorMessage, [
                     'status' => $response->status(),
@@ -819,11 +828,10 @@ class LineService
      * Helper method สำหรับบันทึกข้อความที่ส่งล้มเหลว
      * และ trigger auto-retry mechanism
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $messageType ประเภทข้อความ
-     * @param array $messagePayload ข้อมูลข้อความ
-     * @param Exception $exception Exception ที่เกิดขึ้น
-     * @return void
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $messageType  ประเภทข้อความ
+     * @param  array  $messagePayload  ข้อมูลข้อความ
+     * @param  Exception  $exception  Exception ที่เกิดขึ้น
      */
     private function recordFailureAndRetry(
         string $lineUserId,

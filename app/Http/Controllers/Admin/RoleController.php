@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Role;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,7 +52,7 @@ class RoleController extends Controller
                 'is_system_role' => false,
             ]);
 
-            if (!empty($validated['permissions'])) {
+            if (! empty($validated['permissions'])) {
                 $role->permissions()->sync($validated['permissions']);
             }
 
@@ -63,9 +63,10 @@ class RoleController extends Controller
                 ->with('success', 'สร้างบทบาทสำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -96,7 +97,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'name' => 'required|string|max:255|unique:roles,name,'.$role->id,
             'display_name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'permissions' => 'nullable|array',
@@ -120,9 +121,10 @@ class RoleController extends Controller
                 ->with('success', 'อัพเดทบทบาทสำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 

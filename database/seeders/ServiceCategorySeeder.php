@@ -14,8 +14,6 @@ class ServiceCategorySeeder extends Seeder
 {
     /**
      * รันการ seed
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -287,6 +285,7 @@ class ServiceCategorySeeder extends Seeder
 
             if ($existing) {
                 $this->command->warn("  ⚠️  หมวดหมู่ '{$category['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

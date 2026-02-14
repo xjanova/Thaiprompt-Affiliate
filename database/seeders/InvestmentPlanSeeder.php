@@ -38,7 +38,7 @@ class InvestmentPlanSeeder extends Seeder
             InvestmentPlan::create($plan);
         }
 
-        $this->command->info('✅ Investment plans seeded successfully: ' . count($plans) . ' plans');
+        $this->command->info('✅ Investment plans seeded successfully: '.count($plans).' plans');
     }
 
     /**
@@ -54,7 +54,7 @@ class InvestmentPlanSeeder extends Seeder
         $skipped = 0;
 
         foreach ($plans as $plan) {
-            if (!InvestmentPlan::where('name', $plan['name'])->exists()) {
+            if (! InvestmentPlan::where('name', $plan['name'])->exists()) {
                 InvestmentPlan::create($plan);
                 $this->command->info("   ➕ Added: {$plan['name']}");
                 $added++;

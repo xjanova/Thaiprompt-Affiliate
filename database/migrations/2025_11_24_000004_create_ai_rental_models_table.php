@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บข้อมูล AI Models ที่สามารถ deploy ได้
      * เช่น Stable Diffusion, LLaMA, Whisper, etc.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -123,8 +121,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_models
-     *
-     * @return void
      */
     public function down(): void
     {

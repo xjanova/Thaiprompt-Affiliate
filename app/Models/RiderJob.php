@@ -140,8 +140,6 @@ class RiderJob extends Model
 
     /**
      * สร้างเลขที่งาน
-     *
-     * @return string
      */
     public static function generateJobNumber(): string
     {
@@ -158,7 +156,7 @@ class RiderJob extends Model
             $newNumber = 1;
         }
 
-        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix.$date.str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     // =====================================================
@@ -167,8 +165,6 @@ class RiderJob extends Model
 
     /**
      * ความสัมพันธ์กับ Rider
-     *
-     * @return BelongsTo
      */
     public function rider(): BelongsTo
     {
@@ -177,8 +173,6 @@ class RiderJob extends Model
 
     /**
      * ความสัมพันธ์กับ Customer
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -187,8 +181,6 @@ class RiderJob extends Model
 
     /**
      * ประวัติตำแหน่งของงานนี้
-     *
-     * @return HasMany
      */
     public function locations(): HasMany
     {
@@ -234,12 +226,10 @@ class RiderJob extends Model
 
     /**
      * ชื่อสถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusTextAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอไรเดอร์รับงาน',
             'accepted' => 'ไรเดอร์รับงานแล้ว',
             'picking_up' => 'กำลังไปรับของ',
@@ -255,12 +245,10 @@ class RiderJob extends Model
 
     /**
      * ชื่อประเภทงานภาษาไทย
-     *
-     * @return string
      */
     public function getJobTypeTextAttribute(): string
     {
-        return match($this->job_type) {
+        return match ($this->job_type) {
             'delivery' => 'ส่งของ',
             'food' => 'ส่งอาหาร',
             'document' => 'ส่งเอกสาร',
@@ -272,8 +260,6 @@ class RiderJob extends Model
 
     /**
      * ตรวจสอบว่าสามารถ track GPS ได้หรือไม่
-     *
-     * @return bool
      */
     public function getIsTrackableAttribute(): bool
     {
@@ -291,8 +277,6 @@ class RiderJob extends Model
 
     /**
      * ไรเดอร์รับงาน
-     *
-     * @return void
      */
     public function accept(): void
     {
@@ -311,8 +295,6 @@ class RiderJob extends Model
 
     /**
      * ไปถึงจุดรับ
-     *
-     * @return void
      */
     public function arrivedAtPickup(): void
     {
@@ -321,9 +303,6 @@ class RiderJob extends Model
 
     /**
      * รับของแล้ว
-     *
-     * @param string|null $proofImage
-     * @return void
      */
     public function pickUp(?string $proofImage = null): void
     {
@@ -341,8 +320,6 @@ class RiderJob extends Model
 
     /**
      * กำลังจัดส่ง
-     *
-     * @return void
      */
     public function startDelivery(): void
     {
@@ -351,10 +328,6 @@ class RiderJob extends Model
 
     /**
      * ส่งแล้ว
-     *
-     * @param string|null $proofImage
-     * @param string|null $signatureImage
-     * @return void
      */
     public function deliver(?string $proofImage = null, ?string $signatureImage = null): void
     {
@@ -375,8 +348,6 @@ class RiderJob extends Model
 
     /**
      * เสร็จสิ้นงาน
-     *
-     * @return void
      */
     public function complete(): void
     {
@@ -396,10 +367,6 @@ class RiderJob extends Model
 
     /**
      * ยกเลิกงาน
-     *
-     * @param string $reason
-     * @param string $cancelledBy
-     * @return void
      */
     public function cancel(string $reason, string $cancelledBy): void
     {

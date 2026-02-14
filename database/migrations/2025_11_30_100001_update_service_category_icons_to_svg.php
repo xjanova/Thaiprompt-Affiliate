@@ -13,8 +13,6 @@ return new class extends Migration
 {
     /**
      * รันการ migration
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,8 +55,6 @@ return new class extends Migration
 
     /**
      * ย้อนกลับการ migration
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -48,7 +48,7 @@ class OnboardingController extends Controller
     /**
      * หาขั้นตอนปัจจุบันของผู้ใช้
      *
-     * @param \App\Models\User $user
+     * @param  \App\Models\User  $user
      * @return int ขั้นตอน 1-3
      *             1 = ยังไม่ได้ KYC
      *             2 = KYC แล้ว แต่ยังไม่ได้ตั้งค่าร้านและเลือก package
@@ -57,13 +57,13 @@ class OnboardingController extends Controller
     private function getCurrentStep($user): int
     {
         // ขั้นตอน 1: ตรวจสอบ KYC
-        if (!$this->isKycApproved($user)) {
+        if (! $this->isKycApproved($user)) {
             return 1;
         }
 
         // ขั้นตอน 2: ตรวจสอบว่ามี store และ subscription หรือยัง
         $store = VendorStore::where('user_id', $user->id)->first();
-        if (!$store || !$this->hasActiveSubscription($store)) {
+        if (! $store || ! $this->hasActiveSubscription($store)) {
             return 2;
         }
 
@@ -74,8 +74,7 @@ class OnboardingController extends Controller
     /**
      * ตรวจสอบสถานะ KYC ของผู้ใช้
      *
-     * @param \App\Models\User $user
-     * @return array
+     * @param  \App\Models\User  $user
      */
     private function getKycStatus($user): array
     {
@@ -106,7 +105,7 @@ class OnboardingController extends Controller
      */
     private function hasActiveSubscription(?VendorStore $store): bool
     {
-        if (!$store) {
+        if (! $store) {
             return false;
         }
 
@@ -117,7 +116,7 @@ class OnboardingController extends Controller
 
         // ตรวจสอบว่ามี subscription ที่ active
         if ($store->subscription_status === 'active') {
-            if (!$store->subscription_expires_at || $store->subscription_expires_at > now()) {
+            if (! $store->subscription_expires_at || $store->subscription_expires_at > now()) {
                 return true;
             }
         }
@@ -140,7 +139,7 @@ class OnboardingController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบ KYC ก่อน
-        if (!$this->isKycApproved($user)) {
+        if (! $this->isKycApproved($user)) {
             return redirect()->route('seller.onboarding.index')
                 ->with('error', 'กรุณายืนยันตัวตน (KYC) ก่อนสร้างร้านค้า');
         }
@@ -165,7 +164,7 @@ class OnboardingController extends Controller
                 'user_id' => $user->id,
                 'package_id' => $package->id,
                 'store_name' => $validated['store_name'],
-                'store_slug' => Str::slug($validated['store_name'] . '-' . $user->id),
+                'store_slug' => Str::slug($validated['store_name'].'-'.$user->id),
                 'is_active' => true,
                 'status' => 'active',
                 'store_email' => $user->email,
@@ -232,8 +231,9 @@ class OnboardingController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -293,7 +293,7 @@ class OnboardingController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบ KYC ก่อน
-        if (!$this->isKycApproved($user)) {
+        if (! $this->isKycApproved($user)) {
             return redirect()->route('seller.onboarding.index')
                 ->with('error', 'กรุณายืนยันตัวตน (KYC) ก่อน');
         }
@@ -303,7 +303,7 @@ class OnboardingController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$freePackage) {
+        if (! $freePackage) {
             return redirect()->route('seller.onboarding.index')
                 ->with('error', 'ไม่พบแพ็คเกจฟรี');
         }
@@ -313,13 +313,13 @@ class OnboardingController extends Controller
 
         DB::beginTransaction();
         try {
-            if (!$store) {
+            if (! $store) {
                 // สร้าง store ใหม่
                 $store = VendorStore::create([
                     'user_id' => $user->id,
                     'package_id' => $freePackage->id,
-                    'store_name' => $user->name . ' Store',
-                    'store_slug' => Str::slug($user->name . '-store-' . $user->id),
+                    'store_name' => $user->name.' Store',
+                    'store_slug' => Str::slug($user->name.'-store-'.$user->id),
                     'is_active' => true,
                     'status' => 'active',
                     'subscription_status' => 'active',
@@ -344,8 +344,9 @@ class OnboardingController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

@@ -105,7 +105,7 @@ class TicketNotificationLog extends Model
      */
     public function getTypeLabelAttribute()
     {
-        return match($this->type) {
+        return match ($this->type) {
             'new_ticket' => 'Ticket ใหม่',
             'new_reply' => 'ข้อความตอบกลับใหม่',
             'status_changed' => 'เปลี่ยนสถานะ',
@@ -123,7 +123,7 @@ class TicketNotificationLog extends Model
      */
     public function getChannelLabelAttribute()
     {
-        return match($this->channel) {
+        return match ($this->channel) {
             'email' => 'อีเมล',
             'in_app' => 'แจ้งเตือนในแอป',
             'sms' => 'SMS',
@@ -136,7 +136,7 @@ class TicketNotificationLog extends Model
      */
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอส่ง',
             'sent' => 'ส่งแล้ว',
             'failed' => 'ส่งไม่สำเร็จ',

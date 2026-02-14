@@ -14,6 +14,7 @@ class TokenMintedNotification extends Notification implements ShouldQueue
     use Queueable;
 
     protected TPIXToken $token;
+
     protected CoinControlAction $action;
 
     public function __construct(TPIXToken $token, CoinControlAction $action)
@@ -31,11 +32,11 @@ class TokenMintedNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Tokens Minted - ' . $this->token->symbol)
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line("มีการสร้าง Token เพิ่มเติม")
+            ->subject('Tokens Minted - '.$this->token->symbol)
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('มีการสร้าง Token เพิ่มเติม')
             ->line("Token: {$this->token->symbol}")
-            ->line("จำนวน: " . number_format($this->action->amount, 8))
+            ->line('จำนวน: '.number_format($this->action->amount, 8))
             ->line("ไปยังที่อยู่: {$this->action->target_address}")
             ->line("เหตุผล: {$this->action->reason}")
             ->action('ดู Token', route('user.tokens.show', $this->token->id));

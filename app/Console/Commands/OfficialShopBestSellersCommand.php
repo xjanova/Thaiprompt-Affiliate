@@ -69,11 +69,12 @@ class OfficialShopBestSellersCommand extends Command
         $this->newLine();
 
         try {
-            $service = new OfficialShopSelectionService();
+            $service = new OfficialShopSelectionService;
             $result = $service->calculateMonthlyBestSellers($month, $year);
 
-            if (!isset($result['products'])) {
-                $this->error('❌ ' . ($result['message'] ?? 'เกิดข้อผิดพลาด'));
+            if (! isset($result['products'])) {
+                $this->error('❌ '.($result['message'] ?? 'เกิดข้อผิดพลาด'));
+
                 return Command::FAILURE;
             }
 
@@ -87,7 +88,7 @@ class OfficialShopBestSellersCommand extends Command
 
                 $this->table(
                     ['อันดับ', 'Product ID', 'Store ID', 'ยอดขาย', 'มูลค่า (บาท)'],
-                    collect($result['products'])->map(fn($item) => [
+                    collect($result['products'])->map(fn ($item) => [
                         $item['rank'],
                         $item['product_id'],
                         $item['store_id'],
@@ -104,7 +105,7 @@ class OfficialShopBestSellersCommand extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
 
             return Command::FAILURE;
         }

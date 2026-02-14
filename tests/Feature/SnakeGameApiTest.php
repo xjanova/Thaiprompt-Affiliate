@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Game;
+use App\Models\GameRoom;
+use App\Models\GameRoomItem;
+use App\Models\GameRoomPlayer;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\GameRoom;
-use App\Models\GameRoomPlayer;
-use App\Models\GameRoomItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Snake Game API Feature Tests
@@ -21,6 +21,7 @@ class SnakeGameApiTest extends TestCase
     use RefreshDatabase;
 
     protected Game $game;
+
     protected User $user;
 
     /**

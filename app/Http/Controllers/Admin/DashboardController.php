@@ -3,16 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\MlmMember;
-use App\Models\MlmCommission;
 use App\Models\CryptoExchangeRate;
-use App\Models\CryptoWithdrawalRequest;
 use App\Models\CryptoTransaction;
-use App\Models\TradingMarketData;
+use App\Models\CryptoWithdrawalRequest;
 use App\Models\KycVerification;
+use App\Models\MlmCommission;
+use App\Models\MlmMember;
 use App\Models\Ticket;
-use Illuminate\Http\Request;
+use App\Models\TradingMarketData;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller

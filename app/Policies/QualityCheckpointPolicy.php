@@ -40,7 +40,7 @@ class QualityCheckpointPolicy
             'farmer',
             'processor',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -80,7 +80,7 @@ class QualityCheckpointPolicy
         // Inspectors can delete their own checkpoints within 1 hour if not blockchain-verified
         if ($user->role === 'quality_inspector'
             && $checkpoint->inspector_id === $user->id
-            && !$checkpoint->blockchain_hash
+            && ! $checkpoint->blockchain_hash
             && $checkpoint->created_at->diffInHours(now()) < 1) {
             return true;
         }
@@ -94,7 +94,7 @@ class QualityCheckpointPolicy
     public function issueCertification(User $user, QualityCheckpoint $checkpoint): bool
     {
         // Only certification bodies and admins can issue certifications
-        if (!in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
+        if (! in_array($user->role, ['certification_body', 'admin', 'super_admin'])) {
             return false;
         }
 
@@ -104,7 +104,7 @@ class QualityCheckpointPolicy
         }
 
         // Checkpoint must not already have a certification
-        return !$checkpoint->certification_issued;
+        return ! $checkpoint->certification_issued;
     }
 
     /**
@@ -117,7 +117,7 @@ class QualityCheckpointPolicy
             'quality_inspector',
             'certification_body',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -127,7 +127,7 @@ class QualityCheckpointPolicy
     public function viewDetailedParameters(?User $user, QualityCheckpoint $checkpoint): bool
     {
         // Public can see basic results
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -140,7 +140,7 @@ class QualityCheckpointPolicy
             'quality_inspector',
             'certification_body',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 

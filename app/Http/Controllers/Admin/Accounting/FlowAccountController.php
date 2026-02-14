@@ -3,17 +3,13 @@
 namespace App\Http\Controllers\Admin\Accounting;
 
 use App\Http\Controllers\Controller;
-use App\Models\AccountingFlowaccountConnection;
+use App\Models\AccountingExpense;
 use App\Models\AccountingFlowaccountSyncLog;
 use App\Models\AccountingInvoice;
-use App\Models\AccountingExpense;
-use App\Models\AccountingContact;
-use App\Models\AccountingProduct;
 use App\Services\FlowAccountService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -117,7 +113,6 @@ class FlowAccountController extends Controller
     /**
      * เชื่อมต่อ FlowAccount (บันทึก credentials และ redirect ไป OAuth)
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function connect(Request $request)
@@ -152,15 +147,15 @@ class FlowAccountController extends Controller
             return redirect($authUrl);
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount connect error: ' . $e->getMessage());
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            Log::error('FlowAccount connect error: '.$e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * รับ OAuth Callback จาก FlowAccount
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function callback(Request $request)
@@ -168,11 +163,11 @@ class FlowAccountController extends Controller
         // ตรวจสอบ error จาก OAuth
         if ($request->has('error')) {
             return redirect()->route('admin.accounting.flowaccount.index')
-                ->with('error', 'การเชื่อมต่อถูกปฏิเสธ: ' . $request->get('error_description', $request->get('error')));
+                ->with('error', 'การเชื่อมต่อถูกปฏิเสธ: '.$request->get('error_description', $request->get('error')));
         }
 
         // ตรวจสอบ code
-        if (!$request->has('code')) {
+        if (! $request->has('code')) {
             return redirect()->route('admin.accounting.flowaccount.index')
                 ->with('error', 'การเชื่อมต่อถูกยกเลิก');
         }
@@ -188,7 +183,7 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection) {
+        if (! $connection) {
             return redirect()->route('admin.accounting.flowaccount.index')
                 ->with('error', 'ไม่พบข้อมูลการเชื่อมต่อ กรุณาเริ่มใหม่อีกครั้ง');
         }
@@ -201,7 +196,7 @@ class FlowAccountController extends Controller
                 $request->code
             );
 
-            if (!$tokenData) {
+            if (! $tokenData) {
                 throw new \Exception('ไม่สามารถรับ Access Token ได้');
             }
 
@@ -218,7 +213,7 @@ class FlowAccountController extends Controller
 
             if ($testResult['success']) {
                 // ดึงและบันทึกข้อมูลบริษัท
-                if (!empty($testResult['data'])) {
+                if (! empty($testResult['data'])) {
                     $connection->update([
                         'flowaccount_company_id' => $testResult['data']['id'] ?? null,
                     ]);
@@ -231,9 +226,10 @@ class FlowAccountController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount callback error: ' . $e->getMessage());
+            Log::error('FlowAccount callback error: '.$e->getMessage());
+
             return redirect()->route('admin.accounting.flowaccount.index')
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -255,7 +251,7 @@ class FlowAccountController extends Controller
                 'is_active' => false,
             ]);
 
-            Log::info('FlowAccount disconnected for user: ' . $user->id);
+            Log::info('FlowAccount disconnected for user: '.$user->id);
         }
 
         return back()->with('success', 'ยกเลิกการเชื่อมต่อ FlowAccount แล้ว');
@@ -263,15 +259,13 @@ class FlowAccountController extends Controller
 
     /**
      * ทดสอบการเชื่อมต่อ (AJAX)
-     *
-     * @return JsonResponse
      */
     public function testConnection(): JsonResponse
     {
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection || !$connection->isConnected()) {
+        if (! $connection || ! $connection->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => 'ยังไม่ได้เชื่อมต่อ FlowAccount',
@@ -286,7 +280,6 @@ class FlowAccountController extends Controller
     /**
      * บันทึกการตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function saveSettings(Request $request)
@@ -304,7 +297,7 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection) {
+        if (! $connection) {
             return back()->with('error', 'กรุณาเชื่อมต่อ FlowAccount ก่อน');
         }
 
@@ -324,15 +317,15 @@ class FlowAccountController extends Controller
             return back()->with('success', 'บันทึกการตั้งค่าสำเร็จ');
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount save settings error: ' . $e->getMessage());
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            Log::error('FlowAccount save settings error: '.$e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ซิงค์ข้อมูลทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function sync(Request $request)
@@ -340,8 +333,9 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection || !$connection->isConnected()) {
+        if (! $connection || ! $connection->isConnected()) {
             $message = 'กรุณาเชื่อมต่อ FlowAccount ก่อน';
+
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 400)
                 : back()->with('error', $message);
@@ -412,7 +406,7 @@ class FlowAccountController extends Controller
 
             // สร้างข้อความสรุป
             $summary = sprintf(
-                "ซิงค์สำเร็จ: ผู้ติดต่อ %d/%d, สินค้า %d/%d, ใบแจ้งหนี้ %d, ค่าใช้จ่าย %d",
+                'ซิงค์สำเร็จ: ผู้ติดต่อ %d/%d, สินค้า %d/%d, ใบแจ้งหนี้ %d, ค่าใช้จ่าย %d',
                 $results['contacts']['created'] + $results['contacts']['updated'],
                 $results['contacts']['created'] + $results['contacts']['updated'] + $results['contacts']['failed'],
                 $results['products']['created'] + $results['products']['updated'],
@@ -432,8 +426,8 @@ class FlowAccountController extends Controller
             return back()->with('success', $summary);
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount sync error: ' . $e->getMessage());
-            $message = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            Log::error('FlowAccount sync error: '.$e->getMessage());
+            $message = 'เกิดข้อผิดพลาด: '.$e->getMessage();
 
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 500)
@@ -444,8 +438,7 @@ class FlowAccountController extends Controller
     /**
      * ซิงค์ข้อมูลตามประเภท
      *
-     * @param Request $request
-     * @param string $type ประเภทข้อมูล (contacts, products, invoices, expenses)
+     * @param  string  $type  ประเภทข้อมูล (contacts, products, invoices, expenses)
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function syncType(Request $request, string $type)
@@ -453,8 +446,9 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection || !$connection->isConnected()) {
+        if (! $connection || ! $connection->isConnected()) {
             $message = 'กรุณาเชื่อมต่อ FlowAccount ก่อน';
+
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 400)
                 : back()->with('error', $message);
@@ -531,6 +525,7 @@ class FlowAccountController extends Controller
 
                 default:
                     $message = 'ประเภทข้อมูลไม่ถูกต้อง';
+
                     return $request->wantsJson()
                         ? response()->json(['success' => false, 'message' => $message], 400)
                         : back()->with('error', $message);
@@ -550,8 +545,8 @@ class FlowAccountController extends Controller
             return back()->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error("FlowAccount sync {$type} error: " . $e->getMessage());
-            $message = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            Log::error("FlowAccount sync {$type} error: ".$e->getMessage());
+            $message = 'เกิดข้อผิดพลาด: '.$e->getMessage();
 
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 500)
@@ -562,7 +557,6 @@ class FlowAccountController extends Controller
     /**
      * ดึงประวัติการซิงค์
      *
-     * @param Request $request
      * @return \Illuminate\View\View|JsonResponse
      */
     public function syncLogs(Request $request)
@@ -570,10 +564,11 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection) {
+        if (! $connection) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => 'ไม่พบการเชื่อมต่อ'], 404);
             }
+
             return redirect()->route('admin.accounting.flowaccount.index')
                 ->with('error', 'กรุณาเชื่อมต่อ FlowAccount ก่อน');
         }
@@ -620,15 +615,13 @@ class FlowAccountController extends Controller
 
     /**
      * ดึงสถิติการซิงค์ (AJAX)
-     *
-     * @return JsonResponse
      */
     public function getStats(): JsonResponse
     {
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection || !$connection->isConnected()) {
+        if (! $connection || ! $connection->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => 'ยังไม่ได้เชื่อมต่อ FlowAccount',
@@ -647,17 +640,13 @@ class FlowAccountController extends Controller
 
     /**
      * ดึงข้อมูลจาก FlowAccount API โดยตรง (สำหรับทดสอบ)
-     *
-     * @param Request $request
-     * @param string $endpoint
-     * @return JsonResponse
      */
     public function fetchFromFlowAccount(Request $request, string $endpoint): JsonResponse
     {
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection || !$connection->isConnected()) {
+        if (! $connection || ! $connection->isConnected()) {
             return response()->json([
                 'success' => false,
                 'message' => 'ยังไม่ได้เชื่อมต่อ FlowAccount',
@@ -722,7 +711,6 @@ class FlowAccountController extends Controller
     /**
      * ลบประวัติการซิงค์เก่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|JsonResponse
      */
     public function clearLogs(Request $request)
@@ -734,8 +722,9 @@ class FlowAccountController extends Controller
         $user = Auth::user();
         $connection = $this->flowAccountService->getConnection($user);
 
-        if (!$connection) {
+        if (! $connection) {
             $message = 'ไม่พบการเชื่อมต่อ';
+
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 404)
                 : back()->with('error', $message);
@@ -755,8 +744,8 @@ class FlowAccountController extends Controller
                 : back()->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount clear logs error: ' . $e->getMessage());
-            $message = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            Log::error('FlowAccount clear logs error: '.$e->getMessage());
+            $message = 'เกิดข้อผิดพลาด: '.$e->getMessage();
 
             return $request->wantsJson()
                 ? response()->json(['success' => false, 'message' => $message], 500)

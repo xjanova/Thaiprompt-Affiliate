@@ -16,7 +16,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่แล้วหรือยัง
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             throw new \Exception('Table "users" must exist before creating "affiliates" table. Please run users migration first.');
         }
 

@@ -27,7 +27,7 @@ class EnsureHasVendorStore
         $user = $request->user();
 
         // ถ้าไม่มี user ให้ไปหน้า login
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
@@ -39,13 +39,13 @@ class EnsureHasVendorStore
         // ตรวจสอบว่ามี store หรือยัง
         $store = VendorStore::where('user_id', $user->id)->first();
 
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('info', 'กรุณาตั้งค่าร้านค้าของคุณก่อน');
         }
 
         // ตรวจสอบว่ามี active subscription หรือ trial หรือยัง
-        if (!$this->hasActiveSubscription($store)) {
+        if (! $this->hasActiveSubscription($store)) {
             return redirect()->route('seller.onboarding.index')
                 ->with('warning', 'กรุณาเลือกแพ็คเกจร้านค้าของคุณ');
         }
@@ -55,9 +55,6 @@ class EnsureHasVendorStore
 
     /**
      * ตรวจสอบว่า store มี subscription ที่ active หรือยังอยู่ในช่วง trial
-     *
-     * @param VendorStore $store
-     * @return bool
      */
     private function hasActiveSubscription(VendorStore $store): bool
     {
@@ -69,7 +66,7 @@ class EnsureHasVendorStore
         // ตรวจสอบว่ามี subscription ที่ active
         if ($store->subscription_status === 'active') {
             // ตรวจสอบว่ายังไม่หมดอายุ
-            if (!$store->subscription_expires_at || $store->subscription_expires_at > now()) {
+            if (! $store->subscription_expires_at || $store->subscription_expires_at > now()) {
                 return true;
             }
         }

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Employee;
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -23,12 +23,12 @@ class EmployeeController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('employee_id', 'like', '%'.$search.'%')
-                  ->orWhere('first_name', 'like', '%'.$search.'%')
-                  ->orWhere('last_name', 'like', '%'.$search.'%')
-                  ->orWhere('work_email', 'like', '%'.$search.'%')
-                  ->orWhere('mobile_phone', 'like', '%'.$search.'%');
+                    ->orWhere('first_name', 'like', '%'.$search.'%')
+                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('work_email', 'like', '%'.$search.'%')
+                    ->orWhere('mobile_phone', 'like', '%'.$search.'%');
             });
         }
 
@@ -70,10 +70,10 @@ class EmployeeController extends Controller
         $departments = Department::where('is_active', true)->get();
         $positions = Position::where('is_active', true)->get();
         $managers = Employee::where('employment_status', 'active')
-                           ->whereHas('position', function($q) {
-                               $q->where('level', 'in', ['manager', 'director', 'lead']);
-                           })
-                           ->get();
+            ->whereHas('position', function ($q) {
+                $q->where('level', 'in', ['manager', 'director', 'lead']);
+            })
+            ->get();
 
         return view('admin.hrm.employees.create', compact('departments', 'positions', 'managers'));
     }
@@ -110,7 +110,7 @@ class EmployeeController extends Controller
         try {
             // Create user account
             $user = User::create([
-                'name' => $request->first_name . ' ' . $request->last_name,
+                'name' => $request->first_name.' '.$request->last_name,
                 'email' => $request->work_email,
                 'password' => Hash::make('password123'), // Default password
                 'role' => 'employee',
@@ -123,11 +123,12 @@ class EmployeeController extends Controller
             DB::commit();
 
             return redirect()->route('admin.hrm.employees.show', $employee)
-                           ->with('success', 'Employee created successfully');
+                ->with('success', 'Employee created successfully');
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withInput()
-                       ->with('error', 'Failed to create employee: ' . $e->getMessage());
+                ->with('error', 'Failed to create employee: '.$e->getMessage());
         }
     }
 
@@ -143,22 +144,22 @@ class EmployeeController extends Controller
             'manager',
             'directReports',
             'documents',
-            'attendanceRecords' => function($q) {
+            'attendanceRecords' => function ($q) {
                 $q->latest()->limit(30);
             },
-            'leaveRequests' => function($q) {
+            'leaveRequests' => function ($q) {
                 $q->latest()->limit(10);
             },
-            'payrollRecords' => function($q) {
+            'payrollRecords' => function ($q) {
                 $q->latest()->limit(12);
             },
-            'performanceReviews' => function($q) {
+            'performanceReviews' => function ($q) {
                 $q->latest()->limit(5);
             },
-            'performanceGoals' => function($q) {
+            'performanceGoals' => function ($q) {
                 $q->latest()->limit(10);
             },
-            'trainingEnrollments.trainingCourse' => function($q) {
+            'trainingEnrollments.trainingCourse' => function ($q) {
                 $q->latest();
             },
         ]);
@@ -174,11 +175,11 @@ class EmployeeController extends Controller
         $departments = Department::where('is_active', true)->get();
         $positions = Position::where('is_active', true)->get();
         $managers = Employee::where('employment_status', 'active')
-                           ->where('id', '!=', $employee->id)
-                           ->whereHas('position', function($q) {
-                               $q->where('level', 'in', ['manager', 'director', 'lead']);
-                           })
-                           ->get();
+            ->where('id', '!=', $employee->id)
+            ->whereHas('position', function ($q) {
+                $q->where('level', 'in', ['manager', 'director', 'lead']);
+            })
+            ->get();
 
         return view('admin.hrm.employees.edit', compact('employee', 'departments', 'positions', 'managers'));
     }
@@ -195,7 +196,7 @@ class EmployeeController extends Controller
             'position_id' => 'required|exists:positions,id',
             'employment_type' => 'required|in:full_time,part_time,contract,intern,freelance',
             'employment_status' => 'required|in:active,probation,notice_period,resigned,terminated,retired',
-            'work_email' => 'required|email|unique:employees,work_email,' . $employee->id,
+            'work_email' => 'required|email|unique:employees,work_email,'.$employee->id,
             'personal_email' => 'nullable|email',
             'mobile_phone' => 'required|string',
             'basic_salary' => 'required|numeric|min:0',
@@ -212,7 +213,7 @@ class EmployeeController extends Controller
         $employee->update($validated);
 
         return redirect()->route('admin.hrm.employees.show', $employee)
-                       ->with('success', 'Employee updated successfully');
+            ->with('success', 'Employee updated successfully');
     }
 
     /**
@@ -223,7 +224,7 @@ class EmployeeController extends Controller
         $employee->delete();
 
         return redirect()->route('admin.hrm.employees.index')
-                       ->with('success', 'Employee deleted successfully');
+            ->with('success', 'Employee deleted successfully');
     }
 
     /**
@@ -244,13 +245,13 @@ class EmployeeController extends Controller
 
         $employees = $query->get();
 
-        $filename = 'employees_' . date('Y-m-d_His') . '.csv';
+        $filename = 'employees_'.date('Y-m-d_His').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $callback = function() use ($employees) {
+        $callback = function () use ($employees) {
             $file = fopen('php://output', 'w');
 
             // CSV headers

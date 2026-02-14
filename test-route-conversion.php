@@ -1,9 +1,10 @@
 <?php
+
 /**
  * 🧪 Test Route Name to URL Conversion
  */
-
-function routeNameToUrl($routeName) {
+function routeNameToUrl($routeName)
+{
     if (empty($routeName) || $routeName === '#' || $routeName === null) {
         return '#';
     }
@@ -16,7 +17,7 @@ function routeNameToUrl($routeName) {
 
     // Add leading slash if not present
     if (empty($url) || $url[0] !== '/') {
-        $url = '/' . $url;
+        $url = '/'.$url;
     }
 
     return $url;
@@ -39,16 +40,16 @@ $testCases = [
 ];
 
 echo "🧪 Testing Route Name to URL Conversion\n";
-echo str_repeat("=", 70) . "\n\n";
+echo str_repeat('=', 70)."\n\n";
 
 $allPassed = true;
 
 foreach ($testCases as $input => $expected) {
     $result = routeNameToUrl($input);
     $passed = ($result === $expected);
-    $status = $passed ? "✅ PASS" : "❌ FAIL";
+    $status = $passed ? '✅ PASS' : '❌ FAIL';
 
-    if (!$passed) {
+    if (! $passed) {
         $allPassed = false;
     }
 
@@ -56,13 +57,13 @@ foreach ($testCases as $input => $expected) {
 
     printf("%-35s => %-25s %s\n", $inputDisplay, $result, $status);
 
-    if (!$passed) {
+    if (! $passed) {
         echo "  Expected: {$expected}\n";
         echo "  Got:      {$result}\n";
     }
 }
 
-echo "\n" . str_repeat("=", 70) . "\n";
+echo "\n".str_repeat('=', 70)."\n";
 
 if ($allPassed) {
     echo "✅ All tests passed!\n";

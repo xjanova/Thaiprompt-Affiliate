@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
-use App\Models\Product;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
-use App\Services\Payment\PaymentService;
 use App\Services\FcmNotificationService;
+use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,10 +39,6 @@ class SmsPaymentController extends Controller
      * - Admin device → เข้าถึงได้เฉพาะบิลของ Premium Shop (platformStoreId)
      *   ป้องกัน auto-approve ผิดร้าน: ถ้า seller โอนเงินยอดเดียวกัน admin จะไม่เห็นบิลนั้น
      * - Seller device → เข้าถึงได้เฉพาะบิลของ store ตัวเอง (device.store_id)
-     *
-     * @param SmsCheckerDevice $device
-     * @param PaymentTransaction $transaction
-     * @return bool
      */
     private function deviceCanAccessTransaction(SmsCheckerDevice $device, PaymentTransaction $transaction): bool
     {
@@ -51,6 +46,7 @@ class SmsPaymentController extends Controller
         if ($device->isAdminDevice()) {
             $platformStoreId = VendorStore::getPlatformStoreId();
             $txnStoreId = (int) ($transaction->store_id ?? $platformStoreId);
+
             return $txnStoreId === $platformStoreId;
         }
 
@@ -63,9 +59,6 @@ class SmsPaymentController extends Controller
      *
      * - Admin device (store_id = null) → ใช้ platformStoreId (Premium Shop)
      * - Seller device → ใช้ store_id ของ device
-     *
-     * @param SmsCheckerDevice $device
-     * @return int
      */
     private function resolveDeviceStoreId(SmsCheckerDevice $device): int
     {
@@ -79,8 +72,7 @@ class SmsPaymentController extends Controller
      *   ป้องกัน auto-approve ผิดร้าน: ยอดเงินของ seller ร้านอื่นจะไม่ปนมา
      * - Seller device → filter ตาม device.store_id (เห็นเฉพาะบิลร้านตัวเอง)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param SmsCheckerDevice $device
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     private function applyStoreFilter($query, SmsCheckerDevice $device)
@@ -100,9 +92,6 @@ class SmsPaymentController extends Controller
      * ตรวจสอบว่า device มีสิทธิ์เข้าถึงบิลดูดวงหรือไม่
      *
      * บิลดูดวงให้ทุก device เห็นได้ เพราะต้องรองรับ auto-approve เมื่อโอนตรงยอด
-     *
-     * @param SmsCheckerDevice $device
-     * @return bool
      */
     private function deviceCanAccessFortuneReading(SmsCheckerDevice $device): bool
     {
@@ -224,7 +213,7 @@ class SmsPaymentController extends Controller
 
         $orderDetails = [
             'order_number' => $reading->bill_reference,
-            'product_name' => 'ดูดวง' . ($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
+            'product_name' => 'ดูดวง'.($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
             'product_details' => $reading->facebook_user_name ?? null,
             'quantity' => 1,
             'website_name' => config('app.name'),
@@ -283,26 +272,23 @@ class SmsPaymentController extends Controller
      * รับ SMS payment notification จาก Android App
      *
      * POST /api/v1/sms-payment/notify
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function notify(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         // ตรวจสอบ rate limit ต่ออุปกรณ์
-        $rateLimitKey = 'smschecker:rate:' . $device->device_id;
+        $rateLimitKey = 'smschecker:rate:'.$device->device_id;
         $rateLimit = config('smschecker.rate_limit_per_minute', 30);
         $currentCount = (int) Cache::get($rateLimitKey, 0);
 
         if ($currentCount >= $rateLimit) {
             return response()->json([
                 'success' => false,
-                'message' => 'Rate limit exceeded. Max ' . $rateLimit . ' requests per minute.',
+                'message' => 'Rate limit exceeded. Max '.$rateLimit.' requests per minute.',
             ], 429);
         }
 
@@ -314,7 +300,7 @@ class SmsPaymentController extends Controller
         $nonce = $request->header('X-Nonce');
         $timestamp = $request->header('X-Timestamp');
 
-        if (!$signature || !$nonce || !$timestamp) {
+        if (! $signature || ! $nonce || ! $timestamp) {
             return response()->json([
                 'success' => false,
                 'message' => 'Missing required security headers',
@@ -334,7 +320,7 @@ class SmsPaymentController extends Controller
 
         // รับ encrypted data
         $encryptedData = $request->input('data');
-        if (!$encryptedData) {
+        if (! $encryptedData) {
             return response()->json([
                 'success' => false,
                 'message' => 'No payload data',
@@ -342,12 +328,13 @@ class SmsPaymentController extends Controller
         }
 
         // ตรวจสอบ HMAC signature
-        $signatureData = $encryptedData . $nonce . $timestamp;
-        if (!$this->smsPaymentService->verifySignature($signatureData, $signature, $device->secret_key)) {
+        $signatureData = $encryptedData.$nonce.$timestamp;
+        if (! $this->smsPaymentService->verifySignature($signatureData, $signature, $device->secret_key)) {
             Log::warning('SMS Payment: ลายเซ็นไม่ถูกต้อง', [
                 'device_id' => $device->device_id,
                 'ip' => $request->ip(),
             ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid signature',
@@ -356,7 +343,7 @@ class SmsPaymentController extends Controller
 
         // ถอดรหัส payload
         $payload = $this->smsPaymentService->decryptPayload($encryptedData, $device->secret_key);
-        if (!$payload) {
+        if (! $payload) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to decrypt payload',
@@ -365,8 +352,8 @@ class SmsPaymentController extends Controller
 
         // ตรวจสอบ bank ที่รองรับจาก config
         $supportedBanks = array_keys(config('smschecker.supported_banks', []));
-        $bankRule = !empty($supportedBanks)
-            ? 'required|string|in:' . implode(',', $supportedBanks)
+        $bankRule = ! empty($supportedBanks)
+            ? 'required|string|in:'.implode(',', $supportedBanks)
             : 'required|string|max:20';
 
         // ตรวจสอบ payload fields
@@ -399,7 +386,7 @@ class SmsPaymentController extends Controller
 
         // ✅ แปลง matched model เป็น RemoteOrderApproval format เพื่อให้แอพแสดงบิลได้ทันที
         $matchedOrder = null;
-        if (!empty($result['matched_model'])) {
+        if (! empty($result['matched_model'])) {
             $model = $result['matched_model'];
             $type = $result['matched_model_type'] ?? null;
 
@@ -425,14 +412,11 @@ class SmsPaymentController extends Controller
      * ตรวจสอบสถานะอุปกรณ์และจำนวน pending
      *
      * GET /api/v1/sms-payment/status
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function status(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -452,14 +436,11 @@ class SmsPaymentController extends Controller
      * ลงทะเบียน/อัพเดทข้อมูลอุปกรณ์
      *
      * POST /api/v1/sms-payment/register-device
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerDevice(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -508,9 +489,6 @@ class SmsPaymentController extends Controller
      * endpoint นี้รับเฉพาะ fcm_token เท่านั้น ไม่ต้องส่งข้อมูลอุปกรณ์ทั้งหมดเหมือน register-device
      *
      * POST /api/v1/sms-payment/register-fcm-token
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerFcmToken(Request $request): JsonResponse
     {
@@ -545,9 +523,6 @@ class SmsPaymentController extends Controller
      * เรียกจากระบบ web checkout ไม่ใช่จาก Android App
      *
      * POST /api/v1/sms-payment/generate-amount
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function generateAmount(Request $request): JsonResponse
     {
@@ -576,7 +551,7 @@ class SmsPaymentController extends Controller
             $expiryMinutes
         );
 
-        if (!$uniqueAmount) {
+        if (! $uniqueAmount) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถสร้าง unique amount ได้ มี transactions pending เต็มสำหรับราคานี้',
@@ -591,7 +566,7 @@ class SmsPaymentController extends Controller
                 'unique_amount' => number_format((float) $uniqueAmount->unique_amount, 2, '.', ''),
                 'decimal_suffix' => $uniqueAmount->decimal_suffix,
                 'expires_at' => $uniqueAmount->expires_at->toIso8601String(),
-                'display_amount' => '฿' . number_format((float) $uniqueAmount->unique_amount, 2),
+                'display_amount' => '฿'.number_format((float) $uniqueAmount->unique_amount, 2),
             ],
         ]);
     }
@@ -600,9 +575,6 @@ class SmsPaymentController extends Controller
      * ดู notification history สำหรับ admin dashboard
      *
      * GET /api/v1/sms-payment/notifications
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function notifications(Request $request): JsonResponse
     {
@@ -638,14 +610,11 @@ class SmsPaymentController extends Controller
      * Android App ใช้แสดงรายการ orders ที่รอชำระเงิน
      *
      * GET /api/v1/sms-payment/orders
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function orders(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -663,10 +632,10 @@ class SmsPaymentController extends Controller
             // เพื่อให้แอพแสดงบิลที่เพิ่งจับคู่สำเร็จจาก SMS ด้วย
             $query->where(function ($q) {
                 $q->whereIn('status', ['pending', 'processing'])
-                  ->orWhere(function ($q2) {
-                      $q2->where('status', 'completed')
-                         ->where('paid_at', '>=', now()->subHour());
-                  });
+                    ->orWhere(function ($q2) {
+                        $q2->where('status', 'completed')
+                            ->where('paid_at', '>=', now()->subHour());
+                    });
             });
         } elseif ($status !== 'all') {
             $query->where('status', $status);
@@ -684,7 +653,7 @@ class SmsPaymentController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('transaction_id', 'like', "%{$search}%")
-                  ->orWhere('promptpay_ref_no', 'like', "%{$search}%");
+                    ->orWhere('promptpay_ref_no', 'like', "%{$search}%");
             });
         }
 
@@ -759,9 +728,7 @@ class SmsPaymentController extends Controller
      *
      * POST /api/v1/sms-payment/orders/{identifier}/approve
      *
-     * @param Request $request
-     * @param mixed $identifier numeric ID หรือ bill_reference string
-     * @return JsonResponse
+     * @param  mixed  $identifier  numeric ID หรือ bill_reference string
      */
     public function approveOrder(Request $request, $identifier): JsonResponse
     {
@@ -774,7 +741,7 @@ class SmsPaymentController extends Controller
         if (! $resolved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found: ' . $identifier,
+                'message' => 'Order not found: '.$identifier,
             ], 404);
         }
 
@@ -847,7 +814,7 @@ class SmsPaymentController extends Controller
         if (! in_array($model->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction is not pending (current: ' . $model->status . ')',
+                'message' => 'Transaction is not pending (current: '.$model->status.')',
             ], 422);
         }
 
@@ -895,7 +862,7 @@ class SmsPaymentController extends Controller
      * - FTU-, FR- → FortuneReading (bill_reference)
      * - Numeric → PaymentTransaction::find() / legacy virtual ID (10M+)
      *
-     * @param mixed $identifier
+     * @param  mixed  $identifier
      * @return array{model: Model, type: string}|null
      */
     private function resolveOrderByIdentifier($identifier): ?array
@@ -957,9 +924,7 @@ class SmsPaymentController extends Controller
      *
      * POST /api/v1/sms-payment/orders/{identifier}/reject
      *
-     * @param Request $request
-     * @param mixed $identifier numeric ID หรือ bill_reference string
-     * @return JsonResponse
+     * @param  mixed  $identifier  numeric ID หรือ bill_reference string
      */
     public function rejectOrder(Request $request, $identifier): JsonResponse
     {
@@ -972,7 +937,7 @@ class SmsPaymentController extends Controller
         if (! $resolved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found: ' . $identifier,
+                'message' => 'Order not found: '.$identifier,
             ], 404);
         }
 
@@ -1040,7 +1005,7 @@ class SmsPaymentController extends Controller
         if (! in_array($model->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction is not pending (current: ' . $model->status . ')',
+                'message' => 'Transaction is not pending (current: '.$model->status.')',
             ], 422);
         }
 
@@ -1065,7 +1030,7 @@ class SmsPaymentController extends Controller
             $model->order->update([
                 'status' => 'cancelled',
                 'payment_status' => 'failed',
-                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
+                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: '.$reason,
             ]);
         }
 
@@ -1095,9 +1060,6 @@ class SmsPaymentController extends Controller
      * รองรับทั้ง numeric ID (legacy) และ bill_reference string (ใหม่)
      *
      * POST /api/v1/sms-payment/orders/bulk-approve
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function bulkApproveOrders(Request $request): JsonResponse
     {
@@ -1128,6 +1090,7 @@ class SmsPaymentController extends Controller
             $resolved = $this->resolveOrderByIdentifier($identifier);
             if (! $resolved) {
                 $failed++;
+
                 continue;
             }
 
@@ -1139,6 +1102,7 @@ class SmsPaymentController extends Controller
                 // FortuneReading → เฉพาะ admin device
                 if (! $this->deviceCanAccessFortuneReading($device)) {
                     $failed++;
+
                     continue;
                 }
                 if (! $model->is_paid) {
@@ -1152,6 +1116,7 @@ class SmsPaymentController extends Controller
                 // Multi-Store: ตรวจสอบสิทธิ์ device
                 if (! $this->deviceCanAccessTransaction($device, $model)) {
                     $failed++;
+
                     continue;
                 }
                 if (in_array($model->status, ['pending', 'processing'])) {
@@ -1185,7 +1150,7 @@ class SmsPaymentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Approved {$approved} orders" . ($failed > 0 ? ", {$failed} skipped" : ''),
+            'message' => "Approved {$approved} orders".($failed > 0 ? ", {$failed} skipped" : ''),
             'data' => ['approved' => $approved, 'failed' => $failed],
         ]);
     }
@@ -1194,14 +1159,11 @@ class SmsPaymentController extends Controller
      * Incremental sync - ดึง orders ที่เปลี่ยนแปลงตั้งแต่ version ที่กำหนด
      *
      * GET /api/v1/sms-payment/orders/sync
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncOrders(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1277,19 +1239,16 @@ class SmsPaymentController extends Controller
      * แทนที่จะดึง orders ทั้งหมดมาแสดง จะดึงเฉพาะที่ยอดตรงกัน
      *
      * GET /api/v1/sms-payment/orders/match?amount=500.37
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function matchOrderByAmount(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $amount = $request->input('amount');
-        if (!$amount || !is_numeric($amount)) {
+        if (! $amount || ! is_numeric($amount)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Amount is required and must be numeric',
@@ -1467,7 +1426,7 @@ class SmsPaymentController extends Controller
                 'data' => [
                     'matched' => false,
                     'order' => null,
-                    'message' => 'No pending order found with amount ' . number_format($amount, 2),
+                    'message' => 'No pending order found with amount '.number_format($amount, 2),
                 ],
             ]);
         }
@@ -1488,10 +1447,6 @@ class SmsPaymentController extends Controller
 
     /**
      * ค้นหา FortuneReading จากยอดเงิน (3 ระดับ)
-     *
-     * @param float $amount
-     * @param int $graceMinutes
-     * @return FortuneReading|null
      */
     private function matchFortuneReadingByAmount(float $amount, int $graceMinutes): ?FortuneReading
     {
@@ -1542,14 +1497,11 @@ class SmsPaymentController extends Controller
      * ดึงตั้งค่าอุปกรณ์
      *
      * GET /api/v1/sms-payment/device-settings
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDeviceSettings(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1571,14 +1523,11 @@ class SmsPaymentController extends Controller
      * อัพเดทตั้งค่าอุปกรณ์
      *
      * PUT /api/v1/sms-payment/device-settings
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateDeviceSettings(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1603,7 +1552,7 @@ class SmsPaymentController extends Controller
             $updateData['approval_mode'] = $request->input('approval_mode');
         }
 
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $device->update($updateData);
 
             // ส่ง FCM push ให้แอพอัพเดทตั้งค่าทันที (เหมือน xmanstudio)
@@ -1626,14 +1575,11 @@ class SmsPaymentController extends Controller
      * สถิติ dashboard สำหรับ Android App
      *
      * GET /api/v1/sms-payment/dashboard-stats
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function dashboardStats(Request $request): JsonResponse
     {
         $device = $request->attributes->get('sms_checker_device');
-        if (!$device instanceof SmsCheckerDevice) {
+        if (! $device instanceof SmsCheckerDevice) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1645,6 +1591,7 @@ class SmsPaymentController extends Controller
         $baseQuery = function () use ($device) {
             $query = PaymentTransaction::query();
             $this->applyStoreFilter($query, $device);
+
             return $query;
         };
 
@@ -1718,9 +1665,6 @@ class SmsPaymentController extends Controller
      * Payload: { action, order_identifier, amount, bank, sms_reference, device_id, reason, nonce }
      *
      * POST /api/v1/sms-payment/notify-action
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function notifyAction(Request $request): JsonResponse
     {
@@ -1763,7 +1707,7 @@ class SmsPaymentController extends Controller
         }
 
         // ตรวจสอบ HMAC signature
-        $signatureData = $encryptedData . $nonce . $timestamp;
+        $signatureData = $encryptedData.$nonce.$timestamp;
         if (! $this->smsPaymentService->verifySignature($signatureData, $signature, $device->secret_key)) {
             Log::warning('SMS Payment notifyAction: ลายเซ็นไม่ถูกต้อง', [
                 'device_id' => $device->device_id,
@@ -1838,7 +1782,7 @@ class SmsPaymentController extends Controller
         if (! $resolved) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found: ' . $identifier,
+                'message' => 'Order not found: '.$identifier,
             ], 404);
         }
 
@@ -1892,7 +1836,7 @@ class SmsPaymentController extends Controller
         if (! in_array($txn->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction cannot be approved in current status: ' . $txn->status,
+                'message' => 'Transaction cannot be approved in current status: '.$txn->status,
             ], 422);
         }
 
@@ -1951,7 +1895,7 @@ class SmsPaymentController extends Controller
         if (! in_array($txn->status, ['pending', 'processing'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction cannot be rejected in current status: ' . $txn->status,
+                'message' => 'Transaction cannot be rejected in current status: '.$txn->status,
             ], 422);
         }
 
@@ -1976,7 +1920,7 @@ class SmsPaymentController extends Controller
             $txn->order->update([
                 'status' => 'cancelled',
                 'payment_status' => 'failed',
-                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: ' . $reason,
+                'cancellation_reason' => 'ปฏิเสธโดย SMS Checker: '.$reason,
             ]);
         }
 
@@ -2027,7 +1971,7 @@ class SmsPaymentController extends Controller
             ->first();
 
         // ถ้าไม่พบจาก matched_transaction_id → ลองหาจากยอดเงินที่ตรงกัน
-        if (!$notification && !empty($payload['amount'])) {
+        if (! $notification && ! empty($payload['amount'])) {
             $notification = SmsPaymentNotification::where('amount', $payload['amount'])
                 ->where('type', 'credit')
                 ->whereIn('status', ['matched', 'pending'])
@@ -2123,9 +2067,6 @@ class SmsPaymentController extends Controller
      * Android app เวอร์ชันเก่าเรียก GET /sync แทน /orders/sync
      *
      * GET /api/v1/sms-payment/sync
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function sync(Request $request): JsonResponse
     {
@@ -2139,9 +2080,6 @@ class SmsPaymentController extends Controller
      * ก่อนจะเรียก syncOrders() เพื่อดึงข้อมูลจริง
      *
      * GET /api/v1/sms-payment/sync-version
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSyncVersion(Request $request): JsonResponse
     {

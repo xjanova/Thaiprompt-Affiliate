@@ -80,8 +80,6 @@ class KeywordRelationship extends Model
 
     /**
      * ความสัมพันธ์กับ source keyword
-     *
-     * @return BelongsTo
      */
     public function sourceKeyword(): BelongsTo
     {
@@ -90,8 +88,6 @@ class KeywordRelationship extends Model
 
     /**
      * ความสัมพันธ์กับ related keyword
-     *
-     * @return BelongsTo
      */
     public function relatedKeyword(): BelongsTo
     {
@@ -101,7 +97,7 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง active relationships
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -112,7 +108,7 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง verified relationships
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVerified($query)
@@ -123,8 +119,8 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง strong relationships
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minStrength ค่าต่ำสุด (default: 0.7)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minStrength  ค่าต่ำสุด (default: 0.7)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStrong($query, float $minStrength = 0.7)
@@ -135,7 +131,7 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง synonyms
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSynonyms($query)
@@ -146,8 +142,7 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง by relationship type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByType($query, string $type)
@@ -158,8 +153,8 @@ class KeywordRelationship extends Model
     /**
      * Scope: ดึง high confidence relationships
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minConfidence ค่าต่ำสุด (default: 0.75)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minConfidence  ค่าต่ำสุด (default: 0.75)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighConfidence($query, float $minConfidence = 0.75)
@@ -169,8 +164,6 @@ class KeywordRelationship extends Model
 
     /**
      * ตรวจสอบว่า relationship เป็น synonym
-     *
-     * @return bool
      */
     public function isSynonym(): bool
     {
@@ -179,8 +172,6 @@ class KeywordRelationship extends Model
 
     /**
      * ตรวจสอบว่า relationship ได้รับการยืนยัน
-     *
-     * @return bool
      */
     public function isVerified(): bool
     {
@@ -190,8 +181,7 @@ class KeywordRelationship extends Model
     /**
      * ตรวจสอบว่า relationship แข็งแรง
      *
-     * @param float $threshold default: 0.7
-     * @return bool
+     * @param  float  $threshold  default: 0.7
      */
     public function isStrong(float $threshold = 0.7): bool
     {
@@ -200,8 +190,6 @@ class KeywordRelationship extends Model
 
     /**
      * ดึง strength percentage
-     *
-     * @return int
      */
     public function getStrengthPercentageAttribute(): int
     {
@@ -210,8 +198,6 @@ class KeywordRelationship extends Model
 
     /**
      * ดึง confidence percentage
-     *
-     * @return int
      */
     public function getConfidencePercentageAttribute(): int
     {
@@ -220,8 +206,6 @@ class KeywordRelationship extends Model
 
     /**
      * ดึง supporting message count
-     *
-     * @return int
      */
     public function getSupportingMessageCountAttribute(): int
     {
@@ -230,8 +214,6 @@ class KeywordRelationship extends Model
 
     /**
      * Increment usage count
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -240,9 +222,6 @@ class KeywordRelationship extends Model
 
     /**
      * Update strength based on new data
-     *
-     * @param float $newScore
-     * @return void
      */
     public function updateStrength(float $newScore): void
     {

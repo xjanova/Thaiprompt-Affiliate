@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง platform_transactions
      * บันทึกรายการเข้าออกของกระเป๋าเงิน Platform
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -29,7 +27,7 @@ return new class extends Migration
                 'transfer_in',      // โอนเข้าจากกระเป๋าอื่น
                 'transfer_out',     // โอนออกไปกระเป๋าอื่น
                 'adjustment',       // ปรับยอด
-                'refund'            // คืนเงิน
+                'refund',            // คืนเงิน
             ]);
 
             // ประเภทย่อย (รายละเอียด)
@@ -89,8 +87,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง platform_transactions
-     *
-     * @return void
      */
     public function down(): void
     {

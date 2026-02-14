@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
 
 /**
  * FortuneUserCredit Model
@@ -173,7 +173,7 @@ class FortuneUserCredit extends Model
      */
     public function isCurrentlyUnlimited(): bool
     {
-        if (!$this->is_unlimited) {
+        if (! $this->is_unlimited) {
             return false;
         }
 
@@ -224,6 +224,7 @@ class FortuneUserCredit extends Model
         // มีเครดิตเหลือ → หักเครดิต
         if ($this->getRemainingCredits() > 0) {
             $this->increment('credits_used');
+
             return true;
         }
 
@@ -244,7 +245,7 @@ class FortuneUserCredit extends Model
         if ($note) {
             $updateData['note'] = $note;
         }
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $this->update($updateData);
         }
 

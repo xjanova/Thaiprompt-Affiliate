@@ -92,6 +92,7 @@ class FortuneCategorySeeder extends Seeder
             // ✅ ตรวจสอบว่ามีหมวดหมู่นี้แล้วหรือยัง
             if (FortuneCategory::where('slug', $categoryData['slug'])->exists()) {
                 $this->command->info("หมวดหมู่ '{$categoryData['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

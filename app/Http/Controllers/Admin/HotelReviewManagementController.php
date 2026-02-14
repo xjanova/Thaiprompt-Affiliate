@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\HotelReview;
 use App\Models\Hotel;
+use App\Models\HotelReview;
 use Illuminate\Http\Request;
 
 class HotelReviewManagementController extends Controller
@@ -107,7 +107,7 @@ class HotelReviewManagementController extends Controller
     public function toggleFeatured($id)
     {
         $review = HotelReview::findOrFail($id);
-        $review->update(['is_featured' => !$review->is_featured]);
+        $review->update(['is_featured' => ! $review->is_featured]);
 
         return back()->with('success', 'Featured status updated successfully!');
     }
@@ -147,7 +147,7 @@ class HotelReviewManagementController extends Controller
 
             return back()->with('success', 'Review deleted successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete review: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete review: '.$e->getMessage());
         }
     }
 }

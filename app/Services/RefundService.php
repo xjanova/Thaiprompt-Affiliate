@@ -2,14 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\EarningsLedger;
+use App\Models\MlmCommission;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\User;
-use App\Models\MlmCommission;
-use App\Models\EarningsLedger;
-use App\Models\WalletDebt;
-use App\Models\PlatformWallet;
 use App\Models\PlatformTransaction;
+use App\Models\PlatformWallet;
+use App\Models\User;
+use App\Models\WalletDebt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -32,21 +32,17 @@ use Illuminate\Support\Facades\Log;
 class RefundService
 {
     protected MlmCommissionClawbackService $mlmClawbackService;
+
     protected DebtCollectionService $debtService;
 
     public function __construct()
     {
-        $this->mlmClawbackService = new MlmCommissionClawbackService();
-        $this->debtService = new DebtCollectionService();
+        $this->mlmClawbackService = new MlmCommissionClawbackService;
+        $this->debtService = new DebtCollectionService;
     }
 
     /**
      * ดำเนินการ Full Refund สำหรับ Order
-     *
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     public function processFullRefund(Order $order, ?int $adminId = null, string $reason = ''): array
     {
@@ -111,19 +107,19 @@ class RefundService
             $allDebts = [];
 
             // จาก Cashback clawback
-            if (!empty($refundReport['cashback_clawback']['debt_id'])) {
+            if (! empty($refundReport['cashback_clawback']['debt_id'])) {
                 $allDebts[] = $refundReport['cashback_clawback']['debt_id'];
             }
 
             // จาก Seller clawback
             foreach ($refundReport['seller_clawback'] as $seller) {
-                if (!empty($seller['debt_id'])) {
+                if (! empty($seller['debt_id'])) {
                     $allDebts[] = $seller['debt_id'];
                 }
             }
 
             // จาก MLM clawback
-            if (!empty($refundReport['mlm_clawback']['debts_created'])) {
+            if (! empty($refundReport['mlm_clawback']['debts_created'])) {
                 $allDebts = array_merge($allDebts, $refundReport['mlm_clawback']['debts_created']);
             }
 
@@ -151,11 +147,7 @@ class RefundService
     /**
      * Partial Refund - คืนเงินบางส่วน (เฉพาะบาง Item)
      *
-     * @param Order $order
-     * @param array $itemIds รายการ OrderItem IDs ที่จะ refund
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
+     * @param  array  $itemIds  รายการ OrderItem IDs ที่จะ refund
      */
     public function processPartialRefund(
         Order $order,
@@ -182,7 +174,7 @@ class RefundService
                 $refundReport['refunded_items'][] = $itemRefund;
                 $refundReport['total_refund'] += $itemRefund['customer_refund'];
 
-                if (!empty($itemRefund['debts'])) {
+                if (! empty($itemRefund['debts'])) {
                     $refundReport['debts_created'] = array_merge(
                         $refundReport['debts_created'],
                         $itemRefund['debts']
@@ -193,7 +185,7 @@ class RefundService
             // อัพเดทสถานะ Order เป็น partially_refunded
             $order->update([
                 'status' => 'partially_refunded',
-                'notes' => ($order->notes ?? '') . "\nPartial refund: " . $reason,
+                'notes' => ($order->notes ?? '')."\nPartial refund: ".$reason,
             ]);
 
             Log::info('Partial refund processed', $refundReport);
@@ -204,11 +196,6 @@ class RefundService
 
     /**
      * คืนเงินให้ลูกค้า
-     *
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     protected function refundToCustomer(Order $order, ?int $adminId, string $reason): array
     {
@@ -220,9 +207,10 @@ class RefundService
         ];
 
         $customer = User::find($order->user_id);
-        if (!$customer) {
+        if (! $customer) {
             $result['status'] = 'failed';
             $result['error'] = 'Customer not found';
+
             return $result;
         }
 
@@ -263,11 +251,6 @@ class RefundService
      *
      * หัก cashback ออกจาก wallet ลูกค้า
      * ถ้าเงินไม่พอ → สร้างเป็นหนี้
-     *
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     protected function clawbackCashback(Order $order, ?int $adminId, string $reason): array
     {
@@ -282,8 +265,9 @@ class RefundService
         ];
 
         // ตรวจสอบว่ามี cashback ที่ต้องเรียกคืนหรือไม่
-        if (!$order->cashback_processed || ($order->cashback_amount ?? 0) <= 0) {
+        if (! $order->cashback_processed || ($order->cashback_amount ?? 0) <= 0) {
             $result['reason'] = 'No cashback to clawback';
+
             return $result;
         }
 
@@ -291,9 +275,10 @@ class RefundService
         $result['clawback_amount'] = $cashbackAmount;
 
         $customer = User::find($order->user_id);
-        if (!$customer) {
+        if (! $customer) {
             $result['status'] = 'failed';
             $result['reason'] = 'Customer not found';
+
             return $result;
         }
 
@@ -386,11 +371,6 @@ class RefundService
 
     /**
      * เรียกคืนเงินจากผู้ขาย/ร้านแอดมิน
-     *
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     protected function clawbackFromSellers(Order $order, ?int $adminId, string $reason): array
     {
@@ -485,13 +465,6 @@ class RefundService
 
     /**
      * เรียกคืนเงินจาก User
-     *
-     * @param int $userId
-     * @param float $amount
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     protected function clawbackFromUser(
         int $userId,
@@ -506,7 +479,7 @@ class RefundService
         ];
 
         $user = User::find($userId);
-        if (!$user || !$user->wallet) {
+        if (! $user || ! $user->wallet) {
             // ไม่มี wallet → สร้างหนี้ทั้งหมด
             $debt = WalletDebt::createDebt(
                 $userId,
@@ -519,6 +492,7 @@ class RefundService
                 ['order_number' => $order->order_number]
             );
             $result['debt_id'] = $debt->id;
+
             return $result;
         }
 
@@ -569,10 +543,6 @@ class RefundService
 
     /**
      * ปรับยอด Platform Wallets
-     *
-     * @param Order $order
-     * @param string $reason
-     * @return array
      */
     protected function adjustPlatformWallets(Order $order, string $reason): array
     {
@@ -586,7 +556,7 @@ class RefundService
 
         foreach ($transactions as $tx) {
             $wallet = PlatformWallet::find($tx->wallet_id);
-            if (!$wallet) {
+            if (! $wallet) {
                 continue;
             }
 
@@ -612,12 +582,6 @@ class RefundService
 
     /**
      * Refund สำหรับ OrderItem เดียว
-     *
-     * @param OrderItem $item
-     * @param Order $order
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     protected function refundOrderItem(
         OrderItem $item,
@@ -627,7 +591,7 @@ class RefundService
     ): array {
         $result = [
             'item_id' => $item->id,
-            'product_name' => $item->product_name ?? 'Item #' . $item->id,
+            'product_name' => $item->product_name ?? 'Item #'.$item->id,
             'item_total' => $item->total_price,
             'customer_refund' => $item->total_price,
             'seller_clawback' => 0,
@@ -703,12 +667,6 @@ class RefundService
 
     /**
      * สร้าง Wallet Transaction
-     *
-     * @param User $user
-     * @param float $amount
-     * @param string $type
-     * @param Order $order
-     * @param string $description
      */
     protected function createWalletTransaction(
         User $user,
@@ -717,7 +675,7 @@ class RefundService
         Order $order,
         string $description
     ): void {
-        if (!$user->wallet || !method_exists($user->wallet, 'transactions')) {
+        if (! $user->wallet || ! method_exists($user->wallet, 'transactions')) {
             return;
         }
 
@@ -734,19 +692,16 @@ class RefundService
 
     /**
      * ดึงรายงาน Refund ของ Order
-     *
-     * @param Order $order
-     * @return array
      */
     public function getRefundReport(Order $order): array
     {
         // ดึงหนี้ทั้งหมดที่เกี่ยวกับ Order
         $debts = WalletDebt::where(function ($q) use ($order) {
             $q->where('source_type', 'SellerClawback')
-              ->where('source_id', $order->id);
+                ->where('source_id', $order->id);
         })->orWhere(function ($q) use ($order) {
             $q->where('source_type', 'MlmClawback')
-              ->where('source_id', $order->id);
+                ->where('source_id', $order->id);
         })->get();
 
         // ดึง Platform Transaction reversals
@@ -765,7 +720,7 @@ class RefundService
                 'total_amount' => $debts->sum('original_amount'),
                 'collected' => $debts->sum('deducted_amount'),
                 'pending' => $debts->where('status', 'active')->sum('remaining_amount'),
-                'items' => $debts->map(fn($d) => [
+                'items' => $debts->map(fn ($d) => [
                     'id' => $d->id,
                     'user_id' => $d->user_id,
                     'type' => $d->source_type,
@@ -774,7 +729,7 @@ class RefundService
                     'status' => $d->status,
                 ]),
             ],
-            'platform_adjustments' => $reversals->map(fn($r) => [
+            'platform_adjustments' => $reversals->map(fn ($r) => [
                 'wallet_id' => $r->wallet_id,
                 'amount' => $r->amount,
                 'description' => $r->description,
@@ -784,9 +739,6 @@ class RefundService
 
     /**
      * ดึงสถิติ Refund
-     *
-     * @param array $filters
-     * @return array
      */
     public function getRefundStats(array $filters = []): array
     {

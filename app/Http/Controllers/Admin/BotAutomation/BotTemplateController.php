@@ -121,7 +121,7 @@ class BotTemplateController extends Controller
     public function duplicate(BotContentTemplate $template)
     {
         $newTemplate = $template->replicate();
-        $newTemplate->name = $template->name . ' (Copy)';
+        $newTemplate->name = $template->name.' (Copy)';
         $newTemplate->save();
 
         return redirect()
@@ -139,7 +139,7 @@ class BotTemplateController extends Controller
         $variables = json_decode($template->variables ?? '[]', true);
 
         foreach ($variables as $variable) {
-            $content = str_replace("{{" . $variable . "}}", "[SAMPLE DATA]", $content);
+            $content = str_replace('{{'.$variable.'}}', '[SAMPLE DATA]', $content);
         }
 
         return response()->json([
@@ -152,7 +152,6 @@ class BotTemplateController extends Controller
     /**
      * ส่งออกเทมเพลตเป็นไฟล์ JSON
      *
-     * @param BotContentTemplate $template
      * @return \Illuminate\Http\Response
      */
     public function export(BotContentTemplate $template)
@@ -170,20 +169,18 @@ class BotTemplateController extends Controller
             'version' => '1.0',
         ];
 
-        $filename = 'template-' . \Str::slug($template->name) . '-' . now()->format('Y-m-d') . '.json';
+        $filename = 'template-'.\Str::slug($template->name).'-'.now()->format('Y-m-d').'.json';
 
         return response()
             ->json($data, 200, [
                 'Content-Type' => 'application/json',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
      * ทดสอบเทมเพลตด้วยการส่งข้อความทดสอบ
      *
-     * @param Request $request
-     * @param BotContentTemplate $template
      * @return \Illuminate\Http\JsonResponse
      */
     public function test(Request $request, BotContentTemplate $template)
@@ -201,8 +198,8 @@ class BotTemplateController extends Controller
 
         // แทนที่ variables ด้วยข้อมูลทดสอบ
         foreach ($variables as $variable) {
-            $value = $testData[$variable] ?? '[TEST: ' . $variable . ']';
-            $content = str_replace("{{" . $variable . "}}", $value, $content);
+            $value = $testData[$variable] ?? '[TEST: '.$variable.']';
+            $content = str_replace('{{'.$variable.'}}', $value, $content);
         }
 
         // สร้าง preview ของข้อความ

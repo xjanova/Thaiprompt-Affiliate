@@ -65,7 +65,7 @@ class FoodTraceabilityService
             } catch (\Exception $e) {
                 \Log::error('Blockchain recording failed', [
                     'product_id' => $product->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
                 // Continue without blockchain hash - will retry later
             }
@@ -122,7 +122,7 @@ class FoodTraceabilityService
                 ->where('sequence_order', $sequence - 1)
                 ->first();
 
-            if ($previousStage && !$previousStage->departed_at) {
+            if ($previousStage && ! $previousStage->departed_at) {
                 $previousStage->update(['departed_at' => now()]);
             }
 
@@ -133,7 +133,7 @@ class FoodTraceabilityService
             } catch (\Exception $e) {
                 \Log::error('Blockchain journey recording failed', [
                     'journey_id' => $journey->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -230,7 +230,7 @@ class FoodTraceabilityService
      */
     protected function generateBatchNumber(): string
     {
-        return 'BATCH-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'BATCH-'.date('Ymd').'-'.str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -254,12 +254,12 @@ class FoodTraceabilityService
 
             // Update product with QR code URL
             $product->update([
-                'qr_code_url' => Storage::url($filename)
+                'qr_code_url' => Storage::url($filename),
             ]);
         } catch (\Exception $e) {
             \Log::error('QR code generation failed', [
                 'product_id' => $product->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -279,7 +279,7 @@ class FoodTraceabilityService
             } catch (\Exception $e) {
                 \Log::error('LINE notification failed', [
                     'product_id' => $product->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -326,17 +326,17 @@ class FoodTraceabilityService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => 'ขั้นตอน: ' . $journey->stage_name,
+                                    'text' => 'ขั้นตอน: '.$journey->stage_name,
                                     'size' => 'sm',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'สถานที่: ' . $journey->location_name,
+                                    'text' => 'สถานที่: '.$journey->location_name,
                                     'size' => 'sm',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'ผู้รับผิดชอบ: ' . $journey->handler_name,
+                                    'text' => 'ผู้รับผิดชอบ: '.$journey->handler_name,
                                     'size' => 'sm',
                                 ],
                             ],
@@ -356,7 +356,7 @@ class FoodTraceabilityService
             'journeyStages',
             'qualityCheckpoints',
             'carbonRecords',
-            'consumerScans'
+            'consumerScans',
         ])->findOrFail($productId);
 
         return [

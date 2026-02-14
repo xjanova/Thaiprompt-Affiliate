@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\MlmProspect;
-use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Duplicate Detection Service
@@ -28,9 +28,7 @@ class DuplicateDetectionService
     /**
      * Check for duplicate email
      *
-     * @param string $email
-     * @param int|null $excludeUserId Exclude this user ID from check
-     * @return array
+     * @param  int|null  $excludeUserId  Exclude this user ID from check
      */
     public function checkDuplicateEmail(string $email, ?int $excludeUserId = null): array
     {
@@ -40,7 +38,7 @@ class DuplicateDetectionService
         $cacheKey = "duplicate_check:email:{$email}";
         $cached = Cache::get($cacheKey);
 
-        if ($cached !== null && (!$excludeUserId || $cached['user_id'] !== $excludeUserId)) {
+        if ($cached !== null && (! $excludeUserId || $cached['user_id'] !== $excludeUserId)) {
             return $cached;
         }
 
@@ -54,7 +52,7 @@ class DuplicateDetectionService
         $existingUser = $query->first();
 
         $result = [
-            'exists' => !is_null($existingUser),
+            'exists' => ! is_null($existingUser),
             'user_id' => $existingUser?->id,
             'user_name' => $existingUser?->name,
             'registered_at' => $existingUser?->created_at?->format('Y-m-d H:i:s'),
@@ -73,10 +71,6 @@ class DuplicateDetectionService
 
     /**
      * Check for duplicate phone number
-     *
-     * @param string $phone
-     * @param int|null $excludeUserId
-     * @return array
      */
     public function checkDuplicatePhone(string $phone, ?int $excludeUserId = null): array
     {
@@ -89,7 +83,7 @@ class DuplicateDetectionService
         $cacheKey = "duplicate_check:phone:{$normalized}";
         $cached = Cache::get($cacheKey);
 
-        if ($cached !== null && (!$excludeUserId || $cached['user_id'] !== $excludeUserId)) {
+        if ($cached !== null && (! $excludeUserId || $cached['user_id'] !== $excludeUserId)) {
             return $cached;
         }
 
@@ -103,7 +97,7 @@ class DuplicateDetectionService
         $existingUser = $query->first();
 
         $result = [
-            'exists' => !is_null($existingUser),
+            'exists' => ! is_null($existingUser),
             'user_id' => $existingUser?->id,
             'user_name' => $existingUser?->name,
             'phone' => $existingUser?->phone,
@@ -122,17 +116,13 @@ class DuplicateDetectionService
 
     /**
      * Check for duplicate LINE user ID
-     *
-     * @param string $lineUserId
-     * @param int|null $excludeUserId
-     * @return array
      */
     public function checkDuplicateLineId(string $lineUserId, ?int $excludeUserId = null): array
     {
         $cacheKey = "duplicate_check:line:{$lineUserId}";
         $cached = Cache::get($cacheKey);
 
-        if ($cached !== null && (!$excludeUserId || $cached['user_id'] !== $excludeUserId)) {
+        if ($cached !== null && (! $excludeUserId || $cached['user_id'] !== $excludeUserId)) {
             return $cached;
         }
 
@@ -146,7 +136,7 @@ class DuplicateDetectionService
         $existingUser = $query->first();
 
         $result = [
-            'exists' => !is_null($existingUser),
+            'exists' => ! is_null($existingUser),
             'user_id' => $existingUser?->id,
             'user_name' => $existingUser?->name,
             'line_display_name' => $existingUser?->line_display_name,
@@ -165,10 +155,6 @@ class DuplicateDetectionService
 
     /**
      * Check for duplicate Thai ID card
-     *
-     * @param string $idCard
-     * @param int|null $excludeUserId
-     * @return array
      */
     public function checkDuplicateThaiId(string $idCard, ?int $excludeUserId = null): array
     {
@@ -178,7 +164,7 @@ class DuplicateDetectionService
         $cacheKey = "duplicate_check:thaiid:{$normalized}";
         $cached = Cache::get($cacheKey);
 
-        if ($cached !== null && (!$excludeUserId || $cached['user_id'] !== $excludeUserId)) {
+        if ($cached !== null && (! $excludeUserId || $cached['user_id'] !== $excludeUserId)) {
             return $cached;
         }
 
@@ -192,7 +178,7 @@ class DuplicateDetectionService
         $existingUser = $query->first();
 
         $result = [
-            'exists' => !is_null($existingUser),
+            'exists' => ! is_null($existingUser),
             'user_id' => $existingUser?->id,
             'user_name' => $existingUser?->name,
             'registered_at' => $existingUser?->created_at?->format('Y-m-d H:i:s'),
@@ -211,9 +197,7 @@ class DuplicateDetectionService
     /**
      * Comprehensive duplicate check (all fields)
      *
-     * @param array $data ['email', 'phone', 'line_user_id', 'id_card_number']
-     * @param int|null $excludeUserId
-     * @return array
+     * @param  array  $data  ['email', 'phone', 'line_user_id', 'id_card_number']
      */
     public function checkAllDuplicates(array $data, ?int $excludeUserId = null): array
     {
@@ -221,7 +205,7 @@ class DuplicateDetectionService
         $hasDuplicates = false;
 
         // Check email
-        if (!empty($data['email'])) {
+        if (! empty($data['email'])) {
             $emailCheck = $this->checkDuplicateEmail($data['email'], $excludeUserId);
             if ($emailCheck['exists']) {
                 $duplicates['email'] = $emailCheck;
@@ -230,7 +214,7 @@ class DuplicateDetectionService
         }
 
         // Check phone
-        if (!empty($data['phone'])) {
+        if (! empty($data['phone'])) {
             $phoneCheck = $this->checkDuplicatePhone($data['phone'], $excludeUserId);
             if ($phoneCheck['exists']) {
                 $duplicates['phone'] = $phoneCheck;
@@ -239,7 +223,7 @@ class DuplicateDetectionService
         }
 
         // Check LINE user ID
-        if (!empty($data['line_user_id'])) {
+        if (! empty($data['line_user_id'])) {
             $lineCheck = $this->checkDuplicateLineId($data['line_user_id'], $excludeUserId);
             if ($lineCheck['exists']) {
                 $duplicates['line_user_id'] = $lineCheck;
@@ -248,7 +232,7 @@ class DuplicateDetectionService
         }
 
         // Check Thai ID card
-        if (!empty($data['id_card_number'])) {
+        if (! empty($data['id_card_number'])) {
             $idCheck = $this->checkDuplicateThaiId($data['id_card_number'], $excludeUserId);
             if ($idCheck['exists']) {
                 $duplicates['id_card_number'] = $idCheck;
@@ -265,9 +249,6 @@ class DuplicateDetectionService
 
     /**
      * Check if prospect is already in signup process
-     *
-     * @param string $lineUserId
-     * @return array
      */
     public function checkProspectInProgress(string $lineUserId): array
     {
@@ -277,7 +258,7 @@ class DuplicateDetectionService
             ->first();
 
         return [
-            'in_progress' => !is_null($prospect),
+            'in_progress' => ! is_null($prospect),
             'prospect' => $prospect,
             'progress_percent' => $prospect?->conversation_progress_percent,
             'current_step' => $prospect?->conversation_step,
@@ -290,17 +271,15 @@ class DuplicateDetectionService
     /**
      * Clear duplicate detection cache for a specific field
      *
-     * @param string $type 'email', 'phone', 'line', 'thaiid'
-     * @param string $value
-     * @return void
+     * @param  string  $type  'email', 'phone', 'line', 'thaiid'
      */
     public function clearCache(string $type, string $value): void
     {
-        $cacheKey = match($type) {
-            'email' => "duplicate_check:email:" . strtolower(trim($value)),
-            'phone' => "duplicate_check:phone:" . preg_replace('/[\s\-\(\)]/', '', $value),
+        $cacheKey = match ($type) {
+            'email' => 'duplicate_check:email:'.strtolower(trim($value)),
+            'phone' => 'duplicate_check:phone:'.preg_replace('/[\s\-\(\)]/', '', $value),
             'line' => "duplicate_check:line:{$value}",
-            'thaiid' => "duplicate_check:thaiid:" . preg_replace('/[\s\-]/', '', $value),
+            'thaiid' => 'duplicate_check:thaiid:'.preg_replace('/[\s\-]/', '', $value),
             default => null,
         };
 
@@ -312,9 +291,6 @@ class DuplicateDetectionService
 
     /**
      * Clear all duplicate detection caches for a user
-     *
-     * @param User $user
-     * @return void
      */
     public function clearUserCache(User $user): void
     {
@@ -339,9 +315,6 @@ class DuplicateDetectionService
 
     /**
      * Generate phone number variants for matching
-     *
-     * @param string $phone
-     * @return array
      */
     private function generatePhoneVariants(string $phone): array
     {
@@ -349,17 +322,17 @@ class DuplicateDetectionService
 
         // If starts with 0, add +66 variant
         if (str_starts_with($phone, '0')) {
-            $variants[] = '+66' . substr($phone, 1);
-            $variants[] = '66' . substr($phone, 1);
+            $variants[] = '+66'.substr($phone, 1);
+            $variants[] = '66'.substr($phone, 1);
         }
 
         // If starts with +66 or 66, add 0 variant
         if (str_starts_with($phone, '+66')) {
-            $variants[] = '0' . substr($phone, 3);
+            $variants[] = '0'.substr($phone, 3);
             $variants[] = substr($phone, 1); // Remove +
         } elseif (str_starts_with($phone, '66') && strlen($phone) === 11) {
-            $variants[] = '0' . substr($phone, 2);
-            $variants[] = '+' . $phone;
+            $variants[] = '0'.substr($phone, 2);
+            $variants[] = '+'.$phone;
         }
 
         return array_unique($variants);
@@ -367,8 +340,6 @@ class DuplicateDetectionService
 
     /**
      * Get duplicate detection statistics
-     *
-     * @return array
      */
     public function getStatistics(): array
     {

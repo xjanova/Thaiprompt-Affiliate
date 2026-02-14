@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,12 +18,17 @@ use Illuminate\Support\Facades\Log;
 class TrueMoneyProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $appId;
+
     protected $appSecret;
+
     protected $merchantId;
+
     protected $testMode;
 
     protected const SANDBOX_URL = 'https://api-sandbox.truemoney.com';
+
     protected const LIVE_URL = 'https://api.truemoney.com';
 
     public function __construct()
@@ -39,15 +44,13 @@ class TrueMoneyProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('TrueMoneyProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('TrueMoneyProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
 
     /**
      * Get API base URL
-     *
-     * @return string
      */
     protected function getApiUrl(): string
     {
@@ -57,20 +60,17 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Validate TrueMoney payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบว่า gateway พร้อมใช้งาน
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('TrueMoney gateway is not configured');
         }
 
         // ตรวจสอบว่า gateway เปิดใช้งาน
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('TrueMoney gateway is not active');
         }
 
@@ -97,9 +97,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Process TrueMoney payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     public function process(PaymentTransaction $transaction, array $data): array
@@ -108,7 +105,7 @@ class TrueMoneyProvider implements PaymentProviderInterface
             // สร้าง TrueMoney Payment Request
             $payment = $this->createPaymentRequest($transaction, $data);
 
-            if (!$payment || !isset($payment['transaction_id'])) {
+            if (! $payment || ! isset($payment['transaction_id'])) {
                 throw new Exception('Failed to create TrueMoney payment request');
             }
 
@@ -131,7 +128,7 @@ class TrueMoneyProvider implements PaymentProviderInterface
                     'status' => $payment['status'] ?? 'pending',
                     'amount' => $transaction->amount,
                     'currency' => 'THB',
-                    'redirect_required' => !empty($redirectUrl),
+                    'redirect_required' => ! empty($redirectUrl),
                     'deep_link' => $payment['deep_link'] ?? null,
                 ],
             ];
@@ -147,10 +144,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
 
     /**
      * Verify TrueMoney payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -164,10 +157,11 @@ class TrueMoneyProvider implements PaymentProviderInterface
 
             // ตรวจสอบ signature (ถ้ามี)
             if (isset($data['signature'])) {
-                if (!$this->verifySignature($data)) {
+                if (! $this->verifySignature($data)) {
                     Log::warning('TrueMoney signature verification failed', [
                         'transaction_id' => $transaction->transaction_id,
                     ]);
+
                     return false;
                 }
             }
@@ -180,17 +174,20 @@ class TrueMoneyProvider implements PaymentProviderInterface
                     'expected' => $transaction->amount,
                     'received' => $amount,
                 ]);
+
                 return false;
             }
 
             // ตรวจสอบสถานะ
             $status = $data['status'] ?? '';
+
             return in_array($status, ['SUCCESS', 'COMPLETED', 'success', 'completed']);
         } catch (Exception $e) {
             Log::error('TrueMoney verification error', [
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -198,9 +195,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Refund TrueMoney payment
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
@@ -233,9 +227,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Create TrueMoney Payment Request
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     protected function createPaymentRequest(PaymentTransaction $transaction, array $data): array
@@ -257,7 +248,7 @@ class TrueMoneyProvider implements PaymentProviderInterface
         ];
 
         // ถ้ามีเบอร์โทรศัพท์ (สำหรับ direct payment)
-        if (!empty($data['phone_number'])) {
+        if (! empty($data['phone_number'])) {
             $payload['payer_phone'] = $data['phone_number'];
         }
 
@@ -267,9 +258,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Create TrueMoney Refund
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     protected function createRefund(PaymentTransaction $transaction, float $amount): array
@@ -286,9 +274,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
 
     /**
      * Verify webhook signature
-     *
-     * @param array $data
-     * @return bool
      */
     protected function verifySignature(array $data): bool
     {
@@ -306,10 +291,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
     /**
      * Call TrueMoney API
      *
-     * @param string $endpoint
-     * @param array $payload
-     * @param string $method
-     * @return array
      * @throws Exception
      */
     protected function callTrueMoneyApi(string $endpoint, array $payload = [], string $method = 'POST'): array
@@ -318,7 +299,7 @@ class TrueMoneyProvider implements PaymentProviderInterface
             $timestamp = now()->format('Y-m-d\TH:i:s\Z');
 
             // สร้าง signature สำหรับ request
-            $signatureData = $method . '/' . $endpoint . $timestamp . json_encode($payload);
+            $signatureData = $method.'/'.$endpoint.$timestamp.json_encode($payload);
             $signature = hash_hmac('sha256', $signatureData, $this->appSecret);
 
             $response = Http::withHeaders([
@@ -328,7 +309,7 @@ class TrueMoneyProvider implements PaymentProviderInterface
                 'X-Signature' => $signature,
             ])->timeout(30);
 
-            $url = $this->getApiUrl() . '/' . $endpoint;
+            $url = $this->getApiUrl().'/'.$endpoint;
 
             if ($method === 'GET') {
                 $response = $response->get($url, $payload);
@@ -348,20 +329,17 @@ class TrueMoneyProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
     /**
      * Get payment description
-     *
-     * @param PaymentTransaction $transaction
-     * @return string
      */
     protected function getDescription(PaymentTransaction $transaction): string
     {
         if ($transaction->type === 'order_payment' && $transaction->order) {
-            return 'ชำระเงินคำสั่งซื้อ #' . $transaction->order->order_number;
+            return 'ชำระเงินคำสั่งซื้อ #'.$transaction->order->order_number;
         }
 
         if ($transaction->type === 'wallet_topup') {
@@ -373,9 +351,6 @@ class TrueMoneyProvider implements PaymentProviderInterface
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {

@@ -7,14 +7,16 @@ use Illuminate\Console\Command;
 class BumpVersionCommand extends Command
 {
     protected $signature = 'version:bump {type=patch : The version bump type (major, minor, patch)}';
+
     protected $description = 'Bump application version';
 
     public function handle(): int
     {
         $type = $this->argument('type');
-        
-        if (!in_array($type, ['major', 'minor', 'patch'])) {
+
+        if (! in_array($type, ['major', 'minor', 'patch'])) {
             $this->error('Invalid bump type. Use: major, minor, or patch');
+
             return self::FAILURE;
         }
 
@@ -32,14 +34,14 @@ class BumpVersionCommand extends Command
         $this->updateChangelog($currentVersion, $newVersion);
 
         $this->newLine();
-        $this->info("✅ Version bumped successfully!");
+        $this->info('✅ Version bumped successfully!');
         $this->info("📦 Old: $currentVersion → New: $newVersion");
         $this->newLine();
         $this->warn("Don't forget to:");
-        $this->warn("1. git add VERSION package.json CHANGELOG.md");
+        $this->warn('1. git add VERSION package.json CHANGELOG.md');
         $this->warn("2. git commit -m \"chore: bump version to $newVersion\"");
         $this->warn("3. git tag v$newVersion");
-        $this->warn("4. git push && git push --tags");
+        $this->warn('4. git push && git push --tags');
 
         return self::SUCCESS;
     }
@@ -56,6 +58,7 @@ class BumpVersionCommand extends Command
         $packageFile = base_path('package.json');
         if (file_exists($packageFile)) {
             $package = json_decode(file_get_contents($packageFile), true);
+
             return $package['version'] ?? '1.0.0';
         }
 
@@ -65,9 +68,9 @@ class BumpVersionCommand extends Command
     protected function calculateNewVersion(string $current, string $type): string
     {
         $parts = explode('.', $current);
-        $major = (int)($parts[0] ?? 0);
-        $minor = (int)($parts[1] ?? 0);
-        $patch = (int)($parts[2] ?? 0);
+        $major = (int) ($parts[0] ?? 0);
+        $minor = (int) ($parts[1] ?? 0);
+        $patch = (int) ($parts[2] ?? 0);
 
         switch ($type) {
             case 'major':
@@ -92,26 +95,26 @@ class BumpVersionCommand extends Command
     {
         $file = base_path('VERSION');
         file_put_contents($file, $version);
-        $this->line("✓ Updated VERSION file");
+        $this->line('✓ Updated VERSION file');
     }
 
     protected function updatePackageJson(string $version): void
     {
         $file = base_path('package.json');
-        if (!file_exists($file)) {
+        if (! file_exists($file)) {
             return;
         }
 
         $package = json_decode(file_get_contents($file), true);
         $package['version'] = $version;
-        file_put_contents($file, json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-        $this->line("✓ Updated package.json");
+        file_put_contents($file, json_encode($package, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+        $this->line('✓ Updated package.json');
     }
 
     protected function updateChangelog(string $oldVersion, string $newVersion): void
     {
         $changelogFile = base_path('CHANGELOG.md');
-        if (!file_exists($changelogFile)) {
+        if (! file_exists($changelogFile)) {
             return;
         }
 
@@ -125,15 +128,15 @@ class BumpVersionCommand extends Command
         $newEntry .= "- ไม่มีการเปลี่ยนแปลงอื่นๆ\n\n";
 
         $content = file_get_contents($changelogFile);
-        
+
         // Insert after the header (after line 3)
         $lines = explode("\n", $content);
         $header = array_slice($lines, 0, 3);
         $rest = array_slice($lines, 3);
-        
-        $newContent = implode("\n", $header) . "\n" . $newEntry . implode("\n", $rest);
+
+        $newContent = implode("\n", $header)."\n".$newEntry.implode("\n", $rest);
         file_put_contents($changelogFile, $newContent);
-        
-        $this->line("✓ Updated CHANGELOG.md");
+
+        $this->line('✓ Updated CHANGELOG.md');
     }
 }

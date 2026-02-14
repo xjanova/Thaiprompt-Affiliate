@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บตารางเวลาการเปิด/ปิด AI features
      * รองรับการตั้งเวลาอัตโนมัติและ recurring schedules
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -100,8 +98,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_schedules
-     *
-     * @return void
      */
     public function down(): void
     {

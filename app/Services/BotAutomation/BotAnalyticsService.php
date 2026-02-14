@@ -3,18 +3,18 @@
 namespace App\Services\BotAutomation;
 
 use App\Models\BotAutomation\BotAutomation;
+use App\Models\BotAutomation\BotMarketplaceListing;
 use App\Models\BotAutomation\BotScheduledPost;
 use App\Models\BotAutomation\BotSocialPlatform;
-use App\Models\BotAutomation\BotMarketplaceListing;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class BotAnalyticsService
 {
     /**
      * Get overview analytics
      */
-    public function getOverview(int $userId = null): array
+    public function getOverview(?int $userId = null): array
     {
         $query = BotAutomation::query();
 
@@ -78,7 +78,7 @@ class BotAnalyticsService
     /**
      * Get posts analytics
      */
-    public function getPostsAnalytics(int $userId = null, array $filters = []): array
+    public function getPostsAnalytics(?int $userId = null, array $filters = []): array
     {
         $query = BotScheduledPost::query()
             ->with(['automation', 'platformConnection.platform'])
@@ -89,21 +89,21 @@ class BotAnalyticsService
             });
 
         // Apply filters
-        if (!empty($filters['platform'])) {
+        if (! empty($filters['platform'])) {
             $query->whereHas('platformConnection', function ($q) use ($filters) {
                 $q->where('platform_id', $filters['platform']);
             });
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->where('scheduled_for', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->where('scheduled_for', '<=', $filters['date_to']);
         }
 
@@ -126,7 +126,7 @@ class BotAnalyticsService
     /**
      * Get platform analytics
      */
-    public function getPlatformAnalytics(int $userId = null): array
+    public function getPlatformAnalytics(?int $userId = null): array
     {
         $platforms = BotSocialPlatform::active()->get();
         $analytics = [];
@@ -172,7 +172,7 @@ class BotAnalyticsService
     /**
      * Get engagement trends
      */
-    public function getEngagementTrends(int $userId = null, int $days = 30): array
+    public function getEngagementTrends(?int $userId = null, int $days = 30): array
     {
         $startDate = Carbon::now()->subDays($days);
 
@@ -216,7 +216,7 @@ class BotAnalyticsService
     /**
      * Get revenue analytics (marketplace)
      */
-    public function getRevenueAnalytics(int $userId = null): array
+    public function getRevenueAnalytics(?int $userId = null): array
     {
         $query = BotMarketplaceListing::query();
 
@@ -238,7 +238,7 @@ class BotAnalyticsService
             ->orderBy('total_revenue', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn($listing) => [
+            ->map(fn ($listing) => [
                 'id' => $listing->id,
                 'title' => $listing->title,
                 'revenue' => $listing->total_revenue,
@@ -268,7 +268,7 @@ class BotAnalyticsService
     /**
      * Get automation type distribution
      */
-    public function getAutomationTypeDistribution(int $userId = null): array
+    public function getAutomationTypeDistribution(?int $userId = null): array
     {
         $query = BotAutomation::query();
 
@@ -279,7 +279,7 @@ class BotAnalyticsService
         $distribution = $query->select('automation_type', DB::raw('COUNT(*) as count'))
             ->groupBy('automation_type')
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'type' => $item->automation_type,
                 'count' => $item->count,
             ]);
@@ -290,7 +290,7 @@ class BotAnalyticsService
     /**
      * Export analytics to CSV
      */
-    public function exportToCSV(int $userId = null, array $filters = []): string
+    public function exportToCSV(?int $userId = null, array $filters = []): string
     {
         $analytics = $this->getPostsAnalytics($userId, $filters);
 

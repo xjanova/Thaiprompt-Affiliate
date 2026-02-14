@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * EmailCampaign Model
@@ -114,8 +114,6 @@ class EmailCampaign extends Model
 
     /**
      * ความสัมพันธ์กับ EmailTemplate
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -124,8 +122,6 @@ class EmailCampaign extends Model
 
     /**
      * ความสัมพันธ์กับ User ผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -134,8 +130,6 @@ class EmailCampaign extends Model
 
     /**
      * ความสัมพันธ์กับ User ผู้อนุมัติ
-     *
-     * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
@@ -144,8 +138,6 @@ class EmailCampaign extends Model
 
     /**
      * ความสัมพันธ์กับ EmailProvider
-     *
-     * @return BelongsTo
      */
     public function provider(): BelongsTo
     {
@@ -154,8 +146,6 @@ class EmailCampaign extends Model
 
     /**
      * ความสัมพันธ์กับ EmailCampaignRecipient
-     *
-     * @return HasMany
      */
     public function recipients(): HasMany
     {
@@ -164,8 +154,6 @@ class EmailCampaign extends Model
 
     /**
      * คำนวณ Open Rate (%)
-     *
-     * @return float
      */
     public function getOpenRateAttribute(): float
     {
@@ -178,8 +166,6 @@ class EmailCampaign extends Model
 
     /**
      * คำนวณ Click Rate (%)
-     *
-     * @return float
      */
     public function getClickRateAttribute(): float
     {
@@ -192,8 +178,6 @@ class EmailCampaign extends Model
 
     /**
      * คำนวณ Bounce Rate (%)
-     *
-     * @return float
      */
     public function getBounceRateAttribute(): float
     {
@@ -206,8 +190,6 @@ class EmailCampaign extends Model
 
     /**
      * คำนวณ Success Rate (%)
-     *
-     * @return float
      */
     public function getSuccessRateAttribute(): float
     {
@@ -220,8 +202,6 @@ class EmailCampaign extends Model
 
     /**
      * เช็คว่าแคมเปญกำลังส่งอยู่หรือไม่
-     *
-     * @return bool
      */
     public function isSending(): bool
     {
@@ -230,8 +210,6 @@ class EmailCampaign extends Model
 
     /**
      * เช็คว่าแคมเปญส่งเสร็จแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isCompleted(): bool
     {
@@ -240,8 +218,6 @@ class EmailCampaign extends Model
 
     /**
      * เช็คว่าแคมเปญสามารถแก้ไขได้หรือไม่
-     *
-     * @return bool
      */
     public function isEditable(): bool
     {
@@ -250,8 +226,6 @@ class EmailCampaign extends Model
 
     /**
      * เช็คว่าแคมเปญสามารถลบได้หรือไม่
-     *
-     * @return bool
      */
     public function isDeletable(): bool
     {
@@ -261,7 +235,7 @@ class EmailCampaign extends Model
     /**
      * Scope: แคมเปญที่เป็นฉบับร่าง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDraft($query)
@@ -272,7 +246,7 @@ class EmailCampaign extends Model
     /**
      * Scope: แคมเปญที่กำหนดเวลาแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeScheduled($query)
@@ -283,7 +257,7 @@ class EmailCampaign extends Model
     /**
      * Scope: แคมเปญที่กำลังส่ง
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSending($query)
@@ -294,7 +268,7 @@ class EmailCampaign extends Model
     /**
      * Scope: แคมเปญที่ส่งเสร็จแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)

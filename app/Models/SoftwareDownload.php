@@ -67,9 +67,13 @@ class SoftwareDownload extends Model
 
     // Status Constants
     const STATUS_PENDING = 'pending';
+
     const STATUS_DOWNLOADING = 'downloading';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**
@@ -143,7 +147,7 @@ class SoftwareDownload extends Model
     /**
      * Mark download as completed
      */
-    public function markCompleted(int $duration = null): void
+    public function markCompleted(?int $duration = null): void
     {
         $this->update([
             'status' => self::STATUS_COMPLETED,

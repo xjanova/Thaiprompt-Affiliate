@@ -15,6 +15,7 @@ class DetectViralTrendsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $timeout = 300; // 5 minutes
+
     public int $tries = 3;
 
     /**
@@ -35,7 +36,7 @@ class DetectViralTrendsJob implements ShouldQueue
 
             Log::info("Detected {$newTrends} new viral trends (total processed: {$totalTrends})");
         } catch (\Exception $e) {
-            Log::error('Failed to detect viral trends: ' . $e->getMessage());
+            Log::error('Failed to detect viral trends: '.$e->getMessage());
             throw $e;
         }
     }

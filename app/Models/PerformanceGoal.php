@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class PerformanceGoal extends Model
 {
@@ -103,7 +103,7 @@ class PerformanceGoal extends Model
             $this->status = 'not_started';
         } elseif ($this->current_progress >= 100) {
             $this->status = 'completed';
-            if (!$this->completion_date) {
+            if (! $this->completion_date) {
                 $this->completion_date = now();
             }
         } elseif ($now->greaterThan($this->target_date)) {
@@ -151,7 +151,7 @@ class PerformanceGoal extends Model
      */
     public function getProgressColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'completed' => 'text-green-600',
             'in_progress' => 'text-blue-600',
             'at_risk' => 'text-yellow-600',
@@ -168,6 +168,7 @@ class PerformanceGoal extends Model
         if ($this->status === 'completed') {
             return 0;
         }
+
         return max(0, now()->diffInDays($this->target_date, false));
     }
 

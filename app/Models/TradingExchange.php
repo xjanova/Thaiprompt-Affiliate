@@ -114,6 +114,6 @@ class TradingExchange extends Model
      */
     public function getLogoUrlAttribute()
     {
-        return $this->logo ? asset('storage/' . $this->logo) : asset('images/exchanges/default.png');
+        return $this->logo ? asset('storage/'.$this->logo) : asset('images/exchanges/default.png');
     }
 }

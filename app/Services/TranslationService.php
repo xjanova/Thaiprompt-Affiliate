@@ -10,20 +10,18 @@ use Illuminate\Support\Facades\Log;
 class TranslationService
 {
     protected ?TranslateClient $client = null;
+
     protected bool $enabled;
+
     protected array $supportedLanguages;
 
     /**
      * ป้องกัน recursive initialization loop
-     *
-     * @var bool
      */
     protected static bool $isInitializing = false;
 
     /**
      * นับจำนวน recursive calls
-     *
-     * @var int
      */
     protected static int $recursionDepth = 0;
 
@@ -39,6 +37,7 @@ class TranslationService
             Log::warning('TranslationService: Recursive initialization detected, using defaults');
             $this->enabled = false;
             $this->supportedLanguages = array_keys(config('translate.supported_languages', ['en' => 'English', 'th' => 'Thai']));
+
             return;
         }
 
@@ -49,6 +48,7 @@ class TranslationService
             self::$recursionDepth--;
             $this->enabled = false;
             $this->supportedLanguages = [];
+
             return;
         }
 
@@ -63,7 +63,7 @@ class TranslationService
             $this->supportedLanguages = $this->loadSupportedLanguagesWithFallback();
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก config
-            Log::debug('TranslationService: Cannot load from database, using config - ' . $e->getMessage());
+            Log::debug('TranslationService: Cannot load from database, using config - '.$e->getMessage());
             $this->enabled = config('translate.google.enabled', false);
             $this->supportedLanguages = [];
         } finally {
@@ -80,7 +80,7 @@ class TranslationService
             try {
                 $this->initializeClient();
             } catch (\Exception $e) {
-                Log::error('Google Translate initialization failed: ' . $e->getMessage());
+                Log::error('Google Translate initialization failed: '.$e->getMessage());
                 $this->enabled = false;
             }
         }
@@ -88,8 +88,6 @@ class TranslationService
 
     /**
      * โหลดภาษาที่รองรับพร้อม fallback
-     *
-     * @return array
      */
     protected function loadSupportedLanguagesWithFallback(): array
     {
@@ -99,7 +97,8 @@ class TranslationService
                 return LanguageSetting::getEnabledCodes();
             });
         } catch (\Exception $e) {
-            Log::warning('Cannot load language codes from database: ' . $e->getMessage());
+            Log::warning('Cannot load language codes from database: '.$e->getMessage());
+
             return array_keys(config('translate.supported_languages', []));
         }
     }
@@ -134,22 +133,22 @@ class TranslationService
             if ($credentialsPath && file_exists($credentialsPath)) {
                 $config['keyFilePath'] = $credentialsPath;
                 Log::info('Google Translate initialized with service account', [
-                    'path' => $credentialsPath
+                    'path' => $credentialsPath,
                 ]);
             } else {
                 Log::warning('Google Translate credentials not found', [
-                    'checked_path' => $credentialsPath
+                    'checked_path' => $credentialsPath,
                 ]);
             }
         }
 
-        if (!empty($config)) {
+        if (! empty($config)) {
             try {
                 $this->client = new TranslateClient($config);
             } catch (\Exception $e) {
                 Log::error('Failed to create TranslateClient', [
                     'error' => $e->getMessage(),
-                    'config_keys' => array_keys($config)
+                    'config_keys' => array_keys($config),
                 ]);
                 throw $e;
             }
@@ -161,9 +160,9 @@ class TranslationService
     /**
      * Translate text to target language
      *
-     * @param string $text Text to translate
-     * @param string $targetLang Target language code
-     * @param string|null $sourceLang Source language code (auto-detect if null)
+     * @param  string  $text  Text to translate
+     * @param  string  $targetLang  Target language code
+     * @param  string|null  $sourceLang  Source language code (auto-detect if null)
      * @return string|null Translated text or null on failure
      */
     public function translate(string $text, string $targetLang, ?string $sourceLang = null): ?string
@@ -177,7 +176,7 @@ class TranslationService
         }
 
         // Use source language from database setting, fallback to config
-        if (!$sourceLang) {
+        if (! $sourceLang) {
             $sourceLang = \App\Models\Setting::get('translate_source_language')
                 ?? config('translate.source_language', 'th');
         }
@@ -188,17 +187,19 @@ class TranslationService
         }
 
         // If translation is disabled or not configured, return original text
-        if (!$this->enabled || !$this->client) {
+        if (! $this->enabled || ! $this->client) {
             Log::debug('Translation disabled, returning original text');
+
             return $text;
         }
 
         // Validate target language
-        if (!in_array($targetLang, $this->supportedLanguages)) {
+        if (! in_array($targetLang, $this->supportedLanguages)) {
             Log::warning('Unsupported target language', [
                 'target' => $targetLang,
-                'supported' => $this->supportedLanguages
+                'supported' => $this->supportedLanguages,
             ]);
+
             return $text;
         }
 
@@ -212,6 +213,7 @@ class TranslationService
 
             if ($cached !== null) {
                 Log::debug('Translation cache hit', ['key' => $cacheKey]);
+
                 return $cached;
             }
         }
@@ -236,7 +238,7 @@ class TranslationService
             Log::info('Translation successful', [
                 'source' => $sourceLang,
                 'target' => $targetLang,
-                'length' => strlen($text)
+                'length' => strlen($text),
             ]);
 
             return $translatedText;
@@ -245,8 +247,9 @@ class TranslationService
                 'error' => $e->getMessage(),
                 'source' => $sourceLang,
                 'target' => $targetLang,
-                'text_length' => strlen($text)
+                'text_length' => strlen($text),
             ]);
+
             return $text; // Return original text on error
         }
     }
@@ -254,9 +257,9 @@ class TranslationService
     /**
      * Translate multiple texts
      *
-     * @param array $texts Array of texts to translate
-     * @param string $targetLang Target language code
-     * @param string|null $sourceLang Source language code
+     * @param  array  $texts  Array of texts to translate
+     * @param  string  $targetLang  Target language code
+     * @param  string|null  $sourceLang  Source language code
      * @return array Array of translated texts
      */
     public function translateBatch(array $texts, string $targetLang, ?string $sourceLang = null): array
@@ -272,8 +275,6 @@ class TranslationService
 
     /**
      * Get available languages
-     *
-     * @return array
      */
     public function getAvailableLanguages(): array
     {
@@ -297,15 +298,13 @@ class TranslationService
 
         return $languages->mapWithKeys(function ($lang) use ($flagSize, $showFlags, $showName) {
             return [
-                $lang->code => $lang->toApiArray($flagSize, $showFlags, $showName)
+                $lang->code => $lang->toApiArray($flagSize, $showFlags, $showName),
             ];
         })->toArray();
     }
 
     /**
      * Check if translation service is enabled
-     *
-     * @return bool
      */
     public function isEnabled(): bool
     {
@@ -315,36 +314,33 @@ class TranslationService
     /**
      * Detect language of text
      *
-     * @param string $text
      * @return string|null Language code or null
      */
     public function detectLanguage(string $text): ?string
     {
-        if (!$this->enabled || !$this->client) {
+        if (! $this->enabled || ! $this->client) {
             return null;
         }
 
         try {
             $result = $this->client->detectLanguage($text);
+
             return $result['languageCode'] ?? null;
         } catch (\Exception $e) {
-            Log::error('Language detection failed: ' . $e->getMessage());
+            Log::error('Language detection failed: '.$e->getMessage());
+
             return null;
         }
     }
 
     /**
      * Generate cache key for translation
-     *
-     * @param string $text
-     * @param string $targetLang
-     * @param string $sourceLang
-     * @return string
      */
     protected function getCacheKey(string $text, string $targetLang, string $sourceLang): string
     {
         $prefix = config('translate.cache.prefix', 'translate:');
         $hash = md5($text);
+
         return "{$prefix}{$sourceLang}:{$targetLang}:{$hash}";
     }
 
@@ -353,8 +349,6 @@ class TranslationService
      *
      * ⚠️ FIXED: ใช้ specific cache clearing แทน Cache::flush()
      * เพื่อป้องกัน cascade effects ที่อาจทำให้เกิด infinite loop
-     *
-     * @return void
      */
     public function clearCache(): void
     {
@@ -381,7 +375,7 @@ class TranslationService
                 Cache::tags(['translation'])->flush();
             }
         } catch (\Exception $e) {
-            Log::debug('Cannot clear translation tags: ' . $e->getMessage());
+            Log::debug('Cannot clear translation tags: '.$e->getMessage());
         }
 
         Log::info('Translation cache cleared successfully');

@@ -14,6 +14,7 @@ class ClassicXSettingsController extends Controller
     public function index()
     {
         $settings = ClassicXSetting::getAll();
+
         return view('admin.classic-x-settings.index', compact('settings'));
     }
 
@@ -24,7 +25,7 @@ class ClassicXSettingsController extends Controller
     {
         $validated = $request->validate([
             'settings' => 'required|array',
-            'settings.*' => 'nullable'
+            'settings.*' => 'nullable',
         ]);
 
         foreach ($validated['settings'] as $key => $value) {
@@ -53,7 +54,7 @@ class ClassicXSettingsController extends Controller
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Classic X settings reset to defaults!'
+                'message' => 'Classic X settings reset to defaults!',
             ]);
         }
 

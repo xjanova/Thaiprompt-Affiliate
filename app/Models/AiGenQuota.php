@@ -62,7 +62,7 @@ class AiGenQuota extends Model
      */
     public static function getQuotaForUser(?User $user = null): ?self
     {
-        if (!$user) {
+        if (! $user) {
             return self::active()->default()->first();
         }
 
@@ -76,7 +76,7 @@ class AiGenQuota extends Model
 
         $quota = self::active()->forRole($role)->first();
 
-        if (!$quota) {
+        if (! $quota) {
             $quota = self::active()->default()->first();
         }
 

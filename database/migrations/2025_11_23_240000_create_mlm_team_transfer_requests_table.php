@@ -16,8 +16,6 @@ return new class extends Migration
      * - ต้องได้รับอนุมัติจากแม่ทีมเก่า
      * - ตำแหน่งใหม่ (binary position) ต้องว่าง
      * - ค่าธรรมเนียม: 100 บาท
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -165,8 +163,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง mlm_team_transfer_requests
-     *
-     * @return void
      */
     public function down(): void
     {

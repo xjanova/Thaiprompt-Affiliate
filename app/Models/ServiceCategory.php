@@ -91,14 +91,12 @@ class ServiceCategory extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * บริการทั้งหมดในหมวดหมู่นี้
-     *
-     * @return HasMany
      */
     public function services(): HasMany
     {
@@ -107,8 +105,6 @@ class ServiceCategory extends Model
 
     /**
      * บริการที่เปิดใช้งานในหมวดหมู่นี้
-     *
-     * @return HasMany
      */
     public function activeServices(): HasMany
     {
@@ -117,14 +113,14 @@ class ServiceCategory extends Model
             ->orderBy('sort_order');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะหมวดหมู่ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -135,7 +131,7 @@ class ServiceCategory extends Model
     /**
      * Scope: เฉพาะหมวดหมู่ที่แนะนำ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFeatured($query)
@@ -146,7 +142,7 @@ class ServiceCategory extends Model
     /**
      * Scope: เรียงตามลำดับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -154,14 +150,12 @@ class ServiceCategory extends Model
         return $query->orderBy('sort_order')->orderBy('name');
     }
 
-    //===========================================
+    // ===========================================
     // Methods
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่าหมวดหมู่มีบริการหรือไม่
-     *
-     * @return bool
      */
     public function hasServices(): bool
     {
@@ -170,8 +164,6 @@ class ServiceCategory extends Model
 
     /**
      * นับจำนวนบริการที่เปิดใช้งาน
-     *
-     * @return int
      */
     public function getActiveServicesCount(): int
     {
@@ -180,8 +172,6 @@ class ServiceCategory extends Model
 
     /**
      * ได้ icon HTML
-     *
-     * @return string
      */
     public function getIconHtml(): string
     {
@@ -189,13 +179,11 @@ class ServiceCategory extends Model
             return '<i class="fas fa-folder"></i>';
         }
 
-        return '<i class="' . e($this->icon) . '"></i>';
+        return '<i class="'.e($this->icon).'"></i>';
     }
 
     /**
      * ได้ URL หมวดหมู่
-     *
-     * @return string
      */
     public function getUrl(): string
     {

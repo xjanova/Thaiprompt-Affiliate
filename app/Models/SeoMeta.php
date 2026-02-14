@@ -40,7 +40,7 @@ class SeoMeta extends Model
     /**
      * Get SEO meta by page type and language
      */
-    public static function getByPage(string $pageType, string $language = null): ?self
+    public static function getByPage(string $pageType, ?string $language = null): ?self
     {
         $language = $language ?? app()->getLocale();
 
@@ -52,7 +52,7 @@ class SeoMeta extends Model
     /**
      * Get or create SEO meta for a page
      */
-    public static function getOrCreateForPage(string $pageType, string $language = null): self
+    public static function getOrCreateForPage(string $pageType, ?string $language = null): self
     {
         $language = $language ?? app()->getLocale();
 

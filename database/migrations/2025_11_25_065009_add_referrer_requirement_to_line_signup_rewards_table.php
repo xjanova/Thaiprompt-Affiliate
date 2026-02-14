@@ -20,13 +20,13 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_signup_rewards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
         Schema::table('line_signup_rewards', function (Blueprint $table) {
             // เพิ่มคอลัมน์ referrer_requirement
-            if (!Schema::hasColumn('line_signup_rewards', 'referrer_requirement')) {
+            if (! Schema::hasColumn('line_signup_rewards', 'referrer_requirement')) {
                 $table->enum('referrer_requirement', ['any', 'required', 'none'])
                     ->default('any')
                     ->comment('เงื่อนไขผู้แนะนำ: any=ไม่กำหนด, required=ต้องมี, none=ไม่มี');

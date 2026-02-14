@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง huggingface_model_news
      *
      * เก็บข่าวสารและอัพเดทเกี่ยวกับ Hugging Face models
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -45,7 +43,7 @@ return new class extends Migration
                 'announcement',
                 'tutorial',
                 'benchmark',
-                'other'
+                'other',
             ])->default('new_model')->comment('ประเภทข่าว');
 
             $table->enum('importance', ['low', 'medium', 'high', 'critical'])
@@ -132,8 +130,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง huggingface_model_news
-     *
-     * @return void
      */
     public function down(): void
     {

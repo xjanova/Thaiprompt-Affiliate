@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class AnthropicService implements AiServiceInterface
 {
     protected string $apiKey;
+
     protected string $apiEndpoint;
 
     public function __construct()
@@ -46,8 +47,8 @@ class AnthropicService implements AiServiceInterface
                 'temperature' => $params['temperature'] ?? 0.7,
             ]);
 
-            if (!$response->successful()) {
-                throw new \Exception("Anthropic API error: " . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('Anthropic API error: '.$response->body());
             }
 
             $data = $response->json();

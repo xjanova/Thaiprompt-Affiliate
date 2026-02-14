@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง products มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('products')) {
+        if (! Schema::hasTable('products')) {
             return;
         }
 
@@ -47,7 +47,7 @@ return new class extends Migration
                 'store_id',
                 'is_public_approved',
                 'public_approved_at',
-                'public_approved_by'
+                'public_approved_by',
             ]);
         });
     }

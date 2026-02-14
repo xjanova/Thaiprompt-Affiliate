@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
-use App\Models\UserGameProgress;
-use App\Models\GameLeaderboard;
 use App\Models\GameAchievement;
+use App\Models\GameLeaderboard;
 use App\Models\LeaderboardSeason;
+use App\Models\UserGameProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,7 +37,7 @@ class GameController extends Controller
         $game = Game::where('slug', $slug)->where('is_active', true)->firstOrFail();
 
         // Check if auth required
-        if ($game->requires_auth && !Auth::check()) {
+        if ($game->requires_auth && ! Auth::check()) {
             return redirect()->route('login')->with('error', 'Please login to play this game.');
         }
 
@@ -69,7 +69,7 @@ class GameController extends Controller
     /**
      * แสดงหน้าเกม Tetris
      *
-     * @param Game $game
+     * @param  Game  $game
      * @return \Illuminate\View\View
      */
     private function showTetris($game)
@@ -109,7 +109,7 @@ class GameController extends Controller
      */
     public function saveProgress(Request $request, $slug)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -172,7 +172,7 @@ class GameController extends Controller
      */
     public function changeLoadout(Request $request, $slug)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -252,38 +252,38 @@ class GameController extends Controller
         $unlocks = [];
 
         // Ship unlocks based on wave
-        if ($stats['wave'] >= 5 && !$progress->hasUnlockedShip('interceptor')) {
+        if ($stats['wave'] >= 5 && ! $progress->hasUnlockedShip('interceptor')) {
             $progress->unlockShip('interceptor');
             $unlocks[] = ['type' => 'ship', 'item' => 'interceptor'];
         }
 
-        if ($stats['wave'] >= 10 && !$progress->hasUnlockedShip('destroyer')) {
+        if ($stats['wave'] >= 10 && ! $progress->hasUnlockedShip('destroyer')) {
             $progress->unlockShip('destroyer');
             $unlocks[] = ['type' => 'ship', 'item' => 'destroyer'];
         }
 
-        if ($stats['wave'] >= 15 && !$progress->hasUnlockedShip('titan')) {
+        if ($stats['wave'] >= 15 && ! $progress->hasUnlockedShip('titan')) {
             $progress->unlockShip('titan');
             $unlocks[] = ['type' => 'ship', 'item' => 'titan'];
         }
 
         // Weapon unlocks based on kills
-        if ($progress->total_kills >= 50 && !$progress->hasUnlockedWeapon('laser')) {
+        if ($progress->total_kills >= 50 && ! $progress->hasUnlockedWeapon('laser')) {
             $progress->unlockWeapon('laser');
             $unlocks[] = ['type' => 'weapon', 'item' => 'laser'];
         }
 
-        if ($progress->total_kills >= 100 && !$progress->hasUnlockedWeapon('spread')) {
+        if ($progress->total_kills >= 100 && ! $progress->hasUnlockedWeapon('spread')) {
             $progress->unlockWeapon('spread');
             $unlocks[] = ['type' => 'weapon', 'item' => 'spread'];
         }
 
-        if ($progress->total_kills >= 200 && !$progress->hasUnlockedWeapon('missile')) {
+        if ($progress->total_kills >= 200 && ! $progress->hasUnlockedWeapon('missile')) {
             $progress->unlockWeapon('missile');
             $unlocks[] = ['type' => 'weapon', 'item' => 'missile'];
         }
 
-        if ($progress->bosses_defeated >= 3 && !$progress->hasUnlockedWeapon('plasma')) {
+        if ($progress->bosses_defeated >= 3 && ! $progress->hasUnlockedWeapon('plasma')) {
             $progress->unlockWeapon('plasma');
             $unlocks[] = ['type' => 'weapon', 'item' => 'plasma'];
         }
@@ -341,7 +341,7 @@ class GameController extends Controller
             if ($shouldUnlock) {
                 // Unlock achievement
                 $user->achievements()->attach($achievement->id, [
-                    'unlocked_at' => now()
+                    'unlocked_at' => now(),
                 ]);
 
                 // Award points if configured

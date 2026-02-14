@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง email_campaigns สำหรับระบบแคมเปญอีเมล
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -59,7 +57,7 @@ return new class extends Migration
                 'sent',       // ส่งเสร็จแล้ว
                 'paused',     // หยุดชั่วคราว
                 'cancelled',  // ยกเลิก
-                'failed'      // ล้มเหลว
+                'failed',      // ล้มเหลว
             ])->default('draft')->comment('สถานะแคมเปญ');
 
             // เป้าหมาย
@@ -68,7 +66,7 @@ return new class extends Migration
                 'specific_users',   // เลือกเอง
                 'by_rank',          // ตาม Rank
                 'by_status',        // ตามสถานะ
-                'custom_query'      // Custom Query
+                'custom_query',      // Custom Query
             ])->default('all_users')->comment('ประเภทเป้าหมาย');
             $table->json('target_filters')->nullable()->comment('ตัวกรอง JSON');
 
@@ -104,8 +102,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง email_campaigns
-     *
-     * @return void
      */
     public function down(): void
     {

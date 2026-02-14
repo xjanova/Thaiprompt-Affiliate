@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\CarbonCredit;
+use App\Models\CarbonFootprintRecord;
 use App\Models\FoodProduct;
 use App\Models\ProductJourney;
-use App\Models\CarbonFootprintRecord;
-use App\Models\CarbonCredit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -80,7 +80,7 @@ class CarbonCreditService
         $method = $journey->transport_method;
         $distance = $journey->distance_km;
 
-        if (!$distance || !$method) {
+        if (! $distance || ! $method) {
             return 0;
         }
 
@@ -154,16 +154,29 @@ class CarbonCreditService
         $emission = $product->total_carbon_footprint;
         $quantity = $product->estimated_quantity;
 
-        if ($quantity == 0) return 'N/A';
+        if ($quantity == 0) {
+            return 'N/A';
+        }
 
         $emissionPerKg = $emission / $quantity;
 
         // Grading
-        if ($emissionPerKg <= 0) return 'A+';
-        if ($emissionPerKg < 1) return 'A';
-        if ($emissionPerKg < 3) return 'B';
-        if ($emissionPerKg < 5) return 'C';
-        if ($emissionPerKg < 10) return 'D';
+        if ($emissionPerKg <= 0) {
+            return 'A+';
+        }
+        if ($emissionPerKg < 1) {
+            return 'A';
+        }
+        if ($emissionPerKg < 3) {
+            return 'B';
+        }
+        if ($emissionPerKg < 5) {
+            return 'C';
+        }
+        if ($emissionPerKg < 10) {
+            return 'D';
+        }
+
         return 'E';
     }
 
@@ -187,6 +200,7 @@ class CarbonCreditService
                 'baseline' => $baselineTotal,
                 'actual' => $actual,
             ]);
+
             return null;
         }
 
@@ -220,7 +234,7 @@ class CarbonCreditService
         } catch (\Exception $e) {
             \Log::error('Blockchain carbon credit recording failed', [
                 'credit_id' => $credit->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -254,7 +268,7 @@ class CarbonCreditService
             $credit = CarbonCredit::findOrFail($creditId);
 
             // Check if can be traded
-            if (!$credit->canTrade()) {
+            if (! $credit->canTrade()) {
                 throw new \Exception('This credit cannot be traded');
             }
 
@@ -284,7 +298,7 @@ class CarbonCreditService
             } catch (\Exception $e) {
                 \Log::error('Blockchain carbon trade recording failed', [
                     'credit_id' => $creditId,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
 
@@ -297,7 +311,7 @@ class CarbonCreditService
      */
     public function getLeaderboard(string $period = 'month'): Collection
     {
-        $startDate = match($period) {
+        $startDate = match ($period) {
             'week' => now()->startOfWeek(),
             'month' => now()->startOfMonth(),
             'year' => now()->startOfYear(),
@@ -325,7 +339,7 @@ class CarbonCreditService
         $avgReduction = $credits->avg('reduction_percentage');
 
         // Tier system
-        $tier = match(true) {
+        $tier = match (true) {
             $totalCredits >= 500 => 'Platinum',
             $totalCredits >= 100 => 'Gold',
             $totalCredits >= 50 => 'Silver',
@@ -334,7 +348,7 @@ class CarbonCreditService
         };
 
         // Bonus multiplier
-        $bonus = match($tier) {
+        $bonus = match ($tier) {
             'Platinum' => 1.20,
             'Gold' => 1.15,
             'Silver' => 1.10,
@@ -362,11 +376,11 @@ class CarbonCreditService
             ->selectRaw('emission_category, SUM(total_co2_equivalent) as total, AVG(emission_factor) as avg_factor')
             ->groupBy('emission_category')
             ->get()
-            ->mapWithKeys(fn($item) => [
+            ->mapWithKeys(fn ($item) => [
                 $item->emission_category => [
                     'total_emission' => $item->total,
                     'avg_factor' => $item->avg_factor,
-                ]
+                ],
             ])
             ->toArray();
     }
@@ -399,7 +413,7 @@ class CarbonCreditService
      */
     protected function generateCertificateNumber(): string
     {
-        return 'CC-' . date('Y') . '-' . str_pad(CarbonCredit::count() + 1, 6, '0', STR_PAD_LEFT);
+        return 'CC-'.date('Y').'-'.str_pad(CarbonCredit::count() + 1, 6, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -418,7 +432,7 @@ class CarbonCreditService
             } catch (\Exception $e) {
                 \Log::error('LINE notification failed', [
                     'credit_id' => $credit->id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
             }
         }
@@ -462,20 +476,20 @@ class CarbonCreditService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => round($credit->credit_amount, 2) . ' tons CO2',
+                                    'text' => round($credit->credit_amount, 2).' tons CO2',
                                     'size' => 'xxl',
                                     'weight' => 'bold',
                                     'color' => '#00AA00',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'มูลค่า: ฿' . number_format($credit->total_value, 2),
+                                    'text' => 'มูลค่า: ฿'.number_format($credit->total_value, 2),
                                     'size' => 'lg',
                                     'margin' => 'md',
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => 'ลดได้: ' . round($credit->reduction_percentage, 1) . '%',
+                                    'text' => 'ลดได้: '.round($credit->reduction_percentage, 1).'%',
                                     'size' => 'sm',
                                 ],
                             ],

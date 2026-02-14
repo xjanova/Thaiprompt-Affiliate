@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class HotelSpecialOffer extends Model
 {
@@ -81,7 +81,7 @@ class HotelSpecialOffer extends Model
     public function isValid($checkIn = null, $checkOut = null, $roomTypeId = null, $subtotal = null)
     {
         // Check if active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -108,7 +108,7 @@ class HotelSpecialOffer extends Model
             // Check applicable days
             if ($this->applicable_days && count($this->applicable_days) > 0) {
                 $dayName = strtolower($checkInDate->format('l'));
-                if (!in_array($dayName, $this->applicable_days)) {
+                if (! in_array($dayName, $this->applicable_days)) {
                     return false;
                 }
             }
@@ -129,7 +129,7 @@ class HotelSpecialOffer extends Model
 
         // Check room type restriction
         if ($roomTypeId && $this->room_type_ids && count($this->room_type_ids) > 0) {
-            if (!in_array($roomTypeId, $this->room_type_ids)) {
+            if (! in_array($roomTypeId, $this->room_type_ids)) {
                 return false;
             }
         }
@@ -170,8 +170,9 @@ class HotelSpecialOffer extends Model
     public function getBannerImageUrlAttribute()
     {
         if ($this->banner_image) {
-            return asset('storage/' . $this->banner_image);
+            return asset('storage/'.$this->banner_image);
         }
+
         return null;
     }
 }

@@ -28,10 +28,10 @@ class TokenApprovedNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Token Approved - ' . $this->token->symbol)
-            ->greeting('สวัสดี ' . $notifiable->name)
+            ->subject('Token Approved - '.$this->token->symbol)
+            ->greeting('สวัสดี '.$notifiable->name)
             ->line("Token {$this->token->name} ({$this->token->symbol}) ของคุณได้รับการอนุมัติแล้ว!")
-            ->line("Token ของคุณจะปรากฏใน Marketplace เร็วๆนี้")
+            ->line('Token ของคุณจะปรากฏใน Marketplace เร็วๆนี้')
             ->action('ดู Token', route('user.tokens.show', $this->token->id))
             ->line('ขอบคุณที่ใช้บริการ TPIX!');
     }

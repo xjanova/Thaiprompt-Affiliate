@@ -14,8 +14,6 @@ return new class extends Migration
 {
     /**
      * เพิ่ม Foreign Key Constraints
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -25,7 +23,7 @@ return new class extends Migration
                 // เช็คว่ามี FK อยู่แล้วหรือยัง โดยลอง index name
                 $existingIndexes = collect(Schema::getIndexes('sms_checker_devices'))->pluck('name')->toArray();
 
-                if (!in_array('sms_devices_user_fk', $existingIndexes)) {
+                if (! in_array('sms_devices_user_fk', $existingIndexes)) {
                     $table->foreign('user_id', 'sms_devices_user_fk')
                         ->references('id')
                         ->on('users')
@@ -39,7 +37,7 @@ return new class extends Migration
             Schema::table('sms_payment_notifications', function (Blueprint $table) {
                 $existingIndexes = collect(Schema::getIndexes('sms_payment_notifications'))->pluck('name')->toArray();
 
-                if (!in_array('sms_notif_txn_fk', $existingIndexes)) {
+                if (! in_array('sms_notif_txn_fk', $existingIndexes)) {
                     $table->foreign('matched_transaction_id', 'sms_notif_txn_fk')
                         ->references('id')
                         ->on('payment_transactions')
@@ -53,7 +51,7 @@ return new class extends Migration
             Schema::table('unique_payment_amounts', function (Blueprint $table) {
                 $existingIndexes = collect(Schema::getIndexes('unique_payment_amounts'))->pluck('name')->toArray();
 
-                if (!in_array('unique_amt_txn_fk', $existingIndexes)) {
+                if (! in_array('unique_amt_txn_fk', $existingIndexes)) {
                     $table->foreign('transaction_id', 'unique_amt_txn_fk')
                         ->references('id')
                         ->on('payment_transactions')
@@ -67,7 +65,7 @@ return new class extends Migration
             Schema::table('sms_payment_nonces', function (Blueprint $table) {
                 $existingIndexes = collect(Schema::getIndexes('sms_payment_nonces'))->pluck('name')->toArray();
 
-                if (!in_array('sms_nonce_device_fk', $existingIndexes)) {
+                if (! in_array('sms_nonce_device_fk', $existingIndexes)) {
                     $table->foreign('device_id', 'sms_nonce_device_fk')
                         ->references('device_id')
                         ->on('sms_checker_devices')
@@ -79,8 +77,6 @@ return new class extends Migration
 
     /**
      * ลบ Foreign Key Constraints
-     *
-     * @return void
      */
     public function down(): void
     {

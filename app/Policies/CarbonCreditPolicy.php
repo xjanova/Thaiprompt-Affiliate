@@ -51,7 +51,7 @@ class CarbonCreditPolicy
         return in_array($user->role, [
             'carbon_verifier',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 
@@ -61,7 +61,7 @@ class CarbonCreditPolicy
     public function trade(User $user, CarbonCredit $credit): bool
     {
         // Cannot trade if not tradeable
-        if (!$credit->tradeable || !$credit->canTrade()) {
+        if (! $credit->tradeable || ! $credit->canTrade()) {
             return false;
         }
 
@@ -89,7 +89,7 @@ class CarbonCreditPolicy
         }
 
         // Cannot purchase if not tradeable or active
-        if (!$credit->tradeable || $credit->status !== 'active' || !$credit->canTrade()) {
+        if (! $credit->tradeable || $credit->status !== 'active' || ! $credit->canTrade()) {
             return false;
         }
 
@@ -160,7 +160,7 @@ class CarbonCreditPolicy
         return in_array($user->role, [
             'carbon_verifier',
             'admin',
-            'super_admin'
+            'super_admin',
         ]);
     }
 

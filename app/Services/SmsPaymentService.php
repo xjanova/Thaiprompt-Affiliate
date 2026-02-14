@@ -8,10 +8,6 @@ use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
-use App\Services\FortunePaymentService;
-use App\Services\FortuneConversationService;
-use App\Services\FortuneChannelManager;
-use App\Services\FacebookWebhookService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -26,9 +22,9 @@ class SmsPaymentService
     /**
      * ประมวลผล SMS payment notification ที่ได้รับจาก Android App
      *
-     * @param array $payload ข้อมูล payload ที่ถอดรหัสแล้ว
-     * @param SmsCheckerDevice $device อุปกรณ์ที่ authenticate แล้ว
-     * @param string $ipAddress IP ของ client
+     * @param  array  $payload  ข้อมูล payload ที่ถอดรหัสแล้ว
+     * @param  SmsCheckerDevice  $device  อุปกรณ์ที่ authenticate แล้ว
+     * @param  string  $ipAddress  IP ของ client
      * @return array ผลลัพธ์ success/failure
      */
     public function processNotification(array $payload, SmsCheckerDevice $device, string $ipAddress): array
@@ -44,6 +40,7 @@ class SmsPaymentService
                     'nonce' => $payload['nonce'],
                     'device_id' => $device->device_id,
                 ]);
+
                 return [
                     'success' => false,
                     'message' => 'Duplicate request (nonce already used)',
@@ -98,7 +95,7 @@ class SmsPaymentService
                     $matchedModelType = 'fortune_reading';
                 }
 
-                if (!$fortuneReadingHandled) {
+                if (! $fortuneReadingHandled) {
                     // ขั้นที่ 2: จับคู่กับ UniquePaymentAmount / PaymentTransaction (อีคอมเมิร์ซ)
                     $autoConfirm = config('smschecker.auto_confirm_matched', true);
                     $matched = $notification->attemptMatch($autoConfirm);
@@ -110,7 +107,7 @@ class SmsPaymentService
                     }
                 }
 
-                if (!$fortuneReadingHandled && !$matched) {
+                if (! $fortuneReadingHandled && ! $matched) {
                     // ขั้นที่ 3: ตรวจจับยอดพิเศษ (เช่น 29.99 = ดูดวง)
                     // สร้าง FortuneReading อัตโนมัติเป็น "บิลลอย" ถ้า match ไม่ได้กับ unique amount
                     $specialAmountHandled = $this->handleSpecialAmount($notification);
@@ -161,8 +158,8 @@ class SmsPaymentService
      *
      * รูปแบบข้อมูล: Base64(IV[12 bytes] + Ciphertext + AuthTag[16 bytes])
      *
-     * @param string $encryptedData ข้อมูลเข้ารหัส Base64
-     * @param string $secretKey secret key ของอุปกรณ์
+     * @param  string  $encryptedData  ข้อมูลเข้ารหัส Base64
+     * @param  string  $secretKey  secret key ของอุปกรณ์
      * @return array|null payload ที่ถอดรหัสแล้ว หรือ null ถ้าล้มเหลว
      */
     public function decryptPayload(string $encryptedData, string $secretKey): ?array
@@ -197,18 +194,21 @@ class SmsPaymentService
 
             if ($decrypted === false) {
                 Log::warning('SMS Payment: ถอดรหัสล้มเหลว (auth tag mismatch หรือ key ไม่ตรง)');
+
                 return null;
             }
 
             $payload = json_decode($decrypted, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::warning('SMS Payment: JSON ใน payload ไม่ถูกต้อง');
+
                 return null;
             }
 
             return $payload;
         } catch (\Exception $e) {
             Log::error('SMS Payment: เกิดข้อผิดพลาดขณะถอดรหัส', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -219,9 +219,9 @@ class SmsPaymentService
      * ลายเซ็น = HMAC-SHA256(encrypted_data + nonce + timestamp, hmacKey)
      * hmacKey ถูก derive แยกจาก encryption key ผ่าน PBKDF2
      *
-     * @param string $data ข้อมูลที่ต้องตรวจสอบ
-     * @param string $signature ลายเซ็นที่ได้รับจาก client (Base64)
-     * @param string $secretKey secret key ของอุปกรณ์
+     * @param  string  $data  ข้อมูลที่ต้องตรวจสอบ
+     * @param  string  $signature  ลายเซ็นที่ได้รับจาก client (Base64)
+     * @param  string  $secretKey  secret key ของอุปกรณ์
      * @return bool ลายเซ็นถูกต้องหรือไม่
      */
     public function verifySignature(string $data, string $signature, string $secretKey): bool
@@ -229,6 +229,7 @@ class SmsPaymentService
         // SECURITY: ใช้ dedicated HMAC key (แยกจาก encryption key)
         $hmacKey = $this->deriveKey($secretKey, 'hmac-signing');
         $expected = base64_encode(hash_hmac('sha256', $data, $hmacKey, true));
+
         return hash_equals($expected, $signature);
     }
 
@@ -241,30 +242,30 @@ class SmsPaymentService
      * - Key length: 256 bits (32 bytes)
      * - Salt: "thaiprompt-smschecker-v1:{context}"
      *
-     * @param string $secret Secret key string
-     * @param string $context Purpose context ('encryption' or 'hmac-signing')
+     * @param  string  $secret  Secret key string
+     * @param  string  $context  Purpose context ('encryption' or 'hmac-signing')
      * @return string 32-byte derived key (raw binary)
      */
     private function deriveKey(string $secret, string $context = 'encryption'): string
     {
         $salt = "thaiprompt-smschecker-v1:{$context}";
+
         return hash_pbkdf2('sha256', $secret, $salt, 100000, 32, true);
     }
 
     /**
      * สร้าง unique payment amount สำหรับ transaction
      *
-     * @param float $baseAmount ราคาสินค้าเดิม
-     * @param int|null $transactionId ID ของ transaction
-     * @param string $transactionType ประเภท transaction
-     * @param int $expiryMinutes เวลาหมดอายุ (นาที)
-     * @return UniquePaymentAmount|null
+     * @param  float  $baseAmount  ราคาสินค้าเดิม
+     * @param  int|null  $transactionId  ID ของ transaction
+     * @param  string  $transactionType  ประเภท transaction
+     * @param  int  $expiryMinutes  เวลาหมดอายุ (นาที)
      */
     public function generateUniqueAmount(
         float $baseAmount,
         ?int $transactionId = null,
         string $transactionType = 'order',
-        int $expiryMinutes = null
+        ?int $expiryMinutes = null
     ): ?UniquePaymentAmount {
         $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
 
@@ -279,7 +280,7 @@ class SmsPaymentService
     /**
      * ดึง notifications ที่ยังไม่จับคู่
      *
-     * @param int $limit จำนวนสูงสุด
+     * @param  int  $limit  จำนวนสูงสุด
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getPendingNotifications(int $limit = 50)
@@ -426,7 +427,6 @@ class SmsPaymentService
      * - ถ้าจับคู่ User ได้ → เชื่อมกับ user_id
      * - ถ้าจับคู่ไม่ได้ → สร้างเป็น "บิลลอย" รอ admin assign
      *
-     * @param SmsPaymentNotification $notification
      * @return bool มีการจัดการยอดพิเศษหรือไม่
      */
     protected function handleSpecialAmount(SmsPaymentNotification $notification): bool
@@ -447,6 +447,7 @@ class SmsPaymentService
         if ($config['type'] === 'fortune_reading') {
             $fortunePaymentService = app(FortunePaymentService::class);
             $fortunePaymentService->createFromSmsNotification($notification, $config);
+
             return true;
         }
 
@@ -464,7 +465,6 @@ class SmsPaymentService
      * ตรวจสอบว่ายอดเงินตรงกับ FortuneReading ที่รอชำระเงินหรือไม่
      * ถ้าตรง → ยืนยันการชำระ → ทำนายละเอียด → ส่งผ่าน Platform ที่ใช้งาน (Facebook/LINE)
      *
-     * @param SmsPaymentNotification $notification
      * @return bool มีการจัดการหรือไม่
      */
     protected function handleFortuneReadingPayment(SmsPaymentNotification $notification): bool
@@ -476,7 +476,7 @@ class SmsPaymentService
 
         // ขั้นที่ 2: Grace period — ค้นหา unique amount ที่เพิ่งหมดอายุ (ภายใน 30 นาที)
         // กรณีลูกค้าโอนช้ากว่าเวลาที่กำหนด แต่ยังอยู่ใน grace period
-        if (!$reading) {
+        if (! $reading) {
             $reading = $this->findFortuneReadingByExpiredAmount($amount);
 
             if ($reading) {
@@ -491,11 +491,11 @@ class SmsPaymentService
         // ขั้นที่ 3: Fallback — ค้นหาจาก amount_paid ตรงๆ
         // กรณี unique amount ถูกลบไปแล้ว แต่ FortuneReading ยังรอชำระ
         // หรือ cleanup ปิดไปแล้ว (completed) แต่ SMS มาช้า → recover กลับมา
-        if (!$reading) {
+        if (! $reading) {
             $reading = FortuneReading::whereIn('conversation_status', [
-                    FortuneReading::STATUS_PENDING_PAYMENT,
-                    FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว
-                ])
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว
+            ])
                 ->where('is_paid', false)
                 ->where('amount_paid', $amount)
                 ->where('updated_at', '>=', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES + 30))
@@ -512,12 +512,12 @@ class SmsPaymentService
             }
         }
 
-        if (!$reading) {
+        if (! $reading) {
             return false;
         }
 
         // Recovery: ถ้า reading ถูก cleanup ปิดไปแล้ว (completed) แต่ยังไม่ได้จ่าย → กู้คืนกลับมา
-        if ($reading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT && !$reading->is_paid) {
+        if ($reading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT && ! $reading->is_paid) {
             Log::info('SMS Payment: กู้คืน Fortune Reading ที่หมดอายุ/ถูกปิด กลับเป็น pending_payment', [
                 'reading_id' => $reading->id,
                 'old_status' => $reading->conversation_status,
@@ -576,7 +576,7 @@ class SmsPaymentService
             }
 
             // ส่งคำทำนายผ่าน Channel Manager (รองรับทุก platform)
-            if (!empty($result['message'])) {
+            if (! empty($result['message'])) {
                 $channelManager->sendResponse($platform, $userId, $result);
             }
 
@@ -618,11 +618,6 @@ class SmsPaymentService
 
     /**
      * ส่งข้อความยาวไปยัง Messenger โดยแบ่งเป็นหลายข้อความ
-     *
-     * @param FacebookWebhookService $facebookService
-     * @param string $recipientId
-     * @param string $message
-     * @return void
      */
     protected function sendLongMessageToMessenger(FacebookWebhookService $facebookService, string $recipientId, string $message): void
     {
@@ -630,6 +625,7 @@ class SmsPaymentService
 
         if (mb_strlen($message) <= $maxLength) {
             $facebookService->sendMessage($recipientId, $message);
+
             return;
         }
 
@@ -638,7 +634,7 @@ class SmsPaymentService
 
         $currentMessage = '';
         foreach ($parts as $part) {
-            if (mb_strlen($currentMessage . $part) > $maxLength && !empty($currentMessage)) {
+            if (mb_strlen($currentMessage.$part) > $maxLength && ! empty($currentMessage)) {
                 $facebookService->sendMessage($recipientId, trim($currentMessage));
                 usleep(300000); // รอ 300ms ระหว่างข้อความ
                 $currentMessage = $part;
@@ -647,7 +643,7 @@ class SmsPaymentService
             }
         }
 
-        if (!empty($currentMessage)) {
+        if (! empty($currentMessage)) {
             $facebookService->sendMessage($recipientId, trim($currentMessage));
         }
     }
@@ -658,9 +654,6 @@ class SmsPaymentService
      * กรณีลูกค้าโอนเงินช้ากว่าเวลาที่กำหนด (60 นาที) แต่ unique amount
      * เพิ่งหมดอายุไม่นาน (ภายใน 30 นาทีหลังหมดอายุ)
      * → ยังสามารถจับคู่กับ FortuneReading ที่รอชำระเงินได้
-     *
-     * @param float $amount
-     * @return FortuneReading|null
      */
     protected function findFortuneReadingByExpiredAmount(float $amount): ?FortuneReading
     {
@@ -676,7 +669,7 @@ class SmsPaymentService
             ->lockForUpdate()
             ->first();
 
-        if (!$uniquePayment) {
+        if (! $uniquePayment) {
             return null;
         }
 

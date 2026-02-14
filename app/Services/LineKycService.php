@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\KycVerification;
+use App\Models\User;
 use App\Services\OCR\ThaiIdCardOcrService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,8 +22,6 @@ use Illuminate\Support\Str;
  * - ส่งไปยัง OCR Service เพื่อแปลงข้อความ
  * - สร้าง KYC Verification record
  * - ส่ง notification และ Rich Menu กลับไปยัง LINE
- *
- * @package App\Services
  */
 class LineKycService
 {
@@ -47,7 +45,7 @@ class LineKycService
      */
     public function __construct()
     {
-        $this->ocrService = new ThaiIdCardOcrService();
+        $this->ocrService = new ThaiIdCardOcrService;
         $this->notificationService = app(NotificationService::class);
         $this->channelAccessToken = config('services.line.channel_access_token');
     }
@@ -57,8 +55,8 @@ class LineKycService
      *
      * ส่ง Rich Menu และคำแนะนำให้ผู้ใช้ส่งรูปบัตรประชาชน
      *
-     * @param string $lineUserId LINE User ID
-     * @param User $user User model
+     * @param  string  $lineUserId  LINE User ID
+     * @param  User  $user  User model
      * @return array ผลลัพธ์การดำเนินการ
      */
     public function startKycProcess(string $lineUserId, User $user): array
@@ -110,10 +108,10 @@ class LineKycService
     /**
      * รับและประมวลผลรูปภาพจาก LINE
      *
-     * @param string $messageId LINE Message ID ของรูปภาพ
-     * @param string $lineUserId LINE User ID
-     * @param User $user User model
-     * @param string $imageType ประเภทรูปภาพ: 'id_card' หรือ 'selfie'
+     * @param  string  $messageId  LINE Message ID ของรูปภาพ
+     * @param  string  $lineUserId  LINE User ID
+     * @param  User  $user  User model
+     * @param  string  $imageType  ประเภทรูปภาพ: 'id_card' หรือ 'selfie'
      * @return array ผลลัพธ์การดำเนินการ
      */
     public function processImageFromLine(
@@ -126,14 +124,14 @@ class LineKycService
             // 1. ดาวน์โหลดรูปภาพจาก LINE
             $imageData = $this->downloadLineImage($messageId);
 
-            if (!$imageData['success']) {
+            if (! $imageData['success']) {
                 return $imageData;
             }
 
             // 2. บันทึกรูปภาพลง Storage
             $savedImage = $this->saveImage($imageData['content'], $user->id, $imageType);
 
-            if (!$savedImage['success']) {
+            if (! $savedImage['success']) {
                 return $savedImage;
             }
 
@@ -174,11 +172,6 @@ class LineKycService
      * - ใช้ OCR แปลงข้อความจากบัตร
      * - สร้าง/อัพเดท KYC Verification record
      * - ส่ง notification กลับไปยัง LINE
-     *
-     * @param User $user
-     * @param string $imagePath
-     * @param string $lineUserId
-     * @return array
      */
     protected function processIdCardImage(User $user, string $imagePath, string $lineUserId): array
     {
@@ -186,7 +179,7 @@ class LineKycService
         $ocrResult = $this->ocrService->extractData($imagePath);
 
         // 2. ตรวจสอบผลลัพธ์ OCR
-        if (!$ocrResult['success']) {
+        if (! $ocrResult['success']) {
             $errorMessage = "❌ ไม่สามารถอ่านข้อมูลจากบัตรประชาชนได้\n\n";
             $errorMessage .= "สาเหตุ: {$ocrResult['error']}\n\n";
             $errorMessage .= "คำแนะนำ: {$ocrResult['suggestion']}";
@@ -214,7 +207,7 @@ class LineKycService
         // 4. ส่ง notification กลับไปยัง LINE
         $successMessage = "✅ รับรูปบัตรประชาชนเรียบร้อยแล้ว!\n\n";
 
-        if (!empty($ocrResult['data'])) {
+        if (! empty($ocrResult['data'])) {
             $successMessage .= "📝 ข้อมูลที่อ่านได้:\n";
             $successMessage .= $this->formatOcrDataForLine($ocrResult['data']);
             $successMessage .= "\n\n";
@@ -242,18 +235,13 @@ class LineKycService
 
     /**
      * ประมวลผลรูป Selfie
-     *
-     * @param User $user
-     * @param string $imagePath
-     * @param string $lineUserId
-     * @return array
      */
     protected function processSelfieImage(User $user, string $imagePath, string $lineUserId): array
     {
         // 1. ตรวจสอบว่ามี KYC record อยู่แล้วหรือไม่
         $kyc = KycVerification::where('user_id', $user->id)->first();
 
-        if (!$kyc) {
+        if (! $kyc) {
             $message = "❌ กรุณาส่งรูปบัตรประชาชนก่อน\n\nพิมพ์ 'KYC' เพื่อเริ่มต้นใหม่";
             $this->sendLineMessage($lineUserId, $message);
 
@@ -304,21 +292,20 @@ class LineKycService
     /**
      * ดาวน์โหลดรูปภาพจาก LINE Messaging API
      *
-     * @param string $messageId LINE Message ID
-     * @return array
+     * @param  string  $messageId  LINE Message ID
      */
     protected function downloadLineImage(string $messageId): array
     {
         try {
-            if (!$this->channelAccessToken) {
+            if (! $this->channelAccessToken) {
                 throw new \Exception('LINE Channel Access Token not configured');
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->channelAccessToken,
+                'Authorization' => 'Bearer '.$this->channelAccessToken,
             ])->get("https://api-data.line.me/v2/bot/message/{$messageId}/content");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('LINE KYC: Failed to download image', [
                     'message_id' => $messageId,
                     'status' => $response->status(),
@@ -354,10 +341,9 @@ class LineKycService
     /**
      * บันทึกรูปภาพลง Storage
      *
-     * @param string $imageContent ข้อมูลรูปภาพ (binary)
-     * @param int $userId User ID
-     * @param string $type ประเภทรูป: 'id_card' หรือ 'selfie'
-     * @return array
+     * @param  string  $imageContent  ข้อมูลรูปภาพ (binary)
+     * @param  int  $userId  User ID
+     * @param  string  $type  ประเภทรูป: 'id_card' หรือ 'selfie'
      */
     protected function saveImage(string $imageContent, int $userId, string $type): array
     {
@@ -397,19 +383,18 @@ class LineKycService
     /**
      * ส่งข้อความไปยัง LINE User
      *
-     * @param string $lineUserId LINE User ID
-     * @param string $message ข้อความที่จะส่ง
-     * @return bool
+     * @param  string  $lineUserId  LINE User ID
+     * @param  string  $message  ข้อความที่จะส่ง
      */
     protected function sendLineMessage(string $lineUserId, string $message): bool
     {
         try {
-            if (!$this->channelAccessToken) {
+            if (! $this->channelAccessToken) {
                 throw new \Exception('LINE Channel Access Token not configured');
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->channelAccessToken,
+                'Authorization' => 'Bearer '.$this->channelAccessToken,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
@@ -421,12 +406,13 @@ class LineKycService
                 ],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('LINE KYC: Failed to send message', [
                     'line_user_id' => $lineUserId,
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
@@ -437,26 +423,23 @@ class LineKycService
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * ส่ง Flex Message แบบสวยงามไปยัง LINE
-     *
-     * @param string $lineUserId
-     * @param array $flexMessage
-     * @return bool
      */
     protected function sendLineFlexMessage(string $lineUserId, array $flexMessage): bool
     {
         try {
-            if (!$this->channelAccessToken) {
+            if (! $this->channelAccessToken) {
                 throw new \Exception('LINE Channel Access Token not configured');
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->channelAccessToken,
+                'Authorization' => 'Bearer '.$this->channelAccessToken,
                 'Content-Type' => 'application/json',
             ])->post('https://api.line.me/v2/bot/message/push', [
                 'to' => $lineUserId,
@@ -476,19 +459,17 @@ class LineKycService
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
 
     /**
      * แปลงข้อมูล OCR เป็นข้อความสำหรับแสดงใน LINE
-     *
-     * @param array $ocrData
-     * @return string
      */
     protected function formatOcrDataForLine(array $ocrData): string
     {
-        $formatted = "";
+        $formatted = '';
 
         $fields = [
             'id_number' => '🆔 เลขบัตร',
@@ -500,7 +481,7 @@ class LineKycService
         ];
 
         foreach ($fields as $key => $label) {
-            if (!empty($ocrData[$key])) {
+            if (! empty($ocrData[$key])) {
                 $formatted .= "{$label}: {$ocrData[$key]}\n";
             }
         }
@@ -510,12 +491,10 @@ class LineKycService
 
     /**
      * ข้อความแนะนำเริ่มต้น KYC
-     *
-     * @return string
      */
     protected function getStartKycMessage(): string
     {
-        return <<<MESSAGE
+        return <<<'MESSAGE'
 🔐 ยืนยันตัวตน (KYC)
 
 เพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี กรุณาทำตามขั้นตอนต่อไปนี้:
@@ -541,27 +520,25 @@ MESSAGE;
     /**
      * ส่งการแจ้งเตือนผลการตรวจสอบ KYC ไปยัง LINE
      *
-     * @param User $user
-     * @param KycVerification $kyc
-     * @param string $status 'approved' หรือ 'rejected'
-     * @return bool
+     * @param  string  $status  'approved' หรือ 'rejected'
      */
     public function notifyKycResult(User $user, KycVerification $kyc, string $status): bool
     {
         // ดึง LINE User ID จาก user
         $lineUserId = $user->line_user_id;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             Log::warning('LINE KYC: Cannot notify - LINE User ID not found', [
                 'user_id' => $user->id,
             ]);
+
             return false;
         }
 
         if ($status === 'approved') {
             $message = "🎉 ยินดีด้วย! KYC ผ่านการตรวจสอบ\n\n";
             $message .= "✅ บัญชีของคุณได้รับการยืนยันตัวตนแล้ว\n";
-            $message .= "✨ ตอนนี้คุณสามารถใช้งานฟีเจอร์ครบทุกอย่างได้แล้ว";
+            $message .= '✨ ตอนนี้คุณสามารถใช้งานฟีเจอร์ครบทุกอย่างได้แล้ว';
         } else {
             $message = "❌ KYC ไม่ผ่านการตรวจสอบ\n\n";
             $message .= "สาเหตุ: {$kyc->rejection_reason}\n\n";

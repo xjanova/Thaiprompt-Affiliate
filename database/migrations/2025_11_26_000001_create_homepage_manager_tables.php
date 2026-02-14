@@ -21,13 +21,11 @@ return new class extends Migration
 
     /**
      * สร้างตาราง homepage_sections และ homepage_elements
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตาราง homepage_sections - แต่ละ section บนหน้าแรก
-        if (!Schema::hasTable('homepage_sections')) {
+        if (! Schema::hasTable('homepage_sections')) {
             Schema::create('homepage_sections', function (Blueprint $table) {
                 $table->id();
 
@@ -74,7 +72,7 @@ return new class extends Migration
         }
 
         // ตาราง homepage_elements - elements ภายใน section
-        if (!Schema::hasTable('homepage_elements')) {
+        if (! Schema::hasTable('homepage_elements')) {
             Schema::create('homepage_elements', function (Blueprint $table) {
                 $table->id();
 
@@ -168,7 +166,7 @@ return new class extends Migration
         }
 
         // ตาราง homepage_templates - เทมเพลตสำเร็จรูป
-        if (!Schema::hasTable('homepage_templates')) {
+        if (! Schema::hasTable('homepage_templates')) {
             Schema::create('homepage_templates', function (Blueprint $table) {
                 $table->id();
 
@@ -193,8 +191,6 @@ return new class extends Migration
 
     /**
      * ลบตารางที่สร้างขึ้น
-     *
-     * @return void
      */
     public function down(): void
     {

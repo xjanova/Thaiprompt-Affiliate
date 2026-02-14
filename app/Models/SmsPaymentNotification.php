@@ -102,8 +102,6 @@ class SmsPaymentNotification extends Model
      *
      * หมายเหตุ: เช็คเฉพาะ bank code เท่านั้น (เช่น KBANK, SCB)
      * ไม่เช็คเลขบัญชี เพราะ SMS ไม่ได้แสดงเลขบัญชีเต็ม
-     *
-     * @return PaymentBankAccount|null
      */
     public function getMatchingBankAccount(): ?PaymentBankAccount
     {
@@ -120,8 +118,6 @@ class SmsPaymentNotification extends Model
      * - ตรงกับ bank code (เช่น KBANK, SCB)
      * - เปิดใช้งาน (is_active = true)
      * - เปิด SMS Checker (sms_checker_enabled = true)
-     *
-     * @return bool
      */
     public function isFromRegisteredAccount(): bool
     {
@@ -136,7 +132,7 @@ class SmsPaymentNotification extends Model
      * 2. Fallback: จับคู่ด้วย PaymentTransaction.amount ตรงๆ (กรณี UniquePaymentAmount หมดอายุ แต่ transaction ยังเป็น pending)
      * 3. Fallback: จับคู่ด้วย reference_number + จำนวนเงินใกล้เคียง
      *
-     * @param bool $autoConfirm ยืนยัน transaction อัตโนมัติเมื่อจับคู่ได้
+     * @param  bool  $autoConfirm  ยืนยัน transaction อัตโนมัติเมื่อจับคู่ได้
      * @return bool จับคู่สำเร็จหรือไม่
      */
     public function attemptMatch(bool $autoConfirm = true): bool
@@ -246,6 +242,7 @@ class SmsPaymentNotification extends Model
                     if ($autoConfirm) {
                         app(PaymentService::class)->completePayment($transaction);
                     }
+
                     return true;
                 }
             }

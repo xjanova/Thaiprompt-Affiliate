@@ -4,12 +4,13 @@ namespace App\Services\Email\Providers;
 
 use App\Services\Email\Contracts\EmailProviderInterface;
 use Illuminate\Support\Facades\Log;
-use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class GmailSmtpProvider implements EmailProviderInterface
 {
     protected array $config;
+
     protected PHPMailer $mailer;
 
     public function __construct(array $config)
@@ -122,6 +123,7 @@ class GmailSmtpProvider implements EmailProviderInterface
             return true;
         } catch (\Exception $e) {
             Log::error('Gmail SMTP validation failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
