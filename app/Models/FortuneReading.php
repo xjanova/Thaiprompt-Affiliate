@@ -706,10 +706,14 @@ class FortuneReading extends Model
     /**
      * สร้างเลขที่บิลอ้างอิงที่ไม่ซ้ำกัน
      *
-     * รูปแบบ: FTU-YYMMDD-XXXXX
+     * รูปแบบ: FTU-YYMMDD-AXXXX
      * - FTU = Fortune Reading
      * - YYMMDD = วันที่ (เช่น 260205)
-     * - XXXXX = ลำดับ random 5 หลัก
+     * - AXXXX = ตัวอักษร 1 ตัว + ลำดับ random 4 หลัก
+     *
+     * หมายเหตุ: ใช้ตัวอักษรนำหน้า random part เพื่อป้องกัน Facebook
+     * detect ตัวเลข "YYMMDD-XXXXX" เป็นเลขบัญชีธนาคาร
+     * (Facebook จะสร้าง Payment Card อัตโนมัติจากเลขบัญชีในข้อความ)
      */
     public static function generateBillReference(): string
     {
@@ -717,10 +721,14 @@ class FortuneReading extends Model
         $datePart = now()->format('ymd');
         $maxAttempts = 10;
 
+        // ตัวอักษรสำหรับนำหน้า random part (ไม่ใช้ I, O, L เพื่อไม่สับสนกับตัวเลข)
+        $letters = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+
         for ($i = 0; $i < $maxAttempts; $i++) {
-            // สร้าง random 5 หลัก
-            $randomPart = str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
-            $reference = "{$prefix}-{$datePart}-{$randomPart}";
+            // สร้าง random: ตัวอักษร 1 ตัว + ตัวเลข 4 หลัก
+            $letter = $letters[random_int(0, strlen($letters) - 1)];
+            $numPart = str_pad(random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            $reference = "{$prefix}-{$datePart}-{$letter}{$numPart}";
 
             // ตรวจสอบว่าซ้ำหรือไม่
             if (! self::where('bill_reference', $reference)->exists()) {

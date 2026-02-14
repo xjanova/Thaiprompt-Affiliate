@@ -10,7 +10,10 @@ use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
+use App\Models\FortuneTellingSetting;
 use App\Services\FcmNotificationService;
+use App\Services\FortuneChannelManager;
+use App\Services\FortuneConversationService;
 use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
@@ -770,7 +773,52 @@ class SmsPaymentController extends Controller
 
             // ค้นหา SMS notification ที่จับคู่กับบิลนี้
             $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
-            $model->confirmPayment($notification);
+
+            // ประมวลผลคำทำนาย + ส่งข้อความ (เหมือน auto-approve จาก SMS)
+            // ต้องเรียก processPaymentConfirmed() ไม่ใช่แค่ confirmPayment()
+            // เพราะ confirmPayment() แค่เปลี่ยนสถานะเป็น paid แต่ไม่สร้างคำทำนาย
+            try {
+                $settings = FortuneTellingSetting::getSettings();
+                $conversationService = new FortuneConversationService($settings);
+                $channelManager = new FortuneChannelManager($settings);
+
+                $platform = $model->platform ?? 'facebook';
+                $userId = $model->platform_user_id ?? $model->facebook_user_id;
+
+                // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
+                $result = $conversationService->processPaymentConfirmed($model, $notification);
+
+                // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+                $chartUrl = $result['chart_image_url'] ?? null;
+                if ($chartUrl) {
+                    try {
+                        $platformService = $channelManager->getPlatform($platform);
+                        if ($platformService) {
+                            $platformService->sendImage($userId, $chartUrl);
+                            usleep(500000); // 0.5 วินาที ให้ภาพส่งก่อน
+                        }
+                    } catch (\Exception $imgErr) {
+                        Log::warning('SMS Payment: ส่ง chart image ไม่สำเร็จ (manual approve)', [
+                            'error' => $imgErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                // ส่งคำทำนายผ่าน Channel Manager (รองรับทุก platform)
+                if (! empty($result['message'])) {
+                    $channelManager->sendResponse($platform, $userId, $result);
+                }
+            } catch (\Exception $e) {
+                Log::error('SMS Payment: ประมวลผลคำทำนายล้มเหลว (manual approve)', [
+                    'fortune_reading_id' => $model->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Fallback: ถ้าสร้างคำทำนายไม่ได้ ก็แค่ confirm payment ไว้ก่อน
+                if (! $model->is_paid) {
+                    $model->confirmPayment($notification);
+                }
+            }
 
             // อัพเดท notification สถานะเป็น confirmed
             if ($notification) {
@@ -786,7 +834,7 @@ class SmsPaymentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Fortune reading approved successfully',
+                'message' => 'Fortune reading approved and deep reading sent',
                 'data' => ['bill_reference' => $model->bill_reference, 'status' => 'paid'],
             ]);
         }
@@ -1106,7 +1154,30 @@ class SmsPaymentController extends Controller
                     continue;
                 }
                 if (! $model->is_paid) {
-                    $model->confirmPayment();
+                    // ประมวลผลคำทำนาย + ส่งข้อความ (เหมือน single approve)
+                    try {
+                        $settings = FortuneTellingSetting::getSettings();
+                        $conversationService = new FortuneConversationService($settings);
+                        $channelManager = new FortuneChannelManager($settings);
+
+                        $platform = $model->platform ?? 'facebook';
+                        $userId = $model->platform_user_id ?? $model->facebook_user_id;
+
+                        $result = $conversationService->processPaymentConfirmed($model);
+
+                        if (! empty($result['message'])) {
+                            $channelManager->sendResponse($platform, $userId, $result);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('SMS Payment: bulk approve fortune reading failed', [
+                            'reading_id' => $model->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        // Fallback: แค่ confirm payment
+                        if (! $model->is_paid) {
+                            $model->confirmPayment();
+                        }
+                    }
                     $approved++;
                 } else {
                     $failed++; // already paid
@@ -1979,7 +2050,50 @@ class SmsPaymentController extends Controller
                 ->first();
         }
 
-        $reading->confirmPayment($notification);
+        // ประมวลผลคำทำนาย + ส่งข้อความ (เหมือน auto-approve จาก SMS)
+        // ต้องเรียก processPaymentConfirmed() เพื่อสร้างคำทำนายและส่งให้ user
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $conversationService = new FortuneConversationService($settings);
+            $channelManager = new FortuneChannelManager($settings);
+
+            $platform = $reading->platform ?? 'facebook';
+            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+            // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
+            $result = $conversationService->processPaymentConfirmed($reading, $notification);
+
+            // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
+            $chartUrl = $result['chart_image_url'] ?? null;
+            if ($chartUrl) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $chartUrl);
+                        usleep(500000);
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('SMS Payment: ส่ง chart image ไม่สำเร็จ (encrypted approve)', [
+                        'error' => $imgErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // ส่งคำทำนายผ่าน Channel Manager
+            if (! empty($result['message'])) {
+                $channelManager->sendResponse($platform, $userId, $result);
+            }
+        } catch (\Exception $e) {
+            Log::error('SMS Payment: ประมวลผลคำทำนายล้มเหลว (encrypted approve)', [
+                'fortune_reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback: ถ้าสร้างคำทำนายไม่ได้ ก็แค่ confirm payment ไว้ก่อน
+            if (! $reading->is_paid) {
+                $reading->confirmPayment($notification);
+            }
+        }
 
         // อัพเดท notification สถานะเป็น confirmed
         if ($notification) {
@@ -2000,14 +2114,14 @@ class SmsPaymentController extends Controller
         Log::info('SMS Payment: Fortune reading approved via encrypted action', [
             'fortune_reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
-            'amount' => $payload['amount'],
+            'amount' => $payload['amount'] ?? null,
             'device_id' => $device->device_id,
             'sms_notification_id' => $notification?->id,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Fortune reading approved successfully',
+            'message' => 'Fortune reading approved and deep reading sent',
             'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
         ]);
     }
