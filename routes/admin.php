@@ -3861,6 +3861,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/assign', [FortuneBillingController::class, 'assignToUser'])->name('assign');
         Route::post('/{reading}/manual-confirm', [FortuneBillingController::class, 'manualConfirm'])->name('manual-confirm');
         Route::post('/{reading}/void', [FortuneBillingController::class, 'void'])->name('void');
+        Route::post('/{reading}/retry-fortune', [FortuneBillingController::class, 'retryFortune'])->name('retry-fortune');
         Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
         Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
     });

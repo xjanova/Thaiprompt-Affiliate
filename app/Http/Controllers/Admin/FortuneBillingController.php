@@ -183,6 +183,23 @@ class FortuneBillingController extends Controller
                 // ประมวลผลคำทำนายละเอียด (จะเรียก confirmPayment() ภายในอัตโนมัติ)
                 $result = $conversationService->processPaymentConfirmed($reading);
 
+                // ตรวจสอบว่า AI generation สำเร็จหรือไม่
+                $aiGenerationFailed = ($result['action'] ?? '') === 'error';
+
+                if ($aiGenerationFailed) {
+                    // AI generation ล้มเหลว — ส่ง fallback message ให้ลูกค้า + แจ้ง admin
+                    Log::warning('ManualConfirm: AI generation ล้มเหลว — ส่ง fallback message', [
+                        'reading_id' => $reading->id,
+                        'bill_reference' => $reading->bill_reference,
+                    ]);
+
+                    if (! empty($result['message'])) {
+                        $channelManager->sendResponse($platform, $userId, $result);
+                    }
+
+                    return back()->with('warning', 'ยืนยันการชำระเงินแล้ว แต่ AI สร้างคำทำนายไม่สำเร็จ — กรุณาลองกด "ส่งคำทำนาย" อีกครั้ง หรือตรวจสอบ AI API Key');
+                }
+
                 // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
                 $chartUrl = $result['chart_image_url'] ?? null;
                 if ($chartUrl) {
@@ -264,6 +281,86 @@ class FortuneBillingController extends Controller
         ]);
 
         return back()->with('success', 'ยกเลิกบิลสำเร็จ');
+    }
+
+    /**
+     * ส่งคำทำนายซ้ำ (Retry Fortune)
+     *
+     * สำหรับบิลที่ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ
+     * จะลองสร้างคำทำนาย + ส่งข้อความใหม่อีกครั้ง
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function retryFortune(FortuneReading $reading)
+    {
+        if (! $reading->is_paid) {
+            return back()->with('error', 'บิลนี้ยังไม่ได้ชำระเงิน');
+        }
+
+        $hasQuestions = ! empty($reading->getCollectedQuestions());
+        if (! $hasQuestions) {
+            return back()->with('error', 'บิลนี้ไม่มีคำถาม — ไม่สามารถสร้างคำทำนายได้');
+        }
+
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $conversationService = new FortuneConversationService($settings);
+            $channelManager = new FortuneChannelManager($settings);
+
+            $platform = $reading->platform ?? 'facebook';
+            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+            if (! $userId) {
+                return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
+            }
+
+            // สร้างคำทำนายใหม่
+            $result = $conversationService->processPaymentConfirmed($reading);
+
+            // ตรวจสอบว่า AI generation สำเร็จหรือไม่
+            if (($result['action'] ?? '') === 'error') {
+                Log::warning('RetryFortune: AI generation ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return back()->with('warning', 'AI สร้างคำทำนายไม่สำเร็จอีกครั้ง — กรุณาตรวจสอบ AI API Key');
+            }
+
+            // ส่ง Birth Chart (ถ้ามี)
+            $chartUrl = $result['chart_image_url'] ?? null;
+            if ($chartUrl) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $chartUrl);
+                        usleep(500000);
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('RetryFortune: ส่ง chart image ไม่สำเร็จ', [
+                        'error' => $imgErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // ส่งคำทำนาย
+            if (! empty($result['message'])) {
+                $channelManager->sendResponse($platform, $userId, $result);
+            }
+
+            Log::info('RetryFortune: สร้างคำทำนาย + ส่งข้อความสำเร็จ', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+            ]);
+
+            return back()->with('success', 'ส่งคำทำนายให้ลูกค้าสำเร็จ ✨');
+        } catch (\Exception $e) {
+            Log::error('RetryFortune: ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'ส่งคำทำนายไม่สำเร็จ: '.$e->getMessage());
+        }
     }
 
     /**
