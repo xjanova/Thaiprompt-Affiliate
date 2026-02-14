@@ -673,7 +673,7 @@ class FortuneConversationService
         } else {
             $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n";
             $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
-            $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
             $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
@@ -785,7 +785,7 @@ class FortuneConversationService
 
             $price = $this->getDeepReadingPrice();
             $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
-            $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
             $message .= "พิมพ์ 'ต้องการดูละเอียด' เพื่อเริ่มค่ะ ✨";
@@ -1567,7 +1567,7 @@ class FortuneConversationService
                "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n".
                "📍 บอกวันเดือนปีเกิด\n".
                "📍 ถามได้ 3 คำถาม\n".
-               "📍 เพียง {$price} บาท\n\n".
+               "📍 เริ่มต้นเพียง {$price} บาท\n\n".
                "ตอบ 'ต้องการ' หรือ 'เอา' เพื่อเริ่มต้นค่ะ ✨\n".
                "ตอบ 'ไม่' หากไม่ต้องการ";
     }
@@ -1753,7 +1753,7 @@ class FortuneConversationService
         $message .= "🆓 *ดูดวงฟรี* - วันละ 1 คำถาม\n";
         $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
 
-        $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+        $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
         $message .= "   ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
         $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
 
@@ -2385,7 +2385,7 @@ class FortuneConversationService
         $message .= "(ฟรีวันละ 1 คำถาม)\n\n";
 
         $message .= "═══════════════════════\n";
-        $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
+        $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
         $message .= "═══════════════════════\n\n";
 
         $message .= "📌 ถามได้ถึง 3 คำถาม\n";
@@ -2395,12 +2395,14 @@ class FortuneConversationService
 
         $message .= "🎯 *วิธีใช้บริการ*\n";
         $message .= "─────────────────────\n";
-        $message .= "1️⃣ โอนเงิน {$price} บาท\n";
-        $message .= $this->getBankAccountsListMessage();
-        $message .= "\n2️⃣ บอกวันเดือนปีเกิด\n";
-        $message .= "3️⃣ ถามคำถามได้เลย 3 ข้อ\n\n";
+        $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
+        $message .= "2️⃣ ถามคำถามได้เลย 3 ข้อ\n";
+        $message .= "3️⃣ ระบบจะออกบิลยอดชำระที่แน่นอน\n";
+        $message .= "4️⃣ โอนเงินตามยอดในบิล (ตรงทศนิยม)\n\n";
 
-        $message .= "💡 พิมพ์ \"*ต้องการดูละเอียด*\" หรือ \"*โอนแล้ว*\"\n";
+        $message .= $this->getBankAccountsListMessage();
+
+        $message .= "\n💡 พิมพ์ \"*ต้องการดูละเอียด*\" หรือ \"*โอนแล้ว*\"\n";
         $message .= 'เพื่อเริ่มกระบวนการค่ะ ✨';
 
         return $message;
