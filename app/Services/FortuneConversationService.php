@@ -223,6 +223,49 @@ class FortuneConversationService
     }
 
     /**
+     * ดึงราคาดูดวงละเอียดจากการตั้งค่า
+     *
+     * ⚠️ สำคัญ: ต้องใช้ method นี้แทน $this->settings->deep_reading_price ?: DEEP_READING_PRICE
+     * เพราะ Laravel decimal:2 cast จะคืนค่า "0.00" เป็น string ซึ่ง PHP ถือว่าเป็น truthy
+     * ทำให้ ?: operator ไม่ fallback ไปค่า default
+     *
+     * @return float ราคาดูดวงละเอียด (บาท)
+     */
+    protected function getDeepReadingPrice(): float
+    {
+        $price = (float) ($this->settings->deep_reading_price ?? 0);
+
+        return $price > 0 ? $price : self::DEEP_READING_PRICE;
+    }
+
+    /**
+     * ดึง QR Code URL สำหรับชำระเงิน
+     *
+     * ลำดับ: 1) QR จากการตั้งค่าดูดวง (payment_qr_image)
+     *        2) QR จากบัญชีธนาคารตัวแรกที่มี (qr_image)
+     *
+     * @return string|null URL ของ QR Code หรือ null ถ้าไม่มี
+     */
+    protected function getPaymentQrImageUrl(): ?string
+    {
+        // 1. เช็ค QR จากการตั้งค่าดูดวง
+        $settingsQr = $this->settings->getPaymentQrUrl();
+        if ($settingsQr) {
+            return $settingsQr;
+        }
+
+        // 2. เช็ค QR จากบัญชีธนาคาร
+        $accounts = $this->settings->getFortuneBankAccounts();
+        foreach ($accounts as $account) {
+            if (! empty($account->qr_image_url)) {
+                return $account->qr_image_url;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * ประมวลผลข้อความจาก Messenger
      *
      * @return array ผลลัพธ์ ['action' => '...', 'message' => '...', 'reading' => FortuneReading|null]
@@ -255,10 +298,19 @@ class FortuneConversationService
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
+            // 🔍 Debug log: ติดตามสถานะ conversation
+            Log::info('Fortune processMessage: ตรวจสอบ active conversation', [
+                'facebook_user_id' => $facebookUserId,
+                'has_active' => ! is_null($activeReading),
+                'active_status' => $activeReading?->conversation_status,
+                'active_id' => $activeReading?->id,
+                'text_preview' => mb_substr($messageText, 0, 30),
+            ]);
+
             if ($activeReading) {
-                // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ
+                // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                 if ($this->isCancelRequest($messageText)) {
-                    $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    $this->closeAllActiveConversations($facebookUserId);
 
                     return [
                         'action' => 'cancelled',
@@ -293,10 +345,13 @@ class FortuneConversationService
 
                         return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
                     }
-                    // ถ้าไม่ใช่คำถามดูดวง → ตกลงไปถาม confirmation ตามปกติ
-                } else {
-                    return $this->continueConversation($activeReading, $messageText, $userProfile);
+                    // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ (ต้อง return ไม่ให้ fall through)
+                    return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
+
+                // ✅ สถานะอื่นๆ (collecting_birthdate, collecting_questions, pending_payment)
+                // → ส่งต่อให้ continueConversation() จัดการตามสถานะ
+                return $this->continueConversation($activeReading, $messageText, $userProfile);
             }
 
             // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
@@ -322,11 +377,52 @@ class FortuneConversationService
             Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
                 'facebook_user_id' => $facebookUserId,
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'error_file' => $e->getFile().':'.$e->getLine(),
+                'trace_short' => mb_substr($e->getTraceAsString(), 0, 800),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
 
             // ✅ ป้องกัน null userProfile - ใช้ is_array ก่อนเข้าถึง array key
             $name = (is_array($userProfile) && isset($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+
+            // ✅ ถ้ามี conversation ค้างอยู่ → ตอบตามสถานะแทนที่จะเริ่มใหม่
+            try {
+                $activeReading = FortuneReading::findActiveConversation($facebookUserId);
+                if ($activeReading) {
+                    $status = $activeReading->conversation_status;
+
+                    // ถ้าอยู่ระหว่างเก็บคำถาม → แจ้งให้พิมพ์คำถามอีกครั้ง
+                    if ($status === FortuneReading::STATUS_COLLECTING_QUESTIONS) {
+                        $collected = count($activeReading->getCollectedQuestions());
+                        $remaining = max(0, self::REQUIRED_QUESTIONS - $collected);
+
+                        return [
+                            'action' => 'retry_question',
+                            'message' => "ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\n"
+                                ."ตอนนี้จันทรารับคำถามแล้ว {$collected} ข้อ\n"
+                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อใหม่อีกครั้งนะคะ",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ถ้าอยู่ระหว่างเก็บวันเกิด → แจ้งให้พิมพ์วันเกิดอีกครั้ง
+                    if ($status === FortuneReading::STATUS_COLLECTING_BIRTHDATE) {
+                        return [
+                            'action' => 'retry_birthdate',
+                            'message' => "ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nกรุณาพิมพ์วันเกิดอีกครั้งนะคะ\n📅 เช่น 15/08/1990",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ถ้ารอชำระเงิน → แจ้งยอดชำระ
+                    if ($status === FortuneReading::STATUS_PENDING_PAYMENT) {
+                        return $this->handlePendingPayment($activeReading, $messageText);
+                    }
+                }
+            } catch (\Exception $innerErr) {
+                Log::error('Fortune: Error recovery ล้มเหลว', ['error' => $innerErr->getMessage()]);
+            }
 
             return [
                 'action' => 'error',
@@ -550,7 +646,7 @@ class FortuneConversationService
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         // ดึงข้อมูลเครดิตพิเศษ
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
@@ -591,6 +687,35 @@ class FortuneConversationService
     }
 
     /**
+     * ปิด conversation ที่ยังค้างอยู่ทั้งหมดของผู้ใช้
+     *
+     * ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
+     * เรียกก่อนสร้าง conversation ใหม่เสมอ
+     */
+    protected function closeAllActiveConversations(string $facebookUserId): int
+    {
+        $closed = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_AWAITING_CONFIRMATION,
+                FortuneReading::STATUS_BASIC_DONE,
+                FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_NEW,
+            ])
+            ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        if ($closed > 0) {
+            Log::info('Fortune: ปิด conversation เก่าที่ค้างอยู่', [
+                'facebook_user_id' => $facebookUserId,
+                'closed_count' => $closed,
+            ]);
+        }
+
+        return $closed;
+    }
+
+    /**
      * ถามผู้ใช้ก่อนว่าจะดูดวงไหม พร้อมแจ้งสิทธิ์ฟรีที่เหลือวันนี้
      *
      * สร้าง reading ในสถานะ awaiting_confirmation แล้วส่งข้อความถาม
@@ -615,6 +740,9 @@ class FortuneConversationService
         $name = $userProfile['name'] ?? 'คุณ';
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
+
+        // ✅ ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมดก่อนสร้างใหม่
+        $this->closeAllActiveConversations($facebookUserId);
 
         // สร้าง reading ในสถานะรอยืนยัน เก็บข้อความต้นฉบับไว้
         $reading = FortuneReading::create([
@@ -655,7 +783,7 @@ class FortuneConversationService
             // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+            $price = $this->getDeepReadingPrice();
             $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
             $message .= "💎 *ดูดวงละเอียด {$price} บาท*\n";
             $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
@@ -891,6 +1019,10 @@ class FortuneConversationService
                 'facebook_user_id' => $facebookUserId,
             ]);
         }
+
+        // ✅ ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมดก่อนสร้างใหม่
+        // ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
+        $this->closeAllActiveConversations($facebookUserId);
 
         $reading = null;
         $name = $userProfile['name'] ?? 'คุณ';
@@ -1167,10 +1299,14 @@ class FortuneConversationService
             ];
         }
 
-        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคารเสมอ
+        // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคาร+เวลาเหลือ
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $billRef = $reading->bill_reference;
+
+        // คำนวณเวลาที่เหลือ
+        $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
+        $remainingMinutes = max(0, $remainingMinutes);
 
         $message = "🔮 จันทรารอคำทำนายละเอียดให้อยู่ค่ะ\n\n";
         $message .= "กรุณาโอนเงินเพื่อรับคำทำนายนะคะ 🙏\n\n";
@@ -1178,6 +1314,7 @@ class FortuneConversationService
         $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
         $message .= "🔖 เลขที่บิล: {$billRef}\n";
         $message .= "⏰ โอนก่อน: {$expiresAt} น.\n";
+        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
         $message .= "═══════════════════════\n\n";
 
         // แสดงบัญชีธนาคารทุกครั้ง
@@ -1186,12 +1323,16 @@ class FortuneConversationService
         $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
         $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n\n";
+        if ($remainingMinutes <= 10) {
+            $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุค่ะ\n\n";
+        }
         $message .= "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก";
 
         return [
             'action' => 'waiting_payment',
             'message' => $message,
             'reading' => $reading,
+            'payment_qr_url' => $this->getPaymentQrImageUrl(),
         ];
     }
 
@@ -1201,12 +1342,13 @@ class FortuneConversationService
     protected function createPaymentBill(FortuneReading $reading, array $questions): array
     {
         try {
-            // สร้าง unique amount
+            // สร้าง unique amount จากราคาในการตั้งค่า
+            $basePrice = $this->getDeepReadingPrice();
             $uniqueAmount = UniquePaymentAmount::generate(
-                self::DEEP_READING_PRICE,
+                $basePrice,
                 $reading->id,
                 'fortune_reading',
-                60  // หมดอายุใน 60 นาที
+                30  // หมดอายุใน 30 นาที
             );
 
             if (! $uniqueAmount) {
@@ -1232,10 +1374,14 @@ class FortuneConversationService
                 'facebook_user_id' => $reading->facebook_user_id,
             ]);
 
+            // ดึง QR Code URL สำหรับชำระเงิน (ถ้ามี)
+            $qrImageUrl = $this->getPaymentQrImageUrl();
+
             return [
                 'action' => 'pending_payment',
                 'message' => $message,
                 'reading' => $reading,
+                'payment_qr_url' => $qrImageUrl,
             ];
 
         } catch (\Exception $e) {
@@ -1413,7 +1559,7 @@ class FortuneConversationService
      */
     protected function getUpsellMessage(string $name): string
     {
-        $price = self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         return "═══════════════════════\n".
                "🌟 *ดูดวงละเอียด* 🌟\n".
@@ -1484,9 +1630,14 @@ class FortuneConversationService
             $message .= "{$num}. {$q}\n";
         }
 
+        // คำนวณเวลาที่เหลือ
+        $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
+        $remainingMinutes = max(0, $remainingMinutes);
+
         $message .= "\n═══════════════════════\n";
         $message .= "💰 *ยอดชำระ: ฿{$amount}*\n";
         $message .= "⏰ หมดอายุ: {$expiresAt} น.\n";
+        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
         $message .= "═══════════════════════\n\n";
 
         // เพิ่มบัญชีธนาคาร
@@ -1494,7 +1645,8 @@ class FortuneConversationService
 
         $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨';
+        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n";
+        $message .= "📌 บิลจะหมดอายุอัตโนมัติใน {$remainingMinutes} นาทีค่ะ";
 
         return $message;
     }
@@ -1584,7 +1736,7 @@ class FortuneConversationService
      */
     protected function getHelpMessageWithExamples(): string
     {
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         $message = "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n";
         $message .= "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่องอะไร:\n\n";
@@ -2226,7 +2378,7 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
-        $price = $this->settings->deep_reading_price ?: self::DEEP_READING_PRICE;
+        $price = $this->getDeepReadingPrice();
 
         $message = "🔮 *สวัสดีค่ะ ขอบคุณที่มาหาหมอนะคะ*\n\n";
         $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";

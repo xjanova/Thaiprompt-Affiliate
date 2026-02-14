@@ -759,6 +759,20 @@ class FacebookWebhookController extends Controller
                 $this->sendLongMessage($senderId, $message);
             }
 
+            // ✅ ส่งภาพ QR Code ชำระเงิน หลังข้อความบิล (ถ้ามี)
+            $paymentQrUrl = $result['payment_qr_url'] ?? null;
+            if ($paymentQrUrl) {
+                try {
+                    usleep(300000); // รอ 0.3 วินาทีให้ข้อความส่งก่อน
+                    $this->facebookService->sendImage($senderId, $paymentQrUrl);
+                } catch (\Exception $qrErr) {
+                    Log::warning('Fortune: ส่งภาพ QR Code ไม่สำเร็จ', [
+                        'error' => $qrErr->getMessage(),
+                        'qr_url' => $paymentQrUrl,
+                    ]);
+                }
+            }
+
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
             $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining'];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
