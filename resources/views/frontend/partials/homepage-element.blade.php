@@ -33,6 +33,7 @@
     @if($element->animation)
         x-data="{ shown: false }"
         x-intersect:enter="shown = true"
+        x-init="setTimeout(() => { if (!shown) shown = true }, 800)"
         x-bind:class="shown ? '{{ $animationClass }}' : 'opacity-0'"
     @endif
 >
