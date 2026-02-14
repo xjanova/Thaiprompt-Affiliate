@@ -64,12 +64,12 @@ class ChatbotKeywordResponse extends Model
      */
     public function matches(string $message): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
         // Check conditions first (time, day, user_type, etc.)
-        if (!$this->checkConditions()) {
+        if (! $this->checkConditions()) {
             return false;
         }
 
@@ -116,7 +116,7 @@ class ChatbotKeywordResponse extends Model
         // Check day of week condition
         if (isset($this->conditions['days'])) {
             $today = now()->dayOfWeek; // 0 = Sunday, 6 = Saturday
-            if (!in_array($today, $this->conditions['days'])) {
+            if (! in_array($today, $this->conditions['days'])) {
                 return false;
             }
         }
@@ -130,7 +130,7 @@ class ChatbotKeywordResponse extends Model
     public function getResponse(): string
     {
         // If has variations, randomly pick one
-        if (!empty($this->response_variations) && count($this->response_variations) > 0) {
+        if (! empty($this->response_variations) && count($this->response_variations) > 0) {
             return $this->response_variations[array_rand($this->response_variations)];
         }
 

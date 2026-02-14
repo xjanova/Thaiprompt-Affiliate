@@ -45,7 +45,7 @@ class OfficialShopProcessWarningsCommand extends Command
         $this->newLine();
 
         try {
-            $service = new OfficialShopSelectionService();
+            $service = new OfficialShopSelectionService;
             $result = $service->processWarnings();
 
             // แสดงผลลัพธ์
@@ -60,7 +60,7 @@ class OfficialShopProcessWarningsCommand extends Command
             );
 
             // แสดงรายการที่ปรับปรุงสำเร็จ
-            if (!empty($result['improved'])) {
+            if (! empty($result['improved'])) {
                 $this->newLine();
                 $this->info('✅ ปรับปรุงสำเร็จ:');
                 foreach ($result['improved'] as $item) {
@@ -69,7 +69,7 @@ class OfficialShopProcessWarningsCommand extends Command
             }
 
             // แสดงรายการที่หมดเวลา
-            if (!empty($result['expired'])) {
+            if (! empty($result['expired'])) {
                 $this->newLine();
                 $this->warn('⏰ หมดเวลาปรับปรุง:');
                 foreach ($result['expired'] as $item) {
@@ -78,7 +78,7 @@ class OfficialShopProcessWarningsCommand extends Command
             }
 
             // แสดงรายการที่ถูกถอด
-            if (!empty($result['removed'])) {
+            if (! empty($result['removed'])) {
                 $this->newLine();
                 $this->error('❌ ถูกถอดออกจาก Official Shop:');
                 foreach ($result['removed'] as $productId) {
@@ -93,7 +93,7 @@ class OfficialShopProcessWarningsCommand extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
 
             return Command::FAILURE;
         }

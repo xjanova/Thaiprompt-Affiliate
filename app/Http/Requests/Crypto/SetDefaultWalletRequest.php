@@ -14,7 +14,7 @@ class SetDefaultWalletRequest extends FormRequest
         // Check if the wallet belongs to the user
         $walletId = $this->route('wallet') ?? $this->wallet_id;
 
-        if (!$walletId) {
+        if (! $walletId) {
             return false;
         }
 

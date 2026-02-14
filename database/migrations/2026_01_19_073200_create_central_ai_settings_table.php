@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง central_ai_settings
      * เก็บการตั้งค่ารวมของระบบ Central AI สำหรับจัดการ Ollama และ AI Providers
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -94,8 +92,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง central_ai_settings
-     *
-     * @return void
      */
     public function down(): void
     {

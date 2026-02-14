@@ -41,7 +41,7 @@ class FcmNotificationService
         $data = [
             'type' => 'new_order',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'amount' => number_format((float) $transaction->amount, 2, '.', ''),
             'customer_name' => $transaction->user?->name ?? 'N/A',
         ];
@@ -76,7 +76,7 @@ class FcmNotificationService
         $data = [
             'type' => 'payment_matched',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'amount' => number_format((float) $smsNotification->amount, 2, '.', ''),
             'bank' => $smsNotification->bank,
             'status' => $smsNotification->status,
@@ -116,7 +116,7 @@ class FcmNotificationService
         $data = [
             'type' => 'order_update',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'status' => $status,
         ];
 
@@ -146,7 +146,7 @@ class FcmNotificationService
         $data = [
             'type' => 'order_approved',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'amount' => number_format((float) $transaction->amount, 2, '.', ''),
             'payment_status' => $transaction->status ?? 'completed',
         ];
@@ -180,7 +180,7 @@ class FcmNotificationService
         $data = [
             'type' => 'order_rejected',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'payment_status' => $transaction->status ?? 'failed',
         ];
 
@@ -212,7 +212,7 @@ class FcmNotificationService
         $data = [
             'type' => 'order_cancelled',
             'order_id' => (string) $transaction->id,
-            'order_number' => $transaction->transaction_id ?? ('TXN-' . $transaction->id),
+            'order_number' => $transaction->transaction_id ?? ('TXN-'.$transaction->id),
             'payment_status' => $transaction->status ?? 'cancelled',
         ];
 
@@ -317,7 +317,7 @@ class FcmNotificationService
             $this->markTokensInvalid($failedTokens);
         }
 
-        Log::debug('FCM: Sent to ' . $successCount . '/' . count($tokens) . ' tokens');
+        Log::debug('FCM: Sent to '.$successCount.'/'.count($tokens).' tokens');
 
         return $successCount > 0;
     }

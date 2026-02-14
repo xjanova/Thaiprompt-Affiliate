@@ -59,6 +59,7 @@ class TarotReadingCategory extends Model
     public function getName(string $language = 'th'): string
     {
         $nameField = "name_{$language}";
+
         return $this->$nameField ?? $this->name_en;
     }
 
@@ -68,6 +69,7 @@ class TarotReadingCategory extends Model
     public function getDescription(string $language = 'th'): string
     {
         $descField = "description_{$language}";
+
         return $this->$descField ?? $this->description_en ?? '';
     }
 
@@ -84,7 +86,7 @@ class TarotReadingCategory extends Model
      */
     public function hasUsedFreeReadingToday($userId = null, $sessionId = null): bool
     {
-        if (!$this->is_free_first) {
+        if (! $this->is_free_first) {
             return true; // No free reading available
         }
 

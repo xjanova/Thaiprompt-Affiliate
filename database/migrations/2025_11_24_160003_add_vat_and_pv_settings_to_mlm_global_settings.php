@@ -9,13 +9,11 @@ return new class extends Migration
      * เพิ่มการตั้งค่า VAT, Withdrawal Fee, และ PV to Money Rate
      *
      * ใช้ mlm_global_settings table (key-value store)
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_global_settings มีอยู่หรือไม่
-        if (!\Illuminate\Support\Facades\Schema::hasTable('mlm_global_settings')) {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('mlm_global_settings')) {
             return;
         }
 
@@ -59,8 +57,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

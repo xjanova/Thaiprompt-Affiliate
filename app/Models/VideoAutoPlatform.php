@@ -197,8 +197,7 @@ class VideoAutoPlatform extends Model
     /**
      * Scope: กรองตาม platform type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -209,7 +208,7 @@ class VideoAutoPlatform extends Model
     /**
      * Scope: กรองเฉพาะที่เชื่อมต่อแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeConnected($query)
@@ -220,7 +219,7 @@ class VideoAutoPlatform extends Model
     /**
      * Scope: กรองเฉพาะที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -231,7 +230,7 @@ class VideoAutoPlatform extends Model
     /**
      * Scope: เรียงตาม priority
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -245,8 +244,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * ถอดรหัส access token
-     *
-     * @return string|null
      */
     public function getDecryptedAccessTokenAttribute(): ?string
     {
@@ -263,9 +260,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * เข้ารหัส access token
-     *
-     * @param string|null $value
-     * @return void
      */
     public function setAccessTokenAttribute(?string $value): void
     {
@@ -276,8 +270,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * ถอดรหัส refresh token
-     *
-     * @return string|null
      */
     public function getDecryptedRefreshTokenAttribute(): ?string
     {
@@ -294,9 +286,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * เข้ารหัส refresh token
-     *
-     * @param string|null $value
-     * @return void
      */
     public function setRefreshTokenAttribute(?string $value): void
     {
@@ -307,8 +296,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * ดึงข้อมูล platform
-     *
-     * @return array|null
      */
     public function getPlatformInfoAttribute(): ?array
     {
@@ -317,8 +304,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * ดึง status label
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -327,12 +312,10 @@ class VideoAutoPlatform extends Model
 
     /**
      * ตรวจสอบว่า token หมดอายุหรือไม่
-     *
-     * @return bool
      */
     public function getIsTokenExpiredAttribute(): bool
     {
-        if (!$this->token_expires_at) {
+        if (! $this->token_expires_at) {
             return false;
         }
 
@@ -341,8 +324,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * คำนวณ success rate
-     *
-     * @return float
      */
     public function getSuccessRateAttribute(): float
     {
@@ -359,10 +340,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * อัพเดทสถานะการเชื่อมต่อ
-     *
-     * @param string $status
-     * @param string|null $error
-     * @return void
      */
     public function updateConnectionStatus(string $status, ?string $error = null): void
     {
@@ -379,9 +356,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * บันทึกผลการโพส
-     *
-     * @param bool $success
-     * @return void
      */
     public function recordPost(bool $success): void
     {
@@ -396,8 +370,6 @@ class VideoAutoPlatform extends Model
 
     /**
      * ตั้งเป็น default platform
-     *
-     * @return void
      */
     public function setAsDefault(): void
     {
@@ -412,21 +384,17 @@ class VideoAutoPlatform extends Model
 
     /**
      * ตรวจสอบว่าพร้อมโพสหรือไม่
-     *
-     * @return bool
      */
     public function isReadyToPublish(): bool
     {
         return $this->is_active
             && $this->status === 'connected'
-            && !$this->is_token_expired
+            && ! $this->is_token_expired
             && $this->auto_publish;
     }
 
     /**
      * รีเฟรช token
-     *
-     * @return bool
      */
     public function refreshToken(): bool
     {

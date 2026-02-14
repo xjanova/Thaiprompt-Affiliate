@@ -30,7 +30,7 @@ class ProcessBotAutomations extends Command
 
         $results = $service->processDueAutomations();
 
-        $this->info("Processed " . count($results) . " automations");
+        $this->info('Processed '.count($results).' automations');
 
         foreach ($results as $result) {
             if ($result['status'] === 'error') {

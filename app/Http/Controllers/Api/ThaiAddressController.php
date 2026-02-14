@@ -32,8 +32,6 @@ class ThaiAddressController extends Controller
      * แสดงรายชื่อจังหวัดทั้งหมด เรียงตามชื่อภาษาไทย
      *
      * GET /api/thai-addresses/provinces
-     *
-     * @return JsonResponse
      */
     public function provinces(): JsonResponse
     {
@@ -48,7 +46,7 @@ class ThaiAddressController extends Controller
 
                 $data = json_decode($json, true);
 
-                if (!is_array($data)) {
+                if (! is_array($data)) {
                     return null;
                 }
 
@@ -85,8 +83,7 @@ class ThaiAddressController extends Controller
      *
      * GET /api/thai-addresses/districts/{provinceCode}
      *
-     * @param int $provinceCode รหัสจังหวัด (เช่น 10 = กรุงเทพมหานคร)
-     * @return JsonResponse
+     * @param  int  $provinceCode  รหัสจังหวัด (เช่น 10 = กรุงเทพมหานคร)
      */
     public function districts(int $provinceCode): JsonResponse
     {
@@ -101,7 +98,7 @@ class ThaiAddressController extends Controller
 
                 $data = json_decode($json, true);
 
-                if (!is_array($data)) {
+                if (! is_array($data)) {
                     return null;
                 }
 
@@ -143,8 +140,7 @@ class ThaiAddressController extends Controller
      *
      * GET /api/thai-addresses/sub-districts/{districtCode}
      *
-     * @param int $districtCode รหัสอำเภอ (เช่น 1001 = พระนคร)
-     * @return JsonResponse
+     * @param  int  $districtCode  รหัสอำเภอ (เช่น 1001 = พระนคร)
      */
     public function subDistricts(int $districtCode): JsonResponse
     {
@@ -159,7 +155,7 @@ class ThaiAddressController extends Controller
 
                 $data = json_decode($json, true);
 
-                if (!is_array($data)) {
+                if (! is_array($data)) {
                     return null;
                 }
 

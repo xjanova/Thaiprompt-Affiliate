@@ -58,7 +58,7 @@ class LineSignupThrottle
             ]);
 
             return redirect()->back()->withErrors([
-                'line_signup' => "คุณพยายามสมัครบ่อยเกินไป กรุณารอ {$this->formatTime($remainingTime)}"
+                'line_signup' => "คุณพยายามสมัครบ่อยเกินไป กรุณารอ {$this->formatTime($remainingTime)}",
             ]);
         }
 
@@ -87,7 +87,7 @@ class LineSignupThrottle
             ]);
 
             return redirect()->back()->withErrors([
-                'line_signup' => 'คุณพยายามสมัครบ่อยเกินไป กรุณารอสักครู่'
+                'line_signup' => 'คุณพยายามสมัครบ่อยเกินไป กรุณารอสักครู่',
             ]);
         }
 
@@ -121,11 +121,13 @@ class LineSignupThrottle
         // Try from route parameter
         if ($request->route('token')) {
             $prospect = \App\Models\MlmProspect::where('referral_token', $request->route('token'))->first();
+
             return $prospect?->line_user_id;
         }
 
         // Try from session (LINE login flow)
         $lineProfile = session('line_temp_profile');
+
         return $lineProfile['line_user_id'] ?? null;
     }
 
@@ -150,6 +152,7 @@ class LineSignupThrottle
     private function isLockedOut(string $identifier, string $type): bool
     {
         $key = "line_signup_lockout_{$type}:{$identifier}";
+
         return Cache::has($key);
     }
 
@@ -161,11 +164,12 @@ class LineSignupThrottle
         $key = "line_signup_lockout_{$type}:{$identifier}";
         $lockoutUntil = Cache::get($key);
 
-        if (!$lockoutUntil) {
+        if (! $lockoutUntil) {
             return 0;
         }
 
         $remaining = $lockoutUntil - now()->timestamp;
+
         return max(0, $remaining);
     }
 

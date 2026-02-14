@@ -17,20 +17,18 @@ class ServiceBookingController extends Controller
 {
     public function __construct(
         protected ServiceBookingService $bookingService
-    ) {
-    }
+    ) {}
 
     /**
      * รายการงานทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -79,7 +77,7 @@ class ServiceBookingController extends Controller
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -100,14 +98,13 @@ class ServiceBookingController extends Controller
     /**
      * รายละเอียดงาน
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -118,7 +115,7 @@ class ServiceBookingController extends Controller
         }
 
         // ทำเครื่องหมายว่าดูแล้ว
-        if (!$booking->provider_viewed_at) {
+        if (! $booking->provider_viewed_at) {
             $booking->markAsViewed();
         }
 
@@ -132,22 +129,20 @@ class ServiceBookingController extends Controller
         return view('provider.bookings.show', [
             'booking' => $booking,
             'provider' => $provider,
-            'pageTitle' => 'งาน #' . $booking->booking_number,
+            'pageTitle' => 'งาน #'.$booking->booking_number,
         ]);
     }
 
     /**
      * รับงาน
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function accept(Request $request, ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -177,15 +172,13 @@ class ServiceBookingController extends Controller
     /**
      * ปฏิเสธงาน
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -215,14 +208,13 @@ class ServiceBookingController extends Controller
     /**
      * เริ่มเดินทาง
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function startJourney(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -247,14 +239,13 @@ class ServiceBookingController extends Controller
     /**
      * เริ่มให้บริการ
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function startService(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -279,14 +270,13 @@ class ServiceBookingController extends Controller
     /**
      * เสร็จสิ้นบริการ
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function complete(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -313,15 +303,13 @@ class ServiceBookingController extends Controller
      *
      * รองรับทั้ง Mobile App และ Web Browser GPS
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateLocation(Request $request, ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน',
@@ -374,14 +362,13 @@ class ServiceBookingController extends Controller
     /**
      * เปลี่ยนสถานะพร้อมรับงาน
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleAvailability(Request $request)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน',
@@ -406,14 +393,13 @@ class ServiceBookingController extends Controller
     /**
      * แสดงรายได้ของ Provider
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function earnings(Request $request)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -425,14 +411,14 @@ class ServiceBookingController extends Controller
         // รายได้รวม
         $totalEarnings = ServiceBooking::where('provider_id', $provider->id)
             ->where('status', 'completed')
-            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('completed_at', [$startDate, $endDate.' 23:59:59'])
             ->sum('provider_earnings');
 
         // รายได้รายวัน
         $dailyEarnings = ServiceBooking::selectRaw('DATE(completed_at) as date, SUM(provider_earnings) as total, COUNT(*) as jobs')
             ->where('provider_id', $provider->id)
             ->where('status', 'completed')
-            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('completed_at', [$startDate, $endDate.' 23:59:59'])
             ->groupBy('date')
             ->orderBy('date', 'desc')
             ->get();
@@ -440,7 +426,7 @@ class ServiceBookingController extends Controller
         // รายการงานที่เสร็จสิ้น
         $completedBookings = ServiceBooking::where('provider_id', $provider->id)
             ->where('status', 'completed')
-            ->whereBetween('completed_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('completed_at', [$startDate, $endDate.' 23:59:59'])
             ->with('service')
             ->latest('completed_at')
             ->paginate(20);
@@ -469,7 +455,6 @@ class ServiceBookingController extends Controller
     /**
      * Export รายได้
      *
-     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function exportEarnings(Request $request)
@@ -481,14 +466,13 @@ class ServiceBookingController extends Controller
     /**
      * แสดงสถิติและรีวิวของ Provider
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function stats(Request $request)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -538,14 +522,13 @@ class ServiceBookingController extends Controller
     /**
      * หน้า Live Tracking - ดูตำแหน่งลูกค้าและเส้นทาง
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function track(ServiceBooking $booking)
     {
         $provider = $this->getCurrentProvider();
 
-        if (!$provider) {
+        if (! $provider) {
             return redirect()->route('provider.register')
                 ->with('error', 'กรุณาลงทะเบียนเป็นผู้ให้บริการก่อน');
         }
@@ -556,7 +539,7 @@ class ServiceBookingController extends Controller
         }
 
         // ต้องเป็นสถานะที่กำลังเดินทางหรือให้บริการอยู่
-        if (!in_array($booking->status, ['provider_accepted', 'provider_on_way', 'in_progress'])) {
+        if (! in_array($booking->status, ['provider_accepted', 'provider_on_way', 'in_progress'])) {
             return redirect()
                 ->route('provider.bookings.show', $booking)
                 ->with('info', 'ไม่สามารถติดตามได้ในสถานะนี้');
@@ -570,7 +553,7 @@ class ServiceBookingController extends Controller
             ->first();
 
         // ถ้าไม่มี ใช้ customer_latitude/longitude
-        if (!$serviceLocation && $booking->customer_latitude && $booking->customer_longitude) {
+        if (! $serviceLocation && $booking->customer_latitude && $booking->customer_longitude) {
             $serviceLocation = (object) [
                 'latitude' => $booking->customer_latitude,
                 'longitude' => $booking->customer_longitude,
@@ -582,14 +565,12 @@ class ServiceBookingController extends Controller
             'booking' => $booking,
             'provider' => $provider,
             'serviceLocation' => $serviceLocation,
-            'pageTitle' => 'ติดตามตำแหน่ง - #' . $booking->booking_number,
+            'pageTitle' => 'ติดตามตำแหน่ง - #'.$booking->booking_number,
         ]);
     }
 
     /**
      * หา Provider ปัจจุบัน
-     *
-     * @return ServiceProvider|null
      */
     protected function getCurrentProvider(): ?ServiceProvider
     {

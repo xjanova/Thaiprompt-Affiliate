@@ -126,6 +126,6 @@ class ShippingProviderSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Seed ข้อมูลบริษัทขนส่งสำเร็จ! (' . count($providers) . ' รายการ)');
+        $this->command->info('✅ Seed ข้อมูลบริษัทขนส่งสำเร็จ! ('.count($providers).' รายการ)');
     }
 }

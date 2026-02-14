@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
+use Illuminate\Database\Seeder;
 
 class AiProvidersSeeder extends Seeder
 {
@@ -176,6 +176,7 @@ class AiProvidersSeeder extends Seeder
 
         if ($provider) {
             $skipped++;
+
             return $provider;
         }
 
@@ -196,7 +197,7 @@ class AiProvidersSeeder extends Seeder
                 ->where('model_identifier', $modelData['model_identifier'])
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 AiModel::create($modelData);
                 $this->command->info("      ➕ Added model: {$modelData['display_name']}");
                 $added++;
@@ -747,7 +748,7 @@ class AiProvidersSeeder extends Seeder
     private function getMetaLocalModels(): array
     {
         $provider = AiProvider::where('name', 'meta-local')->first();
-        if (!$provider) {
+        if (! $provider) {
             return [];
         }
 
@@ -879,7 +880,7 @@ class AiProvidersSeeder extends Seeder
     private function getPostXAgentModels(): array
     {
         $provider = AiProvider::where('name', 'postxagent')->first();
-        if (!$provider) {
+        if (! $provider) {
             return [];
         }
 
@@ -1009,4 +1010,3 @@ class AiProvidersSeeder extends Seeder
         ];
     }
 }
-

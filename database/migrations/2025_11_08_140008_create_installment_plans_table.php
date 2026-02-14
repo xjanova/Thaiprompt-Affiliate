@@ -37,7 +37,7 @@ return new class extends Migration
                 'completed',    // ชำระครบแล้ว
                 'overdue',      // ค้างชำระ
                 'cancelled',    // ยกเลิก
-                'defaulted'     // ผิดนัด
+                'defaulted',     // ผิดนัด
             ])->default('pending');
             $table->enum('payment_frequency', ['monthly', 'quarterly', 'yearly'])->default('monthly');
             $table->date('first_payment_date')->nullable(); // วันครบกำหนดชำระงวดแรก

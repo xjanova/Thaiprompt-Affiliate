@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Settings Controller สำหรับจัดการการตั้งค่าของ User
- *
- * @package App\Http\Controllers\User
  */
 class SettingsController extends Controller
 {
@@ -67,7 +65,6 @@ class SettingsController extends Controller
     /**
      * อัปเดตการตั้งค่าของ User
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -113,7 +110,7 @@ class SettingsController extends Controller
         ];
 
         foreach ($booleanFields as $field) {
-            if (!isset($validated[$field])) {
+            if (! isset($validated[$field])) {
                 $validated[$field] = false;
             }
         }
@@ -128,8 +125,6 @@ class SettingsController extends Controller
 
     /**
      * นับจำนวน active sessions ของ user
-     *
-     * @return int
      */
     private function getActiveSessionsCount(): int
     {
@@ -145,8 +140,6 @@ class SettingsController extends Controller
     /**
      * ลบ session ที่ระบุ
      *
-     * @param Request $request
-     * @param string $sessionId
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteSession(Request $request, string $sessionId)
@@ -166,7 +159,6 @@ class SettingsController extends Controller
     /**
      * ลบ sessions ทั้งหมด ยกเว้น session ปัจจุบัน
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteOtherSessions(Request $request)

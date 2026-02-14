@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\VideoCoin;
-use App\Models\VideoCoinTransaction;
 use App\Models\CoinExchangeRate;
 use App\Models\CoinExchangeRequest;
-use Illuminate\Http\Request;
+use App\Models\VideoCoin;
+use App\Models\VideoCoinTransaction;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -21,8 +21,6 @@ class VideoCoinController extends Controller
 {
     /**
      * แสดงหน้าหลัก Video Coins
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -60,8 +58,6 @@ class VideoCoinController extends Controller
 
     /**
      * ดึงยอด coins แบบ AJAX สำหรับ topbar
-     *
-     * @return JsonResponse
      */
     public function getBalanceAjax(): JsonResponse
     {
@@ -89,9 +85,6 @@ class VideoCoinController extends Controller
 
     /**
      * แสดงประวัติธุรกรรม coins
-     *
-     * @param Request $request
-     * @return View
      */
     public function transactions(Request $request): View
     {
@@ -123,8 +116,6 @@ class VideoCoinController extends Controller
 
     /**
      * แสดงหน้าแลก coins เป็นเงิน
-     *
-     * @return View
      */
     public function exchange(): View
     {
@@ -157,7 +148,6 @@ class VideoCoinController extends Controller
     /**
      * ส่งคำขอแลก coins
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function submitExchange(Request $request)
@@ -172,13 +162,13 @@ class VideoCoinController extends Controller
         // ตรวจสอบยอด coins
         $videoCoin = VideoCoin::where('user_id', $user->id)->first();
 
-        if (!$videoCoin || $videoCoin->balance < $rate->coins_amount) {
+        if (! $videoCoin || $videoCoin->balance < $rate->coins_amount) {
             return back()->with('error', 'ยอด Coins ไม่เพียงพอ');
         }
 
         // ตรวจสอบ level ขั้นต่ำ
         if ($rate->min_level && $user->level < $rate->min_level) {
-            return back()->with('error', 'ต้องมี Level อย่างน้อย ' . $rate->min_level);
+            return back()->with('error', 'ต้องมี Level อย่างน้อย '.$rate->min_level);
         }
 
         // ตรวจสอบ limit ต่อวัน/เดือน

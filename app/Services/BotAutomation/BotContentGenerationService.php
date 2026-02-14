@@ -3,7 +3,6 @@
 namespace App\Services\BotAutomation;
 
 use App\Models\BotAutomation\BotAutomation;
-use App\Models\BotAutomation\BotContentTemplate;
 use App\Services\AI\AiService;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +17,7 @@ class BotContentGenerationService
      */
     public function generateContent(BotAutomation $automation): array
     {
-        return match($automation->content_source) {
+        return match ($automation->content_source) {
             'custom' => $this->generateFromCustom($automation),
             'template' => $this->generateFromTemplate($automation),
             'ai_generated' => $this->generateFromAI($automation),
@@ -44,8 +43,8 @@ class BotContentGenerationService
      */
     protected function generateFromTemplate(BotAutomation $automation): array
     {
-        if (!$automation->template) {
-            throw new \Exception("Template not found for automation");
+        if (! $automation->template) {
+            throw new \Exception('Template not found for automation');
         }
 
         $template = $automation->template;
@@ -69,16 +68,16 @@ class BotContentGenerationService
      */
     protected function generateFromAI(BotAutomation $automation): array
     {
-        if (!$automation->ai_generation_prompt) {
-            throw new \Exception("AI generation prompt not provided");
+        if (! $automation->ai_generation_prompt) {
+            throw new \Exception('AI generation prompt not provided');
         }
 
         try {
             // Get AI bot profile or use default
             $botProfile = $automation->aiBotProfile;
 
-            if (!$botProfile) {
-                throw new \Exception("AI bot profile not configured");
+            if (! $botProfile) {
+                throw new \Exception('AI bot profile not configured');
             }
 
             // Prepare prompt with context
@@ -105,7 +104,7 @@ class BotContentGenerationService
                 'model' => $response['model'] ?? 'unknown',
             ];
         } catch (\Exception $e) {
-            Log::error("AI content generation failed", [
+            Log::error('AI content generation failed', [
                 'automation_id' => $automation->id,
                 'error' => $e->getMessage(),
             ]);
@@ -146,12 +145,12 @@ class BotContentGenerationService
         $basePrompt = $automation->ai_generation_prompt;
 
         // Add context based on automation type
-        $context = match($automation->automation_type) {
-            'scheduled_post' => "สร้างโพสต์โซเชียลมีเดียที่น่าสนใจและดึงดูดผู้ติดตาม",
-            'customer_support' => "ตอบคำถามลูกค้าอย่างมืออาชีพและเป็นมิตร",
-            'sales_assistant' => "แนะนำสินค้าและปิดการขายอย่างมีประสิทธิภาพ",
-            'engagement' => "สร้างการมีส่วนร่วมกับผู้ติดตาม",
-            default => "",
+        $context = match ($automation->automation_type) {
+            'scheduled_post' => 'สร้างโพสต์โซเชียลมีเดียที่น่าสนใจและดึงดูดผู้ติดตาม',
+            'customer_support' => 'ตอบคำถามลูกค้าอย่างมืออาชีพและเป็นมิตร',
+            'sales_assistant' => 'แนะนำสินค้าและปิดการขายอย่างมีประสิทธิภาพ',
+            'engagement' => 'สร้างการมีส่วนร่วมกับผู้ติดตาม',
+            default => '',
         };
 
         return "{$context}\n\n{$basePrompt}";
@@ -163,6 +162,7 @@ class BotContentGenerationService
     protected function extractHashtags(string $text): array
     {
         preg_match_all('/#(\w+)/', $text, $matches);
+
         return $matches[1] ?? [];
     }
 
@@ -174,7 +174,7 @@ class BotContentGenerationService
         $baseContent = $this->generateContent($automation);
 
         // Customize content based on platform
-        return match($platformCode) {
+        return match ($platformCode) {
             'tiktok' => $this->customizeForTikTok($baseContent),
             'facebook' => $this->customizeForFacebook($baseContent),
             'instagram' => $this->customizeForInstagram($baseContent),
@@ -192,6 +192,7 @@ class BotContentGenerationService
         // TikTok-specific customization
         // Max 2200 characters, trending hashtags
         $content['text'] = mb_substr($content['text'], 0, 2200);
+
         return $content;
     }
 
@@ -214,6 +215,7 @@ class BotContentGenerationService
         // Max 2200 characters, max 30 hashtags
         $content['text'] = mb_substr($content['text'], 0, 2200);
         $content['hashtags'] = array_slice($content['hashtags'], 0, 30);
+
         return $content;
     }
 
@@ -225,6 +227,7 @@ class BotContentGenerationService
         // Twitter-specific customization
         // Max 280 characters
         $content['text'] = mb_substr($content['text'], 0, 280);
+
         return $content;
     }
 
@@ -236,6 +239,7 @@ class BotContentGenerationService
         // LINE-specific customization
         // Max 5000 characters
         $content['text'] = mb_substr($content['text'], 0, 5000);
+
         return $content;
     }
 }

@@ -87,7 +87,7 @@ class TrendKeyword extends Model
         $olderData = $this->trendData()
             ->whereBetween('scraped_at', [
                 now()->subHours(48),
-                now()->subHours(24)
+                now()->subHours(24),
             ])
             ->count();
 

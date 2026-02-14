@@ -2,10 +2,10 @@
 
 namespace App\Services\AI;
 
-use App\Models\AiProvider;
 use App\Models\AiModel;
-use Illuminate\Support\Facades\Http;
+use App\Models\AiProvider;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -42,9 +42,6 @@ class PostXAgentService extends BaseAiService
 
     /**
      * สร้าง PostXAgentService instance
-     *
-     * @param AiProvider $provider
-     * @param AiModel $model
      */
     public function __construct(AiProvider $provider, AiModel $model)
     {
@@ -62,8 +59,8 @@ class PostXAgentService extends BaseAiService
     /**
      * ส่ง chat completion request ไปยัง PostXAgent
      *
-     * @param array $messages รูปแบบ [['role' => 'user', 'content' => '...'], ...]
-     * @param array $options ตัวเลือกเพิ่มเติม (temperature, max_tokens, etc.)
+     * @param  array  $messages  รูปแบบ [['role' => 'user', 'content' => '...'], ...]
+     * @param  array  $options  ตัวเลือกเพิ่มเติม (temperature, max_tokens, etc.)
      * @return array ['content' => string, 'tokens' => int, 'finish_reason' => string]
      */
     public function chat(array $messages, array $options = []): array
@@ -72,7 +69,7 @@ class PostXAgentService extends BaseAiService
 
         try {
             // ตรวจสอบว่า PostXAgent พร้อมใช้งานหรือไม่
-            if (!$this->isAvailable()) {
+            if (! $this->isAvailable()) {
                 throw new \Exception('PostXAgent ไม่พร้อมใช้งาน กรุณาตรวจสอบการเชื่อมต่อ');
             }
 
@@ -105,10 +102,7 @@ class PostXAgentService extends BaseAiService
     /**
      * ส่ง completion request แบบ streaming
      *
-     * @param array $messages
-     * @param array $options
-     * @param callable $callback function($chunk) - เรียกทุกครั้งที่ได้ chunk ใหม่
-     * @return array
+     * @param  callable  $callback  function($chunk) - เรียกทุกครั้งที่ได้ chunk ใหม่
      */
     public function chatStream(array $messages, array $options, callable $callback): array
     {
@@ -121,7 +115,7 @@ class PostXAgentService extends BaseAiService
             $response = Http::timeout(config('postxagent.timeout', 30))
                 ->withHeaders($this->getAuthHeaders())
                 ->withOptions(['stream' => true])
-                ->post($this->apiUrl . '/ai/chat/stream', $requestBody);
+                ->post($this->apiUrl.'/ai/chat/stream', $requestBody);
 
             // อ่าน stream
             $body = $response->body();
@@ -169,7 +163,6 @@ class PostXAgentService extends BaseAiService
     /**
      * สร้าง embeddings
      *
-     * @param string $text
      * @return array vector embeddings
      */
     public function createEmbedding(string $text): array
@@ -217,7 +210,7 @@ class PostXAgentService extends BaseAiService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถเชื่อมต่อ PostXAgent: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถเชื่อมต่อ PostXAgent: '.$e->getMessage(),
                 'details' => [
                     'api_url' => $this->apiUrl,
                     'error' => $e->getMessage(),
@@ -228,8 +221,6 @@ class PostXAgentService extends BaseAiService
 
     /**
      * ตรวจสอบสถานะ PostXAgent
-     *
-     * @return array
      */
     public function getStatus(): array
     {
@@ -240,7 +231,7 @@ class PostXAgentService extends BaseAiService
             try {
                 $response = Http::timeout(5)
                     ->withHeaders($this->getAuthHeaders())
-                    ->get($this->apiUrl . '/status');
+                    ->get($this->apiUrl.'/status');
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -256,7 +247,7 @@ class PostXAgentService extends BaseAiService
 
                 return [
                     'online' => false,
-                    'error' => 'HTTP ' . $response->status(),
+                    'error' => 'HTTP '.$response->status(),
                     'checked_at' => now()->toDateTimeString(),
                 ];
             } catch (\Exception $e) {
@@ -271,12 +262,10 @@ class PostXAgentService extends BaseAiService
 
     /**
      * ตรวจสอบว่า PostXAgent พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isAvailable(): bool
     {
-        if (!config('postxagent.enabled', false)) {
+        if (! config('postxagent.enabled', false)) {
             return false;
         }
 
@@ -287,15 +276,13 @@ class PostXAgentService extends BaseAiService
 
     /**
      * ดึงรายการ AI providers ที่ PostXAgent รองรับ
-     *
-     * @return array
      */
     public function getAvailableProviders(): array
     {
         try {
             $response = Http::timeout(10)
                 ->withHeaders($this->getAuthHeaders())
-                ->get($this->apiUrl . '/ai/providers');
+                ->get($this->apiUrl.'/ai/providers');
 
             if ($response->successful()) {
                 return $response->json()['providers'] ?? [];
@@ -314,16 +301,13 @@ class PostXAgentService extends BaseAiService
 
     /**
      * ดึงรายการ models สำหรับ provider ที่ระบุ
-     *
-     * @param string $provider
-     * @return array
      */
     public function getAvailableModels(string $provider): array
     {
         try {
             $response = Http::timeout(10)
                 ->withHeaders($this->getAuthHeaders())
-                ->get($this->apiUrl . '/ai/providers/' . $provider . '/models');
+                ->get($this->apiUrl.'/ai/providers/'.$provider.'/models');
 
             if ($response->successful()) {
                 return $response->json()['models'] ?? [];
@@ -345,8 +329,6 @@ class PostXAgentService extends BaseAiService
 
     /**
      * Clear status cache
-     *
-     * @return void
      */
     public function clearStatusCache(): void
     {
@@ -355,10 +337,6 @@ class PostXAgentService extends BaseAiService
 
     /**
      * เตรียม request body
-     *
-     * @param array $messages
-     * @param array $options
-     * @return array
      */
     protected function prepareRequestBody(array $messages, array $options = []): array
     {
@@ -385,9 +363,6 @@ class PostXAgentService extends BaseAiService
     /**
      * ส่ง request พร้อม retry
      *
-     * @param string $endpoint
-     * @param array $body
-     * @return array
      * @throws \Exception
      */
     protected function sendRequestWithRetry(string $endpoint, array $body): array
@@ -402,7 +377,7 @@ class PostXAgentService extends BaseAiService
             try {
                 $response = Http::timeout(config('postxagent.timeout', 30))
                     ->withHeaders($this->getAuthHeaders())
-                    ->post($this->apiUrl . $endpoint, $body);
+                    ->post($this->apiUrl.$endpoint, $body);
 
                 if ($response->successful()) {
                     return $response->json();
@@ -410,10 +385,10 @@ class PostXAgentService extends BaseAiService
 
                 // ถ้า 4xx ไม่ต้อง retry
                 if ($response->status() >= 400 && $response->status() < 500) {
-                    throw new \Exception('PostXAgent API Error: ' . $response->body());
+                    throw new \Exception('PostXAgent API Error: '.$response->body());
                 }
 
-                throw new \Exception('PostXAgent HTTP Error: ' . $response->status());
+                throw new \Exception('PostXAgent HTTP Error: '.$response->status());
             } catch (\Exception $e) {
                 $lastException = $e;
 
@@ -429,14 +404,11 @@ class PostXAgentService extends BaseAiService
             }
         }
 
-        throw $lastException ?? new \Exception('PostXAgent: Request failed after ' . $maxAttempts . ' attempts');
+        throw $lastException ?? new \Exception('PostXAgent: Request failed after '.$maxAttempts.' attempts');
     }
 
     /**
      * Parse response จาก PostXAgent
-     *
-     * @param array $response
-     * @return array
      */
     protected function parseResponse(array $response): array
     {
@@ -454,8 +426,6 @@ class PostXAgentService extends BaseAiService
 
     /**
      * สร้าง authentication headers
-     *
-     * @return array
      */
     protected function getAuthHeaders(): array
     {
@@ -467,10 +437,10 @@ class PostXAgentService extends BaseAiService
 
         $authType = $this->authConfig['type'] ?? 'api_key';
 
-        if ($authType === 'api_key' && !empty($this->authConfig['api_key'])) {
+        if ($authType === 'api_key' && ! empty($this->authConfig['api_key'])) {
             $headers['X-API-Key'] = $this->authConfig['api_key'];
-        } elseif ($authType === 'jwt' && !empty($this->authConfig['jwt_token'])) {
-            $headers['Authorization'] = 'Bearer ' . $this->authConfig['jwt_token'];
+        } elseif ($authType === 'jwt' && ! empty($this->authConfig['jwt_token'])) {
+            $headers['Authorization'] = 'Bearer '.$this->authConfig['jwt_token'];
         }
 
         return $headers;
@@ -478,16 +448,10 @@ class PostXAgentService extends BaseAiService
 
     /**
      * Log request
-     *
-     * @param array $request
-     * @param array $response
-     * @param float $duration
-     * @param string $status
-     * @return void
      */
     protected function logRequest(array $request, array $response, float $duration, string $status): void
     {
-        if (!config('postxagent.logging.enabled', true)) {
+        if (! config('postxagent.logging.enabled', true)) {
             return;
         }
 

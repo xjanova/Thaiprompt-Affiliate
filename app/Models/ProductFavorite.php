@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float|null $target_price ราคาเป้าหมาย
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read User $user
  * @property-read Product $product
  */
@@ -61,8 +60,6 @@ class ProductFavorite extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -71,8 +68,6 @@ class ProductFavorite extends Model
 
     /**
      * ความสัมพันธ์กับ Product
-     *
-     * @return BelongsTo
      */
     public function product(): BelongsTo
     {
@@ -82,9 +77,7 @@ class ProductFavorite extends Model
     /**
      * Toggle favorite สำหรับสินค้า
      *
-     * @param int $userId
-     * @param int $productId
-     * @param array $data ข้อมูลเพิ่มเติม (collection_name, note, etc.)
+     * @param  array  $data  ข้อมูลเพิ่มเติม (collection_name, note, etc.)
      * @return array{favorited: bool, count: int}
      */
     public static function toggle(int $userId, int $productId, array $data = []): array
@@ -113,10 +106,6 @@ class ProductFavorite extends Model
 
     /**
      * ตรวจสอบว่าสินค้าอยู่ในรายการโปรดหรือไม่
-     *
-     * @param int $userId
-     * @param int $productId
-     * @return bool
      */
     public static function isFavorited(int $userId, int $productId): bool
     {
@@ -127,9 +116,6 @@ class ProductFavorite extends Model
 
     /**
      * ดึงรายการ collections ของผู้ใช้
-     *
-     * @param int $userId
-     * @return \Illuminate\Support\Collection
      */
     public static function getCollections(int $userId): \Illuminate\Support\Collection
     {
@@ -143,7 +129,7 @@ class ProductFavorite extends Model
     /**
      * Scope สำหรับสินค้าที่ต้องการแจ้งเตือนลดราคา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWantsPriceAlert($query)

@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บข้อมูล alerts, notifications และ warnings สำหรับระบบ AI Rental
      * รองรับ real-time monitoring และแจ้งเตือนผู้ใช้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -132,8 +130,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_alerts
-     *
-     * @return void
      */
     public function down(): void
     {

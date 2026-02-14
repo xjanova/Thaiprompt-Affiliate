@@ -138,7 +138,7 @@ class HotelManagementController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to create hotel: ' . $e->getMessage());
+                ->with('error', 'Failed to create hotel: '.$e->getMessage());
         }
     }
 
@@ -183,7 +183,7 @@ class HotelManagementController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:hotels,slug,' . $id,
+            'slug' => 'nullable|string|unique:hotels,slug,'.$id,
             'description' => 'nullable|string',
             'short_description' => 'nullable|string',
             'address' => 'required|string',
@@ -235,7 +235,7 @@ class HotelManagementController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update hotel: ' . $e->getMessage());
+                ->with('error', 'Failed to update hotel: '.$e->getMessage());
         }
     }
 
@@ -269,7 +269,7 @@ class HotelManagementController extends Controller
                 ->route('admin.hotels.index')
                 ->with('success', 'Hotel deleted successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete hotel: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete hotel: '.$e->getMessage());
         }
     }
 
@@ -279,7 +279,7 @@ class HotelManagementController extends Controller
     public function toggleStatus($id)
     {
         $hotel = Hotel::findOrFail($id);
-        $hotel->update(['is_active' => !$hotel->is_active]);
+        $hotel->update(['is_active' => ! $hotel->is_active]);
 
         return back()->with('success', 'Hotel status updated.');
     }
@@ -290,7 +290,7 @@ class HotelManagementController extends Controller
     public function toggleFeatured($id)
     {
         $hotel = Hotel::findOrFail($id);
-        $hotel->update(['is_featured' => !$hotel->is_featured]);
+        $hotel->update(['is_featured' => ! $hotel->is_featured]);
 
         return back()->with('success', 'Featured status updated.');
     }

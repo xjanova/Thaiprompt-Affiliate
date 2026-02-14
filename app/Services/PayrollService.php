@@ -2,11 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceRecord;
 use App\Models\Employee;
 use App\Models\PayrollRecord;
-use App\Models\AttendanceRecord;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class PayrollService
 {
@@ -19,9 +18,9 @@ class PayrollService
 
         // Check if payroll already exists
         $existing = PayrollRecord::where('employee_id', $employeeId)
-                                ->where('month', $month)
-                                ->where('year', $year)
-                                ->first();
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
 
         if ($existing) {
             throw new \Exception('Payroll for this period already exists');
@@ -95,11 +94,11 @@ class PayrollService
     protected function calculateAttendance($employeeId, $startDate, $endDate)
     {
         $records = AttendanceRecord::where('employee_id', $employeeId)
-                                  ->whereBetween('date', [$startDate, $endDate])
-                                  ->get();
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get();
 
         $workingDays = $startDate->diffInDaysFiltered(function (Carbon $date) {
-            return !$date->isWeekend();
+            return ! $date->isWeekend();
         }, $endDate);
 
         $presentDays = $records->where('status', 'present')->count();
@@ -124,10 +123,10 @@ class PayrollService
         $total = 0;
 
         $allowances = $employee->salaryComponents()
-                              ->where('component_type', 'earning')
-                              ->where('component_name', 'like', '%allowance%')
-                              ->active()
-                              ->get();
+            ->where('component_type', 'earning')
+            ->where('component_name', 'like', '%allowance%')
+            ->active()
+            ->get();
 
         foreach ($allowances as $allowance) {
             $total += $allowance->calculateValue($employee->basic_salary);
@@ -144,11 +143,11 @@ class PayrollService
         $total = 0;
 
         $bonuses = $employee->salaryComponents()
-                           ->where('component_type', 'earning')
-                           ->where('component_name', 'like', '%bonus%')
-                           ->where('is_recurring', false)
-                           ->active()
-                           ->get();
+            ->where('component_type', 'earning')
+            ->where('component_name', 'like', '%bonus%')
+            ->where('is_recurring', false)
+            ->active()
+            ->get();
 
         foreach ($bonuses as $bonus) {
             $total += $bonus->calculateValue($employee->basic_salary);
@@ -175,6 +174,7 @@ class PayrollService
     protected function calculateSocialSecurity($basicSalary)
     {
         $contribution = $basicSalary * 0.05;
+
         return min($contribution, 750);
     }
 
@@ -185,10 +185,10 @@ class PayrollService
     {
         // Check if employee has provident fund component
         $providentFund = $employee->salaryComponents()
-                                 ->where('component_type', 'deduction')
-                                 ->where('component_name', 'like', '%provident%')
-                                 ->active()
-                                 ->first();
+            ->where('component_type', 'deduction')
+            ->where('component_name', 'like', '%provident%')
+            ->active()
+            ->first();
 
         if ($providentFund) {
             return $providentFund->calculateValue($basicSalary);
@@ -205,12 +205,12 @@ class PayrollService
         $total = 0;
 
         $deductions = $employee->salaryComponents()
-                              ->where('component_type', 'deduction')
-                              ->where('component_name', 'not like', '%provident%')
-                              ->where('component_name', 'not like', '%tax%')
-                              ->where('component_name', 'not like', '%social%')
-                              ->active()
-                              ->get();
+            ->where('component_type', 'deduction')
+            ->where('component_name', 'not like', '%provident%')
+            ->where('component_name', 'not like', '%tax%')
+            ->where('component_name', 'not like', '%social%')
+            ->active()
+            ->get();
 
         foreach ($deductions as $deduction) {
             $total += $deduction->calculateValue($employee->basic_salary);

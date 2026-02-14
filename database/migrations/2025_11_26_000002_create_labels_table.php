@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง labels
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -80,8 +78,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง labels
-     *
-     * @return void
      */
     public function down(): void
     {

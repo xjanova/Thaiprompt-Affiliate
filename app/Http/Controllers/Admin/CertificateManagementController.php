@@ -32,12 +32,12 @@ class CertificateManagementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('certificate_number', 'like', "%{$search}%")
-                  ->orWhere('student_name', 'like', "%{$search}%")
-                  ->orWhere('student_email', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhere('student_name', 'like', "%{$search}%")
+                    ->orWhere('student_email', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -159,8 +159,9 @@ class CertificateManagementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -219,8 +220,9 @@ class CertificateManagementController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -314,6 +316,7 @@ class CertificateManagementController extends Controller
 
                 if ($existing) {
                     $errors[] = "{$user->name} มีใบประกาศนียบัตรอยู่แล้ว";
+
                     continue;
                 }
 
@@ -322,13 +325,13 @@ class CertificateManagementController extends Controller
                 $successCount++;
 
             } catch (\Exception $e) {
-                $errors[] = "{$user->name}: " . $e->getMessage();
+                $errors[] = "{$user->name}: ".$e->getMessage();
             }
         }
 
         $message = "สร้างใบประกาศนียบัตรเรียบร้อย {$successCount} ฉบับ";
-        if (!empty($errors)) {
-            $message .= "\n" . implode("\n", $errors);
+        if (! empty($errors)) {
+            $message .= "\n".implode("\n", $errors);
         }
 
         return response()->json([
@@ -352,7 +355,7 @@ class CertificateManagementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('certificate_number', 'like', "%{$search}%")
-                  ->orWhere('student_name', 'like', "%{$search}%");
+                    ->orWhere('student_name', 'like', "%{$search}%");
             });
         }
 
@@ -370,13 +373,13 @@ class CertificateManagementController extends Controller
 
         $certificates = $query->get();
 
-        $filename = 'certificates_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'certificates_'.now()->format('Y-m-d_His').'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
 
-        $callback = function() use ($certificates) {
+        $callback = function () use ($certificates) {
             $file = fopen('php://output', 'w');
 
             // Add BOM for Excel UTF-8

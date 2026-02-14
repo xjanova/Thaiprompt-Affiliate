@@ -14,20 +14,18 @@ return new class extends Migration
 {
     /**
      * เพิ่มฟิลด์ menu_theme_preference
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             // ตาราง users ยังไม่มี - ข้าม migration นี้
             // ฟิลด์นี้จะถูกสร้างใน users_comprehensive migration แทน
             return;
         }
 
         // ตรวจสอบว่ามีคอลัมน์อยู่แล้วหรือไม่
-        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+        if (! Schema::hasColumn('users', 'menu_theme_preference')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->string('menu_theme_preference')->default('millennium')->after('preferred_language');
             });
@@ -36,12 +34,10 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 

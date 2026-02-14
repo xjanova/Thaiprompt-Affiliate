@@ -14,8 +14,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง tarot_card_interpretations
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -64,8 +62,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง tarot_card_interpretations
-     *
-     * @return void
      */
     public function down(): void
     {

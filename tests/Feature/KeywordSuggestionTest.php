@@ -19,6 +19,7 @@ class KeywordSuggestionTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private KeywordSuggestionService $suggestionService;
 
     protected function setUp(): void
@@ -549,7 +550,7 @@ class KeywordSuggestionTest extends TestCase
             'ไม่พอใจการซื้อ',
             'ขอ refund หน่อย',
             'ขอ refund ตอนนี้',
-            'shipping ไป','การจัดส่ง ช้า',
+            'shipping ไป', 'การจัดส่ง ช้า',
             'shipping มาไหม',
             'delivery ยังไม่ได้รับ',
             'ยังไม่ได้ shipping',
@@ -563,7 +564,7 @@ class KeywordSuggestionTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             DB::table('keyword_activity_logs')->insert([
                 'user_message' => $messages[$i % count($messages)],
-                'line_user_id' => 'U' . (($i % 5) + 1),
+                'line_user_id' => 'U'.(($i % 5) + 1),
                 'action_type' => 'no_match',
                 'created_at' => now()->subMinutes($i),
                 'timestamp' => now()->subMinutes($i),

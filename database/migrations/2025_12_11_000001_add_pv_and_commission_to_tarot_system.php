@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * Platform Fee = ค่าบริการของระบบ (แอดมินตั้ง)
      * PV Percentage = ค่าการตลาด/คอมมิชชั่น MLM
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -20,7 +18,7 @@ return new class extends Migration
         if (Schema::hasTable('tarot_reading_categories')) {
             Schema::table('tarot_reading_categories', function (Blueprint $table) {
                 // ค่าบริการแพลตฟอร์ม (%)
-                if (!Schema::hasColumn('tarot_reading_categories', 'platform_fee_percentage')) {
+                if (! Schema::hasColumn('tarot_reading_categories', 'platform_fee_percentage')) {
                     $table->decimal('platform_fee_percentage', 5, 2)
                         ->default(10.00)
                         ->after('price')
@@ -28,7 +26,7 @@ return new class extends Migration
                 }
 
                 // ค่า PV สำหรับ MLM (%)
-                if (!Schema::hasColumn('tarot_reading_categories', 'pv_percentage')) {
+                if (! Schema::hasColumn('tarot_reading_categories', 'pv_percentage')) {
                     $table->decimal('pv_percentage', 5, 2)
                         ->default(10.00)
                         ->after('platform_fee_percentage')
@@ -36,7 +34,7 @@ return new class extends Migration
                 }
 
                 // เปิด/ปิดการแบ่งคอมมิชชั่น
-                if (!Schema::hasColumn('tarot_reading_categories', 'commission_enabled')) {
+                if (! Schema::hasColumn('tarot_reading_categories', 'commission_enabled')) {
                     $table->boolean('commission_enabled')
                         ->default(true)
                         ->after('pv_percentage')
@@ -49,7 +47,7 @@ return new class extends Migration
         if (Schema::hasTable('tarot_readings')) {
             Schema::table('tarot_readings', function (Blueprint $table) {
                 // ค่าบริการแพลตฟอร์มที่หักไป
-                if (!Schema::hasColumn('tarot_readings', 'platform_fee')) {
+                if (! Schema::hasColumn('tarot_readings', 'platform_fee')) {
                     $table->decimal('platform_fee', 10, 2)
                         ->default(0)
                         ->after('amount_paid')
@@ -57,7 +55,7 @@ return new class extends Migration
                 }
 
                 // PV ที่คำนวณได้
-                if (!Schema::hasColumn('tarot_readings', 'pv_amount')) {
+                if (! Schema::hasColumn('tarot_readings', 'pv_amount')) {
                     $table->decimal('pv_amount', 10, 2)
                         ->default(0)
                         ->after('platform_fee')
@@ -65,7 +63,7 @@ return new class extends Migration
                 }
 
                 // คอมมิชชั่นรวมที่แบ่งออกไป
-                if (!Schema::hasColumn('tarot_readings', 'total_commission')) {
+                if (! Schema::hasColumn('tarot_readings', 'total_commission')) {
                     $table->decimal('total_commission', 10, 2)
                         ->default(0)
                         ->after('pv_amount')
@@ -73,7 +71,7 @@ return new class extends Migration
                 }
 
                 // สถานะการจ่ายคอมมิชชั่น
-                if (!Schema::hasColumn('tarot_readings', 'commission_status')) {
+                if (! Schema::hasColumn('tarot_readings', 'commission_status')) {
                     $table->enum('commission_status', ['pending', 'processed', 'failed'])
                         ->default('pending')
                         ->after('total_commission')
@@ -81,7 +79,7 @@ return new class extends Migration
                 }
 
                 // Payment method ที่ใช้
-                if (!Schema::hasColumn('tarot_readings', 'payment_method')) {
+                if (! Schema::hasColumn('tarot_readings', 'payment_method')) {
                     $table->string('payment_method', 50)
                         ->nullable()
                         ->after('commission_status')
@@ -89,7 +87,7 @@ return new class extends Migration
                 }
 
                 // Payment transaction ID
-                if (!Schema::hasColumn('tarot_readings', 'payment_transaction_id')) {
+                if (! Schema::hasColumn('tarot_readings', 'payment_transaction_id')) {
                     $table->unsignedBigInteger('payment_transaction_id')
                         ->nullable()
                         ->after('payment_method')
@@ -99,7 +97,7 @@ return new class extends Migration
         }
 
         // 3. สร้างตาราง tarot_commissions สำหรับเก็บประวัติคอมมิชชั่น
-        if (!Schema::hasTable('tarot_commissions')) {
+        if (! Schema::hasTable('tarot_commissions')) {
             Schema::create('tarot_commissions', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('tarot_reading_id')->comment('ID ของการทำนาย');
@@ -126,8 +124,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์และตารางที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -89,8 +89,6 @@ class AICoreQuota extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -99,8 +97,6 @@ class AICoreQuota extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -110,7 +106,7 @@ class AICoreQuota extends Model
     /**
      * Scope: เฉพาะ quota ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -122,7 +118,7 @@ class AICoreQuota extends Model
     /**
      * Scope: เฉพาะ quota ที่หมดแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExhausted($query)
@@ -133,8 +129,7 @@ class AICoreQuota extends Model
     /**
      * Scope: กรองตาม period type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $periodType
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePeriodType($query, string $periodType)
@@ -145,8 +140,7 @@ class AICoreQuota extends Model
     /**
      * ตรวจสอบว่ามีโควต้าเหลืออยู่หรือไม่
      *
-     * @param int $amount จำนวนที่ต้องการใช้
-     * @return bool
+     * @param  int  $amount  จำนวนที่ต้องการใช้
      */
     public function hasRemaining(int $amount = 1): bool
     {
@@ -158,19 +152,16 @@ class AICoreQuota extends Model
 
     /**
      * ตรวจสอบว่าสามารถใช้ overage ได้หรือไม่
-     *
-     * @return bool
      */
     public function canUseOverage(): bool
     {
-        return $this->allow_overage && !$this->hasRemaining();
+        return $this->allow_overage && ! $this->hasRemaining();
     }
 
     /**
      * ใช้โควต้า
      *
-     * @param int $amount จำนวนที่ต้องการใช้
-     * @return bool
+     * @param  int  $amount  จำนวนที่ต้องการใช้
      */
     public function consume(int $amount = 1): bool
     {
@@ -179,7 +170,7 @@ class AICoreQuota extends Model
             $this->increment('quota_used', $amount);
 
             // ตรวจสอบว่าโควต้าหมดหรือยัง
-            if (!$this->hasRemaining()) {
+            if (! $this->hasRemaining()) {
                 $this->update([
                     'status' => 'exhausted',
                     'exhausted_at' => now(),
@@ -192,6 +183,7 @@ class AICoreQuota extends Model
         if ($this->canUseOverage()) {
             // ใช้ overage
             $this->increment('overage_used', $amount);
+
             return true;
         }
 
@@ -200,8 +192,6 @@ class AICoreQuota extends Model
 
     /**
      * รีเซ็ตโควต้า
-     *
-     * @return bool
      */
     public function reset(): bool
     {
@@ -241,9 +231,8 @@ class AICoreQuota extends Model
     /**
      * เพิ่มโควต้าพิเศษ
      *
-     * @param int $amount จำนวนโควต้าที่เพิ่ม
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  int  $amount  จำนวนโควต้าที่เพิ่ม
+     * @param  string|null  $reason  เหตุผล
      */
     public function addBonus(int $amount, ?string $reason = null): bool
     {
@@ -256,12 +245,10 @@ class AICoreQuota extends Model
 
     /**
      * คำนวณค่าใช้จ่าย overage
-     *
-     * @return float
      */
     public function calculateOverageCost(): float
     {
-        if (!$this->overage_price || $this->overage_used === 0) {
+        if (! $this->overage_price || $this->overage_used === 0) {
             return 0.0;
         }
 
@@ -270,8 +257,6 @@ class AICoreQuota extends Model
 
     /**
      * ตรวจสอบว่า period หมดอายุหรือยัง
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -280,8 +265,6 @@ class AICoreQuota extends Model
 
     /**
      * ตรวจสอบว่าถึงเวลารีเซ็ตหรือยัง
-     *
-     * @return bool
      */
     public function shouldReset(): bool
     {

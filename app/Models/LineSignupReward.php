@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 // use Illuminate\Database\Eloquent\SoftDeletes; // TODO: Uncomment after running migration 2025_11_23_150001
 
 /**
@@ -109,7 +110,7 @@ class LineSignupReward extends Model
      */
     public function isAvailable(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -138,7 +139,7 @@ class LineSignupReward extends Model
     public function isValidForPackage(?int $packageId): bool
     {
         // ถ้าเป็น free signup และไม่มี package
-        if ($this->signup_type === 'free' && !$packageId) {
+        if ($this->signup_type === 'free' && ! $packageId) {
             return true;
         }
 
@@ -147,17 +148,19 @@ class LineSignupReward extends Model
             if (empty($this->package_ids)) {
                 return true; // ทุกแพคเกจ
             }
+
             return in_array($packageId, $this->package_ids);
         }
 
         // ถ้าเป็น both
         if ($this->signup_type === 'both') {
-            if (!$packageId) {
+            if (! $packageId) {
                 return true; // free
             }
             if (empty($this->package_ids)) {
                 return true; // ทุกแพคเกจ
             }
+
             return in_array($packageId, $this->package_ids);
         }
 
@@ -167,8 +170,7 @@ class LineSignupReward extends Model
     /**
      * ตรวจสอบว่ารางวัลนี้ใช้ได้กับเงื่อนไขผู้แนะนำหรือไม่
      *
-     * @param bool $hasReferrer มีผู้แนะนำหรือไม่
-     * @return bool
+     * @param  bool  $hasReferrer  มีผู้แนะนำหรือไม่
      */
     public function isValidForReferrer(bool $hasReferrer): bool
     {
@@ -184,7 +186,7 @@ class LineSignupReward extends Model
 
         // ต้องไม่มีผู้แนะนำ (สมัครเอง)
         if ($this->referrer_requirement === 'none') {
-            return !$hasReferrer;
+            return ! $hasReferrer;
         }
 
         return true;
@@ -192,8 +194,6 @@ class LineSignupReward extends Model
 
     /**
      * ดึงข้อความแสดงเงื่อนไขผู้แนะนำ
-     *
-     * @return string
      */
     public function getReferrerRequirementText(): string
     {
@@ -207,17 +207,17 @@ class LineSignupReward extends Model
     /**
      * ดึงรางวัลที่ใช้ได้สำหรับการสมัคร
      *
-     * @param int|null $packageId ID แพคเกจ
-     * @param bool|null $hasReferrer มีผู้แนะนำหรือไม่ (null = ไม่กรอง)
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param  int|null  $packageId  ID แพคเกจ
+     * @param  bool|null  $hasReferrer  มีผู้แนะนำหรือไม่ (null = ไม่กรอง)
      */
     public static function getAvailableRewards(?int $packageId = null, ?bool $hasReferrer = null): \Illuminate\Database\Eloquent\Collection
     {
         try {
             // ⚠️ ตรวจสอบว่าตารางมีอยู่หรือไม่ (ป้องกัน error เมื่อยังไม่ได้ run migration)
-            if (!\Illuminate\Support\Facades\Schema::hasTable('line_signup_rewards')) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('line_signup_rewards')) {
                 \Illuminate\Support\Facades\Log::warning('LineSignupReward: ตาราง line_signup_rewards ไม่มีอยู่ - กรุณา run migration');
-                return new \Illuminate\Database\Eloquent\Collection();
+
+                return new \Illuminate\Database\Eloquent\Collection;
             }
 
             return static::query()
@@ -245,12 +245,12 @@ class LineSignupReward extends Model
                 ->get()
                 ->filter(function ($reward) use ($packageId, $hasReferrer) {
                     // ตรวจสอบเงื่อนไขแพคเกจ
-                    if (!$reward->isValidForPackage($packageId)) {
+                    if (! $reward->isValidForPackage($packageId)) {
                         return false;
                     }
 
                     // ตรวจสอบเงื่อนไขผู้แนะนำ (ถ้าระบุ)
-                    if ($hasReferrer !== null && !$reward->isValidForReferrer($hasReferrer)) {
+                    if ($hasReferrer !== null && ! $reward->isValidForReferrer($hasReferrer)) {
                         return false;
                     }
 
@@ -259,8 +259,9 @@ class LineSignupReward extends Model
         } catch (\Exception $e) {
             // ⚠️ ถ้าเกิด error (เช่น ตารางไม่มี) ให้ return collection ว่าง
             // และ log error เพื่อแจ้งเตือน admin
-            \Illuminate\Support\Facades\Log::error('LineSignupReward::getAvailableRewards error: ' . $e->getMessage());
-            return new \Illuminate\Database\Eloquent\Collection();
+            \Illuminate\Support\Facades\Log::error('LineSignupReward::getAvailableRewards error: '.$e->getMessage());
+
+            return new \Illuminate\Database\Eloquent\Collection;
         }
     }
 
@@ -271,21 +272,21 @@ class LineSignupReward extends Model
     {
         switch ($this->reward_type) {
             case 'wallet_points':
-                return number_format($this->amount) . ' แต้ม';
+                return number_format($this->amount).' แต้ม';
             case 'tpix_tokens':
-                return number_format($this->amount, 2) . ' TPIX';
+                return number_format($this->amount, 2).' TPIX';
             case 'coupon':
                 return 'คูปองส่วนลด';
             case 'rank_points':
-                return '+' . number_format($this->amount) . ' คะแนน Rank';
+                return '+'.number_format($this->amount).' คะแนน Rank';
             case 'special_benefit':
                 return $this->name;
             case 'bonus_item':
-                return 'ของแถม: ' . ($this->product->name ?? 'สินค้า');
+                return 'ของแถม: '.($this->product->name ?? 'สินค้า');
             case 'free_downlines':
-                return 'ดาวน์ไลน์ฟรี ' . number_format($this->amount) . ' คน';
+                return 'ดาวน์ไลน์ฟรี '.number_format($this->amount).' คน';
             case 'experience_points':
-                return '+' . number_format($this->amount) . ' XP';
+                return '+'.number_format($this->amount).' XP';
             default:
                 return $this->name;
         }
@@ -309,6 +310,6 @@ class LineSignupReward extends Model
 
         $icon = $this->icon ?? ($defaultIcons[$this->reward_type] ?? 'fa-gift');
 
-        return '<i class="fas ' . $icon . '"></i>';
+        return '<i class="fas '.$icon.'"></i>';
     }
 }

@@ -45,7 +45,7 @@ class WalletTransaction extends Model
 
         static::creating(function ($transaction) {
             if (empty($transaction->transaction_id)) {
-                $transaction->transaction_id = 'TXN' . strtoupper(Str::random(20));
+                $transaction->transaction_id = 'TXN'.strtoupper(Str::random(20));
             }
             if (empty($transaction->ip_address)) {
                 $transaction->ip_address = request()->ip();
@@ -85,7 +85,7 @@ class WalletTransaction extends Model
      */
     public function getTypeIconAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'deposit' => '💵',
             'withdrawal' => '💸',
             'transfer_in' => '📥',
@@ -104,7 +104,7 @@ class WalletTransaction extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'deposit' => 'ฝากเงิน',
             'withdrawal' => 'ถอนเงิน',
             'transfer_in' => 'รับโอน',
@@ -123,7 +123,7 @@ class WalletTransaction extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'completed' => 'green',
             'processing' => 'yellow',
             'pending' => 'blue',
@@ -138,7 +138,7 @@ class WalletTransaction extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'completed' => 'สำเร็จ',
             'processing' => 'กำลังดำเนินการ',
             'pending' => 'รอดำเนินการ',
@@ -154,7 +154,8 @@ class WalletTransaction extends Model
     public function getFormattedAmountAttribute(): string
     {
         $sign = in_array($this->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus', 'cashback']) ? '+' : '-';
-        return $sign . number_format(abs($this->amount), 2) . ' ' . $this->currency;
+
+        return $sign.number_format(abs($this->amount), 2).' '.$this->currency;
     }
 
     /**

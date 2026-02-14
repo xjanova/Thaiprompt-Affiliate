@@ -95,7 +95,7 @@ class ServiceBookingDispute extends Model
 
         static::creating(function ($dispute) {
             if (empty($dispute->dispute_number)) {
-                $dispute->dispute_number = 'DIS-' . date('Ymd') . '-' . str_pad(
+                $dispute->dispute_number = 'DIS-'.date('Ymd').'-'.str_pad(
                     static::whereDate('created_at', today())->count() + 1,
                     4,
                     '0',

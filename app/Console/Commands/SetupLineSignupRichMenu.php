@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Services\LineService;
 use App\Services\LineSignupRichMenuService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 
 class SetupLineSignupRichMenu extends Command
 {
@@ -26,6 +25,7 @@ class SetupLineSignupRichMenu extends Command
     protected $description = 'Setup LINE Rich Menu for signup system';
 
     protected $richMenuService;
+
     protected $lineService;
 
     /**
@@ -51,8 +51,8 @@ class SetupLineSignupRichMenu extends Command
         // Check if image exists
         $imagePath = $this->richMenuService->getRichMenuImagePath();
 
-        if (!file_exists($imagePath)) {
-            $this->warn('⚠️  Rich Menu image not found at: ' . $imagePath);
+        if (! file_exists($imagePath)) {
+            $this->warn('⚠️  Rich Menu image not found at: '.$imagePath);
             $this->info('Creating placeholder image...');
             $this->createPlaceholderImage($imagePath);
         }
@@ -61,8 +61,9 @@ class SetupLineSignupRichMenu extends Command
         $this->info('📋 Creating Rich Menu...');
         $richMenuId = $this->richMenuService->createSignupRichMenu();
 
-        if (!$richMenuId) {
+        if (! $richMenuId) {
             $this->error('❌ Failed to create Rich Menu');
+
             return 1;
         }
 
@@ -76,7 +77,8 @@ class SetupLineSignupRichMenu extends Command
             $this->lineService->uploadRichMenuImage($richMenuId, $imagePath);
             $this->info('✅ Image uploaded successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Failed to upload image: ' . $e->getMessage());
+            $this->error('❌ Failed to upload image: '.$e->getMessage());
+
             return 1;
         }
 
@@ -90,6 +92,7 @@ class SetupLineSignupRichMenu extends Command
                 $this->info('✅ Set as default successfully');
             } else {
                 $this->error('❌ Failed to set as default');
+
                 return 1;
             }
         }
@@ -111,7 +114,7 @@ class SetupLineSignupRichMenu extends Command
     {
         $directory = dirname($path);
 
-        if (!is_dir($directory)) {
+        if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }
 

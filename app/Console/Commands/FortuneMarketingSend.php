@@ -31,10 +31,12 @@ class FortuneMarketingSend extends Command
         // ถ้าระบุ campaign ID เจาะจง
         if ($campaignId = $this->option('campaign')) {
             $campaign = FortuneMarketingCampaign::find($campaignId);
-            if (!$campaign) {
+            if (! $campaign) {
                 $this->error("ไม่พบแคมเปญ ID: {$campaignId}");
+
                 return 1;
             }
+
             return $this->processCampaign($campaign);
         }
 
@@ -43,6 +45,7 @@ class FortuneMarketingSend extends Command
 
         if ($campaigns->isEmpty()) {
             $this->info('ไม่มีแคมเปญที่ถึงเวลาส่ง');
+
             return 0;
         }
 
@@ -53,6 +56,7 @@ class FortuneMarketingSend extends Command
         }
 
         $this->info('✅ ตรวจสอบแคมเปญเสร็จสิ้น');
+
         return 0;
     }
 
@@ -72,27 +76,30 @@ class FortuneMarketingSend extends Command
         }
 
         $message = $campaign->getMessageToSend();
-        if (!$message) {
-            $this->error("   ❌ ไม่มีข้อความ ข้ามแคมเปญนี้");
+        if (! $message) {
+            $this->error('   ❌ ไม่มีข้อความ ข้ามแคมเปญนี้');
             $campaign->markError('ไม่มีข้อความ');
+
             return 1;
         }
 
         // แสดงตัวอย่างข้อความ
-        $this->line("   ข้อความ: " . mb_substr($message, 0, 100) . '...');
+        $this->line('   ข้อความ: '.mb_substr($message, 0, 100).'...');
 
         // Dry run
         if ($this->option('dry-run')) {
             $this->warn('   [DRY RUN] ไม่ส่งจริง');
+
             return 0;
         }
 
         // ส่งจริง
         try {
-            $controller = new FortuneMarketingController();
+            $controller = new FortuneMarketingController;
             $result = $controller->executeCampaign($campaign);
 
             $this->info("   ✅ ส่งสำเร็จ: {$result['sent']} คน | ล้มเหลว: {$result['failed']} คน");
+
             return 0;
 
         } catch (\Exception $e) {
@@ -102,6 +109,7 @@ class FortuneMarketingSend extends Command
                 'campaign_id' => $campaign->id,
                 'error' => $e->getMessage(),
             ]);
+
             return 1;
         }
     }

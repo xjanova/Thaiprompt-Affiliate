@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * จัดการเครดิตดูดวงฟรีรายคน
      * แอดมินสามารถเพิ่ม/รีเซ็ต/ให้เครดิตฟรีเป็นรายคนได้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -41,8 +39,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง fortune_user_credits
-     *
-     * @return void
      */
     public function down(): void
     {

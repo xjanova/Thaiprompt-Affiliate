@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\PaymentTransaction;
-use App\Models\PaymentGateway;
 use App\Models\Order;
+use App\Models\PaymentTransaction;
 use App\Models\User;
 use App\Services\Payment\PaymentService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * PaymentApiController
@@ -36,9 +35,6 @@ class PaymentApiController extends Controller
 
     /**
      * ดึงรายการวิธีการชำระเงินที่ใช้ได้
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getMethods(Request $request): JsonResponse
     {
@@ -55,7 +51,7 @@ class PaymentApiController extends Controller
             $grouped = [];
             foreach ($enabledMethods as $method) {
                 $category = $method['category'] ?? 'other';
-                if (!isset($grouped[$category])) {
+                if (! isset($grouped[$category])) {
                     $grouped[$category] = [];
                 }
                 $grouped[$category][] = [
@@ -89,8 +85,6 @@ class PaymentApiController extends Controller
 
     /**
      * ดึงรายการวิธีการเติมเงิน (Deposit)
-     *
-     * @return JsonResponse
      */
     public function getDepositMethods(): JsonResponse
     {
@@ -115,9 +109,6 @@ class PaymentApiController extends Controller
 
     /**
      * เริ่มต้นการชำระเงินสำหรับ Order
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function initializeOrderPayment(Request $request): JsonResponse
     {
@@ -159,7 +150,7 @@ class PaymentApiController extends Controller
             }
 
             // ตรวจสอบว่า payment method พร้อมใช้งาน
-            if (!$this->paymentService->hasProvider($request->payment_method)) {
+            if (! $this->paymentService->hasProvider($request->payment_method)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'วิธีการชำระเงินไม่พร้อมใช้งาน',
@@ -181,7 +172,7 @@ class PaymentApiController extends Controller
             // ประมวลผล payment
             $result = $this->paymentService->processPayment($transaction, $request->all());
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['message'] ?? 'การชำระเงินล้มเหลว',
@@ -211,9 +202,6 @@ class PaymentApiController extends Controller
 
     /**
      * เริ่มต้นการเติมเงิน Wallet
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function initializeWalletTopup(Request $request): JsonResponse
     {
@@ -238,7 +226,7 @@ class PaymentApiController extends Controller
             $user = Auth::user();
 
             // ตรวจสอบว่า payment method พร้อมใช้งาน
-            if (!$this->paymentService->hasProvider($request->payment_method)) {
+            if (! $this->paymentService->hasProvider($request->payment_method)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'วิธีการชำระเงินไม่พร้อมใช้งาน',
@@ -261,7 +249,7 @@ class PaymentApiController extends Controller
             // ประมวลผล payment
             $result = $this->paymentService->processPayment($transaction, $request->all());
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['message'] ?? 'การเติมเงินล้มเหลว',
@@ -295,9 +283,6 @@ class PaymentApiController extends Controller
 
     /**
      * ตรวจสอบสถานะการชำระเงิน
-     *
-     * @param string $transactionId
-     * @return JsonResponse
      */
     public function checkStatus(string $transactionId): JsonResponse
     {
@@ -308,7 +293,7 @@ class PaymentApiController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
 
-            if (!$transaction) {
+            if (! $transaction) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบรายการชำระเงิน',
@@ -367,9 +352,6 @@ class PaymentApiController extends Controller
 
     /**
      * ดึงประวัติการชำระเงิน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getHistory(Request $request): JsonResponse
     {
@@ -428,10 +410,6 @@ class PaymentApiController extends Controller
 
     /**
      * สร้าง response สำหรับ payment
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $paymentData
-     * @return array
      */
     protected function buildPaymentResponse(PaymentTransaction $transaction, array $paymentData): array
     {
@@ -497,9 +475,6 @@ class PaymentApiController extends Controller
 
     /**
      * แปลง status เป็น label ภาษาไทย
-     *
-     * @param string $status
-     * @return string
      */
     protected function getStatusLabel(string $status): string
     {
@@ -517,9 +492,6 @@ class PaymentApiController extends Controller
 
     /**
      * แปลง type เป็น label ภาษาไทย
-     *
-     * @param string $type
-     * @return string
      */
     protected function getTypeLabel(string $type): string
     {

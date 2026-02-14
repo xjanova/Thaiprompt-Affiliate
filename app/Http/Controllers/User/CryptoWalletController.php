@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Crypto\CreateCustodialWalletRequest;
 use App\Http\Requests\Crypto\ConnectExternalWalletRequest;
-use App\Http\Requests\Crypto\WithdrawCryptoRequest;
+use App\Http\Requests\Crypto\CreateCustodialWalletRequest;
 use App\Http\Requests\Crypto\SetDefaultWalletRequest;
+use App\Http\Requests\Crypto\WithdrawCryptoRequest;
 use App\Models\CryptoCurrency;
-use App\Models\CryptoWallet;
 use App\Models\CryptoWithdrawalRequest;
-use App\Services\Crypto\CryptoWalletService;
 use App\Services\Crypto\CryptoPriceService;
+use App\Services\Crypto\CryptoWalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class CryptoWalletController extends Controller
 {
     protected CryptoWalletService $walletService;
+
     protected CryptoPriceService $priceService;
 
     public function __construct(
@@ -138,7 +138,7 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -181,7 +181,7 @@ class CryptoWalletController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 400);
         }
     }
@@ -218,7 +218,7 @@ class CryptoWalletController extends Controller
             ->where('network', $currency->network)
             ->first();
 
-        if (!$depositAddress) {
+        if (! $depositAddress) {
             // Generate new deposit address
             $cryptoAddress = $this->walletService->generateAddressForCurrency($wallet, $currency);
             $depositAddress = $cryptoAddress->wallet->depositAddresses()
@@ -241,7 +241,7 @@ class CryptoWalletController extends Controller
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return redirect()->route('user.crypto-wallet.index')
                 ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
         }
@@ -265,7 +265,7 @@ class CryptoWalletController extends Controller
         $wallet = $user->defaultCryptoWallet;
 
         // Verify PIN
-        if (!$wallet->verifyPin($request->pin)) {
+        if (! $wallet->verifyPin($request->pin)) {
             return back()->with('error', 'PIN ไม่ถูกต้อง');
         }
 
@@ -314,7 +314,7 @@ class CryptoWalletController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -342,7 +342,7 @@ class CryptoWalletController extends Controller
         $withdrawal = CryptoWithdrawalRequest::where('user_id', $user->id)
             ->findOrFail($id);
 
-        if (!$withdrawal->isPending()) {
+        if (! $withdrawal->isPending()) {
             return back()->with('error', 'ไม่สามารถยกเลิกได้ เนื่องจากคำขอถูกดำเนินการแล้ว');
         }
 
@@ -433,9 +433,9 @@ class CryptoWalletController extends Controller
 
         $rate = $this->priceService->getCurrentRate($currency);
 
-        if (!$rate) {
+        if (! $rate) {
             return response()->json([
-                'error' => 'Price not available'
+                'error' => 'Price not available',
             ], 404);
         }
 
@@ -492,7 +492,7 @@ class CryptoWalletController extends Controller
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return redirect()->route('user.crypto-wallet.index')
                 ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
         }
@@ -536,7 +536,7 @@ class CryptoWalletController extends Controller
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
 
-        if (!$wallet) {
+        if (! $wallet) {
             return redirect()->route('user.crypto-wallet.index')
                 ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
         }

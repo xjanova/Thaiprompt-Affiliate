@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บหมวดหมู่การทำนาย เช่น ความรัก, การเงิน, สุขภาพ, การงาน, ฯลฯ
      * แต่ละหมวดหมู่สามารถกำหนด prompt context เฉพาะได้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -50,8 +48,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง fortune_categories
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -4,15 +4,14 @@ namespace App\Services\AI;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class DocumentProcessorService
 {
     /**
      * Process document based on type
      *
-     * @param string $type Document type (text, pdf, docx, url, file)
-     * @param mixed $source Source content or path
+     * @param  string  $type  Document type (text, pdf, docx, url, file)
+     * @param  mixed  $source  Source content or path
      * @return array ['success' => bool, 'content' => string, 'metadata' => array]
      */
     public function processDocument(string $type, $source): array
@@ -26,7 +25,7 @@ class DocumentProcessorService
                 'file' => $this->processFile($source),
                 default => [
                     'success' => false,
-                    'error' => 'Unsupported document type: ' . $type,
+                    'error' => 'Unsupported document type: '.$type,
                 ],
             };
         } catch (\Exception $e) {
@@ -67,7 +66,7 @@ class DocumentProcessorService
     private function processPdf(string $filePath): array
     {
         // Check if PDF parser is available
-        if (!class_exists('\Smalot\PdfParser\Parser')) {
+        if (! class_exists('\Smalot\PdfParser\Parser')) {
             return [
                 'success' => false,
                 'error' => 'PDF parser not installed. Run: composer require smalot/pdfparser',
@@ -75,7 +74,7 @@ class DocumentProcessorService
         }
 
         try {
-            $parser = new \Smalot\PdfParser\Parser();
+            $parser = new \Smalot\PdfParser\Parser;
             $pdf = $parser->parseFile($filePath);
 
             $text = $pdf->getText();
@@ -106,7 +105,7 @@ class DocumentProcessorService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'PDF parsing error: ' . $e->getMessage(),
+                'error' => 'PDF parsing error: '.$e->getMessage(),
             ];
         }
     }
@@ -117,7 +116,7 @@ class DocumentProcessorService
     private function processDocx(string $filePath): array
     {
         // Check if PHPWord is available
-        if (!class_exists('\PhpOffice\PhpWord\IOFactory')) {
+        if (! class_exists('\PhpOffice\PhpWord\IOFactory')) {
             return [
                 'success' => false,
                 'error' => 'PHPWord not installed. Run: composer require phpoffice/phpword',
@@ -131,7 +130,7 @@ class DocumentProcessorService
             // Extract text from all sections
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getElements() as $element) {
-                    $text .= $this->extractTextFromElement($element) . "\n\n";
+                    $text .= $this->extractTextFromElement($element)."\n\n";
                 }
             }
 
@@ -150,7 +149,7 @@ class DocumentProcessorService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'DOCX parsing error: ' . $e->getMessage(),
+                'error' => 'DOCX parsing error: '.$e->getMessage(),
             ];
         }
     }
@@ -186,10 +185,10 @@ class DocumentProcessorService
                 ])
                 ->get($url);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return [
                     'success' => false,
-                    'error' => 'Failed to fetch URL: HTTP ' . $response->status(),
+                    'error' => 'Failed to fetch URL: HTTP '.$response->status(),
                 ];
             }
 
@@ -213,7 +212,7 @@ class DocumentProcessorService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'URL processing error: ' . $e->getMessage(),
+                'error' => 'URL processing error: '.$e->getMessage(),
             ];
         }
     }
@@ -244,10 +243,10 @@ class DocumentProcessorService
      */
     private function processFile(string $filePath): array
     {
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             return [
                 'success' => false,
-                'error' => 'File not found: ' . $filePath,
+                'error' => 'File not found: '.$filePath,
             ];
         }
 
@@ -260,7 +259,7 @@ class DocumentProcessorService
             'txt', 'md' => $this->processText(file_get_contents($filePath)),
             default => [
                 'success' => false,
-                'error' => 'Unsupported file type: ' . $extension,
+                'error' => 'Unsupported file type: '.$extension,
             ],
         };
     }

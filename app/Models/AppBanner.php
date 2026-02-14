@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class AppBanner extends Model
 {
@@ -83,16 +83,16 @@ class AppBanner extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
-                    ->where(function ($q) {
-                        $q->where(function ($sq) {
-                            $sq->whereNull('start_date')
-                               ->orWhere('start_date', '<=', Carbon::now());
-                        })
-                        ->where(function ($sq) {
-                            $sq->whereNull('end_date')
-                               ->orWhere('end_date', '>=', Carbon::now());
-                        });
+            ->where(function ($q) {
+                $q->where(function ($sq) {
+                    $sq->whereNull('start_date')
+                        ->orWhere('start_date', '<=', Carbon::now());
+                })
+                    ->where(function ($sq) {
+                        $sq->whereNull('end_date')
+                            ->orWhere('end_date', '>=', Carbon::now());
                     });
+            });
     }
 
     /**
@@ -110,8 +110,8 @@ class AppBanner extends Model
     {
         return $query->where(function ($q) use ($platform) {
             $q->where('platform', $platform)
-              ->orWhere('platform', 'all')
-              ->orWhereNull('platform');
+                ->orWhere('platform', 'all')
+                ->orWhereNull('platform');
         });
     }
 
@@ -120,7 +120,7 @@ class AppBanner extends Model
      */
     public function isVisibleForUser($userId = null, $userType = 'all')
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -139,7 +139,7 @@ class AppBanner extends Model
         }
 
         // Check specific user IDs
-        if ($this->target_user_ids && !in_array($userId, $this->target_user_ids)) {
+        if ($this->target_user_ids && ! in_array($userId, $this->target_user_ids)) {
             return false;
         }
 
@@ -213,7 +213,7 @@ class AppBanner extends Model
      */
     public function getSizeClass()
     {
-        return match($this->size) {
+        return match ($this->size) {
             'small' => 'text-sm py-2 px-4',
             'medium' => 'text-base py-3 px-6',
             'large' => 'text-lg py-4 px-8',
@@ -227,7 +227,7 @@ class AppBanner extends Model
      */
     public function getPositionClass()
     {
-        return match($this->display_position) {
+        return match ($this->display_position) {
             'top' => 'top-0 left-0 right-0',
             'bottom' => 'bottom-0 left-0 right-0',
             'top-right' => 'top-4 right-4',
@@ -244,7 +244,7 @@ class AppBanner extends Model
      */
     public function getTypeColorClass()
     {
-        return match($this->type) {
+        return match ($this->type) {
             'info' => 'bg-blue-500 text-white border-blue-600',
             'warning' => 'bg-yellow-500 text-gray-900 border-yellow-600',
             'success' => 'bg-green-500 text-white border-green-600',
@@ -259,7 +259,7 @@ class AppBanner extends Model
      */
     public function getAnimationClass()
     {
-        return match($this->animation_style) {
+        return match ($this->animation_style) {
             'fade' => 'animate-fade-in',
             'slide' => 'animate-slide-in',
             'bounce' => 'animate-bounce-in',

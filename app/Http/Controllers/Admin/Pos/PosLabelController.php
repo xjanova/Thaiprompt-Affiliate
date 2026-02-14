@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Admin\Pos;
 
 use App\Http\Controllers\Controller;
-use App\Models\LabelTemplate;
 use App\Models\LabelPaperSize;
+use App\Models\LabelTemplate;
 use App\Models\PosLabelPrint;
 use App\Models\PosTransaction;
 use App\Models\Product;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 /**
  * PosLabelController
@@ -27,8 +27,6 @@ class PosLabelController extends Controller
 {
     /**
      * แสดงหน้า Dashboard ของ Label Printing
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -61,8 +59,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงหน้าพิมพ์ Product Label
-     *
-     * @return View
      */
     public function printProductLabels(): View
     {
@@ -83,9 +79,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงหน้าพิมพ์ Shipping Label
-     *
-     * @param PosTransaction|null $transaction
-     * @return View
      */
     public function printShippingLabel(?PosTransaction $transaction = null): View
     {
@@ -110,9 +103,6 @@ class PosLabelController extends Controller
 
     /**
      * ดึงรายการสินค้าทั้งหมดพร้อม pagination (Admin)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getProducts(Request $request): JsonResponse
     {
@@ -124,8 +114,8 @@ class PosLabelController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('barcode', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -167,19 +157,16 @@ class PosLabelController extends Controller
 
     /**
      * ค้นหาสินค้าสำหรับพิมพ์ฉลาก (Admin เห็นทั้งหมด)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchProducts(Request $request): JsonResponse
     {
         $query = $request->input('q', '');
 
         $products = Product::where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('barcode', 'like', "%{$query}%")
-                  ->orWhere('sku', 'like', "%{$query}%");
-            })
+            $q->where('name', 'like', "%{$query}%")
+                ->orWhere('barcode', 'like', "%{$query}%")
+                ->orWhere('sku', 'like', "%{$query}%");
+        })
             ->where('is_active', true)
             ->with('store') // โหลด relationship store
             ->limit(20)
@@ -204,9 +191,6 @@ class PosLabelController extends Controller
 
     /**
      * Preview ก่อนพิมพ์
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function preview(Request $request): JsonResponse
     {
@@ -224,7 +208,7 @@ class PosLabelController extends Controller
 
         // คำนวณจำนวนแผ่น (ถ้าไม่ใช่ continuous roll)
         $sheetsCount = 1;
-        if (!$template->is_continuous_roll) {
+        if (! $template->is_continuous_roll) {
             $labelsPerSheet = $template->labels_per_sheet;
             $sheetsCount = ceil($totalLabels / $labelsPerSheet);
         }
@@ -251,9 +235,6 @@ class PosLabelController extends Controller
 
     /**
      * บันทึกและพิมพ์ฉลาก
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function print(Request $request): JsonResponse
     {
@@ -294,7 +275,7 @@ class PosLabelController extends Controller
 
             // คำนวณจำนวนแผ่น
             $sheetsCount = 1;
-            if (!$template->is_continuous_roll) {
+            if (! $template->is_continuous_roll) {
                 $sheetsCount = ceil($totalLabels / $template->labels_per_sheet);
             }
 
@@ -337,17 +318,13 @@ class PosLabelController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * พิมพ์ Shipping Label จาก Transaction
-     *
-     * @param Request $request
-     * @param PosTransaction $transaction
-     * @return JsonResponse
      */
     public function printShippingFromTransaction(Request $request, PosTransaction $transaction): JsonResponse
     {
@@ -412,16 +389,13 @@ class PosLabelController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงรายการ Templates
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTemplates(Request $request): JsonResponse
     {
@@ -448,9 +422,6 @@ class PosLabelController extends Controller
 
     /**
      * ดึงรายการ Paper Sizes
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getPaperSizes(Request $request): JsonResponse
     {
@@ -472,9 +443,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงหน้า Preview สำหรับพิมพ์ฉลาก
-     *
-     * @param Request $request
-     * @return View
      */
     public function showPreview(Request $request): View
     {
@@ -512,7 +480,7 @@ class PosLabelController extends Controller
 
         // คำนวณจำนวนแผ่น
         $sheetsCount = 1;
-        if (!$template->is_continuous_roll) {
+        if (! $template->is_continuous_roll) {
             $labelsPerSheet = $template->labels_per_sheet;
             $sheetsCount = ceil($totalLabels / $labelsPerSheet);
         }
@@ -527,9 +495,6 @@ class PosLabelController extends Controller
 
     /**
      * ดึงประวัติการพิมพ์
-     *
-     * @param Request $request
-     * @return View
      */
     public function history(Request $request): View
     {
@@ -561,9 +526,6 @@ class PosLabelController extends Controller
 
     /**
      * ดูรายละเอียดการพิมพ์
-     *
-     * @param PosLabelPrint $print
-     * @return View
      */
     public function show(PosLabelPrint $print): View
     {
@@ -574,9 +536,6 @@ class PosLabelController extends Controller
 
     /**
      * ลบรายการพิมพ์
-     *
-     * @param PosLabelPrint $print
-     * @return RedirectResponse
      */
     public function destroy(PosLabelPrint $print): RedirectResponse
     {
@@ -589,9 +548,6 @@ class PosLabelController extends Controller
 
     /**
      * สร้าง Batch Print Session
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createBatchSession(Request $request): JsonResponse
     {
@@ -601,7 +557,7 @@ class PosLabelController extends Controller
             'items.*.quantity' => 'required|integer|min:1',
         ]);
 
-        $sessionId = 'BATCH-' . Str::upper(Str::random(10));
+        $sessionId = 'BATCH-'.Str::upper(Str::random(10));
 
         return response()->json([
             'success' => true,
@@ -618,8 +574,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงรายการ Templates ทั้งหมด
-     *
-     * @return View
      */
     public function listTemplates(): View
     {
@@ -640,8 +594,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงฟอร์มสร้าง Template ใหม่
-     *
-     * @return View
      */
     public function createTemplate(): View
     {
@@ -652,9 +604,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงหน้า Label Designer (Drag & Drop Editor)
-     *
-     * @param LabelTemplate $template
-     * @return View
      */
     public function designerTemplate(LabelTemplate $template): View
     {
@@ -666,9 +615,6 @@ class PosLabelController extends Controller
 
     /**
      * แสดงฟอร์มแก้ไขข้อมูล Template
-     *
-     * @param LabelTemplate $template
-     * @return View
      */
     public function editTemplate(LabelTemplate $template): View
     {
@@ -679,9 +625,6 @@ class PosLabelController extends Controller
 
     /**
      * บันทึก Template ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function storeTemplate(Request $request): RedirectResponse
     {
@@ -722,10 +665,6 @@ class PosLabelController extends Controller
 
     /**
      * อัพเดท Template
-     *
-     * @param Request $request
-     * @param LabelTemplate $template
-     * @return RedirectResponse
      */
     public function updateTemplate(Request $request, LabelTemplate $template): RedirectResponse
     {
@@ -746,9 +685,6 @@ class PosLabelController extends Controller
 
     /**
      * ลบ Template
-     *
-     * @param LabelTemplate $template
-     * @return RedirectResponse
      */
     public function destroyTemplate(LabelTemplate $template): RedirectResponse
     {
@@ -768,14 +704,11 @@ class PosLabelController extends Controller
 
     /**
      * ทำสำเนา Template
-     *
-     * @param LabelTemplate $template
-     * @return RedirectResponse
      */
     public function duplicateTemplate(LabelTemplate $template): RedirectResponse
     {
         $newTemplate = $template->replicate();
-        $newTemplate->name = $template->name . ' (สำเนา)';
+        $newTemplate->name = $template->name.' (สำเนา)';
         $newTemplate->user_id = auth()->id();
         $newTemplate->is_system = false;
         $newTemplate->is_public = false;

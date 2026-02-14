@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง theme_typography สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -62,8 +60,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_typography
-     *
-     * @return void
      */
     public function down(): void
     {

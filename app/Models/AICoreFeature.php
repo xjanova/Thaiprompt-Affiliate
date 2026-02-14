@@ -101,8 +101,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Feature Access
-     *
-     * @return HasMany
      */
     public function featureAccess(): HasMany
     {
@@ -111,8 +109,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Usage Logs
-     *
-     * @return HasMany
      */
     public function usageLogs(): HasMany
     {
@@ -121,8 +117,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Quotas
-     *
-     * @return HasMany
      */
     public function quotas(): HasMany
     {
@@ -131,8 +125,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Schedules
-     *
-     * @return HasMany
      */
     public function schedules(): HasMany
     {
@@ -141,8 +133,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Alerts
-     *
-     * @return HasMany
      */
     public function alerts(): HasMany
     {
@@ -151,8 +141,6 @@ class AICoreFeature extends Model
 
     /**
      * ความสัมพันธ์กับ Settings
-     *
-     * @return HasMany
      */
     public function settings(): HasMany
     {
@@ -162,7 +150,7 @@ class AICoreFeature extends Model
     /**
      * Scope: เฉพาะ features ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEnabled($query)
@@ -173,7 +161,7 @@ class AICoreFeature extends Model
     /**
      * Scope: เฉพาะ features ที่แสดงในเมนู
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVisible($query)
@@ -184,8 +172,7 @@ class AICoreFeature extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCategory($query, string $category)
@@ -196,8 +183,7 @@ class AICoreFeature extends Model
     /**
      * Scope: กรองตาม pricing tier
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $tier
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePricingTier($query, string $tier)
@@ -207,8 +193,6 @@ class AICoreFeature extends Model
 
     /**
      * ตรวจสอบว่า feature ต้องมีโควต้าหรือไม่
-     *
-     * @return bool
      */
     public function hasQuota(): bool
     {
@@ -217,8 +201,6 @@ class AICoreFeature extends Model
 
     /**
      * ตรวจสอบว่า feature ต้องชำระเงินหรือไม่
-     *
-     * @return bool
      */
     public function isPaid(): bool
     {
@@ -227,13 +209,10 @@ class AICoreFeature extends Model
 
     /**
      * ตรวจสอบว่าผู้ใช้มีสิทธิ์ใช้ feature นี้หรือไม่ (ตาม role)
-     *
-     * @param User|null $user
-     * @return bool
      */
     public function canAccessByRole(?User $user = null): bool
     {
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -249,8 +228,7 @@ class AICoreFeature extends Model
     /**
      * ดึงการตั้งค่าเฉพาะจาก config
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getConfig(string $key, $default = null)
@@ -261,14 +239,13 @@ class AICoreFeature extends Model
     /**
      * อัปเดตการตั้งค่าเฉพาะใน config
      *
-     * @param string $key
-     * @param mixed $value
-     * @return bool
+     * @param  mixed  $value
      */
     public function setConfig(string $key, $value): bool
     {
         $config = $this->config ?? [];
         data_set($config, $key, $value);
+
         return $this->update(['config' => $config]);
     }
 }

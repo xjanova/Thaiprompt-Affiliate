@@ -17,7 +17,7 @@ class TwoFactorSettingsController extends Controller
         $settings = TwoFactorSetting::first();
 
         // Create default settings if none exist
-        if (!$settings) {
+        if (! $settings) {
             $settings = TwoFactorSetting::create([
                 'enabled' => false,
                 'require_on_login' => false,

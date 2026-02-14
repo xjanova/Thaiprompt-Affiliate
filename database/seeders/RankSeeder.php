@@ -20,8 +20,6 @@ use Illuminate\Database\Seeder;
  * 6. Crown (มงกุฎ) - ผู้นำระดับเอลิท
  * 7. Royal (รอยัล) - ผู้นำระดับพรีเมียม
  * 8. Legend (ตำนาน) - ระดับสูงสุด พร้อมโบนัสพิเศษ 1 ล้านบาท
- *
- * @package Database\Seeders
  */
 class RankSeeder extends Seeder
 {
@@ -29,13 +27,11 @@ class RankSeeder extends Seeder
 
     /**
      * รันการ seed ข้อมูลระดับ
-     *
-     * @return void
      */
     public function run(): void
     {
         // ตรวจสอบว่าตาราง ranks มีอยู่หรือไม่
-        if (!$this->requireTable('ranks', 'RankSeeder')) {
+        if (! $this->requireTable('ranks', 'RankSeeder')) {
             return;
         }
 
@@ -51,8 +47,6 @@ class RankSeeder extends Seeder
 
     /**
      * โหมด Fresh Install - สร้างข้อมูลทั้งหมดใหม่
-     *
-     * @return void
      */
     private function freshInstallMode(): void
     {
@@ -80,8 +74,6 @@ class RankSeeder extends Seeder
 
     /**
      * โหมด Update - เพิ่มเฉพาะระดับที่ยังไม่มี
-     *
-     * @return void
      */
     private function updateMode(): void
     {
@@ -93,7 +85,7 @@ class RankSeeder extends Seeder
         $skipped = 0;
 
         foreach ($ranks as $rankData) {
-            if (!Rank::where('level', $rankData['level'])->exists()) {
+            if (! Rank::where('level', $rankData['level'])->exists()) {
                 $this->createRankWithRelations($rankData);
                 $this->command->info("   ➕ เพิ่ม: {$rankData['name_th']} (Level {$rankData['level']})");
                 $added++;
@@ -114,8 +106,7 @@ class RankSeeder extends Seeder
     /**
      * สร้างระดับพร้อม requirements และ bonuses
      *
-     * @param array $rankData ข้อมูลระดับ
-     * @return void
+     * @param  array  $rankData  ข้อมูลระดับ
      */
     private function createRankWithRelations(array $rankData): void
     {
@@ -164,8 +155,6 @@ class RankSeeder extends Seeder
 
     /**
      * ข้อมูลระดับทั้งหมด 8 ระดับ
-     *
-     * @return array
      */
     private function getAllRanks(): array
     {

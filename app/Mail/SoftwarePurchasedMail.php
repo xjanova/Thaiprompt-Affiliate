@@ -62,7 +62,7 @@ class SoftwarePurchasedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'ขอบคุณที่ซื้อซอฟต์แวร์ ' . $this->product->name,
+            subject: 'ขอบคุณที่ซื้อซอฟต์แวร์ '.$this->product->name,
         );
     }
 

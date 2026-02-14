@@ -18,19 +18,23 @@ class ItemSpawned implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $itemId;
+
     public string $itemType;
+
     public array $position;
+
     public int $value;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่ไอเทมเกิด
-     * @param int $itemId ID ไอเทม
-     * @param string $itemType ประเภทไอเทม
-     * @param array $position ตำแหน่ง {x, y, z}
-     * @param int $value ค่าไอเทม
+     * @param  int  $roomId  ห้องที่ไอเทมเกิด
+     * @param  int  $itemId  ID ไอเทม
+     * @param  string  $itemType  ประเภทไอเทม
+     * @param  array  $position  ตำแหน่ง {x, y, z}
+     * @param  int  $value  ค่าไอเทม
      */
     public function __construct(int $roomId, int $itemId, string $itemType, array $position, int $value)
     {
@@ -43,8 +47,6 @@ class ItemSpawned implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -58,8 +60,6 @@ class ItemSpawned implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -74,7 +74,7 @@ class ItemSpawned implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\Log;
 class LineMembershipSignupController extends Controller
 {
     protected $signupService;
+
     protected $lineService;
+
     protected $aiService;
+
     protected $richMenuService;
 
     public function __construct(
@@ -60,7 +63,7 @@ class LineMembershipSignupController extends Controller
         $source = $event['source'] ?? [];
         $lineUserId = $source['userId'] ?? null;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return;
         }
 
@@ -97,7 +100,7 @@ class LineMembershipSignupController extends Controller
             ->where('status', LineSignupSession::STATUS_ACTIVE)
             ->first();
 
-        if (!$session) {
+        if (! $session) {
             // No active session, check if message is signup trigger
             $text = strtolower(trim($message['text'] ?? ''));
 
@@ -124,7 +127,7 @@ class LineMembershipSignupController extends Controller
     {
         $lineUserId = $event['source']['userId'] ?? null;
 
-        if (!$lineUserId) {
+        if (! $lineUserId) {
             return;
         }
 
@@ -321,7 +324,7 @@ class LineMembershipSignupController extends Controller
             ->where('status', LineSignupSession::STATUS_ACTIVE)
             ->first();
 
-        if (!$session || $session->current_step !== 'otp') {
+        if (! $session || $session->current_step !== 'otp') {
             return;
         }
 
@@ -357,7 +360,7 @@ class LineMembershipSignupController extends Controller
         $wealthPath = $this->aiService->getWealthPathContent();
         $stepData = $wealthPath['steps'][$step - 1] ?? null;
 
-        if (!$stepData) {
+        if (! $stepData) {
             return;
         }
 
@@ -512,7 +515,7 @@ class LineMembershipSignupController extends Controller
     {
         $invitation = LineSignupInvitation::where('invitation_token', $token)->first();
 
-        if (!$invitation || !$invitation->canBeUsed()) {
+        if (! $invitation || ! $invitation->canBeUsed()) {
             return view('line.signup.invitation-invalid');
         }
 
@@ -529,7 +532,7 @@ class LineMembershipSignupController extends Controller
     {
         $invitation = LineSignupInvitation::where('invitation_token', $token)->first();
 
-        if (!$invitation || !$invitation->canBeUsed()) {
+        if (! $invitation || ! $invitation->canBeUsed()) {
             return redirect()->route('line.signup.invitation', $token)
                 ->with('error', 'ลิงก์เชิญหมดอายุหรือถูกใช้งานแล้ว');
         }
@@ -601,7 +604,7 @@ class LineMembershipSignupController extends Controller
         $user = $request->user();
         $mlmMember = $user->mlmMembers()->first();
 
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return response()->json(['error' => 'No MLM member account found'], 400);
         }
 

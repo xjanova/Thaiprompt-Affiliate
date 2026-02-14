@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง service_providers - ผู้ให้บริการ/พนักงาน
      *
      * เก็บข้อมูลผู้ให้บริการที่รับงาน พร้อมระบบแจ้งเตือนผ่าน LINE OA
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -93,8 +91,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_providers
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
-use App\Models\Employee;
 use App\Models\Department;
+use App\Models\Employee;
 use App\Services\AttendanceService;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
@@ -29,7 +29,7 @@ class AttendanceController extends Controller
 
         // Department filter
         if ($request->filled('department_id')) {
-            $query->whereHas('employee', function($q) use ($request) {
+            $query->whereHas('employee', function ($q) use ($request) {
                 $q->where('department_id', $request->get('department_id'));
             });
         }
@@ -65,9 +65,9 @@ class AttendanceController extends Controller
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
         $attendances = AttendanceRecord::where('employee_id', $employee->id)
-                                      ->whereBetween('date', [$startDate, $endDate])
-                                      ->orderBy('date')
-                                      ->get();
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date')
+            ->get();
 
         $summary = $this->attendanceService->getEmployeeAttendanceSummary($employee->id, $month, $year);
 

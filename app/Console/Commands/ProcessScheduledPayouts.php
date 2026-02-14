@@ -40,7 +40,7 @@ class ProcessScheduledPayouts extends Command
         $this->info('🔄 เริ่มประมวลผล Scheduled Payouts...');
         $this->newLine();
 
-        $payoutService = new PayoutService();
+        $payoutService = new PayoutService;
         $dryRun = $this->option('dry-run');
 
         try {
@@ -52,13 +52,14 @@ class ProcessScheduledPayouts extends Command
 
                 if ($payouts->isEmpty()) {
                     $this->info('ℹ️ ไม่มี Scheduled Payouts ที่ถึงกำหนด');
+
                     return Command::SUCCESS;
                 }
 
                 $this->warn('📋 [DRY RUN] รายการที่จะถูกประมวลผล:');
                 $this->table(
                     ['ID', 'User ID', 'Type', 'Net Amount', 'Scheduled At'],
-                    $payouts->map(fn($p) => [
+                    $payouts->map(fn ($p) => [
                         $p->id,
                         $p->user_id,
                         $p->earning_type,
@@ -66,13 +67,14 @@ class ProcessScheduledPayouts extends Command
                         $p->scheduled_at->format('Y-m-d H:i'),
                     ])->toArray()
                 );
+
                 return Command::SUCCESS;
             }
 
             $results = $payoutService->processScheduledPayouts();
 
             // แสดงผลลัพธ์
-            $this->info("📊 ผลการประมวลผล:");
+            $this->info('📊 ผลการประมวลผล:');
             $this->table(
                 ['รายการ', 'จำนวน'],
                 [
@@ -81,7 +83,7 @@ class ProcessScheduledPayouts extends Command
                 ]
             );
 
-            if (!empty($results['errors'])) {
+            if (! empty($results['errors'])) {
                 $this->newLine();
                 $this->error('❗ รายการที่ผิดพลาด:');
                 foreach ($results['errors'] as $error) {
@@ -95,11 +97,12 @@ class ProcessScheduledPayouts extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
             Log::error('ProcessScheduledPayouts failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return Command::FAILURE;
         }
     }

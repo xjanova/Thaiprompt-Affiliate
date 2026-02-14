@@ -18,6 +18,7 @@ class SentimentAnalysisTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private SentimentAnalysisService $sentimentService;
 
     protected function setUp(): void
@@ -45,7 +46,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_analyze_positive_sentiment(): void
     {
-        $message = "ขอบคุณค่ะ! ยินดีมากครับ สำนักงานของคุณเยี่ยมมาก!";
+        $message = 'ขอบคุณค่ะ! ยินดีมากครับ สำนักงานของคุณเยี่ยมมาก!';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U123');
 
@@ -59,7 +60,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_analyze_negative_sentiment(): void
     {
-        $message = "โกรธมากครับ! ไม่พอใจเลย ปัญหามากมาย";
+        $message = 'โกรธมากครับ! ไม่พอใจเลย ปัญหามากมาย';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U124');
 
@@ -73,7 +74,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_analyze_neutral_sentiment(): void
     {
-        $message = "ฉันอยากดูเอกสาร";
+        $message = 'ฉันอยากดูเอกสาร';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U125');
 
@@ -86,7 +87,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_detect_complaints(): void
     {
-        $message = "ร้องเรียน ปัญหา refund ไม่ได้คืนเงิน!";
+        $message = 'ร้องเรียน ปัญหา refund ไม่ได้คืนเงิน!';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U126');
 
@@ -98,7 +99,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_detect_urgent_issues(): void
     {
-        $message = "ด่วน!!! ปัญหา refund ดำเนินการตอนนี้ชีวิต!!!";
+        $message = 'ด่วน!!! ปัญหา refund ดำเนินการตอนนี้ชีวิต!!!';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U127');
 
@@ -110,7 +111,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_detect_pain_points(): void
     {
-        $message = "ปัญหา refund และ shipping ล่าช้า";
+        $message = 'ปัญหา refund และ shipping ล่าช้า';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U128');
 
@@ -124,7 +125,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_sentiment_confidence_is_calculated(): void
     {
-        $message = "ขอบคุณ ยินดี ดี สุดยอด";
+        $message = 'ขอบคุณ ยินดี ดี สุดยอด';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U129');
 
@@ -137,7 +138,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_emotion_scores_are_calculated(): void
     {
-        $message = "ยินดี โกรธ เศร้า กลัว ประหลาดใจ";
+        $message = 'ยินดี โกรธ เศร้า กลัว ประหลาดใจ';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U130');
 
@@ -153,7 +154,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_duplicate_messages_are_not_reanalyzed(): void
     {
-        $message = "เดียวกัน";
+        $message = 'เดียวกัน';
 
         $sentiment1 = $this->sentimentService->analyzeSentiment($message, 'U131');
         $sentiment2 = $this->sentimentService->analyzeSentiment($message, 'U132');
@@ -374,7 +375,7 @@ class SentimentAnalysisTest extends TestCase
      */
     public function test_can_analyze_english_sentiment(): void
     {
-        $message = "Thank you! Great service!";
+        $message = 'Thank you! Great service!';
 
         $sentiment = $this->sentimentService->analyzeSentiment($message, 'U400');
 
@@ -397,9 +398,9 @@ class SentimentAnalysisTest extends TestCase
 
         foreach ($messages as $data) {
             MessageSentiment::create([
-                'line_user_id' => 'U' . uniqid(),
+                'line_user_id' => 'U'.uniqid(),
                 'user_message' => $data['message'],
-                'message_hash' => MessageSentiment::hashMessage($data['message'] . uniqid()),
+                'message_hash' => MessageSentiment::hashMessage($data['message'].uniqid()),
                 'sentiment' => $data['sentiment'],
                 'sentiment_score' => $data['score'],
                 'confidence' => 80,

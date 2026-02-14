@@ -17,15 +17,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class ForumPostController extends Controller
 {
-    /**
-     * @var ForumTrophyService
-     */
     protected ForumTrophyService $trophyService;
 
     /**
      * สร้าง instance
-     *
-     * @param ForumTrophyService $trophyService
      */
     public function __construct(ForumTrophyService $trophyService)
     {
@@ -35,8 +30,6 @@ class ForumPostController extends Controller
     /**
      * สร้างโพสต์/คอมเมนต์ใหม่
      *
-     * @param Request $request
-     * @param int $threadId
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function store(Request $request, int $threadId)
@@ -48,15 +41,17 @@ class ForumPostController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'กระทู้นี้ถูกล็อคไม่สามารถตอบกลับได้'], 403);
             }
+
             return back()->withErrors(['content' => 'กระทู้นี้ถูกล็อคไม่สามารถตอบกลับได้']);
         }
 
         // ตรวจสอบว่าผู้ใช้ไม่ถูกแบน
         if (Auth::user()->forum_banned_until && Auth::user()->forum_banned_until > now()) {
-            $message = 'คุณถูกแบนจากการโพสต์จนถึง ' . Auth::user()->forum_banned_until->format('d/m/Y H:i');
+            $message = 'คุณถูกแบนจากการโพสต์จนถึง '.Auth::user()->forum_banned_until->format('d/m/Y H:i');
             if ($request->expectsJson()) {
                 return response()->json(['error' => $message], 403);
             }
+
             return back()->withErrors(['content' => $message]);
         }
 
@@ -95,8 +90,6 @@ class ForumPostController extends Controller
     /**
      * อัปเดตโพสต์
      *
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function update(Request $request, int $id)
@@ -132,7 +125,6 @@ class ForumPostController extends Controller
     /**
      * ลบโพสต์
      *
-     * @param int $id
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function destroy(Request $request, int $id)
@@ -159,8 +151,6 @@ class ForumPostController extends Controller
     /**
      * กดไลค์/ยกเลิกไลค์โพสต์
      *
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleLike(Request $request, int $id)
@@ -174,8 +164,6 @@ class ForumPostController extends Controller
     /**
      * ตั้งเป็น Best Answer
      *
-     * @param Request $request
-     * @param int $id
      * @return \Illuminate\Http\JsonResponse
      */
     public function markBestAnswer(Request $request, int $id)

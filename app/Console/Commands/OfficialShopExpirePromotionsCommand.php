@@ -46,7 +46,7 @@ class OfficialShopExpirePromotionsCommand extends Command
         $this->newLine();
 
         try {
-            $service = new OfficialShopSelectionService();
+            $service = new OfficialShopSelectionService;
             $result = $service->processExpiredNewProductPromotions();
 
             $expiredCount = count($result['expired']);
@@ -59,7 +59,7 @@ class OfficialShopExpirePromotionsCommand extends Command
 
                 $this->table(
                     ['Promotion ID', 'Product ID', 'Views', 'Sales'],
-                    collect($result['expired'])->map(fn($item) => [
+                    collect($result['expired'])->map(fn ($item) => [
                         $item['promotion_id'],
                         $item['product_id'],
                         $item['views'],
@@ -75,7 +75,7 @@ class OfficialShopExpirePromotionsCommand extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
 
             return Command::FAILURE;
         }

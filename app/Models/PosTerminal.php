@@ -82,8 +82,11 @@ class PosTerminal extends Model
      * สถานะที่เป็นไปได้
      */
     public const STATUS_PENDING = 'pending';      // รอกรอก API Key
+
     public const STATUS_ACTIVE = 'active';        // ใช้งานปกติ
+
     public const STATUS_SUSPENDED = 'suspended';  // ระงับชั่วคราว
+
     public const STATUS_BLOCKED = 'blocked';      // บล็อกถาวร
 
     // =========================================
@@ -165,12 +168,12 @@ class PosTerminal extends Model
         }
 
         // ต้องยืนยันแล้ว
-        if (!$this->is_verified) {
+        if (! $this->is_verified) {
             return false;
         }
 
         // ต้องมี API Key และใช้งานได้
-        if (!$this->apiKey || !$this->apiKey->isUsable()) {
+        if (! $this->apiKey || ! $this->apiKey->isUsable()) {
             return false;
         }
 
@@ -213,7 +216,7 @@ class PosTerminal extends Model
     public function verify(PosApiKey $apiKey): bool
     {
         // ตรวจสอบว่า API Key ใช้งานได้
-        if (!$apiKey->isUsable()) {
+        if (! $apiKey->isUsable()) {
             return false;
         }
 
@@ -297,6 +300,7 @@ class PosTerminal extends Model
         // ตรวจสอบ API Key
         if ($this->apiKey && $this->apiKey->is_blocked) {
             $reason = $this->apiKey->blocked_reason ?? 'ไม่ระบุเหตุผล';
+
             return "API Key ถูกบล็อก: {$reason}\nกรุณาติดต่อ Admin เพื่อขอ API Key ใหม่";
         }
 

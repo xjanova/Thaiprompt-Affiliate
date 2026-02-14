@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,9 +18,9 @@ class AiBotController extends Controller
     public function index()
     {
         $bots = AiBotProfile::with(['provider', 'model', 'owner', 'conversations', 'usageLogs'])
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('owner_id', Auth::id())
-                      ->orWhere('is_public', true);
+                    ->orWhere('is_public', true);
             })
             ->orderBy('created_at', 'desc')
             ->paginate(20);
@@ -31,10 +31,10 @@ class AiBotController extends Controller
         $stats = [
             'total_bots' => $myBots->count(),
             'active_bots' => $myBots->where('is_active', true)->count(),
-            'total_conversations' => $myBots->sum(fn($bot) => $bot->conversations()->count()),
-            'total_messages' => $myBots->sum(fn($bot) => $bot->conversations()->sum('total_messages')),
-            'total_tokens' => $myBots->sum(fn($bot) => $bot->usageLogs()->sum('total_tokens')),
-            'total_cost' => $myBots->sum(fn($bot) => $bot->usageLogs()->sum('cost')),
+            'total_conversations' => $myBots->sum(fn ($bot) => $bot->conversations()->count()),
+            'total_messages' => $myBots->sum(fn ($bot) => $bot->conversations()->sum('total_messages')),
+            'total_tokens' => $myBots->sum(fn ($bot) => $bot->usageLogs()->sum('total_tokens')),
+            'total_cost' => $myBots->sum(fn ($bot) => $bot->usageLogs()->sum('cost')),
         ];
 
         return view('admin.ai-bots.index', compact('bots', 'stats'));
@@ -97,7 +97,7 @@ class AiBotController extends Controller
             ->findOrFail($id);
 
         // ตรวจสอบสิทธิ์
-        if ($bot->owner_id !== Auth::id() && !$bot->is_public) {
+        if ($bot->owner_id !== Auth::id() && ! $bot->is_public) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึง Bot นี้');
         }
 
@@ -205,7 +205,7 @@ class AiBotController extends Controller
             abort(403);
         }
 
-        $bot->is_active = !$bot->is_active;
+        $bot->is_active = ! $bot->is_active;
         $bot->save();
 
         return response()->json([
@@ -226,7 +226,7 @@ class AiBotController extends Controller
 
         $bot = AiBotProfile::findOrFail($id);
 
-        if ($bot->owner_id !== Auth::id() && !$bot->is_public) {
+        if ($bot->owner_id !== Auth::id() && ! $bot->is_public) {
             abort(403);
         }
 
@@ -316,8 +316,8 @@ class AiBotController extends Controller
         }
 
         $newBot = $bot->replicate();
-        $newBot->name = $bot->name . ' (Copy)';
-        $newBot->display_name = $bot->display_name . ' (Copy)';
+        $newBot->name = $bot->name.' (Copy)';
+        $newBot->display_name = $bot->display_name.' (Copy)';
         $newBot->is_public = false;
         $newBot->is_rentable = false;
         $newBot->save();

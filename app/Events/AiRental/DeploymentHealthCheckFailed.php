@@ -25,39 +25,29 @@ class DeploymentHealthCheckFailed
 
     /**
      * Deployment ที่ health check ล้มเหลว
-     *
-     * @var AiRentalDeployment
      */
     public AiRentalDeployment $deployment;
 
     /**
      * Health check record
-     *
-     * @var AiRentalHealthCheck
      */
     public AiRentalHealthCheck $healthCheck;
 
     /**
      * จำนวนครั้งที่ล้มเหลวติดต่อกัน
-     *
-     * @var int
      */
     public int $consecutiveFailures;
 
     /**
      * ข้อมูลเพิ่มเติม
-     *
-     * @var array
      */
     public array $metadata;
 
     /**
      * สร้าง event instance
      *
-     * @param AiRentalDeployment $deployment
-     * @param AiRentalHealthCheck $healthCheck
-     * @param int $consecutiveFailures จำนวนครั้งที่ล้มเหลวติดต่อกัน
-     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @param  int  $consecutiveFailures  จำนวนครั้งที่ล้มเหลวติดต่อกัน
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      * @return void
      *
      * @example
@@ -85,8 +75,6 @@ class DeploymentHealthCheckFailed
 
     /**
      * ตรวจสอบว่าควร trigger alert หรือไม่
-     *
-     * @return bool
      */
     public function shouldTriggerAlert(): bool
     {
@@ -96,8 +84,6 @@ class DeploymentHealthCheckFailed
 
     /**
      * ตรวจสอบว่าควรลอง auto-recovery หรือไม่
-     *
-     * @return bool
      */
     public function shouldAttemptRecovery(): bool
     {
@@ -109,8 +95,6 @@ class DeploymentHealthCheckFailed
 
     /**
      * ตรวจสอบว่าควร escalate (แจ้งเตือน critical) หรือไม่
-     *
-     * @return bool
      */
     public function shouldEscalate(): bool
     {
@@ -136,8 +120,6 @@ class DeploymentHealthCheckFailed
 
     /**
      * ดึงข้อมูล error
-     *
-     * @return array
      */
     public function getErrorDetails(): array
     {
@@ -152,8 +134,6 @@ class DeploymentHealthCheckFailed
 
     /**
      * แนะนำ recovery action
-     *
-     * @return string
      */
     public function getRecommendedAction(): string
     {
@@ -175,13 +155,12 @@ class DeploymentHealthCheckFailed
     {
         // ประมาณจาก check frequency (default: 5 min)
         $checkFrequency = 5;
+
         return $this->consecutiveFailures * $checkFrequency;
     }
 
     /**
      * แปลง event เป็น array
-     *
-     * @return array
      */
     public function toArray(): array
     {

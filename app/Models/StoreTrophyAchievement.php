@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Carbon\Carbon $achieved_at
  * @property array|null $snapshot
  * @property bool $is_displayed
- *
  * @property-read VendorStore $store
  * @property-read StoreTrophy $trophy
  */
@@ -78,8 +77,9 @@ class StoreTrophyAchievement extends Model
      */
     public function toggleDisplay(): bool
     {
-        $this->is_displayed = !$this->is_displayed;
+        $this->is_displayed = ! $this->is_displayed;
         $this->save();
+
         return $this->is_displayed;
     }
 }

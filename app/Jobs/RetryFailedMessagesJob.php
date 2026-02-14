@@ -4,13 +4,13 @@ namespace App\Jobs;
 
 use App\Models\LineFailedMessage;
 use App\Services\LineAutoRetryService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Retry Failed Messages Job
@@ -24,8 +24,6 @@ use Exception;
  * - Exponential backoff delay
  * - Graceful error handling
  * - Idempotent (ทำซ้ำได้ปลอดภัย)
- *
- * @package App\Jobs
  */
 class RetryFailedMessagesJob implements ShouldQueue
 {
@@ -55,7 +53,7 @@ class RetryFailedMessagesJob implements ShouldQueue
     /**
      * สร้าง job instance ใหม่
      *
-     * @param int $failedMessageId ID ของ LINE Failed Message
+     * @param  int  $failedMessageId  ID ของ LINE Failed Message
      * @return void
      */
     public function __construct(int $failedMessageId)
@@ -70,9 +68,6 @@ class RetryFailedMessagesJob implements ShouldQueue
      * ประมวลผล job
      *
      * ดึง failed message และทำการ retry ผ่าน LineAutoRetryService
-     *
-     * @param LineAutoRetryService $retryService
-     * @return void
      */
     public function handle(LineAutoRetryService $retryService): void
     {
@@ -87,20 +82,22 @@ class RetryFailedMessagesJob implements ShouldQueue
             $failedMessage = LineFailedMessage::find($this->failedMessageId);
 
             // ตรวจสอบว่า record ยังมีอยู่หรือไม่
-            if (!$failedMessage) {
+            if (! $failedMessage) {
                 Log::warning('RetryFailedMessagesJob: Failed message not found', [
                     'failed_message_id' => $this->failedMessageId,
                 ]);
+
                 return;
             }
 
             // ตรวจสอบว่ายังสามารถ retry ได้หรือไม่
-            if (!$failedMessage->shouldRetry()) {
+            if (! $failedMessage->shouldRetry()) {
                 Log::info('RetryFailedMessagesJob: Message should not retry', [
                     'failed_message_id' => $this->failedMessageId,
                     'status' => $failedMessage->status,
                     'retry_count' => $failedMessage->retry_count,
                 ]);
+
                 return;
             }
 
@@ -147,9 +144,6 @@ class RetryFailedMessagesJob implements ShouldQueue
      *
      * เมื่อ job ถูก retry ครบตามจำนวนครั้งที่กำหนดแล้วยังล้มเหลว
      * method นี้จะถูกเรียก
-     *
-     * @param Exception $exception
-     * @return void
      */
     public function failed(Exception $exception): void
     {
@@ -163,9 +157,9 @@ class RetryFailedMessagesJob implements ShouldQueue
         try {
             $failedMessage = LineFailedMessage::find($this->failedMessageId);
 
-            if ($failedMessage && !in_array($failedMessage->status, [
+            if ($failedMessage && ! in_array($failedMessage->status, [
                 LineFailedMessage::STATUS_SUCCEEDED,
-                LineFailedMessage::STATUS_ABANDONED
+                LineFailedMessage::STATUS_ABANDONED,
             ])) {
                 $failedMessage->markAsAbandoned();
 
@@ -198,8 +192,6 @@ class RetryFailedMessagesJob implements ShouldQueue
 
     /**
      * กำหนดว่า job นี้ควรถูก retry หรือไม่เมื่อเกิด exception
-     *
-     * @return bool
      */
     public function shouldRetry(): bool
     {
@@ -211,8 +203,6 @@ class RetryFailedMessagesJob implements ShouldQueue
      * Tags สำหรับ monitoring และ debugging
      *
      * ใช้โดย queue monitoring tools เช่น Laravel Horizon
-     *
-     * @return array
      */
     public function tags(): array
     {
@@ -226,8 +216,6 @@ class RetryFailedMessagesJob implements ShouldQueue
 
     /**
      * คำอธิบาย job สำหรับ monitoring
-     *
-     * @return string
      */
     public function displayName(): string
     {

@@ -76,7 +76,7 @@ class TicketReply extends Model
      */
     public function isRead()
     {
-        return !is_null($this->read_at);
+        return ! is_null($this->read_at);
     }
 
     /**
@@ -84,7 +84,7 @@ class TicketReply extends Model
      */
     public function markAsRead()
     {
-        if (!$this->isRead()) {
+        if (! $this->isRead()) {
             $this->update(['read_at' => now()]);
         }
     }

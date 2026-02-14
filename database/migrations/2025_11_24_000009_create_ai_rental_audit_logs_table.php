@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บ audit trail ของทุกการกระทำในระบบ AI Rental
      * สำหรับ compliance, security และ debugging
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -235,8 +233,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_audit_logs
-     *
-     * @return void
      */
     public function down(): void
     {

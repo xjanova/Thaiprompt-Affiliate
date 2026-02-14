@@ -74,8 +74,8 @@ class EmailTemplate extends Model
         foreach ($data as $key => $value) {
             // Support both {{variable}} and {variable} syntax
             $content = str_replace([
-                "{{" . $key . "}}",
-                "{" . $key . "}",
+                '{{'.$key.'}}',
+                '{'.$key.'}',
             ], $value, $content);
         }
 
@@ -98,12 +98,12 @@ class EmailTemplate extends Model
      */
     public function validateVariables(array $data): bool
     {
-        if (!$this->variables) {
+        if (! $this->variables) {
             return true;
         }
 
         foreach ($this->variables as $variable) {
-            if (!isset($data[$variable])) {
+            if (! isset($data[$variable])) {
                 return false;
             }
         }

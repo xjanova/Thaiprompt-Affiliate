@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง video_missions สำหรับระบบภารกิจดูคลิป
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -44,7 +42,7 @@ return new class extends Migration
                 'tiktok',
                 'facebook',
                 'direct',                                              // Direct MP4/WebM URL
-                'embed'                                                // Custom embed code
+                'embed',                                                // Custom embed code
             ])->default('youtube');
             $table->string('video_id')->nullable();                    // ID จาก platform (เช่น YouTube ID)
             $table->text('embed_code')->nullable();                    // Custom embed code (ถ้า video_type = embed)
@@ -66,7 +64,7 @@ return new class extends Migration
                 'points',         // แต้มสะสม
                 'tpix',           // TPIX Token
                 'exp',            // Experience Points
-                'mixed'           // รางวัลผสม
+                'mixed',           // รางวัลผสม
             ])->default('coins');
             $table->decimal('reward_money', 12, 2)->default(0);        // รางวัลเงินสด
             $table->decimal('reward_coins', 12, 2)->default(0);        // รางวัล Coins
@@ -89,7 +87,7 @@ return new class extends Migration
                 'daily',          // ทำได้วันละครั้ง
                 'weekly',         // ทำได้สัปดาห์ละครั้ง
                 'monthly',        // ทำได้เดือนละครั้ง
-                'unlimited'       // ไม่จำกัด (cooldown period)
+                'unlimited',       // ไม่จำกัด (cooldown period)
             ])->default('daily');
             $table->integer('cooldown_minutes')->default(0);           // เวลา cooldown (นาที) สำหรับ unlimited
             $table->integer('max_completions_per_user')->nullable();   // จำนวนครั้งสูงสุดต่อ user
@@ -172,8 +170,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_missions
-     *
-     * @return void
      */
     public function down(): void
     {

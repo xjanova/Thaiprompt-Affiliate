@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Carbon\Carbon $updated_at
  *
  * @version 3.296.0
+ *
  * @since 2025-12-02
  */
 class StakingCoinSetting extends Model
@@ -80,7 +81,6 @@ class StakingCoinSetting extends Model
     /**
      * ดึง instance ที่ active อยู่ (Singleton pattern)
      *
-     * @return static
      *
      * @example
      * $settings = StakingCoinSetting::active();
@@ -90,7 +90,7 @@ class StakingCoinSetting extends Model
     {
         $instance = static::where('is_active', true)->first();
 
-        if (!$instance) {
+        if (! $instance) {
             // สร้าง default settings ถ้ายังไม่มี
             $instance = static::create([
                 'coin_to_thb_rate' => 1.0000,
@@ -110,7 +110,7 @@ class StakingCoinSetting extends Model
     /**
      * แปลง Coin เป็น THB
      *
-     * @param float $coinAmount จำนวน Coin
+     * @param  float  $coinAmount  จำนวน Coin
      * @return float จำนวน THB
      *
      * @example
@@ -124,7 +124,7 @@ class StakingCoinSetting extends Model
     /**
      * แปลง THB เป็น Coin
      *
-     * @param float $thbAmount จำนวน THB
+     * @param  float  $thbAmount  จำนวน THB
      * @return float จำนวน Coin
      *
      * @example
@@ -141,8 +141,6 @@ class StakingCoinSetting extends Model
 
     /**
      * ตรวจสอบว่าสามารถใช้ Coin ลงทุนได้หรือไม่
-     *
-     * @return bool
      */
     public function canUseCoinForStaking(): bool
     {
@@ -152,7 +150,7 @@ class StakingCoinSetting extends Model
     /**
      * ตรวจสอบว่าสัดส่วน Coin ถูกต้องหรือไม่
      *
-     * @param float $coinPercentage สัดส่วน Coin ที่ต้องการใช้ (%)
+     * @param  float  $coinPercentage  สัดส่วน Coin ที่ต้องการใช้ (%)
      * @return array ['valid' => bool, 'message' => string|null]
      *
      * @example
@@ -180,8 +178,6 @@ class StakingCoinSetting extends Model
 
     /**
      * ดึงข้อความเตือนความเสี่ยง
-     *
-     * @return string
      */
     public function getRiskWarningAttribute(): string
     {
@@ -201,9 +197,8 @@ class StakingCoinSetting extends Model
     /**
      * อัพเดทการตั้งค่า
      *
-     * @param array $data ข้อมูลที่จะอัพเดท
-     * @param int|null $userId ID ของผู้อัพเดท
-     * @return bool
+     * @param  array  $data  ข้อมูลที่จะอัพเดท
+     * @param  int|null  $userId  ID ของผู้อัพเดท
      *
      * @example
      * $settings->updateSettings(['coin_to_thb_rate' => 0.5], auth()->id());

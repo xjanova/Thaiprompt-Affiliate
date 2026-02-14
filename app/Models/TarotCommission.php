@@ -96,7 +96,7 @@ class TarotCommission extends Model
     /**
      * Scope สำหรับสถานะ pending
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -107,7 +107,7 @@ class TarotCommission extends Model
     /**
      * Scope สำหรับสถานะ approved
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeApproved($query)
@@ -118,7 +118,7 @@ class TarotCommission extends Model
     /**
      * Scope สำหรับสถานะ paid
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePaid($query)
@@ -129,8 +129,7 @@ class TarotCommission extends Model
     /**
      * Scope กรองตาม user
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -141,8 +140,7 @@ class TarotCommission extends Model
     /**
      * Scope กรองตาม level
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $level
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeLevel($query, int $level)
@@ -152,8 +150,6 @@ class TarotCommission extends Model
 
     /**
      * อนุมัติคอมมิชชั่น
-     *
-     * @return bool
      */
     public function approve(): bool
     {
@@ -162,30 +158,27 @@ class TarotCommission extends Model
         }
 
         $this->status = 'approved';
+
         return $this->save();
     }
 
     /**
      * บันทึกว่าจ่ายคอมมิชชั่นแล้ว
-     *
-     * @return bool
      */
     public function markAsPaid(): bool
     {
-        if (!in_array($this->status, ['pending', 'approved'])) {
+        if (! in_array($this->status, ['pending', 'approved'])) {
             return false;
         }
 
         $this->status = 'paid';
         $this->paid_at = now();
+
         return $this->save();
     }
 
     /**
      * ยกเลิกคอมมิชชั่น
-     *
-     * @param string|null $reason
-     * @return bool
      */
     public function cancel(?string $reason = null): bool
     {
@@ -197,13 +190,12 @@ class TarotCommission extends Model
         if ($reason) {
             $this->notes = $reason;
         }
+
         return $this->save();
     }
 
     /**
      * ตรวจสอบว่าจ่ายได้หรือไม่
-     *
-     * @return bool
      */
     public function canBePaid(): bool
     {
@@ -212,10 +204,6 @@ class TarotCommission extends Model
 
     /**
      * คำนวณยอดคอมมิชชั่นรวมของ user
-     *
-     * @param int $userId
-     * @param string $status
-     * @return float
      */
     public static function getTotalCommission(int $userId, string $status = 'paid'): float
     {
@@ -226,10 +214,6 @@ class TarotCommission extends Model
 
     /**
      * คำนวณยอด PV รวมของ user
-     *
-     * @param int $userId
-     * @param string $status
-     * @return float
      */
     public static function getTotalPv(int $userId, string $status = 'paid'): float
     {

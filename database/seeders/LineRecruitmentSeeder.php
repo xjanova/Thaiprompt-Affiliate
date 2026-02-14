@@ -6,7 +6,6 @@ use App\Models\LineBotAiSetting;
 use App\Models\LineBotKnowledgeBase;
 use App\Models\LineRecruitmentTopicBoundary;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Line Recruitment Seeder
@@ -21,8 +20,6 @@ class LineRecruitmentSeeder extends Seeder
 {
     /**
      * รัน seeder
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -33,6 +30,7 @@ class LineRecruitmentSeeder extends Seeder
 
         if ($existingSetting) {
             $this->command->info('⚠️ มี AI Setting สำหรับ recruitment อยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -50,14 +48,12 @@ class LineRecruitmentSeeder extends Seeder
 
     /**
      * สร้าง AI Setting สำหรับการรับสมัคร
-     *
-     * @return LineBotAiSetting
      */
     private function createAiSetting(): LineBotAiSetting
     {
         $this->command->info('📝 กำลังสร้าง AI Setting...');
 
-        $systemPrompt = <<<PROMPT
+        $systemPrompt = <<<'PROMPT'
 คุณเป็นผู้ช่วยรับสมัครสมาชิกที่เป็นกันเองและช่วยเหลือดี
 
 หน้าที่หลัก:
@@ -79,7 +75,7 @@ class LineRecruitmentSeeder extends Seeder
 - ใช้ emoji เล็กน้อยเพื่อความเป็นมิตร
 PROMPT;
 
-        $recruitmentPrompt = <<<PROMPT
+        $recruitmentPrompt = <<<'PROMPT'
 คุณเป็นผู้ช่วยรับสมัครสมาชิก Affiliate สำหรับธุรกิจออนไลน์
 
 เป้าหมาย:
@@ -152,9 +148,6 @@ PROMPT;
 
     /**
      * สร้าง Topic Boundaries
-     *
-     * @param LineBotAiSetting $aiSetting
-     * @return void
      */
     private function createTopicBoundaries(LineBotAiSetting $aiSetting): void
     {
@@ -259,9 +252,6 @@ PROMPT;
      * - name (ไม่ใช่ title)
      * - type (ไม่ใช่ source_type)
      * - source (ไม่ใช่ source_url)
-     *
-     * @param LineBotAiSetting $aiSetting
-     * @return void
      */
     private function createKnowledgeBase(LineBotAiSetting $aiSetting): void
     {
@@ -272,7 +262,7 @@ PROMPT;
                 'name' => 'ข้อมูลโปรแกรม Affiliate',
                 'type' => 'text',
                 'source' => null,
-                'content' => <<<CONTENT
+                'content' => <<<'CONTENT'
 # โปรแกรม Affiliate
 
 ## เกี่ยวกับเรา
@@ -300,7 +290,7 @@ CONTENT,
                 'name' => 'คำถามที่พบบ่อย (FAQ)',
                 'type' => 'text',
                 'source' => null,
-                'content' => <<<CONTENT
+                'content' => <<<'CONTENT'
 # คำถามที่พบบ่อย
 
 ## Q: ต้องเสียค่าใช้จ่ายในการสมัครไหม?
@@ -330,7 +320,7 @@ CONTENT,
                 'name' => 'ข้อมูลการติดต่อ',
                 'type' => 'text',
                 'source' => null,
-                'content' => <<<CONTENT
+                'content' => <<<'CONTENT'
 # ช่องทางติดต่อ
 
 ## LINE Official

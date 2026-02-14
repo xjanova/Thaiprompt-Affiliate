@@ -29,9 +29,9 @@ class KycController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->whereHas('user', function($q) use ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
-                  ->orWhere('email', 'like', '%'.$search.'%');
+                    ->orWhere('email', 'like', '%'.$search.'%');
             });
         }
 
@@ -95,7 +95,7 @@ class KycController extends Controller
         ];
 
         // Auto-fill profile from extracted OCR data if available
-        if (!empty($kycVerification->extracted_data)) {
+        if (! empty($kycVerification->extracted_data)) {
             $extractedData = $kycVerification->extracted_data;
 
             // Map extracted data to user fields
@@ -113,22 +113,22 @@ class KycController extends Controller
             ];
 
             foreach ($fieldMapping as $extractedKey => $userField) {
-                if (!empty($extractedData[$extractedKey])) {
+                if (! empty($extractedData[$extractedKey])) {
                     $userData[$userField] = $extractedData[$extractedKey];
                 }
             }
 
             // Also update date_of_birth if not already set
-            if (!empty($extractedData['birth_date']) && empty($kycVerification->user->date_of_birth)) {
+            if (! empty($extractedData['birth_date']) && empty($kycVerification->user->date_of_birth)) {
                 $userData['date_of_birth'] = $extractedData['birth_date'];
             }
 
             // Update name if not already set (use Thai name or English name)
             if (empty($kycVerification->user->name)) {
-                if (!empty($extractedData['thai_first_name']) && !empty($extractedData['thai_last_name'])) {
-                    $userData['name'] = $extractedData['thai_first_name'] . ' ' . $extractedData['thai_last_name'];
-                } elseif (!empty($extractedData['english_first_name']) && !empty($extractedData['english_last_name'])) {
-                    $userData['name'] = $extractedData['english_first_name'] . ' ' . $extractedData['english_last_name'];
+                if (! empty($extractedData['thai_first_name']) && ! empty($extractedData['thai_last_name'])) {
+                    $userData['name'] = $extractedData['thai_first_name'].' '.$extractedData['thai_last_name'];
+                } elseif (! empty($extractedData['english_first_name']) && ! empty($extractedData['english_last_name'])) {
+                    $userData['name'] = $extractedData['english_first_name'].' '.$extractedData['english_last_name'];
                 }
             }
         }

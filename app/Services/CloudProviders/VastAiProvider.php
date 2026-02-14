@@ -26,23 +26,17 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ดึง Auth Headers
-     *
-     * @param AiRentalCloudConfig $config
-     * @return array
      */
     protected function getAuthHeaders(AiRentalCloudConfig $config): array
     {
         return [
-            'Authorization' => 'Bearer ' . $config->api_key,
+            'Authorization' => 'Bearer '.$config->api_key,
             'Accept' => 'application/json',
         ];
     }
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @param AiRentalCloudConfig $config
-     * @return array
      */
     public function testConnection(AiRentalCloudConfig $config): array
     {
@@ -69,12 +63,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * Deploy Model
-     *
-     * @param AiRentalCloudConfig $config
-     * @param AiRentalModel $model
-     * @param string $instanceType
-     * @param array $options
-     * @return array
      */
     public function deployModel(
         AiRentalCloudConfig $config,
@@ -89,7 +77,7 @@ class VastAiProvider extends BaseCloudProvider
             ]);
 
             // Mock successful deployment
-            $instanceId = 'vast-' . Str::random(12);
+            $instanceId = 'vast-'.Str::random(12);
             $endpointUrl = "https://{$instanceId}.vast.ai/v1";
 
             sleep(1); // Simulate API call
@@ -102,7 +90,7 @@ class VastAiProvider extends BaseCloudProvider
                 'provider_data' => [
                     'instance_id' => $instanceId,
                     'gpu_type' => $instanceType,
-                    'image' => "pytorch/pytorch:latest",
+                    'image' => 'pytorch/pytorch:latest',
                 ],
             ];
 
@@ -120,10 +108,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * เริ่ม Instance
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @return array
      */
     public function startInstance(AiRentalCloudConfig $config, string $instanceId): array
     {
@@ -147,10 +131,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * หยุด Instance
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @return array
      */
     public function stopInstance(AiRentalCloudConfig $config, string $instanceId): array
     {
@@ -174,10 +154,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ลบ Instance
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @return array
      */
     public function deleteInstance(AiRentalCloudConfig $config, string $instanceId): array
     {
@@ -201,10 +177,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ดึงข้อมูล Instance
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @return array
      */
     public function getInstanceInfo(AiRentalCloudConfig $config, string $instanceId): array
     {
@@ -237,11 +209,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ดึง Logs
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @param int $lines
-     * @return array
      */
     public function getLogs(AiRentalCloudConfig $config, string $instanceId, int $lines = 100): array
     {
@@ -293,10 +260,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ตรวจสอบ Health
-     *
-     * @param AiRentalCloudConfig $config
-     * @param string $instanceId
-     * @return array
      */
     public function checkHealth(AiRentalCloudConfig $config, string $instanceId): array
     {
@@ -329,9 +292,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ดึง GPU Types ที่รองรับ
-     *
-     * @param AiRentalCloudConfig $config
-     * @return array
      */
     public function getAvailableGpuTypes(AiRentalCloudConfig $config): array
     {
@@ -349,9 +309,6 @@ class VastAiProvider extends BaseCloudProvider
 
     /**
      * ดึงราคา
-     *
-     * @param AiRentalCloudConfig $config
-     * @return array
      */
     public function getPricing(AiRentalCloudConfig $config): array
     {

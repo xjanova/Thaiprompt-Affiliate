@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\ServiceBooking;
 use App\Models\ServiceBookingNotification;
 use App\Models\ServiceProvider;
-use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -21,8 +20,6 @@ class ServiceBookingNotificationService
     /**
      * ส่งการแจ้งเตือนงานใหม่ถึง Provider
      *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
      * @return array ผลลัพธ์การส่ง notification แต่ละช่องทาง
      */
     public function notifyNewBooking(ServiceBooking $booking, ServiceProvider $provider): array
@@ -52,15 +49,10 @@ class ServiceBookingNotificationService
 
     /**
      * ส่ง LINE Notification
-     *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param string $type
-     * @return array
      */
     public function sendLineNotification(ServiceBooking $booking, ServiceProvider $provider, string $type): array
     {
-        if (!$provider->line_user_id) {
+        if (! $provider->line_user_id) {
             return $this->createFailedNotification($booking, $provider, 'line', $type, 'ไม่มี LINE User ID');
         }
 
@@ -102,17 +94,13 @@ class ServiceBookingNotificationService
 
     /**
      * สร้างข้อความ LINE
-     *
-     * @param ServiceBooking $booking
-     * @param string $type
-     * @return array
      */
     protected function buildLineMessage(ServiceBooking $booking, string $type): array
     {
         $messages = [
             'new_booking' => [
                 'type' => 'flex',
-                'altText' => '🔔 มีงานใหม่! งานจอง #' . $booking->booking_number,
+                'altText' => '🔔 มีงานใหม่! งานจอง #'.$booking->booking_number,
                 'contents' => [
                     'type' => 'bubble',
                     'header' => [
@@ -152,7 +140,7 @@ class ServiceBookingNotificationService
                                 'layout' => 'baseline',
                                 'contents' => [
                                     ['type' => 'text', 'text' => '💰', 'flex' => 0],
-                                    ['type' => 'text', 'text' => number_format($booking->total_amount, 2) . ' ฿', 'margin' => 'sm'],
+                                    ['type' => 'text', 'text' => number_format($booking->total_amount, 2).' ฿', 'margin' => 'sm'],
                                 ],
                             ],
                             [
@@ -160,7 +148,7 @@ class ServiceBookingNotificationService
                                 'layout' => 'baseline',
                                 'contents' => [
                                     ['type' => 'text', 'text' => '📍', 'flex' => 0],
-                                    ['type' => 'text', 'text' => number_format($booking->distance_km, 1) . ' km', 'margin' => 'sm'],
+                                    ['type' => 'text', 'text' => number_format($booking->distance_km, 1).' km', 'margin' => 'sm'],
                                 ],
                             ],
                         ],
@@ -223,16 +211,12 @@ class ServiceBookingNotificationService
 
     /**
      * ส่งข้อความผ่าน LINE Messaging API
-     *
-     * @param string $lineUserId
-     * @param array $message
-     * @return array
      */
     protected function sendLineMessage(string $lineUserId, array $message): array
     {
         $channelAccessToken = config('services.line.channel_access_token');
 
-        if (!$channelAccessToken) {
+        if (! $channelAccessToken) {
             throw new \Exception('LINE Channel Access Token ไม่ถูกตั้งค่า');
         }
 
@@ -242,8 +226,8 @@ class ServiceBookingNotificationService
                 'messages' => [$message],
             ]);
 
-        if (!$response->successful()) {
-            throw new \Exception('LINE API Error: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('LINE API Error: '.$response->body());
         }
 
         return $response->json();
@@ -251,11 +235,6 @@ class ServiceBookingNotificationService
 
     /**
      * ส่ง In-App Notification
-     *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param string $type
-     * @return array
      */
     protected function sendInAppNotification(ServiceBooking $booking, ServiceProvider $provider, string $type): array
     {
@@ -295,11 +274,6 @@ class ServiceBookingNotificationService
 
     /**
      * ส่ง Email Notification
-     *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param string $type
-     * @return array
      */
     protected function sendEmailNotification(ServiceBooking $booking, ServiceProvider $provider, string $type): array
     {
@@ -339,11 +313,6 @@ class ServiceBookingNotificationService
 
     /**
      * ส่ง SMS Notification
-     *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param string $type
-     * @return array
      */
     protected function sendSmsNotification(ServiceBooking $booking, ServiceProvider $provider, string $type): array
     {
@@ -367,14 +336,6 @@ class ServiceBookingNotificationService
 
     /**
      * สร้าง Notification record
-     *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param string $channel
-     * @param string $type
-     * @param string $message
-     * @param string|null $title
-     * @return ServiceBookingNotification
      */
     protected function createNotification(
         ServiceBooking $booking,

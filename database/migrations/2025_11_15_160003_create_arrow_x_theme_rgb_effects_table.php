@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง theme_rgb_effects สำหรับ Arrow X Theme System
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -30,19 +28,19 @@ return new class extends Migration
             $table->enum('target_element', [
                 'sidebar', 'navbar', 'menu-items', 'menu-items-active', 'cards', 'buttons', 'buttons-active',
                 'links-active', 'headers', 'titles', 'badges', 'borders', 'backgrounds',
-                'custom'
+                'custom',
             ]);
             $table->string('custom_selector')->nullable()->comment('CSS selector if target=custom');
 
             // Trigger State (เมื่อไหร่จะแสดงเอฟเฟกต์)
             $table->enum('trigger_state', [
-                'always', 'hover', 'active', 'focus', 'click'
+                'always', 'hover', 'active', 'focus', 'click',
             ])->default('always')->comment('always=แสดงตลอด, hover=เมื่อ hover, active=เมื่อ element เป็น active');
 
             // RGB Animation Settings
             $table->enum('animation_type', [
                 'rainbow', 'wave', 'pulse', 'glow', 'breathing',
-                'slide', 'rotate', 'flash', 'static'
+                'slide', 'rotate', 'flash', 'static',
             ])->default('rainbow');
 
             // Colors for RGB cycle
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง theme_rgb_effects
-     *
-     * @return void
      */
     public function down(): void
     {

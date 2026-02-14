@@ -44,8 +44,8 @@ class FlowAccountSyncJob implements ShouldQueue
     /**
      * Constructor
      *
-     * @param int|null $connectionId ID ของ connection ที่จะซิงค์
-     * @param string|null $syncType ประเภทข้อมูล (contacts, products, invoices, expenses)
+     * @param  int|null  $connectionId  ID ของ connection ที่จะซิงค์
+     * @param  string|null  $syncType  ประเภทข้อมูล (contacts, products, invoices, expenses)
      */
     public function __construct(?int $connectionId = null, ?string $syncType = null)
     {
@@ -55,9 +55,6 @@ class FlowAccountSyncJob implements ShouldQueue
 
     /**
      * ดำเนินการ Job
-     *
-     * @param FlowAccountService $service
-     * @return void
      */
     public function handle(FlowAccountService $service): void
     {
@@ -79,6 +76,7 @@ class FlowAccountSyncJob implements ShouldQueue
 
             if ($connections->isEmpty()) {
                 Log::info('FlowAccount sync: No active connections with auto_sync enabled');
+
                 return;
             }
 
@@ -89,17 +87,13 @@ class FlowAccountSyncJob implements ShouldQueue
             Log::info('FlowAccount sync job completed');
 
         } catch (\Exception $e) {
-            Log::error('FlowAccount sync job failed: ' . $e->getMessage());
+            Log::error('FlowAccount sync job failed: '.$e->getMessage());
             throw $e; // Re-throw เพื่อให้ job retry
         }
     }
 
     /**
      * ซิงค์ข้อมูลสำหรับ connection หนึ่ง
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param FlowAccountService $service
-     * @return void
      */
     protected function syncConnection(AccountingFlowaccountConnection $connection, FlowAccountService $service): void
     {
@@ -113,25 +107,25 @@ class FlowAccountSyncJob implements ShouldQueue
             // ซิงค์ผู้ติดต่อ
             if ($this->shouldSync('contacts', $syncSettings)) {
                 $results['contacts'] = $service->syncContactsFromFlowAccount($connection, $userId);
-                Log::info("FlowAccount contacts synced", $results['contacts']);
+                Log::info('FlowAccount contacts synced', $results['contacts']);
             }
 
             // ซิงค์สินค้า
             if ($this->shouldSync('products', $syncSettings)) {
                 $results['products'] = $service->syncProductsFromFlowAccount($connection, $userId);
-                Log::info("FlowAccount products synced", $results['products']);
+                Log::info('FlowAccount products synced', $results['products']);
             }
 
             // ซิงค์ใบแจ้งหนี้ไปยัง FlowAccount
             if ($this->shouldSync('invoices', $syncSettings)) {
                 $results['invoices'] = $this->syncInvoices($connection, $service);
-                Log::info("FlowAccount invoices synced", $results['invoices']);
+                Log::info('FlowAccount invoices synced', $results['invoices']);
             }
 
             // ซิงค์ค่าใช้จ่ายไปยัง FlowAccount
             if ($this->shouldSync('expenses', $syncSettings)) {
                 $results['expenses'] = $this->syncExpenses($connection, $service);
-                Log::info("FlowAccount expenses synced", $results['expenses']);
+                Log::info('FlowAccount expenses synced', $results['expenses']);
             }
 
             // อัปเดตเวลาซิงค์
@@ -148,10 +142,6 @@ class FlowAccountSyncJob implements ShouldQueue
 
     /**
      * ตรวจสอบว่าควรซิงค์ประเภทนี้หรือไม่
-     *
-     * @param string $type
-     * @param array $settings
-     * @return bool
      */
     protected function shouldSync(string $type, array $settings): bool
     {
@@ -166,10 +156,6 @@ class FlowAccountSyncJob implements ShouldQueue
 
     /**
      * ซิงค์ใบแจ้งหนี้ไปยัง FlowAccount
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param FlowAccountService $service
-     * @return array
      */
     protected function syncInvoices(AccountingFlowaccountConnection $connection, FlowAccountService $service): array
     {
@@ -195,10 +181,6 @@ class FlowAccountSyncJob implements ShouldQueue
 
     /**
      * ซิงค์ค่าใช้จ่ายไปยัง FlowAccount
-     *
-     * @param AccountingFlowaccountConnection $connection
-     * @param FlowAccountService $service
-     * @return array
      */
     protected function syncExpenses(AccountingFlowaccountConnection $connection, FlowAccountService $service): array
     {
@@ -224,9 +206,6 @@ class FlowAccountSyncJob implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลว
-     *
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(\Throwable $exception): void
     {

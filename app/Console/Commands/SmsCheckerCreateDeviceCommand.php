@@ -34,8 +34,6 @@ class SmsCheckerCreateDeviceCommand extends Command
 
     /**
      * รันคำสั่ง
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -45,8 +43,9 @@ class SmsCheckerCreateDeviceCommand extends Command
         // ตรวจสอบ user ถ้ามีการระบุ
         if ($userId) {
             $user = User::find($userId);
-            if (!$user) {
+            if (! $user) {
                 $this->error("❌ ไม่พบผู้ใช้ ID: {$userId}");
+
                 return Command::FAILURE;
             }
             $this->info("👤 เจ้าของอุปกรณ์: {$user->name} (ID: {$user->id})");
@@ -55,7 +54,7 @@ class SmsCheckerCreateDeviceCommand extends Command
         // สร้าง keys
         $apiKey = SmsCheckerDevice::generateApiKey();
         $secretKey = SmsCheckerDevice::generateSecretKey();
-        $deviceId = 'SMSCHK-' . strtoupper(bin2hex(random_bytes(4)));
+        $deviceId = 'SMSCHK-'.strtoupper(bin2hex(random_bytes(4)));
 
         // กำหนด store_id: ถ้าไม่ระบุ → ใช้ platformStoreId (ร้าน admin/official)
         $storeId = $this->option('store') ?? VendorStore::getPlatformStoreId();
@@ -86,7 +85,7 @@ class SmsCheckerCreateDeviceCommand extends Command
                 ['API Key', $apiKey],
                 ['Secret Key', $secretKey],
                 ['Status', $device->status],
-                ['Store', $storeName . ' (ID: ' . $device->store_id . ')'],
+                ['Store', $storeName.' (ID: '.$device->store_id.')'],
                 ['User ID', $device->user_id ?? '-'],
             ]
         );

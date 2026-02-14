@@ -2,13 +2,12 @@
 
 namespace App\Services\VideoAutomation;
 
-use App\Models\VideoAutoProject;
 use App\Models\VideoAutoJob;
-use App\Models\VideoAutoTemplate;
+use App\Models\VideoAutoProject;
 use App\Models\VideoAutoSchedule;
+use App\Models\VideoAutoTemplate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * Video Automation Service
@@ -27,8 +26,11 @@ class VideoAutomationService
      * Services (lazy loaded เพื่อหลีกเลี่ยง database query ตอน route:cache)
      */
     protected ?SunoApiService $sunoService = null;
+
     protected ?FreepikApiService $freepikService = null;
+
     protected ?VideoCreatorService $videoCreatorService = null;
+
     protected ?SocialPublisherService $publisherService = null;
 
     /**
@@ -44,61 +46,55 @@ class VideoAutomationService
 
     /**
      * ดึง SunoApiService แบบ lazy loading
-     *
-     * @return SunoApiService
      */
     protected function getSunoService(): SunoApiService
     {
         if ($this->sunoService === null) {
-            $this->sunoService = new SunoApiService();
+            $this->sunoService = new SunoApiService;
         }
+
         return $this->sunoService;
     }
 
     /**
      * ดึง FreepikApiService แบบ lazy loading
-     *
-     * @return FreepikApiService
      */
     protected function getFreepikService(): FreepikApiService
     {
         if ($this->freepikService === null) {
-            $this->freepikService = new FreepikApiService();
+            $this->freepikService = new FreepikApiService;
         }
+
         return $this->freepikService;
     }
 
     /**
      * ดึง VideoCreatorService แบบ lazy loading
-     *
-     * @return VideoCreatorService
      */
     protected function getVideoCreatorService(): VideoCreatorService
     {
         if ($this->videoCreatorService === null) {
-            $this->videoCreatorService = new VideoCreatorService();
+            $this->videoCreatorService = new VideoCreatorService;
         }
+
         return $this->videoCreatorService;
     }
 
     /**
      * ดึง SocialPublisherService แบบ lazy loading
-     *
-     * @return SocialPublisherService
      */
     protected function getPublisherService(): SocialPublisherService
     {
         if ($this->publisherService === null) {
-            $this->publisherService = new SocialPublisherService();
+            $this->publisherService = new SocialPublisherService;
         }
+
         return $this->publisherService;
     }
 
     /**
      * รัน Full Pipeline - ทำทุกขั้นตอนอัตโนมัติ
      *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
      * @return array{success: bool, error?: string}
      */
     public function runFullPipeline(VideoAutoProject $project, ?VideoAutoJob $job = null): array
@@ -114,8 +110,8 @@ class VideoAutomationService
             $project->updateStatus('generating', 'generating_music');
 
             $musicResult = $this->generateMusic($project, $job);
-            if (!$musicResult['success']) {
-                throw new \Exception('สร้างเพลงล้มเหลว: ' . $musicResult['error']);
+            if (! $musicResult['success']) {
+                throw new \Exception('สร้างเพลงล้มเหลว: '.$musicResult['error']);
             }
 
             // Step 2: ดาวน์โหลดเพลง
@@ -123,8 +119,8 @@ class VideoAutomationService
             $project->updateStatus('generating', 'downloading_music');
 
             $downloadMusicResult = $this->downloadMusic($project, $musicResult['data'], $job);
-            if (!$downloadMusicResult['success']) {
-                throw new \Exception('ดาวน์โหลดเพลงล้มเหลว: ' . $downloadMusicResult['error']);
+            if (! $downloadMusicResult['success']) {
+                throw new \Exception('ดาวน์โหลดเพลงล้มเหลว: '.$downloadMusicResult['error']);
             }
 
             // Step 3: สร้างภาพ
@@ -132,8 +128,8 @@ class VideoAutomationService
             $project->updateStatus('generating', 'generating_images');
 
             $imagesResult = $this->generateImages($project, $job);
-            if (!$imagesResult['success']) {
-                throw new \Exception('สร้างภาพล้มเหลว: ' . $imagesResult['error']);
+            if (! $imagesResult['success']) {
+                throw new \Exception('สร้างภาพล้มเหลว: '.$imagesResult['error']);
             }
 
             // Step 4: ดาวน์โหลดภาพ
@@ -141,8 +137,8 @@ class VideoAutomationService
             $project->updateStatus('generating', 'downloading_images');
 
             $downloadImagesResult = $this->downloadImages($project, $imagesResult['images'], $job);
-            if (!$downloadImagesResult['success']) {
-                throw new \Exception('ดาวน์โหลดภาพล้มเหลว: ' . $downloadImagesResult['error']);
+            if (! $downloadImagesResult['success']) {
+                throw new \Exception('ดาวน์โหลดภาพล้มเหลว: '.$downloadImagesResult['error']);
             }
 
             // Step 5: สร้างวีดีโอ
@@ -150,8 +146,8 @@ class VideoAutomationService
             $project->updateStatus('generating', 'creating_video');
 
             $videoResult = $this->createVideo($project, $job);
-            if (!$videoResult['success']) {
-                throw new \Exception('สร้างวีดีโอล้มเหลว: ' . $videoResult['error']);
+            if (! $videoResult['success']) {
+                throw new \Exception('สร้างวีดีโอล้มเหลว: '.$videoResult['error']);
             }
 
             // Step 6: สร้าง Thumbnail
@@ -167,7 +163,7 @@ class VideoAutomationService
             DB::commit();
 
             // Step 8: โพสอัตโนมัติ (ถ้าตั้งค่าไว้ และไม่ได้ตั้งเวลา)
-            if (!$project->is_scheduled && !empty($project->target_platforms)) {
+            if (! $project->is_scheduled && ! empty($project->target_platforms)) {
                 $job?->updateProgress(90, 'กำลังโพส...');
                 $project->updateStatus('publishing');
 
@@ -207,10 +203,6 @@ class VideoAutomationService
 
     /**
      * สร้างเพลง
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function generateMusic(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -223,9 +215,15 @@ class VideoAutomationService
 
         if (empty($prompt)) {
             $parts = [];
-            if ($project->music_genre) $parts[] = $project->music_genre;
-            if ($project->music_mood) $parts[] = $project->music_mood . ' mood';
-            if ($project->music_style) $parts[] = $project->music_style;
+            if ($project->music_genre) {
+                $parts[] = $project->music_genre;
+            }
+            if ($project->music_mood) {
+                $parts[] = $project->music_mood.' mood';
+            }
+            if ($project->music_style) {
+                $parts[] = $project->music_style;
+            }
             $prompt = implode(', ', $parts) ?: 'relaxing instrumental music';
         }
 
@@ -241,24 +239,19 @@ class VideoAutomationService
 
     /**
      * ดาวน์โหลดเพลง
-     *
-     * @param VideoAutoProject $project
-     * @param array $musicData
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function downloadMusic(VideoAutoProject $project, array $musicData, ?VideoAutoJob $job = null): array
     {
         $audioUrl = $musicData['audio_url'] ?? $musicData['url'] ?? null;
 
-        if (!$audioUrl) {
+        if (! $audioUrl) {
             return [
                 'success' => false,
                 'error' => 'ไม่พบ URL เพลง',
             ];
         }
 
-        $filename = 'music_' . $project->uuid . '.mp3';
+        $filename = 'music_'.$project->uuid.'.mp3';
         $result = $this->getSunoService()->downloadMusic($audioUrl, $filename, $job);
 
         if ($result['success']) {
@@ -275,10 +268,6 @@ class VideoAutomationService
 
     /**
      * สร้างภาพ
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function generateImages(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -293,7 +282,7 @@ class VideoAutomationService
 
                 // เพิ่มความหลากหลาย
                 $variations = ['vibrant', 'soft', 'dramatic', 'peaceful', 'energetic'];
-                $prompt .= ', ' . $variations[$i % count($variations)];
+                $prompt .= ', '.$variations[$i % count($variations)];
             }
 
             $prompts[] = $prompt;
@@ -309,11 +298,6 @@ class VideoAutomationService
 
     /**
      * ดาวน์โหลดภาพ
-     *
-     * @param VideoAutoProject $project
-     * @param array $images
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function downloadImages(VideoAutoProject $project, array $images, ?VideoAutoJob $job = null): array
     {
@@ -331,10 +315,6 @@ class VideoAutomationService
 
     /**
      * สร้างวีดีโอ
-     *
-     * @param VideoAutoProject $project
-     * @param VideoAutoJob|null $job
-     * @return array
      */
     public function createVideo(VideoAutoProject $project, ?VideoAutoJob $job = null): array
     {
@@ -347,9 +327,9 @@ class VideoAutomationService
             ];
         }
 
-        $musicPath = storage_path('app/public/' . $project->generated_music_path);
+        $musicPath = storage_path('app/public/'.$project->generated_music_path);
 
-        if (!file_exists($musicPath)) {
+        if (! file_exists($musicPath)) {
             return [
                 'success' => false,
                 'error' => 'ไม่พบไฟล์เพลง',
@@ -381,15 +361,12 @@ class VideoAutomationService
 
     /**
      * สร้าง Thumbnail
-     *
-     * @param VideoAutoProject $project
-     * @return void
      */
     protected function createThumbnail(VideoAutoProject $project): void
     {
-        $videoPath = storage_path('app/public/' . $project->generated_video_path);
+        $videoPath = storage_path('app/public/'.$project->generated_video_path);
 
-        if (!file_exists($videoPath)) {
+        if (! file_exists($videoPath)) {
             return;
         }
 
@@ -403,11 +380,6 @@ class VideoAutomationService
 
     /**
      * สร้างโปรเจกต์จาก Template
-     *
-     * @param VideoAutoTemplate $template
-     * @param array $overrides
-     * @param int|null $createdBy
-     * @return VideoAutoProject
      */
     public function createProjectFromTemplate(
         VideoAutoTemplate $template,
@@ -423,8 +395,6 @@ class VideoAutomationService
 
     /**
      * รัน Schedule ที่ถึงเวลา
-     *
-     * @return array
      */
     public function processScheduledJobs(): array
     {
@@ -438,7 +408,7 @@ class VideoAutomationService
                     $project = $this->createProjectFromTemplate(
                         $schedule->template,
                         [
-                            'name' => $schedule->name . ' - ' . now()->format('Y-m-d H:i'),
+                            'name' => $schedule->name.' - '.now()->format('Y-m-d H:i'),
                             'target_platforms' => $schedule->publish_platforms,
                         ]
                     );
@@ -484,8 +454,6 @@ class VideoAutomationService
 
     /**
      * ตรวจสอบสถานะการตั้งค่า APIs ทั้งหมด
-     *
-     * @return array
      */
     public function checkAllApiStatus(): array
     {
@@ -508,8 +476,6 @@ class VideoAutomationService
 
     /**
      * ดึงสถิติระบบ
-     *
-     * @return array
      */
     public function getStatistics(): array
     {

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\WalletDebt;
 use App\Models\User;
+use App\Models\WalletDebt;
 use App\Services\DebtCollectionService;
 use Illuminate\Http\Request;
 
@@ -19,13 +19,12 @@ class DebtController extends Controller
 
     public function __construct()
     {
-        $this->debtService = new DebtCollectionService();
+        $this->debtService = new DebtCollectionService;
     }
 
     /**
      * รายการหนี้ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -48,7 +47,6 @@ class DebtController extends Controller
     /**
      * รายละเอียดหนี้
      *
-     * @param WalletDebt $debt
      * @return \Illuminate\View\View
      */
     public function show(WalletDebt $debt)
@@ -80,7 +78,6 @@ class DebtController extends Controller
     /**
      * สร้างหนี้ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -113,8 +110,6 @@ class DebtController extends Controller
     /**
      * ยกเว้นหนี้
      *
-     * @param Request $request
-     * @param WalletDebt $debt
      * @return \Illuminate\Http\RedirectResponse
      */
     public function waive(Request $request, WalletDebt $debt)
@@ -138,7 +133,6 @@ class DebtController extends Controller
     /**
      * ยกเลิกหนี้
      *
-     * @param WalletDebt $debt
      * @return \Illuminate\Http\RedirectResponse
      */
     public function cancel(WalletDebt $debt)
@@ -158,7 +152,6 @@ class DebtController extends Controller
     /**
      * ดูหนี้ของ User
      *
-     * @param User $user
      * @return \Illuminate\View\View
      */
     public function userDebts(User $user)
@@ -182,9 +175,9 @@ class DebtController extends Controller
         try {
             $result = $this->debtService->batchCollectDebts();
 
-            $message = "เก็บหนี้จาก {$result['processed']} users, รวม ฿" . number_format($result['collected'], 2);
+            $message = "เก็บหนี้จาก {$result['processed']} users, รวม ฿".number_format($result['collected'], 2);
             if (count($result['errors']) > 0) {
-                $message .= " (ล้มเหลว " . count($result['errors']) . " รายการ)";
+                $message .= ' (ล้มเหลว '.count($result['errors']).' รายการ)';
             }
 
             return redirect()
@@ -199,17 +192,16 @@ class DebtController extends Controller
     /**
      * Export รายงานหนี้
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
     {
         $debts = WalletDebt::with(['user'])
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->byPriority()
             ->get();
 
-        $filename = 'debts-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'debts-'.now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -220,7 +212,7 @@ class DebtController extends Controller
             $file = fopen('php://output', 'w');
 
             // BOM for UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header row
             fputcsv($file, [
@@ -275,14 +267,13 @@ class DebtController extends Controller
     /**
      * API: ค้นหา User สำหรับสร้างหนี้
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function searchUsers(Request $request)
     {
         $query = $request->get('q');
 
-        if (!$query || strlen($query) < 2) {
+        if (! $query || strlen($query) < 2) {
             return response()->json(['data' => []]);
         }
 
@@ -293,7 +284,7 @@ class DebtController extends Controller
             ->get(['id', 'name', 'email']);
 
         return response()->json([
-            'data' => $users->map(fn($u) => [
+            'data' => $users->map(fn ($u) => [
                 'id' => $u->id,
                 'text' => "{$u->name} ({$u->email})",
             ]),

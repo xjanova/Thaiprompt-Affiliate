@@ -92,7 +92,7 @@ class MlmProductPv extends Model
     /**
      * คำนวณ preview คอมมิชชั่นตามจำนวนสินค้า
      *
-     * @param int $quantity จำนวนสินค้า
+     * @param  int  $quantity  จำนวนสินค้า
      * @return float จำนวนคอมมิชชั่น
      */
     public function calculateCommissionPreview($quantity = 1)

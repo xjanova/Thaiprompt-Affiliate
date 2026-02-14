@@ -1,17 +1,15 @@
 <?php
 
-use App\Http\Controllers\Frontend\HomeController;
-use App\Http\Controllers\Frontend\PageController;
-use App\Http\Controllers\Frontend\GameController;
-use App\Http\Controllers\Admin\GameController as AdminGameController;
+use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\Auth\SetupController;
-use App\Http\Controllers\LineWebhookController;
+use App\Http\Controllers\Frontend\GameController;
+use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\PageController;
 use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\TPIXWhitepaperController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,7 +81,7 @@ Route::get('/debug/sms-checker-status', function () {
         if (file_exists($logFile)) {
             $logContent = file_get_contents($logFile);
             $lines = explode("\n", $logContent);
-            $smsLines = array_filter($lines, fn($l) => str_contains($l, 'SMS Checker'));
+            $smsLines = array_filter($lines, fn ($l) => str_contains($l, 'SMS Checker'));
             $data['recent_sms_logs'] = array_values(array_slice($smsLines, -10));
         }
     } catch (\Exception $e) {
@@ -340,16 +338,16 @@ Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
 Route::get('/mobile-web-session', function (\Illuminate\Http\Request $request) {
     $token = $request->get('token');
 
-    if (!$token) {
+    if (! $token) {
         return redirect('/login')->with('error', 'ลิงก์ไม่ถูกต้อง');
     }
 
     // ตรวจสอบ token
     $tokenHash = hash('sha256', $token);
-    $cacheKey = 'web_session_token:' . $tokenHash;
+    $cacheKey = 'web_session_token:'.$tokenHash;
     $sessionData = \Cache::get($cacheKey);
 
-    if (!$sessionData) {
+    if (! $sessionData) {
         return redirect('/login')->with('error', 'ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาลองใหม่จากแอพ');
     }
 
@@ -358,7 +356,7 @@ Route::get('/mobile-web-session', function (\Illuminate\Http\Request $request) {
 
     // ค้นหา user
     $user = \App\Models\User::find($sessionData['user_id']);
-    if (!$user) {
+    if (! $user) {
         return redirect('/login')->with('error', 'ไม่พบบัญชีผู้ใช้');
     }
 
@@ -371,8 +369,8 @@ Route::get('/mobile-web-session', function (\Illuminate\Http\Request $request) {
     $redirectPath = $sessionData['redirect_path'] ?? '/user/wallet/topup';
 
     // เพิ่ม query params ลงใน redirect path
-    if (!empty($queryParams)) {
-        $redirectPath .= (strpos($redirectPath, '?') !== false ? '&' : '?') . http_build_query($queryParams);
+    if (! empty($queryParams)) {
+        $redirectPath .= (strpos($redirectPath, '?') !== false ? '&' : '?').http_build_query($queryParams);
     }
 
     // Redirect ไปหน้าที่ต้องการ
@@ -894,8 +892,8 @@ Route::prefix('chatbot/marketplace')->name('chatbot.marketplace.')->group(functi
 // TRADING BOT SYSTEM ROUTES
 // ========================================
 
-use App\Http\Controllers\TradingBotController;
 use App\Http\Controllers\Admin\TradingBotAdminController;
+use App\Http\Controllers\TradingBotController;
 
 // Public Trading Bot Marketplace
 // ⚠️ Marketplace: Trading bot marketplace ต้องถูก index โดย search engines

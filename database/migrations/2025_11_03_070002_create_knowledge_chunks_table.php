@@ -13,6 +13,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('knowledge_chunks')) {
             echo "Table 'knowledge_chunks' already exists, skipping creation.\n";
+
             return;
         }
 

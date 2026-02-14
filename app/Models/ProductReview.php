@@ -97,7 +97,7 @@ class ProductReview extends Model
      */
     public function hasSellerResponse(): bool
     {
-        return !empty($this->seller_response);
+        return ! empty($this->seller_response);
     }
 
     /**

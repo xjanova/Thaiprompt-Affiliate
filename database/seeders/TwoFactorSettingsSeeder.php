@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\TwoFactorSetting;
 use App\Models\OtpSetting;
+use App\Models\TwoFactorSetting;
 use Database\Seeders\Concerns\SafeSeeder;
 use Illuminate\Database\Seeder;
 
@@ -21,7 +21,7 @@ class TwoFactorSettingsSeeder extends Seeder
     public function run(): void
     {
         // ตรวจสอบว่าตาราง two_factor_settings มีอยู่หรือไม่
-        if (!$this->requireTable('two_factor_settings', 'TwoFactorSettingsSeeder')) {
+        if (! $this->requireTable('two_factor_settings', 'TwoFactorSettingsSeeder')) {
             return;
         }
 
@@ -71,7 +71,7 @@ class TwoFactorSettingsSeeder extends Seeder
                 $updates['line_otp_message_template'] = 'รหัสยืนยันของคุณคือ: {code}\nใช้งานได้ใน {expiry} นาที';
             }
 
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $otpSettings->update($updates);
                 $this->command->info('✅ Updated OTP settings with LINE OA support (NULL values only).');
             } else {

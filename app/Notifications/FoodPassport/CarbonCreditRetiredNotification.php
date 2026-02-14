@@ -25,7 +25,7 @@ class CarbonCreditRetiredNotification extends Notification implements ShouldQueu
         return (new MailMessage)
             ->subject('🌍 Carbon Credit ของคุณถูกยกเลิกเพื่อสิ่งแวดล้อม!')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("ขอบคุณที่ยกเลิก Carbon Credit เพื่อสิ่งแวดล้อม!")
+            ->line('ขอบคุณที่ยกเลิก Carbon Credit เพื่อสิ่งแวดล้อม!')
             ->line("จำนวน: {$this->data['amount']} TPCC")
             ->line('')
             ->line('🌳 ผลกระทบต่อสิ่งแวดล้อม:')

@@ -36,7 +36,8 @@ class VendorStoreVisit extends Model
     public static function generateVisitorId($request): string
     {
         // Use IP + User Agent to create a unique visitor ID
-        $identifier = $request->ip() . '|' . $request->userAgent();
+        $identifier = $request->ip().'|'.$request->userAgent();
+
         return hash('sha256', $identifier);
     }
 

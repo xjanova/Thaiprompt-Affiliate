@@ -23,7 +23,7 @@ class QualityFailedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('⚠️ การตรวจสอบคุณภาพไม่ผ่าน')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("ผลิตภัณฑ์ของคุณไม่ผ่านการตรวจสอบคุณภาพ")
+            ->line('ผลิตภัณฑ์ของคุณไม่ผ่านการตรวจสอบคุณภาพ')
             ->line("ประเภทการตรวจ: {$this->data['checkpoint_type']}")
             ->line("คะแนน: {$this->data['score']}/100")
             ->line('กรุณาตรวจสอบและดำเนินการแก้ไข')
@@ -35,7 +35,7 @@ class QualityFailedNotification extends Notification implements ShouldQueue
         return [
             'type' => 'quality_failed',
             'title' => '⚠️ คุณภาพไม่ผ่านเกณฑ์',
-            'message' => "การตรวจสอบคุณภาพไม่ผ่าน - ต้องดำเนินการแก้ไข",
+            'message' => 'การตรวจสอบคุณภาพไม่ผ่าน - ต้องดำเนินการแก้ไข',
             'data' => $this->data,
             'icon' => 'alert-triangle',
             'color' => 'danger',

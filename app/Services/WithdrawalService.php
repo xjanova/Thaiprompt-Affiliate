@@ -2,19 +2,19 @@
 
 namespace App\Services;
 
+use App\Models\PaymentMethod;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\WithdrawalRequest;
-use App\Models\PaymentMethod;
 use App\Models\WalletSetting;
+use App\Models\WithdrawalRequest;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Exception;
 
 class WithdrawalService
 {
     protected $walletService;
+
     protected $notificationService;
 
     public function __construct(WalletService $walletService, NotificationService $notificationService)
@@ -35,13 +35,13 @@ class WithdrawalService
         $wallet = $this->walletService->getOrCreateWallet($user);
 
         // Validate wallet
-        if (!$wallet->isActive()) {
+        if (! $wallet->isActive()) {
             throw new Exception('กระเป๋าเงินของคุณไม่สามารถใช้งานได้');
         }
 
         // Validate amount
         $errors = WalletSetting::validateWithdrawalAmount($amount);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             throw new Exception(implode(', ', $errors));
         }
 
@@ -109,7 +109,7 @@ class WithdrawalService
             );
 
             // Check if auto-approve is enabled
-            if (!WalletSetting::withdrawalRequiresApproval($amount)) {
+            if (! WalletSetting::withdrawalRequiresApproval($amount)) {
                 $this->approveWithdrawal($request, null);
             } else {
                 // Notify user
@@ -137,7 +137,7 @@ class WithdrawalService
      */
     public function approveWithdrawal(WithdrawalRequest $request, ?User $admin): void
     {
-        if (!$request->isPending() && !$request->isProcessing()) {
+        if (! $request->isPending() && ! $request->isProcessing()) {
             throw new Exception('คำขอถอนเงินนี้ไม่สามารถอนุมัติได้');
         }
 
@@ -167,7 +167,7 @@ class WithdrawalService
      */
     public function rejectWithdrawal(WithdrawalRequest $request, User $admin, string $reason): void
     {
-        if (!$request->isPending() && !$request->isProcessing()) {
+        if (! $request->isPending() && ! $request->isProcessing()) {
             throw new Exception('คำขอถอนเงินนี้ไม่สามารถปฏิเสธได้');
         }
 
@@ -211,7 +211,7 @@ class WithdrawalService
         $transferSlipFile,
         ?string $transferNote = null
     ): void {
-        if (!$request->isApproved()) {
+        if (! $request->isApproved()) {
             throw new Exception('คำขอถอนเงินนี้ยังไม่ได้รับการอนุมัติ');
         }
 
@@ -250,7 +250,7 @@ class WithdrawalService
      */
     public function cancelWithdrawal(WithdrawalRequest $request, User $user): void
     {
-        if (!$request->isPending()) {
+        if (! $request->isPending()) {
             throw new Exception('ไม่สามารถยกเลิกคำขอถอนเงินนี้ได้');
         }
 
@@ -336,23 +336,23 @@ class WithdrawalService
         $query = WithdrawalRequest::with(['user', 'wallet', 'paymentMethod', 'approvedBy', 'rejectedBy']);
 
         // Apply filters
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
-        if (!empty($filters['date_from'])) {
+        if (! empty($filters['date_from'])) {
             $query->whereDate('created_at', '>=', $filters['date_from']);
         }
 
-        if (!empty($filters['date_to'])) {
+        if (! empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
         }
 
-        if (!empty($filters['payment_type'])) {
+        if (! empty($filters['payment_type'])) {
             $query->where('payment_type', $filters['payment_type']);
         }
 

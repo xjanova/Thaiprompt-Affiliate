@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * ใช้สำหรับกรณีที่ต้องการเพิ่มเมนูเข้าไปในระบบที่มีข้อมูลอยู่แล้ว
  *
  * @version 1.0.0
+ *
  * @since 2025-12-05
  */
 class AcademyMenuSeeder extends Seeder
@@ -22,22 +23,22 @@ class AcademyMenuSeeder extends Seeder
      * Run the database seeds.
      *
      * เพิ่มเมนู Academy และ submenu ในตาราง menu_items
-     *
-     * @return void
      */
     public function run(): void
     {
         $this->command->info('🎓 กำลังเพิ่มเมนู ศูนย์การเรียนรู้ (Academy)...');
 
         // ตรวจสอบว่าตาราง menu_items มีอยู่หรือไม่
-        if (!Schema::hasTable('menu_items')) {
+        if (! Schema::hasTable('menu_items')) {
             $this->command->warn('⚠️ ไม่พบตาราง menu_items กรุณา run migration ก่อน');
+
             return;
         }
 
         // ตรวจสอบว่าเมนู Academy มีอยู่แล้วหรือไม่
         if (MenuItem::where('menu_key', 'user.academy')->exists()) {
             $this->command->info('ℹ️ เมนู Academy มีอยู่แล้ว ข้าม...');
+
             return;
         }
 

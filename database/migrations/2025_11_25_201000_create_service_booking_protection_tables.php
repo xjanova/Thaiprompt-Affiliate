@@ -23,7 +23,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. ตาราง Location Logs - บันทึกประวัติตำแหน่ง GPS ทุก X วินาที
-        if (!Schema::hasTable('service_booking_location_logs')) {
+        if (! Schema::hasTable('service_booking_location_logs')) {
             Schema::create('service_booking_location_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('service_booking_id')->constrained('service_bookings')->onDelete('cascade');
@@ -61,7 +61,7 @@ return new class extends Migration
         }
 
         // 2. ตาราง Disputes - ข้อพิพาท/ร้องเรียน
-        if (!Schema::hasTable('service_booking_disputes')) {
+        if (! Schema::hasTable('service_booking_disputes')) {
             Schema::create('service_booking_disputes', function (Blueprint $table) {
                 $table->id();
                 $table->string('dispute_number', 20)->unique();
@@ -89,7 +89,7 @@ return new class extends Migration
                     'property_damage',      // ทำทรัพย์สินเสียหาย
                     'overcharge',           // เก็บเงินเกิน
                     'fake_location',        // ปลอมตำแหน่ง GPS
-                    'other'                 // อื่นๆ
+                    'other',                 // อื่นๆ
                 ]);
 
                 // รายละเอียด
@@ -107,7 +107,7 @@ return new class extends Migration
                     'resolved_favor_accused',    // ตัดสินให้ผู้ถูกร้อง
                     'resolved_mutual',      // ยอมความ
                     'dismissed',            // ยกฟ้อง
-                    'escalated'             // ส่งต่อ
+                    'escalated',             // ส่งต่อ
                 ])->default('pending');
 
                 // ผลการตัดสิน
@@ -131,7 +131,7 @@ return new class extends Migration
         }
 
         // 3. ตาราง User Trust Scores - คะแนนความน่าเชื่อถือ
-        if (!Schema::hasTable('user_trust_scores')) {
+        if (! Schema::hasTable('user_trust_scores')) {
             Schema::create('user_trust_scores', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
@@ -167,7 +167,7 @@ return new class extends Migration
                     'warning',      // เตือน (score 40-59)
                     'restricted',   // จำกัด (score 20-39)
                     'suspended',    // ระงับชั่วคราว
-                    'banned'        // แบน
+                    'banned',        // แบน
                 ])->default('new');
 
                 // การจำกัด
@@ -191,7 +191,7 @@ return new class extends Migration
         }
 
         // 4. ตาราง Penalties - บันทึกค่าปรับ/บทลงโทษ
-        if (!Schema::hasTable('service_booking_penalties')) {
+        if (! Schema::hasTable('service_booking_penalties')) {
             Schema::create('service_booking_penalties', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('service_booking_id')->constrained('service_bookings')->onDelete('cascade');
@@ -208,7 +208,7 @@ return new class extends Migration
                     'dispute_lost',             // แพ้ข้อพิพาท
                     'policy_violation',         // ละเมิดนโยบาย
                     'fraud',                    // ฉ้อโกง
-                    'abuse'                     // กลั่นแกล้ง
+                    'abuse',                     // กลั่นแกล้ง
                 ]);
 
                 // จำนวนเงิน
@@ -224,7 +224,7 @@ return new class extends Migration
                     'charged',      // หักแล้ว
                     'paid',         // จ่ายแล้ว
                     'waived',       // ยกเว้น
-                    'disputed'      // โต้แย้ง
+                    'disputed',      // โต้แย้ง
                 ])->default('pending');
 
                 $table->text('reason');
@@ -243,7 +243,7 @@ return new class extends Migration
         }
 
         // 5. ตาราง User Blocks - Block/Blacklist ระหว่างผู้ใช้
-        if (!Schema::hasTable('user_blocks')) {
+        if (! Schema::hasTable('user_blocks')) {
             Schema::create('user_blocks', function (Blueprint $table) {
                 $table->id();
 
@@ -262,7 +262,7 @@ return new class extends Migration
                     'personal',     // Block ส่วนตัว (ไม่อยากเจอกันอีก)
                     'safety',       // ปัญหาความปลอดภัย
                     'system_auto',  // ระบบ block อัตโนมัติ
-                    'admin'         // Admin block
+                    'admin',         // Admin block
                 ])->default('personal');
 
                 $table->string('reason')->nullable();
@@ -278,46 +278,46 @@ return new class extends Migration
         // 6. เพิ่ม columns ใน service_bookings สำหรับ anti-abuse
         Schema::table('service_bookings', function (Blueprint $table) {
             // Cancellation protection
-            if (!Schema::hasColumn('service_bookings', 'cancellation_reason')) {
+            if (! Schema::hasColumn('service_bookings', 'cancellation_reason')) {
                 $table->string('cancellation_reason')->nullable()->after('cancelled_at');
             }
-            if (!Schema::hasColumn('service_bookings', 'cancelled_by_type')) {
+            if (! Schema::hasColumn('service_bookings', 'cancelled_by_type')) {
                 $table->enum('cancelled_by_type', ['user', 'provider', 'system', 'admin'])->nullable()->after('cancellation_reason');
             }
-            if (!Schema::hasColumn('service_bookings', 'cancellation_fee')) {
+            if (! Schema::hasColumn('service_bookings', 'cancellation_fee')) {
                 $table->decimal('cancellation_fee', 12, 2)->default(0)->after('cancelled_by_type');
             }
-            if (!Schema::hasColumn('service_bookings', 'cancellation_fee_charged')) {
+            if (! Schema::hasColumn('service_bookings', 'cancellation_fee_charged')) {
                 $table->boolean('cancellation_fee_charged')->default(false)->after('cancellation_fee');
             }
 
             // Payment protection
-            if (!Schema::hasColumn('service_bookings', 'payment_hold_amount')) {
+            if (! Schema::hasColumn('service_bookings', 'payment_hold_amount')) {
                 $table->decimal('payment_hold_amount', 12, 2)->default(0)->after('payment_status');
             }
-            if (!Schema::hasColumn('service_bookings', 'payment_hold_released_at')) {
+            if (! Schema::hasColumn('service_bookings', 'payment_hold_released_at')) {
                 $table->timestamp('payment_hold_released_at')->nullable()->after('payment_hold_amount');
             }
 
             // Evidence
-            if (!Schema::hasColumn('service_bookings', 'evidence_photos')) {
+            if (! Schema::hasColumn('service_bookings', 'evidence_photos')) {
                 $table->json('evidence_photos')->nullable()->comment('รูปหลักฐานก่อน/หลังบริการ');
             }
-            if (!Schema::hasColumn('service_bookings', 'service_started_photo')) {
+            if (! Schema::hasColumn('service_bookings', 'service_started_photo')) {
                 $table->string('service_started_photo')->nullable()->comment('รูปเมื่อเริ่มบริการ');
             }
-            if (!Schema::hasColumn('service_bookings', 'service_completed_photo')) {
+            if (! Schema::hasColumn('service_bookings', 'service_completed_photo')) {
                 $table->string('service_completed_photo')->nullable()->comment('รูปเมื่อเสร็จบริการ');
             }
 
             // Flags
-            if (!Schema::hasColumn('service_bookings', 'is_suspicious')) {
+            if (! Schema::hasColumn('service_bookings', 'is_suspicious')) {
                 $table->boolean('is_suspicious')->default(false)->comment('มีพฤติกรรมน่าสงสัย');
             }
-            if (!Schema::hasColumn('service_bookings', 'suspicious_flags')) {
+            if (! Schema::hasColumn('service_bookings', 'suspicious_flags')) {
                 $table->json('suspicious_flags')->nullable()->comment('รายละเอียดพฤติกรรมน่าสงสัย');
             }
-            if (!Schema::hasColumn('service_bookings', 'requires_photo_evidence')) {
+            if (! Schema::hasColumn('service_bookings', 'requires_photo_evidence')) {
                 $table->boolean('requires_photo_evidence')->default(false)->comment('ต้องถ่ายรูปหลักฐาน');
             }
         });

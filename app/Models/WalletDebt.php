@@ -67,8 +67,11 @@ class WalletDebt extends Model
      * สถานะ
      */
     const STATUS_ACTIVE = 'active';
+
     const STATUS_PAID = 'paid';
+
     const STATUS_WAIVED = 'waived';
+
     const STATUS_CANCELLED = 'cancelled';
 
     /**
@@ -158,8 +161,8 @@ class WalletDebt extends Model
     /**
      * หักหนี้
      *
-     * @param float $amount จำนวนที่หัก
-     * @param int|null $fromEarningId หักจาก earning ไหน
+     * @param  float  $amount  จำนวนที่หัก
+     * @param  int|null  $fromEarningId  หักจาก earning ไหน
      * @return float จำนวนที่หักได้จริง (อาจน้อยกว่าที่ขอหักถ้าหนี้เหลือน้อยกว่า)
      */
     public function deduct(float $amount, ?int $fromEarningId = null): float
@@ -201,9 +204,7 @@ class WalletDebt extends Model
     /**
      * หักหนี้ทั้งหมดของ user จาก earning
      *
-     * @param int $userId
-     * @param float $amount จำนวนเงินที่มีให้หัก
-     * @param int|null $fromEarningId
+     * @param  float  $amount  จำนวนเงินที่มีให้หัก
      * @return array ['total_deducted' => float, 'remaining' => float]
      */
     public static function deductAllDebts(int $userId, float $amount, ?int $fromEarningId = null): array

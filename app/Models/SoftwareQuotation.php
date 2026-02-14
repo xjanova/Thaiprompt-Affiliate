@@ -69,7 +69,7 @@ class SoftwareQuotation extends Model
 
         static::creating(function ($quotation) {
             if (empty($quotation->quotation_number)) {
-                $quotation->quotation_number = 'QT-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $quotation->quotation_number = 'QT-'.date('Ymd').'-'.strtoupper(\Illuminate\Support\Str::random(6));
             }
 
             // Set default valid_until to 30 days from now
@@ -198,7 +198,7 @@ class SoftwareQuotation extends Model
      */
     public function canBeAccepted(): bool
     {
-        return in_array($this->status, ['pending', 'reviewed', 'sent']) && !$this->isExpired();
+        return in_array($this->status, ['pending', 'reviewed', 'sent']) && ! $this->isExpired();
     }
 
     /**

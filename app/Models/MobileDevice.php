@@ -73,8 +73,6 @@ class MobileDevice extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -127,6 +125,7 @@ class MobileDevice extends Model
     public function touchLastActive(): bool
     {
         $this->last_active_at = now();
+
         return $this->save();
     }
 
@@ -136,6 +135,7 @@ class MobileDevice extends Model
     public function updatePushToken(string $token): bool
     {
         $this->push_token = $token;
+
         return $this->save();
     }
 
@@ -145,6 +145,7 @@ class MobileDevice extends Model
     public function linkToUser(int $userId): bool
     {
         $this->user_id = $userId;
+
         return $this->save();
     }
 }

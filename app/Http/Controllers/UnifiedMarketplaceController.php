@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AiBotProfile;
 use App\Models\SoftwareProduct;
 use App\Models\TradingBotPackage;
-use App\Models\TradingStrategy;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Unified Marketplace Controller
@@ -24,7 +22,6 @@ class UnifiedMarketplaceController extends Controller
     /**
      * แสดงหน้า Unified Marketplace
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -49,7 +46,6 @@ class UnifiedMarketplaceController extends Controller
     /**
      * แสดงสินค้าตามหมวดหมู่
      *
-     * @param string $category
      * @return \Illuminate\View\View
      */
     public function category(string $category)
@@ -64,7 +60,6 @@ class UnifiedMarketplaceController extends Controller
     /**
      * ค้นหาสินค้า
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function search(Request $request)
@@ -82,15 +77,14 @@ class UnifiedMarketplaceController extends Controller
     /**
      * แสดงรายละเอียดสินค้า
      *
-     * @param string $type chatbot|trading|software
-     * @param string $slug
+     * @param  string  $type  chatbot|trading|software
      * @return \Illuminate\View\View
      */
     public function show(string $type, string $slug)
     {
         $product = $this->findProduct($type, $slug);
 
-        if (!$product) {
+        if (! $product) {
             abort(404);
         }
 
@@ -106,9 +100,6 @@ class UnifiedMarketplaceController extends Controller
     /**
      * ดึงสินค้าทั้งหมดตามเงื่อนไข
      *
-     * @param string $category
-     * @param string $sort
-     * @param string|null $search
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     protected function getProducts(string $category, string $sort, ?string $search)
@@ -119,21 +110,21 @@ class UnifiedMarketplaceController extends Controller
         if ($category === 'all' || $category === 'chatbot') {
             $chatbots = AiBotProfile::where('is_public', true)
                 ->where('is_active', true)
-                ->when($search, function($query, $search) {
-                    $query->where(function($q) use ($search) {
+                ->when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('description', 'like', "%{$search}%");
+                            ->orWhere('description', 'like', "%{$search}%");
                     });
                 })
                 ->get()
-                ->map(function($bot) {
+                ->map(function ($bot) {
                     return [
                         'id' => $bot->id,
                         'type' => 'chatbot',
                         'name' => $bot->name,
                         'description' => $bot->description,
                         'price' => $bot->rental_price_per_month,
-                        'price_label' => '฿' . number_format($bot->rental_price_per_month, 0) . '/เดือน',
+                        'price_label' => '฿'.number_format($bot->rental_price_per_month, 0).'/เดือน',
                         'image' => $bot->avatar_url ?? '/images/default-bot.png',
                         'slug' => $bot->id,
                         'is_featured' => false,
@@ -147,21 +138,21 @@ class UnifiedMarketplaceController extends Controller
         // Trading Bot Packages
         if ($category === 'all' || $category === 'trading') {
             $tradingPackages = TradingBotPackage::where('is_active', true)
-                ->when($search, function($query, $search) {
-                    $query->where(function($q) use ($search) {
+                ->when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('description', 'like', "%{$search}%");
+                            ->orWhere('description', 'like', "%{$search}%");
                     });
                 })
                 ->get()
-                ->map(function($package) {
+                ->map(function ($package) {
                     return [
                         'id' => $package->id,
                         'type' => 'trading',
                         'name' => $package->name,
                         'description' => $package->description,
                         'price' => $package->price,
-                        'price_label' => '฿' . number_format($package->price, 0),
+                        'price_label' => '฿'.number_format($package->price, 0),
                         'image' => $package->image_url ?? '/images/default-trading.png',
                         'slug' => $package->id,
                         'is_featured' => $package->is_featured ?? false,
@@ -175,22 +166,22 @@ class UnifiedMarketplaceController extends Controller
         // Software Products
         if ($category === 'all' || $category === 'software') {
             $software = SoftwareProduct::where('is_active', true)
-                ->when($search, function($query, $search) {
-                    $query->where(function($q) use ($search) {
+                ->when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%")
-                          ->orWhere('description', 'like', "%{$search}%")
-                          ->orWhere('short_description', 'like', "%{$search}%");
+                            ->orWhere('description', 'like', "%{$search}%")
+                            ->orWhere('short_description', 'like', "%{$search}%");
                     });
                 })
                 ->get()
-                ->map(function($soft) {
+                ->map(function ($soft) {
                     return [
                         'id' => $soft->id,
                         'type' => 'software',
                         'name' => $soft->name,
                         'description' => $soft->short_description ?? $soft->description,
                         'price' => $soft->base_price,
-                        'price_label' => $soft->price_label ?? ('฿' . number_format($soft->base_price, 0)),
+                        'price_label' => $soft->price_label ?? ('฿'.number_format($soft->base_price, 0)),
                         'image' => $soft->main_image_url ?? '/images/default-software.png',
                         'slug' => $soft->slug,
                         'is_featured' => $soft->is_featured,
@@ -225,8 +216,7 @@ class UnifiedMarketplaceController extends Controller
     /**
      * เรียงลำดับสินค้า
      *
-     * @param \Illuminate\Support\Collection $products
-     * @param string $sort
+     * @param  \Illuminate\Support\Collection  $products
      * @return \Illuminate\Support\Collection
      */
     protected function sortProducts($products, string $sort)
@@ -248,8 +238,6 @@ class UnifiedMarketplaceController extends Controller
     /**
      * ค้นหาสินค้าตาม type และ slug
      *
-     * @param string $type
-     * @param string $slug
      * @return mixed
      */
     protected function findProduct(string $type, string $slug)
@@ -279,8 +267,7 @@ class UnifiedMarketplaceController extends Controller
     /**
      * เพิ่ม view count
      *
-     * @param string $type
-     * @param mixed $product
+     * @param  mixed  $product
      * @return void
      */
     protected function incrementViewCount(string $type, $product)
@@ -294,9 +281,7 @@ class UnifiedMarketplaceController extends Controller
     /**
      * ดึงสินค้าที่เกี่ยวข้อง
      *
-     * @param string $type
-     * @param mixed $product
-     * @param int $limit
+     * @param  mixed  $product
      * @return \Illuminate\Support\Collection
      */
     protected function getRelatedProducts(string $type, $product, int $limit = 4)

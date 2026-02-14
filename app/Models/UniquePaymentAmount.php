@@ -88,17 +88,16 @@ class UniquePaymentAmount extends Model
      * ⚠️ base_amount จะถูกปัดเศษเป็นจำนวนเต็มก่อนเพิ่ม suffix
      * เช่น base_amount = 500 + suffix 37 = 500.37
      *
-     * @param float $baseAmount ราคาสินค้าเดิม (จำนวนเต็ม)
-     * @param int|null $transactionId ID ของ transaction ที่เกี่ยวข้อง
-     * @param string $transactionType ประเภท transaction
-     * @param int $expiryMinutes เวลาหมดอายุของ reservation (นาที)
-     * @return self|null
+     * @param  float  $baseAmount  ราคาสินค้าเดิม (จำนวนเต็ม)
+     * @param  int|null  $transactionId  ID ของ transaction ที่เกี่ยวข้อง
+     * @param  string  $transactionType  ประเภท transaction
+     * @param  int  $expiryMinutes  เวลาหมดอายุของ reservation (นาที)
      */
     public static function generate(
         float $baseAmount,
         ?int $transactionId = null,
         string $transactionType = 'order',
-        int $expiryMinutes = null
+        ?int $expiryMinutes = null
     ): ?self {
         $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
         $maxPending = config('smschecker.max_pending_per_amount', 99);
@@ -161,9 +160,8 @@ class UniquePaymentAmount extends Model
      * - 'tarot_reading' = บิลไพ่ทาโร่
      * - 'order' / 'order_payment' = บิลอีคอมเมิร์ซ
      *
-     * @param float $amount จำนวนเงินที่ได้รับ
-     * @param string|array|null $transactionType กรองตามประเภท (null = ไม่กรอง, ใช้แบบเดิม)
-     * @return self|null
+     * @param  float  $amount  จำนวนเงินที่ได้รับ
+     * @param  string|array|null  $transactionType  กรองตามประเภท (null = ไม่กรอง, ใช้แบบเดิม)
      */
     public static function findMatch(float $amount, string|array|null $transactionType = null): ?self
     {
@@ -187,8 +185,6 @@ class UniquePaymentAmount extends Model
      * ยกเลิก unique amount (ปลดปล่อย suffix ให้ใช้ซ้ำได้)
      *
      * ใช้เมื่อ admin/Android app ปฏิเสธบิล หรือผู้ใช้ยกเลิก
-     *
-     * @return void
      */
     public function cancel(): void
     {

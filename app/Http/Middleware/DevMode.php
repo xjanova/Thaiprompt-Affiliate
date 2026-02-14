@@ -18,7 +18,7 @@ class DevMode
     public function handle(Request $request, Closure $next): Response
     {
         // Check if dev mode is enabled
-        if (!$this->isDevMode()) {
+        if (! $this->isDevMode()) {
             abort(404); // Hide the feature completely
         }
 
@@ -31,7 +31,7 @@ class DevMode
     public static function isDevMode(): bool
     {
         // Check if dev mode is enabled in config
-        if (!config('app.dev_mode_enabled', false)) {
+        if (! config('app.dev_mode_enabled', false)) {
             return false;
         }
 

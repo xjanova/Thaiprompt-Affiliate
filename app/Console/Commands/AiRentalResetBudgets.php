@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Services\AiRental\BudgetService;
 use App\Models\AiRentalBudgetLimit;
+use App\Services\AiRental\BudgetService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -34,15 +34,11 @@ class AiRentalResetBudgets extends Command
 
     /**
      * Budget Service
-     *
-     * @var BudgetService
      */
     protected BudgetService $budgetService;
 
     /**
      * Statistics
-     *
-     * @var array
      */
     protected array $stats = [
         'total_expired' => 0,
@@ -53,8 +49,6 @@ class AiRentalResetBudgets extends Command
 
     /**
      * Constructor
-     *
-     * @param BudgetService $budgetService
      */
     public function __construct(BudgetService $budgetService)
     {
@@ -64,8 +58,6 @@ class AiRentalResetBudgets extends Command
 
     /**
      * Execute the command
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -82,6 +74,7 @@ class AiRentalResetBudgets extends Command
 
             if ($this->stats['total_expired'] === 0) {
                 $this->info('✅ ไม่มี budget ที่หมดอายุต้องรีเซ็ต');
+
                 return 0;
             }
 
@@ -98,16 +91,17 @@ class AiRentalResetBudgets extends Command
             $this->displayExpiredBudgets($expiredBudgets);
 
             // ถามยืนยัน (ถ้าไม่ใช่ dry-run และไม่ได้ใช้ --force)
-            if (!$this->option('dry-run') && !$this->option('no-interaction')) {
-                if (!$this->confirm('ต้องการรีเซ็ต budgets เหล่านี้หรือไม่?', true)) {
+            if (! $this->option('dry-run') && ! $this->option('no-interaction')) {
+                if (! $this->confirm('ต้องการรีเซ็ต budgets เหล่านี้หรือไม่?', true)) {
                     $this->warn('❌ ยกเลิกการรีเซ็ต');
+
                     return 0;
                 }
                 $this->newLine();
             }
 
             // รีเซ็ต budgets
-            if (!$this->option('dry-run')) {
+            if (! $this->option('dry-run')) {
                 $this->resetBudgets($expiredBudgets);
             }
 
@@ -116,11 +110,12 @@ class AiRentalResetBudgets extends Command
 
             return $this->stats['reset_failed'] > 0 ? 1 : 0;
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาดในการรีเซ็ต budgets: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาดในการรีเซ็ต budgets: '.$e->getMessage());
             Log::error('AI Rental budget reset failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return 1;
         }
     }
@@ -152,8 +147,7 @@ class AiRentalResetBudgets extends Command
     /**
      * แสดงรายการ budgets ที่หมดอายุ
      *
-     * @param \Illuminate\Support\Collection $budgets
-     * @return void
+     * @param  \Illuminate\Support\Collection  $budgets
      */
     protected function displayExpiredBudgets($budgets): void
     {
@@ -191,8 +185,7 @@ class AiRentalResetBudgets extends Command
     /**
      * รีเซ็ต budgets
      *
-     * @param \Illuminate\Support\Collection $budgets
-     * @return void
+     * @param  \Illuminate\Support\Collection  $budgets
      */
     protected function resetBudgets($budgets): void
     {
@@ -231,9 +224,6 @@ class AiRentalResetBudgets extends Command
 
     /**
      * แสดงสรุปผล
-     *
-     * @param \Carbon\Carbon $startTime
-     * @return void
      */
     protected function displaySummary(\Carbon\Carbon $startTime): void
     {
@@ -246,7 +236,7 @@ class AiRentalResetBudgets extends Command
                 ['Budgets หมดอายุทั้งหมด', $this->stats['total_expired']],
                 ['✅ รีเซ็ตสำเร็จ', $this->stats['reset_success']],
                 ['❌ รีเซ็ตล้มเหลว', $this->stats['reset_failed']],
-                ['💰 Rollover รวม', '$' . number_format($this->stats['total_rollover'], 2)],
+                ['💰 Rollover รวม', '$'.number_format($this->stats['total_rollover'], 2)],
                 ['⏱️  ระยะเวลา', "{$duration} วินาที"],
             ]
         );

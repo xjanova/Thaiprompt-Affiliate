@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $action_taken การดำเนินการ
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read User $user
  * @property-read User|null $reviewer
  * @property-read ForumThread|ForumPost $reportable
@@ -65,8 +64,6 @@ class ForumReport extends Model
 
     /**
      * ประเภทเหตุผลที่รองรับ
-     *
-     * @var array
      */
     public static array $reasonTypes = [
         'spam' => 'สแปม',
@@ -80,8 +77,6 @@ class ForumReport extends Model
 
     /**
      * สถานะที่รองรับ
-     *
-     * @var array
      */
     public static array $statuses = [
         'pending' => 'รอตรวจสอบ',
@@ -92,8 +87,6 @@ class ForumReport extends Model
 
     /**
      * การดำเนินการที่รองรับ
-     *
-     * @var array
      */
     public static array $actions = [
         'none' => 'ไม่มี',
@@ -105,8 +98,6 @@ class ForumReport extends Model
 
     /**
      * ความสัมพันธ์กับผู้รายงาน
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -115,8 +106,6 @@ class ForumReport extends Model
 
     /**
      * ความสัมพันธ์กับผู้ตรวจสอบ
-     *
-     * @return BelongsTo
      */
     public function reviewer(): BelongsTo
     {
@@ -125,8 +114,6 @@ class ForumReport extends Model
 
     /**
      * ความสัมพันธ์ polymorphic กับ item ที่ถูกรายงาน
-     *
-     * @return MorphTo
      */
     public function reportable(): MorphTo
     {
@@ -136,7 +123,7 @@ class ForumReport extends Model
     /**
      * Scope: รายงานที่รอตรวจสอบ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -147,7 +134,7 @@ class ForumReport extends Model
     /**
      * Scope: รายงานที่แก้ไขแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeResolved($query)
@@ -157,9 +144,6 @@ class ForumReport extends Model
 
     /**
      * เริ่มตรวจสอบ
-     *
-     * @param User $reviewer
-     * @return void
      */
     public function startReview(User $reviewer): void
     {
@@ -173,9 +157,8 @@ class ForumReport extends Model
     /**
      * แก้ไขเสร็จสิ้น
      *
-     * @param string $action การดำเนินการ
-     * @param string|null $notes บันทึก
-     * @return void
+     * @param  string  $action  การดำเนินการ
+     * @param  string|null  $notes  บันทึก
      */
     public function resolve(string $action, ?string $notes = null): void
     {
@@ -193,8 +176,7 @@ class ForumReport extends Model
     /**
      * ยกเลิกรายงาน
      *
-     * @param string|null $notes บันทึก
-     * @return void
+     * @param  string|null  $notes  บันทึก
      */
     public function dismiss(?string $notes = null): void
     {
@@ -208,9 +190,6 @@ class ForumReport extends Model
 
     /**
      * ดำเนินการตาม action
-     *
-     * @param string $action
-     * @return void
      */
     protected function executeAction(string $action): void
     {
@@ -235,8 +214,6 @@ class ForumReport extends Model
 
     /**
      * ดึงชื่อประเภทเหตุผล
-     *
-     * @return string
      */
     public function getReasonTypeLabelAttribute(): string
     {
@@ -245,8 +222,6 @@ class ForumReport extends Model
 
     /**
      * ดึงชื่อสถานะ
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -255,8 +230,6 @@ class ForumReport extends Model
 
     /**
      * ดึงชื่อการดำเนินการ
-     *
-     * @return string
      */
     public function getActionTakenLabelAttribute(): string
     {

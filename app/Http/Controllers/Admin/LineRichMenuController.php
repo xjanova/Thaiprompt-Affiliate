@@ -7,8 +7,6 @@ use App\Http\Requests\StoreLineRichMenuRequest;
 use App\Http\Requests\UpdateLineRichMenuRequest;
 use App\Models\LineRichMenu;
 use App\Services\LineRichMenuImageService;
-use App\Services\WebPService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,6 +15,7 @@ class LineRichMenuController extends Controller
     public function index()
     {
         $richMenus = LineRichMenu::orderBy('created_at', 'desc')->get();
+
         return view('admin.line-bot.rich-menus.index', compact('richMenus'));
     }
 
@@ -28,7 +27,6 @@ class LineRichMenuController extends Controller
     /**
      * สร้าง Rich Menu ใหม่
      *
-     * @param StoreLineRichMenuRequest $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(StoreLineRichMenuRequest $request)
@@ -59,7 +57,7 @@ class LineRichMenuController extends Controller
             } catch (\Exception $e) {
                 return back()
                     ->withInput()
-                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: ' . $e->getMessage()]);
+                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: '.$e->getMessage()]);
             }
         }
 
@@ -82,14 +80,14 @@ class LineRichMenuController extends Controller
     public function edit($id)
     {
         $richMenu = LineRichMenu::findOrFail($id);
+
         return view('admin.line-bot.rich-menus.edit', compact('richMenu'));
     }
 
     /**
      * อัปเดต Rich Menu
      *
-     * @param UpdateLineRichMenuRequest $request
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(UpdateLineRichMenuRequest $request, $id)
@@ -126,7 +124,7 @@ class LineRichMenuController extends Controller
             } catch (\Exception $e) {
                 return back()
                     ->withInput()
-                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: ' . $e->getMessage()]);
+                    ->withErrors(['image' => 'เกิดข้อผิดพลาดในการประมวลผลภาพ: '.$e->getMessage()]);
             }
         }
 
@@ -137,7 +135,7 @@ class LineRichMenuController extends Controller
         $menu->update($validated);
 
         // ตั้งเป็น default ถ้าระบุ (และยังไม่ใช่ default)
-        if ($request->input('is_default') && !$menu->is_default) {
+        if ($request->input('is_default') && ! $menu->is_default) {
             $menu->setAsDefault();
         }
 

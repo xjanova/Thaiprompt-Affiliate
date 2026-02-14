@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง service_categories - หมวดหมู่บริการ
      *
      * ตารางนี้เก็บหมวดหมู่ของบริการต่างๆ เช่น นวด, สปา, ทำความสะอาด, delivery
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -49,8 +47,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_categories
-     *
-     * @return void
      */
     public function down(): void
     {

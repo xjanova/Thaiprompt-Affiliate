@@ -58,12 +58,12 @@ class SystemResetLog extends Model
      */
     public function getDurationHumanAttribute()
     {
-        if (!$this->duration_seconds) {
+        if (! $this->duration_seconds) {
             return 'N/A';
         }
 
         if ($this->duration_seconds < 60) {
-            return $this->duration_seconds . ' วินาที';
+            return $this->duration_seconds.' วินาที';
         }
 
         $minutes = floor($this->duration_seconds / 60);
@@ -77,7 +77,7 @@ class SystemResetLog extends Model
      */
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'warning',
             'processing' => 'info',
             'completed' => 'success',
@@ -91,7 +91,7 @@ class SystemResetLog extends Model
      */
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอดำเนินการ',
             'processing' => 'กำลังดำเนินการ',
             'completed' => 'เสร็จสิ้น',

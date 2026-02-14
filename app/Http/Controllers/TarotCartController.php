@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TarotCartItem;
-use App\Models\TarotReadingCategory;
-use App\Models\TarotSpreadType;
+use App\Models\PaymentTransaction;
 use App\Models\TarotCard;
+use App\Models\TarotCartItem;
 use App\Models\TarotReading;
 use App\Models\TarotReadingCard;
+use App\Models\TarotReadingCategory;
+use App\Models\TarotSpreadType;
 use App\Models\TarotUserLimit;
-use App\Models\TarotSetting;
-use App\Models\PaymentTransaction;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class TarotCartController extends Controller
 {
@@ -215,7 +213,7 @@ class TarotCartController extends Controller
                     'payment_method' => $request->payment_method,
                     'status' => 'pending',
                     'type' => 'tarot_reading',
-                    'notes' => 'ค่าทำนายไพ่ทาโร่ต์ ' . count($readingIds) . ' รายการ',
+                    'notes' => 'ค่าทำนายไพ่ทาโร่ต์ '.count($readingIds).' รายการ',
                     'metadata' => [
                         'reading_ids' => $readingIds,
                         'type' => 'tarot_reading',
@@ -274,7 +272,7 @@ class TarotCartController extends Controller
             DB::rollBack();
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -294,7 +292,7 @@ class TarotCartController extends Controller
                 $card->upright_meaning_th;
 
             $interpretation .= "ตำแหน่ง: {$position}\n";
-            $interpretation .= "ไพ่: {$card->name_th}" . ($readingCard->is_reversed ? ' (กลับหัว)' : '') . "\n";
+            $interpretation .= "ไพ่: {$card->name_th}".($readingCard->is_reversed ? ' (กลับหัว)' : '')."\n";
             $interpretation .= "ความหมาย: {$meaning}\n\n";
         }
 
@@ -316,10 +314,11 @@ class TarotCartController extends Controller
         if ($transaction->status === 'completed') {
             // ถ้าชำระเงินแล้ว redirect ไปหน้าผลการทำนาย
             $readingIds = $transaction->metadata['reading_ids'] ?? [];
-            if (!empty($readingIds)) {
+            if (! empty($readingIds)) {
                 return redirect()->route('tarot.reading.show', $readingIds[0])
                     ->with('success', 'ชำระเงินสำเร็จแล้ว!');
             }
+
             return redirect()->route('tarot.cart.index')
                 ->with('info', 'รายการนี้ชำระเงินแล้ว');
         }
@@ -349,7 +348,7 @@ class TarotCartController extends Controller
         $readingIds = $transaction->metadata['reading_ids'] ?? [];
         $redirectUrl = null;
 
-        if ($completed && !empty($readingIds)) {
+        if ($completed && ! empty($readingIds)) {
             $redirectUrl = route('tarot.reading.show', $readingIds[0]);
         }
 

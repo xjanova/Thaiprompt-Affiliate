@@ -26,7 +26,7 @@ class FoodProductResource extends JsonResource
             'passport_url' => $this->passport_url,
 
             // Farmer info
-            'farmer' => $this->whenLoaded('farmer', fn() => [
+            'farmer' => $this->whenLoaded('farmer', fn () => [
                 'id' => $this->farmer->id,
                 'name' => $this->farmer->name,
             ]),

@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
@@ -33,26 +32,25 @@ class MobileAuthController extends Controller
      * Token expiry times (seconds)
      */
     private const LOGIN_TOKEN_EXPIRY = 300;     // 5 นาที
+
     private const AUTH_CODE_EXPIRY = 60;        // 1 นาที
 
     /**
      * Rate limiting
      */
     private const MAX_INIT_ATTEMPTS = 10;       // 10 ครั้งต่อนาที
+
     private const MAX_EXCHANGE_ATTEMPTS = 5;   // 5 ครั้งต่อนาที
 
     /**
      * Step 1: Initialize mobile login
      *
      * สร้าง login_token สำหรับเปิด WebBrowser
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function init(Request $request): JsonResponse
     {
         // Rate limiting
-        $key = 'mobile-auth-init:' . $request->ip();
+        $key = 'mobile-auth-init:'.$request->ip();
         if (RateLimiter::tooManyAttempts($key, self::MAX_INIT_ATTEMPTS)) {
             return response()->json([
                 'success' => false,
@@ -96,7 +94,7 @@ class MobileAuthController extends Controller
             ]);
 
             // สร้าง login URL
-            $loginUrl = url('/mobile-login') . '?' . http_build_query([
+            $loginUrl = url('/mobile-login').'?'.http_build_query([
                 'token' => $loginToken,
                 'state' => $state,
             ]);
@@ -130,14 +128,11 @@ class MobileAuthController extends Controller
 
     /**
      * Step 5: Exchange auth_code for access_token
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function exchange(Request $request): JsonResponse
     {
         // Rate limiting
-        $key = 'mobile-auth-exchange:' . $request->ip();
+        $key = 'mobile-auth-exchange:'.$request->ip();
         if (RateLimiter::tooManyAttempts($key, self::MAX_EXCHANGE_ATTEMPTS)) {
             return response()->json([
                 'success' => false,
@@ -169,10 +164,11 @@ class MobileAuthController extends Controller
                 ->whereNull('used_at')
                 ->first();
 
-            if (!$mobileAuthToken) {
+            if (! $mobileAuthToken) {
                 Log::warning('Mobile auth exchange: invalid auth_code', [
                     'ip' => $request->ip(),
                 ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid or expired auth code',
@@ -182,6 +178,7 @@ class MobileAuthController extends Controller
             // ตรวจสอบ expiry
             if ($mobileAuthToken->auth_code_expires_at < now()) {
                 $mobileAuthToken->delete();
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Auth code expired',
@@ -190,11 +187,12 @@ class MobileAuthController extends Controller
 
             // ตรวจสอบ PKCE code_verifier
             $expectedChallenge = $this->generateCodeChallenge($request->code_verifier);
-            if (!hash_equals($mobileAuthToken->code_challenge, $expectedChallenge)) {
+            if (! hash_equals($mobileAuthToken->code_challenge, $expectedChallenge)) {
                 Log::warning('Mobile auth exchange: PKCE verification failed', [
                     'ip' => $request->ip(),
                     'device_id' => $mobileAuthToken->device_id,
                 ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid code verifier',
@@ -208,7 +206,7 @@ class MobileAuthController extends Controller
 
             // ดึง user
             $user = User::find($mobileAuthToken->user_id);
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User not found',
@@ -216,7 +214,7 @@ class MobileAuthController extends Controller
             }
 
             // สร้าง API token
-            $tokenName = 'mobile-app-' . substr($mobileAuthToken->device_id, 0, 8);
+            $tokenName = 'mobile-app-'.substr($mobileAuthToken->device_id, 0, 8);
             $apiToken = $user->createToken($tokenName)->plainTextToken;
 
             Log::info('Mobile auth exchange success', [
@@ -264,9 +262,6 @@ class MobileAuthController extends Controller
      * Check login status (for polling)
      *
      * แอพสามารถเรียกเพื่อเช็คว่า user login สำเร็จหรือยัง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function status(Request $request): JsonResponse
     {
@@ -287,7 +282,7 @@ class MobileAuthController extends Controller
             ->where('state', $request->state)
             ->first();
 
-        if (!$mobileAuthToken) {
+        if (! $mobileAuthToken) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid token',
@@ -297,6 +292,7 @@ class MobileAuthController extends Controller
         // ตรวจสอบ expiry
         if ($mobileAuthToken->login_token_expires_at < now()) {
             $mobileAuthToken->delete();
+
             return response()->json([
                 'success' => false,
                 'status' => 'expired',
@@ -322,9 +318,6 @@ class MobileAuthController extends Controller
 
     /**
      * Cancel mobile login
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function cancel(Request $request): JsonResponse
     {
@@ -353,13 +346,11 @@ class MobileAuthController extends Controller
 
     /**
      * Generate PKCE code challenge (S256)
-     *
-     * @param string $codeVerifier
-     * @return string
      */
     private function generateCodeChallenge(string $codeVerifier): string
     {
         $hash = hash('sha256', $codeVerifier, true);
+
         return rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
     }
 }

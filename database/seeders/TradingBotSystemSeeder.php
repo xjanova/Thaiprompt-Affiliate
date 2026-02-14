@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\TradingBotPackage;
 use App\Models\TradingExchange;
 use App\Models\TradingStrategy;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class TradingBotSystemSeeder extends Seeder
@@ -254,8 +254,9 @@ class TradingBotSystemSeeder extends Seeder
         // Get first user or create a demo user
         $user = \App\Models\User::first();
 
-        if (!$user) {
+        if (! $user) {
             $this->command->warn('⚠️ No users found. Create a user first to seed strategies.');
+
             return;
         }
 
@@ -263,7 +264,7 @@ class TradingBotSystemSeeder extends Seeder
             [
                 'user_id' => $user->id,
                 'name' => 'RSI + MACD Combo',
-                'slug' => 'rsi-macd-combo-' . Str::random(8),
+                'slug' => 'rsi-macd-combo-'.Str::random(8),
                 'description' => 'กลยุทธ์ยอดนิยม ใช้ RSI และ MACD ร่วมกันเพื่อหาจุด Entry ที่แม่นยำ',
                 'strategy_type' => 'trend_following',
                 'indicators' => [
@@ -287,7 +288,7 @@ class TradingBotSystemSeeder extends Seeder
             [
                 'user_id' => $user->id,
                 'name' => 'AI-Powered LSTM Strategy',
-                'slug' => 'ai-lstm-strategy-' . Str::random(8),
+                'slug' => 'ai-lstm-strategy-'.Str::random(8),
                 'description' => 'กลยุทธ์ AI ที่ใช้ LSTM Neural Network วิเคราะห์ตลาด พร้อม Backtesting 85% Win Rate',
                 'strategy_type' => 'ai_ml',
                 'indicators' => [
@@ -314,7 +315,7 @@ class TradingBotSystemSeeder extends Seeder
             [
                 'user_id' => $user->id,
                 'name' => 'Grid Trading Bot',
-                'slug' => 'grid-trading-bot-' . Str::random(8),
+                'slug' => 'grid-trading-bot-'.Str::random(8),
                 'description' => 'Grid Trading สำหรับตลาด Sideways กำไรจากความผันผวน',
                 'strategy_type' => 'grid_trading',
                 'indicators' => [

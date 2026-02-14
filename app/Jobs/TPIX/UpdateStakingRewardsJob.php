@@ -16,6 +16,7 @@ class UpdateStakingRewardsJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 300;
 
     protected ?int $poolId;
@@ -23,7 +24,7 @@ class UpdateStakingRewardsJob implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param int|null $poolId If null, update all pools
+     * @param  int|null  $poolId  If null, update all pools
      */
     public function __construct(?int $poolId = null)
     {
@@ -53,7 +54,7 @@ class UpdateStakingRewardsJob implements ShouldQueue
             Log::info("Updated rewards for {$totalUpdated} stakes across {$pools->count()} pools");
 
         } catch (\Exception $e) {
-            Log::error('Failed to update staking rewards: ' . $e->getMessage());
+            Log::error('Failed to update staking rewards: '.$e->getMessage());
             throw $e;
         }
     }
@@ -75,7 +76,7 @@ class UpdateStakingRewardsJob implements ShouldQueue
                 $stake->updateRewards();
 
                 // Check if stake is unlocked and send notification
-                if ($stake->isUnlocked() && !$stake->unlock_notified_at) {
+                if ($stake->isUnlocked() && ! $stake->unlock_notified_at) {
                     dispatch(new \App\Jobs\TPIX\SendStakeUnlockedNotificationJob($stake->id));
                     $stake->update(['unlock_notified_at' => now()]);
                 }
@@ -83,7 +84,8 @@ class UpdateStakingRewardsJob implements ShouldQueue
                 $count++;
 
             } catch (\Exception $e) {
-                Log::error("Failed to update stake {$stake->id}: " . $e->getMessage());
+                Log::error("Failed to update stake {$stake->id}: ".$e->getMessage());
+
                 continue;
             }
         }
@@ -101,6 +103,6 @@ class UpdateStakingRewardsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error('Staking rewards update failed permanently: ' . $exception->getMessage());
+        Log::error('Staking rewards update failed permanently: '.$exception->getMessage());
     }
 }

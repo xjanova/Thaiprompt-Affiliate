@@ -22,7 +22,7 @@ return new class extends Migration
                 'commission',   // เพิ่ม commission rate
                 'multiplier',   // ตัวคูณรายได้
                 'privilege',    // สิทธิพิเศษ
-                'reward'        // รางวัล
+                'reward',        // รางวัล
             ])->default('one_time');
 
             $table->string('name'); // ชื่อโบนัส

@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * Template สำหรับสร้างคูปองส่วนลดอัตโนมัติ
      * ใช้ในระบบรางวัลการสมัครสมาชิก
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง coupon_templates
-     *
-     * @return void
      */
     public function down(): void
     {

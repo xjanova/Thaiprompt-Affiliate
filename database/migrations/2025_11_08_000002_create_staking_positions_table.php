@@ -52,7 +52,7 @@ return new class extends Migration
                 'matured',      // ครบกำหนดแล้ว
                 'withdrawn',    // ถอนเงินแล้ว
                 'cancelled',    // ยกเลิก
-                'early_withdrawn' // ถอนก่อนกำหนด
+                'early_withdrawn', // ถอนก่อนกำหนด
             ])->default('pending');
 
             // คุณสมบัติพิเศษ

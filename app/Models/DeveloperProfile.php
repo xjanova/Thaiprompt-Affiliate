@@ -42,7 +42,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read User $user
  * @property-read User|null $approver
  * @property-read \Illuminate\Database\Eloquent\Collection|SoftwareProduct[] $products
@@ -113,8 +112,11 @@ class DeveloperProfile extends Model
      * สถานะที่เป็นไปได้
      */
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_APPROVED = 'approved';
+
     public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_SUSPENDED = 'suspended';
 
     /**
@@ -124,8 +126,6 @@ class DeveloperProfile extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -134,8 +134,6 @@ class DeveloperProfile extends Model
 
     /**
      * ความสัมพันธ์กับผู้อนุมัติ (Admin)
-     *
-     * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
@@ -144,8 +142,6 @@ class DeveloperProfile extends Model
 
     /**
      * ความสัมพันธ์กับ Software Products
-     *
-     * @return HasMany
      */
     public function products(): HasMany
     {
@@ -155,7 +151,7 @@ class DeveloperProfile extends Model
     /**
      * Scope: ดึงเฉพาะที่อนุมัติแล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeApproved($query)
@@ -166,7 +162,7 @@ class DeveloperProfile extends Model
     /**
      * Scope: ดึงเฉพาะที่รออนุมัติ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -177,7 +173,7 @@ class DeveloperProfile extends Model
     /**
      * Scope: ดึงเฉพาะที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -188,7 +184,7 @@ class DeveloperProfile extends Model
     /**
      * Scope: ดึงเฉพาะที่ยืนยัน KYC แล้ว
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVerified($query)
@@ -198,8 +194,6 @@ class DeveloperProfile extends Model
 
     /**
      * ตรวจสอบว่าสถานะเป็น Approved หรือไม่
-     *
-     * @return bool
      */
     public function isApproved(): bool
     {
@@ -208,8 +202,6 @@ class DeveloperProfile extends Model
 
     /**
      * ตรวจสอบว่าสถานะเป็น Pending หรือไม่
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -218,8 +210,6 @@ class DeveloperProfile extends Model
 
     /**
      * ตรวจสอบว่าสถานะเป็น Rejected หรือไม่
-     *
-     * @return bool
      */
     public function isRejected(): bool
     {
@@ -228,8 +218,6 @@ class DeveloperProfile extends Model
 
     /**
      * ตรวจสอบว่าสถานะเป็น Suspended หรือไม่
-     *
-     * @return bool
      */
     public function isSuspended(): bool
     {
@@ -238,12 +226,10 @@ class DeveloperProfile extends Model
 
     /**
      * ดึง badge สี HTML สำหรับสถานะ
-     *
-     * @return string
      */
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_APPROVED => '<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-bold">✅ อนุมัติแล้ว</span>',
             self::STATUS_PENDING => '<span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm font-bold">⏳ รออนุมัติ</span>',
             self::STATUS_REJECTED => '<span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-sm font-bold">❌ ปฏิเสธ</span>',
@@ -255,7 +241,7 @@ class DeveloperProfile extends Model
     /**
      * คำนวณค่าคอมมิชชั่นที่นักพัฒนาได้รับจากยอดขาย
      *
-     * @param float $saleAmount ยอดขาย
+     * @param  float  $saleAmount  ยอดขาย
      * @return float ค่าคอมมิชชั่นที่ได้รับ
      */
     public function calculateCommission(float $saleAmount): float
@@ -266,21 +252,21 @@ class DeveloperProfile extends Model
     /**
      * คำนวณค่าคอมมิชชั่นของแพลตฟอร์ม
      *
-     * @param float $saleAmount ยอดขาย
+     * @param  float  $saleAmount  ยอดขาย
      * @return float ค่าคอมมิชชั่นของแพลตฟอร์ม
      */
     public function calculatePlatformCommission(float $saleAmount): float
     {
         $developerCommission = $this->calculateCommission($saleAmount);
+
         return $saleAmount - $developerCommission;
     }
 
     /**
      * อัพเดทสถิติ
      *
-     * @param int $sales จำนวนการขายที่เพิ่ม
-     * @param float $earnings รายได้ที่เพิ่ม
-     * @return void
+     * @param  int  $sales  จำนวนการขายที่เพิ่ม
+     * @param  float  $earnings  รายได้ที่เพิ่ม
      */
     public function updateStats(int $sales = 1, float $earnings = 0): void
     {

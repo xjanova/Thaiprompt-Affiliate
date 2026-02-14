@@ -30,7 +30,7 @@ class MlmPlanSeeder extends Seeder
         // เพราะ mlm_members.mlm_plan_id เป็น NOT NULL
         $defaultPlan = MlmPlan::where('slug', 'default-plan')->first();
 
-        if (!$defaultPlan) {
+        if (! $defaultPlan) {
             $defaultPlan = MlmPlan::create([
                 'name' => 'Default Plan',
                 'name_th' => 'แผนมาตรฐาน',
@@ -46,14 +46,14 @@ class MlmPlanSeeder extends Seeder
                 'joining_fee' => 0,
                 'requires_joining_fee' => false,
             ]);
-            $this->command->info('✅ สร้าง Default Plan สำเร็จ: ' . $defaultPlan->name);
+            $this->command->info('✅ สร้าง Default Plan สำเร็จ: '.$defaultPlan->name);
         } else {
             // อัพเดทให้เป็น default
             $defaultPlan->update([
                 'is_active' => true,
                 'is_default' => true,
             ]);
-            $this->command->info('ℹ️  Default Plan มีอยู่แล้ว: ' . $defaultPlan->name);
+            $this->command->info('ℹ️  Default Plan มีอยู่แล้ว: '.$defaultPlan->name);
         }
 
         $this->command->info('ℹ️  ระบบใช้แผนคอมมิชชัน Global ที่ฮาร์ดโค้ดในโค้ด (MlmGlobalSettings)');

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserDailyStreak;
 use App\Models\DailyRewardClaim;
 use App\Models\GameMission;
+use App\Models\UserDailyStreak;
 use App\Models\UserMissionProgress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -145,7 +145,7 @@ class RewardController extends Controller
                 $query->where('user_id', $user->id);
             }])
             ->get()
-            ->map(function ($mission) use ($user) {
+            ->map(function ($mission) {
                 $progress = $mission->userProgress->first();
 
                 return [

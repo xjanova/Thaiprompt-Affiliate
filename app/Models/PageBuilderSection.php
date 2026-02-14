@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PageBuilderSection extends Model
 {
@@ -106,6 +106,6 @@ class PageBuilderSection extends Model
     public function getComponentName(): string
     {
         // Convert snake_case to kebab-case for component names
-        return 'page-builder.sections.' . str_replace('_', '-', $this->section_type);
+        return 'page-builder.sections.'.str_replace('_', '-', $this->section_type);
     }
 }

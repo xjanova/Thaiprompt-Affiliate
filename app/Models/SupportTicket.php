@@ -99,8 +99,6 @@ class SupportTicket extends Model
 
     /**
      * สร้างเลขที่ ticket
-     *
-     * @return string
      */
     public static function generateTicketNumber(): string
     {
@@ -117,7 +115,7 @@ class SupportTicket extends Model
             $newNumber = 1;
         }
 
-        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $prefix.$date.str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     // =====================================================
@@ -126,8 +124,6 @@ class SupportTicket extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้สร้าง ticket)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -136,8 +132,6 @@ class SupportTicket extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้รับผิดชอบ)
-     *
-     * @return BelongsTo
      */
     public function assignedTo(): BelongsTo
     {
@@ -146,8 +140,6 @@ class SupportTicket extends Model
 
     /**
      * ข้อความใน ticket
-     *
-     * @return HasMany
      */
     public function messages(): HasMany
     {
@@ -196,12 +188,10 @@ class SupportTicket extends Model
 
     /**
      * ชื่อหมวดหมู่ภาษาไทย
-     *
-     * @return string
      */
     public function getCategoryTextAttribute(): string
     {
-        return match($this->category) {
+        return match ($this->category) {
             'general' => 'ทั่วไป',
             'account' => 'บัญชี',
             'payment' => 'การชำระเงิน',
@@ -216,12 +206,10 @@ class SupportTicket extends Model
 
     /**
      * ชื่อ priority ภาษาไทย
-     *
-     * @return string
      */
     public function getPriorityTextAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'ต่ำ',
             'medium' => 'ปานกลาง',
             'high' => 'สูง',
@@ -232,12 +220,10 @@ class SupportTicket extends Model
 
     /**
      * ชื่อสถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusTextAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'open' => 'เปิดใหม่',
             'in_progress' => 'กำลังดำเนินการ',
             'waiting' => 'รอผู้ใช้ตอบกลับ',
@@ -249,8 +235,6 @@ class SupportTicket extends Model
 
     /**
      * จำนวนข้อความทั้งหมด
-     *
-     * @return int
      */
     public function getMessageCountAttribute(): int
     {
@@ -259,8 +243,6 @@ class SupportTicket extends Model
 
     /**
      * มีข้อความที่ยังไม่อ่านจากแอดมินหรือไม่
-     *
-     * @return bool
      */
     public function getHasUnreadAdminMessageAttribute(): bool
     {
@@ -276,12 +258,6 @@ class SupportTicket extends Model
 
     /**
      * เพิ่มข้อความ
-     *
-     * @param int $userId
-     * @param string $message
-     * @param bool $isFromAdmin
-     * @param array|null $attachments
-     * @return SupportTicketMessage
      */
     public function addMessage(int $userId, string $message, bool $isFromAdmin = false, ?array $attachments = null): SupportTicketMessage
     {
@@ -305,9 +281,6 @@ class SupportTicket extends Model
 
     /**
      * มอบหมายให้แอดมิน
-     *
-     * @param int $adminId
-     * @return void
      */
     public function assignTo(int $adminId): void
     {
@@ -319,8 +292,6 @@ class SupportTicket extends Model
 
     /**
      * เปลี่ยนสถานะเป็น resolved
-     *
-     * @return void
      */
     public function markAsResolved(): void
     {
@@ -332,8 +303,6 @@ class SupportTicket extends Model
 
     /**
      * ปิด ticket
-     *
-     * @return void
      */
     public function close(): void
     {
@@ -345,10 +314,6 @@ class SupportTicket extends Model
 
     /**
      * ให้คะแนนความพึงพอใจ
-     *
-     * @param int $rating
-     * @param string|null $comment
-     * @return void
      */
     public function rate(int $rating, ?string $comment = null): void
     {

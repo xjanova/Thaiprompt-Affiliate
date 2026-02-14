@@ -30,12 +30,13 @@ class VideoMissionController extends Controller
         $user = auth()->user();
 
         // ตรวจสอบว่าระบบเปิดใช้งานหรือไม่
-        if (!VideoMissionSetting::isSystemEnabled()) {
+        if (! VideoMissionSetting::isSystemEnabled()) {
             return view('user.video-missions.disabled');
         }
 
         if (VideoMissionSetting::isMaintenanceMode()) {
             $message = VideoMissionSetting::get('maintenance_message', 'ระบบกำลังปรับปรุง');
+
             return view('user.video-missions.maintenance', compact('message'));
         }
 
@@ -111,7 +112,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายการภารกิจทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function missions(Request $request)
@@ -157,7 +157,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายละเอียดภารกิจ
      *
-     * @param VideoMission $mission
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function show(VideoMission $mission)
@@ -177,7 +176,7 @@ class VideoMissionController extends Controller
         $canDoNow = $mission->canUserDoNow($user);
 
         // ถ้าไม่มีสิทธิ์เลย (ไม่ใช่แค่รอ cooldown) ให้ redirect กลับไปหน้า index
-        if (!$eligibility['eligible'] && !$canDoNow['can']) {
+        if (! $eligibility['eligible'] && ! $canDoNow['can']) {
             return redirect()
                 ->route('user.video-missions.index')
                 ->with('error', $eligibility['reason'] ?? $canDoNow['reason'] ?? 'คุณไม่มีสิทธิ์เข้าถึงภารกิจนี้');
@@ -209,7 +208,6 @@ class VideoMissionController extends Controller
     /**
      * เริ่มดูวิดีโอ
      *
-     * @param VideoMission $mission
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function watch(VideoMission $mission)
@@ -224,7 +222,7 @@ class VideoMissionController extends Controller
 
         // ตรวจสอบสิทธิ์
         $eligibility = $mission->checkUserEligibility($user);
-        if (!$eligibility['eligible']) {
+        if (! $eligibility['eligible']) {
             return redirect()
                 ->route('user.video-missions.show', $mission)
                 ->with('error', $eligibility['reason']);
@@ -233,7 +231,7 @@ class VideoMissionController extends Controller
         // ตรวจสอบ rank limit
         $rankLimit = VideoMissionRankLimit::getForRank($user->current_rank_id ?? 0);
         $limits = $rankLimit->checkAllLimits($user);
-        if (!$limits['can_do_more']) {
+        if (! $limits['can_do_more']) {
             return redirect()
                 ->route('user.video-missions.show', $mission)
                 ->with('error', $limits['reason']);
@@ -291,8 +289,6 @@ class VideoMissionController extends Controller
     /**
      * บันทึก heartbeat
      *
-     * @param Request $request
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\JsonResponse
      */
     public function heartbeat(Request $request, VideoMissionCompletion $completion)
@@ -303,7 +299,7 @@ class VideoMissionController extends Controller
         }
 
         // ตรวจสอบ session
-        if (!$completion->isSessionValid()) {
+        if (! $completion->isSessionValid()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Session expired',
@@ -333,8 +329,6 @@ class VideoMissionController extends Controller
     /**
      * บันทึก event (tab switch, pause, seek, devtools, etc.)
      *
-     * @param Request $request
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\JsonResponse
      */
     public function recordEvent(Request $request, VideoMissionCompletion $completion)
@@ -389,7 +383,7 @@ class VideoMissionController extends Controller
                 // อัพเดทสถานะเป็น failed
                 $completion->update([
                     'status' => 'failed',
-                    'verification_notes' => 'ตรวจพบการใช้ DevTools: ' . ($request->method ?? 'unknown'),
+                    'verification_notes' => 'ตรวจพบการใช้ DevTools: '.($request->method ?? 'unknown'),
                 ]);
 
                 // ตรวจสอบจำนวนครั้งที่โกงและแบนถ้าเกิน threshold
@@ -413,6 +407,7 @@ class VideoMissionController extends Controller
 
                 // เตือนถ้าใกล้ถึง threshold
                 $remaining = $banThreshold - $cheatCount;
+
                 return response()->json([
                     'success' => true,
                     'warning' => true,
@@ -434,8 +429,6 @@ class VideoMissionController extends Controller
     /**
      * ทำภารกิจเสร็จ
      *
-     * @param Request $request
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\JsonResponse
      */
     public function complete(Request $request, VideoMissionCompletion $completion)
@@ -462,7 +455,7 @@ class VideoMissionController extends Controller
         $verified = false;
         $rewardGiven = false;
 
-        if (!$mission->verify_completion) {
+        if (! $mission->verify_completion) {
             // Auto-verify
             $verified = $completion->verify();
 
@@ -499,7 +492,6 @@ class VideoMissionController extends Controller
     /**
      * ยกเลิกการทำภารกิจ
      *
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\JsonResponse
      */
     public function cancel(VideoMissionCompletion $completion)
@@ -508,7 +500,7 @@ class VideoMissionController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        if (!in_array($completion->status, ['started', 'watching', 'paused'])) {
+        if (! in_array($completion->status, ['started', 'watching', 'paused'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถยกเลิกได้',
@@ -531,7 +523,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงประวัติการทำภารกิจ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function history(Request $request)
@@ -584,7 +575,7 @@ class VideoMissionController extends Controller
     /**
      * ดึง query สำหรับภารกิจที่ user สามารถทำได้
      *
-     * @param \App\Models\User $user
+     * @param  \App\Models\User  $user
      * @return \Illuminate\Database\Eloquent\Builder
      */
     protected function getAvailableMissions($user)
@@ -610,8 +601,6 @@ class VideoMissionController extends Controller
 
     /**
      * ตรวจจับประเภทอุปกรณ์
-     *
-     * @return string
      */
     protected function detectDeviceType(): string
     {
@@ -621,6 +610,7 @@ class VideoMissionController extends Controller
             if (preg_match('/iPad|Tablet/', $agent)) {
                 return 'tablet';
             }
+
             return 'mobile';
         }
 
@@ -629,9 +619,6 @@ class VideoMissionController extends Controller
 
     /**
      * ประมวลผลรางวัล (เพิ่มเข้า wallet/coins)
-     *
-     * @param VideoMissionCompletion $completion
-     * @return void
      */
     protected function processRewards(VideoMissionCompletion $completion): void
     {
@@ -648,14 +635,14 @@ class VideoMissionController extends Controller
 
                     // บันทึก transaction
                     $wallet->transactions()->create([
-                        'transaction_id' => 'TXN' . strtoupper(uniqid()),
+                        'transaction_id' => 'TXN'.strtoupper(uniqid()),
                         'type' => 'bonus',
                         'amount' => $completion->reward_money,
                         'balance_before' => $wallet->balance - $completion->reward_money,
                         'balance_after' => $wallet->balance,
                         'reference_type' => VideoMissionCompletion::class,
                         'reference_id' => $completion->id,
-                        'description' => 'รางวัลจากภารกิจดูคลิป: ' . $completion->mission->display_title,
+                        'description' => 'รางวัลจากภารกิจดูคลิป: '.$completion->mission->display_title,
                         'status' => 'completed',
                     ]);
                 });
@@ -674,7 +661,7 @@ class VideoMissionController extends Controller
                 'mission_reward',
                 VideoMissionCompletion::class,
                 $completion->id,
-                'รางวัลจากภารกิจ: ' . $completion->mission->display_title
+                'รางวัลจากภารกิจ: '.$completion->mission->display_title
             );
         }
 
@@ -699,8 +686,8 @@ class VideoMissionController extends Controller
     /**
      * เพิ่มข้อมูลสิทธิ์การทำภารกิจให้กับแต่ละ mission
      *
-     * @param \Illuminate\Support\Collection $missions
-     * @param \App\Models\User $user
+     * @param  \Illuminate\Support\Collection  $missions
+     * @param  \App\Models\User  $user
      * @return \Illuminate\Support\Collection
      */
     protected function attachEligibilityInfo($missions, $user)
@@ -713,8 +700,8 @@ class VideoMissionController extends Controller
     /**
      * เพิ่มข้อมูลสิทธิ์ให้ mission เดียว
      *
-     * @param \App\Models\VideoMission $mission
-     * @param \App\Models\User $user
+     * @param  \App\Models\VideoMission  $mission
+     * @param  \App\Models\User  $user
      * @return \App\Models\VideoMission
      */
     protected function addEligibilityToMission($mission, $user)

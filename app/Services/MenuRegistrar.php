@@ -9,6 +9,7 @@ namespace App\Services;
  * ทำให้แต่ละฟีเจอร์สามารถ register เมนูของตัวเองได้
  *
  * @version 3.0.0
+ *
  * @since 2025-11-15
  */
 class MenuRegistrar
@@ -34,15 +35,14 @@ class MenuRegistrar
     /**
      * Register Menu Provider
      *
-     * @param object $provider Provider instance ที่มี method registerMenus()
-     * @return void
+     * @param  object  $provider  Provider instance ที่มี method registerMenus()
      *
      * @example
      * $registrar->registerProvider(new GameMenuProvider());
      */
     public function registerProvider($provider): void
     {
-        if (!method_exists($provider, 'registerMenus')) {
+        if (! method_exists($provider, 'registerMenus')) {
             throw new \InvalidArgumentException(
                 'Provider must have registerMenus() method'
             );
@@ -66,9 +66,8 @@ class MenuRegistrar
     /**
      * Register เมนูโดยตรง (ไม่ผ่าน Provider)
      *
-     * @param string $role Role ที่จะเพิ่มเมนู
-     * @param array $menus รายการเมนู
-     * @return void
+     * @param  string  $role  Role ที่จะเพิ่มเมนู
+     * @param  array  $menus  รายการเมนู
      *
      * @example
      * $registrar->registerMenus('admin', [
@@ -77,7 +76,7 @@ class MenuRegistrar
      */
     public function registerMenus(string $role, array $menus): void
     {
-        if (!isset($this->registeredMenus[$role])) {
+        if (! isset($this->registeredMenus[$role])) {
             $this->registeredMenus[$role] = [];
         }
 
@@ -90,7 +89,7 @@ class MenuRegistrar
     /**
      * ดึงเมนูทั้งหมดสำหรับ role ที่กำหนด
      *
-     * @param string $role Role ของผู้ใช้
+     * @param  string  $role  Role ของผู้ใช้
      * @return array เมนูทั้งหมด
      */
     public function getMenusForRole(string $role): array
@@ -100,8 +99,6 @@ class MenuRegistrar
 
     /**
      * ดึง providers ทั้งหมดที่ register แล้ว
-     *
-     * @return array
      */
     public function getProviders(): array
     {
@@ -111,8 +108,7 @@ class MenuRegistrar
     /**
      * ล้างเมนูทั้งหมดสำหรับ role ที่กำหนด
      *
-     * @param string $role Role ที่จะล้าง
-     * @return void
+     * @param  string  $role  Role ที่จะล้าง
      */
     public function clearMenus(string $role): void
     {
@@ -121,8 +117,6 @@ class MenuRegistrar
 
     /**
      * ล้างเมนูทั้งหมดทุก role
-     *
-     * @return void
      */
     public function clearAllMenus(): void
     {
@@ -136,9 +130,6 @@ class MenuRegistrar
 
     /**
      * นับจำนวนเมนูที่ register แล้วสำหรับ role ที่กำหนด
-     *
-     * @param string $role
-     * @return int
      */
     public function count(string $role): int
     {
@@ -147,12 +138,9 @@ class MenuRegistrar
 
     /**
      * ตรวจสอบว่ามีเมนูสำหรับ role หรือไม่
-     *
-     * @param string $role
-     * @return bool
      */
     public function hasMenus(string $role): bool
     {
-        return !empty($this->registeredMenus[$role]);
+        return ! empty($this->registeredMenus[$role]);
     }
 }

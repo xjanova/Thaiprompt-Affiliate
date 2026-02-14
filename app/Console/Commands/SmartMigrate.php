@@ -3,13 +3,13 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schema;
 
 class SmartMigrate extends Command
 {
     protected $signature = 'migrate:smart {--force : Force the operation to run in production}';
+
     protected $description = 'Smart migration system that handles existing tables';
 
     private $stats = [
@@ -27,8 +27,9 @@ class SmartMigrate extends Command
         $this->newLine();
 
         // Check database connection
-        if (!$this->checkDatabaseConnection()) {
+        if (! $this->checkDatabaseConnection()) {
             $this->error('✗ Database connection failed');
+
             return 1;
         }
         $this->info('✓ Database connection OK');
@@ -39,10 +40,11 @@ class SmartMigrate extends Command
 
         if (empty($pending)) {
             $this->info('✓ No pending migrations');
+
             return 0;
         }
 
-        $this->info("Found " . count($pending) . " pending migration(s)");
+        $this->info('Found '.count($pending).' pending migration(s)');
         $this->newLine();
 
         foreach ($pending as $migration) {
@@ -62,9 +64,11 @@ class SmartMigrate extends Command
     {
         try {
             DB::connection()->getPdo();
+
             return true;
         } catch (\Exception $e) {
             $this->error($e->getMessage());
+
             return false;
         }
     }
@@ -82,7 +86,7 @@ class SmartMigrate extends Command
                 ->where('migration', $migrationName)
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 $migrations[] = [
                     'name' => $migrationName,
                     'file' => $file,
@@ -100,9 +104,10 @@ class SmartMigrate extends Command
         // Detect table name from migration filename
         $tableName = $this->extractTableName($migration['name']);
 
-        if (!$tableName) {
-            $this->warn("  ⚠ Could not detect table name, running normal migration");
+        if (! $tableName) {
+            $this->warn('  ⚠ Could not detect table name, running normal migration');
             $this->runNormalMigration($migration);
+
             return;
         }
 
@@ -137,8 +142,9 @@ class SmartMigrate extends Command
         $expectedColumns = $this->parseExpectedColumns($migration['file']);
 
         if (empty($expectedColumns)) {
-            $this->warn("  ⚠ Could not parse migration, skipping");
+            $this->warn('  ⚠ Could not parse migration, skipping');
             $this->stats['tables_skipped']++;
+
             return;
         }
 
@@ -149,13 +155,14 @@ class SmartMigrate extends Command
         $missingColumns = array_diff_key($expectedColumns, $existingColumns);
 
         if (empty($missingColumns)) {
-            $this->info("  ✓ Schema up to date (skipped)");
+            $this->info('  ✓ Schema up to date (skipped)');
             $this->stats['tables_skipped']++;
+
             return;
         }
 
         // Add missing columns
-        $this->line("  → Adding " . count($missingColumns) . " missing column(s)...");
+        $this->line('  → Adding '.count($missingColumns).' missing column(s)...');
 
         foreach ($missingColumns as $columnName => $columnDef) {
             if ($this->addColumn($tableName, $columnName, $columnDef)) {
@@ -175,10 +182,10 @@ class SmartMigrate extends Command
         $this->line("  → Creating new table '{$tableName}'...");
 
         if ($this->runNormalMigration($migration)) {
-            $this->info("  ✓ Table created successfully");
+            $this->info('  ✓ Table created successfully');
             $this->stats['tables_created']++;
         } else {
-            $this->error("  ✗ Failed to create table");
+            $this->error('  ✗ Failed to create table');
             $this->stats['errors'][] = "Failed to create table {$tableName}";
         }
     }
@@ -300,7 +307,8 @@ class SmartMigrate extends Command
 
             return true;
         } catch (\Exception $e) {
-            $this->error("  Error: " . $e->getMessage());
+            $this->error('  Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -315,12 +323,14 @@ class SmartMigrate extends Command
 
             if (is_object($migrationClass) && method_exists($migrationClass, 'up')) {
                 $migrationClass->up();
+
                 return true;
             }
 
             return false;
         } catch (\Exception $e) {
-            $this->error("  Error: " . $e->getMessage());
+            $this->error('  Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -342,7 +352,7 @@ class SmartMigrate extends Command
         }
 
         $this->newLine();
-        $this->info("✓ Marked " . count($migrations) . " migration(s) as ran (batch: {$nextBatch})");
+        $this->info('✓ Marked '.count($migrations)." migration(s) as ran (batch: {$nextBatch})");
     }
 
     private function showSummary(): void
@@ -354,7 +364,7 @@ class SmartMigrate extends Command
         $this->line("  • Tables skipped: {$this->stats['tables_skipped']}");
         $this->line("  • Columns added: {$this->stats['columns_added']}");
 
-        if (!empty($this->stats['errors'])) {
+        if (! empty($this->stats['errors'])) {
             $this->newLine();
             $this->warn('⚠ Errors encountered:');
             foreach ($this->stats['errors'] as $error) {

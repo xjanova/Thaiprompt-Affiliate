@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 abstract class BaseExchangeConnector
 {
     protected string $baseUrl;
+
     protected ?TradingAccount $account = null;
 
     /**
@@ -17,6 +18,7 @@ abstract class BaseExchangeConnector
     public function setAccount(TradingAccount $account): self
     {
         $this->account = $account;
+
         return $this;
     }
 
@@ -82,7 +84,7 @@ abstract class BaseExchangeConnector
     protected function makeRequest(string $method, string $endpoint, array $params = [], bool $signed = false): array
     {
         try {
-            $url = $this->baseUrl . $endpoint;
+            $url = $this->baseUrl.$endpoint;
 
             if ($signed && $this->account) {
                 $params = $this->signRequest($params);
@@ -99,10 +101,9 @@ abstract class BaseExchangeConnector
                 return $response->json();
             }
 
-            throw new \Exception("API request failed: " . $response->body());
-
+            throw new \Exception('API request failed: '.$response->body());
         } catch (\Exception $e) {
-            Log::error("Exchange API error", [
+            Log::error('Exchange API error', [
                 'exchange' => static::class,
                 'endpoint' => $endpoint,
                 'error' => $e->getMessage(),
@@ -117,8 +118,8 @@ abstract class BaseExchangeConnector
      */
     protected function signRequest(array $params): array
     {
-        if (!$this->account) {
-            throw new \Exception("Trading account not set");
+        if (! $this->account) {
+            throw new \Exception('Trading account not set');
         }
 
         $params['timestamp'] = now()->timestamp * 1000;

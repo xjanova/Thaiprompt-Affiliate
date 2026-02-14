@@ -60,7 +60,7 @@ return new class extends Migration
                 'checked_out',       // Guest has checked out
                 'cancelled',         // Booking cancelled
                 'no_show',           // Guest didn't show up
-                'completed'          // Booking completed
+                'completed',          // Booking completed
             ])->default('pending');
 
             // Payment

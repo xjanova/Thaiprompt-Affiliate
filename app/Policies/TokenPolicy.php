@@ -33,7 +33,7 @@ class TokenPolicy
     public function create(User $user): bool
     {
         // Check if user has verified email
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             return false;
         }
 
@@ -86,12 +86,13 @@ class TokenPolicy
     public function transfer(User $user, TPIXToken $token): bool
     {
         // Can transfer if: token is deployed/active and user has balance
-        if (!in_array($token->status, ['deployed', 'active'])) {
+        if (! in_array($token->status, ['deployed', 'active'])) {
             return false;
         }
 
         // Check if user has balance
         $balance = $token->balances()->where('user_id', $user->id)->first();
+
         return $balance && $balance->available_balance > 0;
     }
 
@@ -115,6 +116,7 @@ class TokenPolicy
         }
 
         $balance = $token->balances()->where('user_id', $user->id)->first();
+
         return $balance && $balance->available_balance > 0;
     }
 }

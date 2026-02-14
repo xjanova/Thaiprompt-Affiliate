@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
-use App\Models\HotelFacility;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +22,7 @@ class SuperAdminHotelController extends Controller
         // Search
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('city', 'like', "%{$search}%")
                     ->orWhere('address', 'like', "%{$search}%");
@@ -39,7 +38,7 @@ class SuperAdminHotelController extends Controller
         if ($request->has('status')) {
             if ($request->status === 'active') {
                 $query->where('is_active', true);
-            } else if ($request->status === 'inactive') {
+            } elseif ($request->status === 'inactive') {
                 $query->where('is_active', false);
             }
         }
@@ -68,7 +67,7 @@ class SuperAdminHotelController extends Controller
         $hotels = $query->paginate($request->get('per_page', 20));
 
         // Add statistics for each hotel
-        $hotels->getCollection()->transform(function($hotel) {
+        $hotels->getCollection()->transform(function ($hotel) {
             $hotel->statistics = [
                 'total_bookings' => $hotel->bookings()->count(),
                 'total_revenue' => $hotel->bookings()
@@ -97,10 +96,10 @@ class SuperAdminHotelController extends Controller
             'owner',
             'facilities',
             'roomTypes',
-            'bookings' => function($query) {
+            'bookings' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);
             },
-            'reviews' => function($query) {
+            'reviews' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(10);
             },
         ])->findOrFail($id);
@@ -358,7 +357,7 @@ class SuperAdminHotelController extends Controller
     {
         $hotel = Hotel::findOrFail($id);
 
-        $hotel->update(['is_active' => !$hotel->is_active]);
+        $hotel->update(['is_active' => ! $hotel->is_active]);
 
         return response()->json([
             'success' => true,
@@ -374,7 +373,7 @@ class SuperAdminHotelController extends Controller
     {
         $hotel = Hotel::findOrFail($id);
 
-        $hotel->update(['is_featured' => !$hotel->is_featured]);
+        $hotel->update(['is_featured' => ! $hotel->is_featured]);
 
         return response()->json([
             'success' => true,
@@ -397,7 +396,7 @@ class SuperAdminHotelController extends Controller
         $galleryImages = $hotel->gallery_images ?? [];
 
         // Remove image from array
-        $galleryImages = array_filter($galleryImages, function($image) use ($validated) {
+        $galleryImages = array_filter($galleryImages, function ($image) use ($validated) {
             return $image !== $validated['image_path'];
         });
 

@@ -45,6 +45,7 @@ class AddonListCommand extends Command
             }
 
             $this->line(json_encode($data, JSON_PRETTY_PRINT));
+
             return self::SUCCESS;
         }
 
@@ -55,7 +56,7 @@ class AddonListCommand extends Command
 
         // Check license status first
         $licenseStatus = $licenseService->status();
-        if (!$licenseStatus['is_active']) {
+        if (! $licenseStatus['is_active']) {
             $this->warn('⚠️  No active license found.');
             $this->newLine();
             $this->comment('Add-ons require an active TP-Affiliate Pro license.');
@@ -89,6 +90,7 @@ class AddonListCommand extends Command
             $this->newLine();
             $this->comment('To see available add-ons, run:');
             $this->line('  php artisan addon:list --available');
+
             return self::SUCCESS;
         }
 
@@ -119,7 +121,7 @@ class AddonListCommand extends Command
         $this->newLine();
 
         // Count summary
-        $activeCount = collect($addons)->filter(fn($a) => $a['activated'])->count();
+        $activeCount = collect($addons)->filter(fn ($a) => $a['activated'])->count();
         $totalCount = count($addons);
 
         $this->info("Active: {$activeCount}/{$totalCount}");
@@ -147,6 +149,7 @@ class AddonListCommand extends Command
 
         if (empty($addons)) {
             $this->warn('No add-ons available or could not connect to server.');
+
             return self::SUCCESS;
         }
 
@@ -178,7 +181,7 @@ class AddonListCommand extends Command
         );
 
         $this->newLine();
-        $this->info('Total available: ' . count($addons));
+        $this->info('Total available: '.count($addons));
         $this->newLine();
         $this->line('Purchase add-ons at: https://xman4289.com/addons');
 
@@ -200,6 +203,7 @@ class AddonListCommand extends Command
             $this->newLine();
             $this->comment('To enable an add-on, run:');
             $this->line('  php artisan addon:enable {slug} {license-key}');
+
             return self::SUCCESS;
         }
 
@@ -223,7 +227,7 @@ class AddonListCommand extends Command
         );
 
         $this->newLine();
-        $this->info('Total activated: ' . count($addons));
+        $this->info('Total activated: '.count($addons));
 
         return self::SUCCESS;
     }

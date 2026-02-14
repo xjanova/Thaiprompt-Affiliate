@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Seller;
 
-use App\Models\Product;
 use App\Http\Controllers\Controller;
-use App\Models\PosDevice;
-use App\Models\PosTransaction;
-use App\Models\PosTransactionItem;
-use App\Models\PosSession;
-use App\Models\PosCategory;
-use App\Models\PosSetting;
 use App\Models\PosAdvertisement;
 use App\Models\PosApiKey;
+use App\Models\PosCategory;
+use App\Models\PosDevice;
+use App\Models\PosSession;
+use App\Models\PosSetting;
 use App\Models\PosTerminal;
+use App\Models\PosTransaction;
+use App\Models\PosTransactionItem;
+use App\Models\Product;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +33,7 @@ class SellerPosController extends Controller
             'total_devices' => PosDevice::where('store_id', $store->id)->count(),
             'active_devices' => PosDevice::where('store_id', $store->id)->active()->count(),
             'online_devices' => PosDevice::where('store_id', $store->id)->online()->count(),
-            'active_sessions' => PosSession::whereHas('posDevice', fn($q) => $q->where('store_id', $store->id))->open()->count(),
+            'active_sessions' => PosSession::whereHas('posDevice', fn ($q) => $q->where('store_id', $store->id))->open()->count(),
             'today_transactions' => PosTransaction::where('store_id', $store->id)->whereDate('transaction_date', today())->count(),
             'today_sales' => PosTransaction::where('store_id', $store->id)->whereDate('transaction_date', today())->sum('total_amount'),
             'month_transactions' => PosTransaction::where('store_id', $store->id)->whereMonth('transaction_date', now()->month)->count(),
@@ -46,7 +46,7 @@ class SellerPosController extends Controller
             ->limit(10)
             ->get();
 
-        $activeSessions = PosSession::whereHas('posDevice', fn($q) => $q->where('store_id', $store->id))
+        $activeSessions = PosSession::whereHas('posDevice', fn ($q) => $q->where('store_id', $store->id))
             ->with(['posDevice', 'user'])
             ->open()
             ->get();
@@ -125,7 +125,7 @@ class SellerPosController extends Controller
     {
         $store = $this->getStore();
 
-        $query = PosSession::whereHas('posDevice', fn($q) => $q->where('store_id', $store->id))
+        $query = PosSession::whereHas('posDevice', fn ($q) => $q->where('store_id', $store->id))
             ->with(['posDevice', 'user'])
             ->latest('opened_at');
 
@@ -385,7 +385,7 @@ class SellerPosController extends Controller
             [
                 'store_id' => $store->id,
                 'device_type' => 'web',
-                'device_name' => 'Web POS - ' . auth()->user()->name,
+                'device_name' => 'Web POS - '.auth()->user()->name,
             ],
             [
                 'device_key' => Str::random(32),
@@ -460,7 +460,7 @@ class SellerPosController extends Controller
                 'pos_device_id' => $validated['device_id'],
                 'pos_session_id' => $validated['session_id'],
                 'user_id' => auth()->id(),
-                'transaction_code' => 'POS-' . strtoupper(Str::random(8)),
+                'transaction_code' => 'POS-'.strtoupper(Str::random(8)),
                 'receipt_number' => $this->generateReceiptNumber($store->id),
                 'transaction_date' => now(),
                 'subtotal' => $validated['subtotal'],
@@ -519,9 +519,10 @@ class SellerPosController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create transaction: ' . $e->getMessage(),
+                'message' => 'Failed to create transaction: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -540,7 +541,7 @@ class SellerPosController extends Controller
             $newNumber = 1;
         }
 
-        return 'RCP-' . date('Ymd') . '-' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        return 'RCP-'.date('Ymd').'-'.str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 
     // Receipt view
@@ -560,9 +561,9 @@ class SellerPosController extends Controller
 
         $products = Product::where('store_id', $store->id)
             ->where('is_active', true)
-            ->where(function($query) use ($search) {
+            ->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             })
             ->limit(20)
             ->get();
@@ -621,7 +622,7 @@ class SellerPosController extends Controller
         // สร้าง API Key
         $apiKey = PosApiKey::create([
             'shop_id' => $store->id,
-            'name' => $validated['name'] ?? 'POS Terminal ' . ($store->apiKeys()->count() + 1),
+            'name' => $validated['name'] ?? 'POS Terminal '.($store->apiKeys()->count() + 1),
             'description' => $validated['description'] ?? null,
             'is_active' => true,
             'is_blocked' => false,

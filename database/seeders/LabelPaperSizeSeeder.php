@@ -16,8 +16,6 @@ class LabelPaperSizeSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลขนาดกระดาษมาตรฐาน
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -361,6 +359,6 @@ class LabelPaperSizeSeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Seed ขนาดกระดาษสำเร็จ! จำนวน ' . count($paperSizes) . ' รายการ');
+        $this->command->info('✅ Seed ขนาดกระดาษสำเร็จ! จำนวน '.count($paperSizes).' รายการ');
     }
 }

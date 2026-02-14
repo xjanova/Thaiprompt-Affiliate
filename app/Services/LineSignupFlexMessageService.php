@@ -45,7 +45,7 @@ class LineSignupFlexMessageService
                         ],
                         [
                             'type' => 'text',
-                            'text' => "ยินดีต้อนรับสู่ระบบสมาชิก",
+                            'text' => 'ยินดีต้อนรับสู่ระบบสมาชิก',
                             'size' => 'lg',
                             'weight' => 'bold',
                             'margin' => 'md',
@@ -57,7 +57,7 @@ class LineSignupFlexMessageService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => "🎉 " . number_format($totalMembers) . " คนเป็นสมาชิกแล้ว!",
+                                    'text' => '🎉 '.number_format($totalMembers).' คนเป็นสมาชิกแล้ว!',
                                     'size' => 'sm',
                                     'color' => '#FF6B35',
                                     'weight' => 'bold',
@@ -65,7 +65,7 @@ class LineSignupFlexMessageService
                                 ],
                                 [
                                     'type' => 'text',
-                                    'text' => "⚡ วันนี้มี " . number_format($todaySignups) . " คนสมัครใหม่",
+                                    'text' => '⚡ วันนี้มี '.number_format($todaySignups).' คนสมัครใหม่',
                                     'size' => 'xs',
                                     'color' => '#666666',
                                     'align' => 'center',
@@ -407,7 +407,7 @@ class LineSignupFlexMessageService
      */
     public function buildOtpVerificationMessage(string $phone): array
     {
-        $maskedPhone = substr($phone, 0, 3) . 'XXX' . substr($phone, -4);
+        $maskedPhone = substr($phone, 0, 3).'XXX'.substr($phone, -4);
 
         return [
             'type' => 'flex',
@@ -948,7 +948,7 @@ class LineSignupFlexMessageService
                             'contents' => [
                                 [
                                     'type' => 'text',
-                                    'text' => $milestone['icon'] . " คุณเป็นสมาชิกคนที่ " . number_format($memberNumber) . "!",
+                                    'text' => $milestone['icon'].' คุณเป็นสมาชิกคนที่ '.number_format($memberNumber).'!',
                                     'size' => 'md',
                                     'color' => $milestone['color'],
                                     'weight' => 'bold',
@@ -1078,7 +1078,7 @@ class LineSignupFlexMessageService
                     'contents' => [
                         [
                             'type' => 'text',
-                            'text' => '👋 สวัสดี ' . $user->name,
+                            'text' => '👋 สวัสดี '.$user->name,
                             'weight' => 'bold',
                             'size' => 'xl',
                             'color' => '#1DB446',
@@ -1239,7 +1239,7 @@ class LineSignupFlexMessageService
     /**
      * คำนวณ Gamification Milestone
      *
-     * @param int $memberNumber หมายเลขสมาชิก
+     * @param  int  $memberNumber  หมายเลขสมาชิก
      * @return array milestone data
      */
     protected function getMilestone(int $memberNumber): array
@@ -1308,7 +1308,7 @@ class LineSignupFlexMessageService
         }
 
         // ถ้าไม่เจอ milestone พิเศษ ให้ใช้ default
-        if (!$foundMilestone) {
+        if (! $foundMilestone) {
             return [
                 'icon' => '✨',
                 'message' => 'ยินดีต้อนรับเข้าสู่ครอบครัว!',

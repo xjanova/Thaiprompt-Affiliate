@@ -31,7 +31,7 @@ class ApiResponse
             $response['data'] = $data;
         }
 
-        if (!empty($meta)) {
+        if (! empty($meta)) {
             $response['meta'] = $meta;
         }
 
@@ -52,7 +52,7 @@ class ApiResponse
             'message' => $message,
         ];
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             $response['errors'] = $errors;
         }
 
@@ -253,7 +253,7 @@ class ApiResponse
             'gas' => [
                 'limit' => $gasLimit,
                 'fee_tpix' => \App\Helpers\TpixHelper::formatTPIX($gasFeeTPIX),
-                'fee_thb' => '฿' . number_format($gasFeeTHB, 2),
+                'fee_thb' => '฿'.number_format($gasFeeTHB, 2),
                 'subsidized' => $subsidized,
                 'network' => 'TPIX Chain',
             ],

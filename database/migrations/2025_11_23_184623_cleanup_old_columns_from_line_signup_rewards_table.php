@@ -24,12 +24,10 @@ return new class extends Migration
      * - granted_at: ไม่ควรมีใน template (มีใน reward_claims)
      * - claimed_at: ไม่ควรมีใน template (มีใน reward_claims)
      * - expires_at: ไม่ควรมีใน template (มีใน reward_claims)
-     *
-     * @return void
      */
     public function up(): void
     {
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             return;
         }
 
@@ -84,8 +82,6 @@ return new class extends Migration
      * Rollback: ไม่มี rollback เพราะเป็นการลบ columns ที่ผิดโครงสร้าง
      *
      * หาก rollback จำเป็น ให้ restore จาก backup database
-     *
-     * @return void
      */
     public function down(): void
     {

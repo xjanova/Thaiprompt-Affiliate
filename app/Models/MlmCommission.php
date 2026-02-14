@@ -159,7 +159,7 @@ class MlmCommission extends Model
      */
     public function reject($reason = null)
     {
-        if (!in_array($this->status, ['pending', 'approved'])) {
+        if (! in_array($this->status, ['pending', 'approved'])) {
             return false;
         }
 

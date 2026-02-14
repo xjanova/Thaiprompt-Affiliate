@@ -16,13 +16,11 @@ return new class extends Migration
      * Run the migrations.
      *
      * สร้างตารางระบบบัญชีทั้งหมดที่ขาดหายไป
-     *
-     * @return void
      */
     public function up(): void
     {
         // 1. Settings table for accounting module
-        if (!Schema::hasTable('accounting_settings')) {
+        if (! Schema::hasTable('accounting_settings')) {
             Schema::create('accounting_settings', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -42,7 +40,7 @@ return new class extends Migration
         }
 
         // 2. Companies/Organizations
-        if (!Schema::hasTable('accounting_companies')) {
+        if (! Schema::hasTable('accounting_companies')) {
             Schema::create('accounting_companies', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -67,7 +65,7 @@ return new class extends Migration
         }
 
         // 3. Chart of Accounts - ผังบัญชี
-        if (!Schema::hasTable('accounting_chart_of_accounts')) {
+        if (! Schema::hasTable('accounting_chart_of_accounts')) {
             Schema::create('accounting_chart_of_accounts', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -80,7 +78,7 @@ return new class extends Migration
                     'current_liability', 'long_term_liability',
                     'owner_equity',
                     'revenue', 'other_revenue',
-                    'cost_of_goods_sold', 'operating_expense', 'other_expense'
+                    'cost_of_goods_sold', 'operating_expense', 'other_expense',
                 ]);
                 $table->foreignId('parent_id')->nullable()->constrained('accounting_chart_of_accounts')->nullOnDelete();
                 $table->integer('level')->default(1);
@@ -98,7 +96,7 @@ return new class extends Migration
         }
 
         // 4. Contacts - ลูกค้าและผู้จำหน่าย
-        if (!Schema::hasTable('accounting_contacts')) {
+        if (! Schema::hasTable('accounting_contacts')) {
             Schema::create('accounting_contacts', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -131,7 +129,7 @@ return new class extends Migration
         }
 
         // 5. Products/Services
-        if (!Schema::hasTable('accounting_products')) {
+        if (! Schema::hasTable('accounting_products')) {
             Schema::create('accounting_products', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -157,7 +155,7 @@ return new class extends Migration
         }
 
         // 6. Tax Rates
-        if (!Schema::hasTable('accounting_tax_rates')) {
+        if (! Schema::hasTable('accounting_tax_rates')) {
             Schema::create('accounting_tax_rates', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -172,7 +170,7 @@ return new class extends Migration
         }
 
         // 7. Bank Accounts
-        if (!Schema::hasTable('accounting_bank_accounts')) {
+        if (! Schema::hasTable('accounting_bank_accounts')) {
             Schema::create('accounting_bank_accounts', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -192,7 +190,7 @@ return new class extends Migration
         }
 
         // 8. Invoices - ใบแจ้งหนี้/ใบกำกับภาษี
-        if (!Schema::hasTable('accounting_invoices')) {
+        if (! Schema::hasTable('accounting_invoices')) {
             Schema::create('accounting_invoices', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -223,7 +221,7 @@ return new class extends Migration
         }
 
         // 9. Invoice Items
-        if (!Schema::hasTable('accounting_invoice_items')) {
+        if (! Schema::hasTable('accounting_invoice_items')) {
             Schema::create('accounting_invoice_items', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('invoice_id')->constrained('accounting_invoices')->cascadeOnDelete();
@@ -244,7 +242,7 @@ return new class extends Migration
         }
 
         // 10. Expenses - รายจ่าย
-        if (!Schema::hasTable('accounting_expenses')) {
+        if (! Schema::hasTable('accounting_expenses')) {
             Schema::create('accounting_expenses', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -275,7 +273,7 @@ return new class extends Migration
         }
 
         // 11. Expense Items
-        if (!Schema::hasTable('accounting_expense_items')) {
+        if (! Schema::hasTable('accounting_expense_items')) {
             Schema::create('accounting_expense_items', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('expense_id')->constrained('accounting_expenses')->cascadeOnDelete();
@@ -296,7 +294,7 @@ return new class extends Migration
         }
 
         // 12. Payments - รับ/จ่ายเงิน
-        if (!Schema::hasTable('accounting_payments')) {
+        if (! Schema::hasTable('accounting_payments')) {
             Schema::create('accounting_payments', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -320,7 +318,7 @@ return new class extends Migration
         }
 
         // 13. Journal Entries - บันทึกรายการบัญชี
-        if (!Schema::hasTable('accounting_journal_entries')) {
+        if (! Schema::hasTable('accounting_journal_entries')) {
             Schema::create('accounting_journal_entries', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -340,7 +338,7 @@ return new class extends Migration
         }
 
         // 14. FlowAccount Connections
-        if (!Schema::hasTable('accounting_flowaccount_connections')) {
+        if (! Schema::hasTable('accounting_flowaccount_connections')) {
             Schema::create('accounting_flowaccount_connections', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -361,7 +359,7 @@ return new class extends Migration
         }
 
         // 15. Export Templates
-        if (!Schema::hasTable('accounting_export_templates')) {
+        if (! Schema::hasTable('accounting_export_templates')) {
             Schema::create('accounting_export_templates', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -379,7 +377,7 @@ return new class extends Migration
         }
 
         // 16. Activity Logs
-        if (!Schema::hasTable('accounting_activity_logs')) {
+        if (! Schema::hasTable('accounting_activity_logs')) {
             Schema::create('accounting_activity_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
@@ -400,8 +398,6 @@ return new class extends Migration
      * Reverse the migrations.
      *
      * ลบตารางระบบบัญชีทั้งหมดอย่างปลอดภัย
-     *
-     * @return void
      */
     public function down(): void
     {

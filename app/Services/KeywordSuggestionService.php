@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\LineBotKeyword;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Keyword Suggestion Service
@@ -16,9 +16,8 @@ class KeywordSuggestionService
     /**
      * ดึง suggestions จาก no-match messages (30 วันที่ผ่านมา)
      *
-     * @param int $days จำนวนวันที่วิเคราะห์
-     * @param int $minFrequency จำนวนครั้งต่ำสุดสำหรับ suggestion
-     * @return array
+     * @param  int  $days  จำนวนวันที่วิเคราะห์
+     * @param  int  $minFrequency  จำนวนครั้งต่ำสุดสำหรับ suggestion
      */
     public function getSuggestions(int $days = 30, int $minFrequency = 3): array
     {
@@ -43,6 +42,7 @@ class KeywordSuggestionService
                 $suggestion['frequency'],
                 $noMatches->count()
             );
+
             return $suggestion;
         });
 
@@ -52,9 +52,6 @@ class KeywordSuggestionService
 
     /**
      * ดึง no-match messages
-     *
-     * @param int $days
-     * @return Collection
      */
     private function getNoMatchMessages(int $days): Collection
     {
@@ -69,9 +66,6 @@ class KeywordSuggestionService
 
     /**
      * วิเคราะห์ patterns จาก messages
-     *
-     * @param Collection $messages
-     * @return Collection
      */
     private function analyzePatterns(Collection $messages): Collection
     {
@@ -110,9 +104,6 @@ class KeywordSuggestionService
 
     /**
      * Extract keywords from messages
-     *
-     * @param Collection $messages
-     * @return array
      */
     private function extractKeywords(Collection $messages): array
     {
@@ -120,15 +111,15 @@ class KeywordSuggestionService
 
         // Common words to ignore (stopwords)
         $stopwords = ['the', 'a', 'an', 'is', 'are', 'or', 'and', 'i', 'me', 'you', 'it',
-                      'this', 'that', 'in', 'on', 'at', 'to', 'from', 'of', 'for', 'with',
-                      'โปรดช่วยฉัน', 'คำถาม', 'เรื่อง', 'อยากรู้', 'ได้ไหม', 'ไหม'];
+            'this', 'that', 'in', 'on', 'at', 'to', 'from', 'of', 'for', 'with',
+            'โปรดช่วยฉัน', 'คำถาม', 'เรื่อง', 'อยากรู้', 'ได้ไหม', 'ไหม'];
 
         foreach ($messages as $message) {
             // Extract words
             $words = $this->extractWords($message);
 
             foreach ($words as $word) {
-                if (!in_array(strtolower($word), $stopwords) && strlen($word) > 3) {
+                if (! in_array(strtolower($word), $stopwords) && strlen($word) > 3) {
                     $wordFrequency[strtolower($word)] = ($wordFrequency[strtolower($word)] ?? 0) + 1;
                 }
             }
@@ -136,14 +127,12 @@ class KeywordSuggestionService
 
         // Sort by frequency
         arsort($wordFrequency);
+
         return array_slice($wordFrequency, 0, 20, true); // Top 20
     }
 
     /**
      * Extract phrases (2-3 words) from messages
-     *
-     * @param Collection $messages
-     * @return array
      */
     private function extractPhrases(Collection $messages): array
     {
@@ -154,7 +143,7 @@ class KeywordSuggestionService
 
             // 2-word phrases
             for ($i = 0; $i < count($words) - 1; $i++) {
-                $phrase = strtolower($words[$i] . ' ' . $words[$i + 1]);
+                $phrase = strtolower($words[$i].' '.$words[$i + 1]);
                 if (strlen($phrase) > 5) {
                     $phraseFrequency[$phrase] = ($phraseFrequency[$phrase] ?? 0) + 1;
                 }
@@ -162,7 +151,7 @@ class KeywordSuggestionService
 
             // 3-word phrases
             for ($i = 0; $i < count($words) - 2; $i++) {
-                $phrase = strtolower($words[$i] . ' ' . $words[$i + 1] . ' ' . $words[$i + 2]);
+                $phrase = strtolower($words[$i].' '.$words[$i + 1].' '.$words[$i + 2]);
                 if (strlen($phrase) > 8) {
                     $phraseFrequency[$phrase] = ($phraseFrequency[$phrase] ?? 0) + 1;
                 }
@@ -170,27 +159,23 @@ class KeywordSuggestionService
         }
 
         arsort($phraseFrequency);
+
         return array_slice($phraseFrequency, 0, 10, true); // Top 10
     }
 
     /**
      * Extract words from message
-     *
-     * @param string $message
-     * @return array
      */
     private function extractWords(string $message): array
     {
         // Remove special characters, keep letters, numbers, spaces
         $cleaned = preg_replace('/[^a-zA-Z0-9\s์-๙]/u', '', $message);
+
         return array_filter(explode(' ', trim($cleaned)));
     }
 
     /**
      * Generate keyword name from word/phrase
-     *
-     * @param string $word
-     * @return string
      */
     private function generateKeywordName(string $word): string
     {
@@ -205,11 +190,6 @@ class KeywordSuggestionService
 
     /**
      * Get sample messages for a word
-     *
-     * @param Collection $messages
-     * @param string $word
-     * @param int $limit
-     * @return array
      */
     private function getSampleMessages(Collection $messages, string $word, int $limit = 3): array
     {
@@ -220,10 +200,6 @@ class KeywordSuggestionService
 
     /**
      * Calculate confidence score (0-100)
-     *
-     * @param int $frequency
-     * @param int $total
-     * @return float
      */
     private function calculateConfidence(int $frequency, int $total): float
     {
@@ -236,8 +212,6 @@ class KeywordSuggestionService
 
     /**
      * Get unique suggestions (avoid duplicates with existing keywords)
-     *
-     * @return array
      */
     public function getUniqueNewSuggestions(int $days = 30, int $minFrequency = 3): array
     {
@@ -248,33 +222,30 @@ class KeywordSuggestionService
 
         // Filter out existing
         return array_filter($suggestions, function ($suggestion) use ($existingKeywords) {
-            return !in_array($suggestion['keyword'], $existingKeywords);
+            return ! in_array($suggestion['keyword'], $existingKeywords);
         });
     }
 
     /**
      * Create keyword draft from suggestion
-     *
-     * @param array $suggestion
-     * @return LineBotKeyword
      */
     public function createKeywordDraft(array $suggestion): LineBotKeyword
     {
-        $keyword = new LineBotKeyword();
+        $keyword = new LineBotKeyword;
         $keyword->keyword = $suggestion['keyword'];
         $keyword->trigger_words = json_encode($suggestion['trigger_words']);
         $keyword->response_type = 'text';
-        $keyword->response_text = '💬 ' . ucfirst(str_replace('_', ' ', $suggestion['keyword'])) .
-                                 "\n\n" .
-                                 "ขออภัยค่ะ ยังไม่มีข้อมูลเกี่ยวกับหัวข้อนี้\n" .
-                                 "กรุณาติดต่อเจ้าหน้าที่ค่ะ";
+        $keyword->response_text = '💬 '.ucfirst(str_replace('_', ' ', $suggestion['keyword'])).
+                                 "\n\n".
+                                 "ขออภัยค่ะ ยังไม่มีข้อมูลเกี่ยวกับหัวข้อนี้\n".
+                                 'กรุณาติดต่อเจ้าหน้าที่ค่ะ';
         $keyword->category = 'custom';
         $keyword->priority = 50;
         $keyword->is_active = false; // Inactive by default - for review
-        $keyword->notes = 'Auto-suggested from AI analysis. Frequency: ' .
-                         $suggestion['frequency'] .
-                         ', Confidence: ' .
-                         round($suggestion['confidence'], 1) . '%';
+        $keyword->notes = 'Auto-suggested from AI analysis. Frequency: '.
+                         $suggestion['frequency'].
+                         ', Confidence: '.
+                         round($suggestion['confidence'], 1).'%';
 
         return $keyword;
     }
@@ -282,9 +253,7 @@ class KeywordSuggestionService
     /**
      * Approve and save suggestion as keyword
      *
-     * @param array $suggestion
-     * @param array $updates Optional updates (e.g., response_text)
-     * @return LineBotKeyword
+     * @param  array  $updates  Optional updates (e.g., response_text)
      */
     public function approveSuggestion(array $suggestion, array $updates = []): LineBotKeyword
     {
@@ -308,8 +277,6 @@ class KeywordSuggestionService
 
     /**
      * Get suggestion statistics
-     *
-     * @return array
      */
     public function getStatistics(int $days = 30): array
     {
@@ -329,8 +296,6 @@ class KeywordSuggestionService
 
     /**
      * Get suggestion recommendations
-     *
-     * @return array
      */
     public function getRecommendations(): array
     {
@@ -343,7 +308,7 @@ class KeywordSuggestionService
         if ($stats['total_no_matches'] > 50) {
             $recommendations[] = [
                 'type' => 'urgent',
-                'message' => '⚠️ มี no-match จำนวนมาก (' . $stats['total_no_matches'] . ' ครั้ง)',
+                'message' => '⚠️ มี no-match จำนวนมาก ('.$stats['total_no_matches'].' ครั้ง)',
                 'action' => 'ควรสร้าง keywords ใหม่เพื่อครอบคลุมคำถามเหล่านี้',
             ];
         }
@@ -352,7 +317,7 @@ class KeywordSuggestionService
         if ($stats['potential_coverage_increase'] > 20) {
             $recommendations[] = [
                 'type' => 'opportunity',
-                'message' => '📈 มีโอกาสเพิ่มการครอบคลุม ' . $stats['potential_coverage_increase'] . '%',
+                'message' => '📈 มีโอกาสเพิ่มการครอบคลุม '.$stats['potential_coverage_increase'].'%',
                 'action' => 'อนุมัติ suggestions เพื่อปรับปรุงประสิทธิภาพ',
             ];
         }
@@ -361,7 +326,7 @@ class KeywordSuggestionService
         if (count($suggestions) > 0) {
             $recommendations[] = [
                 'type' => 'suggestion',
-                'message' => '💡 มี ' . count($suggestions) . ' keyword suggestions พร้อมสำหรับการอนุมัติ',
+                'message' => '💡 มี '.count($suggestions).' keyword suggestions พร้อมสำหรับการอนุมัติ',
                 'action' => 'ตรวจสอบและอนุมัติ suggestions',
             ];
         }

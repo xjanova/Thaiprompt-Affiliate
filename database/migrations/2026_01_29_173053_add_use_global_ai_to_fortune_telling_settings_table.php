@@ -11,14 +11,12 @@ return new class extends Migration
      *
      * ให้ระบบดูดวงสามารถใช้ AI Config จากระบบหลัก (AiContentSetting)
      * แทนที่จะตั้งค่าแยกเป็นของตัวเอง
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
             // เช็คว่าฟิลด์มีอยู่แล้วหรือยัง
-            if (!Schema::hasColumn('fortune_telling_settings', 'use_global_ai_settings')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'use_global_ai_settings')) {
                 $table->boolean('use_global_ai_settings')
                     ->default(true)
                     ->after('is_enabled')
@@ -29,8 +27,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์ use_global_ai_settings
-     *
-     * @return void
      */
     public function down(): void
     {

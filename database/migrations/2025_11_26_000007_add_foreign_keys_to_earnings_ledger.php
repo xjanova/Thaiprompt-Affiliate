@@ -9,13 +9,11 @@ return new class extends Migration
     /**
      * เพิ่ม Foreign Key สำหรับ earnings_ledger
      * ต้องทำหลังจาก payout_requests ถูกสร้างแล้ว
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง earnings_ledger มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('earnings_ledger')) {
+        if (! Schema::hasTable('earnings_ledger')) {
             return;
         }
 
@@ -33,8 +31,6 @@ return new class extends Migration
 
     /**
      * ลบ Foreign Key
-     *
-     * @return void
      */
     public function down(): void
     {

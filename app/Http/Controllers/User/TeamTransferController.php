@@ -18,8 +18,6 @@ class TeamTransferController extends Controller
 {
     /**
      * MlmTeamTransferService instance
-     *
-     * @var MlmTeamTransferService
      */
     protected MlmTeamTransferService $transferService;
 
@@ -63,7 +61,7 @@ class TeamTransferController extends Controller
         $user = Auth::user();
 
         // ตรวจสอบว่ามี MLM member หรือไม่
-        if (!$user->mlmMember) {
+        if (! $user->mlmMember) {
             return redirect()
                 ->route('user.dashboard')
                 ->with('error', 'คุณยังไม่ได้เป็นสมาชิก MLM');
@@ -95,7 +93,6 @@ class TeamTransferController extends Controller
     /**
      * บันทึกคำขอย้ายทีมใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -115,7 +112,7 @@ class TeamTransferController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if (!$newSponsor) {
+            if (! $newSponsor) {
                 return back()
                     ->withInput()
                     ->with('error', 'ไม่พบรหัสแม่ทีมที่ระบุ');
@@ -144,7 +141,6 @@ class TeamTransferController extends Controller
     /**
      * แสดงรายละเอียดคำขอย้ายทีม
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\View\View
      */
     public function show(MlmTeamTransferRequest $teamTransfer)
@@ -172,7 +168,6 @@ class TeamTransferController extends Controller
     /**
      * ชำระค่าธรรมเนียมการย้ายทีม
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function pay(MlmTeamTransferRequest $teamTransfer)
@@ -199,7 +194,6 @@ class TeamTransferController extends Controller
     /**
      * ยกเลิกคำขอย้ายทีม
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function cancel(MlmTeamTransferRequest $teamTransfer)
@@ -216,7 +210,7 @@ class TeamTransferController extends Controller
 
             return redirect()
                 ->route('user.team-transfer.index')
-                ->with('success', 'ยกเลิกคำขอเรียบร้อยแล้ว' .
+                ->with('success', 'ยกเลิกคำขอเรียบร้อยแล้ว'.
                     ($teamTransfer->paid_at ? ' (คืนเงินเรียบร้อย)' : ''));
         } catch (\Exception $e) {
             return back()
@@ -227,7 +221,6 @@ class TeamTransferController extends Controller
     /**
      * อนุมัติคำขอย้ายทีม (สำหรับแม่ทีมเก่า)
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function approve(MlmTeamTransferRequest $teamTransfer)
@@ -249,8 +242,6 @@ class TeamTransferController extends Controller
     /**
      * ปฏิเสธคำขอย้ายทีม (สำหรับแม่ทีมเก่า)
      *
-     * @param Request $request
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reject(Request $request, MlmTeamTransferRequest $teamTransfer)

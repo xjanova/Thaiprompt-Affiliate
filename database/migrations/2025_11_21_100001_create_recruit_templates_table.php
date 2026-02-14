@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บเทมเพลตหน้า Recruit ที่แอดมินสร้างไว้
      * แม่ทีมจะใช้เทมเพลตนี้เป็นพื้นฐาน แล้วปรับแต่งข้อมูลส่วนตัว
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -58,8 +56,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง recruit_templates
-     *
-     * @return void
      */
     public function down(): void
     {

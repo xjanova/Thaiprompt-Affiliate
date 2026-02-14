@@ -13,7 +13,6 @@ class VendorStoreController extends Controller
     /**
      * แสดงรายการร้านค้า vendor ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -27,8 +26,8 @@ class VendorStoreController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('store_name', 'like', "%{$search}%")
-                  ->orWhere('store_description', 'like', "%{$search}%")
-                  ->orWhere('store_slug', 'like', "%{$search}%");
+                    ->orWhere('store_description', 'like', "%{$search}%")
+                    ->orWhere('store_slug', 'like', "%{$search}%");
             });
         }
 
@@ -80,8 +79,8 @@ class VendorStoreController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('short_description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%");
             });
         }
 
@@ -120,7 +119,7 @@ class VendorStoreController extends Controller
         // Get categories for this store's products
         $categories = ProductCategory::whereHas('products', function ($q) use ($store) {
             $q->where('seller_id', $store->user_id)
-              ->where('is_active', true);
+                ->where('is_active', true);
         })->get();
 
         // Store statistics

@@ -14,8 +14,6 @@ use Illuminate\Queue\SerializesModels;
  *
  * Event ที่ถูก broadcast เมื่อการทำรายการ POS เสร็จสิ้น
  * ส่งผ่าน WebSocket ไปยัง Customer Display เพื่อแสดงข้อความขอบคุณ
- *
- * @package App\Events
  */
 class PosTransactionCompleted implements ShouldBroadcast
 {
@@ -23,65 +21,46 @@ class PosTransactionCompleted implements ShouldBroadcast
 
     /**
      * Device code ของ POS device
-     *
-     * @var string
      */
     public string $deviceCode;
 
     /**
      * Transaction ID
-     *
-     * @var int
      */
     public int $transactionId;
 
     /**
      * ยอดรวมทั้งหมด
-     *
-     * @var float
      */
     public float $totalAmount;
 
     /**
      * จำนวนเงินที่รับ
-     *
-     * @var float
      */
     public float $amountPaid;
 
     /**
      * เงินทอน
-     *
-     * @var float
      */
     public float $changeAmount;
 
     /**
      * วิธีชำระเงิน
-     *
-     * @var string
      */
     public string $paymentMethod;
 
     /**
      * จำนวนสินค้าทั้งหมด
-     *
-     * @var int
      */
     public int $totalItems;
 
     /**
      * ชื่อลูกค้า (ถ้ามี)
-     *
-     * @var string|null
      */
     public ?string $customerName;
 
     /**
      * สร้าง event instance ใหม่
-     *
-     * @param string $deviceCode
-     * @param PosTransaction $transaction
      */
     public function __construct(string $deviceCode, PosTransaction $transaction)
     {
@@ -97,18 +76,14 @@ class PosTransactionCompleted implements ShouldBroadcast
 
     /**
      * กำหนด channel ที่จะ broadcast
-     *
-     * @return Channel
      */
     public function broadcastOn(): Channel
     {
-        return new Channel('pos-display.' . $this->deviceCode);
+        return new Channel('pos-display.'.$this->deviceCode);
     }
 
     /**
      * กำหนดชื่อ event สำหรับ broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -117,8 +92,6 @@ class PosTransactionCompleted implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะส่งไปกับ broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {

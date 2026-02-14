@@ -11,13 +11,11 @@ return new class extends Migration
      *
      * ตารางนี้เก็บสถิติการเข้าชมหน้า Recruit แต่ละครั้ง
      * ใช้สำหรับวิเคราะห์การตลาด (Marketing Analytics)
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             throw new \Exception('Table "users" must exist before creating "recruit_page_visits" table.');
         }
 
@@ -75,8 +73,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง recruit_page_visits
-     *
-     * @return void
      */
     public function down(): void
     {

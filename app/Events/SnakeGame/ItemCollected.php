@@ -18,15 +18,17 @@ class ItemCollected implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $itemId;
+
     public int $playerId;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่เกิดเหตุการณ์
-     * @param int $itemId ID ไอเทมที่ถูกเก็บ
-     * @param int $playerId ID ผู้เล่นที่เก็บ
+     * @param  int  $roomId  ห้องที่เกิดเหตุการณ์
+     * @param  int  $itemId  ID ไอเทมที่ถูกเก็บ
+     * @param  int  $playerId  ID ผู้เล่นที่เก็บ
      */
     public function __construct(int $roomId, int $itemId, int $playerId)
     {
@@ -37,8 +39,6 @@ class ItemCollected implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -50,8 +50,6 @@ class ItemCollected implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -66,7 +64,7 @@ class ItemCollected implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

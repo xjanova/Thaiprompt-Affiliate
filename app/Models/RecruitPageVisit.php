@@ -91,8 +91,6 @@ class RecruitPageVisit extends Model
 
     /**
      * ความสัมพันธ์กับ User (แม่ทีม)
-     *
-     * @return BelongsTo
      */
     public function teamLeader(): BelongsTo
     {
@@ -101,11 +99,6 @@ class RecruitPageVisit extends Model
 
     /**
      * บันทึกการเข้าชม
-     *
-     * @param int $teamLeaderId
-     * @param string $visitorIdentifier
-     * @param array $data
-     * @return RecruitPageVisit
      */
     public static function recordVisit(
         int $teamLeaderId,
@@ -118,7 +111,7 @@ class RecruitPageVisit extends Model
             ->where('visited_at', '>', now()->subDay())
             ->exists();
 
-        $isUniqueVisit = !$recentVisit;
+        $isUniqueVisit = ! $recentVisit;
 
         // สร้างบันทึกการเข้าชม
         $visit = self::create(array_merge([
@@ -142,7 +135,7 @@ class RecruitPageVisit extends Model
     /**
      * Scope: เฉพาะ unique visits
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnique($query)
@@ -153,7 +146,7 @@ class RecruitPageVisit extends Model
     /**
      * Scope: เฉพาะที่กดปุ่มสมัคร
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeClickedRegister($query)
@@ -164,7 +157,7 @@ class RecruitPageVisit extends Model
     /**
      * Scope: เฉพาะที่เลื่อนดูจนถึงท้ายหน้า
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeScrolledToBottom($query)
@@ -175,9 +168,9 @@ class RecruitPageVisit extends Model
     /**
      * Scope: ภายในช่วงเวลา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param \Carbon\Carbon $from
-     * @param \Carbon\Carbon $to
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  \Carbon\Carbon  $from
+     * @param  \Carbon\Carbon  $to
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeBetween($query, $from, $to)

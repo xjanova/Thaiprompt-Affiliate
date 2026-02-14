@@ -93,7 +93,7 @@ class CoinExchangeController extends Controller
 
         // Check if user can exchange
         $eligibility = $exchangeRate->canUserExchange($user, $coinsAmount);
-        if (!$eligibility['can']) {
+        if (! $eligibility['can']) {
             return response()->json([
                 'success' => false,
                 'message' => $eligibility['reason'],
@@ -102,7 +102,7 @@ class CoinExchangeController extends Controller
 
         // Check coin balance
         $videoCoin = VideoCoin::where('user_id', $user->id)->first();
-        if (!$videoCoin || $videoCoin->balance < $coinsAmount) {
+        if (! $videoCoin || $videoCoin->balance < $coinsAmount) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient coins balance',
@@ -137,9 +137,10 @@ class CoinExchangeController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create exchange request: ' . $e->getMessage(),
+                'message' => 'Failed to create exchange request: '.$e->getMessage(),
             ], 500);
         }
     }

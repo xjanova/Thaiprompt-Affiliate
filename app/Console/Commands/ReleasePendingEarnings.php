@@ -55,6 +55,7 @@ class ReleasePendingEarnings extends Command
 
         if ($earnings->isEmpty()) {
             $this->info('ℹ️ ไม่มี Earnings ที่ต้องปล่อย');
+
             return Command::SUCCESS;
         }
 
@@ -65,7 +66,7 @@ class ReleasePendingEarnings extends Command
             $this->warn('📋 [DRY RUN] รายการที่จะถูกปล่อย:');
             $this->table(
                 ['ID', 'User ID', 'Type', 'Net Amount', 'Available At'],
-                $earnings->map(fn($e) => [
+                $earnings->map(fn ($e) => [
                     $e->id,
                     $e->user_id,
                     $e->earning_type,
@@ -73,6 +74,7 @@ class ReleasePendingEarnings extends Command
                     $e->available_at?->format('Y-m-d H:i') ?? 'ทันที',
                 ])->toArray()
             );
+
             return Command::SUCCESS;
         }
 
@@ -111,7 +113,7 @@ class ReleasePendingEarnings extends Command
         $this->newLine(2);
 
         // แสดงผลลัพธ์
-        $this->info("📊 ผลการประมวลผล:");
+        $this->info('📊 ผลการประมวลผล:');
         $this->table(
             ['รายการ', 'จำนวน'],
             [
@@ -120,7 +122,7 @@ class ReleasePendingEarnings extends Command
             ]
         );
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             $this->newLine();
             $this->error('❗ รายการที่ผิดพลาด:');
             foreach ($errors as $error) {

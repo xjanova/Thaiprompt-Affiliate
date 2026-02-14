@@ -19,9 +19,6 @@ class PageViewAnalyticsController extends Controller
 {
     /**
      * แสดงหน้า Dashboard Analytics หลัก
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -58,8 +55,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * แสดงหน้า Real-time Analytics
-     *
-     * @return View
      */
     public function realtime(): View
     {
@@ -68,8 +63,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูล Real-time (AJAX)
-     *
-     * @return JsonResponse
      */
     public function realtimeData(): JsonResponse
     {
@@ -112,9 +105,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * แสดงหน้ารายละเอียดหน้าที่เข้าชม
-     *
-     * @param Request $request
-     * @return View
      */
     public function pages(Request $request): View
     {
@@ -138,9 +128,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * แสดงหน้า Traffic Sources
-     *
-     * @param Request $request
-     * @return View
      */
     public function sources(Request $request): View
     {
@@ -174,9 +161,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * แสดงหน้า Device & Browser Stats
-     *
-     * @param Request $request
-     * @return View
      */
     public function devices(Request $request): View
     {
@@ -204,9 +188,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * แสดงหน้า Geographic Stats
-     *
-     * @param Request $request
-     * @return View
      */
     public function geography(Request $request): View
     {
@@ -220,7 +201,6 @@ class PageViewAnalyticsController extends Controller
     /**
      * Export ข้อมูลเป็น CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -240,18 +220,18 @@ class PageViewAnalyticsController extends Controller
             ->orderByDesc('views')
             ->get();
 
-        $filename = 'page-views-' . $period . '-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'page-views-'.$period.'-'.now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($pages) {
             $file = fopen('php://output', 'w');
 
             // BOM สำหรับ UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header row
             fputcsv($file, [
@@ -281,9 +261,6 @@ class PageViewAnalyticsController extends Controller
 
     /**
      * API: ดึงสถิติสำหรับ Charts
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function chartData(Request $request): JsonResponse
     {

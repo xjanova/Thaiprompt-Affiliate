@@ -15,26 +15,24 @@ return new class extends Migration
      * platform_fee_amount = total_amount * platform_fee_percentage / 100
      * provider_pv_amount = total_amount * provider_pv_percentage / 100
      * provider_earnings = total_amount - platform_fee_amount - provider_pv_amount
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง service_bookings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('service_bookings')) {
+        if (! Schema::hasTable('service_bookings')) {
             return;
         }
 
         Schema::table('service_bookings', function (Blueprint $table) {
             // Platform Fee (ค่าบริการแพลตฟอร์ม)
-            if (!Schema::hasColumn('service_bookings', 'platform_fee_percentage')) {
+            if (! Schema::hasColumn('service_bookings', 'platform_fee_percentage')) {
                 $table->decimal('platform_fee_percentage', 5, 2)
                     ->default(10.00)
                     ->after('commission_amount')
                     ->comment('เปอร์เซ็นต์ค่าแพลตฟอร์ม (snapshot ณ เวลาจอง)');
             }
 
-            if (!Schema::hasColumn('service_bookings', 'platform_fee_amount')) {
+            if (! Schema::hasColumn('service_bookings', 'platform_fee_amount')) {
                 $table->decimal('platform_fee_amount', 10, 2)
                     ->default(0.00)
                     ->after('platform_fee_percentage')
@@ -42,14 +40,14 @@ return new class extends Migration
             }
 
             // Provider PV (ค่าการตลาด)
-            if (!Schema::hasColumn('service_bookings', 'provider_pv_percentage')) {
+            if (! Schema::hasColumn('service_bookings', 'provider_pv_percentage')) {
                 $table->decimal('provider_pv_percentage', 5, 2)
                     ->default(5.00)
                     ->after('platform_fee_amount')
                     ->comment('เปอร์เซ็นต์ PV/การตลาด (snapshot ณ เวลาจอง)');
             }
 
-            if (!Schema::hasColumn('service_bookings', 'provider_pv_amount')) {
+            if (! Schema::hasColumn('service_bookings', 'provider_pv_amount')) {
                 $table->decimal('provider_pv_amount', 10, 2)
                     ->default(0.00)
                     ->after('provider_pv_percentage')
@@ -57,7 +55,7 @@ return new class extends Migration
             }
 
             // Provider Earnings (รายได้สุทธิของ Provider)
-            if (!Schema::hasColumn('service_bookings', 'provider_earnings')) {
+            if (! Schema::hasColumn('service_bookings', 'provider_earnings')) {
                 $table->decimal('provider_earnings', 10, 2)
                     ->default(0.00)
                     ->after('provider_pv_amount')
@@ -65,7 +63,7 @@ return new class extends Migration
             }
 
             // System Revenue (รายได้รวมของระบบ: platform_fee + pv)
-            if (!Schema::hasColumn('service_bookings', 'system_revenue')) {
+            if (! Schema::hasColumn('service_bookings', 'system_revenue')) {
                 $table->decimal('system_revenue', 10, 2)
                     ->default(0.00)
                     ->after('provider_earnings')
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

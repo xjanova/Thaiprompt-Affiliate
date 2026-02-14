@@ -45,6 +45,7 @@ class OfficialShopSetting extends Model
      * Cache key prefix
      */
     protected const CACHE_PREFIX = 'official_shop_setting_';
+
     protected const CACHE_TTL = 3600; // 1 ชั่วโมง
 
     /**
@@ -144,14 +145,13 @@ class OfficialShopSetting extends Model
     /**
      * ดึงค่าตั้งค่า
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function get(string $key, $default = null)
     {
         // ลองดึงจาก cache ก่อน
-        $cacheKey = self::CACHE_PREFIX . $key;
+        $cacheKey = self::CACHE_PREFIX.$key;
         $cached = Cache::get($cacheKey);
 
         if ($cached !== null) {
@@ -161,11 +161,12 @@ class OfficialShopSetting extends Model
         // ดึงจาก database
         $setting = self::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             // ใช้ค่าเริ่มต้น
             if (isset(self::$defaults[$key])) {
                 $value = self::castValue(self::$defaults[$key]['value'], self::$defaults[$key]['type']);
                 Cache::put($cacheKey, $value, self::CACHE_TTL);
+
                 return $value;
             }
 
@@ -181,16 +182,12 @@ class OfficialShopSetting extends Model
     /**
      * บันทึกค่าตั้งค่า
      *
-     * @param string $key
-     * @param mixed $value
-     * @param string|null $type
-     * @param string|null $description
-     * @return self
+     * @param  mixed  $value
      */
     public static function set(string $key, $value, ?string $type = null, ?string $description = null): self
     {
         // กำหนด type ถ้าไม่ได้ระบุ
-        if (!$type) {
+        if (! $type) {
             $type = isset(self::$defaults[$key]) ? self::$defaults[$key]['type'] : 'string';
         }
 
@@ -215,15 +212,13 @@ class OfficialShopSetting extends Model
         );
 
         // ล้าง cache
-        Cache::forget(self::CACHE_PREFIX . $key);
+        Cache::forget(self::CACHE_PREFIX.$key);
 
         return $setting;
     }
 
     /**
      * ดึงการตั้งค่าทั้งหมด
-     *
-     * @return array
      */
     public static function getAll(): array
     {
@@ -255,8 +250,6 @@ class OfficialShopSetting extends Model
 
     /**
      * สร้างค่าเริ่มต้นทั้งหมด
-     *
-     * @return void
      */
     public static function seedDefaults(): void
     {
@@ -274,27 +267,23 @@ class OfficialShopSetting extends Model
 
     /**
      * ล้าง cache ทั้งหมด
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
         foreach (array_keys(self::$defaults) as $key) {
-            Cache::forget(self::CACHE_PREFIX . $key);
+            Cache::forget(self::CACHE_PREFIX.$key);
         }
 
         // ล้าง custom keys จาก database
         $keys = self::pluck('key');
         foreach ($keys as $key) {
-            Cache::forget(self::CACHE_PREFIX . $key);
+            Cache::forget(self::CACHE_PREFIX.$key);
         }
     }
 
     /**
      * แปลงค่าตาม type
      *
-     * @param string|null $value
-     * @param string $type
      * @return mixed
      */
     protected static function castValue(?string $value, string $type)
@@ -316,8 +305,6 @@ class OfficialShopSetting extends Model
 
     /**
      * คะแนนขั้นต่ำ
-     *
-     * @return int
      */
     public static function getMinAiScore(): int
     {
@@ -326,8 +313,6 @@ class OfficialShopSetting extends Model
 
     /**
      * จำนวนสินค้าขายดี
-     *
-     * @return int
      */
     public static function getBestSellerCount(): int
     {
@@ -336,8 +321,6 @@ class OfficialShopSetting extends Model
 
     /**
      * จำนวนวันเตือน
-     *
-     * @return int
      */
     public static function getWarningDays(): int
     {
@@ -346,8 +329,6 @@ class OfficialShopSetting extends Model
 
     /**
      * น้ำหนักคะแนนทั้งหมด
-     *
-     * @return array
      */
     public static function getScoreWeights(): array
     {

@@ -114,8 +114,6 @@ class AICoreSchedule extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -124,8 +122,6 @@ class AICoreSchedule extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -134,8 +130,6 @@ class AICoreSchedule extends Model
 
     /**
      * ความสัมพันธ์กับผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -145,7 +139,7 @@ class AICoreSchedule extends Model
     /**
      * Scope: เฉพาะ schedules ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -157,7 +151,7 @@ class AICoreSchedule extends Model
     /**
      * Scope: เฉพาะ schedules ที่ถึงเวลาทำงาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDue($query)
@@ -169,8 +163,7 @@ class AICoreSchedule extends Model
     /**
      * Scope: กรองตาม schedule type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeType($query, string $type)
@@ -180,12 +173,10 @@ class AICoreSchedule extends Model
 
     /**
      * ตรวจสอบว่า schedule ถึงเวลาทำงานหรือไม่
-     *
-     * @return bool
      */
     public function isDue(): bool
     {
-        if (!$this->is_enabled || !in_array($this->status, ['pending', 'active'])) {
+        if (! $this->is_enabled || ! in_array($this->status, ['pending', 'active'])) {
             return false;
         }
 
@@ -194,8 +185,6 @@ class AICoreSchedule extends Model
 
     /**
      * ตรวจสอบว่า schedule ถึงจำนวนครั้งสูงสุดหรือยัง
-     *
-     * @return bool
      */
     public function hasReachedMaxExecutions(): bool
     {
@@ -208,8 +197,6 @@ class AICoreSchedule extends Model
 
     /**
      * ตรวจสอบว่า schedule ถึงจำนวน retry สูงสุดหรือยัง
-     *
-     * @return bool
      */
     public function hasReachedMaxRetries(): bool
     {
@@ -219,9 +206,8 @@ class AICoreSchedule extends Model
     /**
      * บันทึกการ execute
      *
-     * @param bool $success สำเร็จหรือไม่
-     * @param string|null $error ข้อความ error
-     * @return bool
+     * @param  bool  $success  สำเร็จหรือไม่
+     * @param  string|null  $error  ข้อความ error
      */
     public function recordExecution(bool $success, ?string $error = null): bool
     {
@@ -255,8 +241,6 @@ class AICoreSchedule extends Model
 
     /**
      * คำนวณเวลา execution ครั้งถัดไป
-     *
-     * @return \Carbon\Carbon|null
      */
     public function calculateNextExecution(): ?\Carbon\Carbon
     {
@@ -287,8 +271,6 @@ class AICoreSchedule extends Model
 
     /**
      * เปิดใช้งาน schedule
-     *
-     * @return bool
      */
     public function enable(): bool
     {
@@ -300,8 +282,6 @@ class AICoreSchedule extends Model
 
     /**
      * ปิดใช้งาน schedule
-     *
-     * @return bool
      */
     public function disable(): bool
     {
@@ -312,8 +292,6 @@ class AICoreSchedule extends Model
 
     /**
      * ยกเลิก schedule
-     *
-     * @return bool
      */
     public function cancel(): bool
     {

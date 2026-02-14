@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ApiKey;
 use App\Models\ApiEndpoint;
+use App\Models\ApiKey;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -28,9 +28,9 @@ class ApiKeyController extends Controller
         if ($request->filled('status')) {
             if ($request->status === 'active') {
                 $query->where('is_active', true);
-            } else if ($request->status === 'inactive') {
+            } elseif ($request->status === 'inactive') {
                 $query->where('is_active', false);
-            } else if ($request->status === 'expired') {
+            } elseif ($request->status === 'expired') {
                 $query->where('expires_at', '<', now());
             }
         }
@@ -91,9 +91,9 @@ class ApiKeyController extends Controller
         }
 
         // สร้าง API key
-        $prefix = 'sk_' . (app()->environment('production') ? 'live' : 'test') . '_';
+        $prefix = 'sk_'.(app()->environment('production') ? 'live' : 'test').'_';
         $randomKey = Str::random(48);
-        $fullKey = $prefix . $randomKey;
+        $fullKey = $prefix.$randomKey;
 
         // แปลง allowed_ips จาก string เป็น array
         $allowedIps = null;
@@ -104,7 +104,7 @@ class ApiKeyController extends Controller
         $apiKey = ApiKey::create([
             'name' => $request->name,
             'key' => hash('sha256', $fullKey),
-            'prefix' => $prefix . substr($randomKey, 0, 8) . '...',
+            'prefix' => $prefix.substr($randomKey, 0, 8).'...',
             'user_id' => $request->user_id,
             'description' => $request->description,
             'allowed_endpoints' => $request->allowed_endpoints,
@@ -239,7 +239,7 @@ class ApiKeyController extends Controller
     public function toggleStatus(ApiKey $apiKey)
     {
         $apiKey->update([
-            'is_active' => !$apiKey->is_active,
+            'is_active' => ! $apiKey->is_active,
         ]);
 
         return response()->json([

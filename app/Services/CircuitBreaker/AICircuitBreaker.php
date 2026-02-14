@@ -39,7 +39,9 @@ class AICircuitBreaker
      * States ของ Circuit Breaker
      */
     public const STATE_CLOSED = 'closed';
+
     public const STATE_OPEN = 'open';
+
     public const STATE_HALF_OPEN = 'half_open';
 
     /**
@@ -70,10 +72,10 @@ class AICircuitBreaker
     /**
      * สร้าง Circuit Breaker instance
      *
-     * @param string $provider ชื่อ AI provider (gemini, groq, qwen, openrouter)
-     * @param int $failureThreshold จำนวนครั้งที่ล้มเหลวก่อนเปิด circuit (default: 5)
-     * @param int $timeout เวลา (วินาที) ที่เปิด circuit (default: 60)
-     * @param int $successThreshold จำนวนความสำเร็จที่ต้องการใน half-open (default: 2)
+     * @param  string  $provider  ชื่อ AI provider (gemini, groq, qwen, openrouter)
+     * @param  int  $failureThreshold  จำนวนครั้งที่ล้มเหลวก่อนเปิด circuit (default: 5)
+     * @param  int  $timeout  เวลา (วินาที) ที่เปิด circuit (default: 60)
+     * @param  int  $successThreshold  จำนวนความสำเร็จที่ต้องการใน half-open (default: 2)
      */
     public function __construct(
         string $provider,
@@ -89,8 +91,6 @@ class AICircuitBreaker
 
     /**
      * ตรวจสอบว่า provider พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isAvailable(): bool
     {
@@ -106,8 +106,10 @@ class AICircuitBreaker
                 if ($this->shouldAttemptReset()) {
                     $this->setState(self::STATE_HALF_OPEN);
                     Log::info("Circuit Breaker: {$this->provider} เข้าสู่ HALF-OPEN state");
+
                     return true;
                 }
+
                 return false;
 
             case self::STATE_HALF_OPEN:
@@ -121,8 +123,6 @@ class AICircuitBreaker
 
     /**
      * บันทึกความสำเร็จ
-     *
-     * @return void
      */
     public function recordSuccess(): void
     {
@@ -145,8 +145,6 @@ class AICircuitBreaker
 
     /**
      * บันทึกความล้มเหลว
-     *
-     * @return void
      */
     public function recordFailure(): void
     {
@@ -171,8 +169,6 @@ class AICircuitBreaker
 
     /**
      * ดึง state ปัจจุบัน
-     *
-     * @return string
      */
     public function getState(): string
     {
@@ -181,9 +177,6 @@ class AICircuitBreaker
 
     /**
      * ตั้งค่า state
-     *
-     * @param string $state
-     * @return void
      */
     protected function setState(string $state): void
     {
@@ -192,32 +185,28 @@ class AICircuitBreaker
 
     /**
      * ตรวจสอบว่าควรทดสอบรีเซ็ตหรือไม่
-     *
-     * @return bool
      */
     protected function shouldAttemptReset(): bool
     {
         $lastFailureTime = Cache::get($this->cacheKey('last_failure_time'), 0);
+
         return (time() - $lastFailureTime) >= $this->timeout;
     }
 
     /**
      * เพิ่มจำนวนครั้งที่ล้มเหลว
-     *
-     * @return int
      */
     protected function incrementFailureCount(): int
     {
         $key = $this->cacheKey('failures');
         $count = Cache::get($key, 0) + 1;
         Cache::put($key, $count, now()->addMinutes(10));
+
         return $count;
     }
 
     /**
      * รีเซ็ตจำนวนครั้งที่ล้มเหลว
-     *
-     * @return void
      */
     protected function resetFailureCount(): void
     {
@@ -226,21 +215,18 @@ class AICircuitBreaker
 
     /**
      * เพิ่มจำนวนความสำเร็จ (ใน half-open state)
-     *
-     * @return int
      */
     protected function incrementSuccessCount(): int
     {
         $key = $this->cacheKey('successes');
         $count = Cache::get($key, 0) + 1;
         Cache::put($key, $count, now()->addMinutes(5));
+
         return $count;
     }
 
     /**
      * บันทึกเวลาที่ล้มเหลวล่าสุด
-     *
-     * @return void
      */
     protected function setLastFailureTime(): void
     {
@@ -249,8 +235,6 @@ class AICircuitBreaker
 
     /**
      * รีเซ็ต counters ทั้งหมด
-     *
-     * @return void
      */
     protected function resetCounters(): void
     {
@@ -261,19 +245,14 @@ class AICircuitBreaker
 
     /**
      * สร้าง cache key
-     *
-     * @param string $suffix
-     * @return string
      */
     protected function cacheKey(string $suffix): string
     {
-        return $this->cacheKeyPrefix . $this->provider . ':' . $suffix;
+        return $this->cacheKeyPrefix.$this->provider.':'.$suffix;
     }
 
     /**
      * ดึงสถิติของ circuit breaker
-     *
-     * @return array
      */
     public function getStats(): array
     {
@@ -290,8 +269,6 @@ class AICircuitBreaker
 
     /**
      * รีเซ็ต circuit breaker (สำหรับ testing หรือ manual intervention)
-     *
-     * @return void
      */
     public function reset(): void
     {
@@ -302,15 +279,13 @@ class AICircuitBreaker
 
     /**
      * ดึง fallback providers
-     *
-     * @return array
      */
     public static function getFallbackProviders(string $currentProvider): array
     {
         $providers = ['gemini', 'groq', 'qwen', 'openrouter'];
 
         // ลบ provider ปัจจุบันออก
-        $fallbacks = array_filter($providers, fn($p) => $p !== $currentProvider);
+        $fallbacks = array_filter($providers, fn ($p) => $p !== $currentProvider);
 
         return array_values($fallbacks);
     }

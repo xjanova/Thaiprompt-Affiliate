@@ -2,24 +2,24 @@
 
 namespace App\Services\AiGen;
 
-use App\Models\User;
-use App\Models\AiGenProvider;
-use App\Models\AiGenUsageLog;
 use App\Models\AiGenGeneration;
+use App\Models\AiGenProvider;
 use App\Models\AiGenSubscription;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Models\AiGenUsageLog;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AiGenService
 {
     protected AiGenQuotaService $quotaService;
+
     protected AiGenSubscriptionService $subscriptionService;
 
     public function __construct()
     {
-        $this->quotaService = new AiGenQuotaService();
-        $this->subscriptionService = new AiGenSubscriptionService();
+        $this->quotaService = new AiGenQuotaService;
+        $this->subscriptionService = new AiGenSubscriptionService;
     }
 
     /**
@@ -33,7 +33,7 @@ class AiGenService
         array $parameters = []
     ): array {
         // Validate type
-        if (!in_array($type, ['image', 'video'])) {
+        if (! in_array($type, ['image', 'video'])) {
             return [
                 'success' => false,
                 'error' => 'Invalid generation type. Must be "image" or "video".',
@@ -45,7 +45,7 @@ class AiGenService
             ->where('is_active', true)
             ->first();
 
-        if (!$provider) {
+        if (! $provider) {
             return [
                 'success' => false,
                 'error' => 'Provider not found or inactive.',
@@ -55,14 +55,14 @@ class AiGenService
         // Create provider instance
         $providerInstance = AiGenProviderFactory::createFromModel($provider);
 
-        if (!$providerInstance) {
+        if (! $providerInstance) {
             return [
                 'success' => false,
                 'error' => 'Provider implementation not found.',
             ];
         }
 
-        if (!$providerInstance->isConfigured()) {
+        if (! $providerInstance->isConfigured()) {
             return [
                 'success' => false,
                 'error' => 'Provider is not properly configured.',
@@ -72,7 +72,7 @@ class AiGenService
         // Check if user can generate
         $canGenerate = $this->checkUserCanGenerate($user, $type);
 
-        if (!$canGenerate['can_generate']) {
+        if (! $canGenerate['can_generate']) {
             return [
                 'success' => false,
                 'error' => $canGenerate['reason'],
@@ -106,7 +106,7 @@ class AiGenService
                 $result = $providerInstance->generateVideo($prompt, $parameters);
             }
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $usageLog->update([
                     'status' => 'failed',
                     'error_message' => $result['error'] ?? 'Unknown error',
@@ -147,7 +147,7 @@ class AiGenService
             }
 
             // Deduct credits if using subscription
-            if (!$canGenerate['is_free_quota'] && $canGenerate['subscription_id']) {
+            if (! $canGenerate['is_free_quota'] && $canGenerate['subscription_id']) {
                 $subscription = AiGenSubscription::find($canGenerate['subscription_id']);
                 if ($subscription) {
                     $subscription->useCredits($type, 1);
@@ -221,7 +221,7 @@ class AiGenService
             'status' => 'completed',
         ];
 
-        if (isset($result['images']) && is_array($result['images']) && !empty($result['images'])) {
+        if (isset($result['images']) && is_array($result['images']) && ! empty($result['images'])) {
             $updateData['file_url'] = $result['images'][0]['url'] ?? null;
             $updateData['thumbnail_url'] = $result['images'][0]['thumbnail'] ?? null;
         }
@@ -242,7 +242,7 @@ class AiGenService
             ->where('user_id', $user->id)
             ->first();
 
-        if (!$generation) {
+        if (! $generation) {
             return [
                 'success' => false,
                 'error' => 'Generation not found',

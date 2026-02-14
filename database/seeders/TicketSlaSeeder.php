@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\TicketSlaPolicy;
 use App\Models\TicketCategory;
+use App\Models\TicketSlaPolicy;
 use Illuminate\Database\Seeder;
 
 class TicketSlaSeeder extends Seeder

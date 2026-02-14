@@ -45,12 +45,13 @@ class ReverseCashbackOnRefund implements ShouldQueue
     {
         try {
             // Skip if cashback was not processed
-            if (!$this->order->cashback_processed || $this->order->cashback_amount <= 0) {
+            if (! $this->order->cashback_processed || $this->order->cashback_amount <= 0) {
                 Log::info('No cashback to reverse for order', ['order_id' => $this->order->id]);
+
                 return;
             }
 
-            $walletService = new WalletService();
+            $walletService = new WalletService;
             $wallet = $walletService->getOrCreateWallet($this->order->user);
 
             // Deduct cashback from wallet

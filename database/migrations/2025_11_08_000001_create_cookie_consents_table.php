@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('cookie_consents')) {
+        if (! Schema::hasTable('cookie_consents')) {
             Schema::create('cookie_consents', function (Blueprint $table) {
                 $table->id();
                 $table->string('session_id')->index();
@@ -28,7 +28,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('cookie_tracking')) {
+        if (! Schema::hasTable('cookie_tracking')) {
             Schema::create('cookie_tracking', function (Blueprint $table) {
                 $table->id();
                 $table->string('session_id')->index();
@@ -75,7 +75,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('cookie_analytics_keywords')) {
+        if (! Schema::hasTable('cookie_analytics_keywords')) {
             Schema::create('cookie_analytics_keywords', function (Blueprint $table) {
                 $table->id();
                 $table->string('keyword')->index();
@@ -89,7 +89,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('cookie_settings')) {
+        if (! Schema::hasTable('cookie_settings')) {
             Schema::create('cookie_settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('key')->unique();

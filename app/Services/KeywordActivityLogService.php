@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\LineBotKeyword;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Keyword Activity Logging Service
@@ -16,10 +16,8 @@ class KeywordActivityLogService
     /**
      * บันทึก keyword match
      *
-     * @param LineBotKeyword $keyword
-     * @param string $userMessage ข้อความของผู้ใช้
-     * @param string $lineUserId LINE User ID
-     * @return void
+     * @param  string  $userMessage  ข้อความของผู้ใช้
+     * @param  string  $lineUserId  LINE User ID
      */
     public function logKeywordMatch(LineBotKeyword $keyword, string $userMessage, string $lineUserId): void
     {
@@ -51,9 +49,8 @@ class KeywordActivityLogService
     /**
      * บันทึก no match (ไปให้ AI)
      *
-     * @param string $userMessage ข้อความของผู้ใช้
-     * @param string $lineUserId LINE User ID
-     * @return void
+     * @param  string  $userMessage  ข้อความของผู้ใช้
+     * @param  string  $lineUserId  LINE User ID
      */
     public function logNoMatch(string $userMessage, string $lineUserId): void
     {
@@ -81,11 +78,9 @@ class KeywordActivityLogService
     /**
      * ดึง keyword statistics
      *
-     * @param LineBotKeyword|null $keyword
-     * @param int $days จำนวนวันย้อนหลัง
-     * @return array
+     * @param  int  $days  จำนวนวันย้อนหลัง
      */
-    public function getKeywordStats(LineBotKeyword $keyword = null, int $days = 30): array
+    public function getKeywordStats(?LineBotKeyword $keyword = null, int $days = 30): array
     {
         $query = DB::table('keyword_activity_logs')
             ->where('created_at', '>=', now()->subDays($days));
@@ -109,8 +104,7 @@ class KeywordActivityLogService
     /**
      * ดึง matches per day
      *
-     * @param \Illuminate\Support\Collection $logs
-     * @return array
+     * @param  \Illuminate\Support\Collection  $logs
      */
     private function getMatchesPerDay($logs): array
     {
@@ -122,8 +116,7 @@ class KeywordActivityLogService
     /**
      * ดึง most used keyword
      *
-     * @param \Illuminate\Support\Collection $logs
-     * @return array|null
+     * @param  \Illuminate\Support\Collection  $logs
      */
     private function getMostUsedKeyword($logs): ?array
     {
@@ -143,8 +136,7 @@ class KeywordActivityLogService
     /**
      * ล้าง old logs
      *
-     * @param int $days ล้าง logs ที่เก่ากว่า N วัน
-     * @return int
+     * @param  int  $days  ล้าง logs ที่เก่ากว่า N วัน
      */
     public function clearOldLogs(int $days = 90): int
     {
@@ -156,7 +148,7 @@ class KeywordActivityLogService
     /**
      * Export activity logs to CSV
      *
-     * @param int $days จำนวนวันย้อนหลัง
+     * @param  int  $days  จำนวนวันย้อนหลัง
      * @return string CSV content
      */
     public function exportToCSV(int $days = 30): string
@@ -185,10 +177,6 @@ class KeywordActivityLogService
 
     /**
      * Get user conversation history with keywords
-     *
-     * @param string $lineUserId
-     * @param int $limit
-     * @return array
      */
     public function getUserHistory(string $lineUserId, int $limit = 20): array
     {

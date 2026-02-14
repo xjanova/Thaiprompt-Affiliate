@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง affiliates มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('affiliates')) {
+        if (! Schema::hasTable('affiliates')) {
             // ตาราง affiliates ยังไม่มี - ข้าม migration นี้
             return;
         }
@@ -76,7 +76,7 @@ return new class extends Migration
                     'binary_position',
                     'binary_level',
                     'binary_left_count',
-                    'binary_right_count'
+                    'binary_right_count',
                 ]);
             });
         }

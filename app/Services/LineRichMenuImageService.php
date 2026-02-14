@@ -4,8 +4,8 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 /**
  * LINE Rich Menu Image Service
@@ -38,16 +38,15 @@ class LineRichMenuImageService
      *
      * ใช้ Intervention Image v3 API
      *
-     * @param UploadedFile $file
-     * @param string $size 'full' หรือ 'half'
-     * @param bool $needsResize ต้อง resize หรือไม่
+     * @param  string  $size  'full' หรือ 'half'
+     * @param  bool  $needsResize  ต้อง resize หรือไม่
      * @return array{path: string, url: string, width: int, height: int, size_kb: int}
      *
      * @throws \Exception
      */
     public function processAndStore(UploadedFile $file, string $size, bool $needsResize = false): array
     {
-        if (!isset(self::DIMENSIONS[$size])) {
+        if (! isset(self::DIMENSIONS[$size])) {
             throw new \InvalidArgumentException("ขนาด Rich Menu ไม่ถูกต้อง: {$size}");
         }
 
@@ -55,7 +54,7 @@ class LineRichMenuImageService
         $targetHeight = self::DIMENSIONS[$size]['height'];
 
         // สร้าง ImageManager ด้วย GD driver (Intervention Image v3)
-        $manager = new ImageManager(new Driver());
+        $manager = new ImageManager(new Driver);
 
         // โหลดภาพด้วย Intervention Image v3
         $image = $manager->read($file->getPathname());
@@ -96,9 +95,6 @@ class LineRichMenuImageService
 
     /**
      * สร้างชื่อไฟล์ที่ unique
-     *
-     * @param string $size
-     * @return string
      */
     protected function generateFilename(string $size): string
     {
@@ -110,9 +106,6 @@ class LineRichMenuImageService
 
     /**
      * ลบไฟล์ภาพ Rich Menu
-     *
-     * @param string $path
-     * @return bool
      */
     public function delete(string $path): bool
     {
@@ -126,13 +119,11 @@ class LineRichMenuImageService
     /**
      * ตรวจสอบว่าภาพมีขนาดถูกต้องหรือไม่
      *
-     * @param UploadedFile $file
-     * @param string $size
      * @return array{valid: bool, message: string, dimensions: array}
      */
     public function validateDimensions(UploadedFile $file, string $size): array
     {
-        if (!isset(self::DIMENSIONS[$size])) {
+        if (! isset(self::DIMENSIONS[$size])) {
             return [
                 'valid' => false,
                 'message' => 'ขนาด Rich Menu ไม่ถูกต้อง',

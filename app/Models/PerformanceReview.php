@@ -101,11 +101,12 @@ class PerformanceReview extends Model
             $this->adaptability_rating,
         ];
 
-        $validRatings = array_filter($ratings, fn($r) => !is_null($r));
+        $validRatings = array_filter($ratings, fn ($r) => ! is_null($r));
 
         if (count($validRatings) > 0) {
             $this->overall_rating = array_sum($validRatings) / count($validRatings);
             $this->overall_grade = $this->calculateGrade($this->overall_rating);
+
             return $this->overall_rating;
         }
 
@@ -117,10 +118,19 @@ class PerformanceReview extends Model
      */
     protected function calculateGrade($rating)
     {
-        if ($rating >= 4.5) return 'A';
-        if ($rating >= 3.5) return 'B';
-        if ($rating >= 2.5) return 'C';
-        if ($rating >= 1.5) return 'D';
+        if ($rating >= 4.5) {
+            return 'A';
+        }
+        if ($rating >= 3.5) {
+            return 'B';
+        }
+        if ($rating >= 2.5) {
+            return 'C';
+        }
+        if ($rating >= 1.5) {
+            return 'D';
+        }
+
         return 'F';
     }
 
@@ -129,7 +139,7 @@ class PerformanceReview extends Model
      */
     public function getGradeLabelAttribute()
     {
-        return match($this->overall_grade) {
+        return match ($this->overall_grade) {
             'A' => 'Excellent',
             'B' => 'Good',
             'C' => 'Average',

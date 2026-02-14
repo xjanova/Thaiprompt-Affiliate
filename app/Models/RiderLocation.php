@@ -74,8 +74,6 @@ class RiderLocation extends Model
 
     /**
      * ความสัมพันธ์กับ Rider
-     *
-     * @return BelongsTo
      */
     public function rider(): BelongsTo
     {
@@ -84,8 +82,6 @@ class RiderLocation extends Model
 
     /**
      * ความสัมพันธ์กับ Job
-     *
-     * @return BelongsTo
      */
     public function job(): BelongsTo
     {
@@ -126,8 +122,6 @@ class RiderLocation extends Model
 
     /**
      * ความเร็วเป็น กม./ชม.
-     *
-     * @return float|null
      */
     public function getSpeedKphAttribute(): ?float
     {
@@ -136,12 +130,10 @@ class RiderLocation extends Model
 
     /**
      * ชื่อกิจกรรมภาษาไทย
-     *
-     * @return string
      */
     public function getActivityTypeTextAttribute(): string
     {
-        return match($this->activity_type) {
+        return match ($this->activity_type) {
             'still' => 'หยุดนิ่ง',
             'walking' => 'เดิน',
             'running' => 'วิ่ง',
@@ -158,11 +150,6 @@ class RiderLocation extends Model
 
     /**
      * บันทึกตำแหน่งใหม่
-     *
-     * @param int $riderId
-     * @param array $locationData
-     * @param int|null $jobId
-     * @return self
      */
     public static function recordLocation(int $riderId, array $locationData, ?int $jobId = null): self
     {
@@ -188,10 +175,6 @@ class RiderLocation extends Model
     /**
      * คำนวณระยะทางระหว่างสองจุด (Haversine formula)
      *
-     * @param float $lat1
-     * @param float $lon1
-     * @param float $lat2
-     * @param float $lon2
      * @return float ระยะทางเป็น กม.
      */
     public static function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float

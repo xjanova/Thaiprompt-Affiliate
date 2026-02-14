@@ -2,16 +2,17 @@
 
 namespace App\Services\TrendDetection;
 
+use App\Models\TrendData;
 use App\Models\TrendKeyword;
 use App\Models\ViralTrend;
-use App\Models\TrendData;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ViralTrendDetectionService
 {
     protected float $viralThreshold = 100.0;
+
     protected int $minMentions = 5;
+
     protected float $minVelocity = 2.0; // mentions per hour
 
     /**
@@ -149,7 +150,7 @@ class ViralTrendDetectionService
             // Extract relevant part of title
             $title = Str::limit($topPost->title, 100);
         } else {
-            $title = "Trending: " . ucfirst($keyword->keyword);
+            $title = 'Trending: '.ucfirst($keyword->keyword);
         }
 
         return $title;
@@ -164,8 +165,8 @@ class ViralTrendDetectionService
         $growthRate = $keyword->growth_rate;
         $sources = $trendData->pluck('source.name')->unique()->implode(', ');
 
-        return "พบการพูดถึง '{$keyword->keyword}' จำนวน {$mentions} ครั้ง " .
-               "เติบโตขึ้น {$growthRate}% " .
+        return "พบการพูดถึง '{$keyword->keyword}' จำนวน {$mentions} ครั้ง ".
+               "เติบโตขึ้น {$growthRate}% ".
                "จากแหล่งข้อมูล: {$sources}";
     }
 

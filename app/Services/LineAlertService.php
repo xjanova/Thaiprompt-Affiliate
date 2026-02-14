@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\MlmProspect;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * LINE Alert Service
@@ -21,7 +21,9 @@ class LineAlertService
      * Alert thresholds
      */
     private const DROPOUT_RATE_THRESHOLD = 50; // %
+
     private const ERROR_RATE_THRESHOLD = 10; // %
+
     private const SLOW_RESPONSE_THRESHOLD = 300; // seconds
 
     public function __construct(
@@ -30,15 +32,12 @@ class LineAlertService
 
     /**
      * Send new signup completion alert to sponsor
-     *
-     * @param MlmProspect $prospect
-     * @return void
      */
     public function notifyNewSignup(MlmProspect $prospect): void
     {
         $sponsor = $prospect->sponsorUser;
 
-        if (!$sponsor || !$sponsor->line_user_id) {
+        if (! $sponsor || ! $sponsor->line_user_id) {
             return;
         }
 
@@ -47,8 +46,8 @@ class LineAlertService
         $message = "🎉 มีสมาชิกใหม่สมัครผ่านคุณแล้ว!\n\n";
         $message .= "👤 ชื่อ: {$user->name}\n";
         $message .= "📧 อีเมล: {$user->email}\n";
-        $message .= "📅 เวลา: " . now()->format('d/m/Y H:i') . "\n\n";
-        $message .= "ยินดีด้วยค่ะ! 🎊";
+        $message .= '📅 เวลา: '.now()->format('d/m/Y H:i')."\n\n";
+        $message .= 'ยินดีด้วยค่ะ! 🎊';
 
         try {
             $this->lineService->sendPushMessage($sponsor->line_user_id, $message);
@@ -67,8 +66,6 @@ class LineAlertService
 
     /**
      * Check and alert on high dropout rate
-     *
-     * @return void
      */
     public function checkDropoutRate(): void
     {
@@ -102,10 +99,6 @@ class LineAlertService
 
     /**
      * Alert on unusual activity pattern
-     *
-     * @param string $pattern
-     * @param array $details
-     * @return void
      */
     public function alertUnusualActivity(string $pattern, array $details): void
     {
@@ -122,17 +115,13 @@ class LineAlertService
 
     /**
      * Alert on system error
-     *
-     * @param string $error
-     * @param array $context
-     * @return void
      */
     public function alertSystemError(string $error, array $context = []): void
     {
         $message = "❌ SYSTEM ERROR\n\n";
         $message .= "Error: {$error}\n\n";
 
-        if (!empty($context)) {
+        if (! empty($context)) {
             $message .= "Context:\n";
             foreach ($context as $key => $value) {
                 $message .= "- {$key}: {$value}\n";
@@ -144,14 +133,11 @@ class LineAlertService
 
     /**
      * Send daily summary to admins
-     *
-     * @param array $stats
-     * @return void
      */
     public function sendDailySummary(array $stats): void
     {
         $message = "📊 LINE OA Daily Summary\n";
-        $message .= "Date: " . now()->format('d/m/Y') . "\n\n";
+        $message .= 'Date: '.now()->format('d/m/Y')."\n\n";
 
         $message .= "✅ Completed: {$stats['completed']}\n";
         $message .= "📝 In Progress: {$stats['in_progress']}\n";
@@ -166,10 +152,6 @@ class LineAlertService
 
     /**
      * Send alert to admin(s)
-     *
-     * @param string $title
-     * @param string $message
-     * @return void
      */
     private function sendAdminAlert(string $title, string $message): void
     {
@@ -197,27 +179,22 @@ class LineAlertService
 
     /**
      * Get performance emoji based on conversion rate
-     *
-     * @param float $rate
-     * @return string
      */
     private function getPerformanceEmoji(float $rate): string
     {
         if ($rate >= 70) {
-            return "🔥 Excellent! Keep it up!";
+            return '🔥 Excellent! Keep it up!';
         } elseif ($rate >= 50) {
-            return "👍 Good performance!";
+            return '👍 Good performance!';
         } elseif ($rate >= 30) {
-            return "📊 Average performance";
+            return '📊 Average performance';
         } else {
-            return "⚠️ Needs attention";
+            return '⚠️ Needs attention';
         }
     }
 
     /**
      * Check and send milestone alerts
-     *
-     * @return void
      */
     public function checkMilestones(): void
     {
@@ -234,9 +211,9 @@ class LineAlertService
         foreach ($milestones as $milestone) {
             $cacheKey = "milestone_reached:{$milestone}";
 
-            if ($totalCompleted >= $milestone && !Cache::has($cacheKey)) {
+            if ($totalCompleted >= $milestone && ! Cache::has($cacheKey)) {
                 $this->sendAdminAlert(
-                    "🎉 Milestone Reached!",
+                    '🎉 Milestone Reached!',
                     "Congratulations! You've reached {$milestone} completed signups via LINE OA!"
                 );
 

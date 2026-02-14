@@ -54,8 +54,6 @@ class TarotCardInterpretation extends Model
 
     /**
      * ความสัมพันธ์กับ TarotCard
-     *
-     * @return BelongsTo
      */
     public function card(): BelongsTo
     {
@@ -64,8 +62,6 @@ class TarotCardInterpretation extends Model
 
     /**
      * ความสัมพันธ์กับ TarotReadingCategory
-     *
-     * @return BelongsTo
      */
     public function category(): BelongsTo
     {
@@ -75,45 +71,47 @@ class TarotCardInterpretation extends Model
     /**
      * ดึงคำทำนายหัวตั้งตามภาษา
      *
-     * @param string $language รหัสภาษา (th หรือ en)
+     * @param  string  $language  รหัสภาษา (th หรือ en)
      * @return string คำทำนาย
      */
     public function getUprightInterpretation(string $language = 'th'): string
     {
         $field = "upright_interpretation_{$language}";
+
         return $this->$field ?? $this->upright_interpretation_th ?? '';
     }
 
     /**
      * ดึงคำทำนายกลับหัวตามภาษา
      *
-     * @param string $language รหัสภาษา (th หรือ en)
+     * @param  string  $language  รหัสภาษา (th หรือ en)
      * @return string คำทำนาย
      */
     public function getReversedInterpretation(string $language = 'th'): string
     {
         $field = "reversed_interpretation_{$language}";
+
         return $this->$field ?? $this->reversed_interpretation_th ?? '';
     }
 
     /**
      * ดึงคำแนะนำตามภาษา
      *
-     * @param string $language รหัสภาษา (th หรือ en)
+     * @param  string  $language  รหัสภาษา (th หรือ en)
      * @return string คำแนะนำ
      */
     public function getAdvice(string $language = 'th'): string
     {
         $field = "advice_{$language}";
+
         return $this->$field ?? $this->advice_th ?? '';
     }
 
     /**
      * ค้นหาหรือสร้าง interpretation สำหรับไพ่และหมวด
      *
-     * @param int $cardId ID ของไพ่
-     * @param int $categoryId ID ของหมวดหมู่
-     * @return self
+     * @param  int  $cardId  ID ของไพ่
+     * @param  int  $categoryId  ID ของหมวดหมู่
      */
     public static function findOrCreateFor(int $cardId, int $categoryId): self
     {
@@ -126,9 +124,8 @@ class TarotCardInterpretation extends Model
     /**
      * ค้นหา interpretation สำหรับไพ่และหมวด
      *
-     * @param int $cardId ID ของไพ่
-     * @param int $categoryId ID ของหมวดหมู่
-     * @return self|null
+     * @param  int  $cardId  ID ของไพ่
+     * @param  int  $categoryId  ID ของหมวดหมู่
      */
     public static function findFor(int $cardId, int $categoryId): ?self
     {
@@ -139,14 +136,12 @@ class TarotCardInterpretation extends Model
 
     /**
      * ตรวจสอบว่ามีคำทำนายที่กำหนดเองหรือไม่
-     *
-     * @return bool
      */
     public function hasCustomInterpretation(): bool
     {
-        return !empty($this->upright_interpretation_th)
-            || !empty($this->upright_interpretation_en)
-            || !empty($this->reversed_interpretation_th)
-            || !empty($this->reversed_interpretation_en);
+        return ! empty($this->upright_interpretation_th)
+            || ! empty($this->upright_interpretation_en)
+            || ! empty($this->reversed_interpretation_th)
+            || ! empty($this->reversed_interpretation_en);
     }
 }

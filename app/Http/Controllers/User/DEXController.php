@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\TPIXToken;
 use App\Models\TPIXLiquidityPool;
 use App\Services\TPIX\DEXService;
 use Illuminate\Http\Request;

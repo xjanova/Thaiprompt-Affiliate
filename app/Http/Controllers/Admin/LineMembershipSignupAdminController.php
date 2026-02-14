@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\LineSignupAnalytic;
 use App\Models\LineSignupInvitation;
 use App\Models\LineSignupReward;
 use App\Models\LineSignupSession;
@@ -19,7 +18,7 @@ class LineMembershipSignupAdminController extends Controller
     public function index(Request $request)
     {
         $dateRange = $request->input('range', '30');
-        $startDate = now()->subDays((int)$dateRange);
+        $startDate = now()->subDays((int) $dateRange);
 
         // Get overview statistics
         $stats = [
@@ -236,7 +235,7 @@ class LineMembershipSignupAdminController extends Controller
         $validated['flex_message_json'] = json_decode($validated['flex_message_json'], true);
 
         // แปลง variables string เป็น array
-        if (!empty($validated['variables'])) {
+        if (! empty($validated['variables'])) {
             $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
         } else {
             $validated['variables'] = [];
@@ -269,7 +268,7 @@ class LineMembershipSignupAdminController extends Controller
         $validated['flex_message_json'] = json_decode($validated['flex_message_json'], true);
 
         // แปลง variables string เป็น array
-        if (!empty($validated['variables'])) {
+        if (! empty($validated['variables'])) {
             $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
         } else {
             $validated['variables'] = [];
@@ -289,7 +288,7 @@ class LineMembershipSignupAdminController extends Controller
     public function resetTemplate(LineSignupTemplate $template)
     {
         // ตรวจสอบว่าสามารถ reset ได้หรือไม่
-        if (!$template->canReset()) {
+        if (! $template->canReset()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Template นี้ไม่สามารถ reset ได้ (ไม่ใช่ default template)',
@@ -299,7 +298,7 @@ class LineMembershipSignupAdminController extends Controller
         // ดึงข้อมูล default
         $defaultData = $template->getDefaultData();
 
-        if (!$defaultData) {
+        if (! $defaultData) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบข้อมูล default template',
@@ -326,12 +325,12 @@ class LineMembershipSignupAdminController extends Controller
     public function duplicateTemplate(LineSignupTemplate $template)
     {
         // สร้าง template key ใหม่
-        $newKey = $template->template_key . '_copy_' . time();
+        $newKey = $template->template_key.'_copy_'.time();
 
         // Duplicate template
         $newTemplate = $template->replicate();
         $newTemplate->template_key = $newKey;
-        $newTemplate->template_name = $template->template_name . ' (Copy)';
+        $newTemplate->template_name = $template->template_name.' (Copy)';
         $newTemplate->is_default = false; // Template ที่ duplicate มาไม่ใช่ default
         $newTemplate->original_template_key = $template->template_key; // เก็บ key ต้นฉบับ
         $newTemplate->usage_count = 0; // Reset usage count
@@ -527,10 +526,19 @@ class LineMembershipSignupAdminController extends Controller
             ->get()
             ->groupBy(function ($item) {
                 $duration = $item->duration_minutes;
-                if ($duration <= 2) return '0-2 min';
-                if ($duration <= 5) return '2-5 min';
-                if ($duration <= 10) return '5-10 min';
-                if ($duration <= 30) return '10-30 min';
+                if ($duration <= 2) {
+                    return '0-2 min';
+                }
+                if ($duration <= 5) {
+                    return '2-5 min';
+                }
+                if ($duration <= 10) {
+                    return '5-10 min';
+                }
+                if ($duration <= 30) {
+                    return '10-30 min';
+                }
+
                 return '30+ min';
             })
             ->map(function ($group) {
@@ -560,7 +568,7 @@ class LineMembershipSignupAdminController extends Controller
 
         $sessions = $query->get();
 
-        $filename = 'line_signup_sessions_' . now()->format('Y-m-d_His') . '.csv';
+        $filename = 'line_signup_sessions_'.now()->format('Y-m-d_His').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

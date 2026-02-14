@@ -57,7 +57,7 @@ class RequireLineUid
         $user = $request->user();
 
         // ถ้าไม่ได้ login ให้ผ่านไป (ให้ auth middleware จัดการ)
-        if (!$user) {
+        if (! $user) {
             return $next($request);
         }
 
@@ -77,6 +77,7 @@ class RequireLineUid
         // Soft mode: แค่เพิ่ม warning ให้ user รู้
         if ($mode === 'soft') {
             session()->flash('line_warning', 'แนะนำให้เชื่อมต่อ LINE เพื่อความสะดวกในการใช้งานและรับการแจ้งเตือน');
+
             return $next($request);
         }
 

@@ -2,13 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\MessageSentiment;
-use App\Models\MessageIntent;
 use App\Models\KeywordABTest;
 use App\Models\LineBotKeyword;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
-use Carbon\Carbon;
+use App\Models\MessageIntent;
+use App\Models\MessageSentiment;
 
 /**
  * Advanced Analytics Service (Phase 3)
@@ -19,9 +16,6 @@ class AdvancedAnalyticsService
 {
     /**
      * Generate comprehensive dashboard analytics
-     *
-     * @param int $days
-     * @return array
      */
     public function getDashboardAnalytics(int $days = 30): array
     {
@@ -37,9 +31,6 @@ class AdvancedAnalyticsService
 
     /**
      * Get analytics summary
-     *
-     * @param int $days
-     * @return array
      */
     private function getSummary(int $days = 30): array
     {
@@ -66,9 +57,6 @@ class AdvancedAnalyticsService
 
     /**
      * Generate predictions using simple ML models
-     *
-     * @param int $days
-     * @return array
      */
     public function generatePredictions(int $days = 30): array
     {
@@ -100,9 +88,6 @@ class AdvancedAnalyticsService
 
     /**
      * Detect anomalies in data
-     *
-     * @param int $days
-     * @return array
      */
     public function detectAnomalies(int $days = 30): array
     {
@@ -114,7 +99,7 @@ class AdvancedAnalyticsService
 
         $messages = $historical['daily_messages'];
         $mean = array_sum($messages) / count($messages);
-        $variance = array_sum(array_map(fn($x) => pow($x - $mean, 2), $messages)) / count($messages);
+        $variance = array_sum(array_map(fn ($x) => pow($x - $mean, 2), $messages)) / count($messages);
         $stdDev = sqrt($variance);
 
         // Find outliers (> 2 standard deviations)
@@ -143,10 +128,6 @@ class AdvancedAnalyticsService
 
     /**
      * Generate forecasts for next period
-     *
-     * @param int $days
-     * @param int $forecastDays
-     * @return array
      */
     public function generateForecasts(int $days = 30, int $forecastDays = 14): array
     {
@@ -176,9 +157,6 @@ class AdvancedAnalyticsService
 
     /**
      * Generate automated insights
-     *
-     * @param int $days
-     * @return array
      */
     public function generateInsights(int $days = 30): array
     {
@@ -222,11 +200,11 @@ class AdvancedAnalyticsService
 
         // Insight 4: Keyword performance
         $topPerforming = $this->getTopPerformingKeywords($days);
-        if (!empty($topPerforming)) {
+        if (! empty($topPerforming)) {
             $insights[] = [
                 'type' => 'success',
                 'title' => 'Top Performing Keywords',
-                'description' => "Keywords: " . implode(', ', array_slice($topPerforming, 0, 3)),
+                'description' => 'Keywords: '.implode(', ', array_slice($topPerforming, 0, 3)),
                 'action' => 'Expand coverage with similar keywords',
                 'priority' => 'normal',
             ];
@@ -237,9 +215,6 @@ class AdvancedAnalyticsService
 
     /**
      * Get recommendations based on analytics
-     *
-     * @param int $days
-     * @return array
      */
     public function getRecommendations(int $days = 30): array
     {
@@ -279,10 +254,6 @@ class AdvancedAnalyticsService
 
     /**
      * Simple trend prediction
-     *
-     * @param array $data
-     * @param int $forecastPoints
-     * @return array
      */
     private function predictTrend(array $data, int $forecastPoints = 7): array
     {
@@ -331,11 +302,6 @@ class AdvancedAnalyticsService
 
     /**
      * Exponential smoothing forecasting
-     *
-     * @param array $data
-     * @param float $alpha
-     * @param int $periods
-     * @return array
      */
     private function exponentialSmoothing(array $data, float $alpha = 0.3, int $periods = 14): array
     {
@@ -357,13 +323,10 @@ class AdvancedAnalyticsService
 
     /**
      * Determine trend direction
-     *
-     * @param array $prediction
-     * @return string
      */
     private function determineTrendDirection(array $prediction): string
     {
-        if (empty($prediction) || !isset($prediction['value'])) {
+        if (empty($prediction) || ! isset($prediction['value'])) {
             return 'stable';
         }
 
@@ -373,9 +336,6 @@ class AdvancedAnalyticsService
 
     /**
      * Get historical data
-     *
-     * @param int $days
-     * @return array
      */
     private function getHistoricalData(int $days = 30): array
     {
@@ -419,8 +379,8 @@ class AdvancedAnalyticsService
             return ['trend' => 'stable', 'change_percentage' => 0];
         }
 
-        $first = array_slice($complaints, 0, (int)(count($complaints) / 2));
-        $last = array_slice($complaints, (int)(count($complaints) / 2));
+        $first = array_slice($complaints, 0, (int) (count($complaints) / 2));
+        $last = array_slice($complaints, (int) (count($complaints) / 2));
 
         $firstAvg = array_sum($first) / max(count($first), 1);
         $lastAvg = array_sum($last) / max(count($last), 1);

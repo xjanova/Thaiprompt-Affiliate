@@ -90,7 +90,8 @@ class ProcessCryptoWithdrawals extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ Withdrawal processing failed: ' . $e->getMessage());
+            $this->error('❌ Withdrawal processing failed: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

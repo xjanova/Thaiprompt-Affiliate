@@ -101,13 +101,13 @@ class QualityCheckpoint extends Model
      */
     public function getPassPercentageAttribute(): float
     {
-        if (!$this->test_parameters) {
+        if (! $this->test_parameters) {
             return 0;
         }
 
         $total = count($this->test_parameters);
         $passed = collect($this->test_parameters)
-            ->filter(fn($param) => $param['status'] === 'pass')
+            ->filter(fn ($param) => $param['status'] === 'pass')
             ->count();
 
         return ($passed / $total) * 100;
@@ -118,7 +118,7 @@ class QualityCheckpoint extends Model
      */
     public function getResultColorAttribute(): string
     {
-        return match($this->overall_result) {
+        return match ($this->overall_result) {
             'pass' => 'green',
             'conditional_pass' => 'yellow',
             'fail' => 'red',

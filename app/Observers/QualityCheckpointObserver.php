@@ -2,11 +2,11 @@
 
 namespace App\Observers;
 
-use App\Models\QualityCheckpoint;
-use App\Services\BlockchainRecordService;
-use App\Jobs\FoodPassport\SendQualityAlertJob;
 use App\Jobs\FoodPassport\IssueCertificationJob;
 use App\Jobs\FoodPassport\RecordQualityOnBlockchainJob;
+use App\Jobs\FoodPassport\SendQualityAlertJob;
+use App\Models\QualityCheckpoint;
+use App\Services\BlockchainRecordService;
 use Illuminate\Support\Facades\Log;
 
 class QualityCheckpointObserver
@@ -30,7 +30,7 @@ class QualityCheckpointObserver
         ]);
 
         // Handle based on result
-        match($checkpoint->overall_result) {
+        match ($checkpoint->overall_result) {
             'fail' => $this->handleFailedCheckpoint($checkpoint),
             'conditional_pass' => $this->handleConditionalPass($checkpoint),
             'pass' => $this->handlePassedCheckpoint($checkpoint),
@@ -60,7 +60,7 @@ class QualityCheckpointObserver
             ]);
 
             // Handle based on new result
-            match($newResult) {
+            match ($newResult) {
                 'fail' => $this->handleFailedCheckpoint($checkpoint),
                 'conditional_pass' => $this->handleConditionalPass($checkpoint),
                 'pass' => $this->handlePassedCheckpoint($checkpoint),
@@ -193,7 +193,7 @@ class QualityCheckpointObserver
 
         return $checkpoint->pass_score >= $criteria['pass_score']
             && in_array($checkpoint->checkpoint_type, $criteria['types'])
-            && !$checkpoint->certification_issued;
+            && ! $checkpoint->certification_issued;
     }
 
     /**

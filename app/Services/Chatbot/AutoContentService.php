@@ -3,7 +3,6 @@
 namespace App\Services\Chatbot;
 
 use App\Models\ChatbotAutoContentPost;
-use App\Models\AiBotProfile;
 use App\Services\AI\AiServiceFactory;
 use Illuminate\Support\Facades\Log;
 
@@ -16,9 +15,9 @@ class AutoContentService
 {
     protected AiServiceFactory $aiServiceFactory;
 
-    public function __construct(AiServiceFactory $aiServiceFactory = null)
+    public function __construct(?AiServiceFactory $aiServiceFactory = null)
     {
-        $this->aiServiceFactory = $aiServiceFactory ?? new AiServiceFactory();
+        $this->aiServiceFactory = $aiServiceFactory ?? new AiServiceFactory;
     }
 
     /**
@@ -29,7 +28,7 @@ class AutoContentService
         try {
             $botProfile = $post->botProfile;
 
-            if (!$botProfile->provider || !$botProfile->model) {
+            if (! $botProfile->provider || ! $botProfile->model) {
                 throw new \Exception('Bot profile must have AI provider and model configured');
             }
 
@@ -161,7 +160,7 @@ class AutoContentService
             ->verified()
             ->first();
 
-        if (!$integration) {
+        if (! $integration) {
             throw new \Exception("Platform integration not found or not active: {$platform}");
         }
 
@@ -286,8 +285,9 @@ class AutoContentService
                 if (empty($post->generated_content)) {
                     $contentResult = $this->generateContent($post);
 
-                    if (!$contentResult['success']) {
+                    if (! $contentResult['success']) {
                         $post->markAsFailed($contentResult['error']);
+
                         continue;
                     }
 
@@ -301,7 +301,7 @@ class AutoContentService
                 $results = $this->postToPlatforms($post);
 
                 // Check if all posts succeeded
-                $allSuccess = collect($results)->every(fn($r) => $r['success'] ?? false);
+                $allSuccess = collect($results)->every(fn ($r) => $r['success'] ?? false);
 
                 if ($allSuccess) {
                     $post->markAsPosted($results);

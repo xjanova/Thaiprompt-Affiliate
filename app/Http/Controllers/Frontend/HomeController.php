@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Setting;
 use App\Models\HomepageSection;
-use Illuminate\Http\Request;
+use App\Models\User;
 
 class HomeController extends Controller
 {
@@ -25,7 +23,7 @@ class HomeController extends Controller
     public function index()
     {
         // ตรวจสอบว่าระบบต้อง setup หรือไม่
-        if (!User::where('is_super_admin', true)->exists()) {
+        if (! User::where('is_super_admin', true)->exists()) {
             return redirect()->route('setup.index');
         }
 

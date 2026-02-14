@@ -5,13 +5,12 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessCommentEngagement;
 use App\Jobs\ProcessFortuneTelling;
 use App\Models\FortuneCommentEngagement;
-use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -33,8 +32,11 @@ use Illuminate\Support\Facades\Log;
 class FacebookWebhookController extends Controller
 {
     protected $facebookService;
+
     protected $aiService;
+
     protected $conversationService;
+
     protected $settings;
 
     public function __construct()
@@ -51,10 +53,10 @@ class FacebookWebhookController extends Controller
                 'error_class' => get_class($e),
             ]);
             // สร้าง fallback services เพื่อให้ระบบยังทำงานได้
-            if (!$this->settings) {
-                $this->settings = new FortuneTellingSetting();
+            if (! $this->settings) {
+                $this->settings = new FortuneTellingSetting;
             }
-            if (!$this->facebookService) {
+            if (! $this->facebookService) {
                 try {
                     $this->facebookService = new FacebookWebhookService($this->settings);
                 } catch (\Exception $fbError) {
@@ -64,7 +66,7 @@ class FacebookWebhookController extends Controller
                 }
             }
             // ✅ สร้าง fallback สำหรับ aiService และ conversationService ด้วย
-            if (!$this->aiService) {
+            if (! $this->aiService) {
                 try {
                     $this->aiService = new FortuneAIService($this->settings);
                 } catch (\Exception $aiError) {
@@ -73,7 +75,7 @@ class FacebookWebhookController extends Controller
                     ]);
                 }
             }
-            if (!$this->conversationService) {
+            if (! $this->conversationService) {
                 try {
                     $this->conversationService = new FortuneConversationService($this->settings);
                 } catch (\Exception $convError) {
@@ -98,6 +100,7 @@ class FacebookWebhookController extends Controller
 
         if ($mode === 'subscribe' && $token === $this->settings->facebook_verify_token) {
             Log::info('Facebook Webhook Verified');
+
             return response($challenge, 200);
         }
 
@@ -105,6 +108,7 @@ class FacebookWebhookController extends Controller
             'mode' => $mode,
             'token_match' => $token === $this->settings->facebook_verify_token,
         ]);
+
         return response()->json(['error' => 'Forbidden'], 403);
     }
 
@@ -128,25 +132,27 @@ class FacebookWebhookController extends Controller
             // 🔍 Debug: Log ทุก webhook request ที่เข้ามา
             Log::info('📥 Facebook Webhook RAW', [
                 'method' => $request->method(),
-                'has_signature' => !empty($request->header('X-Hub-Signature-256')),
+                'has_signature' => ! empty($request->header('X-Hub-Signature-256')),
                 'content_length' => strlen($request->getContent()),
                 'ip' => $request->ip(),
             ]);
 
             // ตรวจสอบ webhook signature (security)
             $signature = $request->header('X-Hub-Signature-256', '');
-            if (!$this->facebookService->verifyWebhookSignature(
+            if (! $this->facebookService->verifyWebhookSignature(
                 $request->getContent(),
                 $signature
             )) {
                 Log::warning('Facebook Webhook: Invalid signature', [
                     'ip' => $request->ip(),
                 ]);
+
                 return response()->json(['status' => 'ok']); // ยังคง return 200
             }
 
-            if (!$this->settings->isServiceEnabled()) {
+            if (! $this->settings->isServiceEnabled()) {
                 Log::info('📥 Webhook: Service disabled, skipping');
+
                 return response()->json(['status' => 'ok']);
             }
 
@@ -162,8 +168,8 @@ class FacebookWebhookController extends Controller
 
             foreach ($data['entry'] ?? [] as $entry) {
                 // 🔍 Debug: Log entry details
-                $hasChanges = !empty($entry['changes']);
-                $hasMessaging = !empty($entry['messaging']);
+                $hasChanges = ! empty($entry['changes']);
+                $hasMessaging = ! empty($entry['messaging']);
                 if ($hasChanges) {
                     foreach ($entry['changes'] as $change) {
                         Log::info('📥 Webhook Entry Change', [
@@ -185,7 +191,7 @@ class FacebookWebhookController extends Controller
             }
         } catch (\Exception $e) {
             // Log error แต่ยังคง return 200 เพื่อไม่ให้ Facebook retry
-            Log::error('Facebook Webhook Error: ' . $e->getMessage(), [
+            Log::error('Facebook Webhook Error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
         }
@@ -212,8 +218,9 @@ class FacebookWebhookController extends Controller
             // ตรวจจับ Echo Messages (ข้อความที่แอดมินส่งจากเพจ)
             // เมื่อแอดมินตอบข้อความ user ผ่าน Page Inbox
             // Facebook จะส่ง webhook พร้อม is_echo = true
-            if (!empty($messaging['message']['is_echo'])) {
+            if (! empty($messaging['message']['is_echo'])) {
                 $this->handleEchoMessage($messaging);
+
                 continue; // ไม่ต้องประมวลผลเป็น user message
             }
 
@@ -247,6 +254,7 @@ class FacebookWebhookController extends Controller
         if (empty($questions)) {
             // ไม่ใช่คำสั่งดูดวง → ลอง engage ชวนดูดวง
             $this->handleCommentEngagement($comment);
+
             return;
         }
 
@@ -259,6 +267,7 @@ class FacebookWebhookController extends Controller
 
             if ($deepLimitCheck['has_reached_limit']) {
                 $this->sendDeepLimitMessage($comment);
+
                 return;
             }
 
@@ -268,6 +277,7 @@ class FacebookWebhookController extends Controller
 
             if ($limitCheck['has_reached_limit']) {
                 $this->sendLimitMessage($comment);
+
                 return;
             }
 
@@ -292,8 +302,9 @@ class FacebookWebhookController extends Controller
             ]);
 
             // ตรวจสอบว่าเปิดระบบ engagement หรือไม่
-            if (!$this->settings->isCommentEngagementEnabled()) {
+            if (! $this->settings->isCommentEngagementEnabled()) {
                 Log::info('🗨️ Comment Engagement: DISABLED - skipping');
+
                 return;
             }
 
@@ -305,16 +316,18 @@ class FacebookWebhookController extends Controller
 
             if (empty($fromId) || empty($commentId) || empty($postId)) {
                 Log::warning('🗨️ Comment Engagement: Missing data', [
-                    'has_from_id' => !empty($fromId),
-                    'has_comment_id' => !empty($commentId),
-                    'has_post_id' => !empty($postId),
+                    'has_from_id' => ! empty($fromId),
+                    'has_comment_id' => ! empty($commentId),
+                    'has_post_id' => ! empty($postId),
                 ]);
+
                 return;
             }
 
             // ไม่ตอบคอมเม้นต์จากเพจเอง
             if ($fromId === $this->settings->facebook_page_id) {
                 Log::info('🗨️ Comment Engagement: Own page comment - skipping');
+
                 return;
             }
 
@@ -324,6 +337,7 @@ class FacebookWebhookController extends Controller
                     'user_id' => $fromId,
                     'post_id' => $postId,
                 ]);
+
                 return;
             }
 
@@ -350,7 +364,7 @@ class FacebookWebhookController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Comment Engagement Error: ' . $e->getMessage(), [
+            Log::error('Comment Engagement Error: '.$e->getMessage(), [
                 'comment' => $comment,
             ]);
         }
@@ -369,7 +383,7 @@ class FacebookWebhookController extends Controller
 
         // ดึง user profile พร้อม fallback
         $userProfile = $this->facebookService->getUserProfile($fromId);
-        if (!is_array($userProfile)) {
+        if (! is_array($userProfile)) {
             $userProfile = ['name' => $fromName, 'id' => $fromId];
         }
         $name = $userProfile['name'] ?? $fromName;
@@ -421,8 +435,7 @@ class FacebookWebhookController extends Controller
      * - message.is_echo = true
      * - message.app_id = app_id ของ bot (ถ้าส่งจาก bot จะมี app_id)
      *
-     * @param array $messaging ข้อมูล messaging event จาก Facebook
-     * @return void
+     * @param  array  $messaging  ข้อมูล messaging event จาก Facebook
      */
     protected function handleEchoMessage(array $messaging): void
     {
@@ -436,13 +449,13 @@ class FacebookWebhookController extends Controller
 
         // ถ้าระบบ Admin Handover ถูกปิด → ข้ามไม่ต้องทำอะไร
         // ⚠️ Default เป็น false เพื่อป้องกันบอทถูกบล็อกโดยไม่ตั้งใจ
-        if (!($this->settings->admin_handover_enabled ?? false)) {
+        if (! ($this->settings->admin_handover_enabled ?? false)) {
             return;
         }
 
         // ถ้า echo มี app_id แสดงว่าเป็นข้อความที่บอทส่งเอง → ข้าม
         // เราสนใจเฉพาะข้อความที่แอดมิน (คน) พิมพ์ตอบเอง (ไม่มี app_id)
-        if (!empty($appId)) {
+        if (! empty($appId)) {
             return;
         }
 
@@ -467,7 +480,7 @@ class FacebookWebhookController extends Controller
     /**
      * ตรวจสอบว่าแอดมินกำลังดูแล user คนนี้อยู่หรือไม่
      *
-     * @param string $userId Facebook User ID
+     * @param  string  $userId  Facebook User ID
      * @return bool true = แอดมินกำลังดูแล, บอทควรหยุดทำงาน
      */
     protected function isAdminActive(string $userId): bool
@@ -499,6 +512,7 @@ class FacebookWebhookController extends Controller
                 'user_id' => $senderId,
                 'message_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
             ]);
+
             return;
         }
 
@@ -506,6 +520,7 @@ class FacebookWebhookController extends Controller
         $quickReplyPayload = $messaging['message']['quick_reply']['payload'] ?? null;
         if ($quickReplyPayload) {
             $this->handleQuickReply($senderId, $quickReplyPayload);
+
             return;
         }
 
@@ -514,7 +529,7 @@ class FacebookWebhookController extends Controller
 
         // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
         $userImageUrl = null;
-        if (!empty($attachments)) {
+        if (! empty($attachments)) {
             $userImageUrl = $this->facebookService->extractImageFromAttachments($attachments);
 
             // ถ้าส่งมาเฉพาะรูป (ไม่มี text) ตอบกลับแนะนำวิธีใช้
@@ -523,6 +538,7 @@ class FacebookWebhookController extends Controller
                     $senderId,
                     "📸 ได้รับรูปภาพแล้วค่ะ\n\nกรุณาพิมพ์ 'ดูดวง' เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวง เรื่องความรัก"
                 );
+
                 return;
             }
         }
@@ -539,8 +555,7 @@ class FacebookWebhookController extends Controller
      * - ผู้ใช้เลือกรายการจาก Persistent Menu
      * - ผู้ใช้กดปุ่ม Template ที่เป็น postback
      *
-     * @param array $messaging ข้อมูล messaging event จาก Facebook
-     * @return void
+     * @param  array  $messaging  ข้อมูล messaging event จาก Facebook
      */
     protected function processPostback(array $messaging): void
     {
@@ -551,6 +566,7 @@ class FacebookWebhookController extends Controller
             Log::warning('Facebook Postback: Missing sender or payload', [
                 'messaging' => $messaging,
             ]);
+
             return;
         }
 
@@ -560,6 +576,7 @@ class FacebookWebhookController extends Controller
                 'user_id' => $senderId,
                 'payload' => $payload,
             ]);
+
             return;
         }
 
@@ -589,8 +606,7 @@ class FacebookWebhookController extends Controller
      *
      * ส่งข้อความต้อนรับและแนะนำวิธีใช้งาน
      *
-     * @param string $senderId Facebook User ID
-     * @return void
+     * @param  string  $senderId  Facebook User ID
      */
     protected function handleGetStarted(string $senderId): void
     {
@@ -600,7 +616,7 @@ class FacebookWebhookController extends Controller
 
             // ดึง user profile พร้อม fallback
             $userProfile = $this->facebookService->getUserProfile($senderId);
-            $userName = (is_array($userProfile) && !empty($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+            $userName = (is_array($userProfile) && ! empty($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
 
             Log::info('🎉 New user started conversation', [
                 'sender_id' => $senderId,
@@ -623,7 +639,7 @@ class FacebookWebhookController extends Controller
             $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
 
         } catch (\Exception $e) {
-            Log::error('Get Started Error: ' . $e->getMessage(), [
+            Log::error('Get Started Error: '.$e->getMessage(), [
                 'sender_id' => $senderId,
             ]);
 
@@ -638,8 +654,7 @@ class FacebookWebhookController extends Controller
     /**
      * สร้างข้อความต้อนรับสำหรับผู้ใช้ใหม่
      *
-     * @param string $userName ชื่อผู้ใช้
-     * @return string
+     * @param  string  $userName  ชื่อผู้ใช้
      */
     protected function buildWelcomeMessage(string $userName): string
     {
@@ -670,7 +685,7 @@ class FacebookWebhookController extends Controller
 
         $message .= "📊 พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n\n";
 
-        $message .= "กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇";
+        $message .= 'กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇';
 
         return $message;
     }
@@ -684,20 +699,20 @@ class FacebookWebhookController extends Controller
      * 3. สร้างบิล + unique amount + แสดงบัญชีธนาคาร
      * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
      *
-     * @param string $senderId Facebook User ID
-     * @param string $messageText ข้อความที่ส่งมา
-     * @return void
+     * @param  string  $senderId  Facebook User ID
+     * @param  string  $messageText  ข้อความที่ส่งมา
      */
     protected function processConversationalMessage(string $senderId, string $messageText): void
     {
         try {
             // ตรวจสอบว่า service พร้อมใช้งาน
-            if (!$this->conversationService) {
+            if (! $this->conversationService) {
                 Log::error('ConversationService ไม่พร้อม - อาจเกิดจากการตั้งค่าระบบไม่ครบ');
                 $this->facebookService->sendMessage(
                     $senderId,
                     "🔮 สวัสดีค่ะ\n\nระบบกำลังเตรียมพร้อมอยู่ค่ะ กรุณาลองพิมพ์มาใหม่ในอีกสักครู่นะคะ 🙏✨"
                 );
+
                 return;
             }
 
@@ -706,7 +721,7 @@ class FacebookWebhookController extends Controller
 
             // ดึง user profile พร้อม fallback กรณี API ล้มเหลว
             $userProfile = $this->facebookService->getUserProfile($senderId);
-            if (!is_array($userProfile)) {
+            if (! is_array($userProfile)) {
                 $userProfile = [
                     'name' => 'คุณ',
                     'id' => $senderId,
@@ -739,14 +754,14 @@ class FacebookWebhookController extends Controller
 
             // ส่งข้อความกลับ
             $message = $result['message'] ?? '';
-            if (!empty($message)) {
+            if (! empty($message)) {
                 // แยกข้อความยาวออกเป็นหลายๆ ข้อความ
                 $this->sendLongMessage($senderId, $message);
             }
 
             // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
             $actionsWithQuickReplies = ['awaiting_confirmation', 'basic_done', 'check_remaining'];
-            if (!empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
+            if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
 
@@ -757,7 +772,7 @@ class FacebookWebhookController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Conversational Fortune Error: ' . $e->getMessage(), [
+            Log::error('Conversational Fortune Error: '.$e->getMessage(), [
                 'facebook_user_id' => $senderId,
                 'message' => $messageText,
                 'error_class' => get_class($e),
@@ -766,30 +781,27 @@ class FacebookWebhookController extends Controller
 
             try {
                 $this->facebookService->sendTypingIndicator($senderId, false);
-            } catch (\Exception $ignored) {}
+            } catch (\Exception $ignored) {
+            }
 
             // ส่งข้อความที่เป็นมิตรกับผู้ใช้ แทนที่จะบอกว่า "ผิดพลาด"
             try {
                 $this->facebookService->sendMessage(
                     $senderId,
-                    "🔮 สวัสดีค่ะ\n\n" .
-                    "ตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\n" .
-                    "กรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n" .
-                    "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n" .
-                    "หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
+                    "🔮 สวัสดีค่ะ\n\n".
+                    "ตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\n".
+                    "กรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n".
+                    "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n".
+                    'หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨'
                 );
             } catch (\Exception $sendError) {
-                Log::error('ส่งข้อความ error response ไม่สำเร็จ: ' . $sendError->getMessage());
+                Log::error('ส่งข้อความ error response ไม่สำเร็จ: '.$sendError->getMessage());
             }
         }
     }
 
     /**
      * ส่งข้อความยาวโดยแบ่งเป็นหลายข้อความ
-     *
-     * @param string $senderId
-     * @param string $message
-     * @return void
      */
     protected function sendLongMessage(string $senderId, string $message): void
     {
@@ -798,12 +810,13 @@ class FacebookWebhookController extends Controller
 
         if (mb_strlen($message) <= $maxLength) {
             $result = $this->facebookService->sendMessage($senderId, $message);
-            if (!$result) {
+            if (! $result) {
                 Log::error('❌ sendLongMessage: ส่งข้อความล้มเหลว', [
                     'recipient' => $senderId,
                     'message_length' => mb_strlen($message),
                 ]);
             }
+
             return;
         }
 
@@ -813,10 +826,10 @@ class FacebookWebhookController extends Controller
         $currentMessage = '';
         $chunkIndex = 0;
         foreach ($parts as $part) {
-            if (mb_strlen($currentMessage . $part) > $maxLength && !empty($currentMessage)) {
+            if (mb_strlen($currentMessage.$part) > $maxLength && ! empty($currentMessage)) {
                 $chunkResult = $this->facebookService->sendMessage($senderId, trim($currentMessage));
-                if (!$chunkResult) {
-                    Log::error('❌ sendLongMessage: ส่งข้อความส่วนที่ ' . ($chunkIndex + 1) . ' ล้มเหลว', [
+                if (! $chunkResult) {
+                    Log::error('❌ sendLongMessage: ส่งข้อความส่วนที่ '.($chunkIndex + 1).' ล้มเหลว', [
                         'recipient' => $senderId,
                         'chunk_length' => mb_strlen($currentMessage),
                     ]);
@@ -829,9 +842,9 @@ class FacebookWebhookController extends Controller
             }
         }
 
-        if (!empty($currentMessage)) {
+        if (! empty($currentMessage)) {
             $chunkResult = $this->facebookService->sendMessage($senderId, trim($currentMessage));
-            if (!$chunkResult) {
+            if (! $chunkResult) {
                 Log::error('❌ sendLongMessage: ส่งข้อความส่วนสุดท้ายล้มเหลว', [
                     'recipient' => $senderId,
                     'chunk_length' => mb_strlen($currentMessage),
@@ -842,10 +855,6 @@ class FacebookWebhookController extends Controller
 
     /**
      * ส่ง Quick Replies ตาม action
-     *
-     * @param string $senderId
-     * @param string $action
-     * @return void
      */
     protected function sendConversationQuickReplies(string $senderId, string $action): void
     {
@@ -876,7 +885,7 @@ class FacebookWebhookController extends Controller
             usleep(500000); // รอ 500ms
             $this->facebookService->sendQuickReplies(
                 $senderId,
-                "เลือกได้เลยค่ะ 👇",
+                'เลือกได้เลยค่ะ 👇',
                 $quickReplies
             );
         }
@@ -889,12 +898,12 @@ class FacebookWebhookController extends Controller
      * เพื่อไม่ให้ webhook response ช้า (Facebook timeout 20 วินาที)
      * ถ้าเป็น 'sync' จะประมวลผลแบบ inline ทันที
      *
-     * @param array $data ข้อมูลจาก Facebook
-     * @param array $questions คำถามที่แยกแล้ว
-     * @param bool $isComment เป็นคอมเมนต์หรือ direct message
-     * @param bool $isDeep เป็นคำทำนายเชิงลึกหรือไม่
-     * @param string|null $userImageUrl URL รูปที่ผู้ใช้ส่งมา
-     * @param string|null $birthDate วันเกิดรูปแบบ Y-m-d
+     * @param  array  $data  ข้อมูลจาก Facebook
+     * @param  array  $questions  คำถามที่แยกแล้ว
+     * @param  bool  $isComment  เป็นคอมเมนต์หรือ direct message
+     * @param  bool  $isDeep  เป็นคำทำนายเชิงลึกหรือไม่
+     * @param  string|null  $userImageUrl  URL รูปที่ผู้ใช้ส่งมา
+     * @param  string|null  $birthDate  วันเกิดรูปแบบ Y-m-d
      */
     protected function processFortuneTelling(
         array $data,
@@ -940,6 +949,7 @@ class FacebookWebhookController extends Controller
                 'reading_type' => $isDeep ? 'deep' : 'basic',
                 'queue_driver' => $queueDriver,
             ]);
+
             return;
         }
 
@@ -950,14 +960,14 @@ class FacebookWebhookController extends Controller
     /**
      * ประมวลผลคำทำนายแบบ synchronous (ใช้เมื่อ queue = sync)
      *
-     * @param array $data ข้อมูลจาก Facebook
-     * @param array $questions คำถาม
-     * @param bool $isComment เป็นคอมเมนต์
-     * @param bool $isDeep เป็นเชิงลึก
-     * @param string|null $userImageUrl รูปจากผู้ใช้
-     * @param string $fromId Facebook User ID
-     * @param string|null $fromName ชื่อผู้ใช้
-     * @param string|null $birthDate วันเกิดรูปแบบ Y-m-d
+     * @param  array  $data  ข้อมูลจาก Facebook
+     * @param  array  $questions  คำถาม
+     * @param  bool  $isComment  เป็นคอมเมนต์
+     * @param  bool  $isDeep  เป็นเชิงลึก
+     * @param  string|null  $userImageUrl  รูปจากผู้ใช้
+     * @param  string  $fromId  Facebook User ID
+     * @param  string|null  $fromName  ชื่อผู้ใช้
+     * @param  string|null  $birthDate  วันเกิดรูปแบบ Y-m-d
      */
     protected function processFortuneSync(
         array $data,
@@ -970,13 +980,13 @@ class FacebookWebhookController extends Controller
         ?string $birthDate = null
     ): void {
         // ส่ง typing indicator ขณะ AI กำลังประมวลผล
-        if (!$isComment) {
+        if (! $isComment) {
             $this->facebookService->sendTypingIndicator($fromId);
         }
 
         $userProfile = $this->facebookService->getUserProfile($fromId);
         // ✅ ป้องกัน null userProfile
-        if (!is_array($userProfile)) {
+        if (! is_array($userProfile)) {
             $userProfile = [
                 'name' => $fromName ?? 'คุณ',
                 'id' => $fromId,
@@ -1023,7 +1033,7 @@ class FacebookWebhookController extends Controller
             ]);
 
             // ปิด typing indicator
-            if (!$isComment) {
+            if (! $isComment) {
                 $this->facebookService->sendTypingIndicator($fromId, false);
             }
 
@@ -1033,7 +1043,7 @@ class FacebookWebhookController extends Controller
             }
 
             // หลังส่งคำทำนายเชิงลึกฟรี ส่ง quick replies แนะนำจ่ายเงิน/สมัครสมาชิก
-            if ($isDeep && $this->settings->isTryBeforeBuyEnabled() && !$isComment) {
+            if ($isDeep && $this->settings->isTryBeforeBuyEnabled() && ! $isComment) {
                 $tryBeforeBuyMsg = $this->settings->getTryBeforeBuyMessage();
                 $this->facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
@@ -1049,14 +1059,14 @@ class FacebookWebhookController extends Controller
                 'tokens' => $aiResponse['tokens_used'],
             ]);
         } catch (\Exception $e) {
-            Log::error('เกิดข้อผิดพลาดในการทำนาย: ' . $e->getMessage(), [
+            Log::error('เกิดข้อผิดพลาดในการทำนาย: '.$e->getMessage(), [
                 'from_id' => $fromId,
                 'is_deep' => $isDeep,
                 'trace' => $e->getTraceAsString(),
             ]);
 
             // ปิด typing indicator
-            if (!$isComment) {
+            if (! $isComment) {
                 $this->facebookService->sendTypingIndicator($fromId, false);
             }
 
@@ -1066,7 +1076,7 @@ class FacebookWebhookController extends Controller
                     "🔮 สวัสดีค่ะ\n\nตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\nกรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n💡 พิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\nหรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
                 );
             } catch (\Exception $sendError) {
-                Log::error('ส่งข้อความ error ไม่สำเร็จ: ' . $sendError->getMessage());
+                Log::error('ส่งข้อความ error ไม่สำเร็จ: '.$sendError->getMessage());
             }
         }
     }

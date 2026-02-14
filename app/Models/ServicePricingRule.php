@@ -54,9 +54,9 @@ class ServicePricingRule extends Model
         'priority' => 'integer',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * บริการที่ใช้กฎนี้ (null = ทุกบริการ)
@@ -74,9 +74,9 @@ class ServicePricingRule extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะกฎที่เปิดใช้งาน
@@ -117,9 +117,9 @@ class ServicePricingRule extends Model
             });
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Rule Matching
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่ากฎนี้ใช้กับระยะทางที่กำหนดหรือไม่
@@ -152,9 +152,9 @@ class ServicePricingRule extends Model
         return $this->service_id === $serviceId;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Price Calculation
-    //===========================================
+    // ===========================================
 
     /**
      * คำนวณราคาตามระยะทาง
@@ -165,13 +165,10 @@ class ServicePricingRule extends Model
      *
      * - กฎ: min=5, max=10, flat_fee=50, price_per_km=10
      *   ระยะ 7 km → 50 + (7 × 10) = 120฿
-     *
-     * @param float $distanceKm
-     * @return float
      */
     public function calculatePrice(float $distanceKm): float
     {
-        if (!$this->matchesDistance($distanceKm)) {
+        if (! $this->matchesDistance($distanceKm)) {
             return 0;
         }
 
@@ -188,8 +185,6 @@ class ServicePricingRule extends Model
     /**
      * หากฎที่เหมาะสมสำหรับการคำนวณ
      *
-     * @param float $distanceKm
-     * @param int|null $serviceId
      * @return static|null
      */
     public static function findMatchingRule(float $distanceKm, ?int $serviceId = null): ?self
@@ -205,16 +200,12 @@ class ServicePricingRule extends Model
 
     /**
      * คำนวณราคาโดยใช้กฎที่เหมาะสม
-     *
-     * @param float $distanceKm
-     * @param int|null $serviceId
-     * @return float
      */
     public static function calculateDistancePrice(float $distanceKm, ?int $serviceId = null): float
     {
         $rule = static::findMatchingRule($distanceKm, $serviceId);
 
-        if (!$rule) {
+        if (! $rule) {
             // ถ้าไม่มีกฎที่เหมาะสม ใช้ default rate
             return $distanceKm * config('services.default_price_per_km', 10);
         }
@@ -222,9 +213,9 @@ class ServicePricingRule extends Model
         return $rule->calculatePrice($distanceKm);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Display
-    //===========================================
+    // ===========================================
 
     /**
      * แสดงช่วงระยะทางเป็นข้อความ
@@ -250,7 +241,7 @@ class ServicePricingRule extends Model
         $parts = [];
 
         if ($this->flat_fee > 0) {
-            $parts[] = number_format($this->flat_fee, 2) . '฿';
+            $parts[] = number_format($this->flat_fee, 2).'฿';
         }
 
         if ($this->price_per_km > 0) {
@@ -273,6 +264,6 @@ class ServicePricingRule extends Model
         $sampleDistance = ($this->min_distance_km + ($this->max_distance_km ?? $this->min_distance_km + 5)) / 2;
         $price = $this->calculatePrice($sampleDistance);
 
-        return "ระยะ " . number_format($sampleDistance, 1) . " km = " . number_format($price, 2) . "฿";
+        return 'ระยะ '.number_format($sampleDistance, 1).' km = '.number_format($price, 2).'฿';
     }
 }

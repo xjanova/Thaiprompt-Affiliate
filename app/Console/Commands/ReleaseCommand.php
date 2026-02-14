@@ -34,14 +34,15 @@ class ReleaseCommand extends Command
         $isDraft = $this->option('draft');
 
         // Validate version format
-        if (!preg_match('/^v?\d+\.\d+\.\d+$/', $version)) {
+        if (! preg_match('/^v?\d+\.\d+\.\d+$/', $version)) {
             $this->error('Invalid version format. Use format: 1.0.0 or v1.0.0');
+
             return self::FAILURE;
         }
 
         // Ensure version starts with 'v'
-        if (!str_starts_with($version, 'v')) {
-            $version = 'v' . $version;
+        if (! str_starts_with($version, 'v')) {
+            $version = 'v'.$version;
         }
 
         // Check if changelog is provided
@@ -50,16 +51,17 @@ class ReleaseCommand extends Command
             $this->line('');
             $this->line('Example:');
             $this->line('  php artisan release:create v1.2.0 --changelog="เพิ่มระบบ affiliate tracking แบบ real-time"');
+
             return self::FAILURE;
         }
 
-        $this->info("╔═══════════════════════════════════════════════════════════╗");
-        $this->info("║            TP-Affiliate Release Creator                  ║");
-        $this->info("╚═══════════════════════════════════════════════════════════╝");
+        $this->info('╔═══════════════════════════════════════════════════════════╗');
+        $this->info('║            TP-Affiliate Release Creator                  ║');
+        $this->info('╚═══════════════════════════════════════════════════════════╝');
         $this->newLine();
 
         // Pre-flight checks
-        if (!$this->preFlightChecks()) {
+        if (! $this->preFlightChecks()) {
             return self::FAILURE;
         }
 
@@ -74,48 +76,49 @@ class ReleaseCommand extends Command
             ]
         );
 
-        if (!$this->confirm('Create this release?', true)) {
+        if (! $this->confirm('Create this release?', true)) {
             $this->warn('Release cancelled.');
+
             return self::SUCCESS;
         }
 
         $this->newLine();
 
         // Step 1: Update CHANGELOG.md
-        if (!$this->updateChangelog($version, $type, $changelog)) {
+        if (! $this->updateChangelog($version, $type, $changelog)) {
             return self::FAILURE;
         }
 
         // Step 2: Update VERSION file
-        if (!$this->updateVersionFile($version)) {
+        if (! $this->updateVersionFile($version)) {
             return self::FAILURE;
         }
 
         // Step 3: Commit changes
-        if (!$this->commitChanges($version, $changelog)) {
+        if (! $this->commitChanges($version, $changelog)) {
             return self::FAILURE;
         }
 
         // Step 4: Create Git tag
-        if (!$this->createGitTag($version, $changelog)) {
+        if (! $this->createGitTag($version, $changelog)) {
             return self::FAILURE;
         }
 
         // Step 5: Push to GitHub (if --push flag)
         if ($this->option('push')) {
-            if (!$this->pushToGitHub($version)) {
+            if (! $this->pushToGitHub($version)) {
                 return self::FAILURE;
             }
 
             // Step 6: Create GitHub Release
-            if (!$this->createGitHubRelease($version, $changelog, $isDraft)) {
+            if (! $this->createGitHubRelease($version, $changelog, $isDraft)) {
                 return self::FAILURE;
             }
         } else {
             $this->newLine();
             $this->warn('⚠️  Release created locally. To publish to GitHub, run:');
-            $this->line('  git push origin ' . $version);
-            $this->line('  gh release create ' . $version . ' --title "' . $version . '" --notes "' . $changelog . '"');
+            $this->line('  git push origin '.$version);
+            $this->line('  gh release create '.$version.' --title "'.$version.'" --notes "'.$changelog.'"');
         }
 
         // Success message
@@ -125,8 +128,8 @@ class ReleaseCommand extends Command
         $this->info('╚═══════════════════════════════════════════════════════════╝');
         $this->newLine();
 
-        if (!$isDraft && $this->option('push')) {
-            $this->info('✅ Release ' . $version . ' is now available for updates!');
+        if (! $isDraft && $this->option('push')) {
+            $this->info('✅ Release '.$version.' is now available for updates!');
             $this->info('   Users can now update via Admin Panel > Updates');
         } elseif ($isDraft) {
             $this->warn('📝 Release created as DRAFT. It will NOT appear in update checks.');
@@ -147,26 +150,29 @@ class ReleaseCommand extends Command
 
         // Check if Git is available
         $result = Process::run('git --version');
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Git is not installed or not available in PATH');
+
             return false;
         }
         $this->info('✓ Git is available');
 
         // Check if we're in a Git repository
         $result = Process::run('git rev-parse --git-dir');
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Not a Git repository');
+
             return false;
         }
         $this->info('✓ Git repository detected');
 
         // Check for uncommitted changes
         $result = Process::run('git status --porcelain');
-        if (!empty(trim($result->output()))) {
+        if (! empty(trim($result->output()))) {
             $this->warn('⚠️  You have uncommitted changes');
-            if (!$this->confirm('Continue anyway? (changes will be included in release commit)', false)) {
+            if (! $this->confirm('Continue anyway? (changes will be included in release commit)', false)) {
                 $this->warn('Release cancelled. Please commit or stash your changes first.');
+
                 return false;
             }
         } else {
@@ -178,7 +184,7 @@ class ReleaseCommand extends Command
         $currentBranch = trim($result->output());
         if ($currentBranch !== 'main' && $currentBranch !== 'master') {
             $this->warn("⚠️  You are on branch: {$currentBranch}");
-            if (!$this->confirm('Releases should be created from main/master branch. Continue anyway?', false)) {
+            if (! $this->confirm('Releases should be created from main/master branch. Continue anyway?', false)) {
                 return false;
             }
         } else {
@@ -186,6 +192,7 @@ class ReleaseCommand extends Command
         }
 
         $this->newLine();
+
         return true;
     }
 
@@ -199,7 +206,7 @@ class ReleaseCommand extends Command
         $changelogFile = base_path('CHANGELOG.md');
 
         // Create CHANGELOG.md if it doesn't exist
-        if (!File::exists($changelogFile)) {
+        if (! File::exists($changelogFile)) {
             $content = "# Changelog\n\n";
             $content .= "รายการการเปลี่ยนแปลงที่สำคัญของ TP-Affiliate\n\n";
             $content .= "## รูปแบบ\n";
@@ -212,7 +219,7 @@ class ReleaseCommand extends Command
 
         // Add new version entry
         $date = now()->format('Y-m-d');
-        $typeLabel = match($type) {
+        $typeLabel = match ($type) {
             'major' => 'Major Release',
             'minor' => 'Minor Release',
             'patch' => 'Patch Release',
@@ -247,7 +254,7 @@ class ReleaseCommand extends Command
 
         File::put($versionFile, $cleanVersion);
 
-        $this->info('✓ VERSION file updated to ' . $cleanVersion);
+        $this->info('✓ VERSION file updated to '.$cleanVersion);
         $this->newLine();
 
         return true;
@@ -265,7 +272,7 @@ class ReleaseCommand extends Command
 
         // Check if there are other changes
         $result = Process::run('git status --porcelain');
-        $hasOtherChanges = !empty(trim($result->output()));
+        $hasOtherChanges = ! empty(trim($result->output()));
 
         if ($hasOtherChanges) {
             if ($this->confirm('There are other uncommitted changes. Include them in the release commit?', false)) {
@@ -277,9 +284,10 @@ class ReleaseCommand extends Command
         $commitMessage = "release: {$version}\n\n{$changelog}";
         $result = Process::run(['git', 'commit', '-m', $commitMessage]);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Failed to commit changes');
             $this->error($result->errorOutput());
+
             return false;
         }
 
@@ -299,9 +307,10 @@ class ReleaseCommand extends Command
         $tagMessage = "{$version}\n\n{$changelog}";
         $result = Process::run(['git', 'tag', '-a', $version, '-m', $tagMessage]);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Failed to create Git tag');
             $this->error($result->errorOutput());
+
             return false;
         }
 
@@ -320,18 +329,20 @@ class ReleaseCommand extends Command
 
         // Push commits
         $result = Process::timeout(120)->run('git push origin HEAD');
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Failed to push commits');
             $this->error($result->errorOutput());
+
             return false;
         }
         $this->info('✓ Commits pushed');
 
         // Push tag
         $result = Process::timeout(120)->run("git push origin {$version}");
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->error('✗ Failed to push tag');
             $this->error($result->errorOutput());
+
             return false;
         }
         $this->info('✓ Tag pushed');
@@ -350,10 +361,11 @@ class ReleaseCommand extends Command
 
         // Check if gh CLI is available
         $result = Process::run('gh --version');
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->warn('✗ GitHub CLI (gh) not installed');
             $this->line('  Install: https://cli.github.com/');
             $this->line('  Or create release manually on GitHub');
+
             return true; // Not a failure, just skip
         }
 
@@ -365,10 +377,11 @@ class ReleaseCommand extends Command
 
         $result = Process::timeout(60)->run($args);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             $this->warn('✗ Failed to create GitHub Release');
             $this->warn($result->errorOutput());
             $this->line('  You can create it manually on GitHub');
+
             return true; // Not a failure
         }
 

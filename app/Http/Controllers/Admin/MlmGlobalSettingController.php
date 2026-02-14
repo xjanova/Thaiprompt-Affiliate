@@ -36,10 +36,10 @@ class MlmGlobalSettingController extends Controller
 
         // ⚠️ Smart Overpay Protection: ตรวจสอบก่อนบันทึก
         $validation = OverpayProtectionService::validateAllSettings($validated['settings']);
-        if (!$validation['is_valid']) {
+        if (! $validation['is_valid']) {
             return redirect()
                 ->route('admin.mlm.settings.index')
-                ->with('error', 'ไม่สามารถบันทึกได้: ' . implode(', ', $validation['errors']));
+                ->with('error', 'ไม่สามารถบันทึกได้: '.implode(', ', $validation['errors']));
         }
 
         foreach ($validated['settings'] as $key => $value) {
@@ -47,7 +47,7 @@ class MlmGlobalSettingController extends Controller
 
             if ($setting && $setting->is_editable) {
                 // Convert value based on type
-                $finalValue = match($setting->type) {
+                $finalValue = match ($setting->type) {
                     'boolean' => $value ? '1' : '0',
                     'json', 'array' => is_string($value) ? $value : json_encode($value),
                     default => $value,
@@ -65,13 +65,13 @@ class MlmGlobalSettingController extends Controller
 
         MlmGlobalSetting::clearCache();
 
-        $warningMsg = !empty($validation['warnings'])
-            ? ' (คำเตือน: ' . implode(', ', $validation['warnings']) . ')'
+        $warningMsg = ! empty($validation['warnings'])
+            ? ' (คำเตือน: '.implode(', ', $validation['warnings']).')'
             : '';
 
         return redirect()
             ->route('admin.mlm.settings.index')
-            ->with('success', 'MLM Global Settings updated successfully' . $warningMsg);
+            ->with('success', 'MLM Global Settings updated successfully'.$warningMsg);
     }
 
     /**
@@ -260,7 +260,6 @@ class MlmGlobalSettingController extends Controller
      *
      * สำหรับ Theme Customizer - MLM Tab
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function updatePlacement(Request $request)
@@ -296,7 +295,7 @@ class MlmGlobalSettingController extends Controller
         // ⚠️ Smart Overpay Protection: ตรวจสอบ commission_per_pv ก่อนบันทึก
         if (isset($validated['commission_per_pv'])) {
             $cpvResult = OverpayProtectionService::validateCommissionPerPv((float) $validated['commission_per_pv']);
-            if (!$cpvResult['is_valid']) {
+            if (! $cpvResult['is_valid']) {
                 return response()->json([
                     'success' => false,
                     'error' => $cpvResult['message'],
@@ -317,7 +316,7 @@ class MlmGlobalSettingController extends Controller
                 isset($validated['commission_per_pv']) ? (float) $validated['commission_per_pv'] : null
             );
 
-            if (!$levelResult['is_valid']) {
+            if (! $levelResult['is_valid']) {
                 return response()->json([
                     'success' => false,
                     'error' => $levelResult['message'],
@@ -365,7 +364,6 @@ class MlmGlobalSettingController extends Controller
      * 3. dispatch background job
      * 4. return task info สำหรับ tracking
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateUnilevelWidth(Request $request)
@@ -379,7 +377,7 @@ class MlmGlobalSettingController extends Controller
         $shouldRebuild = $validated['rebuild_tree'];
 
         // ตรวจสอบว่ามี rebuild task กำลังทำงานอยู่หรือไม่
-        $rebuildService = new MlmTreeRebuildService();
+        $rebuildService = new MlmTreeRebuildService;
 
         if ($rebuildService->hasRunningTask()) {
             return response()->json([
@@ -414,6 +412,7 @@ class MlmGlobalSettingController extends Controller
 
             if ($memberCount === 0) {
                 $response['message'] .= ' (ไม่มีสมาชิก ไม่ต้อง rebuild)';
+
                 return response()->json($response);
             }
 
@@ -429,7 +428,7 @@ class MlmGlobalSettingController extends Controller
                 auth()->id()
             );
 
-            if (!$task) {
+            if (! $task) {
                 return response()->json([
                     'success' => false,
                     'error' => 'ไม่สามารถสร้าง rebuild task ได้ (อาจมี task อื่นกำลังทำงานอยู่)',
@@ -456,14 +455,13 @@ class MlmGlobalSettingController extends Controller
     /**
      * ดึงสถานะ rebuild task ปัจจุบัน
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getRebuildStatus(Request $request)
     {
         $type = $request->get('type', MlmRebuildTask::TYPE_UNILEVEL_REBUILD);
 
-        $rebuildService = new MlmTreeRebuildService();
+        $rebuildService = new MlmTreeRebuildService;
         $taskStatus = $rebuildService->getLatestTaskStatus($type);
 
         return response()->json([
@@ -476,7 +474,6 @@ class MlmGlobalSettingController extends Controller
     /**
      * ยกเลิก rebuild task ที่กำลังทำงาน
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function cancelRebuild(Request $request)
@@ -485,7 +482,7 @@ class MlmGlobalSettingController extends Controller
 
         $task = MlmRebuildTask::find($taskId);
 
-        if (!$task) {
+        if (! $task) {
             return response()->json([
                 'success' => false,
                 'error' => 'ไม่พบ task ที่ระบุ',
@@ -516,12 +513,11 @@ class MlmGlobalSettingController extends Controller
     /**
      * เริ่ม rebuild ใหม่แบบ manual
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function startManualRebuild(Request $request)
     {
-        $rebuildService = new MlmTreeRebuildService();
+        $rebuildService = new MlmTreeRebuildService;
 
         if ($rebuildService->hasRunningTask()) {
             return response()->json([
@@ -551,7 +547,7 @@ class MlmGlobalSettingController extends Controller
             auth()->id()
         );
 
-        if (!$task) {
+        if (! $task) {
             return response()->json([
                 'success' => false,
                 'error' => 'ไม่สามารถสร้าง rebuild task ได้',
@@ -577,7 +573,6 @@ class MlmGlobalSettingController extends Controller
     /**
      * ดึงข้อมูลตัวอย่างผลกระทบจากการเปลี่ยน width
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function previewWidthChange(Request $request)

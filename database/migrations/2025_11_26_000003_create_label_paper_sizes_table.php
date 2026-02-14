@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง label_paper_sizes
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -69,8 +67,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง label_paper_sizes
-     *
-     * @return void
      */
     public function down(): void
     {

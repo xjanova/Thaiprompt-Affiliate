@@ -75,7 +75,7 @@ class BotScheduledPost extends Model
     public function scopeDueForPublishing($query)
     {
         return $query->where('status', 'pending')
-                     ->where('scheduled_for', '<=', now());
+            ->where('scheduled_for', '<=', now());
     }
 
     /**
@@ -155,6 +155,7 @@ class BotScheduledPost extends Model
         }
 
         $totalEngagement = $this->likes_count + $this->comments_count + $this->shares_count;
+
         return ($totalEngagement / $this->views_count) * 100;
     }
 }

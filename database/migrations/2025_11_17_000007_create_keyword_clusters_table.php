@@ -14,8 +14,6 @@ return new class extends Migration
      * - ขยายการตรวจจับคำสำคัญอัตโนมัติ
      * - สร้างข้อเสนอแนะที่เกี่ยวข้อง
      * - วิเคราะห์รูปแบบการใช้งาน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -42,7 +40,7 @@ return new class extends Migration
                 'PROCESS',
                 'TECHNICAL',
                 'BUSINESS',
-                'OTHER'
+                'OTHER',
             ])->index();
 
             // Metadata
@@ -75,8 +73,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง keyword_clusters
-     *
-     * @return void
      */
     public function down(): void
     {

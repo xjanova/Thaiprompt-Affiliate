@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บการตั้งค่าระบบดูดวงผ่าน Facebook Messenger
      * รองรับ AI providers: Gemini, Groq, Qwen, OpenRouter
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง fortune_telling_settings
-     *
-     * @return void
      */
     public function down(): void
     {

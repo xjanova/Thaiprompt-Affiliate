@@ -2,13 +2,11 @@
 
 namespace Tests\Unit\Services;
 
-use Tests\TestCase;
-use App\Services\ThemeCompilerService;
-use App\Services\ThemeService;
-use App\Services\RgbEffectService;
 use App\Models\ThemeSetting;
+use App\Services\ThemeCompilerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
 
 /**
  * ThemeCompilerService Unit Tests
@@ -20,13 +18,14 @@ class ThemeCompilerServiceTest extends TestCase
     use RefreshDatabase;
 
     protected ThemeCompilerService $compiler;
+
     protected ThemeSetting $themeSetting;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->compiler = new ThemeCompilerService();
+        $this->compiler = new ThemeCompilerService;
 
         // สร้าง test theme
         $this->themeSetting = ThemeSetting::factory()->create([

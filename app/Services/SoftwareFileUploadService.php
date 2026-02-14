@@ -19,10 +19,9 @@ class SoftwareFileUploadService
     /**
      * อัพโหลดไฟล์ตามประเภทที่เลือก
      *
-     * @param SoftwareProduct $product
-     * @param string $uploadType (url, s3, google_drive, local)
-     * @param mixed $file ไฟล์หรือข้อมูล URL
-     * @param int $userId ผู้อัพโหลด
+     * @param  string  $uploadType  (url, s3, google_drive, local)
+     * @param  mixed  $file  ไฟล์หรือข้อมูล URL
+     * @param  int  $userId  ผู้อัพโหลด
      * @return array ผลลัพธ์การอัพโหลด
      *
      * @throws \Exception
@@ -30,11 +29,11 @@ class SoftwareFileUploadService
     public function upload(SoftwareProduct $product, string $uploadType, $file, int $userId): array
     {
         // ตรวจสอบว่า method นี้เปิดใช้งานหรือไม่
-        if (!$this->isMethodEnabled($uploadType)) {
+        if (! $this->isMethodEnabled($uploadType)) {
             throw new \Exception("Upload method '{$uploadType}' is not enabled");
         }
 
-        return match($uploadType) {
+        return match ($uploadType) {
             'url' => $this->uploadFromUrl($product, $file, $userId),
             's3' => $this->uploadToS3($product, $file, $userId),
             'google_drive' => $this->uploadToGoogleDrive($product, $file, $userId),
@@ -46,17 +45,13 @@ class SoftwareFileUploadService
     /**
      * อัพโหลดจาก URL Link
      *
-     * @param SoftwareProduct $product
-     * @param string $url
-     * @param int $userId
-     * @return array
      *
      * @throws \Exception
      */
     protected function uploadFromUrl(SoftwareProduct $product, string $url, int $userId): array
     {
         // ตรวจสอบ URL format
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        if (! filter_var($url, FILTER_VALIDATE_URL)) {
             throw new \Exception('Invalid URL format');
         }
 
@@ -72,7 +67,7 @@ class SoftwareFileUploadService
             }
         }
 
-        if (!$isAllowed) {
+        if (! $isAllowed) {
             throw new \Exception("Domain '{$domain}' is not allowed");
         }
 
@@ -82,11 +77,11 @@ class SoftwareFileUploadService
                 $response = Http::timeout(config('software-upload.url.validation_timeout', 10))
                     ->head($url);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     throw new \Exception('URL is not accessible');
                 }
             } catch (\Exception $e) {
-                throw new \Exception('Failed to validate URL: ' . $e->getMessage());
+                throw new \Exception('Failed to validate URL: '.$e->getMessage());
             }
         }
 
@@ -108,10 +103,6 @@ class SoftwareFileUploadService
     /**
      * อัพโหลดไปยัง AWS S3
      *
-     * @param SoftwareProduct $product
-     * @param UploadedFile $file
-     * @param int $userId
-     * @return array
      *
      * @throws \Exception
      */
@@ -161,17 +152,13 @@ class SoftwareFileUploadService
             ];
 
         } catch (\Exception $e) {
-            throw new \Exception('Failed to upload to S3: ' . $e->getMessage());
+            throw new \Exception('Failed to upload to S3: '.$e->getMessage());
         }
     }
 
     /**
      * อัพโหลดไปยัง Google Drive
      *
-     * @param SoftwareProduct $product
-     * @param UploadedFile $file
-     * @param int $userId
-     * @return array
      *
      * @throws \Exception
      */
@@ -184,7 +171,6 @@ class SoftwareFileUploadService
         // ต้องติดตั้ง package: composer require google/apiclient
 
         throw new \Exception('Google Drive upload is not implemented yet. Please use URL, S3, or Local upload.');
-
         // Pseudo code:
         /*
         $client = new \Google_Client();
@@ -229,10 +215,6 @@ class SoftwareFileUploadService
     /**
      * อัพโหลดไปยัง Local Server
      *
-     * @param SoftwareProduct $product
-     * @param UploadedFile $file
-     * @param int $userId
-     * @return array
      *
      * @throws \Exception
      */
@@ -275,15 +257,13 @@ class SoftwareFileUploadService
             ];
 
         } catch (\Exception $e) {
-            throw new \Exception('Failed to upload to local storage: ' . $e->getMessage());
+            throw new \Exception('Failed to upload to local storage: '.$e->getMessage());
         }
     }
 
     /**
      * ตรวจสอบไฟล์
      *
-     * @param UploadedFile $file
-     * @return void
      *
      * @throws \Exception
      */
@@ -293,8 +273,8 @@ class SoftwareFileUploadService
         $allowedExtensions = config('software-upload.allowed_extensions', ['zip']);
         $extension = strtolower($file->getClientOriginalExtension());
 
-        if (!in_array($extension, $allowedExtensions)) {
-            throw new \Exception("File extension '.{$extension}' is not allowed. Only " . implode(', ', $allowedExtensions) . " files are permitted.");
+        if (! in_array($extension, $allowedExtensions)) {
+            throw new \Exception("File extension '.{$extension}' is not allowed. Only ".implode(', ', $allowedExtensions).' files are permitted.');
         }
 
         // ตรวจสอบขนาดไฟล์
@@ -306,7 +286,7 @@ class SoftwareFileUploadService
 
         // ตรวจสอบ MIME type
         $allowedMimeTypes = config('software-upload.allowed_mime_types', []);
-        if (!empty($allowedMimeTypes) && !in_array($file->getMimeType(), $allowedMimeTypes)) {
+        if (! empty($allowedMimeTypes) && ! in_array($file->getMimeType(), $allowedMimeTypes)) {
             throw new \Exception("File type '{$file->getMimeType()}' is not allowed");
         }
 
@@ -319,14 +299,12 @@ class SoftwareFileUploadService
     /**
      * ตรวจสอบความสมบูรณ์ของไฟล์ ZIP
      *
-     * @param UploadedFile $file
-     * @return void
      *
      * @throws \Exception
      */
     protected function verifyZipIntegrity(UploadedFile $file): void
     {
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         $result = $zip->open($file->getRealPath(), \ZipArchive::CHECKCONS);
 
         if ($result !== true) {
@@ -358,9 +336,6 @@ class SoftwareFileUploadService
 
     /**
      * สร้างชื่อไฟล์ unique
-     *
-     * @param UploadedFile $file
-     * @return string
      */
     protected function generateUniqueFilename(UploadedFile $file): string
     {
@@ -382,26 +357,21 @@ class SoftwareFileUploadService
             $originalName,
         ], $pattern);
 
-        return $filename . '.' . $extension;
+        return $filename.'.'.$extension;
     }
 
     /**
      * ตรวจสอบว่า upload method เปิดใช้งานหรือไม่
-     *
-     * @param string $method
-     * @return bool
      */
     protected function isMethodEnabled(string $method): bool
     {
         $enabled = config('software-upload.enabled_methods', []);
+
         return $enabled[$method] ?? false;
     }
 
     /**
      * ลบไฟล์ที่อัพโหลด
-     *
-     * @param SoftwareProduct $product
-     * @return bool
      */
     public function deleteFile(SoftwareProduct $product): bool
     {
@@ -430,7 +400,8 @@ class SoftwareFileUploadService
 
             return true;
         } catch (\Exception $e) {
-            \Log::error('Failed to delete software file: ' . $e->getMessage());
+            \Log::error('Failed to delete software file: '.$e->getMessage());
+
             return false;
         }
     }

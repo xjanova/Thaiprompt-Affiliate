@@ -5,9 +5,9 @@ namespace App\Services\TPIX;
 use App\Models\TPIXToken;
 use App\Models\User;
 use App\Services\Crypto\TPIXBlockchainService;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Token Factory Service
@@ -93,7 +93,7 @@ class TokenFactoryService
             Log::info('Token created', [
                 'token_id' => $token->id,
                 'symbol' => $token->symbol,
-                'creator_id' => $creator->id
+                'creator_id' => $creator->id,
             ]);
 
             return $token;
@@ -102,7 +102,7 @@ class TokenFactoryService
             DB::rollBack();
             Log::error('Token creation failed', [
                 'creator_id' => $creator->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -148,14 +148,14 @@ class TokenFactoryService
 
             Log::info('Token deployed successfully', [
                 'token_id' => $token->id,
-                'contract_address' => $token->contract_address
+                'contract_address' => $token->contract_address,
             ]);
 
             return [
                 'success' => true,
                 'contract_address' => $token->contract_address,
                 'tx_hash' => $token->deployment_tx_hash,
-                'explorer_url' => config('crypto.networks.tpix.explorer') . '/address/' . $token->contract_address
+                'explorer_url' => config('crypto.networks.tpix.explorer').'/address/'.$token->contract_address,
             ];
 
         } catch (Exception $e) {
@@ -164,7 +164,7 @@ class TokenFactoryService
 
             Log::error('Token deployment failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -237,7 +237,7 @@ SOLIDITY;
 
         // Add burn function if burnable
         if ($token->is_burnable) {
-            $contractTemplate .= <<<SOLIDITY
+            $contractTemplate .= <<<'SOLIDITY'
 
     function burn(uint256 amount) public {
         _burn(msg.sender, amount);
@@ -247,7 +247,7 @@ SOLIDITY;
 
         // Add pause functions if pausable
         if ($token->is_pausable) {
-            $contractTemplate .= <<<SOLIDITY
+            $contractTemplate .= <<<'SOLIDITY'
 
     function pause() public onlyOwner {
         paused = true;
@@ -274,10 +274,10 @@ SOLIDITY;
     protected function simulateDeployment(TPIXToken $token, string $contractCode): array
     {
         // Generate fake contract address
-        $contractAddress = '0x' . bin2hex(random_bytes(20));
+        $contractAddress = '0x'.bin2hex(random_bytes(20));
 
         // Generate fake tx hash
-        $txHash = '0x' . bin2hex(random_bytes(32));
+        $txHash = '0x'.bin2hex(random_bytes(32));
 
         // In production, this would:
         // 1. Compile contract with solc
@@ -302,7 +302,7 @@ SOLIDITY;
                 'user_id' => $token->creator_id,
                 'wallet_address' => $token->creator->cryptoWallets()
                     ->where('currency_id', $this->getTpixCurrencyId())
-                    ->first()->address ?? '0x0000000000000000000000000000000000000000'
+                    ->first()->address ?? '0x0000000000000000000000000000000000000000',
             ],
             [
                 'balance' => $token->initial_supply,
@@ -336,7 +336,7 @@ SOLIDITY;
      */
     public function verifyContract(TPIXToken $token, string $sourceCode): bool
     {
-        if (!$token->isDeployed()) {
+        if (! $token->isDeployed()) {
             throw new Exception('Token is not deployed yet');
         }
 
@@ -351,7 +351,7 @@ SOLIDITY;
 
             Log::info('Token contract verified', [
                 'token_id' => $token->id,
-                'contract_address' => $token->contract_address
+                'contract_address' => $token->contract_address,
             ]);
 
             return true;
@@ -359,7 +359,7 @@ SOLIDITY;
         } catch (Exception $e) {
             Log::error('Contract verification failed', [
                 'token_id' => $token->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             throw $e;
@@ -377,7 +377,7 @@ SOLIDITY;
             $gasPrice = hexdec($this->blockchain->getGasPrice());
 
             $costWei = $estimatedGas * $gasPrice;
-            $costTpix = $this->blockchain->fromWei((string)$costWei);
+            $costTpix = $this->blockchain->fromWei((string) $costWei);
 
             return [
                 'estimated_gas' => $estimatedGas,
@@ -389,7 +389,7 @@ SOLIDITY;
 
         } catch (Exception $e) {
             Log::error('Failed to estimate deployment cost', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [

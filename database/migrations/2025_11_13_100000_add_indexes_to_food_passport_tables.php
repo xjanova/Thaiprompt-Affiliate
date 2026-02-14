@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -130,7 +130,7 @@ return new class extends Migration
     private function safeAddIndexes(string $table, array $indexes): void
     {
         // ตรวจสอบว่าตารางมีอยู่
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             return;
         }
 
@@ -139,20 +139,20 @@ return new class extends Migration
             $indexName = $indexDef[1];
 
             // แปลง column เดียวเป็น array
-            if (!is_array($columns)) {
+            if (! is_array($columns)) {
                 $columns = [$columns];
             }
 
             // ตรวจสอบว่าทุก column มีอยู่
             $allColumnsExist = true;
             foreach ($columns as $column) {
-                if (!Schema::hasColumn($table, $column)) {
+                if (! Schema::hasColumn($table, $column)) {
                     $allColumnsExist = false;
                     break;
                 }
             }
 
-            if (!$allColumnsExist) {
+            if (! $allColumnsExist) {
                 continue; // ข้าม index นี้ถ้า column ไม่มี
             }
 
@@ -180,13 +180,13 @@ return new class extends Migration
         $connection = Schema::getConnection();
         $databaseName = $connection->getDatabaseName();
 
-        $result = DB::select("
+        $result = DB::select('
             SELECT COUNT(*) as count
             FROM information_schema.statistics
             WHERE table_schema = ?
             AND table_name = ?
             AND index_name = ?
-        ", [$databaseName, $table, $indexName]);
+        ', [$databaseName, $table, $indexName]);
 
         return $result[0]->count > 0;
     }
@@ -300,7 +300,7 @@ return new class extends Migration
      */
     private function safeDropIndexes(string $table, array $indexNames): void
     {
-        if (!Schema::hasTable($table)) {
+        if (! Schema::hasTable($table)) {
             return;
         }
 

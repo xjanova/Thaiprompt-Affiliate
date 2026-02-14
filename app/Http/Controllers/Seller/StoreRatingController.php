@@ -21,9 +21,6 @@ class StoreRatingController extends Controller
 {
     /**
      * แสดง Dashboard คะแนนร้าน
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -58,9 +55,6 @@ class StoreRatingController extends Controller
 
     /**
      * แสดงรายการคะแนนทั้งหมด
-     *
-     * @param Request $request
-     * @return View
      */
     public function all(Request $request): View
     {
@@ -111,8 +105,6 @@ class StoreRatingController extends Controller
     /**
      * ตอบกลับรีวิว
      *
-     * @param Request $request
-     * @param StoreRating $rating
      * @return JsonResponse|RedirectResponse
      */
     public function respond(Request $request, StoreRating $rating)
@@ -127,6 +119,7 @@ class StoreRatingController extends Controller
                     'message' => 'ไม่มีสิทธิ์ตอบกลับคะแนนนี้',
                 ], 403);
             }
+
             return back()->with('error', 'ไม่มีสิทธิ์ตอบกลับคะแนนนี้');
         }
 
@@ -155,10 +148,6 @@ class StoreRatingController extends Controller
 
     /**
      * ดูรายละเอียดคะแนน
-     *
-     * @param Request $request
-     * @param StoreRating $rating
-     * @return View
      */
     public function show(Request $request, StoreRating $rating): View
     {
@@ -171,15 +160,12 @@ class StoreRatingController extends Controller
 
         return view('seller.store-rating.show', [
             'rating' => $rating,
-            'pageTitle' => 'รายละเอียดคะแนน #' . $rating->id,
+            'pageTitle' => 'รายละเอียดคะแนน #'.$rating->id,
         ]);
     }
 
     /**
      * แสดงสถิติแบบละเอียด
-     *
-     * @param Request $request
-     * @return View
      */
     public function statistics(Request $request): View
     {

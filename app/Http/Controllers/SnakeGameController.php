@@ -3,14 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
-use App\Models\GameRoom;
 use App\Models\GameRoomPlayer;
-use App\Models\GameRoomItem;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\GameRoomManager;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -32,9 +30,6 @@ class SnakeGameController extends Controller
      * เข้าร่วมเกม - ค้นหาหรือสร้างห้อง
      *
      * POST /api/games/snake-io/join
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function join(Request $request): JsonResponse
     {
@@ -81,9 +76,6 @@ class SnakeGameController extends Controller
      * ออกจากห้อง
      *
      * POST /api/games/snake-io/leave
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function leave(Request $request): JsonResponse
     {
@@ -120,9 +112,6 @@ class SnakeGameController extends Controller
      * อัปเดตสถานะผู้เล่น (ตำแหน่ง, ทิศทาง, คะแนน)
      *
      * POST /api/games/snake-io/update-state
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateState(Request $request): JsonResponse
     {
@@ -145,7 +134,7 @@ class SnakeGameController extends Controller
 
             // ⚡ Anti-cheat: ตรวจสอบความถูกต้องของข้อมูล
             $validation = $this->validatePlayerStateChange($player, $validated);
-            if (!$validation['valid']) {
+            if (! $validation['valid']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'การเปลี่ยนแปลงสถานะไม่ถูกต้อง',
@@ -176,9 +165,6 @@ class SnakeGameController extends Controller
      * ผู้เล่นตาย
      *
      * POST /api/games/snake-io/player-died
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function playerDied(Request $request): JsonResponse
     {
@@ -208,9 +194,6 @@ class SnakeGameController extends Controller
      * เก็บไอเทม
      *
      * POST /api/games/snake-io/collect-item
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function collectItem(Request $request): JsonResponse
     {
@@ -223,7 +206,7 @@ class SnakeGameController extends Controller
             $player = GameRoomPlayer::findOrFail($validated['player_id']);
             $item = $this->roomManager->collectItem($player, $validated['item_id']);
 
-            if (!$item) {
+            if (! $item) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไอเทมไม่พร้อมเก็บหรือหมดอายุแล้ว',
@@ -249,9 +232,6 @@ class SnakeGameController extends Controller
      * ดึงสถานะห้อง (สำหรับ sync)
      *
      * GET /api/games/snake-io/room-state/{roomId}
-     *
-     * @param int $roomId
-     * @return JsonResponse
      */
     public function getRoomState(int $roomId): JsonResponse
     {
@@ -274,14 +254,11 @@ class SnakeGameController extends Controller
      * บันทึกคะแนนและหักแต้ม wallet
      *
      * POST /api/games/snake-io/save-score
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveScore(Request $request): JsonResponse
     {
         // ต้อง login ก่อน
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบก่อนบันทึกคะแนน',
@@ -315,7 +292,7 @@ class SnakeGameController extends Controller
             if ($wallet->balance < 1) {
                 return response()->json([
                     'success' => false,
-                    'message' => '💰 แต้มไม่เพียงพอ!\n\nต้องการ 1 แต้มในการบันทึกคะแนน\nคุณมี ' . $wallet->balance . ' แต้ม\n\nกรุณาเติมแต้มหรือทำภารกิจเพื่อรับแต้มฟรี',
+                    'message' => '💰 แต้มไม่เพียงพอ!\n\nต้องการ 1 แต้มในการบันทึกคะแนน\nคุณมี '.$wallet->balance.' แต้ม\n\nกรุณาเติมแต้มหรือทำภารกิจเพื่อรับแต้มฟรี',
                     'current_balance' => $wallet->balance,
                     'topup_url' => route('user.wallet.index'),
                     'need_points' => 1,
@@ -333,7 +310,7 @@ class SnakeGameController extends Controller
                     'wallet_id' => $wallet->id,
                     'type' => 'expense',
                     'amount' => 1,
-                    'description' => 'บันทึกคะแนนเกม Snake.io - Score: ' . $validated['score'],
+                    'description' => 'บันทึกคะแนนเกม Snake.io - Score: '.$validated['score'],
                     'status' => 'completed',
                 ]);
 
@@ -365,7 +342,7 @@ class SnakeGameController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -374,12 +351,10 @@ class SnakeGameController extends Controller
      * ตรวจสอบ wallet balance
      *
      * GET /api/games/snake-io/check-wallet
-     *
-     * @return JsonResponse
      */
     public function checkWallet(): JsonResponse
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'authenticated' => false,
@@ -404,13 +379,10 @@ class SnakeGameController extends Controller
      * บันทึก skin preference ของสมาชิก
      *
      * POST /api/games/snake-io/save-skin-preference
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSkinPreference(Request $request): JsonResponse
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบก่อน',
@@ -448,7 +420,7 @@ class SnakeGameController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -457,8 +429,6 @@ class SnakeGameController extends Controller
      * ตรวจสอบสถานะ service (สำหรับ client polling)
      *
      * GET /api/games/snake-io/service-status
-     *
-     * @return JsonResponse
      */
     public function getServiceStatus(): JsonResponse
     {
@@ -477,13 +447,10 @@ class SnakeGameController extends Controller
      * ดึง skin preference ของสมาชิก
      *
      * GET /api/games/snake-io/get-skin-preference
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSkinPreference(Request $request): JsonResponse
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบก่อน',
@@ -510,7 +477,7 @@ class SnakeGameController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'skin' => 'classic', // default
             ], 500);
         }
@@ -519,8 +486,8 @@ class SnakeGameController extends Controller
     /**
      * ⚡ Anti-cheat: ตรวจสอบความถูกต้องของการเปลี่ยนแปลงสถานะผู้เล่น
      *
-     * @param GameRoomPlayer $player ผู้เล่น
-     * @param array $newState สถานะใหม่
+     * @param  GameRoomPlayer  $player  ผู้เล่น
+     * @param  array  $newState  สถานะใหม่
      * @return array ['valid' => bool, 'reason' => string]
      */
     protected function validatePlayerStateChange(GameRoomPlayer $player, array $newState): array

@@ -127,8 +127,6 @@ class AiRentalAlert extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -137,8 +135,6 @@ class AiRentalAlert extends Model
 
     /**
      * ความสัมพันธ์กับ Deployment
-     *
-     * @return BelongsTo
      */
     public function deployment(): BelongsTo
     {
@@ -148,7 +144,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ที่ยังไม่ได้อ่าน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnread($query)
@@ -159,7 +155,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ที่ยังไม่ได้ resolve
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUnresolved($query)
@@ -170,8 +166,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ตาม severity
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $severity
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSeverity($query, string $severity)
@@ -182,7 +177,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ที่มีความสำคัญสูง (critical/error)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCritical($query)
@@ -193,8 +188,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ตาม user
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -205,7 +199,7 @@ class AiRentalAlert extends Model
     /**
      * Scope: Alerts ที่ active (ยังไม่หมดอายุและยังไม่ resolve)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -219,86 +213,79 @@ class AiRentalAlert extends Model
 
     /**
      * ตรวจสอบว่า alert นี้อ่านแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isRead(): bool
     {
-        return !is_null($this->read_at);
+        return ! is_null($this->read_at);
     }
 
     /**
      * ตรวจสอบว่า alert นี้ resolve แล้วหรือยัง
-     *
-     * @return bool
      */
     public function isResolved(): bool
     {
-        return !is_null($this->resolved_at);
+        return ! is_null($this->resolved_at);
     }
 
     /**
      * ตรวจสอบว่า alert นี้หมดอายุแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
-        return !is_null($this->expires_at) && $this->expires_at < now();
+        return ! is_null($this->expires_at) && $this->expires_at < now();
     }
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @return bool
      */
     public function markAsRead(): bool
     {
-        if (!$this->isRead()) {
+        if (! $this->isRead()) {
             $this->read_at = now();
+
             return $this->save();
         }
+
         return false;
     }
 
     /**
      * ทำเครื่องหมายว่า acknowledge แล้ว
-     *
-     * @return bool
      */
     public function markAsAcknowledged(): bool
     {
         if (is_null($this->acknowledged_at)) {
             $this->acknowledged_at = now();
             $this->status = 'acknowledged';
+
             return $this->save();
         }
+
         return false;
     }
 
     /**
      * ทำเครื่องหมายว่า resolve แล้ว
      *
-     * @param string|null $note หมายเหตุ
-     * @return bool
+     * @param  string|null  $note  หมายเหตุ
      */
     public function markAsResolved(?string $note = null): bool
     {
-        if (!$this->isResolved()) {
+        if (! $this->isResolved()) {
             $this->resolved_at = now();
             $this->status = 'resolved';
             if ($note) {
                 $this->resolution_note = $note;
             }
+
             return $this->save();
         }
+
         return false;
     }
 
     /**
      * ส่ง notification
-     *
-     * @return void
      */
     public function sendNotification(): void
     {

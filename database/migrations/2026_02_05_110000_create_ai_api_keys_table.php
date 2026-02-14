@@ -71,7 +71,7 @@ return new class extends Migration
         });
 
         // สร้างตาราง ai_api_key_usage_logs สำหรับเก็บ log การใช้งาน
-        if (!Schema::hasTable('ai_api_key_usage_logs')) {
+        if (! Schema::hasTable('ai_api_key_usage_logs')) {
             Schema::create('ai_api_key_usage_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('ai_api_key_id')->constrained('ai_api_keys')->onDelete('cascade');
@@ -91,7 +91,7 @@ return new class extends Migration
         }
 
         // สร้างตาราง ai_api_key_settings สำหรับเก็บ settings ของ pool
-        if (!Schema::hasTable('ai_api_key_settings')) {
+        if (! Schema::hasTable('ai_api_key_settings')) {
             Schema::create('ai_api_key_settings', function (Blueprint $table) {
                 $table->id();
                 $table->string('provider', 50)->unique()->comment('ผู้ให้บริการ');

@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Admin\Dev;
 
 use App\Http\Controllers\Controller;
-use App\Models\SystemUpdate;
-use App\Models\UpdateLog;
 use App\Services\UpdateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -70,9 +68,9 @@ class DevReleaseController extends Controller
     {
         try {
             $repositoryConfig = config('version.repository');
-            $response = Http::get($repositoryConfig['api_url'] . '/releases');
+            $response = Http::get($repositoryConfig['api_url'].'/releases');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return collect([]);
             }
 
@@ -120,10 +118,14 @@ class DevReleaseController extends Controller
             $lines = explode("\n", trim($result->output()));
 
             foreach ($lines as $line) {
-                if (empty($line)) continue;
+                if (empty($line)) {
+                    continue;
+                }
 
                 $parts = preg_split('/\s+/', $line, 2);
-                if (count($parts) < 2) continue;
+                if (count($parts) < 2) {
+                    continue;
+                }
 
                 $status = $parts[0];
                 $filePath = $parts[1];
@@ -145,8 +147,8 @@ class DevReleaseController extends Controller
             return [
                 'files' => $files,
                 'total' => count($files),
-                'blocked_count' => count(array_filter($files, fn($f) => $f['is_blocked'])),
-                'sensitive_count' => count(array_filter($files, fn($f) => $f['is_sensitive'])),
+                'blocked_count' => count(array_filter($files, fn ($f) => $f['is_blocked'])),
+                'sensitive_count' => count(array_filter($files, fn ($f) => $f['is_sensitive'])),
                 'previous_tag' => $previousTag ?: 'Initial release',
             ];
 
@@ -219,17 +221,39 @@ class DevReleaseController extends Controller
      */
     protected function getFileCategory($filePath)
     {
-        if (str_starts_with($filePath, 'app/')) return 'Backend Code';
-        if (str_starts_with($filePath, 'resources/views/')) return 'Views';
-        if (str_starts_with($filePath, 'resources/js/')) return 'JavaScript';
-        if (str_starts_with($filePath, 'resources/css/')) return 'CSS';
-        if (str_starts_with($filePath, 'public/')) return 'Public Assets';
-        if (str_starts_with($filePath, 'database/')) return 'Database';
-        if (str_starts_with($filePath, 'routes/')) return 'Routes';
-        if (str_starts_with($filePath, 'config/')) return 'Configuration';
-        if (str_starts_with($filePath, 'storage/')) return 'Storage';
-        if (str_starts_with($filePath, 'tests/')) return 'Tests (Dev Only)';
-        if (str_ends_with($filePath, '.md')) return 'Documentation';
+        if (str_starts_with($filePath, 'app/')) {
+            return 'Backend Code';
+        }
+        if (str_starts_with($filePath, 'resources/views/')) {
+            return 'Views';
+        }
+        if (str_starts_with($filePath, 'resources/js/')) {
+            return 'JavaScript';
+        }
+        if (str_starts_with($filePath, 'resources/css/')) {
+            return 'CSS';
+        }
+        if (str_starts_with($filePath, 'public/')) {
+            return 'Public Assets';
+        }
+        if (str_starts_with($filePath, 'database/')) {
+            return 'Database';
+        }
+        if (str_starts_with($filePath, 'routes/')) {
+            return 'Routes';
+        }
+        if (str_starts_with($filePath, 'config/')) {
+            return 'Configuration';
+        }
+        if (str_starts_with($filePath, 'storage/')) {
+            return 'Storage';
+        }
+        if (str_starts_with($filePath, 'tests/')) {
+            return 'Tests (Dev Only)';
+        }
+        if (str_ends_with($filePath, '.md')) {
+            return 'Documentation';
+        }
 
         return 'Other';
     }
@@ -239,7 +263,7 @@ class DevReleaseController extends Controller
      */
     protected function getFileStatusLabel($statusCode)
     {
-        return match($statusCode) {
+        return match ($statusCode) {
             'A' => 'Added',
             'M' => 'Modified',
             'D' => 'Deleted',
@@ -257,7 +281,7 @@ class DevReleaseController extends Controller
     {
         try {
             $branch = trim(Process::run('git rev-parse --abbrev-ref HEAD')->output());
-            $hasChanges = !empty(trim(Process::run('git status --porcelain')->output()));
+            $hasChanges = ! empty(trim(Process::run('git status --porcelain')->output()));
             $lastCommit = trim(Process::run('git log -1 --format="%h - %s (%cr)"')->output());
 
             return [
@@ -280,7 +304,9 @@ class DevReleaseController extends Controller
             $commits = [];
 
             foreach (explode("\n", trim($result->output())) as $line) {
-                if (empty($line)) continue;
+                if (empty($line)) {
+                    continue;
+                }
 
                 $parts = explode('|', $line);
                 $commits[] = [
@@ -335,7 +361,7 @@ class DevReleaseController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create release: ' . $e->getMessage(),
+                'message' => 'Failed to create release: '.$e->getMessage(),
             ], 500);
         }
     }

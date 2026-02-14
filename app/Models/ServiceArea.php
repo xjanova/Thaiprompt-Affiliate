@@ -57,9 +57,9 @@ class ServiceArea extends Model
         'booking_count' => 'integer',
     ];
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * เจ้าของระบบ
@@ -82,9 +82,9 @@ class ServiceArea extends Model
         )->withTimestamps();
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เฉพาะพื้นที่ที่เปิดใช้งาน
@@ -123,16 +123,16 @@ class ServiceArea extends Model
         return $query->where('province', $province);
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Location
-    //===========================================
+    // ===========================================
 
     /**
      * ตรวจสอบว่ามีศูนย์กลางพื้นที่หรือไม่
      */
     public function hasCenter(): bool
     {
-        return !is_null($this->center_latitude) && !is_null($this->center_longitude);
+        return ! is_null($this->center_latitude) && ! is_null($this->center_longitude);
     }
 
     /**
@@ -140,19 +140,15 @@ class ServiceArea extends Model
      */
     public function hasCoordinates(): bool
     {
-        return !empty($this->coordinates) && is_array($this->coordinates);
+        return ! empty($this->coordinates) && is_array($this->coordinates);
     }
 
     /**
      * คำนวณระยะทางจากจุดกึ่งกลางไปยังตำแหน่งที่กำหนด (km)
-     *
-     * @param float $latitude
-     * @param float $longitude
-     * @return float
      */
     public function calculateDistanceToCenter(float $latitude, float $longitude): float
     {
-        if (!$this->hasCenter()) {
+        if (! $this->hasCenter()) {
             return 0;
         }
 
@@ -177,14 +173,10 @@ class ServiceArea extends Model
      * ตรวจสอบว่าจุดที่กำหนดอยู่ในพื้นที่นี้หรือไม่
      *
      * ใช้ Point in Polygon algorithm
-     *
-     * @param float $latitude
-     * @param float $longitude
-     * @return bool
      */
     public function containsPoint(float $latitude, float $longitude): bool
     {
-        if (!$this->hasCoordinates()) {
+        if (! $this->hasCoordinates()) {
             return false;
         }
 
@@ -202,16 +194,16 @@ class ServiceArea extends Model
                 && ($latitude < ($xj - $xi) * ($longitude - $yi) / ($yj - $yi) + $xi);
 
             if ($intersect) {
-                $inside = !$inside;
+                $inside = ! $inside;
             }
         }
 
         return $inside;
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Statistics
-    //===========================================
+    // ===========================================
 
     /**
      * อัพเดทจำนวน provider ในพื้นที่
@@ -230,9 +222,9 @@ class ServiceArea extends Model
         $this->increment('booking_count');
     }
 
-    //===========================================
+    // ===========================================
     // Methods - Display
-    //===========================================
+    // ===========================================
 
     /**
      * ชื่อเต็มของพื้นที่
@@ -253,7 +245,7 @@ class ServiceArea extends Model
      */
     public function getCenterCoordinatesText(): string
     {
-        if (!$this->hasCenter()) {
+        if (! $this->hasCenter()) {
             return 'ไม่ระบุ';
         }
 

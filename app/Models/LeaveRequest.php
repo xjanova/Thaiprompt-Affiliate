@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class LeaveRequest extends Model
 {
@@ -89,7 +89,7 @@ class LeaveRequest extends Model
         if ($this->start_day_type !== 'full_day') {
             $totalDays -= 0.5;
         }
-        if ($this->end_day_type !== 'full_day' && !$start->isSameDay($end)) {
+        if ($this->end_day_type !== 'full_day' && ! $start->isSameDay($end)) {
             $totalDays -= 0.5;
         }
 
@@ -108,6 +108,7 @@ class LeaveRequest extends Model
         $totalDays -= $weekendDays;
 
         $this->total_days = max(0, $totalDays);
+
         return $this->total_days;
     }
 
@@ -163,7 +164,7 @@ class LeaveRequest extends Model
         $leaveType = $this->leaveType;
 
         // Map leave type codes to balance fields
-        $balanceField = match($leaveType->code) {
+        $balanceField = match ($leaveType->code) {
             'annual' => 'annual_leave_balance',
             'sick' => 'sick_leave_balance',
             'personal' => 'personal_leave_balance',
@@ -184,7 +185,7 @@ class LeaveRequest extends Model
         $employee = $this->employee;
         $leaveType = $this->leaveType;
 
-        $balanceField = match($leaveType->code) {
+        $balanceField = match ($leaveType->code) {
             'annual' => 'annual_leave_balance',
             'sick' => 'sick_leave_balance',
             'personal' => 'personal_leave_balance',
@@ -218,13 +219,13 @@ class LeaveRequest extends Model
      */
     public function scopeDateRange($query, $startDate, $endDate)
     {
-        return $query->where(function($q) use ($startDate, $endDate) {
+        return $query->where(function ($q) use ($startDate, $endDate) {
             $q->whereBetween('start_date', [$startDate, $endDate])
-              ->orWhereBetween('end_date', [$startDate, $endDate])
-              ->orWhere(function($q2) use ($startDate, $endDate) {
-                  $q2->where('start_date', '<=', $startDate)
-                     ->where('end_date', '>=', $endDate);
-              });
+                ->orWhereBetween('end_date', [$startDate, $endDate])
+                ->orWhere(function ($q2) use ($startDate, $endDate) {
+                    $q2->where('start_date', '<=', $startDate)
+                        ->where('end_date', '>=', $endDate);
+                });
         });
     }
 }

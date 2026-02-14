@@ -162,7 +162,7 @@ class BotSupportConversation extends Model
      */
     public static function generateTicketNumber(): string
     {
-        return 'SUP-' . strtoupper(uniqid());
+        return 'SUP-'.strtoupper(uniqid());
     }
 
     /**
@@ -171,7 +171,7 @@ class BotSupportConversation extends Model
     protected static function booted()
     {
         static::creating(function ($conversation) {
-            if (!$conversation->ticket_number) {
+            if (! $conversation->ticket_number) {
                 $conversation->ticket_number = self::generateTicketNumber();
             }
         });

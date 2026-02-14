@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * - กำหนดสิทธิ์การเข้าถึงเมนูแต่ละรายการ
  *
  * @version 1.0.0
+ *
  * @since 2025-12-04
  */
 return new class extends Migration
@@ -30,7 +31,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตาราง menu_items - เก็บรายการเมนูทั้งหมด
-        if (!Schema::hasTable('menu_items')) {
+        if (! Schema::hasTable('menu_items')) {
             Schema::create('menu_items', function (Blueprint $table) {
                 $table->id();
 
@@ -79,7 +80,7 @@ return new class extends Migration
         }
 
         // ตาราง menu_role_settings - เก็บการตั้งค่าสิทธิ์เมนูตาม Role
-        if (!Schema::hasTable('menu_role_settings')) {
+        if (! Schema::hasTable('menu_role_settings')) {
             Schema::create('menu_role_settings', function (Blueprint $table) {
                 $table->id();
 

@@ -19,11 +19,6 @@ class LicenseKeyService
     /**
      * สร้าง License Key ใหม่
      *
-     * @param SoftwareProduct $product
-     * @param User $user
-     * @param int|null $orderId
-     * @param array $options
-     * @return SoftwareLicense
      *
      * @throws \Exception
      */
@@ -71,9 +66,6 @@ class LicenseKeyService
     /**
      * สร้าง Download Token แบบ One-Time/Temporary
      *
-     * @param SoftwareLicense $license
-     * @param int $expirationMinutes
-     * @return SoftwareDownload
      *
      * @throws \Exception
      */
@@ -82,12 +74,12 @@ class LicenseKeyService
         int $expirationMinutes = 60
     ): SoftwareDownload {
         // ตรวจสอบว่า license ยังใช้งานได้
-        if (!$license->isValid()) {
+        if (! $license->isValid()) {
             throw new \Exception('License is not valid');
         }
 
         // ตรวจสอบว่ายังดาวน์โหลดได้หรือไม่
-        if (!$license->canDownload()) {
+        if (! $license->canDownload()) {
             throw new \Exception('Download limit reached');
         }
 
@@ -100,7 +92,7 @@ class LicenseKeyService
         $ipAddress = request()->ip();
 
         // Parse User Agent
-        $agent = new \Jenssegers\Agent\Agent();
+        $agent = new \Jenssegers\Agent\Agent;
         $agent->setUserAgent($userAgent);
 
         $download = SoftwareDownload::create([
@@ -123,8 +115,6 @@ class LicenseKeyService
     /**
      * ตรวจสอบ Download Token และให้สิทธิ์ดาวน์โหลด
      *
-     * @param string $token
-     * @return array
      *
      * @throws \Exception
      */
@@ -132,17 +122,17 @@ class LicenseKeyService
     {
         $download = SoftwareDownload::where('download_token', $token)->first();
 
-        if (!$download) {
+        if (! $download) {
             throw new \Exception('Invalid download token');
         }
 
-        if (!$download->isTokenValid()) {
+        if (! $download->isTokenValid()) {
             throw new \Exception('Download token has expired or already used');
         }
 
         // ตรวจสอบ License
         $license = $download->license;
-        if (!$license || !$license->isValid()) {
+        if (! $license || ! $license->isValid()) {
             throw new \Exception('License is not valid');
         }
 
@@ -158,9 +148,6 @@ class LicenseKeyService
 
     /**
      * บันทึกการดาวน์โหลดเสร็จสิ้น
-     *
-     * @param SoftwareDownload $download
-     * @return void
      */
     public function completeDownload(SoftwareDownload $download): void
     {
@@ -188,8 +175,6 @@ class LicenseKeyService
 
     /**
      * สร้าง License Key (UUID format)
-     *
-     * @return string
      */
     protected function generateLicenseKey(): string
     {
@@ -206,8 +191,6 @@ class LicenseKeyService
 
     /**
      * สร้าง Activation Code (8 characters)
-     *
-     * @return string
      */
     protected function generateActivationCode(): string
     {
@@ -224,8 +207,6 @@ class LicenseKeyService
 
     /**
      * สร้าง Download Token (64 characters)
-     *
-     * @return string
      */
     protected function generateDownloadToken(): string
     {
@@ -242,11 +223,6 @@ class LicenseKeyService
 
     /**
      * ยกเลิก License
-     *
-     * @param SoftwareLicense $license
-     * @param User $revokedBy
-     * @param string $reason
-     * @return void
      */
     public function revokeLicense(SoftwareLicense $license, User $revokedBy, string $reason): void
     {
@@ -264,10 +240,6 @@ class LicenseKeyService
 
     /**
      * ต่ออายุ License
-     *
-     * @param SoftwareLicense $license
-     * @param \Carbon\Carbon $newExpiryDate
-     * @return void
      */
     public function renewLicense(SoftwareLicense $license, \Carbon\Carbon $newExpiryDate): void
     {
@@ -287,9 +259,6 @@ class LicenseKeyService
 
     /**
      * ดึงสถิติการดาวน์โหลด
-     *
-     * @param SoftwareProduct $product
-     * @return array
      */
     public function getDownloadStats(SoftwareProduct $product): array
     {

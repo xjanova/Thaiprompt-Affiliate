@@ -42,6 +42,7 @@ class WebPConversionStat extends Model
         $stat->increment('total_from_uploads', $count);
         $stat->increment('total_converted', $count);
         $stat->update(['last_upload_conversion' => now()]);
+
         return $stat;
     }
 
@@ -54,6 +55,7 @@ class WebPConversionStat extends Model
         $stat->increment('total_from_batch', $count);
         $stat->increment('total_converted', $count);
         $stat->update(['last_batch_conversion' => now()]);
+
         return $stat;
     }
 
@@ -63,6 +65,7 @@ class WebPConversionStat extends Model
     public static function getStats(): array
     {
         $stat = self::getInstance();
+
         return [
             'total_converted' => $stat->total_converted,
             'total_from_uploads' => $stat->total_from_uploads,

@@ -33,7 +33,7 @@ class ProductController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -76,6 +76,7 @@ class ProductController extends Controller
     public function create()
     {
         $categories = ProductCategory::active()->orderBy('name')->get();
+
         return view('seller.products.create', compact('categories'));
     }
 
@@ -132,7 +133,7 @@ class ProductController extends Controller
                 'category_id' => $request->category_id,
                 'name' => $request->name,
                 'slug' => Str::slug($request->name),
-                'sku' => $request->sku ?: 'PRD-' . strtoupper(Str::random(8)),
+                'sku' => $request->sku ?: 'PRD-'.strtoupper(Str::random(8)),
                 'description' => $request->description,
                 'short_description' => $request->short_description,
                 'price' => $request->price,
@@ -200,7 +201,8 @@ class ProductController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -240,7 +242,7 @@ class ProductController extends Controller
             'brand' => 'nullable|string|max:100',
             'weight' => 'nullable|numeric|min:0',
             'dimensions' => 'nullable|string|max:100',
-            'sku' => 'nullable|string|unique:products,sku,' . $product->id,
+            'sku' => 'nullable|string|unique:products,sku,'.$product->id,
             'track_inventory' => 'boolean',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
             'pv_value' => 'nullable|numeric|min:0',
@@ -376,7 +378,8 @@ class ProductController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -413,11 +416,12 @@ class ProductController extends Controller
             ->where('seller_id', auth()->id())
             ->firstOrFail();
 
-        $product->is_active = !$product->is_active;
+        $product->is_active = ! $product->is_active;
         $product->save();
 
         $status = $product->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
-        return back()->with('success', $status . 'สินค้าเรียบร้อยแล้ว');
+
+        return back()->with('success', $status.'สินค้าเรียบร้อยแล้ว');
     }
 
     /**
@@ -441,7 +445,7 @@ class ProductController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ลบรูปภาพเรียบร้อยแล้ว'
+            'message' => 'ลบรูปภาพเรียบร้อยแล้ว',
         ]);
     }
 

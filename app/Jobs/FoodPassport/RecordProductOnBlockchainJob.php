@@ -16,7 +16,9 @@ class RecordProductOnBlockchainJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 120;
+
     public int $backoff = 60; // Wait 60 seconds between retries
 
     /**
@@ -38,6 +40,7 @@ class RecordProductOnBlockchainJob implements ShouldQueue
                     'product_id' => $this->product->id,
                     'hash' => $this->product->blockchain_hash,
                 ]);
+
                 return;
             }
 

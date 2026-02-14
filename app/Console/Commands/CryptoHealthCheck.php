@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Crypto\Web3Service;
-use App\Services\Crypto\BlockchainIndexerService;
-use App\Models\CryptoWallet;
 use App\Models\CryptoTransaction;
+use App\Models\CryptoWallet;
 use App\Models\CryptoWithdrawalRequest;
+use App\Services\Crypto\BlockchainIndexerService;
+use App\Services\Crypto\Web3Service;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -25,8 +25,11 @@ class CryptoHealthCheck extends Command
     protected $description = 'Perform health check on cryptocurrency payment gateway';
 
     protected Web3Service $web3Service;
+
     protected BlockchainIndexerService $indexerService;
+
     protected array $issues = [];
+
     protected array $warnings = [];
 
     public function __construct(
@@ -160,7 +163,7 @@ class CryptoHealthCheck extends Command
             ");
 
             if (empty($hasIndex)) {
-                $this->warnings[] = "Missing recommended database indexes";
+                $this->warnings[] = 'Missing recommended database indexes';
                 $this->warn('  ⚠️  Missing recommended indexes (check CRYPTO_PRODUCTION_DEPLOYMENT.md)');
             }
 
@@ -396,17 +399,17 @@ class CryptoHealthCheck extends Command
             $this->info('✅ All systems operational!');
         } else {
             if (count($this->issues) > 0) {
-                $this->error('❌ Critical Issues: ' . count($this->issues));
+                $this->error('❌ Critical Issues: '.count($this->issues));
                 foreach ($this->issues as $issue) {
-                    $this->error('   • ' . $issue);
+                    $this->error('   • '.$issue);
                 }
                 $this->newLine();
             }
 
             if (count($this->warnings) > 0) {
-                $this->warn('⚠️  Warnings: ' . count($this->warnings));
+                $this->warn('⚠️  Warnings: '.count($this->warnings));
                 foreach ($this->warnings as $warning) {
-                    $this->warn('   • ' . $warning);
+                    $this->warn('   • '.$warning);
                 }
             }
         }
@@ -416,7 +419,7 @@ class CryptoHealthCheck extends Command
 
     protected function getMaxHotWalletBalance(string $currency): float
     {
-        return match($currency) {
+        return match ($currency) {
             'ETH' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_ETH', 10),
             'BNB' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_BNB', 100),
             'MATIC' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_MATIC', 10000),

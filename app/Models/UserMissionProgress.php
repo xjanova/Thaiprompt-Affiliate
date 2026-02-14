@@ -49,7 +49,7 @@ class UserMissionProgress extends Model
         $this->current_progress += $value;
 
         // Check if mission completed
-        if (!$this->is_completed && $this->current_progress >= $this->mission->target) {
+        if (! $this->is_completed && $this->current_progress >= $this->mission->target) {
             $this->is_completed = true;
             $this->completed_at = now();
         }
@@ -67,7 +67,7 @@ class UserMissionProgress extends Model
         $this->current_progress = $value;
 
         // Check if mission completed
-        if (!$this->is_completed && $this->current_progress >= $this->mission->target) {
+        if (! $this->is_completed && $this->current_progress >= $this->mission->target) {
             $this->is_completed = true;
             $this->completed_at = now();
         }
@@ -82,7 +82,7 @@ class UserMissionProgress extends Model
      */
     public function claimReward()
     {
-        if (!$this->is_completed) {
+        if (! $this->is_completed) {
             throw new \Exception('Mission not completed yet');
         }
 
@@ -102,7 +102,7 @@ class UserMissionProgress extends Model
                 // Award skin (if not owned)
                 if ($mission->reward_item) {
                     $skin = GameSkin::where('slug', $mission->reward_item)->first();
-                    if ($skin && !$this->user->gameSkins()->where('skin_id', $skin->id)->exists()) {
+                    if ($skin && ! $this->user->gameSkins()->where('skin_id', $skin->id)->exists()) {
                         $this->user->gameSkins()->attach($skin->id, [
                             'purchase_price' => 0,
                             'purchased_at' => now(),
@@ -146,6 +146,6 @@ class UserMissionProgress extends Model
             return 0;
         }
 
-        return min(100, (int)(($this->current_progress / $this->mission->target) * 100));
+        return min(100, (int) (($this->current_progress / $this->mission->target) * 100));
     }
 }

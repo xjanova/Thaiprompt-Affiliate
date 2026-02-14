@@ -18,21 +18,24 @@ class AiService
     /**
      * สร้าง text จาก AI
      *
-     * @param array $params {
-     *     @type int $bot_profile_id ID ของ bot profile (required)
-     *     @type string $prompt คำสั่งหรือคำถาม (required)
-     *     @type string|null $system_prompt System prompt สำหรับกำหนด behavior ของ AI
-     *     @type array|null $conversation_history ประวัติการสนทนา [['role' => 'user/assistant', 'content' => '...']]
-     *     @type int $max_tokens จำนวน tokens สูงสุด (default: 500)
-     *     @type float $temperature ระดับความสุ่ม 0-1 (default: 0.7)
-     *     @type int|null $user_id ID ของผู้ใช้
-     *     @type int|null $rental_id ID ของ rental (ถ้ามี)
-     * }
+     * @param  array  $params  {
+     *
+     * @type int $bot_profile_id ID ของ bot profile (required)
+     * @type string $prompt คำสั่งหรือคำถาม (required)
+     * @type string|null $system_prompt System prompt สำหรับกำหนด behavior ของ AI
+     * @type array|null $conversation_history ประวัติการสนทนา [['role' => 'user/assistant', 'content' => '...']]
+     * @type int $max_tokens จำนวน tokens สูงสุด (default: 500)
+     * @type float $temperature ระดับความสุ่ม 0-1 (default: 0.7)
+     * @type int|null $user_id ID ของผู้ใช้
+     * @type int|null $rental_id ID ของ rental (ถ้ามี)
+     *                }
+     *
      * @return array {
-     *     @type string $text ข้อความที่ AI สร้าง
-     *     @type int $tokens_used จำนวน tokens ที่ใช้
-     *     @type float $cost ค่าใช้จ่ายในการเรียกใช้ (ถ้ามี)
-     * }
+     *
+     * @type string $text ข้อความที่ AI สร้าง
+     * @type int $tokens_used จำนวน tokens ที่ใช้
+     * @type float $cost ค่าใช้จ่ายในการเรียกใช้ (ถ้ามี)
+     *             }
      *
      * @throws \Exception
      */
@@ -52,7 +55,7 @@ class AiService
             $botProfile = AiBotProfile::with(['provider', 'model'])->findOrFail($params['bot_profile_id']);
 
             // ตรวจสอบว่า bot profile มี provider และ model
-            if (!$botProfile->provider || !$botProfile->model) {
+            if (! $botProfile->provider || ! $botProfile->model) {
                 throw new \Exception('Bot profile missing provider or model configuration');
             }
 
@@ -89,7 +92,7 @@ class AiService
 
             // สร้าง conversation record (ถ้ามี user_id)
             $conversation = null;
-            if (!empty($params['user_id'])) {
+            if (! empty($params['user_id'])) {
                 $conversation = $this->createConversationRecord($botProfile, $params, $messages, $response);
 
                 // Log usage
@@ -117,16 +120,13 @@ class AiService
 
     /**
      * เตรียม messages array จาก parameters
-     *
-     * @param array $params
-     * @return array
      */
     protected function prepareMessages(array $params): array
     {
         $messages = [];
 
         // เพิ่ม system prompt (ถ้ามี)
-        if (!empty($params['system_prompt'])) {
+        if (! empty($params['system_prompt'])) {
             $messages[] = [
                 'role' => 'system',
                 'content' => $params['system_prompt'],
@@ -134,7 +134,7 @@ class AiService
         }
 
         // เพิ่ม conversation history (ถ้ามี)
-        if (!empty($params['conversation_history']) && is_array($params['conversation_history'])) {
+        if (! empty($params['conversation_history']) && is_array($params['conversation_history'])) {
             foreach ($params['conversation_history'] as $message) {
                 if (isset($message['role']) && isset($message['content'])) {
                     $messages[] = [
@@ -156,12 +156,6 @@ class AiService
 
     /**
      * สร้าง conversation record
-     *
-     * @param AiBotProfile $botProfile
-     * @param array $params
-     * @param array $messages
-     * @param array $response
-     * @return AiConversation
      */
     protected function createConversationRecord(
         AiBotProfile $botProfile,
@@ -200,10 +194,7 @@ class AiService
     /**
      * คำนวณ cost จาก tokens
      *
-     * @param \App\Models\AiModel $model
-     * @param int $promptTokens
-     * @param int $completionTokens
-     * @return float
+     * @param  \App\Models\AiModel  $model
      */
     protected function calculateCost($model, int $promptTokens, int $completionTokens): float
     {
@@ -217,12 +208,6 @@ class AiService
 
     /**
      * บันทึก usage log
-     *
-     * @param AiConversation $conversation
-     * @param array $response
-     * @param float $responseTime
-     * @param float $cost
-     * @return void
      */
     protected function logUsageRecord(
         AiConversation $conversation,
@@ -263,9 +248,6 @@ class AiService
 
     /**
      * ทดสอบ AI service ด้วย bot profile
-     *
-     * @param int $botProfileId
-     * @return array
      */
     public function test(int $botProfileId): array
     {

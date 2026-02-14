@@ -12,8 +12,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง rider_locations
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -46,7 +44,7 @@ return new class extends Migration
                 'running',      // วิ่ง
                 'cycling',      // ปั่นจักรยาน
                 'driving',      // ขับรถ
-                'unknown'       // ไม่ทราบ
+                'unknown',       // ไม่ทราบ
             ])->nullable();
 
             // แบตเตอรี่และอุปกรณ์
@@ -69,8 +67,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง rider_locations
-     *
-     * @return void
      */
     public function down(): void
     {

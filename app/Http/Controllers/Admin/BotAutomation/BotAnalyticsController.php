@@ -138,7 +138,6 @@ class BotAnalyticsController extends Controller
     /**
      * ส่งออกข้อมูล analytics เป็นไฟล์ CSV
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
@@ -148,7 +147,7 @@ class BotAnalyticsController extends Controller
 
         // เตรียมข้อมูลตามประเภทที่เลือก
         $data = [];
-        $filename = "analytics-{$type}-" . date('Y-m-d') . '.csv';
+        $filename = "analytics-{$type}-".date('Y-m-d').'.csv';
 
         switch ($type) {
             case 'executions':
@@ -172,7 +171,7 @@ class BotAnalyticsController extends Controller
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // เขียน headers
-            if (!empty($data)) {
+            if (! empty($data)) {
                 fputcsv($handle, array_keys($data[0]));
 
                 // เขียนข้อมูลแต่ละแถว
@@ -190,9 +189,6 @@ class BotAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูล executions สำหรับ export
-     *
-     * @param int $period
-     * @return array
      */
     protected function getExecutionsExportData(int $period): array
     {
@@ -218,9 +214,6 @@ class BotAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูล engagement สำหรับ export
-     *
-     * @param int $period
-     * @return array
      */
     protected function getEngagementExportData(int $period): array
     {
@@ -259,8 +252,6 @@ class BotAnalyticsController extends Controller
 
     /**
      * ดึงข้อมูล performance สำหรับ export
-     *
-     * @return array
      */
     protected function getPerformanceExportData(): array
     {

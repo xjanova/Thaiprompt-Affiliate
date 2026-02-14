@@ -133,8 +133,6 @@ class LineBroadcastMessage extends Model
 
     /**
      * ตรวจสอบว่าสามารถ retry ได้หรือไม่
-     *
-     * @return bool
      */
     public function canRetry(): bool
     {
@@ -143,8 +141,6 @@ class LineBroadcastMessage extends Model
 
     /**
      * ตรวจสอบว่าถึงเวลาส่งแล้วหรือยัง
-     *
-     * @return bool
      */
     public function isReadyToSend(): bool
     {
@@ -155,12 +151,10 @@ class LineBroadcastMessage extends Model
 
     /**
      * ดึงรายละเอียดสถานะเป็นข้อความ
-     *
-     * @return string
      */
     public function getStatusLabel(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => '📝 แบบร่าง',
             'scheduled' => '⏰ รอส่ง',
             'sending' => '🚀 กำลังส่ง',
@@ -172,12 +166,10 @@ class LineBroadcastMessage extends Model
 
     /**
      * ดึง badge color สำหรับแสดงสถานะ
-     *
-     * @return string
      */
     public function getStatusColor(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'gray',
             'scheduled' => 'blue',
             'sending' => 'yellow',

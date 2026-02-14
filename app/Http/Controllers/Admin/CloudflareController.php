@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\CloudflareService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -35,8 +35,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้า Dashboard หลักของ Cloudflare
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -88,8 +86,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้าจัดการ Cache
-     *
-     * @return View
      */
     public function cache(): View
     {
@@ -101,12 +97,10 @@ class CloudflareController extends Controller
 
     /**
      * Purge Cache ทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function purgeAll(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า กรุณาเพิ่ม Zone ID และ API Token ใน .env',
@@ -120,9 +114,6 @@ class CloudflareController extends Controller
 
     /**
      * Purge Cache ตาม URLs
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function purgeUrls(Request $request): JsonResponse
     {
@@ -131,7 +122,7 @@ class CloudflareController extends Controller
             'urls.*' => 'required|url',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -145,9 +136,6 @@ class CloudflareController extends Controller
 
     /**
      * Purge Cache ตาม Prefixes
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function purgePrefixes(Request $request): JsonResponse
     {
@@ -156,7 +144,7 @@ class CloudflareController extends Controller
             'prefixes.*' => 'required|string',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -174,8 +162,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้าจัดการ DNS
-     *
-     * @return View
      */
     public function dns(): View
     {
@@ -197,9 +183,6 @@ class CloudflareController extends Controller
 
     /**
      * สร้าง DNS Record ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createDns(Request $request): JsonResponse
     {
@@ -212,7 +195,7 @@ class CloudflareController extends Controller
             'priority' => 'nullable|integer', // สำหรับ MX records
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -239,10 +222,6 @@ class CloudflareController extends Controller
 
     /**
      * อัพเดท DNS Record
-     *
-     * @param Request $request
-     * @param string $recordId
-     * @return JsonResponse
      */
     public function updateDns(Request $request, string $recordId): JsonResponse
     {
@@ -255,7 +234,7 @@ class CloudflareController extends Controller
             'priority' => 'nullable|integer',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -281,13 +260,10 @@ class CloudflareController extends Controller
 
     /**
      * ลบ DNS Record
-     *
-     * @param string $recordId
-     * @return JsonResponse
      */
     public function deleteDns(string $recordId): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -305,8 +281,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้าตั้งค่า Security
-     *
-     * @return View
      */
     public function security(): View
     {
@@ -345,9 +319,6 @@ class CloudflareController extends Controller
 
     /**
      * เปลี่ยน Security Level
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function setSecurityLevel(Request $request): JsonResponse
     {
@@ -355,7 +326,7 @@ class CloudflareController extends Controller
             'level' => 'required|string|in:off,essentially_off,low,medium,high,under_attack',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -369,12 +340,10 @@ class CloudflareController extends Controller
 
     /**
      * เปิด Under Attack Mode
-     *
-     * @return JsonResponse
      */
     public function enableUnderAttack(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -388,12 +357,10 @@ class CloudflareController extends Controller
 
     /**
      * ปิด Under Attack Mode
-     *
-     * @return JsonResponse
      */
     public function disableUnderAttack(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -411,9 +378,6 @@ class CloudflareController extends Controller
 
     /**
      * สลับ Development Mode
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function toggleDevelopmentMode(Request $request): JsonResponse
     {
@@ -421,7 +385,7 @@ class CloudflareController extends Controller
             'enabled' => 'required|boolean',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -439,8 +403,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้า Analytics
-     *
-     * @return View
      */
     public function analytics(): View
     {
@@ -462,15 +424,12 @@ class CloudflareController extends Controller
 
     /**
      * ดึงข้อมูล Analytics ล่าสุด (AJAX)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAnalytics(Request $request): JsonResponse
     {
         $since = $request->get('since', '-1440'); // ค่าเริ่มต้น 24 ชั่วโมง
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -488,8 +447,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้า Page Rules
-     *
-     * @return View
      */
     public function pageRules(): View
     {
@@ -515,12 +472,10 @@ class CloudflareController extends Controller
 
     /**
      * ดึงข้อมูล Zones ทั้งหมด
-     *
-     * @return JsonResponse
      */
     public function getZones(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -534,12 +489,10 @@ class CloudflareController extends Controller
 
     /**
      * ดึงข้อมูล Zone ปัจจุบัน
-     *
-     * @return JsonResponse
      */
     public function getZoneInfo(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -557,8 +510,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้าตั้งค่า
-     *
-     * @return View
      */
     public function settings(): View
     {
@@ -571,15 +522,12 @@ class CloudflareController extends Controller
             'storedZoneId' => $storedSettings['zone_id'] ?? '',
             'storedApiToken' => $storedSettings['api_token'] ?? '',
             'configZoneId' => config('services.cloudflare.zone_id'),
-            'hasConfigApiToken' => !empty(config('services.cloudflare.api_token')),
+            'hasConfigApiToken' => ! empty(config('services.cloudflare.api_token')),
         ]);
     }
 
     /**
      * บันทึกการตั้งค่า Cloudflare
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSettings(Request $request): JsonResponse
     {
@@ -600,12 +548,12 @@ class CloudflareController extends Controller
             $request->input('api_token')
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json($result, 400);
         }
 
         // ทดสอบการเชื่อมต่อทันที
-        $cloudflare = new CloudflareService();
+        $cloudflare = new CloudflareService;
         $connectionTest = $cloudflare->testConnection();
 
         return response()->json([
@@ -621,8 +569,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้า Optimization
-     *
-     * @return View
      */
     public function optimization(): View
     {
@@ -641,12 +587,10 @@ class CloudflareController extends Controller
 
     /**
      * ดึงสถานะ Optimization (AJAX)
-     *
-     * @return JsonResponse
      */
     public function getOptimizationStatus(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -660,12 +604,10 @@ class CloudflareController extends Controller
 
     /**
      * รัน One-Click Optimization
-     *
-     * @return JsonResponse
      */
     public function runOptimization(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า กรุณาเพิ่ม Zone ID และ API Token',
@@ -679,12 +621,10 @@ class CloudflareController extends Controller
 
     /**
      * ดึง Settings ทั้งหมด (AJAX)
-     *
-     * @return JsonResponse
      */
     public function getAllSettings(): JsonResponse
     {
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -698,8 +638,6 @@ class CloudflareController extends Controller
 
     /**
      * ทดสอบการเชื่อมต่อ Cloudflare API
-     *
-     * @return JsonResponse
      */
     public function testConnection(): JsonResponse
     {
@@ -714,8 +652,6 @@ class CloudflareController extends Controller
 
     /**
      * หน้า Auto Under Attack Mode Settings
-     *
-     * @return View
      */
     public function autoUnderAttack(): View
     {
@@ -734,9 +670,6 @@ class CloudflareController extends Controller
 
     /**
      * บันทึกการตั้งค่า Auto Under Attack Mode
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveAutoUnderAttackSettings(Request $request): JsonResponse
     {
@@ -757,8 +690,6 @@ class CloudflareController extends Controller
 
     /**
      * ดึงสถานะ Auto Under Attack (AJAX)
-     *
-     * @return JsonResponse
      */
     public function getAutoUnderAttackStatus(): JsonResponse
     {
@@ -774,9 +705,6 @@ class CloudflareController extends Controller
 
     /**
      * เปิด/ปิด Under Attack Mode ด้วยตนเอง
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function toggleUnderAttackMode(Request $request): JsonResponse
     {
@@ -784,7 +712,7 @@ class CloudflareController extends Controller
             'enable' => 'required|boolean',
         ]);
 
-        if (!$this->cloudflare->isConfigured()) {
+        if (! $this->cloudflare->isConfigured()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -808,8 +736,6 @@ class CloudflareController extends Controller
 
     /**
      * ทดสอบการตรวจจับการโจมตี (ไม่เปิด Under Attack จริง)
-     *
-     * @return JsonResponse
      */
     public function testAutoUnderAttack(): JsonResponse
     {

@@ -9,7 +9,6 @@ use App\Models\OfficialShopSetting;
 use App\Models\OfficialShopWarning;
 use App\Models\Product;
 use App\Models\VendorStore;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -36,7 +35,6 @@ class OfficialShopSelectionService
      * - Store Age: อายุร้าน (5%)
      * - Store Trophies: Trophy ของร้าน (10%)
      *
-     * @param Product $product
      * @return array ['score' => float, 'breakdown' => array]
      */
     public function calculateProductScore(Product $product): array
@@ -151,12 +149,12 @@ class OfficialShopSelectionService
     /**
      * รัน AI Selection อัตโนมัติ
      *
-     * @param int $maxProducts จำนวนสินค้าสูงสุดที่จะเลือก
+     * @param  int  $maxProducts  จำนวนสินค้าสูงสุดที่จะเลือก
      * @return array ผลลัพธ์การ selection
      */
     public function runAiSelection(?int $maxProducts = null): array
     {
-        if (!OfficialShopSetting::get('ai_selection_enabled', true)) {
+        if (! OfficialShopSetting::get('ai_selection_enabled', true)) {
             return [
                 'success' => false,
                 'message' => 'ระบบ AI Selection ถูกปิดอยู่',
@@ -183,13 +181,14 @@ class OfficialShopSelectionService
                 ->get();
 
             foreach ($existingProducts as $entry) {
-                if (!$entry->product) {
+                if (! $entry->product) {
                     // สินค้าถูกลบแล้ว - ถอดออก
                     $entry->removeFromOfficialShop('สินค้าถูกลบแล้ว');
                     $removed[] = [
                         'product_id' => $entry->product_id,
                         'reason' => 'product_deleted',
                     ];
+
                     continue;
                 }
 
@@ -309,8 +308,6 @@ class OfficialShopSelectionService
 
     /**
      * ตรวจสอบและปรับปรุง Warnings
-     *
-     * @return array
      */
     public function processWarnings(): array
     {
@@ -327,9 +324,10 @@ class OfficialShopSelectionService
                 ->get();
 
             foreach ($pendingWarnings as $warning) {
-                if (!$warning->product) {
+                if (! $warning->product) {
                     $warning->markAsRemoved(null, 'สินค้าถูกลบ');
                     $removed[] = $warning->id;
+
                     continue;
                 }
 
@@ -379,8 +377,6 @@ class OfficialShopSelectionService
 
     /**
      * ตรวจสอบและปิดโปรโมทสินค้าใหม่ที่หมดอายุ
-     *
-     * @return array
      */
     public function processExpiredNewProductPromotions(): array
     {
@@ -415,14 +411,10 @@ class OfficialShopSelectionService
 
     /**
      * คำนวณสินค้าขายดีรายเดือน
-     *
-     * @param int|null $month
-     * @param int|null $year
-     * @return array
      */
     public function calculateMonthlyBestSellers(?int $month = null, ?int $year = null): array
     {
-        if (!OfficialShopSetting::get('best_seller_enabled', true)) {
+        if (! OfficialShopSetting::get('best_seller_enabled', true)) {
             return [
                 'success' => false,
                 'message' => 'ระบบสินค้าขายดีถูกปิดอยู่',
@@ -436,15 +428,10 @@ class OfficialShopSelectionService
 
     /**
      * ขอโปรโมทสินค้าใหม่
-     *
-     * @param Product $product
-     * @param VendorStore $store
-     * @param int|null $userId
-     * @return array
      */
     public function requestNewProductPromotion(Product $product, VendorStore $store, ?int $userId = null): array
     {
-        if (!OfficialShopSetting::get('new_product_promo_enabled', true)) {
+        if (! OfficialShopSetting::get('new_product_promo_enabled', true)) {
             return [
                 'success' => false,
                 'message' => 'ระบบโปรโมทสินค้าใหม่ถูกปิดอยู่',
@@ -453,7 +440,7 @@ class OfficialShopSelectionService
 
         // ตรวจสอบสิทธิ์
         $check = NewProductPromotion::canStorePromote($store->id);
-        if (!$check['can_promote']) {
+        if (! $check['can_promote']) {
             return [
                 'success' => false,
                 'message' => $check['reason'],
@@ -480,7 +467,7 @@ class OfficialShopSelectionService
         // สร้างโปรโมท
         $promo = NewProductPromotion::requestPromotion($product, $store->id, $userId);
 
-        if (!$promo) {
+        if (! $promo) {
             return [
                 'success' => false,
                 'message' => 'ไม่สามารถสร้างโปรโมทได้',
@@ -507,9 +494,7 @@ class OfficialShopSelectionService
     /**
      * จัดการเมื่อสินค้าถูกแก้ไข/ลบ
      *
-     * @param Product $product
-     * @param string $action 'edit' | 'delete'
-     * @return array
+     * @param  string  $action  'edit' | 'delete'
      */
     public function handleProductChange(Product $product, string $action): array
     {
@@ -526,7 +511,7 @@ class OfficialShopSelectionService
         }
 
         // ตรวจสอบการล็อค
-        $lockedEntry = $ospProducts->first(fn($entry) => $entry->is_locked);
+        $lockedEntry = $ospProducts->first(fn ($entry) => $entry->is_locked);
 
         if ($lockedEntry) {
             return [
@@ -540,8 +525,7 @@ class OfficialShopSelectionService
         }
 
         // สินค้าขายดี - แสดง warning และถอดออกทันที
-        $bestSellerEntry = $ospProducts->first(fn($entry) =>
-            $entry->selection_type === OfficialShopProduct::TYPE_BEST_SELLER
+        $bestSellerEntry = $ospProducts->first(fn ($entry) => $entry->selection_type === OfficialShopProduct::TYPE_BEST_SELLER
         );
 
         if ($bestSellerEntry && $action === 'delete') {
@@ -552,7 +536,7 @@ class OfficialShopSelectionService
             'in_official_shop' => true,
             'action_allowed' => true,
             'warning' => 'สินค้านี้อยู่ใน Official Shop การแก้ไข/ลบจะทำให้ถูกถอดออกจาก Official Shop',
-            'entries' => $ospProducts->map(fn($entry) => [
+            'entries' => $ospProducts->map(fn ($entry) => [
                 'id' => $entry->id,
                 'type' => $entry->selection_type,
                 'badge' => $entry->badge_label,
@@ -562,8 +546,6 @@ class OfficialShopSelectionService
 
     /**
      * ดึงสถิติ Official Shop
-     *
-     * @return array
      */
     public function getStatistics(): array
     {

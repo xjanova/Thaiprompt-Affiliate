@@ -38,7 +38,7 @@ class VendorPackageSeeder extends Seeder
             VendorPackage::create($package);
         }
 
-        $this->command->info('✅ Vendor packages seeded successfully: ' . count($packages) . ' packages');
+        $this->command->info('✅ Vendor packages seeded successfully: '.count($packages).' packages');
     }
 
     /**
@@ -54,7 +54,7 @@ class VendorPackageSeeder extends Seeder
         $skipped = 0;
 
         foreach ($packages as $package) {
-            if (!VendorPackage::where('package_slug', $package['package_slug'])->exists()) {
+            if (! VendorPackage::where('package_slug', $package['package_slug'])->exists()) {
                 VendorPackage::create($package);
                 $this->command->info("   ➕ Added: {$package['package_name']}");
                 $added++;

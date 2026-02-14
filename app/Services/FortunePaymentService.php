@@ -23,9 +23,8 @@ class FortunePaymentService
     /**
      * สร้าง FortuneReading จาก SMS notification ที่ตรงกับยอดพิเศษ
      *
-     * @param SmsPaymentNotification $notification SMS notification ที่ตรวจจับได้
-     * @param array $specialAmountConfig config ของยอดพิเศษ (type, name, reading_type, ...)
-     * @return FortuneReading
+     * @param  SmsPaymentNotification  $notification  SMS notification ที่ตรวจจับได้
+     * @param  array  $specialAmountConfig  config ของยอดพิเศษ (type, name, reading_type, ...)
      */
     public function createFromSmsNotification(
         SmsPaymentNotification $notification,
@@ -38,7 +37,7 @@ class FortunePaymentService
         // สร้าง FortuneReading
         $reading = FortuneReading::create([
             'user_id' => $user?->id,
-            'facebook_user_id' => $user?->facebook_id ?? 'sms_' . $notification->id,
+            'facebook_user_id' => $user?->facebook_id ?? 'sms_'.$notification->id,
             'facebook_user_name' => $notification->sender_or_receiver ?? 'ลูกค้า SMS',
             'questions' => ['รอลูกค้าถามคำถาม (ชำระเงินผ่าน SMS แล้ว)'],
             'ai_response' => '',
@@ -78,9 +77,6 @@ class FortunePaymentService
      * ลำดับการค้นหา:
      * 1. ค้นจากชื่อผู้โอน (sender_or_receiver)
      * 2. ค้นจากเลขบัญชี (account_number)
-     *
-     * @param SmsPaymentNotification $notification
-     * @return User|null
      */
     protected function findUserFromNotification(SmsPaymentNotification $notification): ?User
     {
@@ -88,7 +84,7 @@ class FortunePaymentService
         $account = $notification->account_number;
 
         // ค้นจากชื่อผู้โอน (ตรงทั้งชื่อ)
-        if (!empty($sender)) {
+        if (! empty($sender)) {
             $user = User::where('name', $sender)->first();
             if ($user) {
                 return $user;
@@ -104,7 +100,7 @@ class FortunePaymentService
         }
 
         // ค้นจากเลขบัญชี (ถ้ามี)
-        if (!empty($account)) {
+        if (! empty($account)) {
             $user = User::where('bank_account_number', $account)->first();
             if ($user) {
                 return $user;
@@ -116,22 +112,19 @@ class FortunePaymentService
 
     /**
      * สร้างข้อมูลผู้โอน (sender info) สำหรับแสดงใน admin
-     *
-     * @param SmsPaymentNotification $notification
-     * @return string
      */
     protected function buildSenderInfo(SmsPaymentNotification $notification): string
     {
         $parts = [];
 
-        if (!empty($notification->sender_or_receiver)) {
+        if (! empty($notification->sender_or_receiver)) {
             $parts[] = $notification->sender_or_receiver;
         }
-        if (!empty($notification->account_number)) {
-            $parts[] = 'บัญชี: ' . $notification->account_number;
+        if (! empty($notification->account_number)) {
+            $parts[] = 'บัญชี: '.$notification->account_number;
         }
-        if (!empty($notification->reference_number)) {
-            $parts[] = 'Ref: ' . $notification->reference_number;
+        if (! empty($notification->reference_number)) {
+            $parts[] = 'Ref: '.$notification->reference_number;
         }
 
         return implode(' | ', $parts) ?: 'ไม่ทราบข้อมูลผู้โอน';
@@ -141,10 +134,6 @@ class FortunePaymentService
      * เชื่อมบิลลอยกับ User (admin assign)
      *
      * เมื่อ admin ระบุตัวตนลูกค้าได้แล้ว
-     *
-     * @param FortuneReading $reading
-     * @param User $user
-     * @return FortuneReading
      */
     public function assignFloatingBill(FortuneReading $reading, User $user): FortuneReading
     {
@@ -164,7 +153,7 @@ class FortunePaymentService
     /**
      * ตรวจสอบว่ายอดเงินเป็นยอดพิเศษสำหรับบริการใดหรือไม่
      *
-     * @param float $amount ยอดเงินที่ตรวจจับได้
+     * @param  float  $amount  ยอดเงินที่ตรวจจับได้
      * @return array|null config ของยอดพิเศษ หรือ null ถ้าไม่ใช่
      */
     public static function findSpecialAmount(float $amount): ?array

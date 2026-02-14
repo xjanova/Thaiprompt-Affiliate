@@ -27,8 +27,9 @@ class WebhookController extends Controller
     {
         try {
             // Verify webhook signature
-            if (!$this->verifyGitHubSignature($request)) {
+            if (! $this->verifyGitHubSignature($request)) {
                 Log::warning('GitHub webhook signature verification failed');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid signature',
@@ -56,6 +57,7 @@ class WebhookController extends Controller
                 // Skip draft releases
                 if ($isDraft) {
                     Log::info('Skipping draft release', ['tag' => $tagName]);
+
                     return response()->json([
                         'success' => true,
                         'message' => 'Draft release ignored',
@@ -114,17 +116,18 @@ class WebhookController extends Controller
         // If no secret configured, skip verification (development mode)
         if (empty($secret)) {
             Log::warning('GitHub webhook secret not configured, skipping verification');
+
             return true;
         }
 
         $signature = $request->header('X-Hub-Signature-256');
-        if (!$signature) {
+        if (! $signature) {
             return false;
         }
 
         // Calculate expected signature
         $payload = $request->getContent();
-        $expectedSignature = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+        $expectedSignature = 'sha256='.hash_hmac('sha256', $payload, $secret);
 
         // Compare signatures (timing-safe)
         return hash_equals($expectedSignature, $signature);
@@ -154,7 +157,7 @@ class WebhookController extends Controller
     {
         try {
             // Verify admin permission (add middleware or check here)
-            if (!$request->user() || !$request->user()->is_super_admin) {
+            if (! $request->user() || ! $request->user()->is_super_admin) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',

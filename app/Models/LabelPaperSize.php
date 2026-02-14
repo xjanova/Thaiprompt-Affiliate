@@ -123,7 +123,7 @@ class LabelPaperSize extends Model
     /**
      * Scope: เฉพาะที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -134,8 +134,7 @@ class LabelPaperSize extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInCategory($query, string $category)
@@ -146,7 +145,7 @@ class LabelPaperSize extends Model
     /**
      * Scope: เรียงตามลำดับ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -156,8 +155,6 @@ class LabelPaperSize extends Model
 
     /**
      * คำนวณจำนวนฉลากต่อแผ่น
-     *
-     * @return int
      */
     public function getTotalLabelsAttribute(): int
     {
@@ -192,8 +189,6 @@ class LabelPaperSize extends Model
 
     /**
      * ดึงชื่อแสดงผล (ภาษาไทยหรืออังกฤษ)
-     *
-     * @return string
      */
     public function getDisplayNameAttribute(): string
     {
@@ -202,8 +197,6 @@ class LabelPaperSize extends Model
 
     /**
      * ดึงขนาดในรูปแบบ string
-     *
-     * @return string
      */
     public function getSizeStringAttribute(): string
     {
@@ -212,8 +205,6 @@ class LabelPaperSize extends Model
 
     /**
      * รายการหมวดหมู่ที่รองรับ
-     *
-     * @return array
      */
     public static function getCategories(): array
     {
@@ -229,8 +220,6 @@ class LabelPaperSize extends Model
 
     /**
      * รายการเครื่องพิมพ์ยอดนิยม
-     *
-     * @return array
      */
     public static function getPopularPrinters(): array
     {

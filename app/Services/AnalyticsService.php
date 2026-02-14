@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
+use App\Models\BlockedIp;
+use App\Models\MlmCommission;
+use App\Models\MlmMember;
+use App\Models\PaymentTransaction;
+use App\Models\SecurityLog;
 use App\Models\SystemAnalytic;
 use App\Models\User;
-use App\Models\MlmMember;
-use App\Models\MlmCommission;
-use App\Models\PaymentTransaction;
-use App\Models\BlockedIp;
-use App\Models\SecurityLog;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 class AnalyticsService
@@ -119,13 +119,13 @@ class AnalyticsService
 
             // MySQL max connections
             $maxConnections = DB::select('SHOW VARIABLES LIKE "max_connections"');
-            if (!empty($maxConnections)) {
+            if (! empty($maxConnections)) {
                 $metrics['db_connections_total'] = (int) $maxConnections[0]->Value;
             }
 
             // Slow queries
             $slowQueries = DB::select('SHOW GLOBAL STATUS LIKE "Slow_queries"');
-            if (!empty($slowQueries)) {
+            if (! empty($slowQueries)) {
                 $currentSlowQueries = (int) $slowQueries[0]->Value;
                 $previousSlowQueries = Cache::get('analytics.slow_queries', 0);
                 $metrics['db_slow_queries'] = max(0, $currentSlowQueries - $previousSlowQueries);
@@ -316,9 +316,11 @@ class AnalyticsService
             $cpuInfo = @file_get_contents('/proc/cpuinfo');
             if ($cpuInfo) {
                 preg_match_all('/^processor/m', $cpuInfo, $matches);
+
                 return count($matches[0]) ?: 1;
             }
         }
+
         return 1;
     }
 
@@ -327,12 +329,12 @@ class AnalyticsService
      */
     protected function getMemoryInfo(): ?array
     {
-        if (!file_exists('/proc/meminfo')) {
+        if (! file_exists('/proc/meminfo')) {
             return null;
         }
 
         $memInfo = @file_get_contents('/proc/meminfo');
-        if (!$memInfo) {
+        if (! $memInfo) {
             return null;
         }
 
@@ -364,7 +366,7 @@ class AnalyticsService
         $total = @disk_total_space($path);
         $free = @disk_free_space($path);
 
-        if (!$total || !$free) {
+        if (! $total || ! $free) {
             return null;
         }
 

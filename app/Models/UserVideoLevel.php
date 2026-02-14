@@ -84,6 +84,7 @@ class UserVideoLevel extends Model
 
         if ($nextLevel && $this->current_exp >= $nextLevel->required_exp) {
             $this->levelUp($nextLevel);
+
             return true;
         }
 
@@ -135,7 +136,7 @@ class UserVideoLevel extends Model
     {
         $nextLevel = $this->currentLevel->next_level;
 
-        if (!$nextLevel) {
+        if (! $nextLevel) {
             return 100; // Max level
         }
 
@@ -148,8 +149,6 @@ class UserVideoLevel extends Model
 
     /**
      * ประวัติการอัพเกรดดาว
-     *
-     * @return HasMany
      */
     public function starUpgradeHistory(): HasMany
     {
@@ -158,8 +157,6 @@ class UserVideoLevel extends Model
 
     /**
      * จำนวนดาวที่แสดง (สูงสุดระหว่าง Level-based กับ Purchased)
-     *
-     * @return int
      */
     public function getEffectiveStarsAttribute(): int
     {
@@ -171,8 +168,6 @@ class UserVideoLevel extends Model
 
     /**
      * สีดาวที่แสดง (ตาม purchased ถ้ามี, ไม่งั้นตาม level)
-     *
-     * @return string
      */
     public function getEffectiveStarColorAttribute(): string
     {
@@ -186,8 +181,6 @@ class UserVideoLevel extends Model
 
     /**
      * ข้อมูลสีดาวที่แสดง
-     *
-     * @return array
      */
     public function getEffectiveStarColorInfoAttribute(): array
     {
@@ -196,8 +189,6 @@ class UserVideoLevel extends Model
 
     /**
      * Hex สีดาว
-     *
-     * @return string
      */
     public function getEffectiveStarColorHexAttribute(): string
     {
@@ -206,8 +197,6 @@ class UserVideoLevel extends Model
 
     /**
      * Gradient class สีดาว
-     *
-     * @return string
      */
     public function getEffectiveStarGradientAttribute(): string
     {
@@ -217,7 +206,7 @@ class UserVideoLevel extends Model
     /**
      * ตรวจสอบว่าอัพเกรดดาวได้หรือไม่
      *
-     * @param int $targetStars ดาวที่ต้องการ
+     * @param  int  $targetStars  ดาวที่ต้องการ
      * @return array ['can_upgrade' => bool, 'reason' => string|null, 'price' => float|null]
      */
     public function canUpgradeStars(int $targetStars): array
@@ -244,7 +233,7 @@ class UserVideoLevel extends Model
 
         // ดึงราคา
         $priceData = StarUpgradePrice::getByStars($targetStars);
-        if (!$priceData || !$priceData->is_active) {
+        if (! $priceData || ! $priceData->is_active) {
             return [
                 'can_upgrade' => false,
                 'reason' => 'ระดับดาวนี้ยังไม่เปิดให้ซื้อ',
@@ -266,7 +255,7 @@ class UserVideoLevel extends Model
         if ($priceData->require_previous_star && $targetStars > 1 && $currentStars < ($targetStars - 1)) {
             return [
                 'can_upgrade' => false,
-                'reason' => 'ต้องอัพเกรดดาวตามลำดับ (ต้องมี ' . ($targetStars - 1) . ' ดาวก่อน)',
+                'reason' => 'ต้องอัพเกรดดาวตามลำดับ (ต้องมี '.($targetStars - 1).' ดาวก่อน)',
                 'price' => null,
             ];
         }
@@ -287,7 +276,7 @@ class UserVideoLevel extends Model
         if ($coinBalance < $price) {
             return [
                 'can_upgrade' => false,
-                'reason' => 'Coins ไม่เพียงพอ (ต้องการ ' . number_format($price, 2) . ' Coins)',
+                'reason' => 'Coins ไม่เพียงพอ (ต้องการ '.number_format($price, 2).' Coins)',
                 'price' => $price,
             ];
         }
@@ -302,16 +291,14 @@ class UserVideoLevel extends Model
     /**
      * อัพเกรดดาว
      *
-     * @param int $targetStars ดาวที่ต้องการ
-     * @param string|null $ipAddress
-     * @param string|null $userAgent
+     * @param  int  $targetStars  ดาวที่ต้องการ
      * @return array ['success' => bool, 'message' => string, 'history' => StarUpgradeHistory|null]
      */
     public function upgradeStars(int $targetStars, ?string $ipAddress = null, ?string $userAgent = null): array
     {
         // ตรวจสอบว่าอัพเกรดได้หรือไม่
         $check = $this->canUpgradeStars($targetStars);
-        if (!$check['can_upgrade']) {
+        if (! $check['can_upgrade']) {
             return [
                 'success' => false,
                 'message' => $check['reason'],
@@ -362,7 +349,7 @@ class UserVideoLevel extends Model
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 'history' => null,
             ];
         }

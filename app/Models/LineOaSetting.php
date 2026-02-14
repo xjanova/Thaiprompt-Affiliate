@@ -71,6 +71,7 @@ class LineOaSetting extends Model
     public static function isRequired(): bool
     {
         $settings = self::getActive();
+
         return $settings && $settings->require_line_registration;
     }
 
@@ -80,7 +81,8 @@ class LineOaSetting extends Model
     public static function messagingEnabled(): bool
     {
         $settings = self::getActive();
-        return $settings && $settings->enable_line_messaging && !empty($settings->channel_access_token);
+
+        return $settings && $settings->enable_line_messaging && ! empty($settings->channel_access_token);
     }
 
     /**
@@ -109,25 +111,24 @@ class LineOaSetting extends Model
      */
     public function getDisplayOaName(): ?string
     {
-        return !empty($this->custom_oa_name) ? $this->custom_oa_name : null;
+        return ! empty($this->custom_oa_name) ? $this->custom_oa_name : null;
     }
 
     /**
      * ดึงชื่อ LINE OA พร้อม fallback
      *
-     * @param string|null $apiDisplayName ชื่อจาก LINE API
-     * @param string $default ค่าเริ่มต้นถ้าไม่มีชื่อเลย
-     * @return string
+     * @param  string|null  $apiDisplayName  ชื่อจาก LINE API
+     * @param  string  $default  ค่าเริ่มต้นถ้าไม่มีชื่อเลย
      */
     public function getOaNameWithFallback(?string $apiDisplayName = null, string $default = 'LINE OA'): string
     {
         // ใช้ชื่อที่กำหนดเองก่อน
-        if (!empty($this->custom_oa_name)) {
+        if (! empty($this->custom_oa_name)) {
             return $this->custom_oa_name;
         }
 
         // ถ้าไม่มีให้ใช้ชื่อจาก API
-        if (!empty($apiDisplayName)) {
+        if (! empty($apiDisplayName)) {
             return $apiDisplayName;
         }
 
@@ -137,32 +138,26 @@ class LineOaSetting extends Model
 
     /**
      * ตรวจสอบว่ามีการกำหนดชื่อ LINE OA เองหรือไม่
-     *
-     * @return bool
      */
     public function hasCustomOaName(): bool
     {
-        return !empty($this->custom_oa_name);
+        return ! empty($this->custom_oa_name);
     }
 
     /**
      * ตรวจสอบว่า Mobile LINE Login ถูกตั้งค่าแล้วหรือไม่
-     *
-     * @return bool
      */
     public function isMobileLineLoginConfigured(): bool
     {
-        return !empty($this->mobile_login_channel_id) && !empty($this->mobile_login_channel_secret);
+        return ! empty($this->mobile_login_channel_id) && ! empty($this->mobile_login_channel_secret);
     }
 
     /**
      * ดึงข้อมูล Mobile LINE Login สำหรับ API
-     *
-     * @return array|null
      */
     public function getMobileLineConfig(): ?array
     {
-        if (!$this->isMobileLineLoginConfigured()) {
+        if (! $this->isMobileLineLoginConfigured()) {
             return null;
         }
 

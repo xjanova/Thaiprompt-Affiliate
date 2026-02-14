@@ -12,8 +12,6 @@ class SeederVerificationTest extends TestCase
      *
      * This test ensures that whenever a new seeder is created, it must be
      * added to DatabaseSeeder.php to be included in the seeding process.
-     *
-     * @return void
      */
     public function test_all_seeders_are_included_in_database_seeder(): void
     {
@@ -21,7 +19,7 @@ class SeederVerificationTest extends TestCase
         $databaseSeederPath = database_path('seeders/DatabaseSeeder.php');
 
         // Get all seeder files
-        $seederFiles = File::glob($seederPath . '/*Seeder.php');
+        $seederFiles = File::glob($seederPath.'/*Seeder.php');
         $allSeeders = [];
 
         foreach ($seederFiles as $file) {
@@ -53,11 +51,11 @@ class SeederVerificationTest extends TestCase
         $errorMessage = '';
         if (count($missingSeeders) > 0) {
             $errorMessage = sprintf(
-                "\n\n" .
-                "❌ Found %d seeder(s) NOT included in DatabaseSeeder.php:\n\n" .
-                "%s\n\n" .
-                "Please add these seeders to database/seeders/DatabaseSeeder.php:\n\n" .
-                "\$this->call([\n%s\n]);\n\n" .
+                "\n\n".
+                "❌ Found %d seeder(s) NOT included in DatabaseSeeder.php:\n\n".
+                "%s\n\n".
+                "Please add these seeders to database/seeders/DatabaseSeeder.php:\n\n".
+                "\$this->call([\n%s\n]);\n\n".
                 "Or run: php scripts/verify-seeders.php for more details\n",
                 count($missingSeeders),
                 $this->formatList($missingSeeders, '  ❌ '),
@@ -76,11 +74,11 @@ class SeederVerificationTest extends TestCase
         $extraErrorMessage = '';
         if (count($extraSeeders) > 0) {
             $extraErrorMessage = sprintf(
-                "\n\n" .
-                "⚠️  Found %d seeder(s) referenced in DatabaseSeeder.php but file not found:\n\n" .
-                "%s\n\n" .
-                "Please either:\n" .
-                "  1. Create the missing seeder files, or\n" .
+                "\n\n".
+                "⚠️  Found %d seeder(s) referenced in DatabaseSeeder.php but file not found:\n\n".
+                "%s\n\n".
+                "Please either:\n".
+                "  1. Create the missing seeder files, or\n".
                 "  2. Remove them from DatabaseSeeder.php\n",
                 count($extraSeeders),
                 $this->formatList($extraSeeders, '  ⚠️  ')
@@ -95,23 +93,16 @@ class SeederVerificationTest extends TestCase
 
     /**
      * Format array as a bulleted list
-     *
-     * @param array $items
-     * @param string $bullet
-     * @return string
      */
     private function formatList(array $items, string $bullet = '  • '): string
     {
         return implode("\n", array_map(function ($item) use ($bullet) {
-            return $bullet . $item;
+            return $bullet.$item;
         }, $items));
     }
 
     /**
      * Format seeders as $this->call() statements
-     *
-     * @param array $seeders
-     * @return string
      */
     private function formatSeederCalls(array $seeders): string
     {
@@ -122,8 +113,6 @@ class SeederVerificationTest extends TestCase
 
     /**
      * Test that DatabaseSeeder.php file exists and is valid
-     *
-     * @return void
      */
     public function test_database_seeder_exists_and_is_valid(): void
     {
@@ -153,8 +142,6 @@ class SeederVerificationTest extends TestCase
 
     /**
      * Test that seeder verification script exists and is executable
-     *
-     * @return void
      */
     public function test_seeder_verification_script_exists(): void
     {

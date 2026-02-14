@@ -121,15 +121,13 @@ class VendorStore extends Model
     /**
      * ดึง Platform Store (ร้านค้าของ Admin/Platform)
      * ถ้ายังไม่มีจะสร้างใหม่อัตโนมัติ
-     *
-     * @return self
      */
     public static function getPlatformStore(): self
     {
         return static::firstOrCreate(
             ['store_slug' => self::PLATFORM_STORE_SLUG],
             [
-                'store_name' => config('app.name', 'Thaiprompt') . ' Official',
+                'store_name' => config('app.name', 'Thaiprompt').' Official',
                 'store_description' => 'ร้านค้าอย่างเป็นทางการของ Platform',
                 'is_active' => true,
                 'is_verified' => true,
@@ -142,8 +140,6 @@ class VendorStore extends Model
     /**
      * ดึง Platform Store ID
      * ถ้ายังไม่มี Platform Store จะสร้างใหม่
-     *
-     * @return int
      */
     public static function getPlatformStoreId(): int
     {
@@ -152,8 +148,6 @@ class VendorStore extends Model
 
     /**
      * ตรวจสอบว่าเป็น Platform Store หรือไม่
-     *
-     * @return bool
      */
     public function isPlatformStore(): bool
     {
@@ -451,7 +445,7 @@ class VendorStore extends Model
      */
     public function getLogoUrlAttribute(): ?string
     {
-        if (!$this->store_logo) {
+        if (! $this->store_logo) {
             return null;
         }
 
@@ -463,7 +457,7 @@ class VendorStore extends Model
      */
     public function getBannerUrlAttribute(): ?string
     {
-        if (!$this->store_banner) {
+        if (! $this->store_banner) {
             return null;
         }
 
@@ -476,7 +470,7 @@ class VendorStore extends Model
     public function getStoreUrlAttribute(): string
     {
         if ($this->store_domain) {
-            return 'https://' . $this->store_domain;
+            return 'https://'.$this->store_domain;
         }
 
         return route('vendor.stores.show', $this->store_slug);
@@ -487,11 +481,11 @@ class VendorStore extends Model
      */
     public function canAddProducts(): bool
     {
-        if (!$this->package) {
+        if (! $this->package) {
             return false;
         }
 
-        return !$this->package->isProductLimitReached($this);
+        return ! $this->package->isProductLimitReached($this);
     }
 
     /**
@@ -499,11 +493,11 @@ class VendorStore extends Model
      */
     public function canProcessOrders(): bool
     {
-        if (!$this->package) {
+        if (! $this->package) {
             return false;
         }
 
-        return !$this->package->isMonthlyOrderLimitReached($this);
+        return ! $this->package->isMonthlyOrderLimitReached($this);
     }
 
     /**
@@ -518,7 +512,7 @@ class VendorStore extends Model
 
         // Check purchased add-on features
         return $this->activeFeatures()
-            ->whereHas('feature', function($q) use ($featureSlug) {
+            ->whereHas('feature', function ($q) use ($featureSlug) {
                 $q->where('feature_slug', $featureSlug);
             })
             ->exists();
@@ -545,8 +539,6 @@ class VendorStore extends Model
      *
      * บันทึกการเข้าชมลงในตาราง vendor_store_visits
      * เพื่อใช้ในการวิเคราะห์ข้อมูลและสถิติ
-     *
-     * @return void
      */
     public function incrementVisitCount(): void
     {

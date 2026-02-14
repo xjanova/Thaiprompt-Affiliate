@@ -149,8 +149,6 @@ class LabelTemplate extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -159,8 +157,6 @@ class LabelTemplate extends Model
 
     /**
      * ความสัมพันธ์กับ Labels ที่ใช้ template นี้
-     *
-     * @return HasMany
      */
     public function labels(): HasMany
     {
@@ -170,7 +166,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ที่เป็นสาธารณะ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublic($query)
@@ -181,7 +177,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ของระบบ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSystem($query)
@@ -192,7 +188,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template ที่เปิดใช้งาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -203,8 +199,7 @@ class LabelTemplate extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInCategory($query, string $category)
@@ -215,8 +210,7 @@ class LabelTemplate extends Model
     /**
      * Scope: template ยอดนิยม
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $limit
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePopular($query, int $limit = 10)
@@ -226,8 +220,6 @@ class LabelTemplate extends Model
 
     /**
      * เพิ่มจำนวนการใช้งาน
-     *
-     * @return void
      */
     public function incrementUsage(): void
     {
@@ -255,8 +247,6 @@ class LabelTemplate extends Model
 
     /**
      * คำนวณจำนวนฉลากต่อแผ่น
-     *
-     * @return int
      */
     public function getLabelsPerSheetAttribute(): int
     {
@@ -265,8 +255,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default elements structure
-     *
-     * @return array
      */
     public static function getDefaultElements(): array
     {
@@ -281,8 +269,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default settings structure
-     *
-     * @return array
      */
     public static function getDefaultSettings(): array
     {
@@ -299,8 +285,6 @@ class LabelTemplate extends Model
 
     /**
      * ดึง default print settings structure
-     *
-     * @return array
      */
     public static function getDefaultPrintSettings(): array
     {
@@ -316,8 +300,6 @@ class LabelTemplate extends Model
 
     /**
      * ความสัมพันธ์กับ PosLabelPrints
-     *
-     * @return HasMany
      */
     public function posLabelPrints(): HasMany
     {
@@ -327,7 +309,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template สำหรับ POS
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePosTemplates($query)
@@ -338,8 +320,7 @@ class LabelTemplate extends Model
     /**
      * Scope: กรองตาม POS category
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForPosCategory($query, string $category)
@@ -350,7 +331,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template สำหรับ Product Label
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeProductLabels($query)
@@ -361,7 +342,7 @@ class LabelTemplate extends Model
     /**
      * Scope: เฉพาะ template สำหรับ Shipping Label
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeShippingLabels($query)
@@ -372,7 +353,7 @@ class LabelTemplate extends Model
     /**
      * Scope: รองรับเครื่องพิมพ์แบบม้วน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeContinuousRoll($query)
@@ -383,22 +364,19 @@ class LabelTemplate extends Model
     /**
      * Scope: กรองตามประเภทเครื่องพิมพ์
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForPrinterType($query, string $type)
     {
         return $query->where(function ($q) use ($type) {
             $q->where('printer_type', $type)
-              ->orWhere('printer_type', 'any');
+                ->orWhere('printer_type', 'any');
         });
     }
 
     /**
      * ตรวจสอบว่าเป็น template สำหรับ POS หรือไม่
-     *
-     * @return bool
      */
     public function isPosTemplate(): bool
     {
@@ -407,8 +385,6 @@ class LabelTemplate extends Model
 
     /**
      * ตรวจสอบว่ารองรับการพิมพ์แบบม้วนหรือไม่
-     *
-     * @return bool
      */
     public function supportsContinuousRoll(): bool
     {
@@ -417,16 +393,14 @@ class LabelTemplate extends Model
 
     /**
      * ดึงชื่อประเภท POS category
-     *
-     * @return string|null
      */
     public function getPosCategoryNameAttribute(): ?string
     {
-        if (!$this->pos_category) {
+        if (! $this->pos_category) {
             return null;
         }
 
-        return match($this->pos_category) {
+        return match ($this->pos_category) {
             'product_label' => 'ฉลากสินค้า',
             'shipping_label' => 'ใบปะสินค้า',
             'price_tag' => 'ฉลากราคา',
@@ -439,12 +413,10 @@ class LabelTemplate extends Model
 
     /**
      * ดึงชื่อประเภทเครื่องพิมพ์
-     *
-     * @return string
      */
     public function getPrinterTypeNameAttribute(): string
     {
-        return match($this->printer_type) {
+        return match ($this->printer_type) {
             'thermal_roll' => 'Thermal Roll (ม้วน)',
             'thermal_label' => 'Thermal Label (ฉลาก)',
             'inkjet' => 'Inkjet',

@@ -18,8 +18,6 @@ class GoogleMapsSettingsSeeder extends Seeder
      *
      * สร้างการตั้งค่า Google Maps API ทั้งหมด
      * รองรับการรัน seeder ซ้ำได้ (idempotent)
-     *
-     * @return void
      */
     public function run(): void
     {

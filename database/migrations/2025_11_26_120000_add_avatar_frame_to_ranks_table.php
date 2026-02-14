@@ -18,19 +18,19 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง ranks มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('ranks')) {
+        if (! Schema::hasTable('ranks')) {
             return;
         }
 
         Schema::table('ranks', function (Blueprint $table) {
             // เพิ่มคอลัมน์ avatar_frame สำหรับเก็บ URL รูปกรอบ
-            if (!Schema::hasColumn('ranks', 'avatar_frame')) {
+            if (! Schema::hasColumn('ranks', 'avatar_frame')) {
                 $table->string('avatar_frame')->nullable()->after('badge_icon')
                     ->comment('URL รูปกรอบอวาต้าร์สำหรับ Rank นี้');
             }
 
             // เพิ่มคอลัมน์ frame_animation สำหรับประเภท animation
-            if (!Schema::hasColumn('ranks', 'frame_animation')) {
+            if (! Schema::hasColumn('ranks', 'frame_animation')) {
                 $table->string('frame_animation')->nullable()->after('avatar_frame')
                     ->comment('ประเภท animation ของกรอบ: none, pulse, glow, sparkle, rotate');
             }

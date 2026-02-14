@@ -2,10 +2,8 @@
 
 namespace App\Services\AI;
 
-use App\Models\AICoreQuota;
-use App\Models\AICoreFeature;
-use App\Models\AICoreTenant;
 use App\Models\AICoreAlert;
+use App\Models\AICoreQuota;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -19,12 +17,6 @@ class QuotaManager
 {
     /**
      * สร้าง quota ใหม่สำหรับ tenant
-     *
-     * @param int $tenantId
-     * @param int $featureId
-     * @param string $periodType
-     * @param int $quotaLimit
-     * @return AICoreQuota|null
      */
     public function createQuota(
         int $tenantId,
@@ -63,17 +55,12 @@ class QuotaManager
 
     /**
      * ตรวจสอบ quota ว่าเพียงพอหรือไม่
-     *
-     * @param int $tenantId
-     * @param int $featureId
-     * @param int $amount
-     * @return bool
      */
     public function checkQuota(int $tenantId, int $featureId, int $amount = 1): bool
     {
         $quota = $this->getCurrentQuota($tenantId, $featureId);
 
-        if (!$quota) {
+        if (! $quota) {
             return false;
         }
 
@@ -88,17 +75,12 @@ class QuotaManager
 
     /**
      * ใช้ quota
-     *
-     * @param int $tenantId
-     * @param int $featureId
-     * @param int $amount
-     * @return bool
      */
     public function consumeQuota(int $tenantId, int $featureId, int $amount = 1): bool
     {
         $quota = $this->getCurrentQuota($tenantId, $featureId);
 
-        if (!$quota) {
+        if (! $quota) {
             return false;
         }
 
@@ -114,9 +96,6 @@ class QuotaManager
 
     /**
      * รีเซ็ต quota
-     *
-     * @param AICoreQuota $quota
-     * @return bool
      */
     public function resetQuota(AICoreQuota $quota): bool
     {
@@ -125,12 +104,6 @@ class QuotaManager
 
     /**
      * เพิ่มโควต้าพิเศษ
-     *
-     * @param int $tenantId
-     * @param int $featureId
-     * @param int $amount
-     * @param string|null $reason
-     * @return bool
      */
     public function addBonusQuota(
         int $tenantId,
@@ -140,7 +113,7 @@ class QuotaManager
     ): bool {
         $quota = $this->getCurrentQuota($tenantId, $featureId);
 
-        if (!$quota) {
+        if (! $quota) {
             return false;
         }
 
@@ -149,10 +122,6 @@ class QuotaManager
 
     /**
      * ดึง quota ปัจจุบันของ tenant
-     *
-     * @param int $tenantId
-     * @param int $featureId
-     * @return AICoreQuota|null
      */
     public function getCurrentQuota(int $tenantId, int $featureId): ?AICoreQuota
     {
@@ -165,9 +134,6 @@ class QuotaManager
 
     /**
      * คำนวณวันเริ่มต้นและสิ้นสุดของ period
-     *
-     * @param string $periodType
-     * @return array
      */
     private function calculatePeriodDates(string $periodType): array
     {
@@ -203,10 +169,6 @@ class QuotaManager
 
     /**
      * คำนวณเวลารีเซ็ตครั้งถัดไป
-     *
-     * @param string $periodType
-     * @param Carbon $periodEnd
-     * @return Carbon|null
      */
     private function calculateNextReset(string $periodType, Carbon $periodEnd): ?Carbon
     {
@@ -225,9 +187,6 @@ class QuotaManager
 
     /**
      * ตรวจสอบ threshold และส่ง alert
-     *
-     * @param AICoreQuota $quota
-     * @return void
      */
     private function checkQuotaThresholds(AICoreQuota $quota): void
     {
@@ -253,20 +212,15 @@ class QuotaManager
 
     /**
      * สร้าง alert สำหรับ quota
-     *
-     * @param AICoreQuota $quota
-     * @param string $severity
-     * @param int $percentage
-     * @return void
      */
     private function createQuotaAlert(AICoreQuota $quota, string $severity, int $percentage): void
     {
         $alertKey = "quota_{$quota->tenant_id}_{$quota->feature_id}_{$percentage}";
 
         $message = match ($percentage) {
-            80 => "Quota ของคุณใช้ไปแล้ว 80% กรุณาติดตามการใช้งาน",
-            90 => "⚠️ Quota ของคุณใช้ไปแล้ว 90% ใกล้ถึงขีดจำกัดแล้ว",
-            100 => "❌ Quota ของคุณหมดแล้ว กรุณาเพิ่ม quota หรือรอรอบถัดไป",
+            80 => 'Quota ของคุณใช้ไปแล้ว 80% กรุณาติดตามการใช้งาน',
+            90 => '⚠️ Quota ของคุณใช้ไปแล้ว 90% ใกล้ถึงขีดจำกัดแล้ว',
+            100 => '❌ Quota ของคุณหมดแล้ว กรุณาเพิ่ม quota หรือรอรอบถัดไป',
             default => "Quota ของคุณใช้ไปแล้ว {$percentage}%",
         };
 

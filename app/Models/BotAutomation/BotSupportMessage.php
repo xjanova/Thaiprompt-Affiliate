@@ -47,7 +47,7 @@ class BotSupportMessage extends Model
      */
     public function markAsRead(): void
     {
-        if (!$this->read_at) {
+        if (! $this->read_at) {
             $this->update(['read_at' => now()]);
         }
     }
@@ -78,7 +78,7 @@ class BotSupportMessage extends Model
             $conversation->increment('message_count');
 
             // Update first response time if this is first agent/bot response
-            if (!$conversation->first_response_at && in_array($message->sender_type, ['agent', 'bot'])) {
+            if (! $conversation->first_response_at && in_array($message->sender_type, ['agent', 'bot'])) {
                 $conversation->update(['first_response_at' => now()]);
             }
         });

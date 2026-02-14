@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 /**
  * WorkShift Model
@@ -149,7 +149,7 @@ class WorkShift extends Model
     {
         return $query->where(function ($q) use ($storeId) {
             $q->where('store_id', $storeId)
-              ->orWhereNull('store_id'); // Global shifts
+                ->orWhereNull('store_id'); // Global shifts
         });
     }
 

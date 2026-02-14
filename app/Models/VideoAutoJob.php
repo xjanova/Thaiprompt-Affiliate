@@ -247,8 +247,6 @@ class VideoAutoJob extends Model
 
     /**
      * โปรเจกต์ที่เกี่ยวข้อง
-     *
-     * @return BelongsTo
      */
     public function project(): BelongsTo
     {
@@ -257,8 +255,6 @@ class VideoAutoJob extends Model
 
     /**
      * ผู้สั่งรัน
-     *
-     * @return BelongsTo
      */
     public function triggeredBy(): BelongsTo
     {
@@ -267,8 +263,6 @@ class VideoAutoJob extends Model
 
     /**
      * Logs ของ job นี้
-     *
-     * @return HasMany
      */
     public function logs(): HasMany
     {
@@ -282,8 +276,8 @@ class VideoAutoJob extends Model
     /**
      * Scope: กรองตาม status
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string|array  $status
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeStatus($query, $status)
@@ -298,8 +292,7 @@ class VideoAutoJob extends Model
     /**
      * Scope: กรองตาม job type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -310,7 +303,7 @@ class VideoAutoJob extends Model
     /**
      * Scope: งานที่รอ retry
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeReadyToRetry($query)
@@ -326,7 +319,7 @@ class VideoAutoJob extends Model
     /**
      * Scope: งานที่กำลังทำงาน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRunning($query)
@@ -337,7 +330,7 @@ class VideoAutoJob extends Model
     /**
      * Scope: เรียงตาม priority
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -351,8 +344,6 @@ class VideoAutoJob extends Model
 
     /**
      * ดึงข้อมูล job type
-     *
-     * @return array|null
      */
     public function getJobTypeInfoAttribute(): ?array
     {
@@ -361,8 +352,6 @@ class VideoAutoJob extends Model
 
     /**
      * ดึง label ของ job type
-     *
-     * @return string
      */
     public function getJobTypeLabelAttribute(): string
     {
@@ -371,8 +360,6 @@ class VideoAutoJob extends Model
 
     /**
      * ดึงข้อมูล status
-     *
-     * @return array|null
      */
     public function getStatusInfoAttribute(): ?array
     {
@@ -381,8 +368,6 @@ class VideoAutoJob extends Model
 
     /**
      * ดึง label ของ status
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -391,8 +376,6 @@ class VideoAutoJob extends Model
 
     /**
      * ตรวจสอบว่าสามารถ retry ได้หรือไม่
-     *
-     * @return bool
      */
     public function getCanRetryAttribute(): bool
     {
@@ -401,8 +384,6 @@ class VideoAutoJob extends Model
 
     /**
      * ตรวจสอบว่ากำลังทำงานอยู่หรือไม่
-     *
-     * @return bool
      */
     public function getIsRunningAttribute(): bool
     {
@@ -411,12 +392,10 @@ class VideoAutoJob extends Model
 
     /**
      * คำนวณเวลาทำงานแบบ human readable
-     *
-     * @return string|null
      */
     public function getDurationHumanAttribute(): ?string
     {
-        if (!$this->duration) {
+        if (! $this->duration) {
             return null;
         }
 
@@ -432,16 +411,14 @@ class VideoAutoJob extends Model
 
     /**
      * คำนวณเวลาที่เหลือโดยประมาณ
-     *
-     * @return int|null
      */
     public function getRemainingTimeAttribute(): ?int
     {
-        if (!$this->is_running || !$this->estimated_duration) {
+        if (! $this->is_running || ! $this->estimated_duration) {
             return null;
         }
 
-        if (!$this->started_at) {
+        if (! $this->started_at) {
             return $this->estimated_duration;
         }
 
@@ -457,8 +434,6 @@ class VideoAutoJob extends Model
 
     /**
      * เริ่มทำงาน
-     *
-     * @return void
      */
     public function start(): void
     {
@@ -473,10 +448,6 @@ class VideoAutoJob extends Model
 
     /**
      * อัพเดท progress
-     *
-     * @param int $progress
-     * @param string|null $message
-     * @return void
      */
     public function updateProgress(int $progress, ?string $message = null): void
     {
@@ -491,9 +462,6 @@ class VideoAutoJob extends Model
 
     /**
      * ทำงานสำเร็จ
-     *
-     * @param array $outputData
-     * @return void
      */
     public function complete(array $outputData = []): void
     {
@@ -511,10 +479,6 @@ class VideoAutoJob extends Model
 
     /**
      * ทำงานล้มเหลว
-     *
-     * @param string $error
-     * @param string|null $stackTrace
-     * @return void
      */
     public function fail(string $error, ?string $stackTrace = null): void
     {
@@ -541,12 +505,10 @@ class VideoAutoJob extends Model
 
     /**
      * Retry การทำงาน
-     *
-     * @return bool
      */
     public function retry(): bool
     {
-        if (!$this->can_retry) {
+        if (! $this->can_retry) {
             return false;
         }
 
@@ -567,8 +529,6 @@ class VideoAutoJob extends Model
 
     /**
      * ยกเลิกงาน
-     *
-     * @return void
      */
     public function cancel(): void
     {
@@ -579,11 +539,6 @@ class VideoAutoJob extends Model
 
     /**
      * บันทึก log
-     *
-     * @param string $level
-     * @param string $message
-     * @param array $context
-     * @return VideoAutoJobLog
      */
     public function log(string $level, string $message, array $context = []): VideoAutoJobLog
     {
@@ -598,10 +553,6 @@ class VideoAutoJob extends Model
 
     /**
      * บันทึก log แบบ info
-     *
-     * @param string $message
-     * @param array $context
-     * @return VideoAutoJobLog
      */
     public function logInfo(string $message, array $context = []): VideoAutoJobLog
     {
@@ -610,10 +561,6 @@ class VideoAutoJob extends Model
 
     /**
      * บันทึก log แบบ error
-     *
-     * @param string $message
-     * @param array $context
-     * @return VideoAutoJobLog
      */
     public function logError(string $message, array $context = []): VideoAutoJobLog
     {
@@ -622,15 +569,6 @@ class VideoAutoJob extends Model
 
     /**
      * บันทึก API call
-     *
-     * @param string $service
-     * @param string $endpoint
-     * @param string $method
-     * @param int $statusCode
-     * @param int $responseTime
-     * @param array $request
-     * @param array $response
-     * @return VideoAutoJobLog
      */
     public function logApiCall(
         string $service,
@@ -658,9 +596,6 @@ class VideoAutoJob extends Model
 
     /**
      * ลบข้อมูลที่ไม่ควร log
-     *
-     * @param array $data
-     * @return array
      */
     protected function sanitizeForLog(array $data): array
     {
@@ -684,9 +619,6 @@ class VideoAutoJob extends Model
 
     /**
      * เพิ่มค่าใช้จ่าย API
-     *
-     * @param float $cost
-     * @return void
      */
     public function addApiCost(float $cost): void
     {

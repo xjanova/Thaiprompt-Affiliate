@@ -133,11 +133,11 @@ class PosSetting extends Model
             && $discountPercentage <= $this->max_discount_percentage;
     }
 
-    public function calculateTax(float $amount, bool $inclusive = null): array
+    public function calculateTax(float $amount, ?bool $inclusive = null): array
     {
         $inclusive = $inclusive ?? $this->tax_inclusive;
 
-        if (!$this->tax_enabled) {
+        if (! $this->tax_enabled) {
             return [
                 'amount' => $amount,
                 'tax' => 0,
@@ -167,7 +167,7 @@ class PosSetting extends Model
 
     public function calculateServiceCharge(float $amount): float
     {
-        if (!$this->service_charge_enabled) {
+        if (! $this->service_charge_enabled) {
             return 0;
         }
 

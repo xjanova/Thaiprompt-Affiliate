@@ -2,8 +2,8 @@
 
 namespace App\Services\AI;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -41,12 +41,10 @@ class PostXAgentHealthCheck
 
     /**
      * ตรวจสอบว่า PostXAgent พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isAvailable(): bool
     {
-        if (!config('postxagent.enabled', false)) {
+        if (! config('postxagent.enabled', false)) {
             return false;
         }
 
@@ -58,8 +56,7 @@ class PostXAgentHealthCheck
     /**
      * ดึงสถานะ PostXAgent (with caching)
      *
-     * @param bool $fresh ถ้า true จะไม่ใช้ cache
-     * @return array
+     * @param  bool  $fresh  ถ้า true จะไม่ใช้ cache
      */
     public function getStatus(bool $fresh = false): array
     {
@@ -76,15 +73,13 @@ class PostXAgentHealthCheck
 
     /**
      * Fetch status จาก PostXAgent API โดยตรง
-     *
-     * @return array
      */
     protected function fetchStatus(): array
     {
         try {
             $response = Http::timeout(5)
                 ->withHeaders($this->getHeaders())
-                ->get($this->apiUrl . '/status');
+                ->get($this->apiUrl.'/status');
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -102,7 +97,7 @@ class PostXAgentHealthCheck
                 ];
             }
 
-            return $this->offlineStatus('HTTP Error: ' . $response->status());
+            return $this->offlineStatus('HTTP Error: '.$response->status());
         } catch (\Exception $e) {
             return $this->offlineStatus($e->getMessage());
         }
@@ -110,9 +105,6 @@ class PostXAgentHealthCheck
 
     /**
      * สร้าง offline status response
-     *
-     * @param string $error
-     * @return array
      */
     protected function offlineStatus(string $error): array
     {
@@ -125,8 +117,6 @@ class PostXAgentHealthCheck
 
     /**
      * ดึง available AI providers จาก PostXAgent
-     *
-     * @return array
      */
     public function getAvailableProviders(): array
     {
@@ -136,7 +126,7 @@ class PostXAgentHealthCheck
             try {
                 $response = Http::timeout(10)
                     ->withHeaders($this->getHeaders())
-                    ->get($this->apiUrl . '/ai/providers');
+                    ->get($this->apiUrl.'/ai/providers');
 
                 if ($response->successful()) {
                     $providers = $response->json()['providers'] ?? [];
@@ -160,16 +150,13 @@ class PostXAgentHealthCheck
 
     /**
      * ตรวจสอบว่า provider พร้อมใช้งานหรือไม่
-     *
-     * @param string $providerId
-     * @return bool
      */
     public function checkProviderAvailability(string $providerId): bool
     {
         try {
             $response = Http::timeout(5)
                 ->withHeaders($this->getHeaders())
-                ->get($this->apiUrl . '/ai/providers/' . $providerId . '/status');
+                ->get($this->apiUrl.'/ai/providers/'.$providerId.'/status');
 
             if ($response->successful()) {
                 return $response->json()['available'] ?? false;
@@ -183,9 +170,6 @@ class PostXAgentHealthCheck
 
     /**
      * ดึง available models สำหรับ provider
-     *
-     * @param string $providerId
-     * @return array
      */
     public function getAvailableModels(string $providerId): array
     {
@@ -195,7 +179,7 @@ class PostXAgentHealthCheck
             try {
                 $response = Http::timeout(10)
                     ->withHeaders($this->getHeaders())
-                    ->get($this->apiUrl . '/ai/providers/' . $providerId . '/models');
+                    ->get($this->apiUrl.'/ai/providers/'.$providerId.'/models');
 
                 if ($response->successful()) {
                     return $response->json()['models'] ?? [];
@@ -215,12 +199,10 @@ class PostXAgentHealthCheck
 
     /**
      * ดึง ready-to-use providers และ models
-     *
-     * @return array
      */
     public function getReadyProviders(): array
     {
-        if (!$this->isAvailable()) {
+        if (! $this->isAvailable()) {
             return [];
         }
 
@@ -230,9 +212,9 @@ class PostXAgentHealthCheck
         foreach ($providers as $provider) {
             if ($provider['is_available'] ?? false) {
                 $models = $this->getAvailableModels($provider['id'] ?? $provider['name']);
-                $activeModels = array_filter($models, fn($m) => ($m['is_active'] ?? true));
+                $activeModels = array_filter($models, fn ($m) => ($m['is_active'] ?? true));
 
-                if (!empty($activeModels)) {
+                if (! empty($activeModels)) {
                     $readyProviders[] = [
                         'provider' => $provider,
                         'models' => array_values($activeModels),
@@ -252,8 +234,6 @@ class PostXAgentHealthCheck
      * 2. DeepSeek (cheap)
      * 3. GPT-3.5 (reliable)
      * 4. Claude Haiku (fast)
-     *
-     * @return array|null
      */
     public function selectBestAvailableProvider(): ?array
     {
@@ -287,7 +267,7 @@ class PostXAgentHealthCheck
         // ถ้าไม่ตรงกับ priority ใช้ตัวแรก
         $first = $readyProviders[0] ?? null;
 
-        if ($first && !empty($first['models'])) {
+        if ($first && ! empty($first['models'])) {
             return [
                 'provider' => $first['provider'],
                 'model' => $first['models'][0],
@@ -299,8 +279,6 @@ class PostXAgentHealthCheck
 
     /**
      * Clear all PostXAgent related cache
-     *
-     * @return void
      */
     public function clearCache(): void
     {
@@ -316,8 +294,6 @@ class PostXAgentHealthCheck
 
     /**
      * Fallback providers จาก config
-     *
-     * @return array
      */
     protected function getFallbackProviders(): array
     {
@@ -340,9 +316,6 @@ class PostXAgentHealthCheck
 
     /**
      * Fallback models จาก config
-     *
-     * @param string $providerId
-     * @return array
      */
     protected function getFallbackModels(string $providerId): array
     {
@@ -360,8 +333,6 @@ class PostXAgentHealthCheck
 
     /**
      * สร้าง headers
-     *
-     * @return array
      */
     protected function getHeaders(): array
     {
@@ -372,7 +343,7 @@ class PostXAgentHealthCheck
 
         $authConfig = config('postxagent.auth', []);
 
-        if (!empty($authConfig['api_key'])) {
+        if (! empty($authConfig['api_key'])) {
             $headers['X-API-Key'] = $authConfig['api_key'];
         }
 

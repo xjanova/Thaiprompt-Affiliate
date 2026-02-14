@@ -98,6 +98,7 @@ class BotContentTemplate extends Model
     public function getAvailableVariables(): array
     {
         preg_match_all('/\{\{(\w+)\}\}/', $this->content, $matches);
+
         return $matches[1] ?? [];
     }
 }

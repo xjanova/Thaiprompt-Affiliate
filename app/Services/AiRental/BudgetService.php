@@ -4,12 +4,11 @@ namespace App\Services\AiRental;
 
 use App\Models\AiRentalBudgetLimit;
 use App\Models\AiRentalDeployment;
-use App\Models\AiRentalCloudConfig;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Exception;
 use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Budget Service สำหรับ AI Rental System
@@ -18,9 +17,6 @@ use Carbon\Carbon;
  */
 class BudgetService
 {
-    /**
-     * @var MonitoringService
-     */
     protected MonitoringService $monitoringService;
 
     public function __construct(MonitoringService $monitoringService)
@@ -30,9 +26,6 @@ class BudgetService
 
     /**
      * สร้าง budget limit ใหม่
-     *
-     * @param array $data
-     * @return AiRentalBudgetLimit
      */
     public function createBudget(array $data): AiRentalBudgetLimit
     {
@@ -79,17 +72,13 @@ class BudgetService
             return $budget;
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Failed to create budget limit: ' . $e->getMessage());
+            Log::error('Failed to create budget limit: '.$e->getMessage());
             throw $e;
         }
     }
 
     /**
      * อัพเดท budget
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param array $data
-     * @return AiRentalBudgetLimit
      */
     public function updateBudget(AiRentalBudgetLimit $budget, array $data): AiRentalBudgetLimit
     {
@@ -102,17 +91,13 @@ class BudgetService
 
             return $budget->fresh();
         } catch (Exception $e) {
-            Log::error('Failed to update budget limit: ' . $e->getMessage());
+            Log::error('Failed to update budget limit: '.$e->getMessage());
             throw $e;
         }
     }
 
     /**
      * บันทึกค่าใช้จ่ายจาก deployment
-     *
-     * @param AiRentalDeployment $deployment
-     * @param float $cost
-     * @return void
      */
     public function trackDeploymentCost(AiRentalDeployment $deployment, float $cost): void
     {
@@ -124,7 +109,7 @@ class BudgetService
                 $this->addSpending($budget, $cost, $deployment);
             }
         } catch (Exception $e) {
-            Log::error('Failed to track deployment cost: ' . $e->getMessage(), [
+            Log::error('Failed to track deployment cost: '.$e->getMessage(), [
                 'deployment_id' => $deployment->id,
                 'cost' => $cost,
             ]);
@@ -133,11 +118,6 @@ class BudgetService
 
     /**
      * เพิ่มค่าใช้จ่ายให้ budget
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param float $amount
-     * @param AiRentalDeployment|null $deployment
-     * @return void
      */
     public function addSpending(AiRentalBudgetLimit $budget, float $amount, ?AiRentalDeployment $deployment = null): void
     {
@@ -162,7 +142,7 @@ class BudgetService
 
             DB::commit();
 
-            Log::info("Budget spending updated", [
+            Log::info('Budget spending updated', [
                 'budget_id' => $budget->id,
                 'old_spending' => $oldSpending,
                 'new_spending' => $budget->current_spending,
@@ -171,19 +151,13 @@ class BudgetService
             ]);
         } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Failed to add spending: ' . $e->getMessage());
+            Log::error('Failed to add spending: '.$e->getMessage());
             throw $e;
         }
     }
 
     /**
      * ตรวจสอบ thresholds และส่ง alerts
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param float $oldPercentage
-     * @param float $newPercentage
-     * @param AiRentalDeployment|null $deployment
-     * @return void
      */
     protected function checkThresholdsAndAlert(
         AiRentalBudgetLimit $budget,
@@ -194,7 +168,7 @@ class BudgetService
         $user = $budget->user;
 
         // Threshold 1
-        if ($newPercentage >= $budget->warning_threshold_1 && !$budget->threshold_1_triggered) {
+        if ($newPercentage >= $budget->warning_threshold_1 && ! $budget->threshold_1_triggered) {
             $this->monitoringService->createCostWarningAlert(
                 $user,
                 $budget,
@@ -204,7 +178,7 @@ class BudgetService
         }
 
         // Threshold 2
-        if ($newPercentage >= $budget->warning_threshold_2 && !$budget->threshold_2_triggered) {
+        if ($newPercentage >= $budget->warning_threshold_2 && ! $budget->threshold_2_triggered) {
             $this->monitoringService->createCostWarningAlert(
                 $user,
                 $budget,
@@ -214,7 +188,7 @@ class BudgetService
         }
 
         // Threshold 3
-        if ($newPercentage >= $budget->warning_threshold_3 && !$budget->threshold_3_triggered) {
+        if ($newPercentage >= $budget->warning_threshold_3 && ! $budget->threshold_3_triggered) {
             $this->monitoringService->createCostWarningAlert(
                 $user,
                 $budget,
@@ -226,10 +200,6 @@ class BudgetService
 
     /**
      * จัดการเมื่อ budget เกิน limit
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @param AiRentalDeployment|null $deployment
-     * @return void
      */
     protected function handleBudgetExceeded(AiRentalBudgetLimit $budget, ?AiRentalDeployment $deployment): void
     {
@@ -262,7 +232,7 @@ class BudgetService
             $this->autoStopDeployments($budget, $deployment);
         }
 
-        Log::warning("Budget exceeded", [
+        Log::warning('Budget exceeded', [
             'budget_id' => $budget->id,
             'budget_name' => $budget->budget_name,
             'limit_amount' => $budget->limit_amount,
@@ -273,8 +243,6 @@ class BudgetService
     /**
      * หยุด deployments อัตโนมัติเมื่อเกิน budget
      *
-     * @param AiRentalBudgetLimit $budget
-     * @param AiRentalDeployment|null $currentDeployment
      * @return int จำนวน deployments ที่หยุด
      */
     protected function autoStopDeployments(AiRentalBudgetLimit $budget, ?AiRentalDeployment $currentDeployment): int
@@ -307,12 +275,12 @@ class BudgetService
 
                 $stopped++;
 
-                Log::info("Auto-stopped deployment due to budget exceeded", [
+                Log::info('Auto-stopped deployment due to budget exceeded', [
                     'deployment_id' => $deployment->id,
                     'budget_id' => $budget->id,
                 ]);
             } catch (Exception $e) {
-                Log::error("Failed to auto-stop deployment: " . $e->getMessage(), [
+                Log::error('Failed to auto-stop deployment: '.$e->getMessage(), [
                     'deployment_id' => $deployment->id,
                 ]);
             }
@@ -324,7 +292,6 @@ class BudgetService
     /**
      * หา budget limits ที่เกี่ยวข้องกับ deployment
      *
-     * @param AiRentalDeployment $deployment
      * @return \Illuminate\Support\Collection
      */
     protected function getApplicableBudgets(AiRentalDeployment $deployment)
@@ -350,16 +317,13 @@ class BudgetService
 
     /**
      * รีเซ็ต budget ตาม period
-     *
-     * @param AiRentalBudgetLimit $budget
-     * @return bool
      */
     public function resetBudget(AiRentalBudgetLimit $budget): bool
     {
         try {
             $budget->reset();
 
-            Log::info("Budget reset", [
+            Log::info('Budget reset', [
                 'budget_id' => $budget->id,
                 'budget_type' => $budget->budget_type,
                 'rollover_amount' => $budget->rollover_amount,
@@ -367,7 +331,8 @@ class BudgetService
 
             return true;
         } catch (Exception $e) {
-            Log::error('Failed to reset budget: ' . $e->getMessage());
+            Log::error('Failed to reset budget: '.$e->getMessage());
+
             return false;
         }
     }
@@ -398,9 +363,6 @@ class BudgetService
 
     /**
      * ดึง budget summary สำหรับ user
-     *
-     * @param int $userId
-     * @return array
      */
     public function getBudgetSummary(int $userId): array
     {
@@ -428,10 +390,6 @@ class BudgetService
 
     /**
      * คำนวณ projected spending
-     *
-     * @param int $userId
-     * @param string $budgetType
-     * @return float
      */
     public function calculateProjectedSpending(int $userId, string $budgetType = 'monthly'): float
     {
@@ -457,9 +415,6 @@ class BudgetService
 
     /**
      * ดึงวันเริ่มต้นของ period
-     *
-     * @param string $budgetType
-     * @return Carbon
      */
     protected function getStartOfPeriod(string $budgetType): Carbon
     {
@@ -473,9 +428,6 @@ class BudgetService
 
     /**
      * ดึงจำนวนวันใน period
-     *
-     * @param string $budgetType
-     * @return int
      */
     protected function getDaysInPeriod(string $budgetType): int
     {

@@ -2,19 +2,16 @@
 
 namespace App\Services;
 
-use App\Models\GameRoom;
-use App\Models\GameRoomPlayer;
-use App\Models\GameRoomItem;
-use App\Models\Game;
+use App\Events\SnakeGame\ItemCollected as ItemCollectedEvent;
+use App\Events\SnakeGame\ItemSpawned;
+use App\Events\SnakeGame\PlayerDied as PlayerDiedEvent;
 use App\Events\SnakeGame\PlayerJoined;
 use App\Events\SnakeGame\PlayerLeft;
 use App\Events\SnakeGame\PlayerMoved;
-use App\Events\SnakeGame\PlayerDied as PlayerDiedEvent;
-use App\Events\SnakeGame\ItemSpawned;
-use App\Events\SnakeGame\ItemCollected as ItemCollectedEvent;
+use App\Models\GameRoom;
+use App\Models\GameRoomItem;
+use App\Models\GameRoomPlayer;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 /**
  * GameRoomManager Service
@@ -43,9 +40,6 @@ class GameRoomManager
 
     /**
      * ค้นหาหรือสร้างห้องที่ว่างสำหรับเข้าเล่น
-     *
-     * @param int $gameId
-     * @return GameRoom
      */
     public function findOrCreateAvailableRoom(int $gameId): GameRoom
     {
@@ -56,7 +50,7 @@ class GameRoomManager
             ->first();
 
         // ถ้าไม่มีห้องว่าง สร้างห้องใหม่
-        if (!$room) {
+        if (! $room) {
             $room = $this->createNewRoom($gameId);
         }
 
@@ -65,9 +59,6 @@ class GameRoomManager
 
     /**
      * สร้างห้องเกมใหม่
-     *
-     * @param int $gameId
-     * @return GameRoom
      */
     public function createNewRoom(int $gameId): GameRoom
     {
@@ -76,7 +67,7 @@ class GameRoomManager
         $room = GameRoom::create([
             'game_id' => $gameId,
             'room_code' => $roomCode,
-            'name' => 'Room ' . $roomCode,
+            'name' => 'Room '.$roomCode,
             'max_players' => self::MAX_PLAYERS_PER_ROOM,
             'current_players' => 0,
             'status' => 'waiting',
@@ -95,12 +86,6 @@ class GameRoomManager
 
     /**
      * ผู้เล่นเข้าร่วมห้อง
-     *
-     * @param GameRoom $room
-     * @param int|null $userId
-     * @param string $playerName
-     * @param string $skinSlug
-     * @return GameRoomPlayer
      */
     public function joinRoom(GameRoom $room, ?int $userId, string $playerName, string $skinSlug = 'classic'): GameRoomPlayer
     {
@@ -148,9 +133,6 @@ class GameRoomManager
 
     /**
      * ผู้เล่นออกจากห้อง
-     *
-     * @param GameRoomPlayer $player
-     * @return void
      */
     public function leaveRoom(GameRoomPlayer $player): void
     {
@@ -175,13 +157,6 @@ class GameRoomManager
 
     /**
      * อัปเดตตำแหน่งผู้เล่น
-     *
-     * @param GameRoomPlayer $player
-     * @param array $position
-     * @param array $direction
-     * @param int $score
-     * @param int $length
-     * @return void
      */
     public function updatePlayerState(GameRoomPlayer $player, array $position, array $direction, int $score, int $length): void
     {
@@ -206,9 +181,6 @@ class GameRoomManager
 
     /**
      * ผู้เล่นตาย
-     *
-     * @param GameRoomPlayer $player
-     * @return void
      */
     public function playerDied(GameRoomPlayer $player): void
     {
@@ -231,10 +203,6 @@ class GameRoomManager
 
     /**
      * เก็บไอเทม
-     *
-     * @param GameRoomPlayer $player
-     * @param int $itemId
-     * @return GameRoomItem|null
      */
     public function collectItem(GameRoomPlayer $player, int $itemId): ?GameRoomItem
     {
@@ -243,7 +211,7 @@ class GameRoomManager
             ->where('is_collected', false)
             ->first();
 
-        if (!$item || $item->isExpired()) {
+        if (! $item || $item->isExpired()) {
             return null;
         }
 
@@ -268,9 +236,6 @@ class GameRoomManager
 
     /**
      * สร้างอาหารเริ่มต้นในห้อง
-     *
-     * @param int $roomId
-     * @return void
      */
     public function spawnInitialFood(int $roomId): void
     {
@@ -286,9 +251,6 @@ class GameRoomManager
 
     /**
      * Spawn powerup แบบสุ่ม
-     *
-     * @param int $roomId
-     * @return void
      */
     public function spawnRandomPowerup(int $roomId): void
     {
@@ -320,9 +282,6 @@ class GameRoomManager
 
     /**
      * ลบไอเทมที่หมดอายุและ spawn ใหม่
-     *
-     * @param int $roomId
-     * @return void
      */
     public function maintainItems(int $roomId): void
     {
@@ -362,9 +321,6 @@ class GameRoomManager
 
     /**
      * สร้างอาหารจากงูที่ตาย
-     *
-     * @param GameRoomPlayer $player
-     * @return void
      */
     protected function spawnFoodFromSnake(GameRoomPlayer $player): void
     {
@@ -387,8 +343,6 @@ class GameRoomManager
 
     /**
      * สร้าง room code ที่ unique
-     *
-     * @return string
      */
     protected function generateUniqueRoomCode(): string
     {
@@ -401,9 +355,6 @@ class GameRoomManager
 
     /**
      * สร้างตำแหน่งเริ่มต้นแบบสุ่มสำหรับผู้เล่น
-     *
-     * @param GameRoom $room
-     * @return array
      */
     protected function generateRandomPosition(GameRoom $room): array
     {
@@ -419,9 +370,6 @@ class GameRoomManager
 
     /**
      * สร้างตำแหน่งแบบสุ่มสำหรับอาหาร
-     *
-     * @param int $worldSize
-     * @return array
      */
     protected function generateRandomFoodPosition(int $worldSize): array
     {
@@ -436,9 +384,6 @@ class GameRoomManager
 
     /**
      * ดึงสถานะห้องทั้งหมด (สำหรับ sync กับ client)
-     *
-     * @param int $roomId
-     * @return array
      */
     public function getRoomState(int $roomId): array
     {

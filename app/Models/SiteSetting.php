@@ -121,8 +121,6 @@ class SiteSetting extends Model
 
     /**
      * ดึงการตั้งค่าเว็บไซต์ (แบบ Singleton พร้อม Cache)
-     *
-     * @return SiteSetting
      */
     public static function getSetting(): SiteSetting
     {
@@ -131,7 +129,7 @@ class SiteSetting extends Model
             $setting = self::first();
 
             // ถ้าไม่มี สร้างใหม่
-            if (!$setting) {
+            if (! $setting) {
                 $setting = self::create([
                     'site_name' => 'TP-Affiliate',
                     'site_description' => 'ระบบ Affiliate Marketing ที่ทรงพลังที่สุด',
@@ -154,8 +152,6 @@ class SiteSetting extends Model
 
     /**
      * ล้าง Cache หลังจาก update
-     *
-     * @return void
      */
     public static function clearCache(): void
     {
@@ -183,12 +179,10 @@ class SiteSetting extends Model
 
     /**
      * ดึง URL ของโลโก้
-     *
-     * @return string|null
      */
     public function getLogoUrlAttribute(): ?string
     {
-        if (!$this->logo) {
+        if (! $this->logo) {
             return asset('images/logo.png'); // Default logo
         }
 
@@ -197,12 +191,10 @@ class SiteSetting extends Model
 
     /**
      * ดึง URL ของโลโก้ dark mode
-     *
-     * @return string|null
      */
     public function getLogoDarkUrlAttribute(): ?string
     {
-        if (!$this->logo_dark) {
+        if (! $this->logo_dark) {
             return $this->logo_url; // ใช้โลโก้ปกติถ้าไม่มี dark logo
         }
 
@@ -211,12 +203,10 @@ class SiteSetting extends Model
 
     /**
      * ดึง URL ของ favicon
-     *
-     * @return string|null
      */
     public function getFaviconUrlAttribute(): ?string
     {
-        if (!$this->favicon) {
+        if (! $this->favicon) {
             return asset('favicon.ico'); // Default favicon
         }
 
@@ -225,12 +215,10 @@ class SiteSetting extends Model
 
     /**
      * ดึง URL ของไอคอนแอป
-     *
-     * @return string
      */
     public function getAppIconUrlAttribute(): string
     {
-        if (!$this->app_icon) {
+        if (! $this->app_icon) {
             return asset('images/tp-ultra-icon.png'); // Default app icon
         }
 

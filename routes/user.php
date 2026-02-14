@@ -1,20 +1,20 @@
 <?php
 
-use App\Http\Controllers\User\DashboardController;
-use App\Http\Controllers\User\SettingsController;
-use App\Http\Controllers\User\WalletController;
-use App\Http\Controllers\User\NFCCardController;
-use App\Http\Controllers\User\CryptoWalletController;
-use App\Http\Controllers\User\CryptoExchangeController;
-use App\Http\Controllers\User\RankController;
-use App\Http\Controllers\User\KycController;
-use App\Http\Controllers\User\TwoFactorController;
-use App\Http\Controllers\User\TicketController;
-use App\Http\Controllers\User\InvestmentController;
-use App\Http\Controllers\User\MarketplaceController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\User\CryptoExchangeController;
+use App\Http\Controllers\User\CryptoWalletController;
+use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\User\InvestmentController;
+use App\Http\Controllers\User\KycController;
+use App\Http\Controllers\User\MarketplaceController;
+use App\Http\Controllers\User\NFCCardController;
+use App\Http\Controllers\User\RankController;
+use App\Http\Controllers\User\SettingsController;
+use App\Http\Controllers\User\TicketController;
+use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\User\UserGuideController;
+use App\Http\Controllers\User\WalletController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,8 +34,10 @@ Route::get('/line-required', function () {
     // ถ้ามี LINE UID แล้ว redirect กลับไปหน้าเดิม
     if (auth()->user()?->line_user_id) {
         $redirect = session()->pull('line_redirect_after', route('user.dashboard'));
+
         return redirect($redirect)->with('success', '✅ เชื่อมต่อ LINE เรียบร้อยแล้ว!');
     }
+
     return view('user.line-required');
 })->name('line-required');
 
@@ -502,7 +504,7 @@ Route::get('shop', function () {
     return redirect('/shop');
 });
 Route::get('shop/{slug}', function ($slug) {
-    return redirect('/shop/' . $slug);
+    return redirect('/shop/'.$slug);
 });
 
 // Ticket Support System (User)
@@ -541,7 +543,7 @@ Route::prefix('team-transfer')->name('team-transfer.')->group(function () {
     Route::get('/{teamTransfer}', [\App\Http\Controllers\User\TeamTransferController::class, 'show'])->name('show');
     Route::post('/{teamTransfer}/pay', [\App\Http\Controllers\User\TeamTransferController::class, 'pay'])->name('pay');
     Route::post('/{teamTransfer}/cancel', [\App\Http\Controllers\User\TeamTransferController::class, 'cancel'])->name('cancel');
-    
+
     // Approval routes (สำหรับแม่ทีมเก่า)
     Route::get('/approvals/list', [\App\Http\Controllers\User\TeamTransferController::class, 'approvals'])->name('approvals');
     Route::post('/{teamTransfer}/approve', [\App\Http\Controllers\User\TeamTransferController::class, 'approve'])->name('approve');
@@ -578,7 +580,6 @@ Route::prefix('service-reviews')->name('service-reviews.')->group(function () {
     Route::put('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'updateReview'])->name('update');
     Route::delete('/{review}', [\App\Http\Controllers\User\ServiceBookingController::class, 'deleteReview'])->name('destroy');
 });
-
 
 // ============================================
 // Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)

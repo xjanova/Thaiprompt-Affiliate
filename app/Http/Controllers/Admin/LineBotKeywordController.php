@@ -27,7 +27,7 @@ class LineBotKeywordController extends Controller
                 return $query->where('category', request('category'));
             })
             ->when(request('search'), function ($query) {
-                return $query->where('keyword', 'like', '%' . request('search') . '%');
+                return $query->where('keyword', 'like', '%'.request('search').'%');
             })
             ->orderBy('priority', 'desc')
             ->paginate(15);
@@ -65,7 +65,6 @@ class LineBotKeywordController extends Controller
     /**
      * บันทึก keyword ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -116,7 +115,6 @@ class LineBotKeywordController extends Controller
     /**
      * แสดงฟอร์มแก้ไข keyword
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\View\View
      */
     public function edit(LineBotKeyword $keyword)
@@ -132,8 +130,6 @@ class LineBotKeywordController extends Controller
     /**
      * อัปเดต keyword
      *
-     * @param Request $request
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, LineBotKeyword $keyword)
@@ -188,7 +184,6 @@ class LineBotKeywordController extends Controller
     /**
      * ลบ keyword
      *
-     * @param LineBotKeyword $keyword
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(LineBotKeyword $keyword)
@@ -209,7 +204,6 @@ class LineBotKeywordController extends Controller
     /**
      * ทดสอบ keyword ด้วยข้อความ
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function test(Request $request)
@@ -270,8 +264,6 @@ class LineBotKeywordController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับการแสดงผล
-     *
-     * @return array
      */
     private function getCategories(): array
     {

@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
 
 /**
  * CleanupUserData - ลบข้อมูล User ทั้งหมด ยกเว้น Admin
@@ -212,13 +212,14 @@ class CleanupUserData extends Command
         $adminCount = User::where('role', 'admin')->count();
         $userCount = User::where('role', '!=', 'admin')->count();
 
-        $this->info("📊 สถิติ:");
+        $this->info('📊 สถิติ:');
         $this->info("   • Admin users (เก็บไว้): {$adminCount} คน");
         $this->info("   • Users ที่จะลบ: {$userCount} คน");
         $this->info('');
 
         if ($userCount === 0) {
             $this->info('✅ ไม่มี User ที่ต้องลบ');
+
             return Command::SUCCESS;
         }
 
@@ -226,11 +227,12 @@ class CleanupUserData extends Command
         if ($this->option('dry-run')) {
             $this->warn('🔍 DRY RUN MODE - แสดงสิ่งที่จะลบโดยไม่ลบจริง');
             $this->showDryRun();
+
             return Command::SUCCESS;
         }
 
         // ยืนยันก่อนลบ
-        if (!$this->option('force')) {
+        if (! $this->option('force')) {
             $this->warn('⚠️  คำเตือน: การดำเนินการนี้จะลบข้อมูลทั้งหมดและไม่สามารถกู้คืนได้!');
             $this->warn('   ข้อมูลที่จะลบ:');
             $this->warn('   - Users ทั้งหมด (ยกเว้น Admin)');
@@ -241,8 +243,9 @@ class CleanupUserData extends Command
             $this->warn('   - และข้อมูลอื่นๆ ที่เกี่ยวข้อง');
             $this->info('');
 
-            if (!$this->confirm('คุณแน่ใจหรือไม่ที่จะดำเนินการ?')) {
+            if (! $this->confirm('คุณแน่ใจหรือไม่ที่จะดำเนินการ?')) {
                 $this->info('❌ ยกเลิกการดำเนินการ');
+
                 return Command::FAILURE;
             }
         }
@@ -255,6 +258,7 @@ class CleanupUserData extends Command
 
         if (empty($userIdsToDelete)) {
             $this->info('✅ ไม่มี User ที่ต้องลบ');
+
             return Command::SUCCESS;
         }
 
@@ -280,7 +284,8 @@ class CleanupUserData extends Command
             $this->info("   • Admin ที่เหลือ: {$adminCount} คน");
 
         } catch (\Exception $e) {
-            $this->error("❌ เกิดข้อผิดพลาด: " . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
+
             return Command::FAILURE;
         } finally {
             // เปิด foreign key checks กลับ
@@ -299,6 +304,7 @@ class CleanupUserData extends Command
 
         if (empty($userIds)) {
             $this->info('ไม่มี User ที่ต้องลบ');
+
             return;
         }
 
@@ -340,12 +346,12 @@ class CleanupUserData extends Command
         $totalDeleted = 0;
 
         foreach ($this->tablesWithUserId as $table) {
-            if (!Schema::hasTable($table)) {
+            if (! Schema::hasTable($table)) {
                 continue;
             }
 
             $column = $this->getUserIdColumn($table);
-            if (!$column || !Schema::hasColumn($table, $column)) {
+            if (! $column || ! Schema::hasColumn($table, $column)) {
                 continue;
             }
 
@@ -357,7 +363,7 @@ class CleanupUserData extends Command
                     $totalDeleted += $count;
                 }
             } catch (\Exception $e) {
-                $this->warn("   ⚠ {$table}: " . $e->getMessage());
+                $this->warn("   ⚠ {$table}: ".$e->getMessage());
             }
         }
 
@@ -421,7 +427,7 @@ class CleanupUserData extends Command
         $totalFiles = 0;
 
         foreach ($this->userStorageFolders as $folder) {
-            if (!Storage::disk('public')->exists($folder)) {
+            if (! Storage::disk('public')->exists($folder)) {
                 continue;
             }
 
@@ -439,7 +445,7 @@ class CleanupUserData extends Command
                     $totalFiles += $count;
                 }
             } catch (\Exception $e) {
-                $this->warn("   ⚠ {$folder}: " . $e->getMessage());
+                $this->warn("   ⚠ {$folder}: ".$e->getMessage());
             }
         }
 

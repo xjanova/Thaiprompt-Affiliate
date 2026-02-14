@@ -41,7 +41,6 @@ class BotPlatformApiController extends Controller
     /**
      * เชื่อมต่อกับ Bot Platform
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function connect(Request $request)
@@ -55,7 +54,7 @@ class BotPlatformApiController extends Controller
     /**
      * ตัดการเชื่อมต่อกับ Bot Platform
      *
-     * @param int $connection
+     * @param  int  $connection
      * @return \Illuminate\Http\JsonResponse
      */
     public function disconnect($connection)

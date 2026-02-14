@@ -22,18 +22,16 @@ return new class extends Migration
      * 1. อัพเดทค่า menu_theme_preference ทั้งหมดให้เป็น 'arrow-x'
      * 2. เปลี่ยน default value เป็น 'arrow-x'
      * 3. ไม่ใช้ ENUM เพราะ MySQL มีข้อจำกัด แต่จะใช้ validation ใน Model แทน
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 
         // ตรวจสอบว่าคอลัมน์มีอยู่หรือไม่
-        if (!Schema::hasColumn('users', 'menu_theme_preference')) {
+        if (! Schema::hasColumn('users', 'menu_theme_preference')) {
             return;
         }
 
@@ -67,13 +65,11 @@ return new class extends Migration
 
     /**
      * Reverse the migration (ไม่สามารถ reverse ได้เพราะข้อมูลเดิมถูกแทนที่แล้ว)
-     *
-     * @return void
      */
     public function down(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 

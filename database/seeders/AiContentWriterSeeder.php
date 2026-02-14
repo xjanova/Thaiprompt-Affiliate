@@ -17,8 +17,6 @@ class AiContentWriterSeeder extends Seeder
 {
     /**
      * Run the database seeds.
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -35,8 +33,6 @@ class AiContentWriterSeeder extends Seeder
 
     /**
      * สร้างการตั้งค่าเริ่มต้น
-     *
-     * @return void
      */
     protected function seedSettings(): void
     {
@@ -149,8 +145,6 @@ class AiContentWriterSeeder extends Seeder
      * จะได้ slug เป็น "script-youtube" ทั้งคู่
      *
      * ดังนั้นต้องกำหนด slug ที่ unique ให้กับแต่ละ template
-     *
-     * @return void
      */
     protected function seedTemplates(): void
     {
@@ -317,7 +311,7 @@ class AiContentWriterSeeder extends Seeder
                 'content_type' => 'general',
                 'category' => 'general',
                 'system_prompt' => 'คุณเป็นนักเขียน Content มืออาชีพ สามารถเขียนได้ทุกประเภท ทุกโทน และทุกรูปแบบ',
-                'user_prompt_template' => "{{prompt}}",
+                'user_prompt_template' => '{{prompt}}',
                 'default_provider' => 'openai',
                 'default_model' => 'gpt-4o-mini',
                 'temperature' => 0.7,
@@ -337,6 +331,6 @@ class AiContentWriterSeeder extends Seeder
             );
         }
 
-        $this->command->info('   📄 สร้างเทมเพลต AI Content Writer ' . count($templates) . ' รายการแล้ว');
+        $this->command->info('   📄 สร้างเทมเพลต AI Content Writer '.count($templates).' รายการแล้ว');
     }
 }

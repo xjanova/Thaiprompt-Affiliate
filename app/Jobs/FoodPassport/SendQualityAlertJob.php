@@ -51,10 +51,11 @@ class SendQualityAlertJob implements ShouldQueue
         ]);
 
         $product = $this->checkpoint->foodProduct;
-        if (!$product) {
+        if (! $product) {
             Log::warning('Quality alert: Product not found', [
                 'checkpoint_id' => $this->checkpoint->id,
             ]);
+
             return;
         }
 

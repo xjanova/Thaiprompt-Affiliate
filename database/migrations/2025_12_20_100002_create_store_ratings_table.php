@@ -20,13 +20,11 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตาราง store_ratings - ให้คะแนนร้านค้า
-        if (!Schema::hasTable('store_ratings')) {
+        if (! Schema::hasTable('store_ratings')) {
             Schema::create('store_ratings', function (Blueprint $table) {
                 $table->id();
 
@@ -70,16 +68,16 @@ return new class extends Migration
 
         // เพิ่มคอลัมน์ใน vendor_stores สำหรับสถิติ
         Schema::table('vendor_stores', function (Blueprint $table) {
-            if (!Schema::hasColumn('vendor_stores', 'service_rating_average')) {
+            if (! Schema::hasColumn('vendor_stores', 'service_rating_average')) {
                 $table->decimal('service_rating_average', 3, 2)->default(0)->after('rating_average');
             }
-            if (!Schema::hasColumn('vendor_stores', 'shipping_rating_average')) {
+            if (! Schema::hasColumn('vendor_stores', 'shipping_rating_average')) {
                 $table->decimal('shipping_rating_average', 3, 2)->default(0)->after('service_rating_average');
             }
-            if (!Schema::hasColumn('vendor_stores', 'communication_rating_average')) {
+            if (! Schema::hasColumn('vendor_stores', 'communication_rating_average')) {
                 $table->decimal('communication_rating_average', 3, 2)->default(0)->after('shipping_rating_average');
             }
-            if (!Schema::hasColumn('vendor_stores', 'store_rating_count')) {
+            if (! Schema::hasColumn('vendor_stores', 'store_rating_count')) {
                 $table->unsignedInteger('store_rating_count')->default(0)->after('communication_rating_average');
             }
         });
@@ -87,8 +85,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -7,13 +7,11 @@ use App\Models\ServiceBooking;
 use App\Models\ServiceBookingDispute;
 use App\Models\ServiceBookingLocationLog;
 use App\Models\ServiceBookingPenalty;
-use App\Models\ServiceProvider;
 use App\Models\User;
 use App\Models\UserBlock;
 use App\Models\UserTrustScore;
 use App\Services\AntiAbuseService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * AntiAbuseController - Admin Panel
@@ -29,8 +27,7 @@ class AntiAbuseController extends Controller
 {
     public function __construct(
         protected AntiAbuseService $antiAbuseService
-    ) {
-    }
+    ) {}
 
     // ============================================
     // Dashboard
@@ -172,7 +169,7 @@ class AntiAbuseController extends Controller
             'locationHistory' => $locationHistory,
             'reporterTrustScore' => $reporterTrustScore,
             'accusedTrustScore' => $accusedTrustScore,
-            'pageTitle' => 'ข้อร้องเรียน #' . $dispute->dispute_number,
+            'pageTitle' => 'ข้อร้องเรียน #'.$dispute->dispute_number,
         ]);
     }
 
@@ -263,14 +260,14 @@ class AntiAbuseController extends Controller
                 $trustScore->penalizeForDisputeLost();
 
                 if ($data['resulted_in_ban'] ?? false) {
-                    $trustScore->ban('แพ้ข้อร้องเรียน #' . $dispute->dispute_number);
+                    $trustScore->ban('แพ้ข้อร้องเรียน #'.$dispute->dispute_number);
                 }
             } elseif ($dispute->accused_type === 'provider' && $dispute->accusedProvider) {
                 $trustScore = UserTrustScore::getOrCreateForProvider($dispute->accusedProvider);
                 $trustScore->penalizeForDisputeLost();
 
                 if ($data['resulted_in_ban'] ?? false) {
-                    $trustScore->ban('แพ้ข้อร้องเรียน #' . $dispute->dispute_number);
+                    $trustScore->ban('แพ้ข้อร้องเรียน #'.$dispute->dispute_number);
                 }
             }
 
@@ -285,7 +282,7 @@ class AntiAbuseController extends Controller
                     'penalty_amount' => $data['penalty_amount'],
                     'trust_score_deduction' => 15,
                     'status' => 'pending',
-                    'reason' => 'แพ้ข้อร้องเรียน #' . $dispute->dispute_number,
+                    'reason' => 'แพ้ข้อร้องเรียน #'.$dispute->dispute_number,
                 ]);
             }
         }
@@ -380,7 +377,7 @@ class AntiAbuseController extends Controller
             'penalties' => $penalties,
             'disputes' => $disputes,
             'bookings' => $bookings,
-            'pageTitle' => 'Trust Score: ' . ($trustScore->user?->name ?? $trustScore->provider?->display_name),
+            'pageTitle' => 'Trust Score: '.($trustScore->user?->name ?? $trustScore->provider?->display_name),
         ]);
     }
 
@@ -405,7 +402,7 @@ class AntiAbuseController extends Controller
 
             case 'suspend':
                 $trustScore->suspend($validated['suspension_days'] ?? 7, $validated['reason']);
-                $message = 'ระงับการใช้งาน ' . ($validated['suspension_days'] ?? 7) . ' วัน';
+                $message = 'ระงับการใช้งาน '.($validated['suspension_days'] ?? 7).' วัน';
                 break;
 
             case 'ban':
@@ -464,7 +461,7 @@ class AntiAbuseController extends Controller
 
         return redirect()
             ->route('admin.anti-abuse.trust-scores')
-            ->with('success', 'ระงับการใช้งาน ' . $validated['days'] . ' วัน เรียบร้อยแล้ว');
+            ->with('success', 'ระงับการใช้งาน '.$validated['days'].' วัน เรียบร้อยแล้ว');
     }
 
     /**
@@ -563,7 +560,7 @@ class AntiAbuseController extends Controller
         ]);
 
         if ($validated['action'] === 'charge') {
-            $penalty->markAsCharged('admin_manual', 'ADMIN-' . auth()->id() . '-' . now()->timestamp);
+            $penalty->markAsCharged('admin_manual', 'ADMIN-'.auth()->id().'-'.now()->timestamp);
             $message = 'บันทึกการหักค่าปรับเรียบร้อยแล้ว';
         } else {
             $penalty->waive($validated['notes'] ?? 'Admin ยกเว้น');
@@ -583,10 +580,10 @@ class AntiAbuseController extends Controller
         if ($penalty->status !== 'pending') {
             return redirect()
                 ->route('admin.anti-abuse.penalties')
-                ->with('error', 'ค่าปรับนี้ไม่สามารถหักได้ (สถานะ: ' . $penalty->status . ')');
+                ->with('error', 'ค่าปรับนี้ไม่สามารถหักได้ (สถานะ: '.$penalty->status.')');
         }
 
-        $penalty->markAsCharged('admin_manual', 'ADMIN-' . auth()->id() . '-' . now()->timestamp);
+        $penalty->markAsCharged('admin_manual', 'ADMIN-'.auth()->id().'-'.now()->timestamp);
 
         // บันทึก Log
         activity()
@@ -597,7 +594,7 @@ class AntiAbuseController extends Controller
 
         return redirect()
             ->route('admin.anti-abuse.penalties')
-            ->with('success', 'หักค่าปรับ ฿' . number_format($penalty->penalty_amount) . ' เรียบร้อยแล้ว');
+            ->with('success', 'หักค่าปรับ ฿'.number_format($penalty->penalty_amount).' เรียบร้อยแล้ว');
     }
 
     /**
@@ -612,7 +609,7 @@ class AntiAbuseController extends Controller
         if ($penalty->status !== 'pending') {
             return redirect()
                 ->route('admin.anti-abuse.penalties')
-                ->with('error', 'ค่าปรับนี้ไม่สามารถยกเว้นได้ (สถานะ: ' . $penalty->status . ')');
+                ->with('error', 'ค่าปรับนี้ไม่สามารถยกเว้นได้ (สถานะ: '.$penalty->status.')');
         }
 
         $penalty->waive($validated['reason']);
@@ -698,7 +695,7 @@ class AntiAbuseController extends Controller
             'booking' => $booking,
             'history' => $history,
             'logs' => $logs,
-            'pageTitle' => 'ประวัติตำแหน่ง #' . $booking->booking_number,
+            'pageTitle' => 'ประวัติตำแหน่ง #'.$booking->booking_number,
         ]);
     }
 

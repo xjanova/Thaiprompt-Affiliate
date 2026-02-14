@@ -4,12 +4,11 @@ namespace App\Http\Controllers\HotelAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
-use App\Models\RoomType;
 use App\Models\RoomAvailability;
+use App\Models\RoomType;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -255,7 +254,7 @@ class RoomManagementController extends Controller
         $galleryImages = $roomType->gallery_images ?? [];
 
         // Remove image from array
-        $galleryImages = array_filter($galleryImages, function($image) use ($validated) {
+        $galleryImages = array_filter($galleryImages, function ($image) use ($validated) {
             return $image !== $validated['image_path'];
         });
 
@@ -335,7 +334,7 @@ class RoomManagementController extends Controller
 
         $validated = $request->validate([
             'date' => 'required|date|after_or_equal:today',
-            'available_rooms' => 'required|integer|min:0|max:' . $roomType->total_rooms,
+            'available_rooms' => 'required|integer|min:0|max:'.$roomType->total_rooms,
             'price' => 'nullable|numeric|min:0',
             'is_available' => 'boolean',
             'min_stay' => 'nullable|integer|min:1',
@@ -376,7 +375,7 @@ class RoomManagementController extends Controller
         $validated = $request->validate([
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after:start_date',
-            'available_rooms' => 'nullable|integer|min:0|max:' . $roomType->total_rooms,
+            'available_rooms' => 'nullable|integer|min:0|max:'.$roomType->total_rooms,
             'price' => 'nullable|numeric|min:0',
             'is_available' => 'nullable|boolean',
             'min_stay' => 'nullable|integer|min:1',
@@ -427,7 +426,7 @@ class RoomManagementController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Availability updated successfully for ' . $startDate->diffInDays($endDate) . ' days',
+            'message' => 'Availability updated successfully for '.$startDate->diffInDays($endDate).' days',
         ]);
     }
 }

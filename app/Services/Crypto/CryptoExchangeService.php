@@ -2,13 +2,12 @@
 
 namespace App\Services\Crypto;
 
-use App\Models\User;
-use App\Models\Wallet;
-use App\Models\CryptoWallet;
 use App\Models\CryptoCurrency;
 use App\Models\CryptoExchangeTransaction;
 use App\Models\CryptoTransaction;
-use App\Models\WalletTransaction;
+use App\Models\CryptoWallet;
+use App\Models\User;
+use App\Models\Wallet;
 use App\Services\WalletService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +15,9 @@ use Illuminate\Support\Facades\Log;
 class CryptoExchangeService
 {
     protected CryptoPriceService $priceService;
+
     protected WalletService $walletService;
+
     protected CryptoWalletService $cryptoWalletService;
 
     public function __construct(
@@ -31,14 +32,6 @@ class CryptoExchangeService
 
     /**
      * Buy crypto with THB (THB → Crypto)
-     *
-     * @param User $user
-     * @param CryptoCurrency $currency
-     * @param float $thbAmount
-     * @param CryptoWallet|null $cryptoWallet
-     * @param string|null $pin
-     * @param array $options
-     * @return CryptoExchangeTransaction
      */
     public function buyCrypto(
         User $user,
@@ -51,7 +44,7 @@ class CryptoExchangeService
         DB::beginTransaction();
         try {
             // Validate currency is active and exchange enabled
-            if (!$currency->is_active || !$currency->exchange_enabled) {
+            if (! $currency->is_active || ! $currency->exchange_enabled) {
                 throw new \Exception('Currency exchange is not enabled');
             }
 
@@ -64,7 +57,7 @@ class CryptoExchangeService
             $thbWallet = $this->walletService->getOrCreateWallet($user);
 
             // Verify PIN if provided
-            if ($pin && !$thbWallet->verifyPin($pin)) {
+            if ($pin && ! $thbWallet->verifyPin($pin)) {
                 throw new \Exception('Invalid PIN');
             }
 
@@ -74,13 +67,13 @@ class CryptoExchangeService
             }
 
             // Get or create crypto wallet
-            if (!$cryptoWallet) {
+            if (! $cryptoWallet) {
                 $cryptoWallet = $this->cryptoWalletService->getOrCreateDefaultWallet($user);
             }
 
             // Get current exchange rate
             $rate = $this->priceService->getCurrentRate($currency);
-            if (!$rate) {
+            if (! $rate) {
                 throw new \Exception('Failed to get exchange rate');
             }
 
@@ -192,14 +185,6 @@ class CryptoExchangeService
 
     /**
      * Sell crypto for THB (Crypto → THB)
-     *
-     * @param User $user
-     * @param CryptoCurrency $currency
-     * @param float $cryptoAmount
-     * @param CryptoWallet|null $cryptoWallet
-     * @param string|null $pin
-     * @param array $options
-     * @return CryptoExchangeTransaction
      */
     public function sellCrypto(
         User $user,
@@ -212,17 +197,17 @@ class CryptoExchangeService
         DB::beginTransaction();
         try {
             // Validate currency is active and exchange enabled
-            if (!$currency->is_active || !$currency->exchange_enabled) {
+            if (! $currency->is_active || ! $currency->exchange_enabled) {
                 throw new \Exception('Currency exchange is not enabled');
             }
 
             // Get or create crypto wallet
-            if (!$cryptoWallet) {
+            if (! $cryptoWallet) {
                 $cryptoWallet = $this->cryptoWalletService->getOrCreateDefaultWallet($user);
             }
 
             // Verify crypto wallet PIN if custodial
-            if ($cryptoWallet->isCustodial() && $pin && !$cryptoWallet->verifyPin($pin)) {
+            if ($cryptoWallet->isCustodial() && $pin && ! $cryptoWallet->verifyPin($pin)) {
                 throw new \Exception('Invalid crypto wallet PIN');
             }
 
@@ -237,7 +222,7 @@ class CryptoExchangeService
 
             // Get current exchange rate
             $rate = $this->priceService->getCurrentRate($currency);
-            if (!$rate) {
+            if (! $rate) {
                 throw new \Exception('Failed to get exchange rate');
             }
 
@@ -357,11 +342,7 @@ class CryptoExchangeService
     /**
      * Get exchange preview
      *
-     * @param CryptoCurrency $currency
-     * @param float $amount
-     * @param string $type ('buy' or 'sell')
-     * @param string $fromCurrency
-     * @return array|null
+     * @param  string  $type  ('buy' or 'sell')
      */
     public function getExchangePreview(
         CryptoCurrency $currency,
@@ -380,8 +361,6 @@ class CryptoExchangeService
     /**
      * Get user's exchange history
      *
-     * @param User $user
-     * @param array $filters
      * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
     public function getExchangeHistory(User $user, array $filters = [])
@@ -407,10 +386,6 @@ class CryptoExchangeService
 
     /**
      * Cancel exchange (if still pending)
-     *
-     * @param CryptoExchangeTransaction $exchange
-     * @param User $user
-     * @return bool
      */
     public function cancelExchange(CryptoExchangeTransaction $exchange, User $user): bool
     {
@@ -418,7 +393,7 @@ class CryptoExchangeService
             throw new \Exception('Unauthorized');
         }
 
-        if (!$exchange->isPending()) {
+        if (! $exchange->isPending()) {
             throw new \Exception('Can only cancel pending exchanges');
         }
 

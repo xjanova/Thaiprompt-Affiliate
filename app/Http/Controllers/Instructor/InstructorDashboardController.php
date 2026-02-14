@@ -13,7 +13,6 @@ use App\Models\UserArticleProgress;
 use App\Services\CertificateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 /**
  * InstructorDashboardController
@@ -71,7 +70,6 @@ class InstructorDashboardController extends Controller
     /**
      * แสดงรายการคอร์สของ Instructor
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function courses(Request $request)
@@ -130,7 +128,6 @@ class InstructorDashboardController extends Controller
     /**
      * บันทึกคอร์สใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeCourse(Request $request)
@@ -167,7 +164,7 @@ class InstructorDashboardController extends Controller
         $validated['slug'] = \Illuminate\Support\Str::slug($validated['title']);
 
         // Parse tags
-        if (!empty($validated['tags'])) {
+        if (! empty($validated['tags'])) {
             $validated['tags'] = array_map('trim', explode(',', $validated['tags']));
         }
 
@@ -187,7 +184,6 @@ class InstructorDashboardController extends Controller
     /**
      * ฟอร์มแก้ไขคอร์ส
      *
-     * @param LearningArticle $article
      * @return \Illuminate\View\View
      */
     public function editCourse(LearningArticle $article)
@@ -207,8 +203,6 @@ class InstructorDashboardController extends Controller
     /**
      * อัปเดตคอร์ส
      *
-     * @param Request $request
-     * @param LearningArticle $article
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateCourse(Request $request, LearningArticle $article)
@@ -247,7 +241,7 @@ class InstructorDashboardController extends Controller
         }
 
         // Parse tags
-        if (!empty($validated['tags'])) {
+        if (! empty($validated['tags'])) {
             $validated['tags'] = array_map('trim', explode(',', $validated['tags']));
         } else {
             $validated['tags'] = [];
@@ -265,7 +259,6 @@ class InstructorDashboardController extends Controller
     /**
      * ดูสถิติผู้เรียนของคอร์ส
      *
-     * @param LearningArticle $article
      * @return \Illuminate\View\View
      */
     public function courseStats(LearningArticle $article)
@@ -312,7 +305,6 @@ class InstructorDashboardController extends Controller
     /**
      * จัดการ Quiz ของคอร์ส
      *
-     * @param LearningArticle $article
      * @return \Illuminate\View\View
      */
     public function manageQuiz(LearningArticle $article)
@@ -327,7 +319,6 @@ class InstructorDashboardController extends Controller
     /**
      * ส่งคอร์สเพื่อขออนุมัติ
      *
-     * @param LearningArticle $article
      * @return \Illuminate\Http\RedirectResponse
      */
     public function submitForApproval(LearningArticle $article)
@@ -373,8 +364,8 @@ class InstructorDashboardController extends Controller
                 ->get();
 
             foreach ($completions as $completion) {
-                $key = $completion->year . '-' . str_pad($completion->month, 2, '0', STR_PAD_LEFT);
-                if (!isset($monthlyEarnings[$key])) {
+                $key = $completion->year.'-'.str_pad($completion->month, 2, '0', STR_PAD_LEFT);
+                if (! isset($monthlyEarnings[$key])) {
                     $monthlyEarnings[$key] = 0;
                 }
 
@@ -392,9 +383,6 @@ class InstructorDashboardController extends Controller
 
     /**
      * ตรวจสอบสิทธิ์ Instructor
-     *
-     * @param LearningArticle $article
-     * @return void
      */
     protected function authorizeInstructor(LearningArticle $article): void
     {
@@ -467,8 +455,6 @@ class InstructorDashboardController extends Controller
     /**
      * ออกใบประกาศนียบัตรให้นักเรียน
      *
-     * @param LearningArticle $article
-     * @param User $user
      * @return \Illuminate\Http\RedirectResponse
      */
     public function issueCertificate(LearningArticle $article, User $user)
@@ -481,7 +467,7 @@ class InstructorDashboardController extends Controller
             ->where('status', 'completed')
             ->first();
 
-        if (!$progress) {
+        if (! $progress) {
             return back()->with('error', 'นักเรียนยังเรียนไม่จบคอร์สนี้');
         }
 
@@ -500,9 +486,9 @@ class InstructorDashboardController extends Controller
             $certificateService = app(CertificateService::class);
             $certificate = $certificateService->generateCertificate($user, $article);
 
-            return back()->with('success', 'ออกใบประกาศนียบัตรให้ ' . $user->name . ' เรียบร้อยแล้ว');
+            return back()->with('success', 'ออกใบประกาศนียบัตรให้ '.$user->name.' เรียบร้อยแล้ว');
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

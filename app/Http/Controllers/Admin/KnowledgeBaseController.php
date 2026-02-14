@@ -7,9 +7,9 @@ use App\Models\AiBotProfile;
 use App\Models\KnowledgeBase;
 use App\Models\KnowledgeChunk;
 use App\Services\AI\DocumentProcessorService;
-use App\Services\AI\TextChunkingService;
 use App\Services\AI\EmbeddingService;
 use App\Services\AI\RagService;
+use App\Services\AI\TextChunkingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -17,16 +17,19 @@ use Illuminate\Support\Facades\Storage;
 class KnowledgeBaseController extends Controller
 {
     private DocumentProcessorService $documentProcessor;
+
     private TextChunkingService $chunkingService;
+
     private EmbeddingService $embeddingService;
+
     private RagService $ragService;
 
     public function __construct()
     {
-        $this->documentProcessor = new DocumentProcessorService();
-        $this->chunkingService = new TextChunkingService();
-        $this->embeddingService = new EmbeddingService();
-        $this->ragService = new RagService();
+        $this->documentProcessor = new DocumentProcessorService;
+        $this->chunkingService = new TextChunkingService;
+        $this->embeddingService = new EmbeddingService;
+        $this->ragService = new RagService;
     }
 
     /**
@@ -37,7 +40,7 @@ class KnowledgeBaseController extends Controller
         $bot = AiBotProfile::findOrFail($botId);
 
         // Check permission
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403, 'Unauthorized access to bot knowledge bases');
         }
 
@@ -58,7 +61,7 @@ class KnowledgeBaseController extends Controller
     {
         $bot = AiBotProfile::findOrFail($botId);
 
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403);
         }
 
@@ -72,7 +75,7 @@ class KnowledgeBaseController extends Controller
     {
         $bot = AiBotProfile::findOrFail($botId);
 
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403);
         }
 
@@ -86,7 +89,7 @@ class KnowledgeBaseController extends Controller
         ]);
 
         try {
-            $knowledgeBase = new KnowledgeBase();
+            $knowledgeBase = new KnowledgeBase;
             $knowledgeBase->bot_profile_id = $bot->id;
             $knowledgeBase->name = $validated['name'];
             $knowledgeBase->description = $validated['description'] ?? null;
@@ -120,7 +123,7 @@ class KnowledgeBaseController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to create knowledge base: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create knowledge base: '.$e->getMessage());
         }
     }
 
@@ -133,7 +136,7 @@ class KnowledgeBaseController extends Controller
         $knowledgeBase = KnowledgeBase::where('bot_profile_id', $bot->id)
             ->findOrFail($id);
 
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403);
         }
 
@@ -153,7 +156,7 @@ class KnowledgeBaseController extends Controller
         $knowledgeBase = KnowledgeBase::where('bot_profile_id', $bot->id)
             ->findOrFail($id);
 
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403);
         }
 
@@ -176,7 +179,7 @@ class KnowledgeBaseController extends Controller
     {
         $bot = AiBotProfile::findOrFail($botId);
 
-        if ($bot->owner_id !== auth()->id() && !auth()->user()->isSuperAdmin()) {
+        if ($bot->owner_id !== auth()->id() && ! auth()->user()->isSuperAdmin()) {
             abort(403);
         }
 
@@ -280,13 +283,15 @@ class KnowledgeBaseController extends Controller
 
             case 'url':
                 $result = $this->documentProcessor->processUrl($knowledgeBase->source_url);
+
                 return $result['success'] ? $result['content'] : '';
 
             case 'file':
             case 'pdf':
             case 'docx':
-                $filePath = storage_path('app/public/' . $knowledgeBase->file_path);
+                $filePath = storage_path('app/public/'.$knowledgeBase->file_path);
                 $result = $this->documentProcessor->processFile($filePath);
+
                 return $result['success'] ? $result['content'] : '';
 
             default:

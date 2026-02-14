@@ -3,19 +3,19 @@
 namespace App\Services\Payment;
 
 use App\Events\NewTransactionCreated;
-use App\Models\PaymentTransaction;
-use App\Models\PaymentGateway;
+use App\Models\Order;
 use App\Models\PaymentBankAccount;
+use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\UniquePaymentAmount;
-use App\Models\Order;
 use App\Models\User;
+use App\Models\VendorStore;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
-use App\Models\VendorStore;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 /**
  * Payment Service
@@ -66,7 +66,7 @@ class PaymentService
                 if ($code === 'nfc_card') {
                     $this->providers[$code] = app($class);
                 } else {
-                    $this->providers[$code] = new $class();
+                    $this->providers[$code] = new $class;
                 }
             } catch (\Exception $e) {
                 // ถ้าสร้าง provider ไม่สำเร็จ ให้ข้ามไป
@@ -79,9 +79,6 @@ class PaymentService
 
     /**
      * Check if a provider is available
-     *
-     * @param string $method
-     * @return bool
      */
     public function hasProvider(string $method): bool
     {
@@ -90,8 +87,6 @@ class PaymentService
 
     /**
      * Get all registered providers
-     *
-     * @return array
      */
     public function getRegisteredProviders(): array
     {
@@ -101,13 +96,11 @@ class PaymentService
     /**
      * Get payment provider by method
      *
-     * @param string $method
-     * @return PaymentProviderInterface
      * @throws Exception
      */
     public function getProvider(string $method): PaymentProviderInterface
     {
-        if (!isset($this->providers[$method])) {
+        if (! isset($this->providers[$method])) {
             throw new Exception("Payment provider '{$method}' not found");
         }
 
@@ -236,8 +229,8 @@ class PaymentService
             }
 
             // SECURITY: Check transaction is in valid state
-            if (!in_array($transaction->status, ['pending', 'processing'])) {
-                throw new Exception('Invalid transaction status for processing: ' . $transaction->status);
+            if (! in_array($transaction->status, ['pending', 'processing'])) {
+                throw new Exception('Invalid transaction status for processing: '.$transaction->status);
             }
 
             $provider = $this->getProvider($transaction->payment_method);
@@ -247,7 +240,7 @@ class PaymentService
             $uniqueAmountRecord = $this->generateUniqueAmountIfNeeded($transaction);
 
             // Validate payment
-            if (!$provider->validate($transaction, $paymentData)) {
+            if (! $provider->validate($transaction, $paymentData)) {
                 throw new Exception('Payment validation failed');
             }
 
@@ -295,10 +288,11 @@ class PaymentService
             // Pessimistic lock: ป้องกัน double-spend / race condition
             // โหลด transaction ใหม่พร้อม lock เพื่อให้แน่ใจว่าไม่มี process อื่นทำพร้อมกัน
             $transaction = PaymentTransaction::lockForUpdate()->find($transaction->id);
-            if (!$transaction) {
+            if (! $transaction) {
                 Log::warning('PaymentService: Transaction not found during completePayment', [
                     'id' => $transaction->id ?? 'unknown',
                 ]);
+
                 return false;
             }
 
@@ -378,7 +372,7 @@ class PaymentService
             'type' => 'deposit',
             'amount' => $depositAmount,
             'balance_after' => $wallet->balance + $depositAmount,
-            'description' => 'Wallet top-up via ' . $transaction->payment_method,
+            'description' => 'Wallet top-up via '.$transaction->payment_method,
             'status' => 'approved',
             'metadata' => [
                 'payment_transaction_id' => $transaction->id,
@@ -408,9 +402,6 @@ class PaymentService
      * และมีบัญชีธนาคารที่เปิดใช้ SMS Checker หรือไม่
      * ถ้ามี → สร้างยอดชำระที่มีทศนิยมเฉพาะ (เช่น 1000.37)
      * แล้วอัพเดท PaymentTransaction.amount เป็นยอดใหม่
-     *
-     * @param PaymentTransaction $transaction
-     * @return UniquePaymentAmount|null
      */
     protected function generateUniqueAmountIfNeeded(PaymentTransaction $transaction): ?UniquePaymentAmount
     {
@@ -421,20 +412,22 @@ class PaymentService
         ]);
 
         // เฉพาะ promptpay และ bank_transfer เท่านั้น
-        if (!in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
+        if (! in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
             Log::debug('SMS Checker: ข้าม - payment method ไม่ใช่ promptpay/bank_transfer', [
                 'method' => $transaction->payment_method,
             ]);
+
             return null;
         }
 
         // ตรวจสอบว่ามี unique amount แล้วหรือยัง (จาก Model boot หรือการเรียกก่อนหน้า)
         $metadata = $transaction->metadata ?? [];
-        if (!empty($metadata['unique_amount_id'])) {
+        if (! empty($metadata['unique_amount_id'])) {
             Log::debug('SMS Checker: ข้าม - มี unique amount แล้ว', [
                 'transaction_id' => $transaction->id,
                 'unique_amount_id' => $metadata['unique_amount_id'],
             ]);
+
             // คืน UniquePaymentAmount record ที่มีอยู่
             return UniquePaymentAmount::find($metadata['unique_amount_id']);
         }
@@ -446,9 +439,9 @@ class PaymentService
         // ⚠️ ใช้ default = true เพื่อให้ทำงานแม้ config ยังไม่ถูก cache
         // (config file มี default = true อยู่แล้ว)
         $smsCheckerEnabled = config('smschecker.enabled', true);
-        Log::info('SMS Checker: config enabled = ' . var_export($smsCheckerEnabled, true));
+        Log::info('SMS Checker: config enabled = '.var_export($smsCheckerEnabled, true));
 
-        if (!$smsCheckerEnabled) {
+        if (! $smsCheckerEnabled) {
             // config ปิด → ตรวจแบบเดิม (ต้องมี bank account หรือ device ที่ active)
             try {
                 $hasSmsChecker = false;
@@ -459,25 +452,27 @@ class PaymentService
                         ->where('sms_checker_enabled', true)
                         ->exists();
                 } catch (\Exception $e) {
-                    Log::debug('PaymentBankAccount check skipped: ' . $e->getMessage());
+                    Log::debug('PaymentBankAccount check skipped: '.$e->getMessage());
                 }
 
                 // ทาง 2: ถ้าไม่มีบัญชี ให้ตรวจว่ามีอุปกรณ์ SMS Checker ที่ active อยู่
-                if (!$hasSmsChecker) {
+                if (! $hasSmsChecker) {
                     $hasSmsChecker = \App\Models\SmsCheckerDevice::where('status', 'active')->exists();
                 }
 
-                if (!$hasSmsChecker) {
+                if (! $hasSmsChecker) {
                     Log::debug('SMS Checker: ไม่พบ active device หรือ bank account ที่เปิด SMS Checker');
+
                     return null;
                 }
             } catch (\Exception $e) {
-                Log::debug('SMS Checker check skipped: ' . $e->getMessage());
+                Log::debug('SMS Checker check skipped: '.$e->getMessage());
+
                 return null;
             }
         }
 
-        Log::info('SMS Checker: กำลังสร้าง unique amount สำหรับ transaction #' . $transaction->id);
+        Log::info('SMS Checker: กำลังสร้าง unique amount สำหรับ transaction #'.$transaction->id);
 
         // สร้าง unique amount
         try {
@@ -528,7 +523,7 @@ class PaymentService
     /**
      * Refund payment
      */
-    public function refundPayment(PaymentTransaction $transaction, float $amount = null)
+    public function refundPayment(PaymentTransaction $transaction, ?float $amount = null)
     {
         return DB::transaction(function () use ($transaction, $amount) {
             $refundAmount = $amount ?? $transaction->amount;
@@ -562,7 +557,7 @@ class PaymentService
                     'type' => 'refund',
                     'amount' => $refundAmount,
                     'balance_after' => $wallet->balance,
-                    'description' => 'Refund for order #' . $transaction->order->order_number,
+                    'description' => 'Refund for order #'.$transaction->order->order_number,
                     'status' => 'approved',
                 ]);
             }
@@ -593,6 +588,7 @@ class PaymentService
 
         if ($provider->verify($transaction, $data)) {
             $this->completePayment($transaction);
+
             return true;
         }
 
@@ -604,8 +600,6 @@ class PaymentService
      *
      * ดึงรายการ payment methods ที่พร้อมใช้งาน
      * โดยรวมทั้ง built-in methods และ gateways ที่ active
-     *
-     * @return array
      */
     public function getAvailablePaymentMethods(): array
     {
@@ -640,7 +634,7 @@ class PaymentService
 
                 foreach ($gateways as $gateway) {
                     // ตรวจสอบว่ามี provider สำหรับ gateway นี้หรือไม่
-                    if (!$this->hasProvider($gateway->code)) {
+                    if (! $this->hasProvider($gateway->code)) {
                         continue;
                     }
 
@@ -662,7 +656,7 @@ class PaymentService
             }
         } catch (\Exception $e) {
             // PaymentGateway model not available or database not ready
-            Log::warning('Could not load payment gateways: ' . $e->getMessage());
+            Log::warning('Could not load payment gateways: '.$e->getMessage());
 
             // Fallback to basic methods
             $methods = array_merge($methods, [
@@ -698,8 +692,6 @@ class PaymentService
 
     /**
      * Get payment methods for deposit
-     *
-     * @return array
      */
     public function getDepositMethods(): array
     {
@@ -710,8 +702,6 @@ class PaymentService
 
     /**
      * Get payment methods for withdrawal
-     *
-     * @return array
      */
     public function getWithdrawalMethods(): array
     {

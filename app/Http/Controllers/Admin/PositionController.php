@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Position;
 use App\Models\Department;
+use App\Models\Position;
 use Illuminate\Http\Request;
 
 class PositionController extends Controller
@@ -19,10 +19,10 @@ class PositionController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('position_name', 'like', '%'.$search.'%')
-                  ->orWhere('position_code', 'like', '%'.$search.'%')
-                  ->orWhere('description', 'like', '%'.$search.'%');
+                    ->orWhere('position_code', 'like', '%'.$search.'%')
+                    ->orWhere('description', 'like', '%'.$search.'%');
             });
         }
 
@@ -76,7 +76,7 @@ class PositionController extends Controller
         Position::create($validated);
 
         return redirect()->route('admin.hrm.positions.index')
-                        ->with('success', __('Position created successfully'));
+            ->with('success', __('Position created successfully'));
     }
 
     /**
@@ -120,7 +120,7 @@ class PositionController extends Controller
         $position->update($validated);
 
         return redirect()->route('admin.hrm.positions.index')
-                        ->with('success', __('Position updated successfully'));
+            ->with('success', __('Position updated successfully'));
     }
 
     /**
@@ -131,12 +131,12 @@ class PositionController extends Controller
         // Check if position has employees
         if ($position->employees()->count() > 0) {
             return redirect()->route('admin.hrm.positions.index')
-                            ->with('error', __('Cannot delete position that has employees assigned to it'));
+                ->with('error', __('Cannot delete position that has employees assigned to it'));
         }
 
         $position->delete();
 
         return redirect()->route('admin.hrm.positions.index')
-                        ->with('success', __('Position deleted successfully'));
+            ->with('success', __('Position deleted successfully'));
     }
 }

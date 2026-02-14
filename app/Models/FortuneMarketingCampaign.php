@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * FortuneMarketingCampaign Model
@@ -46,22 +46,33 @@ class FortuneMarketingCampaign extends Model
 
     // สถานะแคมเปญ
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_SCHEDULED = 'scheduled';
+
     public const STATUS_SENDING = 'sending';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_PAUSED = 'paused';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     // กลุ่มเป้าหมาย
     public const TARGET_ALL = 'all';
+
     public const TARGET_PAID = 'paid';
+
     public const TARGET_RECENT = 'recent';
+
     public const TARGET_NEW = 'new';
 
     // ประเภทตาราง
     public const SCHEDULE_ONCE = 'once';
+
     public const SCHEDULE_DAILY = 'daily';
+
     public const SCHEDULE_WEEKLY = 'weekly';
+
     public const SCHEDULE_CUSTOM = 'custom';
 
     protected $fillable = [
@@ -163,11 +174,11 @@ class FortuneMarketingCampaign extends Model
                         ->where('scheduled_at', '<=', now());
                 })
                 // ส่งซ้ำ: ถึง next_run_at แล้ว
-                ->orWhere(function ($sub) {
-                    $sub->whereIn('schedule_type', [self::SCHEDULE_DAILY, self::SCHEDULE_WEEKLY, self::SCHEDULE_CUSTOM])
-                        ->whereNotNull('next_run_at')
-                        ->where('next_run_at', '<=', now());
-                });
+                    ->orWhere(function ($sub) {
+                        $sub->whereIn('schedule_type', [self::SCHEDULE_DAILY, self::SCHEDULE_WEEKLY, self::SCHEDULE_CUSTOM])
+                            ->whereNotNull('next_run_at')
+                            ->where('next_run_at', '<=', now());
+                    });
             });
     }
 
@@ -193,7 +204,7 @@ class FortuneMarketingCampaign extends Model
     public function isReadyToSend(): bool
     {
         // ต้องมีข้อความ
-        if (!$this->getMessageToSend()) {
+        if (! $this->getMessageToSend()) {
             return false;
         }
 
@@ -217,6 +228,7 @@ class FortuneMarketingCampaign extends Model
     public function markSending(): self
     {
         $this->update(['status' => self::STATUS_SENDING]);
+
         return $this;
     }
 
@@ -237,7 +249,7 @@ class FortuneMarketingCampaign extends Model
         } else {
             // ส่งซ้ำ → คำนวณ next_run_at
             $nextRun = $this->calculateNextRun();
-            if ($nextRun && (!$this->recurring_until || $nextRun->lte($this->recurring_until))) {
+            if ($nextRun && (! $this->recurring_until || $nextRun->lte($this->recurring_until))) {
                 $updateData['status'] = self::STATUS_SCHEDULED;
                 $updateData['next_run_at'] = $nextRun;
             } else {
@@ -247,6 +259,7 @@ class FortuneMarketingCampaign extends Model
         }
 
         $this->update($updateData);
+
         return $this->fresh();
     }
 
@@ -259,6 +272,7 @@ class FortuneMarketingCampaign extends Model
             'status' => self::STATUS_SCHEDULED,
             'last_error' => $error,
         ]);
+
         return $this;
     }
 
@@ -292,6 +306,7 @@ class FortuneMarketingCampaign extends Model
         }
 
         $this->update($updateData);
+
         return $this->fresh();
     }
 
@@ -301,6 +316,7 @@ class FortuneMarketingCampaign extends Model
     public function pause(): self
     {
         $this->update(['status' => self::STATUS_PAUSED]);
+
         return $this;
     }
 
@@ -310,6 +326,7 @@ class FortuneMarketingCampaign extends Model
     public function cancel(): self
     {
         $this->update(['status' => self::STATUS_CANCELLED]);
+
         return $this;
     }
 

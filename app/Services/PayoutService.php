@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\User;
 use App\Models\EarningsLedger;
 use App\Models\PayoutRequest;
 use App\Models\PayoutSetting;
-use App\Models\WalletDebt;
 use App\Models\PlatformWallet;
+use App\Models\User;
+use App\Models\WalletDebt;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 /**
  * PayoutService
@@ -24,23 +24,21 @@ class PayoutService
 
     public function __construct()
     {
-        $this->revenueService = new PlatformRevenueService();
+        $this->revenueService = new PlatformRevenueService;
     }
 
     /**
      * สร้าง Payout Request ใหม่
      *
-     * @param int $userId
-     * @param string $earningType seller_sale, mlm_commission, affiliate_commission
-     * @param float|null $requestedAmount ถ้าไม่ระบุจะดึงทั้งหมดที่ available
-     * @return PayoutRequest
+     * @param  string  $earningType  seller_sale, mlm_commission, affiliate_commission
+     * @param  float|null  $requestedAmount  ถ้าไม่ระบุจะดึงทั้งหมดที่ available
      */
     public function createPayoutRequest(int $userId, string $earningType, ?float $requestedAmount = null): PayoutRequest
     {
         return DB::transaction(function () use ($userId, $earningType, $requestedAmount) {
             // ดึง setting สำหรับ earning type นี้
             $setting = PayoutSetting::getSettingByType($earningType);
-            if (!$setting || !$setting->is_active) {
+            if (! $setting || ! $setting->is_active) {
                 throw new \Exception('Payout สำหรับประเภทนี้ถูกปิดใช้งาน');
             }
 
@@ -99,7 +97,7 @@ class PayoutService
                 // คำนวณวันจ่ายถัดไป
                 $scheduledAt = $this->calculateNextPayoutDate($setting);
                 $status = PayoutRequest::STATUS_SCHEDULED;
-            } elseif ($setting->payout_mode === 'realtime' && !$setting->requires_approval) {
+            } elseif ($setting->payout_mode === 'realtime' && ! $setting->requires_approval) {
                 $status = PayoutRequest::STATUS_APPROVED;
             }
 
@@ -121,7 +119,7 @@ class PayoutService
             $this->linkEarningsToPayout($availableEarnings, $payoutRequest, $payoutAmount);
 
             // ถ้า realtime และไม่ต้อง approve → ประมวลผลทันที
-            if ($setting->payout_mode === 'realtime' && !$setting->requires_approval) {
+            if ($setting->payout_mode === 'realtime' && ! $setting->requires_approval) {
                 $this->processPayout($payoutRequest);
             }
 
@@ -139,9 +137,7 @@ class PayoutService
     /**
      * Link earnings ไปยัง payout request
      *
-     * @param \Illuminate\Support\Collection $earnings
-     * @param PayoutRequest $payoutRequest
-     * @param float $targetAmount
+     * @param  \Illuminate\Support\Collection  $earnings
      */
     protected function linkEarningsToPayout($earnings, PayoutRequest $payoutRequest, float $targetAmount): void
     {
@@ -169,10 +165,6 @@ class PayoutService
 
     /**
      * คำนวณค่าธรรมเนียมการถอน
-     *
-     * @param float $amount
-     * @param PayoutSetting $setting
-     * @return float
      */
     protected function calculatePayoutFee(float $amount, PayoutSetting $setting): float
     {
@@ -193,16 +185,13 @@ class PayoutService
 
     /**
      * คำนวณวันจ่ายถัดไป
-     *
-     * @param PayoutSetting $setting
-     * @return Carbon
      */
     protected function calculateNextPayoutDate(PayoutSetting $setting): Carbon
     {
         $schedule = $setting->schedule;
         $now = now();
 
-        if (!$schedule) {
+        if (! $schedule) {
             return $now->addDay(); // default: วันถัดไป
         }
 
@@ -215,6 +204,7 @@ class PayoutService
                 case 'weekly':
                     $dayOfWeek = $schedule['day_of_week'] ?? 1; // 1 = Monday
                     $next = $now->copy()->next($dayOfWeek);
+
                     return $next->setTime($schedule['hour'] ?? 9, 0);
 
                 case 'biweekly':
@@ -228,6 +218,7 @@ class PayoutService
                 case 'monthly':
                     $dayOfMonth = $schedule['day_of_month'] ?? 1;
                     $next = $now->copy()->addMonth()->day(min($dayOfMonth, $now->copy()->addMonth()->daysInMonth));
+
                     return $next->setTime($schedule['hour'] ?? 9, 0);
 
                 case 'custom_days':
@@ -239,6 +230,7 @@ class PayoutService
                             return $now->copy()->day($day)->setTime($schedule['hour'] ?? 9, 0);
                         }
                     }
+
                     // ถ้าเลยทุกวันแล้ว → วันแรกเดือนหน้า
                     return $now->copy()->addMonth()->day($days[0])->setTime($schedule['hour'] ?? 9, 0);
             }
@@ -250,10 +242,7 @@ class PayoutService
     /**
      * อนุมัติ Payout Request
      *
-     * @param PayoutRequest $payoutRequest
-     * @param int $approvedBy User ID ของ Admin
-     * @param string|null $note
-     * @return PayoutRequest
+     * @param  int  $approvedBy  User ID ของ Admin
      */
     public function approvePayout(PayoutRequest $payoutRequest, int $approvedBy, ?string $note = null): PayoutRequest
     {
@@ -283,15 +272,10 @@ class PayoutService
 
     /**
      * ปฏิเสธ Payout Request
-     *
-     * @param PayoutRequest $payoutRequest
-     * @param int $rejectedBy
-     * @param string $reason
-     * @return PayoutRequest
      */
     public function rejectPayout(PayoutRequest $payoutRequest, int $rejectedBy, string $reason): PayoutRequest
     {
-        if (!in_array($payoutRequest->status, [PayoutRequest::STATUS_PENDING, PayoutRequest::STATUS_SCHEDULED])) {
+        if (! in_array($payoutRequest->status, [PayoutRequest::STATUS_PENDING, PayoutRequest::STATUS_SCHEDULED])) {
             throw new \Exception('ไม่สามารถปฏิเสธ request นี้ได้');
         }
 
@@ -327,9 +311,6 @@ class PayoutService
 
     /**
      * ประมวลผลจ่ายเงิน
-     *
-     * @param PayoutRequest $payoutRequest
-     * @return PayoutRequest
      */
     public function processPayout(PayoutRequest $payoutRequest): PayoutRequest
     {
@@ -347,7 +328,7 @@ class PayoutService
                 $walletSlug = $this->getSourceWallet($payoutRequest->earning_type);
                 $wallet = PlatformWallet::where('slug', $walletSlug)->first();
 
-                if (!$wallet) {
+                if (! $wallet) {
                     throw new \Exception("ไม่พบ Platform Wallet: {$walletSlug}");
                 }
 
@@ -368,7 +349,7 @@ class PayoutService
                     ->update(['status' => EarningsLedger::STATUS_PAID]);
 
                 // สร้าง transaction reference
-                $transactionRef = 'PO' . date('Ymd') . str_pad($payoutRequest->id, 8, '0', STR_PAD_LEFT);
+                $transactionRef = 'PO'.date('Ymd').str_pad($payoutRequest->id, 8, '0', STR_PAD_LEFT);
 
                 $payoutRequest->update([
                     'status' => PayoutRequest::STATUS_COMPLETED,
@@ -402,9 +383,6 @@ class PayoutService
 
     /**
      * ดึง slug ของ wallet ที่เป็นแหล่งเงิน
-     *
-     * @param string $earningType
-     * @return string
      */
     protected function getSourceWallet(string $earningType): string
     {
@@ -418,19 +396,17 @@ class PayoutService
 
     /**
      * โอนเงินเข้า User Wallet
-     *
-     * @param PayoutRequest $payoutRequest
      */
     protected function transferToUserWallet(PayoutRequest $payoutRequest): void
     {
         $user = User::find($payoutRequest->user_id);
-        if (!$user) {
+        if (! $user) {
             throw new \Exception("ไม่พบ User #{$payoutRequest->user_id}");
         }
 
         // ตรวจสอบว่า User มี Wallet หรือไม่
         $wallet = $user->wallet;
-        if (!$wallet) {
+        if (! $wallet) {
             // สร้าง wallet ใหม่ถ้ายังไม่มี
             $wallet = $user->wallet()->create([
                 'balance' => 0,
@@ -458,8 +434,6 @@ class PayoutService
     /**
      * ประมวลผล Scheduled Payouts
      * สำหรับ CRON job
-     *
-     * @return array
      */
     public function processScheduledPayouts(): array
     {
@@ -506,15 +480,10 @@ class PayoutService
 
     /**
      * ยกเลิก Payout Request
-     *
-     * @param PayoutRequest $payoutRequest
-     * @param int $cancelledBy
-     * @param string $reason
-     * @return PayoutRequest
      */
     public function cancelPayout(PayoutRequest $payoutRequest, int $cancelledBy, string $reason): PayoutRequest
     {
-        if (!in_array($payoutRequest->status, [PayoutRequest::STATUS_PENDING, PayoutRequest::STATUS_SCHEDULED])) {
+        if (! in_array($payoutRequest->status, [PayoutRequest::STATUS_PENDING, PayoutRequest::STATUS_SCHEDULED])) {
             throw new \Exception('ไม่สามารถยกเลิก request นี้ได้');
         }
 
@@ -546,9 +515,6 @@ class PayoutService
 
     /**
      * ดึงสถิติ Payout
-     *
-     * @param array $filters
-     * @return array
      */
     public function getPayoutStats(array $filters = []): array
     {
@@ -590,8 +556,6 @@ class PayoutService
     /**
      * ดึงรายการ Payout Requests
      *
-     * @param array $filters
-     * @param int $perPage
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getPayoutRequests(array $filters = [], int $perPage = 15)

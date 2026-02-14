@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MessageEntity;
-use App\Models\MessageIntent;
 use App\Models\KeywordCluster;
 use App\Models\KeywordClusterItem;
+use App\Models\MessageEntity;
+use App\Models\MessageIntent;
 use App\Services\NLPEnhancementService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * NLP Analysis Controller
@@ -18,15 +18,10 @@ use Illuminate\Http\JsonResponse;
  */
 class NLPAnalysisController extends Controller
 {
-    /**
-     * @var NLPEnhancementService
-     */
     protected NLPEnhancementService $nlpService;
 
     /**
      * Constructor
-     *
-     * @param NLPEnhancementService $nlpService
      */
     public function __construct(NLPEnhancementService $nlpService)
     {
@@ -36,7 +31,6 @@ class NLPAnalysisController extends Controller
     /**
      * Display NLP analysis dashboard
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -96,7 +90,6 @@ class NLPAnalysisController extends Controller
     /**
      * Display entities list
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function entities(Request $request)
@@ -136,7 +129,6 @@ class NLPAnalysisController extends Controller
     /**
      * Display intents list
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function intents(Request $request)
@@ -185,7 +177,6 @@ class NLPAnalysisController extends Controller
     /**
      * Display clusters management
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function clusters(Request $request)
@@ -218,7 +209,7 @@ class NLPAnalysisController extends Controller
 
         $categories = [
             'PRODUCT', 'SERVICE', 'ISSUE', 'FEATURE', 'FEEDBACK',
-            'PROCESS', 'TECHNICAL', 'BUSINESS', 'OTHER'
+            'PROCESS', 'TECHNICAL', 'BUSINESS', 'OTHER',
         ];
 
         return view('admin.line-bot.keywords.nlp-analysis.clusters', [
@@ -231,7 +222,6 @@ class NLPAnalysisController extends Controller
     /**
      * Show cluster detail
      *
-     * @param KeywordCluster $cluster
      * @return \Illuminate\View\View
      */
     public function showCluster(KeywordCluster $cluster)
@@ -245,7 +235,7 @@ class NLPAnalysisController extends Controller
             ->get();
 
         return view('admin.line-bot.keywords.nlp-analysis.cluster-detail', [
-            'pageTitle' => 'Cluster: ' . $cluster->display_name,
+            'pageTitle' => 'Cluster: '.$cluster->display_name,
             'cluster' => $cluster,
             'clusterItems' => $clusterItems,
         ]);
@@ -254,7 +244,6 @@ class NLPAnalysisController extends Controller
     /**
      * Create new cluster
      *
-     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function createCluster(Request $request)
@@ -279,8 +268,6 @@ class NLPAnalysisController extends Controller
     /**
      * Update cluster
      *
-     * @param Request $request
-     * @param KeywordCluster $cluster
      * @return \Illuminate\Http\Response
      */
     public function updateCluster(Request $request, KeywordCluster $cluster)
@@ -300,9 +287,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Delete cluster
-     *
-     * @param KeywordCluster $cluster
-     * @return JsonResponse
      */
     public function deleteCluster(KeywordCluster $cluster): JsonResponse
     {
@@ -316,8 +300,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get entity statistics as JSON
-     *
-     * @return JsonResponse
      */
     public function entityStatistics(): JsonResponse
     {
@@ -336,8 +318,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get intent statistics as JSON
-     *
-     * @return JsonResponse
      */
     public function intentStatistics(): JsonResponse
     {
@@ -357,8 +337,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get cluster usage data for chart
-     *
-     * @return JsonResponse
      */
     public function clusterUsageData(): JsonResponse
     {
@@ -372,9 +350,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get cluster recommendations
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function clusterRecommendations(Request $request): JsonResponse
     {
@@ -389,15 +364,12 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get related keywords for entity
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function relatedKeywords(Request $request): JsonResponse
     {
         $entityValue = $request->get('entity');
 
-        if (!$entityValue) {
+        if (! $entityValue) {
             return response()->json([
                 'success' => false,
                 'message' => 'Entity value required',
@@ -420,9 +392,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Get entity co-occurrence data
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function entityCoOccurrence(Request $request): JsonResponse
     {
@@ -446,9 +415,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Export NLP analysis report
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function exportReport(Request $request): JsonResponse
     {
@@ -494,9 +460,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Delete entity
-     *
-     * @param MessageEntity $entity
-     * @return JsonResponse
      */
     public function deleteEntity(MessageEntity $entity): JsonResponse
     {
@@ -510,9 +473,6 @@ class NLPAnalysisController extends Controller
 
     /**
      * Delete intent
-     *
-     * @param MessageIntent $intent
-     * @return JsonResponse
      */
     public function deleteIntent(MessageIntent $intent): JsonResponse
     {

@@ -1,30 +1,28 @@
 <?php
 
-use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\DashboardController;
-use App\Http\Controllers\Api\V1\TreeController;
-use App\Http\Controllers\Api\V1\TranslateController;
-use App\Http\Controllers\Api\RankController;
-use App\Http\Controllers\Api\InvestmentController;
-use App\Http\Controllers\Api\CryptoWalletApiController;
-use App\Http\Controllers\Api\NFCCardApiController;
-use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\AiGenController;
 use App\Http\Controllers\Api\AiGenPackageController;
-use App\Http\Controllers\Api\TrendApiController;
-use App\Http\Controllers\LineWebhookController;
-use App\Http\Controllers\Api\VideoRewardController;
-use App\Http\Controllers\Api\VideoWatchController;
-use App\Http\Controllers\Api\VideoQuestController;
-use App\Http\Controllers\Api\CoinExchangeController;
-use App\Http\Controllers\Api\FoodPassportController;
-use App\Http\Controllers\Api\TraceabilityController;
-use App\Http\Controllers\Api\QualityController;
+use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\CarbonCreditController;
 use App\Http\Controllers\Api\CertificationController;
-use App\Http\Controllers\SnakeGameController;
+use App\Http\Controllers\Api\CoinExchangeController;
+use App\Http\Controllers\Api\CryptoWalletApiController;
+use App\Http\Controllers\Api\FoodPassportController;
+use App\Http\Controllers\Api\InvestmentController;
+use App\Http\Controllers\Api\NFCCardApiController;
+use App\Http\Controllers\Api\QualityController;
+use App\Http\Controllers\Api\RankController;
+use App\Http\Controllers\Api\TraceabilityController;
+use App\Http\Controllers\Api\TrendApiController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\TranslateController;
+use App\Http\Controllers\Api\V1\TreeController;
+use App\Http\Controllers\Api\VideoQuestController;
+use App\Http\Controllers\Api\VideoRewardController;
+use App\Http\Controllers\Api\VideoWatchController;
+use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\SnakeGameSyncController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -615,33 +613,33 @@ Route::prefix('v1/bot-automation')->middleware('auth:sanctum')->name('api.bot-au
     Route::apiResource('automations', \App\Http\Controllers\Api\BotAutomationApiController::class);
     Route::post('automations/{automation}/execute', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'execute'])->name('automations.execute');
     Route::get('automations/{automation}/statistics', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'statistics'])->name('automations.statistics');
-    
+
     // Marketplace
     Route::get('marketplace', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'marketplace'])->name('marketplace');
     Route::get('marketplace/{listing}', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'show'])->name('marketplace.show');
     Route::post('marketplace/{listing}/subscribe', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'subscribe'])->name('marketplace.subscribe');
     Route::post('marketplace/{listing}/review', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'review'])->name('marketplace.review');
-    
+
     // Platform Connections
     Route::get('platforms', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'index'])->name('platforms.index');
     Route::get('platforms/available', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'available'])->name('platforms.available');
     Route::post('platforms/connect', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'connect'])->name('platforms.connect');
     Route::delete('platforms/{connection}', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'disconnect'])->name('platforms.disconnect');
-    
+
     // Templates
     Route::apiResource('templates', \App\Http\Controllers\Api\BotTemplateApiController::class);
     Route::post('templates/{template}/duplicate', [\App\Http\Controllers\Api\BotTemplateApiController::class, 'duplicate'])->name('templates.duplicate');
-    
+
     // Support
     Route::get('support/conversations', [\App\Http\Controllers\Api\BotSupportApiController::class, 'conversations'])->name('support.conversations');
     Route::get('support/conversations/{conversation}', [\App\Http\Controllers\Api\BotSupportApiController::class, 'show'])->name('support.show');
     Route::post('support/conversations/{conversation}/messages', [\App\Http\Controllers\Api\BotSupportApiController::class, 'sendMessage'])->name('support.send');
-    
+
     // Sales
     Route::get('sales/conversations', [\App\Http\Controllers\Api\BotSalesApiController::class, 'conversations'])->name('sales.conversations');
     Route::get('sales/conversations/{conversation}', [\App\Http\Controllers\Api\BotSalesApiController::class, 'show'])->name('sales.show');
     Route::post('sales/conversations/{conversation}/recommend', [\App\Http\Controllers\Api\BotSalesApiController::class, 'recommend'])->name('sales.recommend');
-    
+
     // Analytics
     Route::get('analytics/overview', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'overview'])->name('analytics.overview');
     Route::get('analytics/posts', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'posts'])->name('analytics.posts');
@@ -862,7 +860,7 @@ Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
                         'amount' => (float) $stake->staked_amount,
                         'lock_period_days' => (int) $stake->lock_period_days,
                         'apy' => (float) $stake->apy,
-                        'exchange_rate' => '1 ' . $stake->pool->token->symbol,
+                        'exchange_rate' => '1 '.$stake->pool->token->symbol,
                         'price_impact' => 0,
                         'slippage_tolerance' => 0,
                         'created_at' => $stake->created_at->toISOString(),
@@ -870,7 +868,7 @@ Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
                         'status' => $stake->status,
                         'blockchain_tx_hash' => $stake->blockchain_tx_hash,
                         'blockchain_tx_url' => $stake->blockchain_tx_hash
-                            ? config('tpix.blockchain.explorer_url') . '/tx/' . $stake->blockchain_tx_hash
+                            ? config('tpix.blockchain.explorer_url').'/tx/'.$stake->blockchain_tx_hash
                             : null,
                     ],
                 ]);
@@ -1430,7 +1428,7 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/service-categories/{category}/services', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'categoryServices']);
     Route::get('/services/{service}', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'showService']);
     Route::post('/services/calculate-price', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'calculatePrice']);
-    
+
     // Customer Bookings
     Route::prefix('bookings')->group(function () {
         Route::post('/', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'createBooking']);
@@ -1516,7 +1514,7 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
         ->name('status');
 
     // Health check (public)
-    Route::get('/health', fn() => response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]));
+    Route::get('/health', fn () => response()->json(['status' => 'ok', 'timestamp' => now()->toISOString()]));
 
     // ======== Sync Routes (ต้องมี X-API-Key + X-Product-Key headers) ========
     // Sync สินค้าจาก Server
@@ -1537,4 +1535,4 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
 });
 
 // SMS Payment Checker Routes
-require __DIR__ . '/sms_payment_api.php';
+require __DIR__.'/sms_payment_api.php';

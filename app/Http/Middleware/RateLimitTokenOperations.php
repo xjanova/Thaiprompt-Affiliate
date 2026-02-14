@@ -24,7 +24,7 @@ class RateLimitTokenOperations
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return $next($request);
         }
 
@@ -50,7 +50,7 @@ class RateLimitTokenOperations
 
             return response()->json([
                 'error' => 'Rate limit exceeded',
-                'message' => "คุณทำรายการมากเกินไป กรุณารอ " . ceil($remainingTime / 60) . " นาที",
+                'message' => 'คุณทำรายการมากเกินไป กรุณารอ '.ceil($remainingTime / 60).' นาที',
                 'retry_after' => $remainingTime,
                 'limit' => $limit['max'],
                 'window' => $limit['window'],

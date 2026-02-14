@@ -67,23 +67,23 @@ class TicketSlaPolicy extends Model
                 $query->where(function ($q) use ($categoryId, $priority) {
                     // Exact match: category + priority
                     $q->where('category_id', $categoryId)
-                      ->where('priority', $priority);
+                        ->where('priority', $priority);
                 })
-                ->orWhere(function ($q) use ($categoryId) {
-                    // Category only
-                    $q->where('category_id', $categoryId)
-                      ->whereNull('priority');
-                })
-                ->orWhere(function ($q) use ($priority) {
-                    // Priority only
-                    $q->whereNull('category_id')
-                      ->where('priority', $priority);
-                })
-                ->orWhere(function ($q) {
-                    // Default policy
-                    $q->whereNull('category_id')
-                      ->whereNull('priority');
-                });
+                    ->orWhere(function ($q) use ($categoryId) {
+                        // Category only
+                        $q->where('category_id', $categoryId)
+                            ->whereNull('priority');
+                    })
+                    ->orWhere(function ($q) use ($priority) {
+                        // Priority only
+                        $q->whereNull('category_id')
+                            ->where('priority', $priority);
+                    })
+                    ->orWhere(function ($q) {
+                        // Default policy
+                        $q->whereNull('category_id')
+                            ->whereNull('priority');
+                    });
             })
             ->first();
     }
@@ -120,7 +120,7 @@ class TicketSlaPolicy extends Model
 
         while ($remainingMinutes > 0) {
             // Move to next business day if needed
-            while (!in_array($dueDate->dayOfWeek, $businessHours['days'])) {
+            while (! in_array($dueDate->dayOfWeek, $businessHours['days'])) {
                 $dueDate->addDay()->setTimeFromTimeString($businessHours['start']);
             }
 
@@ -134,6 +134,7 @@ class TicketSlaPolicy extends Model
 
             if ($dueDate->gte($endTime)) {
                 $dueDate->addDay()->setTimeFromTimeString($businessHours['start']);
+
                 continue;
             }
 
@@ -174,15 +175,17 @@ class TicketSlaPolicy extends Model
     private function formatMinutes($minutes)
     {
         if ($minutes < 60) {
-            return $minutes . ' นาที';
+            return $minutes.' นาที';
         } elseif ($minutes < 1440) {
             $hours = floor($minutes / 60);
             $mins = $minutes % 60;
-            return $hours . ' ชั่วโมง' . ($mins > 0 ? ' ' . $mins . ' นาที' : '');
+
+            return $hours.' ชั่วโมง'.($mins > 0 ? ' '.$mins.' นาที' : '');
         } else {
             $days = floor($minutes / 1440);
             $hours = floor(($minutes % 1440) / 60);
-            return $days . ' วัน' . ($hours > 0 ? ' ' . $hours . ' ชั่วโมง' : '');
+
+            return $days.' วัน'.($hours > 0 ? ' '.$hours.' ชั่วโมง' : '');
         }
     }
 }

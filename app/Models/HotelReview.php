@@ -135,9 +135,10 @@ class HotelReview extends Model
     {
         if ($this->images) {
             return collect($this->images)->map(function ($image) {
-                return asset('storage/' . $image);
+                return asset('storage/'.$image);
             })->toArray();
         }
+
         return [];
     }
 

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง tickets มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tickets')) {
+        if (! Schema::hasTable('tickets')) {
             return;
         }
 
@@ -55,7 +55,7 @@ return new class extends Migration
                 'response_time_minutes',
                 'resolution_time_minutes',
                 'merged_into_ticket_id',
-                'tags'
+                'tags',
             ]);
         });
     }

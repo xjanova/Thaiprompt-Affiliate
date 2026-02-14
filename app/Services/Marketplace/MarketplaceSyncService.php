@@ -3,9 +3,9 @@
 namespace App\Services\Marketplace;
 
 use App\Models\MarketplaceAccount;
-use App\Models\MarketplaceProduct;
 use App\Models\MarketplaceOrder;
 use App\Models\MarketplaceOrderItem;
+use App\Models\MarketplaceProduct;
 use App\Models\MarketplaceSyncLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class MarketplaceSyncService
 {
     private MarketplaceApiInterface $apiService;
+
     private MarketplaceAccount $account;
 
     public function __construct(MarketplaceAccount $account)
@@ -23,9 +24,6 @@ class MarketplaceSyncService
 
     /**
      * Sync products from marketplace
-     *
-     * @param array $params
-     * @return MarketplaceSyncLog
      */
     public function syncProducts(array $params = []): MarketplaceSyncLog
     {
@@ -88,7 +86,7 @@ class MarketplaceSyncService
                 'duration_seconds' => now()->diffInSeconds($log->started_at),
             ]);
 
-            Log::info("Product sync completed", [
+            Log::info('Product sync completed', [
                 'account_id' => $this->account->id,
                 'processed' => $processed,
                 'created' => $created,
@@ -119,9 +117,6 @@ class MarketplaceSyncService
 
     /**
      * Sync orders from marketplace
-     *
-     * @param array $params
-     * @return MarketplaceSyncLog
      */
     public function syncOrders(array $params = []): MarketplaceSyncLog
     {
@@ -172,7 +167,7 @@ class MarketplaceSyncService
                     }
 
                     // Sync order items
-                    if (!empty($items)) {
+                    if (! empty($items)) {
                         // Delete existing items
                         $order->items()->delete();
 
@@ -218,7 +213,7 @@ class MarketplaceSyncService
                 'duration_seconds' => now()->diffInSeconds($log->started_at),
             ]);
 
-            Log::info("Order sync completed", [
+            Log::info('Order sync completed', [
                 'account_id' => $this->account->id,
                 'processed' => $processed,
                 'created' => $created,
@@ -249,9 +244,6 @@ class MarketplaceSyncService
 
     /**
      * Sync both products and orders
-     *
-     * @param array $params
-     * @return array
      */
     public function syncAll(array $params = []): array
     {

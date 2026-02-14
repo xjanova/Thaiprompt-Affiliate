@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\LearningArticle;
+use App\Models\QuestionOption;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
-use App\Models\QuestionOption;
-use App\Models\LearningArticle;
+use Illuminate\Database\Seeder;
 
 class QuizSeeder extends Seeder
 {
@@ -207,8 +207,9 @@ class QuizSeeder extends Seeder
         foreach ($quizzes as $quizData) {
             $article = LearningArticle::where('slug', $quizData['article_slug'])->first();
 
-            if (!$article) {
+            if (! $article) {
                 $this->command->warn("Article {$quizData['article_slug']} not found. Skipping quiz.");
+
                 continue;
             }
 

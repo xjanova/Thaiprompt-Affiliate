@@ -55,9 +55,9 @@ class ServiceBookingTracking extends Model
         'created_at' => 'datetime',
     ];
 
-    //===========================================
+    // ===========================================
     // Lifecycle Hooks
-    //===========================================
+    // ===========================================
 
     protected static function boot()
     {
@@ -69,9 +69,9 @@ class ServiceBookingTracking extends Model
         });
     }
 
-    //===========================================
+    // ===========================================
     // Relationships
-    //===========================================
+    // ===========================================
 
     /**
      * การจอง
@@ -89,9 +89,9 @@ class ServiceBookingTracking extends Model
         return $this->belongsTo(ServiceProvider::class, 'provider_id');
     }
 
-    //===========================================
+    // ===========================================
     // Scopes
-    //===========================================
+    // ===========================================
 
     /**
      * Scope: เรียงตามเวลาล่าสุด
@@ -110,16 +110,13 @@ class ServiceBookingTracking extends Model
             ->whereNotNull('longitude');
     }
 
-    //===========================================
+    // ===========================================
     // Methods
-    //===========================================
+    // ===========================================
 
     /**
      * สร้าง tracking log ใหม่
      *
-     * @param ServiceBooking $booking
-     * @param ServiceProvider $provider
-     * @param array $data
      * @return static
      */
     public static function log(ServiceBooking $booking, ServiceProvider $provider, array $data): self
@@ -143,7 +140,7 @@ class ServiceBookingTracking extends Model
      */
     public function getCoordinatesTextAttribute(): string
     {
-        if (!$this->latitude || !$this->longitude) {
+        if (! $this->latitude || ! $this->longitude) {
             return 'ไม่มีข้อมูลตำแหน่ง';
         }
 
@@ -179,7 +176,7 @@ class ServiceBookingTracking extends Model
         $message = $this->status_text;
 
         if ($this->distance_to_customer_km) {
-            $message .= " | ห่างจากลูกค้า " . number_format($this->distance_to_customer_km, 1) . " km";
+            $message .= ' | ห่างจากลูกค้า '.number_format($this->distance_to_customer_km, 1).' km';
         }
 
         if ($this->estimated_arrival_minutes) {
@@ -187,7 +184,7 @@ class ServiceBookingTracking extends Model
         }
 
         if ($this->speed_kmh) {
-            $message .= " | ความเร็ว " . number_format($this->speed_kmh, 0) . " km/h";
+            $message .= ' | ความเร็ว '.number_format($this->speed_kmh, 0).' km/h';
         }
 
         return $message;

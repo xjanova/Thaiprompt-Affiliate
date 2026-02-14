@@ -86,7 +86,7 @@ class ApiEndpoint extends Model
      */
     public function getSignatureAttribute()
     {
-        return strtoupper($this->method) . ' ' . $this->path;
+        return strtoupper($this->method).' '.$this->path;
     }
 
     /**

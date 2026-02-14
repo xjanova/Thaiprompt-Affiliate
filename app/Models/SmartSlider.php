@@ -175,8 +175,8 @@ class SmartSlider extends Model
     public function duplicate()
     {
         $newSlider = $this->replicate();
-        $newSlider->name = $this->name . ' (Copy)';
-        $newSlider->alias = $this->alias . '-copy-' . time();
+        $newSlider->name = $this->name.' (Copy)';
+        $newSlider->alias = $this->alias.'-copy-'.time();
         $newSlider->is_published = false;
         $newSlider->save();
 

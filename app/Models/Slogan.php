@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Slogan Model
@@ -131,7 +131,7 @@ class Slogan extends Model
      */
     public function scopeForRole(Builder $query, ?string $role = null): Builder
     {
-        if (!$role) {
+        if (! $role) {
             return $query;
         }
 
@@ -164,9 +164,9 @@ class Slogan extends Model
     /**
      * สุ่มคำขวัญสำหรับแสดง
      *
-     * @param string|null $role Role ของผู้ใช้
-     * @param string|null $category หมวดหมู่ที่ต้องการ
-     * @param int $count จำนวนที่ต้องการ
+     * @param  string|null  $role  Role ของผู้ใช้
+     * @param  string|null  $category  หมวดหมู่ที่ต้องการ
+     * @param  int  $count  จำนวนที่ต้องการ
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getRandom(?string $role = null, ?string $category = null, int $count = 1)
@@ -207,7 +207,7 @@ class Slogan extends Model
     /**
      * ดึงคำขวัญสำหรับ Seller Dashboard
      *
-     * @param int $count จำนวนที่ต้องการ
+     * @param  int  $count  จำนวนที่ต้องการ
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getForSellerDashboard(int $count = 5)
@@ -218,7 +218,7 @@ class Slogan extends Model
     /**
      * ดึงคำขวัญสำหรับ Admin Dashboard
      *
-     * @param int $count จำนวนที่ต้องการ
+     * @param  int  $count  จำนวนที่ต้องการ
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getForAdminDashboard(int $count = 3)
@@ -241,8 +241,6 @@ class Slogan extends Model
 
     /**
      * ดึงรายการหมวดหมู่
-     *
-     * @return array
      */
     public static function getCategories(): array
     {
@@ -251,8 +249,6 @@ class Slogan extends Model
 
     /**
      * ดึงรายการไอคอน
-     *
-     * @return array
      */
     public static function getIcons(): array
     {
@@ -261,8 +257,6 @@ class Slogan extends Model
 
     /**
      * ดึงสถิติ
-     *
-     * @return array
      */
     public static function getStats(): array
     {
@@ -298,6 +292,7 @@ class Slogan extends Model
         if ($this->author) {
             return "\"{$this->content}\" — {$this->author}";
         }
+
         return $this->content;
     }
 
@@ -326,7 +321,8 @@ class Slogan extends Model
      */
     public function toggleActive(): bool
     {
-        $this->is_active = !$this->is_active;
+        $this->is_active = ! $this->is_active;
+
         return $this->save();
     }
 }

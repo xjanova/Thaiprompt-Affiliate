@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class AttendanceRecord extends Model
 {
@@ -73,8 +73,10 @@ class AttendanceRecord extends Model
             $checkOut = Carbon::parse($this->check_out);
             $totalHours = $checkOut->diffInMinutes($checkIn) / 60;
             $this->work_hours = $totalHours - $this->break_hours;
+
             return $this->work_hours;
         }
+
         return 0;
     }
 
@@ -85,7 +87,7 @@ class AttendanceRecord extends Model
     {
         if ($this->check_in) {
             $checkIn = Carbon::parse($this->check_in);
-            $expected = Carbon::parse($this->date->format('Y-m-d') . ' ' . $expectedCheckIn);
+            $expected = Carbon::parse($this->date->format('Y-m-d').' '.$expectedCheckIn);
 
             if ($checkIn->greaterThan($expected)) {
                 $this->is_late = true;
@@ -101,7 +103,7 @@ class AttendanceRecord extends Model
     {
         if ($this->check_out) {
             $checkOut = Carbon::parse($this->check_out);
-            $expected = Carbon::parse($this->date->format('Y-m-d') . ' ' . $expectedCheckOut);
+            $expected = Carbon::parse($this->date->format('Y-m-d').' '.$expectedCheckOut);
 
             if ($checkOut->lessThan($expected)) {
                 $this->is_early_leave = true;

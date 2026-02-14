@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ServicePricingRule;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\ServicePricingRule;
 use Illuminate\Http\Request;
 
 /**
@@ -18,7 +18,6 @@ class ServicePricingRuleController extends Controller
     /**
      * แสดงรายการกฎการคิดราคาทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -82,7 +81,6 @@ class ServicePricingRuleController extends Controller
     /**
      * บันทึกกฎใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -115,7 +113,6 @@ class ServicePricingRuleController extends Controller
     /**
      * แสดงรายละเอียดกฎ
      *
-     * @param ServicePricingRule $pricingRule
      * @return \Illuminate\View\View
      */
     public function show(ServicePricingRule $pricingRule)
@@ -124,14 +121,13 @@ class ServicePricingRuleController extends Controller
 
         return view('admin.service-pricing-rules.show', [
             'rule' => $pricingRule,
-            'pageTitle' => 'รายละเอียดกฎ: ' . $pricingRule->name,
+            'pageTitle' => 'รายละเอียดกฎ: '.$pricingRule->name,
         ]);
     }
 
     /**
      * แสดงฟอร์มแก้ไขกฎ
      *
-     * @param ServicePricingRule $pricingRule
      * @return \Illuminate\View\View
      */
     public function edit(ServicePricingRule $pricingRule)
@@ -143,15 +139,13 @@ class ServicePricingRuleController extends Controller
             'rule' => $pricingRule,
             'services' => $services,
             'categories' => $categories,
-            'pageTitle' => 'แก้ไขกฎ: ' . $pricingRule->name,
+            'pageTitle' => 'แก้ไขกฎ: '.$pricingRule->name,
         ]);
     }
 
     /**
      * อัพเดทกฎ
      *
-     * @param Request $request
-     * @param ServicePricingRule $pricingRule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, ServicePricingRule $pricingRule)
@@ -184,7 +178,6 @@ class ServicePricingRuleController extends Controller
     /**
      * ลบกฎ
      *
-     * @param ServicePricingRule $pricingRule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(ServicePricingRule $pricingRule)
@@ -199,13 +192,12 @@ class ServicePricingRuleController extends Controller
     /**
      * เปิด/ปิดการใช้งานกฎ
      *
-     * @param ServicePricingRule $pricingRule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleActive(ServicePricingRule $pricingRule)
     {
         $pricingRule->update([
-            'is_active' => !$pricingRule->is_active,
+            'is_active' => ! $pricingRule->is_active,
         ]);
 
         $status = $pricingRule->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';

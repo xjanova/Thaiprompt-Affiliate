@@ -77,8 +77,6 @@ class MessageSimilarity extends Model
 
     /**
      * ความสัมพันธ์กับ MessageSentiment (first message)
-     *
-     * @return BelongsTo
      */
     public function message1(): BelongsTo
     {
@@ -87,8 +85,6 @@ class MessageSimilarity extends Model
 
     /**
      * ความสัมพันธ์กับ MessageSentiment (second message)
-     *
-     * @return BelongsTo
      */
     public function message2(): BelongsTo
     {
@@ -98,7 +94,7 @@ class MessageSimilarity extends Model
     /**
      * Scope: ดึง exact matches
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExact($query)
@@ -109,7 +105,7 @@ class MessageSimilarity extends Model
     /**
      * Scope: ดึง semantic similarities
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSemantic($query)
@@ -120,8 +116,8 @@ class MessageSimilarity extends Model
     /**
      * Scope: ดึง high similarity matches
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $threshold ค่าต่ำสุด (default: 0.7)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $threshold  ค่าต่ำสุด (default: 0.7)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighSimilarity($query, float $threshold = 0.7)
@@ -132,7 +128,7 @@ class MessageSimilarity extends Model
     /**
      * Scope: เรียงตาม overall similarity
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrderBySimilarity($query)
@@ -142,8 +138,6 @@ class MessageSimilarity extends Model
 
     /**
      * ตรวจสอบว่า messages ชนิด exact match
-     *
-     * @return bool
      */
     public function isExactMatch(): bool
     {
@@ -153,8 +147,7 @@ class MessageSimilarity extends Model
     /**
      * ตรวจสอบว่า similarity สูง
      *
-     * @param float $threshold default: 0.7
-     * @return bool
+     * @param  float  $threshold  default: 0.7
      */
     public function isHighSimilarity(float $threshold = 0.7): bool
     {
@@ -163,8 +156,6 @@ class MessageSimilarity extends Model
 
     /**
      * ดึง matching entities count
-     *
-     * @return int
      */
     public function getMatchingEntityCountAttribute(): int
     {
@@ -173,8 +164,6 @@ class MessageSimilarity extends Model
 
     /**
      * ดึง matching intents count
-     *
-     * @return int
      */
     public function getMatchingIntentCountAttribute(): int
     {
@@ -183,8 +172,6 @@ class MessageSimilarity extends Model
 
     /**
      * ดึง similarity percentage
-     *
-     * @return int
      */
     public function getSimilarityPercentageAttribute(): int
     {

@@ -17,8 +17,6 @@ return new class extends Migration
      * - flat_rate = อัตราเหมา (กำหนดค่าส่งคงที่)
      * - weight_based = คำนวณตามน้ำหนัก
      * - store_default = ใช้ค่าเริ่มต้นของร้าน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -47,7 +45,7 @@ return new class extends Migration
         });
 
         // สร้างตาราง shipping_rates สำหรับคำนวณตามน้ำหนัก/โซน
-        if (!Schema::hasTable('shipping_rates')) {
+        if (! Schema::hasTable('shipping_rates')) {
             Schema::create('shipping_rates', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -69,8 +67,6 @@ return new class extends Migration
 
     /**
      * ลบฟิลด์และตารางที่สร้าง
-     *
-     * @return void
      */
     public function down(): void
     {

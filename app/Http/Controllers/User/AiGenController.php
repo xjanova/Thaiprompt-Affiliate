@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\AiGen\AiGenService;
 use App\Models\AiGenPackage;
+use App\Services\AiGen\AiGenService;
 use Illuminate\Http\Request;
 
 class AiGenController extends Controller
@@ -88,7 +88,8 @@ class AiGenController extends Controller
         $subscription = $dashboard['subscription'] ?? null;
 
         if ($subscription && isset($subscription['has_subscription']) && $subscription['has_subscription']) {
-            $key = $type . '_credits';
+            $key = $type.'_credits';
+
             return $subscription[$key]['remaining'] ?? 0;
         }
 

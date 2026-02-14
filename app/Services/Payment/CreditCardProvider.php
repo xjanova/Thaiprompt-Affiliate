@@ -49,13 +49,13 @@ class CreditCardProvider implements PaymentProviderInterface
         return [
             'status' => 'processing',
             'gateway' => $gateway,
-            'gateway_transaction_id' => 'CC-' . strtoupper(substr($transaction->transaction_id, -10)),
+            'gateway_transaction_id' => 'CC-'.strtoupper(substr($transaction->transaction_id, -10)),
             'response' => [
                 'card_last4' => $data['card_last4'] ?? '****', // Provided by gateway
                 'card_brand' => $data['card_brand'] ?? 'Unknown', // Provided by gateway
-                'token_used' => substr($token, 0, 10) . '...',
+                'token_used' => substr($token, 0, 10).'...',
             ],
-            'message' => 'Card payment is processing via ' . $gateway,
+            'message' => 'Card payment is processing via '.$gateway,
         ];
     }
 

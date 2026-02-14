@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางหลักสำหรับเก็บข้อมูลการจองบริการทั้งหมด
      * รวมถึงระบบ notification, accept/reject, payment, tracking
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -96,7 +94,7 @@ return new class extends Migration
                 'provider_on_way',      // provider กำลังเดินทาง
                 'in_progress',          // กำลังให้บริการ
                 'completed',            // เสร็จสิ้น
-                'cancelled'             // ยกเลิก
+                'cancelled',             // ยกเลิก
             ])->default('pending')->comment('สถานะการจอง');
 
             // หมายเหตุ
@@ -143,8 +141,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_bookings
-     *
-     * @return void
      */
     public function down(): void
     {

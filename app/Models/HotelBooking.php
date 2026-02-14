@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class HotelBooking extends Model
 {
@@ -96,7 +96,8 @@ class HotelBooking extends Model
     {
         $date = Carbon::now()->format('Ymd');
         $count = self::whereDate('created_at', Carbon::today())->count() + 1;
-        return 'HB' . $date . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+
+        return 'HB'.$date.'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -277,6 +278,7 @@ class HotelBooking extends Model
     public function complete()
     {
         $this->update(['status' => 'completed']);
+
         return $this;
     }
 

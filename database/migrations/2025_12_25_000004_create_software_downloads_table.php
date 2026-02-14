@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง software_downloads
      *
      * Tracking การดาวน์โหลดซอฟต์แวร์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -79,8 +77,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง software_downloads
-     *
-     * @return void
      */
     public function down(): void
     {

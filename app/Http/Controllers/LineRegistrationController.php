@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\LineOaSetting;
 use App\Models\LineRegistrationSession;
 use App\Models\LineSignupReward;
-use App\Models\MlmMember;
 use App\Models\User;
 use App\Services\LineService;
 use Illuminate\Http\JsonResponse;
@@ -34,9 +33,6 @@ class LineRegistrationController extends Controller
      * 2. แสดง QR Code สำหรับเพิ่มเพื่อน LINE OA
      * 3. หน้าเว็บจะ polling เช็คสถานะ
      * 4. เมื่อสมัครเสร็จ → redirect ไปหน้าอัพเดทข้อมูล
-     *
-     * @param Request $request
-     * @return View
      */
     public function showRegister(Request $request): View
     {
@@ -79,16 +75,12 @@ class LineRegistrationController extends Controller
 
     /**
      * API: ตรวจสอบสถานะ session (สำหรับ polling)
-     *
-     * @param Request $request
-     * @param string $token
-     * @return JsonResponse
      */
     public function checkStatus(Request $request, string $token): JsonResponse
     {
         $session = LineRegistrationSession::findByToken($token);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'error' => 'Session not found',
@@ -128,16 +120,12 @@ class LineRegistrationController extends Controller
 
     /**
      * API: บันทึกว่าผู้ใช้คลิกปุ่มเพิ่มเพื่อน LINE OA
-     *
-     * @param Request $request
-     * @param string $token
-     * @return JsonResponse
      */
     public function recordAddFriendClick(Request $request, string $token): JsonResponse
     {
         $session = LineRegistrationSession::findByToken($token);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'error' => 'Session not found',
@@ -163,8 +151,7 @@ class LineRegistrationController extends Controller
     /**
      * หน้า complete - auto-login และ redirect ไปอัพเดทข้อมูล
      *
-     * @param Request $request
-     * @param string $token Auth token
+     * @param  string  $token  Auth token
      * @return \Illuminate\Http\RedirectResponse|View
      */
     public function completeRegistration(Request $request, string $token)
@@ -172,14 +159,14 @@ class LineRegistrationController extends Controller
         // ตรวจสอบ auth token
         $authData = $this->validateOneTimeAuthToken($token);
 
-        if (!$authData) {
+        if (! $authData) {
             return redirect()->route('login')
                 ->with('error', 'ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบ');
         }
 
         $user = User::find($authData['user_id']);
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')
                 ->with('error', 'ไม่พบผู้ใช้ในระบบ');
         }
@@ -199,16 +186,12 @@ class LineRegistrationController extends Controller
 
     /**
      * API: ยกเลิก session
-     *
-     * @param Request $request
-     * @param string $token
-     * @return JsonResponse
      */
     public function cancelSession(Request $request, string $token): JsonResponse
     {
         $session = LineRegistrationSession::findByToken($token);
 
-        if (!$session) {
+        if (! $session) {
             return response()->json([
                 'success' => false,
                 'error' => 'Session not found',
@@ -225,10 +208,6 @@ class LineRegistrationController extends Controller
 
     /**
      * สร้าง one-time auth token สำหรับ auto-login
-     *
-     * @param User $user
-     * @param LineRegistrationSession $session
-     * @return string
      */
     private function generateOneTimeAuthToken(User $user, LineRegistrationSession $session): string
     {
@@ -243,14 +222,11 @@ class LineRegistrationController extends Controller
         $payload = json_encode($data);
         $signature = hash_hmac('sha256', $payload, config('app.key'));
 
-        return base64_encode($payload . '.' . $signature);
+        return base64_encode($payload.'.'.$signature);
     }
 
     /**
      * ตรวจสอบ one-time auth token
-     *
-     * @param string $token
-     * @return array|null
      */
     private function validateOneTimeAuthToken(string $token): ?array
     {
@@ -265,7 +241,7 @@ class LineRegistrationController extends Controller
             [$payload, $signature] = $parts;
             $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
 
-            if (!hash_equals($expectedSignature, $signature)) {
+            if (! hash_equals($expectedSignature, $signature)) {
                 return null;
             }
 
@@ -279,39 +255,34 @@ class LineRegistrationController extends Controller
             return $data;
         } catch (\Exception $e) {
             Log::warning('Invalid auth token', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
 
     /**
      * สร้าง QR Code URL สำหรับเพิ่มเพื่อน LINE OA
-     *
-     * @param LineOaSetting|null $settings
-     * @return string|null
      */
     private function getLineOaQrCodeUrl(?LineOaSetting $settings): ?string
     {
-        if (!$settings || !$settings->messaging_channel_id) {
+        if (! $settings || ! $settings->messaging_channel_id) {
             return null;
         }
 
         // LINE OA QR Code URL
-        return 'https://qr-official.line.me/gs/M_' . $settings->messaging_channel_id . '_GW.png';
+        return 'https://qr-official.line.me/gs/M_'.$settings->messaging_channel_id.'_GW.png';
     }
 
     /**
      * สร้าง URL สำหรับเพิ่มเพื่อน LINE OA
-     *
-     * @param LineOaSetting|null $settings
-     * @return string|null
      */
     private function getLineOaAddFriendUrl(?LineOaSetting $settings): ?string
     {
-        if (!$settings || !$settings->line_id) {
+        if (! $settings || ! $settings->line_id) {
             return null;
         }
 
         // LINE OA Add Friend URL
-        return 'https://line.me/R/ti/p/' . $settings->line_id;
+        return 'https://line.me/R/ti/p/'.$settings->line_id;
     }
 }

@@ -27,7 +27,7 @@ class FortuneUserCreditController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('facebook_user_id', 'like', "%{$search}%")
-                  ->orWhere('facebook_user_name', 'like', "%{$search}%");
+                    ->orWhere('facebook_user_name', 'like', "%{$search}%");
             });
         }
 

@@ -31,8 +31,6 @@ class SmsCheckerStatusCommand extends Command
 
     /**
      * รันคำสั่ง
-     *
-     * @return int
      */
     public function handle(): int
     {

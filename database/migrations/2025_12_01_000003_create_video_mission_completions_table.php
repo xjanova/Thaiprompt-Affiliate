@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง video_mission_completions
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -45,7 +43,7 @@ return new class extends Migration
                 'verified',       // ยืนยันแล้ว (ได้รางวัล)
                 'failed',         // ไม่ผ่าน (โกง/ไม่ครบ)
                 'expired',        // หมดเวลา
-                'cancelled'       // ยกเลิก
+                'cancelled',       // ยกเลิก
             ])->default('started');
 
             // ข้อมูลการดู
@@ -149,8 +147,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_mission_completions
-     *
-     * @return void
      */
     public function down(): void
     {

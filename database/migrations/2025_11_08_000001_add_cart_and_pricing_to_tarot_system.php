@@ -12,22 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง tarot_spread_types มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tarot_spread_types')) {
+        if (! Schema::hasTable('tarot_spread_types')) {
             return;
         }
 
         // ตรวจสอบว่าตาราง tarot_settings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tarot_settings')) {
+        if (! Schema::hasTable('tarot_settings')) {
             return;
         }
 
         // ตรวจสอบว่าตาราง tarot_user_limits มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tarot_user_limits')) {
+        if (! Schema::hasTable('tarot_user_limits')) {
             return;
         }
 
         // ตรวจสอบว่าตาราง tarot_readings มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tarot_readings')) {
+        if (! Schema::hasTable('tarot_readings')) {
             return;
         }
 
@@ -58,7 +58,7 @@ return new class extends Migration
 
         // Add IP tracking to user limits
         Schema::table('tarot_user_limits', function (Blueprint $table) {
-            if (!Schema::hasColumn('tarot_user_limits', 'ip_address')) {
+            if (! Schema::hasColumn('tarot_user_limits', 'ip_address')) {
                 $table->string('ip_address', 45)->nullable()->after('session_id')->index();
             }
         });
@@ -101,7 +101,7 @@ return new class extends Migration
                 'member_daily_limit',
                 'require_login_for_save',
                 'enable_ip_tracking',
-                'enable_cart'
+                'enable_cart',
             ]);
         });
 

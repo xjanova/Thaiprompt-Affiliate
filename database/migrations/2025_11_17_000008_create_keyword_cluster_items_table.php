@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง keyword_cluster_items เป็น junction table
      * เพื่อเชื่อมระหว่าง keywords กับ clusters
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -36,7 +34,7 @@ return new class extends Migration
                 'SYNONYM',      // คำพ้องความหมาย
                 'RELATED',      // เกี่ยวข้อง
                 'VARIANT',      // รูปแบบอื่น
-                'SIMILAR'       // คล้ายกัน
+                'SIMILAR',       // คล้ายกัน
             ])->default('RELATED')->index();
 
             $table->float('relevance_score')->default(1.0); // ความเกี่ยวข้อง (0-1)
@@ -59,8 +57,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง keyword_cluster_items
-     *
-     * @return void
      */
     public function down(): void
     {

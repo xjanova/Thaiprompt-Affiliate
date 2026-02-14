@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\Order;
 use App\Models\WalletTransaction;
@@ -14,14 +14,16 @@ use Illuminate\Support\Facades\Log;
 class MlmCalculationService
 {
     protected $unilevelService;
+
     protected $binaryService;
+
     protected $pvService;
 
     public function __construct()
     {
-        $this->unilevelService = new MlmUnilevelService();
-        $this->binaryService = new MlmBinaryService();
-        $this->pvService = new MlmPvService();
+        $this->unilevelService = new MlmUnilevelService;
+        $this->binaryService = new MlmBinaryService;
+        $this->pvService = new MlmPvService;
     }
 
     /**
@@ -44,6 +46,7 @@ class MlmCalculationService
                     'order_id' => $order->id,
                 ]);
                 DB::commit();
+
                 return true;
             }
 
@@ -58,6 +61,7 @@ class MlmCalculationService
                     'order_id' => $order->id,
                 ]);
                 DB::commit();
+
                 return true;
             }
 
@@ -66,7 +70,7 @@ class MlmCalculationService
             ]);
 
             $user = $order->user;
-            if (!$user) {
+            if (! $user) {
                 throw new \Exception('Order has no user');
             }
 
@@ -78,7 +82,7 @@ class MlmCalculationService
             foreach ($mlmMembers as $member) {
                 $plan = $member->plan;
 
-                if (!$plan || !$plan->is_active) {
+                if (! $plan || ! $plan->is_active) {
                     continue;
                 }
 
@@ -166,12 +170,12 @@ class MlmCalculationService
 
             $commissions = $query->get();
             $paidCount = 0;
-            $revenueService = new PlatformRevenueService();
+            $revenueService = new PlatformRevenueService;
 
             foreach ($commissions as $commission) {
                 $user = $commission->user;
 
-                if (!$user || !$user->wallet) {
+                if (! $user || ! $user->wallet) {
                     continue;
                 }
 
@@ -194,6 +198,7 @@ class MlmCalculationService
                         'amount' => $commission->commission_amount,
                         'error' => $e->getMessage(),
                     ]);
+
                     continue;
                 }
 
@@ -208,7 +213,7 @@ class MlmCalculationService
                     'type' => 'commission',
                     'amount' => $commission->commission_amount,
                     'balance_after' => $user->wallet->balance,
-                    'description' => 'MLM Commission: ' . $commission->type,
+                    'description' => 'MLM Commission: '.$commission->type,
                     'status' => 'completed',
                     'metadata' => json_encode([
                         'mlm_commission_id' => $commission->id,
@@ -252,7 +257,7 @@ class MlmCalculationService
         // ใช้ Global Settings แทน per-plan settings
         $pvRate = MlmGlobalSetting::get('global_pv_rate', 1);
 
-        if (!$orderPv) {
+        if (! $orderPv) {
             $orderPv = $orderAmount * $pvRate;
         }
 
@@ -274,7 +279,7 @@ class MlmCalculationService
 
         // Unilevel preview (direct level only)
         if ($unilevelEnabled && ($plan->type === 'unilevel' || $plan->type === 'hybrid')) {
-            if (!empty($levels) && isset($levels[0])) {
+            if (! empty($levels) && isset($levels[0])) {
                 $preview['unilevel_commission'] = $orderPv * ($levels[0]['percentage'] / 100) * $commissionPerPv;
             }
         }

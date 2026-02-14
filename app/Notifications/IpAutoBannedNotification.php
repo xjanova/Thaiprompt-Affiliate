@@ -2,21 +2,25 @@
 
 namespace App\Notifications;
 
+use App\Services\IpIntelligenceService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Carbon\Carbon;
-use App\Services\IpIntelligenceService;
 
 class IpAutoBannedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
     protected string $ip;
+
     protected string $eventType;
+
     protected int $violations;
+
     protected array $ipInfo;
+
     protected Carbon $expiresAt;
 
     /**
@@ -59,7 +63,7 @@ class IpAutoBannedNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("🚨 [{$appName}] IP Auto-Banned Alert")
             ->greeting('Security Alert!')
-            ->line("An IP address has been automatically banned due to suspicious activity.")
+            ->line('An IP address has been automatically banned due to suspicious activity.')
             ->line('')
             ->line('**Ban Details:**')
             ->line("**IP Address:** {$this->ip}")

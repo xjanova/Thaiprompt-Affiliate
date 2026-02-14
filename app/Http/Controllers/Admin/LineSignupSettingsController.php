@@ -35,7 +35,6 @@ class LineSignupSettingsController extends Controller
     /**
      * อัพเดทการตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -58,12 +57,12 @@ class LineSignupSettingsController extends Controller
         foreach ($request->input('settings', []) as $key => $value) {
             $setting = LineSignupSetting::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 continue;
             }
 
             // ตรวจสอบว่าแก้ไขได้หรือไม่
-            if (!$setting->is_editable) {
+            if (! $setting->is_editable) {
                 continue;
             }
 
@@ -93,7 +92,6 @@ class LineSignupSettingsController extends Controller
     /**
      * รีเซ็ตการตั้งค่ากลับเป็นค่าเริ่มต้น
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function reset(Request $request)
@@ -140,7 +138,7 @@ class LineSignupSettingsController extends Controller
     {
         $accessToken = LineSignupSetting::get('integration.line_channel_access_token');
 
-        if (!$accessToken) {
+        if (! $accessToken) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ Access Token กรุณาตั้งค่าก่อน',
@@ -149,10 +147,10 @@ class LineSignupSettingsController extends Controller
 
         // ทดสอบการเชื่อมต่อโดยเรียก LINE API
         try {
-            $client = new \GuzzleHttp\Client();
+            $client = new \GuzzleHttp\Client;
             $response = $client->get('https://api.line.me/v2/bot/info', [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Authorization' => 'Bearer '.$accessToken,
                 ],
             ]);
 
@@ -166,15 +164,13 @@ class LineSignupSettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เชื่อมต่อ LINE ล้มเหลว: ' . $e->getMessage(),
+                'message' => 'เชื่อมต่อ LINE ล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงสถิติเบื้องต้น
-     *
-     * @return array
      */
     protected function getStats(): array
     {
@@ -199,8 +195,7 @@ class LineSignupSettingsController extends Controller
     /**
      * แปลงค่าตามประเภทข้อมูล
      *
-     * @param mixed $value
-     * @param string $type
+     * @param  mixed  $value
      * @return mixed
      */
     protected function castValueByType($value, string $type)

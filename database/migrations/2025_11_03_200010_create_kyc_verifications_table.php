@@ -14,22 +14,20 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง kyc_verifications และเพิ่มฟิลด์ KYC
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
         // ถ้าไม่มี ให้ข้าม migration นี้ทั้งหมด
         // เพราะ kyc_verifications ต้องมี foreign key ไปยัง users
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             // ตาราง users ยังไม่มี - ข้าม migration นี้
             // kyc_verifications และ kyc fields จะถูกสร้างในภายหลัง
             return;
         }
 
         // สร้างตาราง kyc_verifications (ถ้ายังไม่มี)
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             Schema::create('kyc_verifications', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -51,12 +49,12 @@ return new class extends Migration
         // เพิ่มฟิลด์ kyc_status ในตาราง users (ถ้ายังไม่มี)
         // ฟิลด์เหล่านี้อาจมีอยู่แล้วจาก users_comprehensive migration
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'kyc_status')) {
+            if (! Schema::hasColumn('users', 'kyc_status')) {
                 $table->enum('kyc_status', ['not_submitted', 'pending', 'approved', 'rejected'])
                     ->default('not_submitted')
                     ->after('is_super_admin');
             }
-            if (!Schema::hasColumn('users', 'kyc_verified_at')) {
+            if (! Schema::hasColumn('users', 'kyc_verified_at')) {
                 $table->timestamp('kyc_verified_at')->nullable()->after('kyc_status');
             }
         });
@@ -64,8 +62,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง kyc_verifications และฟิลด์ที่เกี่ยวข้อง
-     *
-     * @return void
      */
     public function down(): void
     {
@@ -78,7 +74,7 @@ return new class extends Migration
                 if (Schema::hasColumn('users', 'kyc_verified_at')) {
                     $columns[] = 'kyc_verified_at';
                 }
-                if (!empty($columns)) {
+                if (! empty($columns)) {
                     $table->dropColumn($columns);
                 }
             });

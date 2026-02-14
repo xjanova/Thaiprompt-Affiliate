@@ -57,7 +57,6 @@ class PaymentBankAccountController extends Controller
     /**
      * บันทึกบัญชีธนาคารใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -96,13 +95,12 @@ class PaymentBankAccountController extends Controller
 
         return redirect()
             ->route('admin.payment-bank-accounts.index')
-            ->with('success', 'เพิ่มบัญชีธนาคาร ' . $account->bank_name . ' สำเร็จ');
+            ->with('success', 'เพิ่มบัญชีธนาคาร '.$account->bank_name.' สำเร็จ');
     }
 
     /**
      * แสดงฟอร์มแก้ไขบัญชีธนาคาร
      *
-     * @param PaymentBankAccount $account
      * @return \Illuminate\View\View
      */
     public function edit(PaymentBankAccount $account)
@@ -115,8 +113,6 @@ class PaymentBankAccountController extends Controller
     /**
      * อัพเดทบัญชีธนาคาร
      *
-     * @param Request $request
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, PaymentBankAccount $account)
@@ -159,13 +155,12 @@ class PaymentBankAccountController extends Controller
 
         return redirect()
             ->route('admin.payment-bank-accounts.index')
-            ->with('success', 'อัพเดทบัญชี ' . $account->bank_name . ' สำเร็จ');
+            ->with('success', 'อัพเดทบัญชี '.$account->bank_name.' สำเร็จ');
     }
 
     /**
      * ลบบัญชีธนาคาร (soft delete)
      *
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(PaymentBankAccount $account)
@@ -175,18 +170,17 @@ class PaymentBankAccountController extends Controller
 
         return redirect()
             ->route('admin.payment-bank-accounts.index')
-            ->with('success', 'ลบบัญชี ' . $bankName . ' สำเร็จ');
+            ->with('success', 'ลบบัญชี '.$bankName.' สำเร็จ');
     }
 
     /**
      * สลับสถานะ active/inactive
      *
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggle(PaymentBankAccount $account)
     {
-        $account->update(['is_active' => !$account->is_active]);
+        $account->update(['is_active' => ! $account->is_active]);
 
         $status = $account->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
 
@@ -198,7 +192,6 @@ class PaymentBankAccountController extends Controller
     /**
      * ตั้งเป็นบัญชีหลัก
      *
-     * @param PaymentBankAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function setDefault(PaymentBankAccount $account)
@@ -207,6 +200,6 @@ class PaymentBankAccountController extends Controller
 
         return redirect()
             ->route('admin.payment-bank-accounts.index')
-            ->with('success', 'ตั้ง ' . $account->bank_name . ' เป็นบัญชีหลักสำเร็จ');
+            ->with('success', 'ตั้ง '.$account->bank_name.' เป็นบัญชีหลักสำเร็จ');
     }
 }

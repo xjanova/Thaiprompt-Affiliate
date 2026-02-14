@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -89,8 +89,6 @@ class KeywordCluster extends Model
     /**
      * ความสัมพันธ์: many-to-many กับ LineBotKeyword
      * ผ่าน keyword_cluster_items
-     *
-     * @return BelongsToMany
      */
     public function keywords(): BelongsToMany
     {
@@ -106,8 +104,6 @@ class KeywordCluster extends Model
 
     /**
      * ความสัมพันธ์: hasMany กับ KeywordClusterItem
-     *
-     * @return HasMany
      */
     public function items(): HasMany
     {
@@ -117,7 +113,7 @@ class KeywordCluster extends Model
     /**
      * Scope: ดึงเฉพาะ active clusters
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -128,8 +124,8 @@ class KeywordCluster extends Model
     /**
      * Scope: ดึง clusters ตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category หมวดหมู่
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $category  หมวดหมู่
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByCategory($query, string $category)
@@ -140,8 +136,8 @@ class KeywordCluster extends Model
     /**
      * Scope: ดึง clusters ที่ใช้บ่อย (usage frequency สูง)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $minFrequency ความถี่ต่ำสุด (default: 0.5)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $minFrequency  ความถี่ต่ำสุด (default: 0.5)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFrequent($query, float $minFrequency = 0.5)
@@ -153,7 +149,7 @@ class KeywordCluster extends Model
     /**
      * Scope: ดึง system clusters
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSystem($query)
@@ -164,7 +160,7 @@ class KeywordCluster extends Model
     /**
      * Scope: ดึง user-defined clusters
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUserDefined($query)
@@ -175,7 +171,7 @@ class KeywordCluster extends Model
     /**
      * Scope: เรียงตามการใช้งาน (popularity)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrderByPopularity($query)
@@ -185,8 +181,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง primary keywords เป็น array
-     *
-     * @return array
      */
     public function getPrimaryKeywordsArray(): array
     {
@@ -195,8 +189,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง primary keywords เป็น string (comma-separated)
-     *
-     * @return string
      */
     public function getPrimaryKeywordsString(): string
     {
@@ -205,8 +197,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง related intents
-     *
-     * @return array
      */
     public function getRelatedIntents(): array
     {
@@ -215,8 +205,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง related entities
-     *
-     * @return array
      */
     public function getRelatedEntities(): array
     {
@@ -225,8 +213,6 @@ class KeywordCluster extends Model
 
     /**
      * ตรวจสอบว่า cluster นี้มีคำสำคัญ
-     *
-     * @return bool
      */
     public function hasKeywords(): bool
     {
@@ -235,8 +221,6 @@ class KeywordCluster extends Model
 
     /**
      * ตรวจสอบว่า cluster นี้ถูกใช้งาน (matches หรือ frequency สูง)
-     *
-     * @return bool
      */
     public function isInUse(): bool
     {
@@ -245,22 +229,18 @@ class KeywordCluster extends Model
 
     /**
      * ตรวจสอบว่า cluster มี suggested actions
-     *
-     * @return bool
      */
     public function hasSuggestedActions(): bool
     {
-        return !empty($this->suggested_actions) && is_array($this->suggested_actions);
+        return ! empty($this->suggested_actions) && is_array($this->suggested_actions);
     }
 
     /**
      * ดึงสถานะ activity ของ cluster
-     *
-     * @return string
      */
     public function getActivityStatusAttribute(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'ปิดใช้งาน';
         }
 
@@ -281,8 +261,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง usage frequency เป็นเปอร์เซ็นต์
-     *
-     * @return int
      */
     public function getUsageFrequencyPercentageAttribute(): int
     {
@@ -291,8 +269,6 @@ class KeywordCluster extends Model
 
     /**
      * ดึง keyword count จาก relation
-     *
-     * @return int
      */
     public function getActualKeywordCountAttribute(): int
     {
@@ -302,10 +278,8 @@ class KeywordCluster extends Model
     /**
      * เพิ่ม keyword ลงใน cluster
      *
-     * @param LineBotKeyword $keyword
-     * @param string $relationshipType PRIMARY|SYNONYM|RELATED|VARIANT|SIMILAR
-     * @param float $relevanceScore ความเกี่ยวข้อง (0-1)
-     * @return void
+     * @param  string  $relationshipType  PRIMARY|SYNONYM|RELATED|VARIANT|SIMILAR
+     * @param  float  $relevanceScore  ความเกี่ยวข้อง (0-1)
      */
     public function addKeyword(LineBotKeyword $keyword, string $relationshipType = 'RELATED', float $relevanceScore = 1.0): void
     {
@@ -320,9 +294,6 @@ class KeywordCluster extends Model
 
     /**
      * ลบ keyword ออกจาก cluster
-     *
-     * @param LineBotKeyword $keyword
-     * @return void
      */
     public function removeKeyword(LineBotKeyword $keyword): void
     {
@@ -335,8 +306,7 @@ class KeywordCluster extends Model
     /**
      * อัพเดท usage statistics
      *
-     * @param int $matchCount จำนวนครั้งที่พบ
-     * @return void
+     * @param  int  $matchCount  จำนวนครั้งที่พบ
      */
     public function recordMatch(int $matchCount = 1): void
     {

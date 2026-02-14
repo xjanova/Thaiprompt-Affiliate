@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
@@ -21,7 +20,9 @@ class SmsPaymentTest extends TestCase
     use RefreshDatabase;
 
     private SmsCheckerDevice $device;
+
     private string $apiKey;
+
     private string $secretKey;
 
     /**
@@ -245,7 +246,7 @@ class SmsPaymentTest extends TestCase
         $key = str_pad(substr($this->secretKey, 0, 32), 32, "\0");
         $iv = random_bytes(12);
         $cipherText = openssl_encrypt($json, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
-        $combined = $iv . $cipherText . $tag;
+        $combined = $iv.$cipherText.$tag;
         $encrypted = base64_encode($combined);
 
         // ถอดรหัส (ฝั่ง server)

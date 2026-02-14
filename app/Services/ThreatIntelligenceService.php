@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Models\ThreatIp;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class ThreatIntelligenceService
 {
@@ -24,13 +24,13 @@ class ThreatIntelligenceService
         ];
 
         $results['total_updated'] = array_sum(array_column(array_filter($results['firehol'], 'is_array'), 'updated'));
-        $results['total_errors'] = count(array_filter($results['firehol'], fn($r) => isset($r['error'])));
+        $results['total_errors'] = count(array_filter($results['firehol'], fn ($r) => isset($r['error'])));
 
         // Clear cache
         Cache::forget('threat_intelligence_stats');
 
         // Mark as complete
-        $this->updateProgress(100, 'อัปเดตเสร็จสิ้น! อัปเดตทั้งหมด ' . number_format($results['total_updated']) . ' รายการ');
+        $this->updateProgress(100, 'อัปเดตเสร็จสิ้น! อัปเดตทั้งหมด '.number_format($results['total_updated']).' รายการ');
 
         return $results;
     }
@@ -129,7 +129,7 @@ class ThreatIntelligenceService
                     ]);
                 } else {
                     $results[$name] = [
-                        'error' => 'HTTP ' . $response->status(),
+                        'error' => 'HTTP '.$response->status(),
                     ];
 
                     Log::error("Failed to fetch Firehol {$name} list", [
@@ -270,9 +270,13 @@ class ThreatIntelligenceService
                 if ($data['success']) {
                     // Determine threat type
                     $threatType = 'other';
-                    if ($data['proxy']) $threatType = 'proxy';
-                    elseif ($data['vpn']) $threatType = 'vpn';
-                    elseif ($data['tor']) $threatType = 'tor';
+                    if ($data['proxy']) {
+                        $threatType = 'proxy';
+                    } elseif ($data['vpn']) {
+                        $threatType = 'vpn';
+                    } elseif ($data['tor']) {
+                        $threatType = 'tor';
+                    }
 
                     // Store in database
                     ThreatIp::updateOrCreate(
@@ -321,9 +325,9 @@ class ThreatIntelligenceService
 
         // Check if it's a valid CIDR
         if (str_contains($value, '/')) {
-            list($ip, $mask) = explode('/', $value);
+            [$ip, $mask] = explode('/', $value);
             if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                $mask = (int)$mask;
+                $mask = (int) $mask;
                 if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                     return $mask >= 0 && $mask <= 32;
                 } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {

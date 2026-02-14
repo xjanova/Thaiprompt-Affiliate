@@ -16,9 +16,11 @@ class DeployTokenJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 300;
 
     protected int $tokenId;
+
     protected ?array $deploymentOptions;
 
     /**
@@ -39,13 +41,15 @@ class DeployTokenJob implements ShouldQueue
         try {
             $token = TPIXToken::find($this->tokenId);
 
-            if (!$token) {
+            if (! $token) {
                 Log::error("Token {$this->tokenId} not found");
+
                 return;
             }
 
             if ($token->status !== 'draft') {
                 Log::warning("Token {$this->tokenId} is not in draft status");
+
                 return;
             }
 
@@ -67,7 +71,7 @@ class DeployTokenJob implements ShouldQueue
                 event(new \App\Events\TPIX\TokenDeployed($token));
 
             } else {
-                Log::error("Token {$token->symbol} deployment failed: " . ($result['error'] ?? 'Unknown error'));
+                Log::error("Token {$token->symbol} deployment failed: ".($result['error'] ?? 'Unknown error'));
                 $token->update([
                     'status' => 'failed',
                     'deployment_error' => $result['error'] ?? 'Deployment failed',
@@ -75,7 +79,7 @@ class DeployTokenJob implements ShouldQueue
             }
 
         } catch (\Exception $e) {
-            Log::error("Failed to deploy token {$this->tokenId}: " . $e->getMessage());
+            Log::error("Failed to deploy token {$this->tokenId}: ".$e->getMessage());
 
             $token = TPIXToken::find($this->tokenId);
             if ($token) {
@@ -94,13 +98,13 @@ class DeployTokenJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Token deployment failed permanently for token {$this->tokenId}: " . $exception->getMessage());
+        Log::error("Token deployment failed permanently for token {$this->tokenId}: ".$exception->getMessage());
 
         $token = TPIXToken::find($this->tokenId);
         if ($token) {
             $token->update([
                 'status' => 'failed',
-                'deployment_error' => 'Deployment failed after multiple retries: ' . $exception->getMessage(),
+                'deployment_error' => 'Deployment failed after multiple retries: '.$exception->getMessage(),
             ]);
         }
     }

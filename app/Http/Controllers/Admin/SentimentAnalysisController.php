@@ -22,9 +22,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * แสดง sentiment analysis dashboard
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -66,9 +63,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * แสดงรายละเอียด sentiment
-     *
-     * @param MessageSentiment $sentiment
-     * @return View
      */
     public function show(MessageSentiment $sentiment): View
     {
@@ -79,9 +73,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ sentiment data เป็น JSON
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function listJson(Request $request): JsonResponse
     {
@@ -123,9 +114,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ statistics
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function statistics(Request $request): JsonResponse
     {
@@ -140,9 +128,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ sentiment trend data
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function trendData(Request $request): JsonResponse
     {
@@ -156,7 +141,7 @@ class SentimentAnalysisController extends Controller
         $neutral = [];
 
         foreach ($trend as $item) {
-            if (!in_array($item->date, $dates)) {
+            if (! in_array($item->date, $dates)) {
                 $dates[] = $item->date;
             }
 
@@ -197,9 +182,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ pain points distribution
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function painPointsData(Request $request): JsonResponse
     {
@@ -215,9 +197,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ emotion distribution
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function emotionData(Request $request): JsonResponse
     {
@@ -247,9 +226,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ recommendations
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function recommendations(Request $request): JsonResponse
     {
@@ -264,9 +240,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ top complaints
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function topComplaints(Request $request): JsonResponse
     {
@@ -292,9 +265,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ได้ urgent issues
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function urgentIssues(Request $request): JsonResponse
     {
@@ -319,9 +289,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * Export sentiment report
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function exportReport(Request $request): JsonResponse
     {
@@ -373,9 +340,6 @@ class SentimentAnalysisController extends Controller
 
     /**
      * ลบ sentiment record
-     *
-     * @param MessageSentiment $sentiment
-     * @return JsonResponse
      */
     public function destroy(MessageSentiment $sentiment): JsonResponse
     {

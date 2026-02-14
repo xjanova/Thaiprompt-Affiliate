@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บรีวิวและคะแนนจากลูกค้าหลังใช้บริการ
      * แต่ละการจอง review ได้เพียงครั้งเดียว (unique booking_id)
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -83,8 +81,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_reviews
-     *
-     * @return void
      */
     public function down(): void
     {

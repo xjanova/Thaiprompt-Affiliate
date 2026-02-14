@@ -8,8 +8,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง keyword_ab_test_variants สำหรับเก็บรายละเอียดตัวแปร A/B
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -56,8 +54,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง keyword_ab_test_variants
-     *
-     * @return void
      */
     public function down(): void
     {

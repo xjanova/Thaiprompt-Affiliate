@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\SoftwareProduct;
 use App\Models\SoftwareQuotation;
-use App\Models\Order;
 use App\Models\User;
-use App\Services\QuotationCalculatorService;
-use App\Mail\QuotationMail;
 use App\Notifications\NewQuotationNotification;
+use App\Services\QuotationCalculatorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 
 class QuotationController extends Controller
@@ -92,7 +90,7 @@ class QuotationController extends Controller
     public function show(SoftwareQuotation $quotation)
     {
         // Check authorization
-        if ($quotation->user_id !== Auth::id() && !Auth::user()->is_admin) {
+        if ($quotation->user_id !== Auth::id() && ! Auth::user()->is_admin) {
             abort(403);
         }
 
@@ -111,7 +109,7 @@ class QuotationController extends Controller
             abort(403);
         }
 
-        if (!$quotation->canBeAccepted()) {
+        if (! $quotation->canBeAccepted()) {
             return back()->with('error', 'ไม่สามารถยอมรับใบเสนอราคานี้ได้');
         }
 
@@ -162,7 +160,7 @@ class QuotationController extends Controller
         // Create order
         $order = Order::create([
             'user_id' => Auth::id(),
-            'order_number' => 'ORD-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
+            'order_number' => 'ORD-'.date('Ymd').'-'.strtoupper(\Illuminate\Support\Str::random(6)),
             'status' => 'pending',
             'payment_status' => 'pending',
             'subtotal' => $quotation->subtotal,

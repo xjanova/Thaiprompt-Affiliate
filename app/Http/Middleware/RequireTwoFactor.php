@@ -24,13 +24,13 @@ class RequireTwoFactor
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         // Check if 2FA is required for this action
         $amount = $request->input('amount'); // For withdrawal/transfer
-        if (!$this->twoFactorService->isRequired($action, $user, $amount)) {
+        if (! $this->twoFactorService->isRequired($action, $user, $amount)) {
             return $next($request);
         }
 

@@ -79,9 +79,13 @@ class PushNotificationDelivery extends Model
      * สถานะที่เป็นไปได้
      */
     const STATUS_PENDING = 'pending';           // รอส่ง
+
     const STATUS_SENT = 'sent';                 // ส่งไปยัง FCM/APNs แล้ว
+
     const STATUS_DELIVERED = 'delivered';       // ส่งถึงเครื่องแล้ว
+
     const STATUS_FAILED = 'failed';             // ล้มเหลวถาวร (หลัง retry หมดแล้ว)
+
     const STATUS_RETRY_PENDING = 'retry_pending'; // รอ retry (เครื่องอาจ offline)
 
     /**
@@ -91,8 +95,6 @@ class PushNotificationDelivery extends Model
 
     /**
      * ความสัมพันธ์กับ MobilePushNotification
-     *
-     * @return BelongsTo
      */
     public function notification(): BelongsTo
     {
@@ -101,8 +103,6 @@ class PushNotificationDelivery extends Model
 
     /**
      * ความสัมพันธ์กับ MobileDevice
-     *
-     * @return BelongsTo
      */
     public function device(): BelongsTo
     {
@@ -179,8 +179,6 @@ class PushNotificationDelivery extends Model
 
     /**
      * Mark for retry (เครื่องอาจ offline)
-     *
-     * @param string|null $errorMessage
      */
     public function markForRetry(?string $errorMessage = null): void
     {
@@ -188,7 +186,8 @@ class PushNotificationDelivery extends Model
 
         // ถ้า retry เกินกำหนดแล้ว ให้ fail ถาวร
         if ($attemptCount >= self::MAX_RETRY_ATTEMPTS) {
-            $this->markAsFailed($errorMessage . ' (exceeded max retry attempts)');
+            $this->markAsFailed($errorMessage.' (exceeded max retry attempts)');
+
             return;
         }
 
@@ -212,8 +211,6 @@ class PushNotificationDelivery extends Model
 
     /**
      * Mark as failed (ล้มเหลวถาวร)
-     *
-     * @param string|null $errorMessage
      */
     public function markAsFailed(?string $errorMessage = null): void
     {

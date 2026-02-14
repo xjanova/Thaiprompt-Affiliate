@@ -7,13 +7,13 @@ use App\Events\PosDisplayClear;
 use App\Events\PosTransactionCompleted;
 use App\Http\Controllers\Controller;
 use App\Models\PosAdvertisement;
+use App\Models\PosCategory;
 use App\Models\PosDevice;
 use App\Models\PosSession;
+use App\Models\PosSetting;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
-use App\Models\PosCategory;
 use App\Models\Product;
-use App\Models\PosSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +28,7 @@ class PosCashierController extends Controller
             ->firstOrFail();
 
         // Check if device can operate
-        if (!$device->canOperate()) {
+        if (! $device->canOperate()) {
             abort(403, 'Device is not active or subscription has expired');
         }
 
@@ -45,7 +45,7 @@ class PosCashierController extends Controller
         $settings = PosSetting::where('store_id', $device->store_id)->first();
 
         // If session required but none exists, redirect to open session
-        if (!$activeSession && $settings?->require_cash_management) {
+        if (! $activeSession && $settings?->require_cash_management) {
             return redirect()->route('pos.session.open', ['device_code' => $deviceCode]);
         }
 
@@ -57,7 +57,7 @@ class PosCashierController extends Controller
             ->ordered()
             ->with(['products' => function ($query) {
                 $query->where('is_active', true)
-                      ->where('stock_status', '!=', 'out_of_stock');
+                    ->where('stock_status', '!=', 'out_of_stock');
             }])
             ->get();
 
@@ -131,11 +131,11 @@ class PosCashierController extends Controller
         $storeId = $request->get('store_id');
 
         $products = Product::where('is_active', true)
-            ->when($storeId, fn($q) => $q->where('store_id', $storeId))
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('barcode', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%");
             })
             ->limit(20)
             ->get(['id', 'name', 'sku', 'price', 'stock_quantity', 'image_urls']);
@@ -192,7 +192,7 @@ class PosCashierController extends Controller
             }
 
             // Create transaction
-            $transaction = new PosTransaction();
+            $transaction = new PosTransaction;
             $transaction->pos_device_id = $device->id;
             $transaction->pos_session_id = $session->id;
             $transaction->store_id = $device->store_id;
@@ -267,7 +267,7 @@ class PosCashierController extends Controller
 
             // Create transaction items
             foreach ($items as $item) {
-                $transactionItem = new PosTransactionItem();
+                $transactionItem = new PosTransactionItem;
                 $transactionItem->pos_transaction_id = $transaction->id;
                 $transactionItem->product_id = $item['product']->id;
                 $transactionItem->product_name = $item['product']->name;
@@ -294,7 +294,7 @@ class PosCashierController extends Controller
                 }
             } catch (\Exception $broadcastError) {
                 // Log error แต่ไม่ fail transaction
-                \Log::warning('Failed to broadcast transaction completed: ' . $broadcastError->getMessage());
+                \Log::warning('Failed to broadcast transaction completed: '.$broadcastError->getMessage());
             }
 
             return response()->json([
@@ -305,9 +305,10 @@ class PosCashierController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Transaction failed: ' . $e->getMessage(),
+                'message' => 'Transaction failed: '.$e->getMessage(),
             ], 422);
         }
     }
@@ -334,15 +335,12 @@ class PosCashierController extends Controller
 
     /**
      * ดึงรายการโฆษณาสำหรับ Customer Display
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAdvertisements(Request $request): JsonResponse
     {
         $deviceCode = $request->get('device_code');
 
-        if (!$deviceCode) {
+        if (! $deviceCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาระบุ device_code',
@@ -351,7 +349,7 @@ class PosCashierController extends Controller
 
         $device = PosDevice::where('device_code', $deviceCode)->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ device',
@@ -391,10 +389,6 @@ class PosCashierController extends Controller
 
     /**
      * บันทึกการแสดงโฆษณา
-     *
-     * @param Request $request
-     * @param PosAdvertisement $advertisement
-     * @return JsonResponse
      */
     public function recordAdView(Request $request, PosAdvertisement $advertisement): JsonResponse
     {
@@ -408,15 +402,12 @@ class PosCashierController extends Controller
 
     /**
      * ดึงการตั้งค่าสำหรับ Customer Display
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getDisplaySettings(Request $request): JsonResponse
     {
         $deviceCode = $request->get('device_code');
 
-        if (!$deviceCode) {
+        if (! $deviceCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาระบุ device_code',
@@ -427,7 +418,7 @@ class PosCashierController extends Controller
             ->with('store')
             ->first();
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ device',
@@ -468,15 +459,12 @@ class PosCashierController extends Controller
 
     /**
      * Display Heartbeat - อัพเดทสถานะออนไลน์ของ display
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function displayHeartbeat(Request $request): JsonResponse
     {
         $deviceCode = $request->get('device_code');
 
-        if (!$deviceCode) {
+        if (! $deviceCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาระบุ device_code',
@@ -497,9 +485,6 @@ class PosCashierController extends Controller
 
     /**
      * อัพเดทตะกร้าสินค้าและ broadcast ไปยัง Customer Display
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateCart(Request $request): JsonResponse
     {
@@ -527,9 +512,6 @@ class PosCashierController extends Controller
 
     /**
      * ล้าง Customer Display
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function clearDisplay(Request $request): JsonResponse
     {
@@ -537,7 +519,7 @@ class PosCashierController extends Controller
         $showThankYou = $request->boolean('show_thank_you', true);
         $thankYouDuration = $request->integer('thank_you_duration', 5);
 
-        if (!$deviceCode) {
+        if (! $deviceCode) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาระบุ device_code',

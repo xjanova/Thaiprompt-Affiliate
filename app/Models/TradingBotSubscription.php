@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 
 class TradingBotSubscription extends Model
 {
@@ -128,7 +127,7 @@ class TradingBotSubscription extends Model
      */
     public function renew(): void
     {
-        $duration = match($this->package->billing_cycle) {
+        $duration = match ($this->package->billing_cycle) {
             'monthly' => 1,
             'quarterly' => 3,
             'yearly' => 12,
@@ -149,10 +148,10 @@ class TradingBotSubscription extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active')
-                    ->where(function($q) {
-                        $q->whereNull('ends_at')
-                          ->orWhere('ends_at', '>', now());
-                    });
+            ->where(function ($q) {
+                $q->whereNull('ends_at')
+                    ->orWhere('ends_at', '>', now());
+            });
     }
 
     /**
@@ -161,6 +160,6 @@ class TradingBotSubscription extends Model
     public function scopeExpired($query)
     {
         return $query->where('status', 'expired')
-                    ->orWhere('ends_at', '<=', now());
+            ->orWhere('ends_at', '<=', now());
     }
 }

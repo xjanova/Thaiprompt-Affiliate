@@ -15,6 +15,7 @@ return new class extends Migration
         // Skip if table already exists (from SQL import)
         if (Schema::hasTable('line_chat_widget_settings')) {
             echo "Table line_chat_widget_settings already exists, skipping...\n";
+
             return;
         }
 

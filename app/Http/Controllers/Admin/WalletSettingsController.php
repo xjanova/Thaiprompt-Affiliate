@@ -5,22 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Exception;
 
 class WalletSettingsController extends Controller
 {
     /**
      * แสดงหน้าตั้งค่า Wallet พร้อมข้อมูลกระเป๋าเงินทุกคน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        if (!auth()->user()->hasPermission('manage_wallet_settings')) {
+        if (! auth()->user()->hasPermission('manage_wallet_settings')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
@@ -98,7 +97,7 @@ class WalletSettingsController extends Controller
      */
     public function update(Request $request, $key)
     {
-        if (!auth()->user()->hasPermission('manage_wallet_settings')) {
+        if (! auth()->user()->hasPermission('manage_wallet_settings')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -111,12 +110,13 @@ class WalletSettingsController extends Controller
 
             if ($success) {
                 Cache::forget('wallet_settings');
+
                 return redirect()->back()->with('success', 'อัพเดทการตั้งค่าเรียบร้อยแล้ว');
             } else {
                 return redirect()->back()->with('error', 'ไม่พบการตั้งค่านี้');
             }
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -125,7 +125,7 @@ class WalletSettingsController extends Controller
      */
     public function bulkUpdate(Request $request)
     {
-        if (!auth()->user()->hasPermission('manage_wallet_settings')) {
+        if (! auth()->user()->hasPermission('manage_wallet_settings')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
         }
 
@@ -143,7 +143,7 @@ class WalletSettingsController extends Controller
 
             return redirect()->back()->with('success', "อัพเดทการตั้งค่า {$count} รายการเรียบร้อยแล้ว");
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -152,13 +152,13 @@ class WalletSettingsController extends Controller
      */
     public function toggle($id)
     {
-        if (!auth()->user()->hasPermission('manage_wallet_settings')) {
+        if (! auth()->user()->hasPermission('manage_wallet_settings')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         try {
             $setting = WalletSetting::findOrFail($id);
-            $setting->is_active = !$setting->is_active;
+            $setting->is_active = ! $setting->is_active;
             $setting->save();
 
             Cache::forget('wallet_settings');
@@ -224,7 +224,7 @@ class WalletSettingsController extends Controller
      */
     public function resetToDefaults()
     {
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             return redirect()->back()->with('error', 'เฉพาะ Super Admin เท่านั้นที่สามารถรีเซ็ตการตั้งค่าได้');
         }
 
@@ -249,7 +249,7 @@ class WalletSettingsController extends Controller
 
             return redirect()->back()->with('success', 'รีเซ็ตการตั้งค่าเป็นค่าเริ่มต้นเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

@@ -18,13 +18,13 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_commissions มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_commissions')) {
+        if (! Schema::hasTable('mlm_commissions')) {
             return;
         }
 
         Schema::table('mlm_commissions', function (Blueprint $table) {
             // เพิ่ม calculation_details column
-            if (!Schema::hasColumn('mlm_commissions', 'calculation_details')) {
+            if (! Schema::hasColumn('mlm_commissions', 'calculation_details')) {
                 $table->json('calculation_details')->nullable()->after('notes');
             }
         });

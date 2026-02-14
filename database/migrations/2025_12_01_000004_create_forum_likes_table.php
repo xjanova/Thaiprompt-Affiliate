@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง forum_likes สำหรับเก็บการกดไลค์ (หัวใจ)
      *
      * ใช้ระบบ polymorphic เพื่อรองรับทั้ง threads และ posts
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -40,8 +38,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง forum_likes
-     *
-     * @return void
      */
     public function down(): void
     {

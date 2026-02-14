@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InstallmentPlan;
 use App\Models\InstallmentPayment;
+use App\Models\InstallmentPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,11 +28,11 @@ class InstallmentController extends Controller
     public function show(InstallmentPlan $plan)
     {
         // Check authorization
-        if ($plan->user_id !== Auth::id() && !Auth::user()->is_admin) {
+        if ($plan->user_id !== Auth::id() && ! Auth::user()->is_admin) {
             abort(403);
         }
 
-        $plan->load(['payments' => function($query) {
+        $plan->load(['payments' => function ($query) {
             $query->orderBy('installment_number');
         }, 'order', 'quotation']);
 

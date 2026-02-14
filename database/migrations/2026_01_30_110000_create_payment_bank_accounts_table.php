@@ -12,8 +12,6 @@ return new class extends Migration
      * เก็บบัญชีธนาคารหลายบัญชีสำหรับรับชำระเงิน
      * รองรับทั้งโอนผ่านธนาคารและ PromptPay
      * เชื่อมกับ SMS Checker สำหรับยืนยันอัตโนมัติ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -61,8 +59,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง payment_bank_accounts
-     *
-     * @return void
      */
     public function down(): void
     {

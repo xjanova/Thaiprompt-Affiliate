@@ -91,7 +91,7 @@ class VersionCommand extends Command
         $updateInfo = $versionService->checkForUpdates();
 
         if ($updateInfo['update_available']) {
-            $this->warn('🎉 ' . $updateInfo['message']);
+            $this->warn('🎉 '.$updateInfo['message']);
             $this->newLine();
             $this->info("Current: {$updateInfo['current_version']}");
             $this->info("Latest: {$updateInfo['latest_version']}");
@@ -107,7 +107,7 @@ class VersionCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->info('✓ ' . $updateInfo['message']);
+        $this->info('✓ '.$updateInfo['message']);
 
         return self::SUCCESS;
     }
@@ -152,7 +152,7 @@ class VersionCommand extends Command
             $rows
         );
 
-        $allOk = collect($requirements)->every(fn($req) => $req['status'] === 'ok');
+        $allOk = collect($requirements)->every(fn ($req) => $req['status'] === 'ok');
 
         if ($allOk) {
             $this->newLine();
@@ -172,8 +172,9 @@ class VersionCommand extends Command
     {
         $changelog = $versionService->getChangelog();
 
-        if (!$changelog) {
+        if (! $changelog) {
             $this->error('Changelog not found!');
+
             return self::FAILURE;
         }
 

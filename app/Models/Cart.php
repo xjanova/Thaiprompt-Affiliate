@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read User $user
  * @property-read \Illuminate\Database\Eloquent\Collection|CartItem[] $items
  */
@@ -57,8 +56,6 @@ class Cart extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -67,8 +64,6 @@ class Cart extends Model
 
     /**
      * ความสัมพันธ์กับ CartItem
-     *
-     * @return HasMany
      */
     public function items(): HasMany
     {
@@ -77,8 +72,6 @@ class Cart extends Model
 
     /**
      * คำนวณยอดรวมทั้งหมดในตะกร้า
-     *
-     * @return float
      */
     public function getTotalAttribute(): float
     {
@@ -89,8 +82,6 @@ class Cart extends Model
 
     /**
      * นับจำนวนรายการสินค้าทั้งหมดในตะกร้า
-     *
-     * @return int
      */
     public function getTotalItemsAttribute(): int
     {
@@ -99,8 +90,6 @@ class Cart extends Model
 
     /**
      * ตรวจสอบว่าตะกร้าว่างหรือไม่
-     *
-     * @return bool
      */
     public function isEmpty(): bool
     {
@@ -109,8 +98,6 @@ class Cart extends Model
 
     /**
      * ล้างสินค้าทั้งหมดในตะกร้า
-     *
-     * @return void
      */
     public function clear(): void
     {
@@ -120,8 +107,7 @@ class Cart extends Model
     /**
      * Scope: ดึงตะกร้าของผู้ใช้ที่ระบุ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -132,7 +118,7 @@ class Cart extends Model
     /**
      * Scope: ดึงตะกร้าที่มีรายการสินค้า
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithItems($query)

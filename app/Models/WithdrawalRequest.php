@@ -57,7 +57,7 @@ class WithdrawalRequest extends Model
 
         static::creating(function ($request) {
             if (empty($request->request_id)) {
-                $request->request_id = 'WDR' . strtoupper(Str::random(20));
+                $request->request_id = 'WDR'.strtoupper(Str::random(20));
             }
             if (empty($request->ip_address)) {
                 $request->ip_address = request()->ip();
@@ -161,7 +161,7 @@ class WithdrawalRequest extends Model
      */
     public function getStatusLabelAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอดำเนินการ',
             'processing' => 'กำลังดำเนินการ',
             'approved' => 'อนุมัติแล้ว',
@@ -177,7 +177,7 @@ class WithdrawalRequest extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'yellow',
             'processing' => 'blue',
             'approved' => 'green',
@@ -193,7 +193,7 @@ class WithdrawalRequest extends Model
      */
     public function getPaymentTypeLabelAttribute(): string
     {
-        return match($this->payment_type) {
+        return match ($this->payment_type) {
             'promptpay' => 'พร้อมเพย์',
             'bank_transfer' => 'โอนผ่านธนาคาร',
             'stripe' => 'Stripe',
@@ -207,7 +207,7 @@ class WithdrawalRequest extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        return number_format($this->amount, 2) . ' ' . $this->currency;
+        return number_format($this->amount, 2).' '.$this->currency;
     }
 
     /**
@@ -215,7 +215,7 @@ class WithdrawalRequest extends Model
      */
     public function getFormattedNetAmountAttribute(): string
     {
-        return number_format($this->net_amount, 2) . ' ' . $this->currency;
+        return number_format($this->net_amount, 2).' '.$this->currency;
     }
 
     /**
@@ -223,7 +223,7 @@ class WithdrawalRequest extends Model
      */
     public function getTransferSlipUrlAttribute(): ?string
     {
-        return $this->transfer_slip ? asset('storage/' . $this->transfer_slip) : null;
+        return $this->transfer_slip ? asset('storage/'.$this->transfer_slip) : null;
     }
 
     /**

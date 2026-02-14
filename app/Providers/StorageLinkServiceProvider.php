@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\ServiceProvider;
 
 class StorageLinkServiceProvider extends ServiceProvider
 {
@@ -38,7 +38,7 @@ class StorageLinkServiceProvider extends ServiceProvider
         $link = public_path('storage');
 
         // ถ้ายังไม่มี symlink หรือเป็น directory ธรรมดา (ไม่ใช่ symlink)
-        return !file_exists($link) || (!is_link($link) && is_dir($link));
+        return ! file_exists($link) || (! is_link($link) && is_dir($link));
     }
 
     /**
@@ -51,20 +51,21 @@ class StorageLinkServiceProvider extends ServiceProvider
             $link = public_path('storage');
 
             // ถ้ามี directory ธรรมดาอยู่ ให้ลบออกก่อน
-            if (is_dir($link) && !is_link($link)) {
+            if (is_dir($link) && ! is_link($link)) {
                 // ลบ directory เฉพาะถ้าว่างเปล่า
                 if ($this->isDirectoryEmpty($link)) {
                     rmdir($link);
                 } else {
                     Log::warning('Cannot create storage symlink: public/storage exists and is not empty');
+
                     return;
                 }
             }
 
             // สร้าง symlink ถ้ายังไม่มี
-            if (!file_exists($link)) {
+            if (! file_exists($link)) {
                 // สร้าง target directory ถ้ายังไม่มี
-                if (!is_dir($target)) {
+                if (! is_dir($target)) {
                     File::makeDirectory($target, 0755, true);
                 }
 
@@ -77,7 +78,7 @@ class StorageLinkServiceProvider extends ServiceProvider
             }
         } catch (\Exception $e) {
             // บันทึก error แต่ไม่ให้ crash application
-            Log::error('Error creating storage symlink: ' . $e->getMessage());
+            Log::error('Error creating storage symlink: '.$e->getMessage());
         }
     }
 
@@ -86,7 +87,7 @@ class StorageLinkServiceProvider extends ServiceProvider
      */
     protected function isDirectoryEmpty(string $path): bool
     {
-        if (!is_dir($path)) {
+        if (! is_dir($path)) {
             return false;
         }
 

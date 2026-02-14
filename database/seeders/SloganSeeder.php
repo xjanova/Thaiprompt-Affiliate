@@ -28,7 +28,7 @@ class SloganSeeder extends Seeder
             Slogan::create($slogan);
         }
 
-        $this->command->info('✅ Seed คำขวัญสำเร็จ! (' . count($slogans) . ' คำ)');
+        $this->command->info('✅ Seed คำขวัญสำเร็จ! ('.count($slogans).' คำ)');
     }
 
     /**
@@ -78,7 +78,7 @@ class SloganSeeder extends Seeder
             ['content' => 'สืบสานวัฒนธรรม นำพาชาติก้าวไกล', 'icon' => '🎭', 'priority' => 3],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'thai_spirit']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'thai_spirit']), $slogans);
     }
 
     /**
@@ -114,7 +114,7 @@ class SloganSeeder extends Seeder
             ['content' => 'มองหาโอกาส ไม่ใช่มองหาข้อแก้ตัว', 'icon' => '👀', 'priority' => 4],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'business']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'business']), $slogans);
     }
 
     /**
@@ -155,7 +155,7 @@ class SloganSeeder extends Seeder
             ['content' => 'ชีวิตไม่ได้มีไว้รอ แต่มีไว้ลงมือทำ', 'icon' => '🚀', 'priority' => 4],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'motivation']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'motivation']), $slogans);
     }
 
     /**
@@ -186,7 +186,7 @@ class SloganSeeder extends Seeder
             ['content' => 'ความสำเร็จที่แท้จริง คือได้ช่วยเหลือผู้อื่น', 'icon' => '🤝', 'priority' => 4],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'success']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'success']), $slogans);
     }
 
     /**
@@ -217,7 +217,7 @@ class SloganSeeder extends Seeder
             ['content' => 'ทีมที่แข็งแกร่ง เกิดจากความเข้าใจกัน', 'icon' => '💕', 'priority' => 3],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'teamwork']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'teamwork']), $slogans);
     }
 
     /**
@@ -248,7 +248,7 @@ class SloganSeeder extends Seeder
             ['content' => 'แนะนำจากใจ ลูกค้าประทับใจ', 'icon' => '❤️', 'priority' => 4],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'affiliate']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'affiliate']), $slogans);
     }
 
     /**
@@ -279,7 +279,7 @@ class SloganSeeder extends Seeder
             ['content' => 'เปิดร้านออนไลน์ เปิดประตูสู่ความสำเร็จ', 'icon' => '🚪', 'priority' => 3],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'ecommerce']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'ecommerce']), $slogans);
     }
 
     /**
@@ -315,7 +315,7 @@ class SloganSeeder extends Seeder
             ['content' => 'ชีวิตคือการเดินทาง ไม่ใช่จุดหมายปลายทาง', 'icon' => '🚶', 'priority' => 4],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'life']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'life']), $slogans);
     }
 
     /**
@@ -346,7 +346,7 @@ class SloganSeeder extends Seeder
             ['content' => 'ความสงบ นำมาซึ่งปัญญา', 'icon' => '🧘', 'priority' => 3],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'wisdom']), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'wisdom']), $slogans);
     }
 
     /**
@@ -382,6 +382,6 @@ class SloganSeeder extends Seeder
             ['content' => 'สัญญาของเรา: เราจะไม่ทิ้งคุณ', 'icon' => '🤞', 'priority' => 5],
         ];
 
-        return array_map(fn($s) => array_merge($s, ['category' => 'general', 'priority' => $s['priority'] ?? 3]), $slogans);
+        return array_map(fn ($s) => array_merge($s, ['category' => 'general', 'priority' => $s['priority'] ?? 3]), $slogans);
     }
 }

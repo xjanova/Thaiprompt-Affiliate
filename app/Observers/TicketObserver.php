@@ -24,7 +24,7 @@ class TicketObserver
             try {
                 $this->notificationService->notifyAdminNewTicket($ticket);
             } catch (\Exception $e) {
-                \Log::error('Failed to notify admin about new ticket: ' . $e->getMessage(), [
+                \Log::error('Failed to notify admin about new ticket: '.$e->getMessage(), [
                     'ticket_id' => $ticket->id,
                 ]);
             }
@@ -43,7 +43,7 @@ class TicketObserver
             try {
                 $this->notificationService->notifyAdminUnassignedTicket($ticket);
             } catch (\Exception $e) {
-                \Log::error('Failed to notify admin about unassigned ticket: ' . $e->getMessage(), [
+                \Log::error('Failed to notify admin about unassigned ticket: '.$e->getMessage(), [
                     'ticket_id' => $ticket->id,
                 ]);
             }

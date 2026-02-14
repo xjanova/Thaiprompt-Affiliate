@@ -225,7 +225,7 @@ class AiContentGeneration extends Model
      */
     public function getGenerationTimeSecondsAttribute(): ?float
     {
-        if (!$this->generation_time_ms) {
+        if (! $this->generation_time_ms) {
             return null;
         }
 
@@ -273,9 +273,6 @@ class AiContentGeneration extends Model
 
     /**
      * สำเร็จ
-     *
-     * @param string $content
-     * @param array $usage
      */
     public function markAsCompleted(string $content, array $usage = []): void
     {
@@ -298,9 +295,6 @@ class AiContentGeneration extends Model
 
     /**
      * ล้มเหลว
-     *
-     * @param string $message
-     * @param string|null $code
      */
     public function markAsFailed(string $message, ?string $code = null): void
     {
@@ -314,9 +308,6 @@ class AiContentGeneration extends Model
 
     /**
      * ให้คะแนน
-     *
-     * @param int $rating
-     * @param string|null $feedback
      */
     public function rate(int $rating, ?string $feedback = null): void
     {

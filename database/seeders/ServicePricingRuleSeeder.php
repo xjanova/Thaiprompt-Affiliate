@@ -15,8 +15,6 @@ class ServicePricingRuleSeeder extends Seeder
 {
     /**
      * รันการ seed
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -25,9 +23,10 @@ class ServicePricingRuleSeeder extends Seeder
         // หา owner_id (ใช้ admin หรือ user แรก)
         $owner = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->command->error('❌ ไม่พบ User สำหรับเป็น owner กฎคำนวณราคา');
             $this->command->warn('ℹ️  กรุณารัน UserSeeder ก่อน');
+
             return;
         }
 
@@ -90,6 +89,7 @@ class ServicePricingRuleSeeder extends Seeder
 
             if ($existing) {
                 $this->command->warn("  ⚠️  กฎ '{$rule['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

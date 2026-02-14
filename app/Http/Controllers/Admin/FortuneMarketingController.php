@@ -39,7 +39,7 @@ class FortuneMarketingController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('topic', 'like', "%{$search}%");
+                    ->orWhere('topic', 'like', "%{$search}%");
             });
         }
 
@@ -191,11 +191,11 @@ class FortuneMarketingController extends Controller
      */
     public function activate(FortuneMarketingCampaign $campaign)
     {
-        if (!$campaign->getMessageToSend()) {
+        if (! $campaign->getMessageToSend()) {
             return back()->with('error', 'ต้องมีข้อความก่อนเปิดใช้งาน (สร้างด้วย AI หรือพิมพ์เอง)');
         }
 
-        if (!$campaign->scheduled_at && $campaign->schedule_type === 'once') {
+        if (! $campaign->scheduled_at && $campaign->schedule_type === 'once') {
             return back()->with('error', 'กรุณาตั้งเวลาส่งก่อน');
         }
 
@@ -210,6 +210,7 @@ class FortuneMarketingController extends Controller
     public function pause(FortuneMarketingCampaign $campaign)
     {
         $campaign->pause();
+
         return back()->with('success', "หยุดแคมเปญ \"{$campaign->name}\" ชั่วคราว");
     }
 
@@ -219,6 +220,7 @@ class FortuneMarketingController extends Controller
     public function cancel(FortuneMarketingCampaign $campaign)
     {
         $campaign->cancel();
+
         return back()->with('success', "ยกเลิกแคมเปญ \"{$campaign->name}\" สำเร็จ");
     }
 
@@ -227,7 +229,7 @@ class FortuneMarketingController extends Controller
      */
     public function sendNow(FortuneMarketingCampaign $campaign)
     {
-        if (!$campaign->getMessageToSend()) {
+        if (! $campaign->getMessageToSend()) {
             return back()->with('error', 'ต้องมีข้อความก่อนส่ง');
         }
 
@@ -236,7 +238,7 @@ class FortuneMarketingController extends Controller
 
             return back()->with('success', "ส่งสำเร็จ {$result['sent']} คน (ล้มเหลว {$result['failed']} คน)");
         } catch (\Exception $e) {
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -282,7 +284,7 @@ class FortuneMarketingController extends Controller
                 'campaign_id' => $campaign->id,
                 'error' => $e->getMessage(),
             ]);
-            $campaign->update(['last_error' => 'AI สร้างข้อความล้มเหลว: ' . $e->getMessage()]);
+            $campaign->update(['last_error' => 'AI สร้างข้อความล้มเหลว: '.$e->getMessage()]);
         }
     }
 

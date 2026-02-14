@@ -19,9 +19,6 @@ class CouponController extends Controller
 {
     /**
      * แสดงรายการคูปองของร้าน
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -47,8 +44,6 @@ class CouponController extends Controller
 
     /**
      * แสดงฟอร์มสร้างคูปอง
-     *
-     * @return View
      */
     public function create(): View
     {
@@ -59,9 +54,6 @@ class CouponController extends Controller
 
     /**
      * บันทึกคูปองใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function store(Request $request): RedirectResponse
     {
@@ -81,7 +73,7 @@ class CouponController extends Controller
         ]);
 
         // สร้างรหัสคูปองอัตโนมัติ
-        $code = strtoupper($store->store_slug) . '-' . strtoupper(Str::random(6));
+        $code = strtoupper($store->store_slug).'-'.strtoupper(Str::random(6));
 
         Coupon::create([
             'code' => $code,
@@ -103,15 +95,11 @@ class CouponController extends Controller
 
         return redirect()
             ->route('seller.coupons.index')
-            ->with('success', 'สร้างคูปองสำเร็จ! รหัส: ' . $code);
+            ->with('success', 'สร้างคูปองสำเร็จ! รหัส: '.$code);
     }
 
     /**
      * แสดงฟอร์มแก้ไขคูปอง
-     *
-     * @param Request $request
-     * @param Coupon $coupon
-     * @return View
      */
     public function edit(Request $request, Coupon $coupon): View
     {
@@ -130,10 +118,6 @@ class CouponController extends Controller
 
     /**
      * อัพเดทคูปอง
-     *
-     * @param Request $request
-     * @param Coupon $coupon
-     * @return RedirectResponse
      */
     public function update(Request $request, Coupon $coupon): RedirectResponse
     {
@@ -165,10 +149,6 @@ class CouponController extends Controller
 
     /**
      * ลบคูปอง
-     *
-     * @param Request $request
-     * @param Coupon $coupon
-     * @return RedirectResponse
      */
     public function destroy(Request $request, Coupon $coupon): RedirectResponse
     {
@@ -187,10 +167,6 @@ class CouponController extends Controller
 
     /**
      * Toggle สถานะคูปอง
-     *
-     * @param Request $request
-     * @param Coupon $coupon
-     * @return JsonResponse
      */
     public function toggleActive(Request $request, Coupon $coupon): JsonResponse
     {
@@ -203,7 +179,7 @@ class CouponController extends Controller
             ], 403);
         }
 
-        $coupon->is_active = !$coupon->is_active;
+        $coupon->is_active = ! $coupon->is_active;
         $coupon->save();
 
         return response()->json([

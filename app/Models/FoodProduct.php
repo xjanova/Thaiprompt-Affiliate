@@ -179,7 +179,7 @@ class FoodProduct extends Model
             ->selectRaw('emission_category, SUM(total_co2_equivalent) as total')
             ->groupBy('emission_category')
             ->get()
-            ->mapWithKeys(fn($item) => [$item->emission_category => $item->total])
+            ->mapWithKeys(fn ($item) => [$item->emission_category => $item->total])
             ->toArray();
     }
 
@@ -220,7 +220,7 @@ class FoodProduct extends Model
      */
     public function scopeHighQuality($query)
     {
-        return $query->whereHas('qualityCheckpoints', function($q) {
+        return $query->whereHas('qualityCheckpoints', function ($q) {
             $q->where('pass_score', '>=', 90);
         });
     }

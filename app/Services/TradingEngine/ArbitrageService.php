@@ -2,21 +2,23 @@
 
 namespace App\Services\TradingEngine;
 
+use App\Models\TradingAccount;
 use App\Models\TradingBot;
 use App\Models\TradingExchange;
-use App\Models\TradingAccount;
 use App\Models\TradingSignal;
 use App\Services\Exchange\BinanceConnector;
 use App\Services\Exchange\BitkubConnector;
-use App\Services\Exchange\KuCoinConnector;
 use App\Services\Exchange\BybitConnector;
-use Illuminate\Support\Facades\Log;
+use App\Services\Exchange\KuCoinConnector;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class ArbitrageService
 {
     protected array $exchangeConnectors = [];
+
     protected float $minimumProfitPercentage = 0.5; // 0.5% minimum profit
+
     protected float $tradingFeeEstimate = 0.002; // 0.2% trading fee estimate
 
     public function __construct()
@@ -76,7 +78,7 @@ class ArbitrageService
         foreach ($exchangeIds as $exchangeId) {
             try {
                 $exchange = TradingExchange::find($exchangeId);
-                if (!$exchange || !$exchange->is_active) {
+                if (! $exchange || ! $exchange->is_active) {
                     continue;
                 }
 
@@ -101,7 +103,7 @@ class ArbitrageService
                     ];
                 }
             } catch (\Exception $e) {
-                Log::warning("Failed to fetch price from exchange", [
+                Log::warning('Failed to fetch price from exchange', [
                     'exchange_id' => $exchangeId,
                     'symbol' => $symbol,
                     'error' => $e->getMessage(),
@@ -119,7 +121,7 @@ class ArbitrageService
     {
         $connectorKey = strtolower($exchange->code);
 
-        if (!isset($this->exchangeConnectors[$connectorKey])) {
+        if (! isset($this->exchangeConnectors[$connectorKey])) {
             return null;
         }
 
@@ -128,11 +130,12 @@ class ArbitrageService
         try {
             return $connector->getTicker($symbol);
         } catch (\Exception $e) {
-            Log::error("Exchange ticker fetch failed", [
+            Log::error('Exchange ticker fetch failed', [
                 'exchange' => $exchange->code,
                 'symbol' => $symbol,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -219,8 +222,8 @@ class ArbitrageService
             $buyAccount = $this->getTradingAccount($bot, $opportunity['buy_exchange_id']);
             $sellAccount = $this->getTradingAccount($bot, $opportunity['sell_exchange_id']);
 
-            if (!$buyAccount || !$sellAccount) {
-                throw new \Exception("Trading accounts not found for arbitrage");
+            if (! $buyAccount || ! $sellAccount) {
+                throw new \Exception('Trading accounts not found for arbitrage');
             }
 
             // Calculate quantity to trade
@@ -229,8 +232,8 @@ class ArbitrageService
             // Step 1: Buy on cheaper exchange
             $buyOrder = $this->executeBuyOrder($buyAccount, $opportunity, $quantity);
 
-            if (!$buyOrder) {
-                throw new \Exception("Failed to execute buy order");
+            if (! $buyOrder) {
+                throw new \Exception('Failed to execute buy order');
             }
 
             $results['buy_order'] = $buyOrder;
@@ -242,12 +245,13 @@ class ArbitrageService
             // Note: In real-world, you'd need to wait for withdrawal/transfer
             $sellOrder = $this->executeSellOrder($sellAccount, $opportunity, $quantity);
 
-            if (!$sellOrder) {
+            if (! $sellOrder) {
                 // Try to reverse buy order if sell fails
-                Log::error("Sell order failed, manual intervention required", [
+                Log::error('Sell order failed, manual intervention required', [
                     'buy_order' => $buyOrder,
                 ]);
-                $results['errors'][] = "Sell order failed";
+                $results['errors'][] = 'Sell order failed';
+
                 return $results;
             }
 
@@ -264,14 +268,14 @@ class ArbitrageService
             $results['success'] = true;
             $results['profit'] = $actualProfit;
 
-            Log::info("Arbitrage executed successfully", [
+            Log::info('Arbitrage executed successfully', [
                 'bot_id' => $bot->id,
                 'symbol' => $opportunity['symbol'],
                 'profit' => $actualProfit,
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Arbitrage execution failed", [
+            Log::error('Arbitrage execution failed', [
                 'bot_id' => $bot->id,
                 'opportunity' => $opportunity,
                 'error' => $e->getMessage(),
@@ -299,10 +303,11 @@ class ArbitrageService
                 $quantity
             );
         } catch (\Exception $e) {
-            Log::error("Buy order failed", [
+            Log::error('Buy order failed', [
                 'exchange' => $opportunity['buy_exchange_code'],
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -323,10 +328,11 @@ class ArbitrageService
                 $quantity
             );
         } catch (\Exception $e) {
-            Log::error("Sell order failed", [
+            Log::error('Sell order failed', [
                 'exchange' => $opportunity['sell_exchange_code'],
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -372,6 +378,7 @@ class ArbitrageService
     public function setMinimumProfitPercentage(float $percentage): self
     {
         $this->minimumProfitPercentage = $percentage;
+
         return $this;
     }
 
@@ -381,6 +388,7 @@ class ArbitrageService
     public function setTradingFeeEstimate(float $fee): self
     {
         $this->tradingFeeEstimate = $fee;
+
         return $this;
     }
 
@@ -391,7 +399,7 @@ class ArbitrageService
     {
         $strategy = $bot->strategy;
 
-        if (!$strategy || $strategy->strategy_type !== 'arbitrage') {
+        if (! $strategy || $strategy->strategy_type !== 'arbitrage') {
             return ['active' => false];
         }
 

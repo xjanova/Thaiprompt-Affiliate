@@ -273,6 +273,6 @@ class StoreTrophySeeder extends Seeder
             );
         }
 
-        $this->command->info('✅ Seed ข้อมูล Store Trophies สำเร็จ! (' . count($trophies) . ' trophies)');
+        $this->command->info('✅ Seed ข้อมูล Store Trophies สำเร็จ! ('.count($trophies).' trophies)');
     }
 }

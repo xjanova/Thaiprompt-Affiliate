@@ -7,9 +7,9 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class CashbackService
 {
@@ -38,7 +38,7 @@ class CashbackService
     /**
      * คำนวณ cashback สำหรับ order item เดี่ยว
      *
-     * @param OrderItem $item รายการสินค้าในออเดอร์
+     * @param  OrderItem  $item  รายการสินค้าในออเดอร์
      * @return float จำนวน cashback ที่คำนวณได้
      */
     public function calculateItemCashback(OrderItem $item): float
@@ -110,12 +110,14 @@ class CashbackService
         // Check if already processed
         if ($order->cashback_processed) {
             Log::info('Cashback already processed for order', ['order_id' => $order->id]);
+
             return null;
         }
 
         // Check if payment is completed
         if ($order->payment_status !== 'paid') {
             Log::info('Order not paid yet, skipping cashback', ['order_id' => $order->id]);
+
             return null;
         }
 
@@ -123,6 +125,7 @@ class CashbackService
         // This will be handled separately when admin confirms receipt
         if ($order->payment_method === 'cod' && $order->status !== 'delivered') {
             Log::info('COD order not delivered yet, skipping cashback', ['order_id' => $order->id]);
+
             return null;
         }
 
@@ -237,7 +240,7 @@ class CashbackService
         return [
             'breakdown' => $breakdown,
             'total_cashback' => round($totalCashback, 2),
-            'formatted_total' => '฿' . number_format($totalCashback, 2),
+            'formatted_total' => '฿'.number_format($totalCashback, 2),
         ];
     }
 
@@ -264,8 +267,8 @@ class CashbackService
             'total_cashback' => $totalCashback,
             'total_transactions' => $totalTransactions,
             'average_cashback' => round($averageCashback, 2),
-            'formatted_total' => '฿' . number_format($totalCashback, 2),
-            'formatted_average' => '฿' . number_format($averageCashback, 2),
+            'formatted_total' => '฿'.number_format($totalCashback, 2),
+            'formatted_average' => '฿'.number_format($averageCashback, 2),
         ];
     }
 }

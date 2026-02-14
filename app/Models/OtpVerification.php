@@ -99,7 +99,7 @@ class OtpVerification extends Model
         $alphanumeric = $settings->alphanumeric ?? false;
 
         // Auto-detect channel if not specified
-        if (!$channel) {
+        if (! $channel) {
             $twoFactorSettings = TwoFactorUserSetting::where('user_id', $user->id)->first();
             $channel = $twoFactorSettings?->preferred_method ?? 'sms';
         }
@@ -140,7 +140,7 @@ class OtpVerification extends Model
             ->where('expires_at', '>', now())
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return false;
         }
 
@@ -153,6 +153,7 @@ class OtpVerification extends Model
 
         if ($otp->attempts > $maxAttempts) {
             $otp->delete();
+
             return false;
         }
 
@@ -162,6 +163,7 @@ class OtpVerification extends Model
                 'verified' => true,
                 'verified_at' => now(),
             ]);
+
             return true;
         }
 
@@ -179,7 +181,7 @@ class OtpVerification extends Model
             ->where('expires_at', '>', now())
             ->first();
 
-        if (!$otp) {
+        if (! $otp) {
             return false;
         }
 
@@ -192,6 +194,7 @@ class OtpVerification extends Model
 
         if ($otp->attempts > $maxAttempts) {
             $otp->delete();
+
             return false;
         }
 
@@ -201,6 +204,7 @@ class OtpVerification extends Model
                 'verified' => true,
                 'verified_at' => now(),
             ]);
+
             return true;
         }
 

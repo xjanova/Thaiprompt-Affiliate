@@ -10,8 +10,6 @@ return new class extends Migration
      *
      * การตั้งค่าคอมมิชชั่นย้ายไปใช้ที่ MLM Global Settings แทน
      * การตั้งค่า API (Google Translate, TinyMCE) ใช้ config/env แทน
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -40,8 +38,6 @@ return new class extends Migration
 
     /**
      * ไม่สามารถ rollback ได้เพราะไม่ทราบค่าเดิม
-     *
-     * @return void
      */
     public function down(): void
     {

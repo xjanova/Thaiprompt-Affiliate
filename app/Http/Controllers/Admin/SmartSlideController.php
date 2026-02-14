@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SmartSlider;
 use App\Models\SmartSlide;
+use App\Models\SmartSlider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class SmartSlideController extends Controller
 {
@@ -32,7 +31,7 @@ class SmartSlideController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'สไลด์ถูกสร้างแล้ว',
-            'slide' => $slide->load('layers')
+            'slide' => $slide->load('layers'),
         ]);
     }
 
@@ -56,7 +55,7 @@ class SmartSlideController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'สไลด์ถูกอัปเดตแล้ว',
-            'slide' => $slide->fresh()->load('layers')
+            'slide' => $slide->fresh()->load('layers'),
         ]);
     }
 
@@ -69,7 +68,7 @@ class SmartSlideController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'สไลด์ถูกลบแล้ว'
+            'message' => 'สไลด์ถูกลบแล้ว',
         ]);
     }
 
@@ -83,7 +82,7 @@ class SmartSlideController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'สไลด์ถูกทำสำเนาแล้ว',
-            'slide' => $newSlide->load('layers')
+            'slide' => $newSlide->load('layers'),
         ]);
     }
 
@@ -105,7 +104,7 @@ class SmartSlideController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'ลำดับสไลด์ถูกอัปเดตแล้ว'
+            'message' => 'ลำดับสไลด์ถูกอัปเดตแล้ว',
         ]);
     }
 
@@ -123,7 +122,7 @@ class SmartSlideController extends Controller
         return response()->json([
             'success' => true,
             'path' => $path,
-            'url' => asset('storage/' . $path)
+            'url' => asset('storage/'.$path),
         ]);
     }
 
@@ -141,7 +140,7 @@ class SmartSlideController extends Controller
         return response()->json([
             'success' => true,
             'path' => $path,
-            'url' => asset('storage/' . $path)
+            'url' => asset('storage/'.$path),
         ]);
     }
 }

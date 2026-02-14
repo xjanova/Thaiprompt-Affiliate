@@ -52,7 +52,7 @@ return new class extends Migration
                 'accepted',        // ลูกค้ายอมรับ
                 'rejected',        // ลูกค้าปฏิเสธ
                 'expired',         // หมดอายุ
-                'converted'        // แปลงเป็นคำสั่งซื้อแล้ว
+                'converted',        // แปลงเป็นคำสั่งซื้อแล้ว
             ])->default('draft');
 
             // Dates

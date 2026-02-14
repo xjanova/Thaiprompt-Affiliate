@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AiGenPackage;
 use App\Services\AiGen\AiGenSubscriptionService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AiGenPackageController extends Controller
 {
@@ -16,6 +16,7 @@ class AiGenPackageController extends Controller
     {
         $this->subscriptionService = $subscriptionService;
     }
+
     /**
      * Get all active packages.
      */
@@ -49,7 +50,7 @@ class AiGenPackageController extends Controller
                 ->where('id', $packageId)
                 ->first();
 
-            if (!$package) {
+            if (! $package) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Package not found',
@@ -88,7 +89,7 @@ class AiGenPackageController extends Controller
                 ->where('id', $packageId)
                 ->first();
 
-            if (!$package) {
+            if (! $package) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Package not found',
@@ -108,7 +109,7 @@ class AiGenPackageController extends Controller
             $paymentData = [
                 'amount' => $package->price,
                 'method' => $validated['payment_method'],
-                'transaction_id' => $validated['transaction_id'] ?? 'DEMO-' . uniqid(),
+                'transaction_id' => $validated['transaction_id'] ?? 'DEMO-'.uniqid(),
             ];
 
             // TODO: Integrate with payment gateway here

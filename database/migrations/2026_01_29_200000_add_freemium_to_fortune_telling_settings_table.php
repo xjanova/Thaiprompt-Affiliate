@@ -14,21 +14,19 @@ return new class extends Migration
      * - ขอรับคำทำนายก่อนจ่ายทีหลัง (try before buy)
      * - ดูดวงฟรีวันละ 1 ครั้ง ต้องการดูเพิ่มต้องจ่าย/สมัครสมาชิก
      * - ระบบสมัครสมาชิกรายเดือน/รายปี
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
             // === ระบบคำทำนายเชิงลึก ===
-            if (!Schema::hasColumn('fortune_telling_settings', 'enable_deep_reading')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'enable_deep_reading')) {
                 $table->boolean('enable_deep_reading')
                     ->default(true)
                     ->after('reading_price')
                     ->comment('เปิดใช้งานคำทำนายเชิงลึก (ต้องจ่ายเงิน/สมัครสมาชิก)');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'deep_reading_price')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'deep_reading_price')) {
                 $table->decimal('deep_reading_price', 10, 2)
                     ->default(99.00)
                     ->after('enable_deep_reading')
@@ -36,14 +34,14 @@ return new class extends Migration
             }
 
             // === ระบบขอรับคำทำนายก่อนจ่าย ===
-            if (!Schema::hasColumn('fortune_telling_settings', 'allow_try_before_buy')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'allow_try_before_buy')) {
                 $table->boolean('allow_try_before_buy')
                     ->default(true)
                     ->after('deep_reading_price')
                     ->comment('อนุญาตให้ขอรับคำทำนายเชิงลึก 1 ครั้ง/วัน ก่อนจ่ายเงิน');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'free_deep_per_day')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'free_deep_per_day')) {
                 $table->integer('free_deep_per_day')
                     ->default(1)
                     ->after('allow_try_before_buy')
@@ -51,28 +49,28 @@ return new class extends Migration
             }
 
             // === ระบบสมัครสมาชิก ===
-            if (!Schema::hasColumn('fortune_telling_settings', 'subscription_enabled')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'subscription_enabled')) {
                 $table->boolean('subscription_enabled')
                     ->default(true)
                     ->after('free_deep_per_day')
                     ->comment('เปิดใช้งานระบบสมัครสมาชิก');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'subscription_monthly_price')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'subscription_monthly_price')) {
                 $table->decimal('subscription_monthly_price', 10, 2)
                     ->default(199.00)
                     ->after('subscription_enabled')
                     ->comment('ราคาสมัครสมาชิกรายเดือน (บาท)');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'subscription_yearly_price')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'subscription_yearly_price')) {
                 $table->decimal('subscription_yearly_price', 10, 2)
                     ->default(1990.00)
                     ->after('subscription_monthly_price')
                     ->comment('ราคาสมัครสมาชิกรายปี (บาท)');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'subscription_benefits')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'subscription_benefits')) {
                 $table->text('subscription_benefits')
                     ->nullable()
                     ->after('subscription_yearly_price')
@@ -80,14 +78,14 @@ return new class extends Migration
             }
 
             // === Prompt Templates แยกระดับ ===
-            if (!Schema::hasColumn('fortune_telling_settings', 'basic_prompt_template')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'basic_prompt_template')) {
                 $table->text('basic_prompt_template')
                     ->nullable()
                     ->after('prompt_template')
                     ->comment('Prompt สำหรับคำทำนายพื้นฐาน (สั้น กระชับ)');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'deep_prompt_template')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'deep_prompt_template')) {
                 $table->text('deep_prompt_template')
                     ->nullable()
                     ->after('basic_prompt_template')
@@ -95,14 +93,14 @@ return new class extends Migration
             }
 
             // === ข้อความอัตโนมัติเพิ่มเติม ===
-            if (!Schema::hasColumn('fortune_telling_settings', 'subscription_message')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'subscription_message')) {
                 $table->text('subscription_message')
                     ->nullable()
                     ->after('payment_message')
                     ->comment('ข้อความแนะนำสมัครสมาชิก');
             }
 
-            if (!Schema::hasColumn('fortune_telling_settings', 'try_before_buy_message')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'try_before_buy_message')) {
                 $table->text('try_before_buy_message')
                     ->nullable()
                     ->after('subscription_message')
@@ -113,8 +111,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ระบบ Freemium
-     *
-     * @return void
      */
     public function down(): void
     {

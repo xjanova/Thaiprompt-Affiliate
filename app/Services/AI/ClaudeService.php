@@ -18,7 +18,7 @@ class ClaudeService extends BaseAiService
                     'anthropic-version' => '2023-06-01',
                     'Content-Type' => 'application/json',
                 ])
-                ->post($this->getEndpoint() . '/messages', [
+                ->post($this->getEndpoint().'/messages', [
                     'model' => $this->model->model_identifier,
                     'messages' => $this->formatMessagesForClaude($messages),
                     'max_tokens' => $options['max_tokens'] ?? 4096,
@@ -90,7 +90,7 @@ class ClaudeService extends BaseAiService
 
     public function testConnection(): array
     {
-        if (!$this->hasApiKey()) {
+        if (! $this->hasApiKey()) {
             return ['success' => false, 'message' => 'ไม่พบ API Key'];
         }
 

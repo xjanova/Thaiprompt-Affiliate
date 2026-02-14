@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ที่อยู่จัดส่งถูกย้ายไปจัดการในตาราง shipping_addresses แทน
      * เพื่อไม่ให้ข้อมูลซ้ำซ้อน และประหยัดพื้นที่ในฐานข้อมูล
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -36,28 +34,26 @@ return new class extends Migration
 
     /**
      * คืนค่าคอลัมน์ shipping address กลับมา
-     *
-     * @return void
      */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'shipping_address')) {
+            if (! Schema::hasColumn('users', 'shipping_address')) {
                 $table->text('shipping_address')->nullable()->comment('ที่อยู่จัดส่ง');
             }
-            if (!Schema::hasColumn('users', 'shipping_city')) {
+            if (! Schema::hasColumn('users', 'shipping_city')) {
                 $table->string('shipping_city', 100)->nullable()->comment('เมือง/อำเภอ (จัดส่ง)');
             }
-            if (!Schema::hasColumn('users', 'shipping_state')) {
+            if (! Schema::hasColumn('users', 'shipping_state')) {
                 $table->string('shipping_state', 100)->nullable()->comment('จังหวัด (จัดส่ง)');
             }
-            if (!Schema::hasColumn('users', 'shipping_postal_code')) {
+            if (! Schema::hasColumn('users', 'shipping_postal_code')) {
                 $table->string('shipping_postal_code', 20)->nullable()->comment('รหัสไปรษณีย์ (จัดส่ง)');
             }
-            if (!Schema::hasColumn('users', 'shipping_country')) {
+            if (! Schema::hasColumn('users', 'shipping_country')) {
                 $table->string('shipping_country', 10)->nullable()->comment('ประเทศ (จัดส่ง)');
             }
-            if (!Schema::hasColumn('users', 'shipping_phone')) {
+            if (! Schema::hasColumn('users', 'shipping_phone')) {
                 $table->string('shipping_phone', 20)->nullable()->comment('เบอร์โทร (จัดส่ง)');
             }
         });

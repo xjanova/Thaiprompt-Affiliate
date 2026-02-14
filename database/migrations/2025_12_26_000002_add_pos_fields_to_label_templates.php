@@ -15,46 +15,44 @@ return new class extends Migration
 {
     /**
      * เพิ่มคอลัมน์ POS ในตาราง label_templates
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('label_templates', function (Blueprint $table) {
             // เช็คว่าคอลัมน์มีอยู่แล้วหรือยัง
-            if (!Schema::hasColumn('label_templates', 'is_pos_template')) {
+            if (! Schema::hasColumn('label_templates', 'is_pos_template')) {
                 $table->boolean('is_pos_template')
                     ->default(false)
                     ->after('is_system')
                     ->comment('เป็น template สำหรับ POS');
             }
 
-            if (!Schema::hasColumn('label_templates', 'pos_category')) {
+            if (! Schema::hasColumn('label_templates', 'pos_category')) {
                 $table->enum('pos_category', [
                     'product_label',    // ฉลากสินค้า
                     'shipping_label',   // ใบปะสินค้า
                     'price_tag',        // ฉลากราคา
                     'barcode_only',     // barcode อย่างเดียว
                     'receipt',          // ใบเสร็จ
-                    'other'             // อื่นๆ
+                    'other',             // อื่นๆ
                 ])->nullable()
                     ->after('is_pos_template')
                     ->comment('ประเภท template POS');
             }
 
-            if (!Schema::hasColumn('label_templates', 'printer_type')) {
+            if (! Schema::hasColumn('label_templates', 'printer_type')) {
                 $table->enum('printer_type', [
                     'thermal_roll',     // เครื่องพิมพ์แบบม้วน
                     'thermal_label',    // เครื่องพิมพ์ฉลาก thermal
                     'inkjet',           // inkjet
                     'laser',            // laser
-                    'any'               // ทุกประเภท
+                    'any',               // ทุกประเภท
                 ])->default('any')
                     ->after('pos_category')
                     ->comment('ประเภทเครื่องพิมพ์ที่รองรับ');
             }
 
-            if (!Schema::hasColumn('label_templates', 'is_continuous_roll')) {
+            if (! Schema::hasColumn('label_templates', 'is_continuous_roll')) {
                 $table->boolean('is_continuous_roll')
                     ->default(false)
                     ->after('printer_type')
@@ -63,7 +61,7 @@ return new class extends Migration
         });
 
         // เพิ่ม index
-        if (!Schema::hasColumn('label_templates', 'is_pos_template')) {
+        if (! Schema::hasColumn('label_templates', 'is_pos_template')) {
             Schema::table('label_templates', function (Blueprint $table) {
                 $table->index('is_pos_template', 'label_tpl_pos_idx');
                 $table->index('pos_category', 'label_tpl_pos_cat_idx');
@@ -73,8 +71,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

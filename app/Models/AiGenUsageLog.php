@@ -70,6 +70,7 @@ class AiGenUsageLog extends Model
         if ($this->started_at && $this->completed_at) {
             return $this->completed_at->diffInSeconds($this->started_at);
         }
+
         return null;
     }
 

@@ -14,8 +14,6 @@ class ThemePresetSeeder extends Seeder
 {
     /**
      * สร้างข้อมูล theme presets
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class ThemePresetSeeder extends Seeder
         // ตรวจสอบก่อนสร้าง (idempotent)
         if (ThemePreset::count() > 0) {
             $this->command->info('ข้อมูล Theme Presets มีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -285,6 +284,6 @@ class ThemePresetSeeder extends Seeder
             $this->command->info("  ✓ สร้าง preset: {$preset['display_name']}");
         }
 
-        $this->command->info('✅ Seed ข้อมูล Theme Presets สำเร็จ! (สร้าง ' . count($presets) . ' presets)');
+        $this->command->info('✅ Seed ข้อมูล Theme Presets สำเร็จ! (สร้าง '.count($presets).' presets)');
     }
 }

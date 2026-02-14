@@ -58,7 +58,7 @@ class ShoppingCart extends Model
      */
     public function hasEnoughStock(): bool
     {
-        if (!$this->product->track_inventory) {
+        if (! $this->product->track_inventory) {
             return true;
         }
 

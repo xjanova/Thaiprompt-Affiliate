@@ -5,10 +5,8 @@ namespace App\Http\Controllers\Seller;
 use App\Http\Controllers\Controller;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsGatewayBankAccount;
-use App\Models\SmsGatewayPricing;
 use App\Models\VendorStore;
 use App\Services\SmsGatewaySubscriptionService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -49,7 +47,7 @@ class SmsGatewaySellerController extends Controller
     public function index()
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -67,7 +65,7 @@ class SmsGatewaySellerController extends Controller
     public function subscribe(Request $request)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -93,8 +91,9 @@ class SmsGatewaySellerController extends Controller
 
             return back()->with('success', 'สมัครใช้งาน SMS Payment Gateway สำเร็จ!');
         } catch (\Exception $e) {
-            Log::error('SMS Gateway subscribe failed: ' . $e->getMessage());
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            Log::error('SMS Gateway subscribe failed: '.$e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -106,7 +105,7 @@ class SmsGatewaySellerController extends Controller
     public function startTrial(Request $request)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -139,12 +138,12 @@ class SmsGatewaySellerController extends Controller
     public function cancel(Request $request)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
         $subscription = $this->subscriptionService->getActiveSubscription($store->id);
-        if (!$subscription) {
+        if (! $subscription) {
             return back()->with('error', 'ไม่พบ subscription ที่ active');
         }
 
@@ -166,7 +165,7 @@ class SmsGatewaySellerController extends Controller
     public function devices()
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -187,17 +186,17 @@ class SmsGatewaySellerController extends Controller
     public function createDevice(Request $request)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
         // เช็คสิทธิ์
-        if (!$this->subscriptionService->hasAccess($store->id)) {
+        if (! $this->subscriptionService->hasAccess($store->id)) {
             return back()->with('error', 'กรุณาสมัคร SMS Gateway ก่อน');
         }
 
         // เช็คจำนวนอุปกรณ์
-        if (!$this->subscriptionService->canAddDevice($store->id)) {
+        if (! $this->subscriptionService->canAddDevice($store->id)) {
             return back()->with('error', 'จำนวนอุปกรณ์เต็มตามแพ็กเกจแล้ว กรุณาอัพเกรดแพ็กเกจ');
         }
 
@@ -209,7 +208,7 @@ class SmsGatewaySellerController extends Controller
             return back()->withErrors($validator);
         }
 
-        $deviceId = 'SMSCHK-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+        $deviceId = 'SMSCHK-'.strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
 
         $device = SmsCheckerDevice::create([
             'device_id' => $deviceId,
@@ -227,7 +226,7 @@ class SmsGatewaySellerController extends Controller
             'device_id' => $device->device_id,
             'api_key' => $device->api_key,
             'secret_key' => $device->secret_key,
-            'server_url' => config('app.url') . '/api/v1/sms-payment',
+            'server_url' => config('app.url').'/api/v1/sms-payment',
         ]);
 
         return back()->with([
@@ -245,7 +244,7 @@ class SmsGatewaySellerController extends Controller
     public function deleteDevice(int $id)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -253,7 +252,7 @@ class SmsGatewaySellerController extends Controller
             ->where('store_id', $store->id)
             ->first();
 
-        if (!$device) {
+        if (! $device) {
             return back()->with('error', 'ไม่พบอุปกรณ์');
         }
 
@@ -274,7 +273,7 @@ class SmsGatewaySellerController extends Controller
     public function bankAccounts()
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -293,7 +292,7 @@ class SmsGatewaySellerController extends Controller
     public function createBankAccount(Request $request)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -344,7 +343,7 @@ class SmsGatewaySellerController extends Controller
     public function updateBankAccount(Request $request, int $id)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -352,7 +351,7 @@ class SmsGatewaySellerController extends Controller
             ->where('store_id', $store->id)
             ->first();
 
-        if (!$account) {
+        if (! $account) {
             return back()->with('error', 'ไม่พบบัญชี');
         }
 
@@ -371,7 +370,7 @@ class SmsGatewaySellerController extends Controller
         }
 
         // ถ้าตั้งเป็น primary → ยกเลิก primary เดิม
-        if ($request->boolean('is_primary') && !$account->is_primary) {
+        if ($request->boolean('is_primary') && ! $account->is_primary) {
             SmsGatewayBankAccount::forStore($store->id)
                 ->where('is_primary', true)
                 ->update(['is_primary' => false]);
@@ -393,7 +392,7 @@ class SmsGatewaySellerController extends Controller
     public function deleteBankAccount(int $id)
     {
         $store = $this->getStore();
-        if (!$store) {
+        if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
@@ -401,7 +400,7 @@ class SmsGatewaySellerController extends Controller
             ->where('store_id', $store->id)
             ->first();
 
-        if (!$account) {
+        if (! $account) {
             return back()->with('error', 'ไม่พบบัญชี');
         }
 

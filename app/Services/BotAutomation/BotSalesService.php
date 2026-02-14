@@ -4,7 +4,6 @@ namespace App\Services\BotAutomation;
 
 use App\Models\BotAutomation\BotSalesConversation;
 use App\Models\BotAutomation\BotSalesMessage;
-use App\Models\BotAutomation\BotAutomation;
 use App\Models\Product;
 use App\Services\AI\AiService;
 use Illuminate\Support\Facades\Log;
@@ -53,7 +52,7 @@ class BotSalesService
         $this->updateStageByIntent($conversation, $analysis['intent']);
 
         // Generate AI response if bot-handled
-        if ($conversation->is_ai_handled && !$conversation->requires_human) {
+        if ($conversation->is_ai_handled && ! $conversation->requires_human) {
             try {
                 $aiResponse = $this->generateSalesResponse($conversation, $message, $analysis);
 
@@ -77,7 +76,7 @@ class BotSalesService
                     'confidence' => $aiResponse['confidence'] ?? 80,
                 ];
             } catch (\Exception $e) {
-                Log::error("AI sales response failed", [
+                Log::error('AI sales response failed', [
                     'conversation_id' => $conversation->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -161,8 +160,8 @@ class BotSalesService
         $automation = $conversation->automation;
         $botProfile = $automation->aiBotProfile;
 
-        if (!$botProfile) {
-            throw new \Exception("AI bot profile not configured");
+        if (! $botProfile) {
+            throw new \Exception('AI bot profile not configured');
         }
 
         // Get conversation history
@@ -170,7 +169,7 @@ class BotSalesService
             ->orderBy('created_at', 'asc')
             ->limit(10)
             ->get()
-            ->map(fn($msg) => [
+            ->map(fn ($msg) => [
                 'role' => $msg->sender_type === 'customer' ? 'user' : 'assistant',
                 'content' => $msg->message,
             ])
@@ -199,7 +198,7 @@ class BotSalesService
 
         return [
             'message' => $response['text'],
-            'type' => !empty($recommendedProducts) ? 'product_recommendation' : 'text',
+            'type' => ! empty($recommendedProducts) ? 'product_recommendation' : 'text',
             'products' => $recommendedProducts,
             'tokens_used' => $response['tokens_used'] ?? 0,
             'next_action' => $nextAction,
@@ -219,13 +218,13 @@ class BotSalesService
         $prompt .= "ขั้นตอนปัจจุบัน: {$stage}\n";
         $prompt .= "ความตั้งใจของลูกค้า: {$intent}\n\n";
 
-        $prompt .= match($stage) {
-            'awareness' => "สร้างความสนใจและบอกข้อดีของผลิตภัณฑ์",
-            'interest' => "ตอบคำถามและให้ข้อมูลเพิ่มเติม",
-            'consideration' => "เปรียบเทียบและแนะนำผลิตภัณฑ์ที่เหมาะสม",
-            'intent' => "ช่วยตัดสินใจและปิดการขาย",
-            'purchase' => "ช่วยเหลือในกระบวนการสั่งซื้อ",
-            default => "ให้ข้อมูลและคำแนะนำ",
+        $prompt .= match ($stage) {
+            'awareness' => 'สร้างความสนใจและบอกข้อดีของผลิตภัณฑ์',
+            'interest' => 'ตอบคำถามและให้ข้อมูลเพิ่มเติม',
+            'consideration' => 'เปรียบเทียบและแนะนำผลิตภัณฑ์ที่เหมาะสม',
+            'intent' => 'ช่วยตัดสินใจและปิดการขาย',
+            'purchase' => 'ช่วยเหลือในกระบวนการสั่งซื้อ',
+            default => 'ให้ข้อมูลและคำแนะนำ',
         };
 
         $prompt .= "\n\nตอบอย่างเป็นมิตร กระตุ้นความสนใจ และพยายามปิดการขาย แต่ไม่กดดัน";
@@ -243,7 +242,7 @@ class BotSalesService
             ->inRandomOrder()
             ->limit(3)
             ->get()
-            ->map(fn($product) => [
+            ->map(fn ($product) => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
@@ -260,7 +259,7 @@ class BotSalesService
      */
     protected function determineNextAction(BotSalesConversation $conversation, array $analysis): ?string
     {
-        return match($analysis['intent']) {
+        return match ($analysis['intent']) {
             'purchase_intent' => 'show_checkout',
             'recommendation_request' => 'show_products',
             'price_inquiry' => 'show_pricing',
@@ -303,7 +302,7 @@ class BotSalesService
     {
         $conversation->markAsConverted($orderId, $orderValue);
 
-        Log::info("Sales conversation converted", [
+        Log::info('Sales conversation converted', [
             'conversation_id' => $conversation->id,
             'order_id' => $orderId,
             'order_value' => $orderValue,
@@ -313,7 +312,7 @@ class BotSalesService
     /**
      * Get sales statistics
      */
-    public function getStatistics(int $automationId = null): array
+    public function getStatistics(?int $automationId = null): array
     {
         $query = BotSalesConversation::query();
 

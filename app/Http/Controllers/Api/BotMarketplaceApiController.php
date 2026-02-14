@@ -15,7 +15,7 @@ class BotMarketplaceApiController extends Controller
     /**
      * แสดงรายละเอียด Bot Marketplace listing
      *
-     * @param int $listing
+     * @param  int  $listing
      * @return \Illuminate\Http\JsonResponse
      */
     public function show($listing)
@@ -29,8 +29,7 @@ class BotMarketplaceApiController extends Controller
     /**
      * Subscribe to Bot Marketplace listing
      *
-     * @param int $listing
-     * @param Request $request
+     * @param  int  $listing
      * @return \Illuminate\Http\JsonResponse
      */
     public function subscribe($listing, Request $request)
@@ -44,8 +43,7 @@ class BotMarketplaceApiController extends Controller
     /**
      * Review Bot Marketplace listing
      *
-     * @param int $listing
-     * @param Request $request
+     * @param  int  $listing
      * @return \Illuminate\Http\JsonResponse
      */
     public function review($listing, Request $request)

@@ -88,7 +88,7 @@ class CryptoTransaction extends Model
 
         static::creating(function ($transaction) {
             if (empty($transaction->transaction_id)) {
-                $transaction->transaction_id = 'CRTX' . strtoupper(Str::random(20));
+                $transaction->transaction_id = 'CRTX'.strtoupper(Str::random(20));
             }
         });
     }
@@ -98,9 +98,10 @@ class CryptoTransaction extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        if (!$this->currency) {
+        if (! $this->currency) {
             return number_format($this->amount, 8);
         }
+
         return $this->currency->formatAmount($this->amount);
     }
 
@@ -128,7 +129,8 @@ class CryptoTransaction extends Model
         if ($this->confirmations_required <= 0) {
             return 100;
         }
-        return min(100, (int)(($this->confirmations / $this->confirmations_required) * 100));
+
+        return min(100, (int) (($this->confirmations / $this->confirmations_required) * 100));
     }
 
     /**
@@ -221,9 +223,10 @@ class CryptoTransaction extends Model
      */
     public function getExplorerUrl(): string
     {
-        if (!$this->tx_hash || !$this->currency) {
+        if (! $this->tx_hash || ! $this->currency) {
             return '';
         }
+
         return $this->currency->getExplorerTxUrl($this->tx_hash);
     }
 

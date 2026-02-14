@@ -62,10 +62,6 @@ class TrackPageView
 
     /**
      * Handle an incoming request.
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -76,7 +72,7 @@ class TrackPageView
         $response = $next($request);
 
         // ตรวจสอบว่าควรเก็บสถิติหรือไม่
-        if (!$this->shouldTrack($request, $response)) {
+        if (! $this->shouldTrack($request, $response)) {
             return $response;
         }
 
@@ -95,7 +91,7 @@ class TrackPageView
     protected function shouldTrack(Request $request, Response $response): bool
     {
         // เฉพาะ GET requests
-        if (!$request->isMethod('GET')) {
+        if (! $request->isMethod('GET')) {
             return false;
         }
 
@@ -114,7 +110,7 @@ class TrackPageView
         }
 
         // ไม่เก็บ AJAX requests (ยกเว้นถ้าเป็น HTML)
-        if ($request->ajax() && !str_contains($response->headers->get('Content-Type', ''), 'text/html')) {
+        if ($request->ajax() && ! str_contains($response->headers->get('Content-Type', ''), 'text/html')) {
             return false;
         }
 
@@ -128,7 +124,7 @@ class TrackPageView
     {
         try {
             // ใช้ Jenssegers Agent สำหรับ parse user agent
-            $agent = new Agent();
+            $agent = new Agent;
             $agent->setUserAgent($request->userAgent());
 
             // ดึง referrer domain
@@ -156,7 +152,7 @@ class TrackPageView
                 'user_id' => auth()->id(),
                 'session_id' => session()->getId(),
                 'url' => $request->fullUrl(),
-                'path' => '/' . ltrim($request->path(), '/'),
+                'path' => '/'.ltrim($request->path(), '/'),
                 'route_name' => Route::currentRouteName(),
                 'page_title' => null, // จะถูก update จาก JavaScript ถ้าต้องการ
                 'method' => $request->method(),
@@ -183,7 +179,7 @@ class TrackPageView
             ]);
         } catch (\Exception $e) {
             // Log error แต่ไม่ทำให้ request fail
-            Log::warning('Failed to record page view: ' . $e->getMessage());
+            Log::warning('Failed to record page view: '.$e->getMessage());
         }
     }
 

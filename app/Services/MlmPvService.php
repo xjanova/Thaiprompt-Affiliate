@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
-use App\Models\MlmPvTransaction;
 use App\Models\MlmProductPv;
+use App\Models\MlmPvTransaction;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +86,7 @@ class MlmPvService
             'previous_balance' => $previousBalance,
             'new_balance' => $newBalance,
             'attributed_leg' => $attributedLeg,
-            'description' => 'PV from Order #' . $order->id,
+            'description' => 'PV from Order #'.$order->id,
         ]);
     }
 
@@ -148,7 +148,7 @@ class MlmPvService
             ->where('mlm_plan_id', $plan->id)
             ->first();
 
-        if (!$config) {
+        if (! $config) {
             // Return default config using global settings
             return [
                 'pv_value' => $product->price * $globalPvRate,

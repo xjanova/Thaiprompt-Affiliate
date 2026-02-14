@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง earnings_ledger
      * บัญชีรายได้รอจ่าย - บันทึกทุกรายการรายได้ก่อนโอนเข้า wallet
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -29,7 +27,7 @@ return new class extends Migration
                 'mlm_commission',       // คอมมิชชัน MLM
                 'affiliate_commission', // คอมมิชชัน Affiliate
                 'referral_bonus',       // โบนัสแนะนำ
-                'other'                 // อื่นๆ
+                'other',                 // อื่นๆ
             ]);
 
             // ที่มาของรายได้
@@ -52,7 +50,7 @@ return new class extends Migration
                 'processing',   // กำลังประมวลผล
                 'paid',         // จ่ายแล้ว
                 'held',         // ถูกระงับ
-                'cancelled'     // ยกเลิก
+                'cancelled',     // ยกเลิก
             ])->default('pending');
 
             // วันที่พร้อมจ่าย (หลังจาก holding period)
@@ -91,8 +89,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง earnings_ledger
-     *
-     * @return void
      */
     public function down(): void
     {

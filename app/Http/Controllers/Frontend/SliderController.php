@@ -18,7 +18,7 @@ class SliderController extends Controller
             ? SmartSlider::find($idOrAlias)
             : SmartSlider::findByAlias($idOrAlias);
 
-        if (!$slider || !$slider->is_published) {
+        if (! $slider || ! $slider->is_published) {
             abort(404, 'Slider not found');
         }
 
@@ -41,7 +41,7 @@ class SliderController extends Controller
             ? SmartSlider::find($idOrAlias)
             : SmartSlider::findByAlias($idOrAlias);
 
-        if (!$slider || !$slider->is_published) {
+        if (! $slider || ! $slider->is_published) {
             return response()->json(['error' => 'Slider not found'], 404);
         }
 

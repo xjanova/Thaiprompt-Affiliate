@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บตำแหน่ง GPS และที่อยู่สำหรับให้บริการ
      * รวมถึงตำแหน่งปัจจุบันของ provider
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -62,8 +60,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง service_booking_locations
-     *
-     * @return void
      */
     public function down(): void
     {

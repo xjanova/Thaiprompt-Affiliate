@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Wallet;
 use App\Models\User;
+use App\Models\Wallet;
 
 /**
  * Wallet Authorization Policy

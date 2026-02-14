@@ -23,7 +23,7 @@ class BotAutomationApiController extends Controller
         $automations = BotAutomation::query()
             ->where('user_id', auth()->id())
             ->with(['aiBotProfile', 'template'])
-            ->when($request->type, fn($q, $type) => $q->where('automation_type', $type))
+            ->when($request->type, fn ($q, $type) => $q->where('automation_type', $type))
             ->latest()
             ->paginate(20);
 
@@ -194,12 +194,12 @@ class BotAutomationApiController extends Controller
         $listings = BotMarketplaceListing::query()
             ->published()
             ->with(['automation', 'category'])
-            ->when($request->category, fn($q, $cat) => $q->where('category_id', $cat))
-            ->when($request->featured, fn($q) => $q->featured())
+            ->when($request->category, fn ($q, $cat) => $q->where('category_id', $cat))
+            ->when($request->featured, fn ($q) => $q->featured())
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($query) use ($search) {
                     $query->where('title', 'like', "%{$search}%")
-                          ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             })
             ->orderBy('is_featured', 'desc')

@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,9 +18,13 @@ use Illuminate\Support\Facades\Log;
 class StripeProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $apiKey;
+
     protected $secretKey;
+
     protected $webhookSecret;
+
     protected $testMode;
 
     public function __construct()
@@ -36,7 +40,7 @@ class StripeProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('StripeProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('StripeProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
@@ -44,20 +48,17 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Validate Stripe payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบว่า gateway พร้อมใช้งาน
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('Stripe gateway is not configured');
         }
 
         // ตรวจสอบว่า gateway เปิดใช้งาน
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('Stripe gateway is not active');
         }
 
@@ -83,9 +84,6 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Process Stripe payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     public function process(PaymentTransaction $transaction, array $data): array
@@ -94,7 +92,7 @@ class StripeProvider implements PaymentProviderInterface
             // สร้าง Payment Intent
             $paymentIntent = $this->createPaymentIntent($transaction, $data);
 
-            if (!$paymentIntent || !isset($paymentIntent['id'])) {
+            if (! $paymentIntent || ! isset($paymentIntent['id'])) {
                 throw new Exception('Failed to create Stripe payment intent');
             }
 
@@ -145,19 +143,16 @@ class StripeProvider implements PaymentProviderInterface
 
     /**
      * Verify Stripe payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
         try {
             // ตรวจสอบ webhook signature
-            if (!$this->verifyWebhookSignature($data)) {
+            if (! $this->verifyWebhookSignature($data)) {
                 Log::warning('Stripe webhook signature verification failed', [
                     'transaction_id' => $transaction->transaction_id,
                 ]);
+
                 return false;
             }
 
@@ -175,17 +170,20 @@ class StripeProvider implements PaymentProviderInterface
                     'expected' => $transaction->amount,
                     'received' => $paidAmount,
                 ]);
+
                 return false;
             }
 
             // ตรวจสอบสถานะ
             $status = $data['data']['object']['status'] ?? '';
+
             return $status === 'succeeded';
         } catch (Exception $e) {
             Log::error('Stripe verification error', [
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -193,9 +191,6 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Refund Stripe payment
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
@@ -228,9 +223,6 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Create Stripe Payment Intent
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     protected function createPaymentIntent(PaymentTransaction $transaction, array $data): array
@@ -248,7 +240,7 @@ class StripeProvider implements PaymentProviderInterface
         ];
 
         // ถ้ามี customer ID
-        if (!empty($data['customer_id'])) {
+        if (! empty($data['customer_id'])) {
             $payload['customer'] = $data['customer_id'];
         }
 
@@ -261,9 +253,6 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Create Stripe Refund
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     protected function createRefund(PaymentTransaction $transaction, float $amount): array
@@ -279,9 +268,6 @@ class StripeProvider implements PaymentProviderInterface
     /**
      * Call Stripe API
      *
-     * @param string $endpoint
-     * @param array $payload
-     * @return array
      * @throws Exception
      */
     protected function callStripeApi(string $endpoint, array $payload): array
@@ -304,15 +290,12 @@ class StripeProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
     /**
      * Verify Stripe webhook signature
-     *
-     * @param array $data
-     * @return bool
      */
     protected function verifyWebhookSignature(array $data): bool
     {
@@ -332,9 +315,6 @@ class StripeProvider implements PaymentProviderInterface
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {

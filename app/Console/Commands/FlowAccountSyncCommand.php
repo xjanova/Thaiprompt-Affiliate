@@ -32,8 +32,6 @@ class FlowAccountSyncCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -68,10 +66,12 @@ class FlowAccountSyncCommand extends Command
             }
 
             $this->info('การซิงค์เริ่มต้นสำเร็จ!');
+
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('เกิดข้อผิดพลาด: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

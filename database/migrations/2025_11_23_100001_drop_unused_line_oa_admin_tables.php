@@ -2,7 +2,6 @@
 
 use Database\Migrations\Concerns\SafeMigration;
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -17,13 +16,11 @@ return new class extends Migration
      *
      * ระบบ Chat Widget ที่ใช้ avatar ก็ไม่ใช้แล้ว
      * เพราะจะทำในส่วน AI แยกต่างหาก
-     *
-     * @return void
      */
     public function up(): void
     {
         // ปิด foreign key checks เพื่อให้ลบตารางได้โดยไม่ติด constraint
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
 
         // ลบตาราง line_flex_message_templates (ไม่ใช้แล้ว)
         $this->safeDropTable('line_flex_message_templates');
@@ -35,7 +32,7 @@ return new class extends Migration
         $this->safeDropTable('line_avatars');
 
         // เปิด foreign key checks กลับคืน
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -44,8 +41,6 @@ return new class extends Migration
      * หมายเหตุ: migration นี้เป็นการลบตาราง
      * ถ้า rollback จะไม่สร้างตารางกลับคืนเพราะโครงสร้างตารางเดิม
      * อยู่ใน migrations เก่าแล้ว
-     *
-     * @return void
      */
     public function down(): void
     {

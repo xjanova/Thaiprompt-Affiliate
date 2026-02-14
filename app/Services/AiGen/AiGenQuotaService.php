@@ -2,9 +2,9 @@
 
 namespace App\Services\AiGen;
 
-use App\Models\User;
 use App\Models\AiGenQuota;
 use App\Models\AiGenUsageLog;
+use App\Models\User;
 use Carbon\Carbon;
 
 class AiGenQuotaService
@@ -21,7 +21,7 @@ class AiGenQuotaService
 
         $quota = AiGenQuota::getQuotaForUser($user);
 
-        if (!$quota) {
+        if (! $quota) {
             return false;
         }
 
@@ -88,7 +88,7 @@ class AiGenQuotaService
 
         $quota = AiGenQuota::getQuotaForUser($user);
 
-        if (!$quota) {
+        if (! $quota) {
             return [
                 'daily' => 0,
                 'monthly' => 0,

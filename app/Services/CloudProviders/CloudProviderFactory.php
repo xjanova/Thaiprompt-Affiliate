@@ -2,8 +2,8 @@
 
 namespace App\Services\CloudProviders;
 
-use App\Models\AiRentalCloudProvider;
 use App\Models\AiRentalCloudConfig;
+use App\Models\AiRentalCloudProvider;
 
 /**
  * Cloud Provider Factory
@@ -14,8 +14,6 @@ class CloudProviderFactory
 {
     /**
      * Provider mappings
-     *
-     * @var array
      */
     protected static array $providers = [
         'runpod' => RunPodProvider::class,
@@ -27,8 +25,6 @@ class CloudProviderFactory
     /**
      * สร้าง Provider instance จาก Config
      *
-     * @param AiRentalCloudConfig $config
-     * @return CloudProviderInterface
      *
      * @throws \Exception
      */
@@ -42,8 +38,6 @@ class CloudProviderFactory
     /**
      * สร้าง Provider instance จาก CloudProvider model
      *
-     * @param AiRentalCloudProvider $cloudProvider
-     * @return CloudProviderInterface
      *
      * @throws \Exception
      */
@@ -52,20 +46,17 @@ class CloudProviderFactory
         $slug = strtolower($cloudProvider->slug);
 
         // ค้นหา provider class
-        if (!isset(self::$providers[$slug])) {
+        if (! isset(self::$providers[$slug])) {
             throw new \Exception("Provider '{$cloudProvider->name}' is not supported yet");
         }
 
         $providerClass = self::$providers[$slug];
 
-        return new $providerClass();
+        return new $providerClass;
     }
 
     /**
      * เช็คว่า Provider รองรับหรือไม่
-     *
-     * @param string $slug
-     * @return bool
      */
     public static function isSupported(string $slug): bool
     {
@@ -74,8 +65,6 @@ class CloudProviderFactory
 
     /**
      * ดึงรายการ Providers ที่รองรับทั้งหมด
-     *
-     * @return array
      */
     public static function getSupportedProviders(): array
     {
@@ -84,10 +73,6 @@ class CloudProviderFactory
 
     /**
      * Register provider ใหม่
-     *
-     * @param string $slug
-     * @param string $class
-     * @return void
      */
     public static function register(string $slug, string $class): void
     {

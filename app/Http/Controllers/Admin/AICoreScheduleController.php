@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AICoreFeature;
 use App\Models\AICoreSchedule;
 use App\Models\AICoreTenant;
-use App\Models\AICoreFeature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -55,7 +55,6 @@ class AICoreScheduleController extends Controller
     /**
      * บันทึก Schedule ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -84,7 +83,7 @@ class AICoreScheduleController extends Controller
             $validated['status'] = 'pending';
 
             // คำนวณ next_execution_at
-            if ($validated['schedule_type'] === 'once' && !empty($validated['starts_at'])) {
+            if ($validated['schedule_type'] === 'once' && ! empty($validated['starts_at'])) {
                 $validated['next_execution_at'] = $validated['starts_at'];
             }
 
@@ -100,14 +99,13 @@ class AICoreScheduleController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แสดงรายละเอียด Schedule
      *
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\View\View
      */
     public function show(AICoreSchedule $schedule)
@@ -120,7 +118,6 @@ class AICoreScheduleController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Schedule
      *
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\View\View
      */
     public function edit(AICoreSchedule $schedule)
@@ -144,8 +141,6 @@ class AICoreScheduleController extends Controller
     /**
      * อัปเดต Schedule
      *
-     * @param Request $request
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, AICoreSchedule $schedule)
@@ -182,14 +177,13 @@ class AICoreScheduleController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบ Schedule
      *
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(AICoreSchedule $schedule)
@@ -200,21 +194,20 @@ class AICoreScheduleController extends Controller
 
             return redirect()
                 ->route('admin.ai-core.schedules.index')
-                ->with('success', 'ลบ Schedule สำเร็จ: ' . $scheduleName);
+                ->with('success', 'ลบ Schedule สำเร็จ: '.$scheduleName);
         } catch (\Exception $e) {
             Log::error('AI Core: ลบ schedule ล้มเหลว', [
                 'schedule_id' => $schedule->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * เปิด/ปิดใช้งาน Schedule
      *
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggle(AICoreSchedule $schedule)
@@ -234,7 +227,7 @@ class AICoreScheduleController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -242,7 +235,6 @@ class AICoreScheduleController extends Controller
     /**
      * Execute Schedule ทันที (สำหรับทดสอบ)
      *
-     * @param AICoreSchedule $schedule
      * @return \Illuminate\Http\RedirectResponse
      */
     public function execute(AICoreSchedule $schedule)
@@ -262,7 +254,7 @@ class AICoreScheduleController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

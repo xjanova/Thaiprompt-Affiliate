@@ -14,7 +14,7 @@ class SoftwareProductController extends Controller
     {
         $product->load(['activeOptions.activeValues']);
 
-        $options = $product->activeOptions->map(function($option) {
+        $options = $product->activeOptions->map(function ($option) {
             return [
                 'id' => $option->id,
                 'name' => $option->name,
@@ -23,7 +23,7 @@ class SoftwareProductController extends Controller
                 'input_type' => $option->input_type,
                 'is_required' => $option->is_required,
                 'allow_multiple' => $option->allow_multiple,
-                'values' => $option->activeValues->map(function($value) use ($option) {
+                'values' => $option->activeValues->map(function ($value) {
                     return [
                         'id' => $value->id,
                         'value' => $value->value,

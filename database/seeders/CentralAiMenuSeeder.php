@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
  * สำหรับจัดการ Ollama และ PostXAgent
  *
  * @version 1.0.0
+ *
  * @since 2026-01-19
  */
 class CentralAiMenuSeeder extends Seeder
@@ -31,6 +32,7 @@ class CentralAiMenuSeeder extends Seeder
 
         if ($existingMenu) {
             $this->command->warn('⚠️  เมนู Central AI มีอยู่แล้ว กำลังข้าม...');
+
             return;
         }
 
@@ -56,7 +58,7 @@ class CentralAiMenuSeeder extends Seeder
                 'is_divider' => false,
             ]);
 
-            $this->command->info('   ✅ สร้างเมนูหลัก Central AI สำเร็จ (ID: ' . $centralAiMenu->id . ')');
+            $this->command->info('   ✅ สร้างเมนูหลัก Central AI สำเร็จ (ID: '.$centralAiMenu->id.')');
 
             // สร้าง submenu
             $submenus = [
@@ -88,7 +90,7 @@ class CentralAiMenuSeeder extends Seeder
 
             foreach ($submenus as $submenu) {
                 MenuItem::create([
-                    'menu_key' => 'admin.central-ai.' . str_replace(['🎯 ', '🔧 ', '🤖 ', '⚙️ '], '', strtolower(str_replace(' ', '-', $submenu['label']))),
+                    'menu_key' => 'admin.central-ai.'.str_replace(['🎯 ', '🔧 ', '🤖 ', '⚙️ '], '', strtolower(str_replace(' ', '-', $submenu['label']))),
                     'dashboard_type' => 'admin',
                     'parent_id' => $centralAiMenu->id,
                     'label' => $submenu['label'],
@@ -108,7 +110,7 @@ class CentralAiMenuSeeder extends Seeder
                 ]);
             }
 
-            $this->command->info('   ✅ สร้าง submenu ' . count($submenus) . ' รายการสำเร็จ');
+            $this->command->info('   ✅ สร้าง submenu '.count($submenus).' รายการสำเร็จ');
         });
 
         $this->command->info('');

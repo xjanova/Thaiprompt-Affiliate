@@ -13,15 +13,12 @@ class ThemeService
 {
     /**
      * สร้าง CSS Variables จาก Theme Settings
-     *
-     * @param ThemeSetting|null $themeSetting
-     * @return string
      */
     public function generateCssVariables(?ThemeSetting $themeSetting = null): string
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting) {
+        if (! $themeSetting) {
             return '';
         }
 
@@ -36,11 +33,11 @@ class ThemeService
 
         // Opacity Variables
         $css .= "    /* Opacity */\n";
-        $css .= "    --arrow-x-global-opacity: " . ($themeSetting->global_opacity / 100) . ";\n";
-        $css .= "    --arrow-x-sidebar-opacity: " . ($themeSetting->sidebar_opacity / 100) . ";\n";
-        $css .= "    --arrow-x-navbar-opacity: " . ($themeSetting->navbar_opacity / 100) . ";\n";
-        $css .= "    --arrow-x-card-opacity: " . ($themeSetting->card_opacity / 100) . ";\n";
-        $css .= "    --arrow-x-modal-opacity: " . ($themeSetting->modal_opacity / 100) . ";\n\n";
+        $css .= '    --arrow-x-global-opacity: '.($themeSetting->global_opacity / 100).";\n";
+        $css .= '    --arrow-x-sidebar-opacity: '.($themeSetting->sidebar_opacity / 100).";\n";
+        $css .= '    --arrow-x-navbar-opacity: '.($themeSetting->navbar_opacity / 100).";\n";
+        $css .= '    --arrow-x-card-opacity: '.($themeSetting->card_opacity / 100).";\n";
+        $css .= '    --arrow-x-modal-opacity: '.($themeSetting->modal_opacity / 100).";\n\n";
 
         // Card Variables
         $css .= "    /* Cards */\n";
@@ -51,7 +48,7 @@ class ThemeService
 
         // Glass Effect Variables (ใช้กับ .glass-fusion, .glass-neu, .glass-dropdown)
         $css .= "    /* Glass Effect */\n";
-        $css .= "    --glass-opacity: " . ($themeSetting->card_opacity / 100) . ";\n";
+        $css .= '    --glass-opacity: '.($themeSetting->card_opacity / 100).";\n";
         $css .= "    --glass-blur: {$themeSetting->card_blur_intensity}px;\n";
         $css .= "    --card-roundness: {$themeSetting->card_border_radius}px;\n";
         $css .= "    --border-opacity: 0.2;\n";
@@ -59,22 +56,22 @@ class ThemeService
 
         // Background Effects Variables
         $css .= "    /* Background Effects */\n";
-        $css .= "    --bg-effects-enabled: " . ($themeSetting->bg_effects_enabled ? '1' : '0') . ";\n";
-        $css .= "    --bg-circle1-color1: " . ($themeSetting->bg_circle1_color1 ?? '#22d3ee') . ";\n";
-        $css .= "    --bg-circle1-color2: " . ($themeSetting->bg_circle1_color2 ?? '#2563eb') . ";\n";
-        $css .= "    --bg-circle2-color1: " . ($themeSetting->bg_circle2_color1 ?? '#f472b6') . ";\n";
-        $css .= "    --bg-circle2-color2: " . ($themeSetting->bg_circle2_color2 ?? '#9333ea') . ";\n";
-        $css .= "    --bg-circle3-color1: " . ($themeSetting->bg_circle3_color1 ?? '#fbbf24') . ";\n";
-        $css .= "    --bg-circle3-color2: " . ($themeSetting->bg_circle3_color2 ?? '#f97316') . ";\n";
+        $css .= '    --bg-effects-enabled: '.($themeSetting->bg_effects_enabled ? '1' : '0').";\n";
+        $css .= '    --bg-circle1-color1: '.($themeSetting->bg_circle1_color1 ?? '#22d3ee').";\n";
+        $css .= '    --bg-circle1-color2: '.($themeSetting->bg_circle1_color2 ?? '#2563eb').";\n";
+        $css .= '    --bg-circle2-color1: '.($themeSetting->bg_circle2_color1 ?? '#f472b6').";\n";
+        $css .= '    --bg-circle2-color2: '.($themeSetting->bg_circle2_color2 ?? '#9333ea').";\n";
+        $css .= '    --bg-circle3-color1: '.($themeSetting->bg_circle3_color1 ?? '#fbbf24').";\n";
+        $css .= '    --bg-circle3-color2: '.($themeSetting->bg_circle3_color2 ?? '#f97316').";\n";
 
         // Animation duration based on speed
         $speed = $themeSetting->bg_animation_speed ?? 'normal';
         $duration = $speed === 'slow' ? '10s' : ($speed === 'fast' ? '3s' : '6s');
         $css .= "    --bg-animation-duration: {$duration};\n";
 
-        $css .= "    --bg-circle-opacity: " . (($themeSetting->bg_circle_opacity ?? 15) / 100) . ";\n";
-        $css .= "    --bg-circle-blur: " . ($themeSetting->bg_circle_blur ?? 96) . "px;\n";
-        $css .= "    --bg-circle-size: " . ($themeSetting->bg_circle_size ?? 384) . "px;\n\n";
+        $css .= '    --bg-circle-opacity: '.(($themeSetting->bg_circle_opacity ?? 15) / 100).";\n";
+        $css .= '    --bg-circle-blur: '.($themeSetting->bg_circle_blur ?? 96)."px;\n";
+        $css .= '    --bg-circle-size: '.($themeSetting->bg_circle_size ?? 384)."px;\n\n";
 
         // Colors (if available)
         if ($themeSetting->color) {
@@ -100,13 +97,13 @@ class ThemeService
         $css .= "    --arrow-x-primary-start: {$color->primary_start};\n";
         $css .= "    --arrow-x-primary-middle: {$color->primary_middle};\n";
         $css .= "    --arrow-x-primary-end: {$color->primary_end};\n";
-        $css .= "    --arrow-x-primary-gradient: linear-gradient(" . str_replace('-', ' ', $color->gradient_direction) . ", {$color->primary_start}, {$color->primary_middle}, {$color->primary_end});\n\n";
+        $css .= '    --arrow-x-primary-gradient: linear-gradient('.str_replace('-', ' ', $color->gradient_direction).", {$color->primary_start}, {$color->primary_middle}, {$color->primary_end});\n\n";
 
         $css .= "    /* Colors - Secondary Gradient */\n";
         $css .= "    --arrow-x-secondary-start: {$color->secondary_start};\n";
         $css .= "    --arrow-x-secondary-middle: {$color->secondary_middle};\n";
         $css .= "    --arrow-x-secondary-end: {$color->secondary_end};\n";
-        $css .= "    --arrow-x-secondary-gradient: linear-gradient(" . str_replace('-', ' ', $color->gradient_direction) . ", {$color->secondary_start}, {$color->secondary_middle}, {$color->secondary_end});\n\n";
+        $css .= '    --arrow-x-secondary-gradient: linear-gradient('.str_replace('-', ' ', $color->gradient_direction).", {$color->secondary_start}, {$color->secondary_middle}, {$color->secondary_end});\n\n";
 
         $css .= "    /* Colors - Status */\n";
         $css .= "    --arrow-x-accent: {$color->accent_color};\n";
@@ -165,7 +162,7 @@ class ThemeService
     {
         $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-        if (!$themeSetting || !$themeSetting->color) {
+        if (! $themeSetting || ! $themeSetting->color) {
             return '';
         }
 
@@ -195,42 +192,38 @@ class ThemeService
 
     /**
      * Compile ทุกอย่างเป็น CSS file เดียว
-     *
-     * @return string
      */
     public function compileThemeCss(): string
     {
-        $rgbService = new RgbEffectService();
+        $rgbService = new RgbEffectService;
 
         $css = "/**\n";
         $css .= " * Arrow X Theme System - Compiled CSS\n";
-        $css .= " * Generated: " . now()->toDateTimeString() . "\n";
+        $css .= ' * Generated: '.now()->toDateTimeString()."\n";
         $css .= " */\n\n";
 
         // CSS Variables
-        $css .= $this->generateCssVariables() . "\n\n";
+        $css .= $this->generateCssVariables()."\n\n";
 
         // Dark Mode
-        $css .= $this->generateDarkModeCssVariables() . "\n\n";
+        $css .= $this->generateDarkModeCssVariables()."\n\n";
 
         // RGB Effects
-        $css .= $rgbService->generateAllEffectsCss() . "\n";
+        $css .= $rgbService->generateAllEffectsCss()."\n";
 
         return $css;
     }
 
     /**
      * Compile JavaScript
-     *
-     * @return string
      */
     public function compileThemeJs(): string
     {
-        $rgbService = new RgbEffectService();
+        $rgbService = new RgbEffectService;
 
         $js = "/**\n";
         $js .= " * Arrow X Theme System - Compiled JavaScript\n";
-        $js .= " * Generated: " . now()->toDateTimeString() . "\n";
+        $js .= ' * Generated: '.now()->toDateTimeString()."\n";
         $js .= " */\n\n";
 
         $js .= $rgbService->generateAllEffectsJs();

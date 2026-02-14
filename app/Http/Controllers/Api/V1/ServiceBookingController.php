@@ -21,8 +21,7 @@ class ServiceBookingController extends Controller
     public function __construct(
         protected ServiceBookingService $bookingService,
         protected ServicePricingService $pricingService
-    ) {
-    }
+    ) {}
 
     /**
      * หมวดหมู่บริการทั้งหมด
@@ -49,7 +48,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/service-categories/{category}/services
      *
-     * @param ServiceCategory $category
      * @return \Illuminate\Http\JsonResponse
      */
     public function categoryServices(ServiceCategory $category)
@@ -70,7 +68,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/services/{service}
      *
-     * @param Service $service
      * @return \Illuminate\Http\JsonResponse
      */
     public function showService(Service $service)
@@ -90,7 +87,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/services/calculate-price
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculatePrice(Request $request)
@@ -127,7 +123,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/bookings
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function createBooking(Request $request)
@@ -174,7 +169,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function myBookings(Request $request)
@@ -199,7 +193,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings/{booking}
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function showBooking(ServiceBooking $booking)
@@ -216,7 +209,7 @@ class ServiceBookingController extends Controller
             'provider',
             'items',
             'locations',
-            'trackings' => fn($q) => $q->latest()->limit(10),
+            'trackings' => fn ($q) => $q->latest()->limit(10),
         ]);
 
         return response()->json([
@@ -230,7 +223,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings/{booking}/track
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function trackBooking(ServiceBooking $booking)
@@ -273,8 +265,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/bookings/{booking}/cancel
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function cancelBooking(Request $request, ServiceBooking $booking)
@@ -309,24 +299,22 @@ class ServiceBookingController extends Controller
         }
     }
 
-    //===========================================
+    // ===========================================
     // Provider APIs
-    //===========================================
+    // ===========================================
 
     /**
      * Provider: รับงาน
      *
      * POST /api/v1/provider/bookings/{booking}/accept
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function providerAccept(Request $request, ServiceBooking $booking)
     {
         $provider = ServiceProvider::where('user_id', auth()->id())->first();
 
-        if (!$provider || $booking->provider_id !== $provider->id) {
+        if (! $provider || $booking->provider_id !== $provider->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่มีสิทธิ์เข้าถึง',
@@ -358,15 +346,13 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/provider/bookings/{booking}/reject
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function providerReject(Request $request, ServiceBooking $booking)
     {
         $provider = ServiceProvider::where('user_id', auth()->id())->first();
 
-        if (!$provider || $booking->provider_id !== $provider->id) {
+        if (! $provider || $booking->provider_id !== $provider->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่มีสิทธิ์เข้าถึง',
@@ -397,15 +383,13 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/provider/bookings/{booking}/update-location
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function providerUpdateLocation(Request $request, ServiceBooking $booking)
     {
         $provider = ServiceProvider::where('user_id', auth()->id())->first();
 
-        if (!$provider || $booking->provider_id !== $provider->id) {
+        if (! $provider || $booking->provider_id !== $provider->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่มีสิทธิ์เข้าถึง',
@@ -456,14 +440,13 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/provider/bookings/{booking}/track
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function providerTrackBooking(ServiceBooking $booking)
     {
         $provider = ServiceProvider::where('user_id', auth()->id())->first();
 
-        if (!$provider || $booking->provider_id !== $provider->id) {
+        if (! $provider || $booking->provider_id !== $provider->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่มีสิทธิ์เข้าถึง',
@@ -516,17 +499,15 @@ class ServiceBookingController extends Controller
         ]);
     }
 
-    //===========================================
+    // ===========================================
     // User Live Location APIs
-    //===========================================
+    // ===========================================
 
     /**
      * User: อัพเดทตำแหน่ง GPS ของตัวเอง
      *
      * POST /api/v1/bookings/{booking}/update-location
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function userUpdateLocation(Request $request, ServiceBooking $booking)
@@ -582,7 +563,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings/{booking}/live-tracking
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function liveTracking(ServiceBooking $booking)
@@ -592,7 +572,7 @@ class ServiceBookingController extends Controller
         $isProvider = $provider && $booking->provider_id === $provider->id;
         $isUser = $booking->user_id === auth()->id();
 
-        if (!$isProvider && !$isUser) {
+        if (! $isProvider && ! $isUser) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่มีสิทธิ์เข้าถึง',
@@ -659,8 +639,6 @@ class ServiceBookingController extends Controller
      *
      * สำหรับ Service Worker ส่งตำแหน่งแม้ปิดแอพ
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function logLocation(Request $request, ServiceBooking $booking)
@@ -714,8 +692,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/bookings/{booking}/cancel-with-penalty
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function cancelWithPenalty(Request $request, ServiceBooking $booking)
@@ -737,7 +713,7 @@ class ServiceBookingController extends Controller
         $antiAbuseService = app(\App\Services\AntiAbuseService::class);
         $result = $antiAbuseService->cancelBooking($booking, 'user', $validated['reason']);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'],
@@ -759,7 +735,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings/{booking}/cancellation-fee
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function previewCancellationFee(Request $request, ServiceBooking $booking)
@@ -794,7 +769,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/user/trust-score
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getUserTrustScore(Request $request)
@@ -834,8 +808,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/bookings/{booking}/report
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function reportIssue(Request $request, ServiceBooking $booking)
@@ -897,8 +869,6 @@ class ServiceBookingController extends Controller
      *
      * POST /api/v1/providers/{provider}/block
      *
-     * @param Request $request
-     * @param ServiceProvider $provider
      * @return \Illuminate\Http\JsonResponse
      */
     public function blockProvider(Request $request, ServiceProvider $provider)
@@ -943,7 +913,6 @@ class ServiceBookingController extends Controller
      *
      * GET /api/v1/bookings/{booking}/location-history
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function getLocationHistory(Request $request, ServiceBooking $booking)

@@ -16,29 +16,22 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 {
     /**
      * Provider name
-     *
-     * @var string
      */
     protected string $providerName;
 
     /**
      * API Base URL
-     *
-     * @var string
      */
     protected string $baseUrl;
 
     /**
      * Default timeout (seconds)
-     *
-     * @var int
      */
     protected int $timeout = 30;
 
     /**
      * สร้าง HTTP Client พร้อม authentication
      *
-     * @param AiRentalCloudConfig $config
      * @return \Illuminate\Http\Client\PendingRequest
      */
     protected function createHttpClient(AiRentalCloudConfig $config)
@@ -50,19 +43,11 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 
     /**
      * ดึง Auth Headers สำหรับ API
-     *
-     * @param AiRentalCloudConfig $config
-     * @return array
      */
     abstract protected function getAuthHeaders(AiRentalCloudConfig $config): array;
 
     /**
      * Log API request
-     *
-     * @param string $method
-     * @param string $endpoint
-     * @param array $data
-     * @return void
      */
     protected function logRequest(string $method, string $endpoint, array $data = []): void
     {
@@ -76,9 +61,7 @@ abstract class BaseCloudProvider implements CloudProviderInterface
     /**
      * Log API response
      *
-     * @param int $statusCode
-     * @param mixed $response
-     * @return void
+     * @param  mixed  $response
      */
     protected function logResponse(int $statusCode, $response): void
     {
@@ -90,10 +73,6 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 
     /**
      * Log error
-     *
-     * @param string $message
-     * @param \Exception|null $exception
-     * @return void
      */
     protected function logError(string $message, ?\Exception $exception = null): void
     {
@@ -106,8 +85,7 @@ abstract class BaseCloudProvider implements CloudProviderInterface
     /**
      * Handle API error response
      *
-     * @param \Illuminate\Http\Client\Response $response
-     * @return array
+     * @param  \Illuminate\Http\Client\Response  $response
      */
     protected function handleErrorResponse($response): array
     {
@@ -125,10 +103,6 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 
     /**
      * ทดสอบ Inference Endpoint (Common implementation)
-     *
-     * @param string $endpointUrl
-     * @param array $payload
-     * @return array
      */
     public function testInference(string $endpointUrl, array $payload): array
     {
@@ -153,7 +127,7 @@ abstract class BaseCloudProvider implements CloudProviderInterface
                 'success' => false,
                 'response' => null,
                 'latency_ms' => $latencyMs,
-                'message' => "HTTP {$response->status()}: " . ($response->json()['error'] ?? 'Unknown error'),
+                'message' => "HTTP {$response->status()}: ".($response->json()['error'] ?? 'Unknown error'),
             ];
 
         } catch (\Exception $e) {
@@ -170,9 +144,6 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 
     /**
      * แปลง GPU type เป็นรูปแบบที่ provider ต้องการ
-     *
-     * @param string $instanceType
-     * @return string
      */
     protected function normalizeGpuType(string $instanceType): string
     {
@@ -182,14 +153,12 @@ abstract class BaseCloudProvider implements CloudProviderInterface
 
     /**
      * สร้าง deployment name
-     *
-     * @param string $modelName
-     * @return string
      */
     protected function generateDeploymentName(string $modelName): string
     {
         $slug = \Illuminate\Support\Str::slug($modelName);
         $random = \Illuminate\Support\Str::random(6);
+
         return "{$slug}-{$random}";
     }
 }

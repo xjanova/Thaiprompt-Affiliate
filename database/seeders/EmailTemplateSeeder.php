@@ -16,7 +16,7 @@ class EmailTemplateSeeder extends Seeder
         $existingTemplatesCount = EmailTemplate::whereIn('name', [
             'welcome_email',
             'password_reset',
-            'commission_earned'
+            'commission_earned',
         ])->count();
 
         if ($existingTemplatesCount > 0) {
@@ -39,7 +39,7 @@ class EmailTemplateSeeder extends Seeder
             EmailTemplate::create($template);
         }
 
-        $this->command->info('✅ Email templates seeded successfully: ' . count($templates) . ' templates');
+        $this->command->info('✅ Email templates seeded successfully: '.count($templates).' templates');
     }
 
     /**
@@ -55,7 +55,7 @@ class EmailTemplateSeeder extends Seeder
         $skipped = 0;
 
         foreach ($templates as $template) {
-            if (!EmailTemplate::where('name', $template['name'])->exists()) {
+            if (! EmailTemplate::where('name', $template['name'])->exists()) {
                 EmailTemplate::create($template);
                 $this->command->info("   ➕ Added: {$template['name']}");
                 $added++;

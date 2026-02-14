@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * MenuItem Model
@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property \Carbon\Carbon $updated_at
  *
  * @version 1.0.0
+ *
  * @since 2025-12-04
  */
 class MenuItem extends Model
@@ -95,15 +96,17 @@ class MenuItem extends Model
      * Dashboard Types ที่รองรับ
      */
     public const DASHBOARD_ADMIN = 'admin';
+
     public const DASHBOARD_SELLER = 'seller';
+
     public const DASHBOARD_USER = 'user';
+
     public const DASHBOARD_PROVIDER = 'provider';
+
     public const DASHBOARD_INSTRUCTOR = 'instructor';
 
     /**
      * ดึง Dashboard types ทั้งหมด
-     *
-     * @return array
      */
     public static function getDashboardTypes(): array
     {
@@ -118,8 +121,6 @@ class MenuItem extends Model
 
     /**
      * ความสัมพันธ์กับเมนูแม่ (Parent)
-     *
-     * @return BelongsTo
      */
     public function parent(): BelongsTo
     {
@@ -128,8 +129,6 @@ class MenuItem extends Model
 
     /**
      * ความสัมพันธ์กับเมนูลูก (Children/Submenu)
-     *
-     * @return HasMany
      */
     public function children(): HasMany
     {
@@ -139,8 +138,6 @@ class MenuItem extends Model
 
     /**
      * ความสัมพันธ์กับ Roles ผ่านตาราง menu_role_settings
-     *
-     * @return BelongsToMany
      */
     public function roles(): BelongsToMany
     {
@@ -151,8 +148,6 @@ class MenuItem extends Model
 
     /**
      * ความสัมพันธ์กับ MenuRoleSetting
-     *
-     * @return HasMany
      */
     public function roleSettings(): HasMany
     {
@@ -162,8 +157,7 @@ class MenuItem extends Model
     /**
      * Scope: ดึงเมนูตาม Dashboard Type
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForDashboard($query, string $type)
@@ -174,7 +168,7 @@ class MenuItem extends Model
     /**
      * Scope: ดึงเฉพาะเมนูที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -185,7 +179,7 @@ class MenuItem extends Model
     /**
      * Scope: ดึงเฉพาะเมนูที่แสดง (visible)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVisible($query)
@@ -196,7 +190,7 @@ class MenuItem extends Model
     /**
      * Scope: ดึงเฉพาะเมนูหลัก (ไม่มี parent)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeTopLevel($query)
@@ -207,7 +201,7 @@ class MenuItem extends Model
     /**
      * Scope: ดึงเมนูพร้อม children (Eager loading)
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithSubmenu($query)
@@ -219,8 +213,6 @@ class MenuItem extends Model
 
     /**
      * ตรวจสอบว่าเป็นเมนูหลักหรือไม่
-     *
-     * @return bool
      */
     public function isTopLevel(): bool
     {
@@ -229,8 +221,6 @@ class MenuItem extends Model
 
     /**
      * ตรวจสอบว่ามี submenu หรือไม่
-     *
-     * @return bool
      */
     public function hasChildren(): bool
     {
@@ -239,8 +229,6 @@ class MenuItem extends Model
 
     /**
      * ตรวจสอบว่าเป็น divider หรือไม่
-     *
-     * @return bool
      */
     public function isDivider(): bool
     {
@@ -249,8 +237,6 @@ class MenuItem extends Model
 
     /**
      * ดึง URL ของเมนู (แปลง route เป็น URL)
-     *
-     * @return string
      */
     public function getResolvedUrl(): string
     {
@@ -263,26 +249,23 @@ class MenuItem extends Model
 
     /**
      * ตรวจสอบว่า User มีสิทธิ์เข้าถึงเมนูนี้หรือไม่
-     *
-     * @param User|null $user
-     * @return bool
      */
     public function userCanAccess(?User $user = null): bool
     {
         // ถ้าไม่ active หรือไม่ visible ให้ซ่อน
-        if (!$this->is_active || !$this->is_visible) {
+        if (! $this->is_active || ! $this->is_visible) {
             return false;
         }
 
         // ถ้าไม่มี user ให้ดูได้เฉพาะเมนูที่ไม่ต้องการ permission
-        if (!$user) {
+        if (! $user) {
             return empty($this->permissions);
         }
 
         // ตรวจสอบ permissions
-        if (!empty($this->permissions)) {
+        if (! empty($this->permissions)) {
             foreach ($this->permissions as $permission) {
-                if (!$user->hasPermission($permission)) {
+                if (! $user->hasPermission($permission)) {
                     return false;
                 }
             }
@@ -298,9 +281,6 @@ class MenuItem extends Model
 
     /**
      * ดึงการตั้งค่าสำหรับ Role
-     *
-     * @param int $roleId
-     * @return MenuRoleSetting|null
      */
     public function getSettingForRole(int $roleId): ?MenuRoleSetting
     {
@@ -311,16 +291,13 @@ class MenuItem extends Model
 
     /**
      * ตรวจสอบว่า Role สามารถเห็นเมนูนี้ได้หรือไม่
-     *
-     * @param int $roleId
-     * @return bool
      */
     public function isVisibleForRole(int $roleId): bool
     {
         $setting = $this->getSettingForRole($roleId);
 
         // ถ้าไม่มีการตั้งค่า ให้ใช้ค่าเริ่มต้น (แสดง)
-        if (!$setting) {
+        if (! $setting) {
             return $this->is_visible;
         }
 
@@ -329,9 +306,6 @@ class MenuItem extends Model
 
     /**
      * ดึงลำดับสำหรับ Role (ใช้ custom_order ถ้ามี)
-     *
-     * @param int $roleId
-     * @return float
      */
     public function getOrderForRole(int $roleId): float
     {
@@ -346,8 +320,6 @@ class MenuItem extends Model
 
     /**
      * แปลง Model เป็น Array สำหรับ Frontend
-     *
-     * @return array
      */
     public function toMenuArray(): array
     {
@@ -364,7 +336,7 @@ class MenuItem extends Model
             'badge_color' => $this->badge_color,
             'description' => $this->description,
             'hide_if_kyc_verified' => $this->hide_if_kyc_verified,
-            'submenu' => $this->children->map(fn($child) => $child->toMenuArray())->toArray(),
+            'submenu' => $this->children->map(fn ($child) => $child->toMenuArray())->toArray(),
         ];
     }
 }

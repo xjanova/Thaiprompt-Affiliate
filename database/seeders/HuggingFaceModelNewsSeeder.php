@@ -14,8 +14,6 @@ class HuggingFaceModelNewsSeeder extends Seeder
 {
     /**
      * สร้างข้อมูลข่าวสาร
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -24,6 +22,7 @@ class HuggingFaceModelNewsSeeder extends Seeder
         // ✅ ตรวจสอบก่อนสร้าง (idempotent)
         if (HuggingFaceModelNews::count() > 0) {
             $this->command->info('ข้อมูลข่าวสารมีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -161,6 +160,6 @@ class HuggingFaceModelNewsSeeder extends Seeder
             $this->command->info("  ✅ {$newsData['title']}");
         }
 
-        $this->command->info('✅ Seed ข่าวสาร Hugging Face สำเร็จ! สร้างทั้งหมด ' . count($news) . ' ข่าว');
+        $this->command->info('✅ Seed ข่าวสาร Hugging Face สำเร็จ! สร้างทั้งหมด '.count($news).' ข่าว');
     }
 }

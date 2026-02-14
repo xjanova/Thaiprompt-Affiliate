@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Ticket;
-use App\Models\TicketCategory;
-use App\Models\TicketCannedResponse;
-use App\Models\TicketSlaPolicy;
-use App\Models\TicketAssignmentRule;
 use App\Models\KbArticle;
+use App\Models\Ticket;
+use App\Models\TicketAssignmentRule;
+use App\Models\TicketCannedResponse;
+use App\Models\TicketCategory;
 use App\Models\TicketRating;
+use App\Models\TicketSlaPolicy;
 use App\Models\User;
 use App\Services\TicketService;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
@@ -89,7 +89,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'เพิ่มข้อความตอบกลับเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -109,7 +109,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'มอบหมายตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -134,7 +134,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'อัปเดตสถานะตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -154,7 +154,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'อัปเดตความสำคัญเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -174,7 +174,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'อัปเดตหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -190,7 +190,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.index')
                 ->with('success', 'ลบตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -200,6 +200,7 @@ class TicketController extends Controller
     public function categories()
     {
         $categories = TicketCategory::orderBy('sort_order')->get();
+
         return view('admin.tickets.categories', compact('categories'));
     }
 
@@ -227,7 +228,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.categories')
                 ->with('success', 'เพิ่มหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -251,7 +252,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.categories')
                 ->with('success', 'อัปเดตหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -273,7 +274,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.categories')
                 ->with('success', 'ลบหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -324,7 +325,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $targetTicket->id)
                 ->with('success', 'รวมตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -353,7 +354,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.show', $id)
                 ->with('success', 'เชื่อมโยงตั๋วเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -403,7 +404,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.canned-responses.index')
                 ->with('success', 'เพิ่มข้อความสำเร็จรูปเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -414,7 +415,7 @@ class TicketController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'shortcode' => 'required|string|max:50|unique:ticket_canned_responses,shortcode,' . $id,
+            'shortcode' => 'required|string|max:50|unique:ticket_canned_responses,shortcode,'.$id,
             'content' => 'required|string',
             'category_id' => 'nullable|exists:ticket_categories,id',
             'tags' => 'nullable|array',
@@ -429,7 +430,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.canned-responses.index')
                 ->with('success', 'อัปเดตข้อความสำเร็จรูปเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -445,7 +446,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.canned-responses.index')
                 ->with('success', 'ลบข้อความสำเร็จรูปเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -497,7 +498,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.sla-policies.index')
                 ->with('success', 'เพิ่ม SLA Policy เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -525,7 +526,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.sla-policies.index')
                 ->with('success', 'อัปเดต SLA Policy เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -541,7 +542,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.sla-policies.index')
                 ->with('success', 'ลบ SLA Policy เรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -590,7 +591,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.assignment-rules.index')
                 ->with('success', 'เพิ่มกฎการมอบหมายเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -615,7 +616,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.assignment-rules.index')
                 ->with('success', 'อัปเดตกฎการมอบหมายเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -631,7 +632,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.assignment-rules.index')
                 ->with('success', 'ลบกฎการมอบหมายเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -642,12 +643,12 @@ class TicketController extends Controller
     {
         try {
             $rule = TicketAssignmentRule::findOrFail($id);
-            $rule->update(['is_active' => !$rule->is_active]);
+            $rule->update(['is_active' => ! $rule->is_active]);
 
             return redirect()->route('admin.tickets.assignment-rules.index')
                 ->with('success', 'เปลี่ยนสถานะกฎการมอบหมายเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -673,6 +674,7 @@ class TicketController extends Controller
     public function createKbArticle()
     {
         $categories = TicketCategory::active()->ordered()->get();
+
         return view('admin.tickets.kb-article-form', compact('categories'));
     }
 
@@ -702,7 +704,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.kb-articles.index')
                 ->with('success', 'เพิ่มบทความเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -713,6 +715,7 @@ class TicketController extends Controller
     {
         $article = KbArticle::findOrFail($id);
         $categories = TicketCategory::active()->ordered()->get();
+
         return view('admin.tickets.kb-article-form', compact('article', 'categories'));
     }
 
@@ -736,7 +739,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.kb-articles.index')
                 ->with('success', 'อัปเดตบทความเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -752,7 +755,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.kb-articles.index')
                 ->with('success', 'ลบบทความเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -763,12 +766,12 @@ class TicketController extends Controller
     {
         try {
             $article = KbArticle::findOrFail($id);
-            $article->update(['is_public' => !$article->is_public]);
+            $article->update(['is_public' => ! $article->is_public]);
 
             return redirect()->route('admin.tickets.kb-articles.index')
                 ->with('success', 'เปลี่ยนสถานะบทความเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -796,7 +799,7 @@ class TicketController extends Controller
             return redirect()->route('admin.tickets.settings')
                 ->with('success', 'อัปเดตการตั้งค่าเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

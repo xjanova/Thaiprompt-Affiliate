@@ -106,7 +106,7 @@ return new class extends Migration
                 'video_youtube',
                 'video_vimeo',
                 'video_upload',
-                'html'
+                'html',
             ]);
 
             // Content

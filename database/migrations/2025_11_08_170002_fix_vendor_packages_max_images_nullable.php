@@ -15,7 +15,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง vendor_packages มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('vendor_packages')) {
+        if (! Schema::hasTable('vendor_packages')) {
             return;
         }
 

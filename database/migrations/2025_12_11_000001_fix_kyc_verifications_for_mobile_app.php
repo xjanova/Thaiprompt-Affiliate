@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Migration: แก้ไขตาราง kyc_verifications เพื่อรองรับ Mobile App
@@ -20,13 +20,11 @@ return new class extends Migration
 {
     /**
      * แก้ไขตาราง kyc_verifications
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง kyc_verifications มีอยู่หรือไม่
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             // ถ้าไม่มี ให้ข้าม migration นี้
             return;
         }
@@ -52,12 +50,10 @@ return new class extends Migration
 
     /**
      * Reverse the migrations
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             return;
         }
 

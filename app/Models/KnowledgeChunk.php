@@ -44,13 +44,10 @@ class KnowledgeChunk extends Model
 
     /**
      * Calculate cosine similarity with another embedding
-     *
-     * @param array $otherEmbedding
-     * @return float
      */
     public function cosineSimilarity(array $otherEmbedding): float
     {
-        if (!$this->embedding || empty($this->embedding)) {
+        if (! $this->embedding || empty($this->embedding)) {
             return 0.0;
         }
 
@@ -86,7 +83,7 @@ class KnowledgeChunk extends Model
      */
     public function getPreviewAttribute(): string
     {
-        return mb_substr($this->content, 0, 100) . (mb_strlen($this->content) > 100 ? '...' : '');
+        return mb_substr($this->content, 0, 100).(mb_strlen($this->content) > 100 ? '...' : '');
     }
 
     /**
@@ -94,6 +91,6 @@ class KnowledgeChunk extends Model
      */
     public function hasEmbedding(): bool
     {
-        return !empty($this->embedding);
+        return ! empty($this->embedding);
     }
 }

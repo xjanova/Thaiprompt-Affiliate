@@ -8,17 +8,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     use SafeMigration;
+
     /**
      * เพิ่ม payment fields ใน tpix_configurations table
      *
      * ใช้ SafeMigration trait เพื่อความปลอดภัยในการเพิ่ม columns และ indexes
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง tpix_configurations มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('tpix_configurations')) {
+        if (! Schema::hasTable('tpix_configurations')) {
             return;
         }
 
@@ -120,8 +119,6 @@ return new class extends Migration
      * Reverse the migrations.
      *
      * ลบ indexes และ columns ที่เพิ่มเข้าไปอย่างปลอดภัย
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -19,11 +19,11 @@ class JobApplicationController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', '%'.$search.'%')
-                  ->orWhere('last_name', 'like', '%'.$search.'%')
-                  ->orWhere('email', 'like', '%'.$search.'%')
-                  ->orWhere('phone', 'like', '%'.$search.'%');
+                    ->orWhere('last_name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhere('phone', 'like', '%'.$search.'%');
             });
         }
 
@@ -83,7 +83,7 @@ class JobApplicationController extends Controller
         JobApplication::create($validated);
 
         return redirect()->route('admin.hrm.recruitment.applications.index')
-                        ->with('success', __('Job application created successfully'));
+            ->with('success', __('Job application created successfully'));
     }
 
     /**
@@ -125,7 +125,7 @@ class JobApplicationController extends Controller
         $application->update($validated);
 
         return redirect()->route('admin.hrm.recruitment.applications.index')
-                        ->with('success', __('Job application updated successfully'));
+            ->with('success', __('Job application updated successfully'));
     }
 
     /**
@@ -141,6 +141,6 @@ class JobApplicationController extends Controller
         $application->delete();
 
         return redirect()->route('admin.hrm.recruitment.applications.index')
-                        ->with('success', __('Job application deleted successfully'));
+            ->with('success', __('Job application deleted successfully'));
     }
 }

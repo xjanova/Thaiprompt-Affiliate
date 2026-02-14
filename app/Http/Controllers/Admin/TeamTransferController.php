@@ -19,8 +19,6 @@ class TeamTransferController extends Controller
 {
     /**
      * MlmTeamTransferService instance
-     *
-     * @var MlmTeamTransferService
      */
     protected MlmTeamTransferService $transferService;
 
@@ -36,7 +34,6 @@ class TeamTransferController extends Controller
     /**
      * แสดงรายการคำขอย้ายทีมทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -93,7 +90,6 @@ class TeamTransferController extends Controller
     /**
      * แสดงรายละเอียดคำขอย้ายทีม
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\View\View
      */
     public function show(MlmTeamTransferRequest $teamTransfer)
@@ -113,20 +109,19 @@ class TeamTransferController extends Controller
 
         return view('admin.team-transfer.show', [
             'request' => $teamTransfer,
-            'pageTitle' => 'รายละเอียดคำขอย้ายทีม #' . $teamTransfer->id,
+            'pageTitle' => 'รายละเอียดคำขอย้ายทีม #'.$teamTransfer->id,
         ]);
     }
 
     /**
      * แสดงฟอร์มดำเนินการย้ายทีม
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\View\View
      */
     public function edit(MlmTeamTransferRequest $teamTransfer)
     {
         // ตรวจสอบว่าสามารถดำเนินการได้หรือไม่
-        if (!$teamTransfer->canBeProcessed()) {
+        if (! $teamTransfer->canBeProcessed()) {
             return redirect()
                 ->route('admin.team-transfer.show', $teamTransfer)
                 ->with('error', 'ไม่สามารถดำเนินการคำขอนี้ได้');
@@ -141,15 +136,13 @@ class TeamTransferController extends Controller
 
         return view('admin.team-transfer.edit', [
             'request' => $teamTransfer,
-            'pageTitle' => 'ดำเนินการย้ายทีม #' . $teamTransfer->id,
+            'pageTitle' => 'ดำเนินการย้ายทีม #'.$teamTransfer->id,
         ]);
     }
 
     /**
      * ดำเนินการย้ายทีม
      *
-     * @param Request $request
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function process(Request $request, MlmTeamTransferRequest $teamTransfer)
@@ -180,7 +173,6 @@ class TeamTransferController extends Controller
     /**
      * ลบคำขอย้ายทีม (Soft Delete)
      *
-     * @param MlmTeamTransferRequest $teamTransfer
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(MlmTeamTransferRequest $teamTransfer)
@@ -204,7 +196,7 @@ class TeamTransferController extends Controller
     /**
      * Restore คำขอย้ายทีมที่ถูกลบ
      *
-     * @param int $id
+     * @param  int  $id
      * @return \Illuminate\Http\RedirectResponse
      */
     public function restore($id)
@@ -220,7 +212,7 @@ class TeamTransferController extends Controller
     /**
      * ดูประวัติการย้ายทีมของสมาชิก
      *
-     * @param int $memberId
+     * @param  int  $memberId
      * @return \Illuminate\View\View
      */
     public function history($memberId)
@@ -244,7 +236,6 @@ class TeamTransferController extends Controller
     /**
      * Export รายงานคำขอย้ายทีม
      *
-     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function export(Request $request)
@@ -256,7 +247,6 @@ class TeamTransferController extends Controller
     /**
      * สถิติการย้ายทีม
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function statistics(Request $request)
@@ -315,7 +305,6 @@ class TeamTransferController extends Controller
     /**
      * แสดงฟอร์มย้ายทีมโดยตรง (Admin Direct Transfer)
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function directTransferForm(Request $request)
@@ -339,7 +328,6 @@ class TeamTransferController extends Controller
     /**
      * ดำเนินการย้ายทีมโดยตรง (Admin Direct Transfer)
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function directTransferProcess(Request $request)
@@ -368,7 +356,7 @@ class TeamTransferController extends Controller
         $transferUnilevel = $request->boolean('transfer_unilevel');
         $transferBinary = $request->boolean('transfer_binary');
 
-        if (!$transferUnilevel && !$transferBinary) {
+        if (! $transferUnilevel && ! $transferBinary) {
             return back()
                 ->withInput()
                 ->with('error', 'กรุณาเลือกอย่างน้อย 1 แผน (Unilevel หรือ Binary) ที่ต้องการย้าย');
@@ -383,11 +371,11 @@ class TeamTransferController extends Controller
                 'admin_notes' => $validated['admin_notes'] ?? null,
             ];
 
-            if ($transferUnilevel && !empty($validated['new_unilevel_sponsor_id'])) {
+            if ($transferUnilevel && ! empty($validated['new_unilevel_sponsor_id'])) {
                 $transferData['new_unilevel_sponsor_id'] = $validated['new_unilevel_sponsor_id'];
             }
 
-            if ($transferBinary && !empty($validated['new_binary_parent_id'])) {
+            if ($transferBinary && ! empty($validated['new_binary_parent_id'])) {
                 $transferData['new_binary_parent_id'] = $validated['new_binary_parent_id'];
                 $transferData['new_binary_position'] = $validated['new_binary_position'];
             }
@@ -409,7 +397,7 @@ class TeamTransferController extends Controller
 
             return redirect()
                 ->route('admin.team-transfer.direct')
-                ->with('success', 'ย้ายทีมสำเร็จ! ' . implode(' | ', $messages));
+                ->with('success', 'ย้ายทีมสำเร็จ! '.implode(' | ', $messages));
 
         } catch (\Exception $e) {
             return back()
@@ -420,9 +408,6 @@ class TeamTransferController extends Controller
 
     /**
      * API: ค้นหาสมาชิกสำหรับ autocomplete
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchMembersApi(Request $request): JsonResponse
     {
@@ -451,9 +436,6 @@ class TeamTransferController extends Controller
 
     /**
      * API: ดึงตำแหน่ง Binary ที่ว่างของสมาชิก
-     *
-     * @param MlmMember $member
-     * @return JsonResponse
      */
     public function getBinaryPositionsApi(MlmMember $member): JsonResponse
     {

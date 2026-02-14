@@ -15,6 +15,7 @@ class AcademySettingsController extends Controller
     public function index()
     {
         $settings = AcademySetting::getInstance();
+
         return view('admin.academy.settings.index', compact('settings'));
     }
 
@@ -247,14 +248,14 @@ class AcademySettingsController extends Controller
     public function toggleActive(Request $request)
     {
         $settings = AcademySetting::getInstance();
-        $settings->update(['is_active' => !$settings->is_active]);
+        $settings->update(['is_active' => ! $settings->is_active]);
         AcademySetting::clearCache();
 
         $status = $settings->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน';
 
         return response()->json([
             'success' => true,
-            'message' => $status . 'ระบบ Academy เรียบร้อยแล้ว',
+            'message' => $status.'ระบบ Academy เรียบร้อยแล้ว',
             'is_active' => $settings->is_active,
         ]);
     }

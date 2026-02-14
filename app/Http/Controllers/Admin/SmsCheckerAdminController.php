@@ -84,7 +84,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * แสดงรายการอุปกรณ์ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function devices(Request $request)
@@ -95,7 +94,7 @@ class SmsCheckerAdminController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('device_name', 'like', "%{$search}%")
-                  ->orWhere('device_id', 'like', "%{$search}%");
+                    ->orWhere('device_id', 'like', "%{$search}%");
             });
         }
 
@@ -125,7 +124,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * บันทึกอุปกรณ์ใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeDevice(Request $request)
@@ -141,7 +139,7 @@ class SmsCheckerAdminController extends Controller
         $storeId = $validated['store_id'] ?? VendorStore::getPlatformStoreId();
 
         $device = SmsCheckerDevice::create([
-            'device_id' => 'SMSCHK-' . strtoupper(bin2hex(random_bytes(4))),
+            'device_id' => 'SMSCHK-'.strtoupper(bin2hex(random_bytes(4))),
             'device_name' => $validated['device_name'],
             'api_key' => SmsCheckerDevice::generateApiKey(),
             'secret_key' => SmsCheckerDevice::generateSecretKey(),
@@ -159,7 +157,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * แสดงรายละเอียดอุปกรณ์
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\View\View
      */
     public function showDevice(SmsCheckerDevice $device)
@@ -188,8 +185,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * เปลี่ยนสถานะอุปกรณ์ (toggle active/inactive/blocked)
      *
-     * @param Request $request
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\Http\RedirectResponse
      */
     public function toggleDeviceStatus(Request $request, SmsCheckerDevice $device)
@@ -214,7 +209,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * สร้าง API Key ใหม่สำหรับอุปกรณ์
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\Http\RedirectResponse
      */
     public function regenerateKeys(SmsCheckerDevice $device)
@@ -232,7 +226,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * ลบอุปกรณ์
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroyDevice(SmsCheckerDevice $device)
@@ -248,7 +241,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * แสดงประวัติ SMS Notifications ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function notifications(Request $request)
@@ -274,8 +266,8 @@ class SmsCheckerAdminController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('reference_number', 'like', "%{$search}%")
-                  ->orWhere('sender_or_receiver', 'like', "%{$search}%")
-                  ->orWhere('device_id', 'like', "%{$search}%");
+                    ->orWhere('sender_or_receiver', 'like', "%{$search}%")
+                    ->orWhere('device_id', 'like', "%{$search}%");
             });
         }
 
@@ -294,7 +286,6 @@ class SmsCheckerAdminController extends Controller
      * Android App จะสแกน QR Code นี้เพื่อรับค่า API Key, Secret Key
      * และ URL ของ server
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\View\View
      */
     public function qrCode(SmsCheckerDevice $device)
@@ -322,7 +313,7 @@ class SmsCheckerAdminController extends Controller
                         new \BaconQrCode\Renderer\Color\Rgb(0, 0, 0)
                     )
                 ),
-                new SvgImageBackEnd()
+                new SvgImageBackEnd
             );
             $writer = new Writer($renderer);
             $qrCodeSvg = $writer->writeString(
@@ -331,7 +322,7 @@ class SmsCheckerAdminController extends Controller
                 \BaconQrCode\Common\ErrorCorrectionLevel::H()
             );
         } catch (\Throwable $e) {
-            Log::warning('QR Code SVG generation failed, will use JS fallback: ' . $e->getMessage());
+            Log::warning('QR Code SVG generation failed, will use JS fallback: '.$e->getMessage());
         }
 
         return view('admin.smschecker.qr-code', compact('device', 'qrData', 'qrCodeSvg'));
@@ -340,7 +331,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * ส่งข้อมูล QR Code เป็น JSON สำหรับ API
      *
-     * @param SmsCheckerDevice $device
      * @return \Illuminate\Http\JsonResponse
      */
     public function qrCodeJson(SmsCheckerDevice $device)
@@ -402,7 +392,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * บันทึกการตั้งค่าระบบ
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)
@@ -418,7 +407,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * บันทึกการตั้งค่า FCM
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateFcmSettings(Request $request)
@@ -489,7 +477,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * แสดงรายการคำสั่งซื้อที่รอการตรวจสอบชำระเงิน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function pendingOrders(Request $request)
@@ -502,10 +489,10 @@ class SmsCheckerAdminController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('id', $search)
-                  ->orWhereHas('user', function ($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -525,8 +512,6 @@ class SmsCheckerAdminController extends Controller
     /**
      * ยืนยันการชำระเงินด้วยตนเอง
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function confirmPayment(Request $request, Order $order)
@@ -560,7 +545,7 @@ class SmsCheckerAdminController extends Controller
 
             DB::commit();
 
-            Log::info("[SMS Checker] Admin ยืนยันการชำระเงิน Order #{$order->id} โดย User #" . auth()->id());
+            Log::info("[SMS Checker] Admin ยืนยันการชำระเงิน Order #{$order->id} โดย User #".auth()->id());
 
             return redirect()
                 ->back()
@@ -568,19 +553,17 @@ class SmsCheckerAdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("[SMS Checker] ยืนยันการชำระเงินล้มเหลว: " . $e->getMessage());
+            Log::error('[SMS Checker] ยืนยันการชำระเงินล้มเหลว: '.$e->getMessage());
 
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปฏิเสธการชำระเงิน
      *
-     * @param Request $request
-     * @param Order $order
      * @return \Illuminate\Http\RedirectResponse
      */
     public function rejectPayment(Request $request, Order $order)
@@ -618,7 +601,7 @@ class SmsCheckerAdminController extends Controller
 
             DB::commit();
 
-            Log::info("[SMS Checker] Admin ปฏิเสธการชำระเงิน Order #{$order->id} โดย User #" . auth()->id());
+            Log::info("[SMS Checker] Admin ปฏิเสธการชำระเงิน Order #{$order->id} โดย User #".auth()->id());
 
             return redirect()
                 ->back()
@@ -626,11 +609,11 @@ class SmsCheckerAdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("[SMS Checker] ปฏิเสธการชำระเงินล้มเหลว: " . $e->getMessage());
+            Log::error('[SMS Checker] ปฏิเสธการชำระเงินล้มเหลว: '.$e->getMessage());
 
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

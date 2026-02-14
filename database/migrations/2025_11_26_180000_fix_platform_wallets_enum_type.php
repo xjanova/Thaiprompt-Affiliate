@@ -15,13 +15,11 @@ return new class extends Migration
 {
     /**
      * เพิ่ม ENUM values ใหม่ในคอลัมน์ type ของตาราง platform_wallets
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตารางมีอยู่
-        if (!Schema::hasTable('platform_wallets')) {
+        if (! Schema::hasTable('platform_wallets')) {
             return;
         }
 
@@ -48,8 +46,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

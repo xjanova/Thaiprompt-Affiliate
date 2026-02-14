@@ -70,7 +70,7 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        if (!$order->canBeCancelled()) {
+        if (! $order->canBeCancelled()) {
             return back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้');
         }
 
@@ -108,7 +108,7 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        if (!$order->canRetryPayment()) {
+        if (! $order->canRetryPayment()) {
             return back()->with('error', 'ไม่สามารถชำระเงินสำหรับคำสั่งซื้อนี้ได้');
         }
 
@@ -195,7 +195,7 @@ class OrderController extends Controller
     /**
      * ดึงข้อมูลติดตามพัสดุแบบ realtime (AJAX)
      *
-     * @param int $id Order ID
+     * @param  int  $id  Order ID
      * @return \Illuminate\Http\JsonResponse
      */
     public function trackingRealtime($id)
@@ -205,14 +205,14 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
-        if (!$order->tracking_number) {
+        if (! $order->tracking_number) {
             return response()->json([
                 'success' => false,
                 'message' => 'คำสั่งซื้อนี้ยังไม่มีเลขพัสดุ',
             ]);
         }
 
-        $trackingService = new TrackingService();
+        $trackingService = new TrackingService;
         $forceRefresh = request()->boolean('refresh', false);
         $result = $trackingService->trackOrder($order, $forceRefresh);
 

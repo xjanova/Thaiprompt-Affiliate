@@ -206,7 +206,7 @@ class ComponentSettingSeeder extends Seeder
 
         foreach ($components as $component) {
             // Check if component already exists
-            if (!ComponentSetting::where('component_id', $component['component_id'])->exists()) {
+            if (! ComponentSetting::where('component_id', $component['component_id'])->exists()) {
                 ComponentSetting::create($component);
                 $this->command->info("   ✅ Added: {$component['component_id']}");
                 $added++;

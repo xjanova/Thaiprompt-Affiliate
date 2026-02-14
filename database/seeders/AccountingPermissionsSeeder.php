@@ -37,7 +37,7 @@ class AccountingPermissionsSeeder extends Seeder
             Permission::create($permission);
         }
 
-        $this->command->info('✅ Accounting permissions seeded successfully: ' . count($permissions) . ' permissions');
+        $this->command->info('✅ Accounting permissions seeded successfully: '.count($permissions).' permissions');
     }
 
     /**
@@ -53,7 +53,7 @@ class AccountingPermissionsSeeder extends Seeder
         $skipped = 0;
 
         foreach ($permissions as $permission) {
-            if (!Permission::where('name', $permission['name'])->exists()) {
+            if (! Permission::where('name', $permission['name'])->exists()) {
                 Permission::create($permission);
                 $this->command->info("   ➕ Added: {$permission['name']}");
                 $added++;

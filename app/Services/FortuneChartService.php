@@ -17,28 +17,28 @@ class FortuneChartService
 {
     // ดาวเคราะห์ 9 ดวง
     public const PLANETS = [
-        'sun'     => ['name' => 'อาทิตย์', 'symbol' => "\u{2609}", 'color' => '#FF6B35', 'day' => 0],
-        'moon'    => ['name' => 'จันทร์',   'symbol' => "\u{263D}", 'color' => '#C0C0C0', 'day' => 1],
-        'mars'    => ['name' => 'อังคาร',   'symbol' => "\u{2642}", 'color' => '#E74C3C', 'day' => 2],
+        'sun' => ['name' => 'อาทิตย์', 'symbol' => "\u{2609}", 'color' => '#FF6B35', 'day' => 0],
+        'moon' => ['name' => 'จันทร์',   'symbol' => "\u{263D}", 'color' => '#C0C0C0', 'day' => 1],
+        'mars' => ['name' => 'อังคาร',   'symbol' => "\u{2642}", 'color' => '#E74C3C', 'day' => 2],
         'mercury' => ['name' => 'พุธ',      'symbol' => "\u{263F}", 'color' => '#2ECC71', 'day' => 3],
         'jupiter' => ['name' => 'พฤหัสบดี', 'symbol' => "\u{2643}", 'color' => '#F39C12', 'day' => 4],
-        'venus'   => ['name' => 'ศุกร์',    'symbol' => "\u{2640}", 'color' => '#3498DB', 'day' => 5],
-        'saturn'  => ['name' => 'เสาร์',    'symbol' => "\u{2644}", 'color' => '#8E44AD', 'day' => 6],
-        'rahu'    => ['name' => 'ราหู',     'symbol' => "\u{260A}", 'color' => '#34495E', 'day' => -1],
-        'ketu'    => ['name' => 'เกตุ',     'symbol' => "\u{260B}", 'color' => '#95A5A6', 'day' => -2],
+        'venus' => ['name' => 'ศุกร์',    'symbol' => "\u{2640}", 'color' => '#3498DB', 'day' => 5],
+        'saturn' => ['name' => 'เสาร์',    'symbol' => "\u{2644}", 'color' => '#8E44AD', 'day' => 6],
+        'rahu' => ['name' => 'ราหู',     'symbol' => "\u{260A}", 'color' => '#34495E', 'day' => -1],
+        'ketu' => ['name' => 'เกตุ',     'symbol' => "\u{260B}", 'color' => '#95A5A6', 'day' => -2],
     ];
 
     // ภพ 12 ภพ
     public const HOUSES = [
-        1  => ['name' => 'ตนุ',       'meaning' => 'ตัวตน',         'color' => '#E74C3C'],
-        2  => ['name' => 'กดุมภ',     'meaning' => 'ทรัพย์',        'color' => '#F39C12'],
-        3  => ['name' => 'สหัชชะ',    'meaning' => 'พี่น้อง',       'color' => '#2ECC71'],
-        4  => ['name' => 'พันธุ',     'meaning' => 'ครอบครัว',      'color' => '#3498DB'],
-        5  => ['name' => 'ปุตตะ',     'meaning' => 'ลูก/สร้างสรรค์', 'color' => '#9B59B6'],
-        6  => ['name' => 'อริ',       'meaning' => 'ศัตรู/โรค',     'color' => '#E67E22'],
-        7  => ['name' => 'ปัตนิ',     'meaning' => 'คู่ครอง',       'color' => '#E91E63'],
-        8  => ['name' => 'มรณะ',      'meaning' => 'เปลี่ยนแปลง',   'color' => '#607D8B'],
-        9  => ['name' => 'ศุภะ',      'meaning' => 'โชคลาภ',       'color' => '#FF9800'],
+        1 => ['name' => 'ตนุ',       'meaning' => 'ตัวตน',         'color' => '#E74C3C'],
+        2 => ['name' => 'กดุมภ',     'meaning' => 'ทรัพย์',        'color' => '#F39C12'],
+        3 => ['name' => 'สหัชชะ',    'meaning' => 'พี่น้อง',       'color' => '#2ECC71'],
+        4 => ['name' => 'พันธุ',     'meaning' => 'ครอบครัว',      'color' => '#3498DB'],
+        5 => ['name' => 'ปุตตะ',     'meaning' => 'ลูก/สร้างสรรค์', 'color' => '#9B59B6'],
+        6 => ['name' => 'อริ',       'meaning' => 'ศัตรู/โรค',     'color' => '#E67E22'],
+        7 => ['name' => 'ปัตนิ',     'meaning' => 'คู่ครอง',       'color' => '#E91E63'],
+        8 => ['name' => 'มรณะ',      'meaning' => 'เปลี่ยนแปลง',   'color' => '#607D8B'],
+        9 => ['name' => 'ศุภะ',      'meaning' => 'โชคลาภ',       'color' => '#FF9800'],
         10 => ['name' => 'กัมมะ',     'meaning' => 'การงาน',       'color' => '#795548'],
         11 => ['name' => 'ลาภะ',      'meaning' => 'ลาภผล',        'color' => '#4CAF50'],
         12 => ['name' => 'วินาศ',     'meaning' => 'อุปสรรค',      'color' => '#9E9E9E'],
@@ -58,9 +58,9 @@ class FortuneChartService
     /**
      * สร้าง birth chart จากวันเกิด
      *
-     * @param string $birthDate วันเกิด (Y-m-d)
-     * @param string $name ชื่อผู้ใช้
-     * @param string|null $gender เพศ
+     * @param  string  $birthDate  วันเกิด (Y-m-d)
+     * @param  string  $name  ชื่อผู้ใช้
+     * @param  string|null  $gender  เพศ
      * @return string|null URL ของภาพ chart หรือ null ถ้าเกิดข้อผิดพลาด
      */
     public function generateBirthChart(string $birthDate, string $name, ?string $gender = null): ?string
@@ -78,7 +78,7 @@ class FortuneChartService
 
             $chartData = [
                 'name' => $name,
-                'birthDate' => $date->format('d/m/') . ($date->year + 543),
+                'birthDate' => $date->format('d/m/').($date->year + 543),
                 'dayOfWeek' => $dayName,
                 'mainPlanet' => $mainPlanet['name'],
                 'mainPlanetSymbol' => $mainPlanet['symbol'],
@@ -89,6 +89,7 @@ class FortuneChartService
             ];
 
             $pngData = $this->buildPngChart($chartData);
+
             return $this->saveChartAsImage($pngData, "birth-chart-{$dayOfWeek}");
 
         } catch (\Exception $e) {
@@ -97,6 +98,7 @@ class FortuneChartService
                 'trace' => $e->getTraceAsString(),
                 'birthDate' => $birthDate,
             ]);
+
             return null;
         }
     }
@@ -120,7 +122,7 @@ class FortuneChartService
 
             $chartData = [
                 'name' => $name,
-                'birthDate' => $date->format('d/m/') . ($date->year + 543),
+                'birthDate' => $date->format('d/m/').($date->year + 543),
                 'dayOfWeek' => $thaiDays[$dayOfWeek],
                 'mainPlanet' => $mainPlanet['name'],
                 'mainPlanetSymbol' => $mainPlanet['symbol'],
@@ -131,12 +133,14 @@ class FortuneChartService
             ];
 
             $svg = $this->buildSvgChart($chartData);
-            return 'data:image/svg+xml;base64,' . base64_encode($svg);
+
+            return 'data:image/svg+xml;base64,'.base64_encode($svg);
 
         } catch (\Exception $e) {
             Log::warning('FortuneChart: Failed to generate SVG chart', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -144,7 +148,7 @@ class FortuneChartService
     /**
      * สร้าง chart แบบด่วน (ไม่มีวันเกิด) - แสดงดวงดาวช่วงปัจจุบัน
      *
-     * @param string $name ชื่อผู้ใช้
+     * @param  string  $name  ชื่อผู้ใช้
      * @return string|null URL ของภาพ chart
      */
     public function generateQuickChart(string $name): ?string
@@ -163,16 +167,18 @@ class FortuneChartService
                 'planetPositions' => $this->calculateCurrentTransit(),
                 'chaochana' => null,
                 'isFullChart' => false,
-                'transitDate' => $now->format('d/m/') . ($now->year + 543),
+                'transitDate' => $now->format('d/m/').($now->year + 543),
             ];
 
             $pngData = $this->buildPngChart($chartData);
-            return $this->saveChartAsImage($pngData, "quick-chart");
+
+            return $this->saveChartAsImage($pngData, 'quick-chart');
 
         } catch (\Exception $e) {
             Log::warning('FortuneChart: Failed to generate quick chart', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -181,7 +187,7 @@ class FortuneChartService
      * คำนวณตำแหน่งดาวในภพตามหลักเจ้าชนะ
      * ใช้วันเกิดเป็นฐาน → ดาวเจ้าชนะอยู่ภพตนุ(1) → ดาวอื่นกระจายตามลำดับ
      *
-     * @param int $dayOfWeek 0-6
+     * @param  int  $dayOfWeek  0-6
      * @return array [house_number => [planet_keys]]
      */
     public function calculatePlanetPositions(int $dayOfWeek): array
@@ -246,7 +252,7 @@ class FortuneChartService
     /**
      * สร้าง PNG chart ด้วย GD — รองรับภาษาไทย + ใช้ได้ใน Facebook/LINE
      *
-     * @param array $chartData ข้อมูล chart
+     * @param  array  $chartData  ข้อมูล chart
      * @return string PNG binary data
      */
     protected function buildPngChart(array $chartData): string
@@ -296,9 +302,9 @@ class FortuneChartService
 
         // Glow ตรงกลาง (วงกลมโปร่งใส)
         for ($r = $outerR; $r > $centerR; $r -= 5) {
-            $alpha = (int)(127 - (127 - 100) * ($r - $centerR) / ($outerR - $centerR));
+            $alpha = (int) (127 - (127 - 100) * ($r - $centerR) / ($outerR - $centerR));
             $glowColor = imagecolorallocatealpha($img, 139, 92, 246, $alpha);
-            imagefilledellipse($img, (int)$cx, (int)$cy, $r * 2, $r * 2, $glowColor);
+            imagefilledellipse($img, (int) $cx, (int) $cy, $r * 2, $r * 2, $glowColor);
         }
 
         // === วงกลม 3 ชั้น ===
@@ -307,16 +313,16 @@ class FortuneChartService
         // วงใน
         $this->drawCircle($img, $cx, $cy, $innerR, $purpleDark, 2);
         // วงกลาง (filled)
-        imagefilledellipse($img, (int)$cx, (int)$cy, $centerR * 2, $centerR * 2, $bgInner);
+        imagefilledellipse($img, (int) $cx, (int) $cy, $centerR * 2, $centerR * 2, $bgInner);
         $this->drawCircle($img, $cx, $cy, $centerR, $purpleLight, 2);
 
         // === เส้นแบ่ง 12 ภพ ===
         for ($i = 0; $i < 12; $i++) {
             $angle = deg2rad($i * 30 - 90);
-            $x1 = (int)($cx + $innerR * cos($angle));
-            $y1 = (int)($cy + $innerR * sin($angle));
-            $x2 = (int)($cx + $outerR * cos($angle));
-            $y2 = (int)($cy + $outerR * sin($angle));
+            $x1 = (int) ($cx + $innerR * cos($angle));
+            $y1 = (int) ($cy + $innerR * sin($angle));
+            $x2 = (int) ($cx + $outerR * cos($angle));
+            $y2 = (int) ($cy + $outerR * sin($angle));
             imageline($img, $x1, $y1, $x2, $y2, $purpleDark);
         }
 
@@ -334,7 +340,7 @@ class FortuneChartService
 
             // ดาวเคราะห์ในภพ
             $planets = $chartData['planetPositions'][$i] ?? [];
-            if (!empty($planets)) {
+            if (! empty($planets)) {
                 $planetR = ($innerR + $centerR) / 2 + 15;
                 $planetCount = count($planets);
 
@@ -347,7 +353,7 @@ class FortuneChartService
 
                     // วงกลมพื้นหลังดาว
                     $bgPlanet = $this->hexColorAlpha($img, $planet['color'], 90);
-                    imagefilledellipse($img, (int)$px, (int)$py, 30, 30, $bgPlanet);
+                    imagefilledellipse($img, (int) $px, (int) $py, 30, 30, $bgPlanet);
 
                     // สัญลักษณ์ดาว (ใช้ symbol font)
                     $this->drawCenteredText($img, $symbolFont, 18, $px, $py - 2, $planet['symbol'], $planetColor);
@@ -374,8 +380,8 @@ class FortuneChartService
             $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 58, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
 
             // มิตร/ศัตรู
-            $friendNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
-            $enemyNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
+            $friendNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
+            $enemyNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
             $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 78, "มิตร: {$friendNames}", $green);
             $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 95, "ศัตรู: {$enemyNames}", $red);
         } else {
@@ -456,6 +462,7 @@ class FortuneChartService
         $r = hexdec(substr($hex, 0, 2));
         $g = hexdec(substr($hex, 2, 2));
         $b = hexdec(substr($hex, 4, 2));
+
         return imagecolorallocate($img, $r, $g, $b);
     }
 
@@ -468,6 +475,7 @@ class FortuneChartService
         $r = hexdec(substr($hex, 0, 2));
         $g = hexdec(substr($hex, 2, 2));
         $b = hexdec(substr($hex, 4, 2));
+
         return imagecolorallocatealpha($img, $r, $g, $b, $alpha);
     }
 
@@ -477,12 +485,14 @@ class FortuneChartService
     protected function drawCenteredText($img, string $font, float $size, float $x, float $y, string $text, int $color): void
     {
         $bbox = imagettfbbox($size, 0, $font, $text);
-        if ($bbox === false) return;
+        if ($bbox === false) {
+            return;
+        }
         $textWidth = $bbox[2] - $bbox[0];
         $textHeight = $bbox[1] - $bbox[7];
         $drawX = $x - $textWidth / 2;
         $drawY = $y + $textHeight / 2;
-        imagettftext($img, $size, 0, (int)$drawX, (int)$drawY, $color, $font, $text);
+        imagettftext($img, $size, 0, (int) $drawX, (int) $drawY, $color, $font, $text);
     }
 
     /**
@@ -491,14 +501,14 @@ class FortuneChartService
     protected function drawCircle($img, float $cx, float $cy, float $r, int $color, int $thickness = 1): void
     {
         imagesetthickness($img, $thickness);
-        imagearc($img, (int)$cx, (int)$cy, (int)($r * 2), (int)($r * 2), 0, 360, $color);
+        imagearc($img, (int) $cx, (int) $cy, (int) ($r * 2), (int) ($r * 2), 0, 360, $color);
         imagesetthickness($img, 1);
     }
 
     /**
      * สร้าง SVG chart (ใช้สำหรับ admin preview ในเบราว์เซอร์)
      *
-     * @param array $chartData ข้อมูล chart
+     * @param  array  $chartData  ข้อมูล chart
      * @return string SVG XML
      */
     protected function buildSvgChart(array $chartData): string
@@ -579,7 +589,7 @@ SVG;
 
             // ดาวเคราะห์ในภพ
             $planets = $chartData['planetPositions'][$i] ?? [];
-            if (!empty($planets)) {
+            if (! empty($planets)) {
                 $planetR = ($innerR + $centerR) / 2 + 15;
                 $baseAngle = deg2rad(($i - 1) * 30 - 90 + 15);
                 $planetCount = count($planets);
@@ -593,9 +603,9 @@ SVG;
 
                     // วงกลมรอบดาว
                     $svg .= "<circle cx=\"{$px}\" cy=\"{$py}\" r=\"16\" fill=\"{$planet['color']}\" opacity=\"0.2\"/>\n";
-                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 1) . "\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$planet['color']}\" font-size=\"18\" font-weight=\"bold\">{$planet['symbol']}</text>\n";
+                    $svg .= "<text x=\"{$px}\" y=\"".($py + 1)."\" text-anchor=\"middle\" dominant-baseline=\"middle\" fill=\"{$planet['color']}\" font-size=\"18\" font-weight=\"bold\">{$planet['symbol']}</text>\n";
                     // ชื่อดาว ด้านล่าง
-                    $svg .= "<text x=\"{$px}\" y=\"" . ($py + 18) . "\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"12\" opacity=\"0.9\">{$planet['name']}</text>\n";
+                    $svg .= "<text x=\"{$px}\" y=\"".($py + 18)."\" text-anchor=\"middle\" fill=\"{$planet['color']}\" font-size=\"12\" opacity=\"0.9\">{$planet['name']}</text>\n";
                 }
             }
         }
@@ -606,28 +616,28 @@ SVG;
         if ($chartData['isFullChart']) {
             // Birth chart
             $mainColor = $chartData['mainPlanetColor'] ?? '#FFD700';
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 55) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">BIRTH CHART</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 33) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 13) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"14\">วัน{$chartData['dayOfWeek']}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 7) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"13\">{$chartData['birthDate']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy - 55)."\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">BIRTH CHART</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy - 33)."\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy - 13)."\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"14\">วัน{$chartData['dayOfWeek']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 7)."\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"13\">{$chartData['birthDate']}</text>\n";
 
             // ดาวเจ้าชนะ
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 35) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"30\" filter=\"url(#textGlow)\">{$chartData['mainPlanetSymbol']}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 58) . "\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"13\" font-weight=\"bold\">ดาวเจ้าชนะ: {$chartData['mainPlanet']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 35)."\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"30\" filter=\"url(#textGlow)\">{$chartData['mainPlanetSymbol']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 58)."\" text-anchor=\"middle\" fill=\"{$mainColor}\" font-size=\"13\" font-weight=\"bold\">ดาวเจ้าชนะ: {$chartData['mainPlanet']}</text>\n";
 
             // Legend มิตร/ศัตรู
-            $friendNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
-            $enemyNames = implode(' ', array_map(fn($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 78) . "\" text-anchor=\"middle\" fill=\"#4ADE80\" font-size=\"11\">มิตร: {$friendNames}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 95) . "\" text-anchor=\"middle\" fill=\"#F87171\" font-size=\"11\">ศัตรู: {$enemyNames}</text>\n";
+            $friendNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
+            $enemyNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 78)."\" text-anchor=\"middle\" fill=\"#4ADE80\" font-size=\"11\">มิตร: {$friendNames}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 95)."\" text-anchor=\"middle\" fill=\"#F87171\" font-size=\"11\">ศัตรู: {$enemyNames}</text>\n";
         } else {
             // Quick chart (ไม่มีวันเกิด)
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 50) . "\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">TRANSIT CHART</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy - 25) . "\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy) . "\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"13\">ดวงดาวโคจรขณะนี้</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 20) . "\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"12\">{$chartData['transitDate']}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 55) . "\" text-anchor=\"middle\" fill=\"#8B5CF6\" font-size=\"32\" filter=\"url(#textGlow)\">\u{2728}</text>\n";
-            $svg .= "<text x=\"{$cx}\" y=\"" . ($cy + 80) . "\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"11\">บอกวันเกิดเพื่อดู Birth Chart</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy - 50)."\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"15\" font-weight=\"bold\" filter=\"url(#textGlow)\">TRANSIT CHART</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy - 25)."\" text-anchor=\"middle\" fill=\"white\" font-size=\"18\" font-weight=\"bold\">{$name}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy)."\" text-anchor=\"middle\" fill=\"#A78BFA\" font-size=\"13\">ดวงดาวโคจรขณะนี้</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 20)."\" text-anchor=\"middle\" fill=\"#D1D5DB\" font-size=\"12\">{$chartData['transitDate']}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 55)."\" text-anchor=\"middle\" fill=\"#8B5CF6\" font-size=\"32\" filter=\"url(#textGlow)\">\u{2728}</text>\n";
+            $svg .= "<text x=\"{$cx}\" y=\"".($cy + 80)."\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"11\">บอกวันเกิดเพื่อดู Birth Chart</text>\n";
         }
 
         // Title ด้านบน
@@ -635,9 +645,9 @@ SVG;
         $svg .= "<text x=\"{$cx}\" y=\"55\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"12\">โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ</text>\n";
 
         // Footer
-        $svg .= "<text x=\"{$cx}\" y=\"" . ($height - 20) . "\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"10\">จันทราพยากรณ์ | Powered by Xman Studio</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"".($height - 20)."\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"10\">จันทราพยากรณ์ | Powered by Xman Studio</text>\n";
 
-        $svg .= "</svg>";
+        $svg .= '</svg>';
 
         return $svg;
     }
@@ -645,14 +655,14 @@ SVG;
     /**
      * บันทึก SVG เป็นไฟล์ภาพ SVG แล้ว return URL
      *
-     * @param string $svg SVG XML
-     * @param string $prefix prefix ชื่อไฟล์
+     * @param  string  $svg  SVG XML
+     * @param  string  $prefix  prefix ชื่อไฟล์
      * @return string|null URL ของภาพ
      */
     protected function saveChartAsImage(string $pngData, string $prefix): ?string
     {
         try {
-            $filename = "{$prefix}-" . Str::random(8) . '.png';
+            $filename = "{$prefix}-".Str::random(8).'.png';
             $path = "fortune/charts/{$filename}";
 
             Storage::disk('public')->put($path, $pngData);
@@ -662,6 +672,7 @@ SVG;
             Log::error('FortuneChart: Failed to save chart image', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -669,7 +680,7 @@ SVG;
     /**
      * ลบ chart เก่า (เรียกจาก scheduler)
      *
-     * @param int $daysOld จำนวนวันที่เก่ากว่านี้จะถูกลบ
+     * @param  int  $daysOld  จำนวนวันที่เก่ากว่านี้จะถูกลบ
      * @return int จำนวนไฟล์ที่ลบ
      */
     public function cleanupOldCharts(int $daysOld = 7): int

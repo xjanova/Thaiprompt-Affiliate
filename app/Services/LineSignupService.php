@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\LineRegistrationSession;
 use App\Models\LineSignupFlow;
-use App\Models\MlmProspect;
 use App\Models\MlmMember;
+use App\Models\MlmProspect;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -37,17 +37,19 @@ class LineSignupService
         // Check if conversation is expired and can be resumed
         if ($prospect->conversation_expired) {
             $this->timeoutService->resumeConversation($prospect);
+
             return;
         }
 
         $firstStep = LineSignupFlow::getFirstStep();
 
-        if (!$firstStep) {
+        if (! $firstStep) {
             Log::error('No signup flow configured');
             $this->lineService->sendPushMessage(
                 $prospect->line_user_id,
                 '❌ ขออภัย ระบบการสมัครสมาชิกยังไม่พร้อมใช้งาน กรุณาติดต่อทีมงาน'
             );
+
             return;
         }
 
@@ -77,6 +79,7 @@ class LineSignupService
         // Check if conversation is expired
         if ($this->timeoutService->isExpired($prospect)) {
             $this->timeoutService->expireConversation($prospect);
+
             return;
         }
 
@@ -96,6 +99,7 @@ class LineSignupService
 
             $this->lineService->sendPushMessage($prospect->line_user_id, $response['message']);
             $this->contextService->addMessageToHistory($prospect, 'assistant', $response['message']);
+
             return;
         }
 
@@ -110,18 +114,20 @@ class LineSignupService
 
             $this->lineService->sendPushMessage($prospect->line_user_id, $response['message']);
             $this->contextService->addMessageToHistory($prospect, 'assistant', $response['message']);
+
             return;
         }
 
         // Get current step
         $currentStep = LineSignupFlow::getByStepKey($prospect->conversation_step);
 
-        if (!$currentStep) {
+        if (! $currentStep) {
             Log::warning('Invalid conversation step', [
                 'prospect_id' => $prospect->id,
                 'step' => $prospect->conversation_step,
             ]);
             $this->startConversation($prospect);
+
             return;
         }
 
@@ -130,11 +136,11 @@ class LineSignupService
             // Use enhanced validation service
             $validation = $this->validateInputWithService($currentStep->input_type, $message);
 
-            if (!$validation['valid']) {
+            if (! $validation['valid']) {
                 // Send validation error with suggestions if available
                 $errorMessage = implode("\n", $validation['errors']);
 
-                if (!empty($validation['suggestion'])) {
+                if (! empty($validation['suggestion'])) {
                     $errorMessage .= "\n\n💡 คุณหมายถึง: {$validation['suggestion']} ใช่ไหม?";
                 }
 
@@ -142,6 +148,7 @@ class LineSignupService
                     $prospect->line_user_id,
                     "❌ {$errorMessage}\n\nกรุณาลองใหม่อีกครั้ง"
                 );
+
                 return;
             }
 
@@ -155,6 +162,7 @@ class LineSignupService
                     $prospect->line_user_id,
                     "⚠️ {$errorMessage}\n\nหากคุณเป็นเจ้าของบัญชี กรุณาเข้าสู่ระบบแทนการสมัครใหม่"
                 );
+
                 return;
             }
 
@@ -167,9 +175,10 @@ class LineSignupService
         // Get next step
         $nextStep = $currentStep->getNextStepFor($prospect->conversation_data);
 
-        if (!$nextStep) {
+        if (! $nextStep) {
             // Conversation complete - create user account
             $this->completeSignup($prospect);
+
             return;
         }
 
@@ -184,9 +193,10 @@ class LineSignupService
             // ไปที่ step ถัดไป (consent)
             $nextStep = $nextStep->getNextStepFor([]);
 
-            if (!$nextStep) {
+            if (! $nextStep) {
                 // ไม่น่าจะเกิด แต่ป้องกันกรณี edge case
                 $this->completeSignup($prospect);
+
                 return;
             }
         }
@@ -217,7 +227,7 @@ class LineSignupService
             // แทรกข้อมูล sponsor ก่อนส่วน "📸 เราได้รับข้อมูลจาก LINE"
             $message = str_replace(
                 "\n\n📸 เราได้รับข้อมูลจาก LINE",
-                $sponsorInfo . "\n\n📸 เราได้รับข้อมูลจาก LINE",
+                $sponsorInfo."\n\n📸 เราได้รับข้อมูลจาก LINE",
                 $message
             );
         }
@@ -340,7 +350,7 @@ class LineSignupService
         $name = $prospect->line_display_name ?? $data['name'] ?? 'User';
 
         // ใช้ email จาก conversation_data (ถ้ามี) หรือ generate
-        $email = $data['email'] ?? 'line_' . $prospect->line_user_id . '@thaiprompt.local';
+        $email = $data['email'] ?? 'line_'.$prospect->line_user_id.'@thaiprompt.local';
 
         // Phone เป็น optional (ค่อยเพิ่มภายหลัง)
         $phone = $data['phone'] ?? null;
@@ -394,7 +404,7 @@ class LineSignupService
         $sponsor = $prospect->sponsorMember;
 
         // ถ้าไม่มี sponsor จาก invitation link → ตรวจสอบ sponsor_code
-        if (!$sponsor) {
+        if (! $sponsor) {
             $sponsorCode = $prospect->conversation_data['sponsor_code'] ?? null;
 
             if ($sponsorCode && $sponsorCode !== 'ข้าม') {
@@ -419,16 +429,16 @@ class LineSignupService
         }
 
         // ถ้ายังไม่มี sponsor → หา Super Admin (user_id = 1)
-        if (!$sponsor) {
+        if (! $sponsor) {
             $superAdmin = User::find(1);
-            if (!$superAdmin) {
+            if (! $superAdmin) {
                 throw new \Exception('Super Admin not found (user_id = 1)');
             }
 
             // หา MLM member ของ Super Admin
             $sponsor = MlmMember::where('user_id', $superAdmin->id)->first();
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 throw new \Exception('Super Admin MLM member not found');
             }
 
@@ -441,7 +451,7 @@ class LineSignupService
         // Get default MLM plan
         $defaultPlan = \App\Models\MlmPlan::where('is_default', true)->first();
 
-        if (!$defaultPlan) {
+        if (! $defaultPlan) {
             throw new \Exception('No default MLM plan found');
         }
 
@@ -456,7 +466,7 @@ class LineSignupService
             // Unilevel structure
             'unilevel_sponsor_id' => $sponsor->id,
             'unilevel_level' => $sponsor->unilevel_level + 1,
-            'unilevel_path' => $sponsor->unilevel_path . '/' . $sponsor->id,
+            'unilevel_path' => $sponsor->unilevel_path.'/'.$sponsor->id,
             // Binary structure (auto-placement)
             'binary_sponsor_id' => $sponsor->id,
             'binary_parent_id' => $placement['parent_id'],
@@ -533,7 +543,7 @@ class LineSignupService
                         ],
                         [
                             'type' => 'text',
-                            'text' => 'ยินดีต้อนรับ ' . $user->name,
+                            'text' => 'ยินดีต้อนรับ '.$user->name,
                             'size' => 'sm',
                             'color' => '#999999',
                             'margin' => 'md',
@@ -663,9 +673,6 @@ class LineSignupService
      * - App Store: app_appstore_url (ถ้า app_appstore_enabled = true)
      *
      * ถ้าไม่มีลิงก์ใดๆ → ส่งข้อความแนะนำดาวน์โหลดเฉยๆ
-     *
-     * @param string $lineUserId
-     * @return void
      */
     private function sendAppDownloadMessage(string $lineUserId): void
     {
@@ -673,7 +680,7 @@ class LineSignupService
             $settings = SiteSetting::getSetting();
 
             // ตรวจสอบว่าเปิดใช้งาน section ดาวน์โหลดหรือไม่
-            if (!$settings->app_download_enabled) {
+            if (! $settings->app_download_enabled) {
                 return; // ไม่แสดงอะไร
             }
 
@@ -682,7 +689,7 @@ class LineSignupService
             $downloadButtons = [];
 
             // APK Direct Download
-            if ($settings->app_apk_enabled && !empty($settings->app_apk_url)) {
+            if ($settings->app_apk_enabled && ! empty($settings->app_apk_url)) {
                 $hasAnyLink = true;
                 $downloadButtons[] = [
                     'type' => 'button',
@@ -697,7 +704,7 @@ class LineSignupService
             }
 
             // Google Play Store
-            if ($settings->app_playstore_enabled && !empty($settings->app_playstore_url)) {
+            if ($settings->app_playstore_enabled && ! empty($settings->app_playstore_url)) {
                 $hasAnyLink = true;
                 $downloadButtons[] = [
                     'type' => 'button',
@@ -711,7 +718,7 @@ class LineSignupService
             }
 
             // Apple App Store
-            if ($settings->app_appstore_enabled && !empty($settings->app_appstore_url)) {
+            if ($settings->app_appstore_enabled && ! empty($settings->app_appstore_url)) {
                 $hasAnyLink = true;
                 $downloadButtons[] = [
                     'type' => 'button',
@@ -805,18 +812,18 @@ class LineSignupService
                 Log::info('App download message sent', [
                     'line_user_id' => $lineUserId,
                     'app_name' => $appName,
-                    'has_apk' => $settings->app_apk_enabled && !empty($settings->app_apk_url),
-                    'has_playstore' => $settings->app_playstore_enabled && !empty($settings->app_playstore_url),
-                    'has_appstore' => $settings->app_appstore_enabled && !empty($settings->app_appstore_url),
+                    'has_apk' => $settings->app_apk_enabled && ! empty($settings->app_apk_url),
+                    'has_playstore' => $settings->app_playstore_enabled && ! empty($settings->app_playstore_url),
+                    'has_appstore' => $settings->app_appstore_enabled && ! empty($settings->app_appstore_url),
                 ]);
             } else {
                 // ไม่มีลิงก์ → ส่งข้อความแนะนำเฉยๆ
                 $this->lineService->sendPushMessage(
                     $lineUserId,
-                    "📲 แนะนำดาวน์โหลดแอพ {$appName}\n\n" .
-                    "เพื่อความสะดวกในการจัดการธุรกิจ Affiliate ของคุณ\n" .
-                    "สามารถดาวน์โหลดแอพได้จาก Play Store หรือ App Store เร็วๆ นี้\n\n" .
-                    "ติดตามข่าวสารได้ที่ LINE OA นี้"
+                    "📲 แนะนำดาวน์โหลดแอพ {$appName}\n\n".
+                    "เพื่อความสะดวกในการจัดการธุรกิจ Affiliate ของคุณ\n".
+                    "สามารถดาวน์โหลดแอพได้จาก Play Store หรือ App Store เร็วๆ นี้\n\n".
+                    'ติดตามข่าวสารได้ที่ LINE OA นี้'
                 );
 
                 Log::info('App download recommendation sent (no links)', [
@@ -838,12 +845,12 @@ class LineSignupService
      */
     private function getDataKeyFromInputType(string $inputType): string
     {
-        return match($inputType) {
+        return match ($inputType) {
             'name' => 'name',
             'phone' => 'phone',
             'email' => 'email',
             'confirm' => 'confirmed',
-            default => 'response_' . $inputType,
+            default => 'response_'.$inputType,
         };
     }
 
@@ -866,14 +873,10 @@ class LineSignupService
 
     /**
      * Validate input using enhanced validation service
-     *
-     * @param string $inputType
-     * @param string $value
-     * @return array
      */
     private function validateInputWithService(string $inputType, string $value): array
     {
-        return match($inputType) {
+        return match ($inputType) {
             'phone' => $this->validationService->validateThaiPhone($value),
             'email' => $this->validationService->validateEmail($value, true),
             'name' => $this->validationService->validateThaiName($value),
@@ -891,9 +894,6 @@ class LineSignupService
      * ตรวจสอบรหัสผู้แนะนำ:
      * - ถ้าเป็น "ข้าม" → valid (ไม่มี sponsor)
      * - ถ้ากรอกรหัส → ตรวจสอบว่ามี member_code นี้หรือไม่
-     *
-     * @param string $value
-     * @return array
      */
     private function validateSponsorCode(string $value): array
     {
@@ -926,7 +926,7 @@ class LineSignupService
             ->where('status', 'active')
             ->first();
 
-        if (!$sponsor) {
+        if (! $sponsor) {
             return [
                 'valid' => false,
                 'formatted' => null,
@@ -946,14 +946,11 @@ class LineSignupService
 
     /**
      * Check for duplicate data
-     *
-     * @param string $field
-     * @param string $value
-     * @return array
      */
     private function checkDuplicates(string $field, string $value): array
     {
         $data = [$field => $value];
+
         return $this->duplicateService->checkAllDuplicates($data);
     }
 
@@ -963,15 +960,14 @@ class LineSignupService
      * ใช้สำหรับ update สถานะ session ของหน้าเว็บ
      * เพื่อให้หน้าเว็บที่ polling อยู่สามารถ redirect ไปหน้าอัพเดทข้อมูลได้อัตโนมัติ
      *
-     * @param string $lineUserId LINE User ID ของผู้สมัคร
-     * @param int $userId User ID ที่สร้างใหม่
-     * @return void
+     * @param  string  $lineUserId  LINE User ID ของผู้สมัคร
+     * @param  int  $userId  User ID ที่สร้างใหม่
      */
     private function updateRegistrationSession(string $lineUserId, int $userId): void
     {
         try {
             // ตรวจสอบว่า table มีอยู่หรือไม่ (เผื่อยังไม่ได้ migrate)
-            if (!Schema::hasTable('line_registration_sessions')) {
+            if (! Schema::hasTable('line_registration_sessions')) {
                 return;
             }
 

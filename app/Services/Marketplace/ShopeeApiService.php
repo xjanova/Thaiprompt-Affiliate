@@ -7,7 +7,9 @@ use App\Models\MarketplaceAccount;
 class ShopeeApiService extends BaseMarketplaceService
 {
     protected string $baseUrl = 'https://partner.shopeemobile.com';
+
     private string $partnerId;
+
     private string $partnerKey;
 
     public function __construct(MarketplaceAccount $account)
@@ -22,11 +24,6 @@ class ShopeeApiService extends BaseMarketplaceService
 
     /**
      * Generate API signature for Shopee
-     *
-     * @param string $path
-     * @param int $timestamp
-     * @param string $body
-     * @return string
      */
     private function generateSignature(string $path, int $timestamp, string $body = ''): string
     {
@@ -43,11 +40,6 @@ class ShopeeApiService extends BaseMarketplaceService
 
     /**
      * Make signed request to Shopee API
-     *
-     * @param string $path
-     * @param array $body
-     * @param string $method
-     * @return array|null
      */
     private function makeSignedRequest(string $path, array $body = [], string $method = 'POST'): ?array
     {
@@ -72,7 +64,7 @@ class ShopeeApiService extends BaseMarketplaceService
         }
 
         $queryString = http_build_query($queryParams);
-        $fullPath = $path . '?' . $queryString;
+        $fullPath = $path.'?'.$queryString;
 
         $headers = [
             'Content-Type' => 'application/json',
@@ -90,6 +82,7 @@ class ShopeeApiService extends BaseMarketplaceService
 
         if ($response && isset($response['error']) && $response['error'] === '') {
             $this->account->update(['status' => 'active']);
+
             return true;
         }
 
@@ -109,7 +102,7 @@ class ShopeeApiService extends BaseMarketplaceService
 
         $response = $this->makeSignedRequest('/api/v2/product/get_item_list', $requestBody);
 
-        if (!$response || !isset($response['response']['item'])) {
+        if (! $response || ! isset($response['response']['item'])) {
             return [];
         }
 
@@ -134,7 +127,7 @@ class ShopeeApiService extends BaseMarketplaceService
             'item_id_list' => [$productId],
         ]);
 
-        if (!$response || !isset($response['response']['item_list'][0])) {
+        if (! $response || ! isset($response['response']['item_list'][0])) {
             return null;
         }
 
@@ -156,7 +149,7 @@ class ShopeeApiService extends BaseMarketplaceService
 
         $response = $this->makeSignedRequest('/api/v2/order/get_order_list', $requestBody);
 
-        if (!$response || !isset($response['response']['order_list'])) {
+        if (! $response || ! isset($response['response']['order_list'])) {
             return [];
         }
 
@@ -181,7 +174,7 @@ class ShopeeApiService extends BaseMarketplaceService
             'order_sn_list' => [$orderId],
         ]);
 
-        if (!$response || !isset($response['response']['order_list'][0])) {
+        if (! $response || ! isset($response['response']['order_list'][0])) {
             return null;
         }
 
@@ -212,7 +205,7 @@ class ShopeeApiService extends BaseMarketplaceService
      */
     public function refreshToken(): bool
     {
-        if (!$this->account->refresh_token) {
+        if (! $this->account->refresh_token) {
             return false;
         }
 
@@ -234,11 +227,11 @@ class ShopeeApiService extends BaseMarketplaceService
         ];
 
         $queryString = http_build_query($queryParams);
-        $fullPath = $path . '?' . $queryString;
+        $fullPath = $path.'?'.$queryString;
 
         $response = $this->makeRequest('POST', $fullPath, $body, ['Content-Type' => 'application/json']);
 
-        if (!$response || !isset($response['access_token'])) {
+        if (! $response || ! isset($response['access_token'])) {
             return false;
         }
 

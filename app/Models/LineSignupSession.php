@@ -55,8 +55,11 @@ class LineSignupSession extends Model
      * Session statuses
      */
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_ABANDONED = 'abandoned';
+
     public const STATUS_EXPIRED = 'expired';
 
     /**
@@ -119,7 +122,7 @@ class LineSignupSession extends Model
      */
     public function isOtpValid(string $code): bool
     {
-        if (!$this->otp_code || !$this->otp_expires_at) {
+        if (! $this->otp_code || ! $this->otp_expires_at) {
             return false;
         }
 

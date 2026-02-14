@@ -71,7 +71,7 @@ class WalletLog extends Model
      */
     public function getActionIconAttribute(): string
     {
-        return match($this->action) {
+        return match ($this->action) {
             'login' => '🔐',
             'logout' => '🚪',
             'transaction_attempt' => '🔄',
@@ -94,7 +94,7 @@ class WalletLog extends Model
      */
     public function getActionLabelAttribute(): string
     {
-        return match($this->action) {
+        return match ($this->action) {
             'login' => 'เข้าสู่ระบบ',
             'logout' => 'ออกจากระบบ',
             'transaction_attempt' => 'พยายามทำธุรกรรม',
@@ -117,7 +117,7 @@ class WalletLog extends Model
      */
     public function getSeverityColorAttribute(): string
     {
-        return match($this->severity) {
+        return match ($this->severity) {
             'info' => 'blue',
             'warning' => 'yellow',
             'critical' => 'red',
@@ -130,7 +130,7 @@ class WalletLog extends Model
      */
     public function getSeverityLabelAttribute(): string
     {
-        return match($this->severity) {
+        return match ($this->severity) {
             'info' => 'ทั่วไป',
             'warning' => 'คำเตือน',
             'critical' => 'ร้ายแรง',

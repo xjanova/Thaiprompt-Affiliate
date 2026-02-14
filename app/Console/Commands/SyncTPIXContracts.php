@@ -4,11 +4,11 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class SyncTPIXContracts extends Command
 {
     protected $signature = 'tpix:sync-contracts {--force : Force sync even if contracts exist}';
+
     protected $description = 'Sync deployed TPIX smart contracts to database';
 
     public function handle()
@@ -19,27 +19,29 @@ class SyncTPIXContracts extends Command
         // Load deployment file
         $deploymentPath = storage_path('app/tpix/deployments.json');
 
-        if (!file_exists($deploymentPath)) {
+        if (! file_exists($deploymentPath)) {
             $this->error('❌ Deployment file not found!');
-            $this->error('   Expected: ' . $deploymentPath);
+            $this->error('   Expected: '.$deploymentPath);
             $this->newLine();
             $this->warn('💡 Please deploy contracts first:');
             $this->line('   cd tpix-blockchain && npm run deploy:mainnet');
+
             return 1;
         }
 
         $deployment = json_decode(file_get_contents($deploymentPath), true);
 
-        if (!$deployment || !isset($deployment['contracts'])) {
+        if (! $deployment || ! isset($deployment['contracts'])) {
             $this->error('❌ Invalid deployment file format!');
+
             return 1;
         }
 
         $this->info('📄 Deployment Info:');
-        $this->line('   Network: ' . ($deployment['network'] ?? 'unknown'));
-        $this->line('   Chain ID: ' . ($deployment['chainId'] ?? 'unknown'));
-        $this->line('   Deployer: ' . ($deployment['deployer'] ?? 'unknown'));
-        $this->line('   Timestamp: ' . ($deployment['timestamp'] ?? 'unknown'));
+        $this->line('   Network: '.($deployment['network'] ?? 'unknown'));
+        $this->line('   Chain ID: '.($deployment['chainId'] ?? 'unknown'));
+        $this->line('   Deployer: '.($deployment['deployer'] ?? 'unknown'));
+        $this->line('   Timestamp: '.($deployment['timestamp'] ?? 'unknown'));
         $this->newLine();
 
         // Sync contracts
@@ -64,7 +66,7 @@ class SyncTPIXContracts extends Command
                 $this->line("  ✅ {$name}: {$address}");
                 $synced++;
             } catch (\Exception $e) {
-                $this->error("  ❌ {$name}: " . $e->getMessage());
+                $this->error("  ❌ {$name}: ".$e->getMessage());
                 $failed++;
             }
         }
@@ -72,7 +74,7 @@ class SyncTPIXContracts extends Command
         $this->newLine();
 
         // Update .env if needed
-        if ($this->option('force') || !env('TPIX_TOKEN_ADDRESS')) {
+        if ($this->option('force') || ! env('TPIX_TOKEN_ADDRESS')) {
             $this->info('📝 Updating .env file...');
 
             $envPath = base_path('.env');

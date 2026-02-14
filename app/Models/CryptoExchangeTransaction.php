@@ -75,7 +75,7 @@ class CryptoExchangeTransaction extends Model
 
         static::creating(function ($transaction) {
             if (empty($transaction->exchange_id)) {
-                $transaction->exchange_id = 'EXG' . strtoupper(Str::random(20));
+                $transaction->exchange_id = 'EXG'.strtoupper(Str::random(20));
             }
         });
     }
@@ -194,6 +194,7 @@ class CryptoExchangeTransaction extends Model
     public function calculateSlippage(float $currentRate): float
     {
         $originalRate = $this->exchange_rate;
+
         return abs(($currentRate - $originalRate) / $originalRate * 100);
     }
 
@@ -202,8 +203,8 @@ class CryptoExchangeTransaction extends Model
      */
     public function getSummary(): string
     {
-        $from = number_format($this->from_amount, 2) . ' ' . $this->from_currency_code;
-        $to = number_format($this->to_amount, 8) . ' ' . $this->to_currency_code;
+        $from = number_format($this->from_amount, 2).' '.$this->from_currency_code;
+        $to = number_format($this->to_amount, 8).' '.$this->to_currency_code;
 
         return "{$from} → {$to}";
     }
@@ -355,7 +356,7 @@ class CryptoExchangeTransaction extends Model
     {
         return $query->where(function ($q) use ($currencyCode) {
             $q->where('from_currency_code', $currencyCode)
-              ->orWhere('to_currency_code', $currencyCode);
+                ->orWhere('to_currency_code', $currencyCode);
         });
     }
 }

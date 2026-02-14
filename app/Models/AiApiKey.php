@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Crypt;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * AI API Key Model
@@ -182,7 +182,7 @@ class AiApiKey extends Model
             return str_repeat('*', $length);
         }
 
-        return substr($key, 0, 4) . str_repeat('*', $length - 8) . substr($key, -4);
+        return substr($key, 0, 4).str_repeat('*', $length - 8).substr($key, -4);
     }
 
     /**
@@ -190,7 +190,7 @@ class AiApiKey extends Model
      */
     public function getDailyUsagePercentAttribute(): ?float
     {
-        if (!$this->tokens_limit_daily) {
+        if (! $this->tokens_limit_daily) {
             return null;
         }
 
@@ -202,7 +202,7 @@ class AiApiKey extends Model
      */
     public function getMonthlyUsagePercentAttribute(): ?float
     {
-        if (!$this->tokens_limit_monthly) {
+        if (! $this->tokens_limit_monthly) {
             return null;
         }
 
@@ -214,7 +214,7 @@ class AiApiKey extends Model
      */
     public function getDailyTokensRemainingAttribute(): ?int
     {
-        if (!$this->tokens_limit_daily) {
+        if (! $this->tokens_limit_daily) {
             return null;
         }
 
@@ -226,7 +226,7 @@ class AiApiKey extends Model
      */
     public function getMonthlyTokensRemainingAttribute(): ?int
     {
-        if (!$this->tokens_limit_monthly) {
+        if (! $this->tokens_limit_monthly) {
             return null;
         }
 
@@ -303,7 +303,7 @@ class AiApiKey extends Model
     public function isAvailable(): bool
     {
         // ไม่ active
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -458,7 +458,7 @@ class AiApiKey extends Model
         return [
             'total_keys' => $keys->count(),
             'active_keys' => $keys->where('is_active', true)->count(),
-            'available_keys' => $keys->filter(fn($k) => $k->isAvailable())->count(),
+            'available_keys' => $keys->filter(fn ($k) => $k->isAvailable())->count(),
             'tokens_used_today' => $keys->sum('tokens_used_today'),
             'tokens_used_month' => $keys->sum('tokens_used_month'),
             'tokens_used_total' => $keys->sum('tokens_used_total'),

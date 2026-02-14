@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 class HotelController extends Controller
 {
     protected $searchService;
+
     protected $availabilityService;
 
     public function __construct(
@@ -33,7 +34,6 @@ class HotelController extends Controller
     /**
      * แสดงหน้าค้นหาโรงแรม
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -66,8 +66,7 @@ class HotelController extends Controller
     /**
      * แสดงรายละเอียดโรงแรม
      *
-     * @param Request $request
-     * @param string $slug
+     * @param  string  $slug
      * @return \Illuminate\View\View
      */
     public function show(Request $request, $slug)
@@ -81,7 +80,7 @@ class HotelController extends Controller
                 'province',
                 'reviews' => function ($query) {
                     $query->approved()->orderBy('created_at', 'desc')->limit(10);
-                }
+                },
             ])
             ->firstOrFail();
 
@@ -121,7 +120,6 @@ class HotelController extends Controller
     /**
      * ค้นหาโรงแรม (AJAX)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function search(Request $request)
@@ -141,7 +139,6 @@ class HotelController extends Controller
     /**
      * ค้นหาโรงแรมใกล้เคียง (GPS)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function nearby(Request $request)
@@ -182,7 +179,6 @@ class HotelController extends Controller
     /**
      * Autocomplete ค้นหา
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function autocomplete(Request $request)
@@ -217,7 +213,7 @@ class HotelController extends Controller
     /**
      * แสดงโรงแรมตามเมือง
      *
-     * @param string $city
+     * @param  string  $city
      * @return \Illuminate\View\View
      */
     public function byCity($city)
@@ -233,7 +229,7 @@ class HotelController extends Controller
     /**
      * แสดงโรงแรมตามจังหวัด
      *
-     * @param int $provinceId
+     * @param  int  $provinceId
      * @return \Illuminate\View\View
      */
     public function byProvince($provinceId)
@@ -256,13 +252,13 @@ class HotelController extends Controller
     /**
      * แสดงโรงแรมตามภูมิภาค
      *
-     * @param string $region
+     * @param  string  $region
      * @return \Illuminate\View\View
      */
     public function byRegion($region)
     {
         // ตรวจสอบว่า region ถูกต้อง
-        if (!array_key_exists($region, Province::REGIONS)) {
+        if (! array_key_exists($region, Province::REGIONS)) {
             abort(404, 'ไม่พบภูมิภาคที่ระบุ');
         }
 
@@ -285,7 +281,6 @@ class HotelController extends Controller
     /**
      * ดึงรายการจังหวัด (AJAX)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getProvinces(Request $request)
@@ -312,7 +307,6 @@ class HotelController extends Controller
     /**
      * ตรวจสอบห้องว่าง (AJAX)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function checkAvailability(Request $request)
@@ -333,7 +327,7 @@ class HotelController extends Controller
             $request->rooms ?? 1
         );
 
-        $isAvailable = collect($availability)->every(fn($day) => $day['is_available']);
+        $isAvailable = collect($availability)->every(fn ($day) => $day['is_available']);
 
         return response()->json([
             'success' => true,

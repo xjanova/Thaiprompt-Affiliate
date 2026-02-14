@@ -1,9 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * แก้ไขปัญหา payment_method enum ที่ไม่ครอบคลุม payment methods ทั้งหมด
@@ -17,25 +16,21 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตารางมีอยู่
-        if (!Schema::hasTable('payment_transactions')) {
+        if (! Schema::hasTable('payment_transactions')) {
             return;
         }
 
         // เปลี่ยนคอลัมน์ payment_method จาก ENUM เป็น VARCHAR
         // ใช้ raw SQL เพราะ Laravel ไม่รองรับการเปลี่ยน ENUM โดยตรง
-        DB::statement("ALTER TABLE payment_transactions MODIFY COLUMN payment_method VARCHAR(50) NOT NULL");
+        DB::statement('ALTER TABLE payment_transactions MODIFY COLUMN payment_method VARCHAR(50) NOT NULL');
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

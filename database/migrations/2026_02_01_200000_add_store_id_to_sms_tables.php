@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         // เพิ่ม store_id ให้ payment_transactions (for routing)
-        if (Schema::hasTable('payment_transactions') && !Schema::hasColumn('payment_transactions', 'store_id')) {
+        if (Schema::hasTable('payment_transactions') && ! Schema::hasColumn('payment_transactions', 'store_id')) {
             Schema::table('payment_transactions', function (Blueprint $table) {
                 $table->unsignedBigInteger('store_id')->nullable()->after('order_id');
                 $table->index('store_id');

@@ -17,16 +17,12 @@ class VerifySmsCheckerDevice
 {
     /**
      * ตรวจสอบ API key และสถานะอุปกรณ์
-     *
-     * @param Request $request
-     * @param Closure $next
-     * @return Response
      */
     public function handle(Request $request, Closure $next): Response
     {
         $apiKey = $request->header('X-Api-Key');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return response()->json([
                 'success' => false,
                 'message' => 'API key is required',
@@ -36,7 +32,7 @@ class VerifySmsCheckerDevice
         // ค้นหาอุปกรณ์จาก API key
         $device = SmsCheckerDevice::findByApiKey($apiKey);
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid API key',
@@ -44,10 +40,10 @@ class VerifySmsCheckerDevice
         }
 
         // ตรวจสอบว่าอุปกรณ์ active หรือไม่
-        if (!$device->isActive()) {
+        if (! $device->isActive()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Device is ' . $device->status,
+                'message' => 'Device is '.$device->status,
             ], 403);
         }
 

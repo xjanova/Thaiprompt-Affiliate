@@ -3,17 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PlatformWallet;
-use App\Models\PlatformTransaction;
-use App\Models\EarningsLedger;
 use App\Models\PayoutRequest;
+use App\Models\PlatformTransaction;
+use App\Models\PlatformWallet;
 use App\Models\WalletDebt;
-use App\Models\PayoutSetting;
-use App\Services\PlatformRevenueService;
-use App\Services\PayoutService;
 use App\Services\DebtCollectionService;
-use Illuminate\Http\Request;
+use App\Services\PayoutService;
+use App\Services\PlatformRevenueService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 /**
  * PlatformRevenueController
@@ -23,14 +21,16 @@ use Carbon\Carbon;
 class PlatformRevenueController extends Controller
 {
     protected PlatformRevenueService $revenueService;
+
     protected PayoutService $payoutService;
+
     protected DebtCollectionService $debtService;
 
     public function __construct()
     {
-        $this->revenueService = new PlatformRevenueService();
-        $this->payoutService = new PayoutService();
-        $this->debtService = new DebtCollectionService();
+        $this->revenueService = new PlatformRevenueService;
+        $this->payoutService = new PayoutService;
+        $this->debtService = new DebtCollectionService;
     }
 
     /**
@@ -151,7 +151,6 @@ class PlatformRevenueController extends Controller
     /**
      * รายละเอียด Wallet
      *
-     * @param PlatformWallet $wallet
      * @return \Illuminate\View\View
      */
     public function showWallet(PlatformWallet $wallet)
@@ -186,7 +185,6 @@ class PlatformRevenueController extends Controller
     /**
      * รายการ Transactions ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function transactions(Request $request)
@@ -225,7 +223,6 @@ class PlatformRevenueController extends Controller
     /**
      * รายงานรายได้/รายจ่าย
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function reports(Request $request)
@@ -271,9 +268,6 @@ class PlatformRevenueController extends Controller
 
     /**
      * ข้อมูลกราฟรายได้
-     *
-     * @param int $days
-     * @return array
      */
     protected function getRevenueChartData(int $days): array
     {
@@ -307,7 +301,6 @@ class PlatformRevenueController extends Controller
     /**
      * Export รายงาน
      *
-     * @param Request $request
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function exportReport(Request $request)
@@ -332,7 +325,7 @@ class PlatformRevenueController extends Controller
             $file = fopen('php://output', 'w');
 
             // BOM for UTF-8
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
             // Header row
             fputcsv($file, [
@@ -381,7 +374,7 @@ class PlatformRevenueController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'wallets' => $wallets->map(fn($w) => [
+                'wallets' => $wallets->map(fn ($w) => [
                     'id' => $w->id,
                     'name' => $w->name,
                     'slug' => $w->slug,

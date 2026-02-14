@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -22,7 +22,7 @@ class BankTransferProvider implements PaymentProviderInterface
             $this->gateway = PaymentGateway::findByCode('bank_transfer');
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('BankTransferProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('BankTransferProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
@@ -30,9 +30,6 @@ class BankTransferProvider implements PaymentProviderInterface
     /**
      * Validate bank transfer payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
@@ -62,10 +59,6 @@ class BankTransferProvider implements PaymentProviderInterface
 
     /**
      * Process bank transfer payment
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      */
     public function process(PaymentTransaction $transaction, array $data): array
     {
@@ -77,7 +70,7 @@ class BankTransferProvider implements PaymentProviderInterface
         $branch = $this->gateway?->getCredential('branch') ?? '';
 
         // สร้าง reference number
-        $refNo = 'BT-' . strtoupper(substr($transaction->transaction_id, -8));
+        $refNo = 'BT-'.strtoupper(substr($transaction->transaction_id, -8));
 
         Log::info('Bank transfer payment initiated', [
             'transaction_id' => $transaction->transaction_id,
@@ -104,10 +97,6 @@ class BankTransferProvider implements PaymentProviderInterface
 
     /**
      * Verify bank transfer payment (admin approval)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -129,10 +118,6 @@ class BankTransferProvider implements PaymentProviderInterface
 
     /**
      * Refund bank transfer payment
-     *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
     {
@@ -152,12 +137,10 @@ class BankTransferProvider implements PaymentProviderInterface
 
     /**
      * Get bank account information for display
-     *
-     * @return array
      */
     public function getBankAccountInfo(): array
     {
-        if (!$this->gateway) {
+        if (! $this->gateway) {
             return [];
         }
 

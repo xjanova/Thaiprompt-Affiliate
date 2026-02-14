@@ -17,7 +17,7 @@ class CryptoHelper
      */
     public static function isValidEthereumAddress(string $address): bool
     {
-        if (!preg_match('/^0x[a-fA-F0-9]{40}$/', $address)) {
+        if (! preg_match('/^0x[a-fA-F0-9]{40}$/', $address)) {
             return false;
         }
 
@@ -28,7 +28,7 @@ class CryptoHelper
         }
 
         // Otherwise, verify checksum (EIP-55)
-        return self::verifyEthereumAddressChecksum('0x' . $address);
+        return self::verifyEthereumAddressChecksum('0x'.$address);
     }
 
     /**
@@ -45,7 +45,7 @@ class CryptoHelper
                 $isUpperCase = $char === strtoupper($char);
                 $hashValue = intval($hash[$i], 16);
 
-                if (($isUpperCase && $hashValue <= 7) || (!$isUpperCase && $hashValue > 7)) {
+                if (($isUpperCase && $hashValue <= 7) || (! $isUpperCase && $hashValue > 7)) {
                     return false;
                 }
             }
@@ -109,10 +109,10 @@ class CryptoHelper
         $isNegative = str_starts_with($wei, '-');
         $wei = ltrim($wei, '-');
 
-        $divisor = bcpow('10', (string)$decimals, 0);
+        $divisor = bcpow('10', (string) $decimals, 0);
         $value = bcdiv($wei, $divisor, $decimals);
 
-        return $isNegative ? '-' . $value : $value;
+        return $isNegative ? '-'.$value : $value;
     }
 
     /**
@@ -124,10 +124,10 @@ class CryptoHelper
         $isNegative = str_starts_with($ether, '-');
         $ether = ltrim($ether, '-');
 
-        $multiplier = bcpow('10', (string)$decimals, 0);
+        $multiplier = bcpow('10', (string) $decimals, 0);
         $value = bcmul($ether, $multiplier, 0);
 
-        return $isNegative ? '-' . $value : $value;
+        return $isNegative ? '-'.$value : $value;
     }
 
     /**
@@ -138,7 +138,7 @@ class CryptoHelper
         // Remove unnecessary trailing zeros
         $formatted = rtrim(rtrim(number_format($amount, $maxDecimals, '.', ''), '0'), '.');
 
-        return $formatted . ' ' . strtoupper($currency);
+        return $formatted.' '.strtoupper($currency);
     }
 
     /**
@@ -146,7 +146,7 @@ class CryptoHelper
      */
     public static function formatAmountTHB(float $amount): string
     {
-        return '฿' . number_format($amount, 2, '.', ',');
+        return '฿'.number_format($amount, 2, '.', ',');
     }
 
     /**
@@ -170,7 +170,7 @@ class CryptoHelper
             return $address;
         }
 
-        return substr($address, 0, $startChars) . '...' . substr($address, -$endChars);
+        return substr($address, 0, $startChars).'...'.substr($address, -$endChars);
     }
 
     /**
@@ -186,7 +186,8 @@ class CryptoHelper
         ];
 
         $baseUrl = $explorers[$network] ?? $explorers['ethereum'];
-        return $baseUrl . $txHash;
+
+        return $baseUrl.$txHash;
     }
 
     /**
@@ -202,7 +203,8 @@ class CryptoHelper
         ];
 
         $baseUrl = $explorers[$network] ?? $explorers['ethereum'];
-        return $baseUrl . $address;
+
+        return $baseUrl.$address;
     }
 
     /**
@@ -260,7 +262,8 @@ class CryptoHelper
      */
     public static function calculateGasFee(int $gasLimit, string $gasPrice, int $decimals = 18): string
     {
-        $fee = bcmul((string)$gasLimit, $gasPrice, 0);
+        $fee = bcmul((string) $gasLimit, $gasPrice, 0);
+
         return self::fromWei($fee, $decimals);
     }
 
@@ -269,7 +272,7 @@ class CryptoHelper
      */
     public static function getNetworkDisplayName(string $network): string
     {
-        return match($network) {
+        return match ($network) {
             'ethereum' => 'Ethereum',
             'bsc' => 'Binance Smart Chain',
             'polygon' => 'Polygon',
@@ -283,7 +286,7 @@ class CryptoHelper
      */
     public static function getNativeCurrencyCode(string $network): string
     {
-        return match($network) {
+        return match ($network) {
             'ethereum' => 'ETH',
             'bsc' => 'BNB',
             'polygon' => 'MATIC',
@@ -297,7 +300,7 @@ class CryptoHelper
      */
     public static function getRecommendedGasLimit(string $txType): int
     {
-        return match($txType) {
+        return match ($txType) {
             'native_transfer' => 21000,
             'erc20_transfer' => 100000,
             'erc20_approve' => 50000,
@@ -322,6 +325,6 @@ class CryptoHelper
 
         $maxAllowed = $maxGasPrices[$network] ?? 500;
 
-        return bccomp($gasPriceGwei, (string)$maxAllowed) <= 0;
+        return bccomp($gasPriceGwei, (string) $maxAllowed) <= 0;
     }
 }

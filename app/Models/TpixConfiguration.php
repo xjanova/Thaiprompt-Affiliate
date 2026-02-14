@@ -89,7 +89,6 @@ use Illuminate\Support\Str;
  * @property array|null $deployment_logs
  * @property array|null $error_logs
  * @property string|null $notes
- *
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -297,8 +296,6 @@ class TpixConfiguration extends Model
 
     /**
      * ความสัมพันธ์กับ User (ผู้สร้าง)
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -307,8 +304,6 @@ class TpixConfiguration extends Model
 
     /**
      * ความสัมพันธ์กับ Liquidity Pool
-     *
-     * @return BelongsTo
      */
     public function liquidityPool(): BelongsTo
     {
@@ -322,7 +317,7 @@ class TpixConfiguration extends Model
     /**
      * Scope: Draft configurations
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDraft($query)
@@ -333,7 +328,7 @@ class TpixConfiguration extends Model
     /**
      * Scope: Deployed configurations
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDeployed($query)
@@ -344,7 +339,7 @@ class TpixConfiguration extends Model
     /**
      * Scope: Listed configurations
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeListed($query)
@@ -355,8 +350,7 @@ class TpixConfiguration extends Model
     /**
      * Scope: Filter by step
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $step
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAtStep($query, int $step)
@@ -370,9 +364,6 @@ class TpixConfiguration extends Model
 
     /**
      * สร้าง unique slug
-     *
-     * @param string $name
-     * @return string
      */
     protected static function generateUniqueSlug(string $name): string
     {
@@ -380,7 +371,7 @@ class TpixConfiguration extends Model
         $count = 1;
 
         while (static::where('slug', $slug)->exists()) {
-            $slug = Str::slug($name) . '-' . $count;
+            $slug = Str::slug($name).'-'.$count;
             $count++;
         }
 
@@ -389,9 +380,6 @@ class TpixConfiguration extends Model
 
     /**
      * ตรวจสอบว่าผ่าน step ที่ระบุหรือไม่
-     *
-     * @param int $step
-     * @return bool
      */
     public function hasCompletedStep(int $step): bool
     {
@@ -400,8 +388,6 @@ class TpixConfiguration extends Model
 
     /**
      * ไปยัง step ถัดไป
-     *
-     * @return void
      */
     public function nextStep(): void
     {
@@ -414,8 +400,6 @@ class TpixConfiguration extends Model
 
     /**
      * กลับไป step ก่อนหน้า
-     *
-     * @return void
      */
     public function previousStep(): void
     {
@@ -427,8 +411,6 @@ class TpixConfiguration extends Model
 
     /**
      * อัพเดทสถานะตาม step
-     *
-     * @return void
      */
     protected function updateStatus(): void
     {
@@ -449,10 +431,6 @@ class TpixConfiguration extends Model
 
     /**
      * เพิ่ม log การ deploy
-     *
-     * @param string $action
-     * @param array $data
-     * @return void
      */
     public function addDeploymentLog(string $action, array $data = []): void
     {
@@ -471,10 +449,6 @@ class TpixConfiguration extends Model
 
     /**
      * เพิ่ม error log
-     *
-     * @param string $error
-     * @param array $context
-     * @return void
      */
     public function addErrorLog(string $error, array $context = []): void
     {
@@ -493,8 +467,6 @@ class TpixConfiguration extends Model
 
     /**
      * ตรวจสอบว่า prerequisites ผ่านหรือไม่
-     *
-     * @return bool
      */
     public function hasPassedPrerequisites(): bool
     {
@@ -505,7 +477,7 @@ class TpixConfiguration extends Model
         $required = ['rpc_node', 'wallet', 'services', 'environment'];
 
         foreach ($required as $key) {
-            if (!isset($this->prerequisites[$key]) || $this->prerequisites[$key] !== true) {
+            if (! isset($this->prerequisites[$key]) || $this->prerequisites[$key] !== true) {
                 return false;
             }
         }
@@ -515,48 +487,40 @@ class TpixConfiguration extends Model
 
     /**
      * ตรวจสอบว่าพร้อม deploy หรือไม่
-     *
-     * @return bool
      */
     public function isReadyToDeploy(): bool
     {
         return $this->current_step >= 5
-            && !empty($this->token_name)
-            && !empty($this->token_symbol)
-            && !empty($this->total_supply)
+            && ! empty($this->token_name)
+            && ! empty($this->token_symbol)
+            && ! empty($this->total_supply)
             && $this->hasPassedPrerequisites();
     }
 
     /**
      * ตรวจสอบว่า deployed แล้วหรือไม่
-     *
-     * @return bool
      */
     public function isDeployed(): bool
     {
-        return !empty($this->contract_address)
-            && !empty($this->deploy_tx_hash)
+        return ! empty($this->contract_address)
+            && ! empty($this->deploy_tx_hash)
             && $this->deployed_at !== null;
     }
 
     /**
      * ตรวจสอบว่าพร้อมสำหรับ DEX หรือไม่
-     *
-     * @return bool
      */
     public function isReadyForDex(): bool
     {
         return $this->isDeployed()
             && $this->current_step >= 6
             && $this->dex_enabled
-            && !empty($this->initial_liquidity_tpix)
-            && !empty($this->initial_liquidity_token);
+            && ! empty($this->initial_liquidity_tpix)
+            && ! empty($this->initial_liquidity_token);
     }
 
     /**
      * ดึง progress percentage
-     *
-     * @return float
      */
     public function getProgressPercentage(): float
     {
@@ -565,8 +529,6 @@ class TpixConfiguration extends Model
 
     /**
      * ดึง step title
-     *
-     * @return string
      */
     public function getCurrentStepTitle(): string
     {
@@ -585,8 +547,6 @@ class TpixConfiguration extends Model
 
     /**
      * ดึง status badge color
-     *
-     * @return string
      */
     public function getStatusBadgeColor(): string
     {
@@ -603,8 +563,6 @@ class TpixConfiguration extends Model
 
     /**
      * ดึง status label
-     *
-     * @return string
      */
     public function getStatusLabel(): string
     {

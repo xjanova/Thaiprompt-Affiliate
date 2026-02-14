@@ -34,8 +34,6 @@ class SoftwareDownloadController extends Controller
     /**
      * สร้าง Download Token สำหรับ License
      *
-     * @param Request $request
-     * @param SoftwareLicense $license
      * @return \Illuminate\Http\JsonResponse
      */
     public function createToken(Request $request, SoftwareLicense $license)
@@ -72,7 +70,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดไฟล์ผ่าน Token
      *
-     * @param string $token
      * @return StreamedResponse|Response
      */
     public function downloadByToken(string $token)
@@ -96,7 +93,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดไฟล์จาก Product (ต้องมี License)
      *
-     * @param SoftwareProduct $product
      * @return \Illuminate\Http\JsonResponse
      */
     public function download(SoftwareProduct $product)
@@ -108,7 +104,7 @@ class SoftwareDownloadController extends Controller
                 ->active()
                 ->first();
 
-            if (!$license) {
+            if (! $license) {
                 return response()->json([
                     'success' => false,
                     'message' => 'คุณไม่มี License สำหรับซอฟต์แวร์นี้',
@@ -131,8 +127,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดไฟล์ตามประเภทการจัดเก็บ
      *
-     * @param SoftwareProduct $product
-     * @param SoftwareDownload $download
      * @return StreamedResponse|Response
      */
     protected function downloadFile(SoftwareProduct $product, SoftwareDownload $download)
@@ -144,7 +138,7 @@ class SoftwareDownloadController extends Controller
         ]);
 
         try {
-            $response = match($product->storage_type) {
+            $response = match ($product->storage_type) {
                 'url' => $this->downloadFromUrl($product, $download),
                 's3' => $this->downloadFromS3($product, $download),
                 'google_drive' => $this->downloadFromGoogleDrive($product, $download),
@@ -167,8 +161,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดจาก URL
      *
-     * @param SoftwareProduct $product
-     * @param SoftwareDownload $download
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function downloadFromUrl(SoftwareProduct $product, SoftwareDownload $download)
@@ -180,8 +172,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดจาก AWS S3
      *
-     * @param SoftwareProduct $product
-     * @param SoftwareDownload $download
      * @return StreamedResponse
      */
     protected function downloadFromS3(SoftwareProduct $product, SoftwareDownload $download)
@@ -191,7 +181,7 @@ class SoftwareDownloadController extends Controller
             $product->s3_key,
             now()->addMinutes(5),
             [
-                'ResponseContentDisposition' => 'attachment; filename="' . $product->slug . '.zip"',
+                'ResponseContentDisposition' => 'attachment; filename="'.$product->slug.'.zip"',
             ]
         );
 
@@ -201,8 +191,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดจาก Google Drive
      *
-     * @param SoftwareProduct $product
-     * @param SoftwareDownload $download
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function downloadFromGoogleDrive(SoftwareProduct $product, SoftwareDownload $download)
@@ -217,8 +205,6 @@ class SoftwareDownloadController extends Controller
     /**
      * ดาวน์โหลดจาก Local Server
      *
-     * @param SoftwareProduct $product
-     * @param SoftwareDownload $download
      * @return StreamedResponse
      */
     protected function downloadFromLocal(SoftwareProduct $product, SoftwareDownload $download)
@@ -226,17 +212,17 @@ class SoftwareDownloadController extends Controller
         $filePath = $product->local_file_path;
 
         // ตรวจสอบว่าไฟล์มีอยู่จริง
-        if (!Storage::disk('local')->exists($filePath)) {
+        if (! Storage::disk('local')->exists($filePath)) {
             throw new \Exception('ไม่พบไฟล์ซอฟต์แวร์');
         }
 
         // ดาวน์โหลดไฟล์
         return Storage::disk('local')->download(
             $filePath,
-            $product->slug . '.zip',
+            $product->slug.'.zip',
             [
                 'Content-Type' => 'application/zip',
-                'Content-Disposition' => 'attachment; filename="' . $product->slug . '.zip"',
+                'Content-Disposition' => 'attachment; filename="'.$product->slug.'.zip"',
             ]
         );
     }

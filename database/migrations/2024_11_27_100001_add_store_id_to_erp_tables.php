@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
  * เพื่อแยกข้อมูลตามร้านค้า - ใช้ฟรีทุกร้าน
  *
  * @author AI Assistant
+ *
  * @since 2024-11-27
  */
 return new class extends Migration
@@ -19,8 +20,6 @@ return new class extends Migration
      *
      * ⚠️ vendor_stores ถูกสร้างใน migration 2025_11_03
      * ดังนั้นต้องเช็คว่า vendor_stores มีอยู่ก่อนเพิ่ม foreign key
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -28,8 +27,8 @@ return new class extends Migration
 
         // เพิ่ม store_id ให้ตาราง departments
         if (Schema::hasTable('departments')) {
-            Schema::table('departments', function (Blueprint $table) use ($vendorStoresExists) {
-                if (!Schema::hasColumn('departments', 'store_id')) {
+            Schema::table('departments', function (Blueprint $table) {
+                if (! Schema::hasColumn('departments', 'store_id')) {
                     // เพิ่มคอลัมน์ก่อน
                     $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'departments_store_id_index');
@@ -50,8 +49,8 @@ return new class extends Migration
 
         // เพิ่ม store_id ให้ตาราง positions
         if (Schema::hasTable('positions')) {
-            Schema::table('positions', function (Blueprint $table) use ($vendorStoresExists) {
-                if (!Schema::hasColumn('positions', 'store_id')) {
+            Schema::table('positions', function (Blueprint $table) {
+                if (! Schema::hasColumn('positions', 'store_id')) {
                     $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'positions_store_id_index');
                 }
@@ -70,8 +69,8 @@ return new class extends Migration
 
         // เพิ่ม store_id ให้ตาราง employees
         if (Schema::hasTable('employees')) {
-            Schema::table('employees', function (Blueprint $table) use ($vendorStoresExists) {
-                if (!Schema::hasColumn('employees', 'store_id')) {
+            Schema::table('employees', function (Blueprint $table) {
+                if (! Schema::hasColumn('employees', 'store_id')) {
                     $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'employees_store_id_index');
                 }
@@ -91,7 +90,7 @@ return new class extends Migration
         // เพิ่ม store_id ให้ตาราง attendance_records (ถ้ามี)
         if (Schema::hasTable('attendance_records')) {
             Schema::table('attendance_records', function (Blueprint $table) {
-                if (!Schema::hasColumn('attendance_records', 'store_id')) {
+                if (! Schema::hasColumn('attendance_records', 'store_id')) {
                     $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'attendance_records_store_id_idx');
                 }
@@ -111,7 +110,7 @@ return new class extends Migration
         // เพิ่ม store_id ให้ตาราง leave_requests (ถ้ามี)
         if (Schema::hasTable('leave_requests')) {
             Schema::table('leave_requests', function (Blueprint $table) {
-                if (!Schema::hasColumn('leave_requests', 'store_id')) {
+                if (! Schema::hasColumn('leave_requests', 'store_id')) {
                     $table->unsignedBigInteger('store_id')->nullable()->after('id');
                     $table->index('store_id', 'leave_requests_store_id_index');
                 }
@@ -134,8 +133,6 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      * ลบ store_id ออกจากตาราง ERP
-     *
-     * @return void
      */
     public function down(): void
     {

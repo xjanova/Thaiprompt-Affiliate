@@ -29,7 +29,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Real-time Analytics หรือคืน JSON สำหรับ AJAX
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function realtime(Request $request)
@@ -56,7 +55,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Historical Analytics หรือคืนข้อมูล historical data สำหรับ charts
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function historical(Request $request)
@@ -95,7 +93,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Performance Analytics หรือคืนข้อมูล system performance
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function performance(Request $request)
@@ -121,7 +118,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Database Analytics หรือคืนข้อมูล database metrics
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function database(Request $request)
@@ -153,7 +149,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Cache Analytics หรือคืนข้อมูล cache metrics
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function cache(Request $request)
@@ -186,7 +181,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Traffic Analytics หรือคืนข้อมูล traffic metrics
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function traffic(Request $request)
@@ -221,7 +215,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Business Analytics หรือคืนข้อมูล business metrics
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function business(Request $request)
@@ -254,7 +247,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Security Analytics หรือคืนข้อมูล security metrics
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function security(Request $request)
@@ -299,7 +291,7 @@ class AnalyticsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to collect metrics: ' . $e->getMessage(),
+                'message' => 'Failed to collect metrics: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -307,7 +299,6 @@ class AnalyticsController extends Controller
     /**
      * แสดงหน้า Capacity Analytics หรือคืน system capacity report
      *
-     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function capacity(Request $request)
@@ -375,7 +366,7 @@ class AnalyticsController extends Controller
             if ($connectionUsage > 70) {
                 $recommendations[] = [
                     'severity' => 'medium',
-                    'message' => 'Database connection pool is at ' . round($connectionUsage) . '%. Consider adding read replicas or increasing pool size.',
+                    'message' => 'Database connection pool is at '.round($connectionUsage).'%. Consider adding read replicas or increasing pool size.',
                 ];
             }
         }
@@ -383,14 +374,14 @@ class AnalyticsController extends Controller
         if ($latest->cache_hit_rate !== null && $latest->cache_hit_rate < 70) {
             $recommendations[] = [
                 'severity' => 'medium',
-                'message' => 'Cache hit rate is low (' . $latest->cache_hit_rate . '%). Review caching strategy.',
+                'message' => 'Cache hit rate is low ('.$latest->cache_hit_rate.'%). Review caching strategy.',
             ];
         }
 
         if ($latest->avg_response_time > 500) {
             $recommendations[] = [
                 'severity' => 'high',
-                'message' => 'Average response time is ' . $latest->avg_response_time . 'ms. Optimize slow queries and add caching.',
+                'message' => 'Average response time is '.$latest->avg_response_time.'ms. Optimize slow queries and add caching.',
             ];
         }
 
@@ -415,11 +406,11 @@ class AnalyticsController extends Controller
             ->orderBy('recorded_at', 'asc')
             ->get();
 
-        $filename = 'system-analytics-' . now()->format('Y-m-d') . '.csv';
+        $filename = 'system-analytics-'.now()->format('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
         $callback = function () use ($metrics) {

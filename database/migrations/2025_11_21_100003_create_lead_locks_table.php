@@ -12,18 +12,16 @@ return new class extends Migration
      * ตารางนี้เก็บข้อมูลการล็อคผู้มุ่งหวัง (Lead Lock) 48 ชั่วโมง
      * เมื่อผู้มุ่งหวังเข้าลิงก์แม่ทีมคนใด จะถูกล็อคไว้ 48 ชม.
      * ถ้ามีคนอื่นส่งลิงก์ซ้อน จะให้สิทธิ์คนแรกที่ล็อคไว้
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             throw new \Exception('Table "users" must exist before creating "lead_locks" table.');
         }
 
         // ตรวจสอบว่าตาราง mlm_members มีอยู่หรือไม่
-        if (!Schema::hasTable('mlm_members')) {
+        if (! Schema::hasTable('mlm_members')) {
             throw new \Exception('Table "mlm_members" must exist before creating "lead_locks" table.');
         }
 
@@ -80,8 +78,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง lead_locks
-     *
-     * @return void
      */
     public function down(): void
     {

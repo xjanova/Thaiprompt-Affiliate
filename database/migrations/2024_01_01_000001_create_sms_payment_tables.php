@@ -17,13 +17,11 @@ return new class extends Migration
 {
     /**
      * สร้างตารางระบบ SMS Payment
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตาราง SMS Checker Devices
-        if (!Schema::hasTable('sms_checker_devices')) {
+        if (! Schema::hasTable('sms_checker_devices')) {
             Schema::create('sms_checker_devices', function (Blueprint $table) {
                 $table->id();
                 $table->string('device_id')->unique();
@@ -44,7 +42,7 @@ return new class extends Migration
         }
 
         // ตาราง SMS Payment Notifications
-        if (!Schema::hasTable('sms_payment_notifications')) {
+        if (! Schema::hasTable('sms_payment_notifications')) {
             Schema::create('sms_payment_notifications', function (Blueprint $table) {
                 $table->id();
                 $table->string('bank', 20);
@@ -72,7 +70,7 @@ return new class extends Migration
         }
 
         // ตาราง Unique Payment Amounts (จำนวนเงินเฉพาะสำหรับจับคู่)
-        if (!Schema::hasTable('unique_payment_amounts')) {
+        if (! Schema::hasTable('unique_payment_amounts')) {
             Schema::create('unique_payment_amounts', function (Blueprint $table) {
                 $table->id();
                 $table->decimal('base_amount', 15, 2);
@@ -93,7 +91,7 @@ return new class extends Migration
         }
 
         // ตาราง Nonce Tracking (ป้องกัน replay attack)
-        if (!Schema::hasTable('sms_payment_nonces')) {
+        if (! Schema::hasTable('sms_payment_nonces')) {
             Schema::create('sms_payment_nonces', function (Blueprint $table) {
                 $table->id();
                 $table->string('nonce', 50)->unique();
@@ -108,8 +106,6 @@ return new class extends Migration
 
     /**
      * ลบตารางระบบ SMS Payment
-     *
-     * @return void
      */
     public function down(): void
     {

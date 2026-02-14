@@ -57,8 +57,6 @@ class PaymentBankAccount extends Model
 
     /**
      * รายชื่อธนาคารที่รองรับ
-     *
-     * @return array
      */
     public static function supportedBanks(): array
     {
@@ -135,7 +133,8 @@ class PaymentBankAccount extends Model
         if (strlen($number) <= 4) {
             return $number;
         }
-        return str_repeat('*', strlen($number) - 4) . substr($number, -4);
+
+        return str_repeat('*', strlen($number) - 4).substr($number, -4);
     }
 
     /**
@@ -150,7 +149,8 @@ class PaymentBankAccount extends Model
         if (strlen($id) <= 6) {
             return $id;
         }
-        return substr($id, 0, 3) . str_repeat('*', strlen($id) - 6) . substr($id, -3);
+
+        return substr($id, 0, 3).str_repeat('*', strlen($id) - 6).substr($id, -3);
     }
 
     /**
@@ -169,7 +169,8 @@ class PaymentBankAccount extends Model
         if (empty($this->qr_image)) {
             return null;
         }
-        return asset('storage/' . $this->qr_image);
+
+        return asset('storage/'.$this->qr_image);
     }
 
     // ความสัมพันธ์
@@ -202,7 +203,7 @@ class PaymentBankAccount extends Model
      */
     public function hasPromptpay(): bool
     {
-        return !empty($this->promptpay_id);
+        return ! empty($this->promptpay_id);
     }
 
     /**

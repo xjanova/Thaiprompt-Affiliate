@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ShoppingCart;
 use App\Models\Product;
+use App\Models\ShoppingCart;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -47,13 +47,14 @@ class CartController extends Controller
         $product = Product::findOrFail($request->product_id);
 
         // Check if product is available
-        if (!$product->isInStock()) {
+        if (! $product->isInStock()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'สินค้านี้หมดสต็อกแล้ว'
+                    'message' => 'สินค้านี้หมดสต็อกแล้ว',
                 ], 400);
             }
+
             return back()->with('error', 'สินค้านี้หมดสต็อกแล้ว');
         }
 
@@ -62,9 +63,10 @@ class CartController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'สินค้ามีจำนวนไม่เพียงพอ'
+                    'message' => 'สินค้ามีจำนวนไม่เพียงพอ',
                 ], 400);
             }
+
             return back()->with('error', 'สินค้ามีจำนวนไม่เพียงพอ');
         }
 
@@ -82,9 +84,10 @@ class CartController extends Controller
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'สินค้ามีจำนวนไม่เพียงพอ'
+                        'message' => 'สินค้ามีจำนวนไม่เพียงพอ',
                     ], 400);
                 }
+
                 return back()->with('error', 'สินค้ามีจำนวนไม่เพียงพอ');
             }
 
@@ -107,7 +110,7 @@ class CartController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'เพิ่มสินค้าลงตะกร้าเรียบร้อยแล้ว',
-                'cart_count' => $cartCount
+                'cart_count' => $cartCount,
             ]);
         }
 
@@ -138,7 +141,7 @@ class CartController extends Controller
         if ($product->track_inventory && $product->stock_quantity < $request->quantity) {
             return response()->json([
                 'success' => false,
-                'message' => 'สินค้ามีจำนวนไม่เพียงพอ'
+                'message' => 'สินค้ามีจำนวนไม่เพียงพอ',
             ], 400);
         }
 
@@ -147,7 +150,7 @@ class CartController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'อัพเดตจำนวนสินค้าเรียบร้อย',
-            'subtotal' => $cartItem->subtotal
+            'subtotal' => $cartItem->subtotal,
         ]);
     }
 

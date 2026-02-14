@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * แก้ไขประเภทคอลัมน์ extracted_data ให้รองรับข้อมูล JSON ขนาดใหญ่
@@ -17,22 +17,21 @@ return new class extends Migration
 {
     /**
      * แก้ไขคอลัมน์ extracted_data เป็น LONGTEXT
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง kyc_verifications มีอยู่
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             return;
         }
 
         // ตรวจสอบว่าคอลัมน์ extracted_data มีอยู่
-        if (!Schema::hasColumn('kyc_verifications', 'extracted_data')) {
+        if (! Schema::hasColumn('kyc_verifications', 'extracted_data')) {
             // ถ้ายังไม่มี ให้สร้างใหม่เป็น LONGTEXT
             Schema::table('kyc_verifications', function (Blueprint $table) {
                 $table->longText('extracted_data')->nullable()->after('submitted_at');
             });
+
             return;
         }
 
@@ -43,12 +42,10 @@ return new class extends Migration
 
     /**
      * ย้อนกลับ (เปลี่ยนเป็น JSON)
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             return;
         }
 

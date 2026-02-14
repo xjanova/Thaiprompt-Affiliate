@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\TPIX\CreateTokenRequest;
-use App\Http\Requests\TPIX\TransferTokenRequest;
 use App\Http\Requests\TPIX\BuyTokenRequest;
+use App\Http\Requests\TPIX\CreateTokenRequest;
 use App\Http\Requests\TPIX\SellTokenRequest;
+use App\Http\Requests\TPIX\TransferTokenRequest;
 use App\Models\TPIXToken;
 use App\Services\TPIX\TokenFactoryService;
 use App\Services\TPIX\TokenWalletIntegrationService;
@@ -28,7 +28,7 @@ class TokenApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $cacheKey = 'api_tokens_' . md5(json_encode($request->all()));
+        $cacheKey = 'api_tokens_'.md5(json_encode($request->all()));
 
         $result = Cache::remember($cacheKey, 60, function () use ($request) {
             $query = TPIXToken::where('status', 'active')
@@ -36,9 +36,9 @@ class TokenApiController extends Controller
 
             // Search
             if ($request->search) {
-                $query->where(function($q) use ($request) {
+                $query->where(function ($q) use ($request) {
                     $q->where('name', 'like', "%{$request->search}%")
-                      ->orWhere('symbol', 'like', "%{$request->search}%");
+                        ->orWhere('symbol', 'like', "%{$request->search}%");
                 });
             }
 
@@ -55,12 +55,12 @@ class TokenApiController extends Controller
             $tokens = $query->paginate($request->get('per_page', 20));
 
             return [
-                'data' => $tokens->map(function($token) {
+                'data' => $tokens->map(function ($token) {
                     return [
                         'id' => $token->id,
                         'name' => $token->name,
                         'symbol' => $token->symbol,
-                        'logo' => $token->logo ? asset('storage/' . $token->logo) : null,
+                        'logo' => $token->logo ? asset('storage/'.$token->logo) : null,
                         'current_price' => $token->current_price_tpix,
                         'price_change_24h' => $token->price_change_24h,
                         'market_cap' => $token->market_cap,
@@ -96,7 +96,7 @@ class TokenApiController extends Controller
                 'name' => $token->name,
                 'symbol' => $token->symbol,
                 'description' => $token->description,
-                'logo' => $token->logo ? asset('storage/' . $token->logo) : null,
+                'logo' => $token->logo ? asset('storage/'.$token->logo) : null,
                 'contract_address' => $token->contract_address,
                 'total_supply' => $token->total_supply,
                 'decimals' => $token->decimals,
@@ -280,13 +280,13 @@ class TokenApiController extends Controller
             ->with('token')
             ->where('balance', '>', 0)
             ->get()
-            ->map(function($balance) {
+            ->map(function ($balance) {
                 return [
                     'token' => [
                         'id' => $balance->token->id,
                         'name' => $balance->token->name,
                         'symbol' => $balance->token->symbol,
-                        'logo' => $balance->token->logo ? asset('storage/' . $balance->token->logo) : null,
+                        'logo' => $balance->token->logo ? asset('storage/'.$balance->token->logo) : null,
                     ],
                     'balance' => $balance->balance,
                     'available_balance' => $balance->available_balance,
@@ -320,7 +320,7 @@ class TokenApiController extends Controller
             ->paginate($request->get('per_page', 20));
 
         return response()->json([
-            'data' => $transactions->map(function($tx) {
+            'data' => $transactions->map(function ($tx) {
                 return [
                     'tx_hash' => $tx->tx_hash,
                     'from' => $tx->from_address,

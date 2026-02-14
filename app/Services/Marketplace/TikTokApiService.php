@@ -15,11 +15,6 @@ class TikTokApiService extends BaseMarketplaceService
 
     /**
      * Generate API signature for TikTok Shop
-     *
-     * @param string $path
-     * @param array $params
-     * @param string $body
-     * @return string
      */
     private function generateSignature(string $path, array $params, string $body = ''): string
     {
@@ -29,7 +24,7 @@ class TikTokApiService extends BaseMarketplaceService
         // Build string to sign
         $input = $path;
         foreach ($params as $key => $value) {
-            $input .= $key . $value;
+            $input .= $key.$value;
         }
         $input .= $body;
 
@@ -41,12 +36,6 @@ class TikTokApiService extends BaseMarketplaceService
 
     /**
      * Make signed request to TikTok Shop API
-     *
-     * @param string $path
-     * @param array $params
-     * @param array $body
-     * @param string $method
-     * @return array|null
      */
     private function makeSignedRequest(string $path, array $params = [], array $body = [], string $method = 'POST'): ?array
     {
@@ -68,7 +57,7 @@ class TikTokApiService extends BaseMarketplaceService
 
         // Build query string
         $queryString = http_build_query($params);
-        $fullPath = $path . '?' . $queryString;
+        $fullPath = $path.'?'.$queryString;
 
         $headers = [
             'Content-Type' => 'application/json',
@@ -86,6 +75,7 @@ class TikTokApiService extends BaseMarketplaceService
 
         if ($response && isset($response['code']) && $response['code'] === 0) {
             $this->account->update(['status' => 'active']);
+
             return true;
         }
 
@@ -104,11 +94,11 @@ class TikTokApiService extends BaseMarketplaceService
 
         $response = $this->makeSignedRequest('/api/products/search', [], $requestBody);
 
-        if (!$response || !isset($response['data']['products'])) {
+        if (! $response || ! isset($response['data']['products'])) {
             return [];
         }
 
-        return array_map(fn($product) => $this->normalizeProduct($product), $response['data']['products']);
+        return array_map(fn ($product) => $this->normalizeProduct($product), $response['data']['products']);
     }
 
     /**
@@ -120,7 +110,7 @@ class TikTokApiService extends BaseMarketplaceService
             'product_id' => $productId,
         ]);
 
-        if (!$response || !isset($response['data'])) {
+        if (! $response || ! isset($response['data'])) {
             return null;
         }
 
@@ -141,11 +131,11 @@ class TikTokApiService extends BaseMarketplaceService
 
         $response = $this->makeSignedRequest('/api/orders/search', [], $requestBody);
 
-        if (!$response || !isset($response['data']['orders'])) {
+        if (! $response || ! isset($response['data']['orders'])) {
             return [];
         }
 
-        return array_map(fn($order) => $this->normalizeOrder($order), $response['data']['orders']);
+        return array_map(fn ($order) => $this->normalizeOrder($order), $response['data']['orders']);
     }
 
     /**
@@ -157,7 +147,7 @@ class TikTokApiService extends BaseMarketplaceService
             'order_id_list' => [$orderId],
         ]);
 
-        if (!$response || !isset($response['data']['order_list'][0])) {
+        if (! $response || ! isset($response['data']['order_list'][0])) {
             return null;
         }
 
@@ -187,7 +177,7 @@ class TikTokApiService extends BaseMarketplaceService
      */
     public function refreshToken(): bool
     {
-        if (!$this->account->refresh_token) {
+        if (! $this->account->refresh_token) {
             return false;
         }
 
@@ -200,7 +190,7 @@ class TikTokApiService extends BaseMarketplaceService
 
         $response = $this->makeRequest('GET', '/api/token/refresh', $params);
 
-        if (!$response || !isset($response['data']['access_token'])) {
+        if (! $response || ! isset($response['data']['access_token'])) {
             return false;
         }
 

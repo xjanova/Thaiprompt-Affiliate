@@ -76,7 +76,7 @@ class NotificationTemplate extends Model
      */
     public function getTypeLabelAttribute(): string
     {
-        return match($this->type) {
+        return match ($this->type) {
             'wallet' => 'กระเป๋าเงิน',
             'withdrawal' => 'ถอนเงิน',
             'deposit' => 'ฝากเงิน',
@@ -94,7 +94,7 @@ class NotificationTemplate extends Model
      */
     public function getPriorityLabelAttribute(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'ต่ำ',
             'normal' => 'ปกติ',
             'high' => 'สูง',

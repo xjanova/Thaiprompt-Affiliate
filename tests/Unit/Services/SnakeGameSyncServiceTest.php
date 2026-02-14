@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Services;
 
-use Tests\TestCase;
 use App\Services\SnakeGameSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
 
 /**
  * SnakeGameSyncService Unit Tests
@@ -25,7 +25,7 @@ class SnakeGameSyncServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->service = new SnakeGameSyncService();
+        $this->service = new SnakeGameSyncService;
 
         // ล้าง cache ก่อนทดสอบ
         Cache::flush();
@@ -268,13 +268,13 @@ class SnakeGameSyncServiceTest extends TestCase
         // จำลองว่า player_1 และ player_2 หมดอายุ (45 วินาทีที่แล้ว)
         $expiredTime = now()->subSeconds(45)->timestamp;
 
-        Cache::put("snake_sync:player:player_1", [
+        Cache::put('snake_sync:player:player_1', [
             'player_id' => 'player_1',
             'name' => 'Player1',
             'last_ping' => $expiredTime,
         ], 60);
 
-        Cache::put("snake_sync:player:player_2", [
+        Cache::put('snake_sync:player:player_2', [
             'player_id' => 'player_2',
             'name' => 'Player2',
             'last_ping' => $expiredTime,
@@ -287,11 +287,11 @@ class SnakeGameSyncServiceTest extends TestCase
         $this->assertEquals(2, $cleanedCount);
 
         // ตรวจสอบว่า player_3 ยังอยู่
-        $this->assertNotNull(Cache::get("snake_sync:player:player_3"));
+        $this->assertNotNull(Cache::get('snake_sync:player:player_3'));
 
         // ตรวจสอบว่า player_1 และ player_2 ถูกลบ
-        $this->assertNull(Cache::get("snake_sync:player:player_1"));
-        $this->assertNull(Cache::get("snake_sync:player:player_2"));
+        $this->assertNull(Cache::get('snake_sync:player:player_1'));
+        $this->assertNull(Cache::get('snake_sync:player:player_2'));
     }
 
     /**

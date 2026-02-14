@@ -10,8 +10,6 @@ return new class extends Migration
      * สร้างตาราง daily_reward_claims
      *
      * ตารางนี้เก็บประวัติการรับรางวัลประจำวันของผู้ใช้
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -48,8 +46,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง daily_reward_claims
-     *
-     * @return void
      */
     public function down(): void
     {

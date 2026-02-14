@@ -2,8 +2,8 @@
 
 namespace App\Services\BotAutomation;
 
-use App\Models\BotAutomation\BotScheduledPost;
 use App\Models\BotAutomation\BotPlatformConnection;
+use App\Models\BotAutomation\BotScheduledPost;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +17,7 @@ class BotPlatformService
         $connection = $post->platformConnection;
         $platform = $connection->platform;
 
-        if (!$connection->isValid()) {
+        if (! $connection->isValid()) {
             return [
                 'success' => false,
                 'error' => 'Platform connection is not valid or token expired',
@@ -25,7 +25,7 @@ class BotPlatformService
         }
 
         try {
-            $result = match($platform->code) {
+            $result = match ($platform->code) {
                 'facebook' => $this->publishToFacebook($post, $connection),
                 'instagram' => $this->publishToInstagram($post, $connection),
                 'twitter' => $this->publishToTwitter($post, $connection),
@@ -44,7 +44,7 @@ class BotPlatformService
 
                 $connection->recordPost();
 
-                Log::info("Post published successfully", [
+                Log::info('Post published successfully', [
                     'post_id' => $post->id,
                     'platform' => $platform->code,
                     'platform_post_id' => $result['post_id'],
@@ -52,7 +52,7 @@ class BotPlatformService
             } else {
                 $post->markAsFailed($result['error'] ?? 'Unknown error');
 
-                Log::warning("Post publication failed", [
+                Log::warning('Post publication failed', [
                     'post_id' => $post->id,
                     'platform' => $platform->code,
                     'error' => $result['error'] ?? 'Unknown error',
@@ -63,7 +63,7 @@ class BotPlatformService
         } catch (\Exception $e) {
             $post->markAsFailed($e->getMessage());
 
-            Log::error("Post publication exception", [
+            Log::error('Post publication exception', [
                 'post_id' => $post->id,
                 'platform' => $platform->code,
                 'error' => $e->getMessage(),
@@ -90,7 +90,7 @@ class BotPlatformService
             ];
 
             // Add media if present
-            if (!empty($post->media_urls)) {
+            if (! empty($post->media_urls)) {
                 // For multiple photos, use different endpoint
                 $endpoint = "https://graph.facebook.com/v18.0/{$connection->account_id}/photos";
                 $data['url'] = $post->media_urls[0];
@@ -101,6 +101,7 @@ class BotPlatformService
 
             if ($response->successful()) {
                 $result = $response->json();
+
                 return [
                     'success' => true,
                     'post_id' => $result['id'] ?? $result['post_id'] ?? '',
@@ -138,7 +139,7 @@ class BotPlatformService
             ];
 
             // Add media URL
-            if (!empty($post->media_urls)) {
+            if (! empty($post->media_urls)) {
                 $createData['image_url'] = $post->media_urls[0];
             } else {
                 return [
@@ -149,7 +150,7 @@ class BotPlatformService
 
             $createResponse = Http::post($createEndpoint, $createData);
 
-            if (!$createResponse->successful()) {
+            if (! $createResponse->successful()) {
                 return [
                     'success' => false,
                     'error' => $createResponse->json()['error']['message'] ?? 'Instagram create media error',
@@ -169,6 +170,7 @@ class BotPlatformService
 
             if ($publishResponse->successful()) {
                 $result = $publishResponse->json();
+
                 return [
                     'success' => true,
                     'post_id' => $result['id'],
@@ -196,7 +198,7 @@ class BotPlatformService
     {
         try {
             // Twitter v2 API
-            $endpoint = "https://api.twitter.com/2/tweets";
+            $endpoint = 'https://api.twitter.com/2/tweets';
 
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$connection->access_token}",
@@ -207,6 +209,7 @@ class BotPlatformService
 
             if ($response->successful()) {
                 $result = $response->json();
+
                 return [
                     'success' => true,
                     'post_id' => $result['data']['id'],
@@ -247,13 +250,13 @@ class BotPlatformService
     {
         try {
             // LINE Broadcast API
-            $endpoint = "https://api.line.me/v2/bot/message/broadcast";
+            $endpoint = 'https://api.line.me/v2/bot/message/broadcast';
 
             $messages = [
                 [
                     'type' => 'text',
                     'text' => $post->content,
-                ]
+                ],
             ];
 
             $response = Http::withHeaders([
@@ -266,7 +269,7 @@ class BotPlatformService
             if ($response->successful()) {
                 return [
                     'success' => true,
-                    'post_id' => 'broadcast_' . time(),
+                    'post_id' => 'broadcast_'.time(),
                     'post_url' => '',
                     'response' => $response->json(),
                 ];
@@ -304,19 +307,19 @@ class BotPlatformService
         $connection = $post->platformConnection;
         $platform = $connection->platform;
 
-        if (!$post->platform_post_id) {
+        if (! $post->platform_post_id) {
             return [];
         }
 
         try {
-            return match($platform->code) {
+            return match ($platform->code) {
                 'facebook' => $this->fetchFacebookAnalytics($post, $connection),
                 'instagram' => $this->fetchInstagramAnalytics($post, $connection),
                 'twitter' => $this->fetchTwitterAnalytics($post, $connection),
                 default => [],
             };
         } catch (\Exception $e) {
-            Log::error("Failed to fetch analytics", [
+            Log::error('Failed to fetch analytics', [
                 'post_id' => $post->id,
                 'platform' => $platform->code,
                 'error' => $e->getMessage(),
@@ -339,6 +342,7 @@ class BotPlatformService
 
         if ($response->successful()) {
             $data = $response->json();
+
             return [
                 'likes' => $data['likes']['summary']['total_count'] ?? 0,
                 'comments' => $data['comments']['summary']['total_count'] ?? 0,
@@ -362,6 +366,7 @@ class BotPlatformService
 
         if ($response->successful()) {
             $data = $response->json();
+
             return [
                 'engagement' => $data['data'][0]['values'][0]['value'] ?? 0,
                 'impressions' => $data['data'][1]['values'][0]['value'] ?? 0,

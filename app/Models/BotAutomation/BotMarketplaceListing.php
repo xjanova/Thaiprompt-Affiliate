@@ -109,7 +109,7 @@ class BotMarketplaceListing extends Model
     public function scopePublished($query)
     {
         return $query->where('status', 'approved')
-                     ->whereNotNull('published_at');
+            ->whereNotNull('published_at');
     }
 
     /**

@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_jobs
      * เก็บงานที่กำลังรัน/รันเสร็จแล้ว ของแต่ละโปรเจกต์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -37,7 +35,7 @@ return new class extends Migration
                 'publish_tiktok',       // โพส TikTok
                 'publish_twitter',      // โพส Twitter
                 'publish_threads',      // โพส Threads
-                'full_pipeline'         // ทำทั้งหมด
+                'full_pipeline',         // ทำทั้งหมด
             ])->index();
 
             $table->enum('status', [
@@ -47,7 +45,7 @@ return new class extends Migration
                 'completed',    // สำเร็จ
                 'failed',       // ล้มเหลว
                 'cancelled',    // ยกเลิก
-                'retrying'      // กำลัง retry
+                'retrying',      // กำลัง retry
             ])->default('pending')->index();
 
             // Queue Integration
@@ -110,8 +108,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_jobs
-     *
-     * @return void
      */
     public function down(): void
     {

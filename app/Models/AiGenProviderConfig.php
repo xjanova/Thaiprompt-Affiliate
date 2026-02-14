@@ -42,6 +42,7 @@ class AiGenProviderConfig extends Model
                 return null;
             }
         }
+
         return $this->config_value;
     }
 }

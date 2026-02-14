@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\AcademySettingsController;
 use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
 use App\Http\Controllers\Admin\Accounting\ContactController;
 use App\Http\Controllers\Admin\Accounting\ExpenseController;
@@ -15,17 +14,9 @@ use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
-use App\Http\Controllers\Admin\AppBannerController;
-use App\Http\Controllers\Admin\AppControlSectionController;
-use App\Http\Controllers\Admin\AppFeatureController;
-use App\Http\Controllers\Admin\AppMaintenanceController;
-use App\Http\Controllers\Admin\AppSettingController;
-use App\Http\Controllers\Admin\AppThemeSettingController;
 use App\Http\Controllers\Admin\CacheSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\CentralAiController;
-use App\Http\Controllers\Admin\CertificateManagementController;
-use App\Http\Controllers\Admin\ComponentSettingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\EmailAnalyticsController;
@@ -60,7 +51,6 @@ use App\Http\Controllers\Admin\PageBuilderSectionController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PaymentBankAccountController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
-use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\Pos\PosLabelController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
 use App\Http\Controllers\Admin\PosDashboardController;
@@ -73,6 +63,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\SloganController;
+use App\Http\Controllers\Admin\SmsCheckerAdminController;
 use App\Http\Controllers\Admin\SuperAdminHotelController;
 use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\TicketController;
@@ -80,7 +71,6 @@ use App\Http\Controllers\Admin\TrendManagementController;
 use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\UserGuideController;
-use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\WebPManagementController;
@@ -1161,7 +1151,6 @@ Route::prefix('central-ai')->name('central-ai.')->group(function () {
     Route::get('/health-check', [CentralAiController::class, 'performHealthCheck'])->name('health-check');
 });
 
-
 // AI Installation & Management
 Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
     // Installation Wizard
@@ -1665,7 +1654,6 @@ Route::prefix('academy')->name('academy.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'index'])->name('index');
     });
 });
-
 
 // HRM (Human Resource Management) System
 Route::prefix('hrm')->name('hrm.')->group(function () {
@@ -2529,9 +2517,9 @@ Route::prefix('api-management')->name('api-management.')->group(function () {
 // ========================================
 // SMART SLIDER PRO SYSTEM
 // ========================================
-use App\Http\Controllers\Admin\SmartSliderController;
 use App\Http\Controllers\Admin\SmartSlideController;
 use App\Http\Controllers\Admin\SmartSlideLayerController;
+use App\Http\Controllers\Admin\SmartSliderController;
 
 Route::prefix('smart-sliders')->name('smart-sliders.')->group(function () {
     // Main slider management
@@ -2964,7 +2952,6 @@ Route::prefix('service-pricing-rules')->name('service-pricing-rules.')->group(fu
     Route::delete('/{pricingRule}', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'destroy'])->name('destroy');
     Route::post('/{pricingRule}/toggle-active', [\App\Http\Controllers\Admin\ServicePricingRuleController::class, 'toggleActive'])->name('toggle-active');
 });
-
 
 // ============================================
 // AI Rental with Cloud GPU Routes 🚀🤖
@@ -3538,8 +3525,6 @@ Route::prefix('marketplace')->name('marketplace.')->group(function () {
     });
 });
 
-
-
 // ========================================
 // CLOUDFLARE MANAGEMENT SYSTEM
 // ========================================
@@ -3601,7 +3586,6 @@ Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
     Route::post('/auto-under-attack/toggle', [CloudflareController::class, 'toggleUnderAttackMode'])->name('auto-under-attack.toggle');
     Route::get('/auto-under-attack/test', [CloudflareController::class, 'testAutoUnderAttack'])->name('auto-under-attack.test');
 });
-
 
 // ============================================
 // Video Mission System Routes (ภารกิจดูคลิปรับรางวัล)
@@ -3797,17 +3781,16 @@ Route::prefix('developers')->name('developers.')->group(function () {
 | จัดการระบบดูดวงผ่าน Facebook Messenger และ LINE Official Account
 */
 
-use App\Http\Controllers\Admin\FortuneSettingsController;
+use App\Http\Controllers\Admin\FortuneAstrologyController;
+use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
+use App\Http\Controllers\Admin\FortuneChannelController;
+use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
-use App\Http\Controllers\Admin\FortuneBillingController;
-use App\Http\Controllers\Admin\FortuneChannelController;
+use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
-use App\Http\Controllers\Admin\FortuneMarketingController;
-
-use App\Http\Controllers\Admin\FortuneAstrologyController;
 
 Route::prefix('fortune')->name('fortune.')->group(function () {
     // Dashboard

@@ -46,6 +46,7 @@ class RankRequirement extends Model
     public function getDisplayNameAttribute(): string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->name_th ? $this->name_th : $this->name;
     }
 
@@ -55,6 +56,7 @@ class RankRequirement extends Model
     public function getDisplayDescriptionAttribute(): ?string
     {
         $locale = app()->getLocale();
+
         return $locale === 'th' && $this->description_th ? $this->description_th : $this->description;
     }
 
@@ -71,14 +73,11 @@ class RankRequirement extends Model
      * - diamond_legs: จำนวนลูกทีมระดับเพชร (Diamond)
      * - crown_legs: จำนวนลูกทีมระดับมงกุฎ (Crown)
      * - royal_legs: จำนวนลูกทีมระดับรอยัล (Royal)
-     *
-     * @param User $user
-     * @return float
      */
     public function getUserCurrentValue(User $user): float
     {
         $mlmMember = $user->mlmMembers()->first();
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return 0;
         }
 
@@ -87,7 +86,7 @@ class RankRequirement extends Model
             ->whereIn('status', ['approved', 'paid'])
             ->sum('commission_amount');
 
-        return match($this->requirement_type) {
+        return match ($this->requirement_type) {
             'points' => $user->rank_points ?? 0,
             'referrals' => $mlmMember->total_direct_referrals ?? 0,
             'sales' => $totalSales,
@@ -109,7 +108,7 @@ class RankRequirement extends Model
         $currentValue = $this->getUserCurrentValue($user);
         $targetValue = (float) $this->target_value;
 
-        return match($this->operator) {
+        return match ($this->operator) {
             '>=' => $currentValue >= $targetValue,
             '>' => $currentValue > $targetValue,
             '=' => $currentValue == $targetValue,
@@ -137,6 +136,7 @@ class RankRequirement extends Model
         // This would need more complex logic based on your business rules
         // For now, returning a simple calculation
         $monthsSinceCreation = now()->diffInMonths($mlmMember->joined_at ?? $mlmMember->created_at);
+
         return $monthsSinceCreation;
     }
 
@@ -148,21 +148,21 @@ class RankRequirement extends Model
      * - crown_legs: ต้องมีลูกทีมโดยตรงระดับ Crown กี่คน
      * - royal_legs: ต้องมีลูกทีมโดยตรงระดับ Royal กี่คน
      *
-     * @param User $user ผู้ใช้ที่ต้องการตรวจสอบ
-     * @param string $rankName ชื่อระดับที่ต้องการนับ (เช่น 'Diamond', 'Crown', 'Royal')
+     * @param  User  $user  ผู้ใช้ที่ต้องการตรวจสอบ
+     * @param  string  $rankName  ชื่อระดับที่ต้องการนับ (เช่น 'Diamond', 'Crown', 'Royal')
      * @return int จำนวนลูกทีมที่มีระดับตามที่ระบุ
      */
     private function getLegsCountByRankName(User $user, string $rankName): int
     {
         // หาระดับที่ต้องการ
         $targetRank = \App\Models\Rank::where('name', $rankName)->first();
-        if (!$targetRank) {
+        if (! $targetRank) {
             return 0;
         }
 
         // หา MLM Member ของ user
         $mlmMember = $user->mlmMembers()->first();
-        if (!$mlmMember) {
+        if (! $mlmMember) {
             return 0;
         }
 
@@ -189,6 +189,7 @@ class RankRequirement extends Model
         }
 
         $percentage = ($currentValue / $targetValue) * 100;
+
         return min(100, max(0, $percentage));
     }
 }

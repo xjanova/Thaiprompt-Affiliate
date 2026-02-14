@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
+use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\MlmPvTransaction;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class MlmReportController extends Controller
 {
@@ -284,7 +283,7 @@ class MlmReportController extends Controller
 
         return response($csv)
             ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="mlm_members_' . now()->format('Y-m-d') . '.csv"');
+            ->header('Content-Disposition', 'attachment; filename="mlm_members_'.now()->format('Y-m-d').'.csv"');
     }
 
     public function exportCommissions(Request $request)
@@ -321,6 +320,6 @@ class MlmReportController extends Controller
 
         return response($csv)
             ->header('Content-Type', 'text/csv')
-            ->header('Content-Disposition', 'attachment; filename="mlm_commissions_' . now()->format('Y-m-d') . '.csv"');
+            ->header('Content-Disposition', 'attachment; filename="mlm_commissions_'.now()->format('Y-m-d').'.csv"');
     }
 }

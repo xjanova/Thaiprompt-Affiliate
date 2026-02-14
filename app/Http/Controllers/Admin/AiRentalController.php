@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AiRentalCloudProvider;
 use App\Models\AiRentalCloudConfig;
+use App\Models\AiRentalCloudProvider;
 use App\Models\AiRentalDeployment;
 use App\Models\HuggingFaceModelNews;
 use App\Models\HuggingFaceTrendingModel;
@@ -23,8 +23,6 @@ class AiRentalController extends Controller
      * แสดงหน้า Dashboard AI Rental
      *
      * แสดงภาพรวมของระบบ AI Rental พร้อมสถิติและสถานะโครงการ
-     *
-     * @return View
      */
     public function dashboard(): View
     {
@@ -106,8 +104,6 @@ class AiRentalController extends Controller
      * แสดงคู่มือการตั้งค่า Cloud GPU
      *
      * คู่มือแบบ Step-by-step สำหรับการตั้งค่า Cloud ต่างๆ
-     *
-     * @return View
      */
     public function setupGuide(): View
     {
@@ -123,8 +119,6 @@ class AiRentalController extends Controller
      * แสดงเครื่องคำนวณค่าใช้จ่าย
      *
      * คำนวณค่าใช้จ่ายโดยประมาณสำหรับการใช้ Cloud GPU
-     *
-     * @return View
      */
     public function costCalculator(): View
     {
@@ -140,7 +134,6 @@ class AiRentalController extends Controller
     /**
      * คำนวณค่าใช้จ่าย (API)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculateCost(Request $request)
@@ -212,9 +205,6 @@ class AiRentalController extends Controller
      * แสดงรายการ Trending Models จาก Hugging Face
      *
      * รองรับการค้นหา, กรอง, และเรียงลำดับ
-     *
-     * @param Request $request
-     * @return View
      */
     public function trendingModels(Request $request): View
     {
@@ -282,9 +272,6 @@ class AiRentalController extends Controller
      * แสดงข่าวสาร Hugging Face Models
      *
      * รองรับการค้นหา, กรอง, และเรียงลำดับ
-     *
-     * @param Request $request
-     * @return View
      */
     public function news(Request $request): View
     {
@@ -310,7 +297,7 @@ class AiRentalController extends Controller
         $featured_news = HuggingFaceModelNews::published()
             ->where(function ($q) {
                 $q->where('is_featured', true)
-                  ->orWhere('is_pinned', true);
+                    ->orWhere('is_pinned', true);
             })
             ->latest('published_at')
             ->take(2)
@@ -330,9 +317,6 @@ class AiRentalController extends Controller
      * แสดงรายละเอียดข่าว
      *
      * พร้อมนับ view count
-     *
-     * @param HuggingFaceModelNews $news
-     * @return View
      */
     public function showNews(HuggingFaceModelNews $news): View
     {

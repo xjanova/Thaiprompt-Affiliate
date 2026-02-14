@@ -38,7 +38,7 @@ return new class extends Migration
                 'reward',        // Referral/staking reward
                 'swap',          // DEX swap
                 'liquidity_add', // Add liquidity
-                'liquidity_remove' // Remove liquidity
+                'liquidity_remove', // Remove liquidity
             ])->default('transfer');
 
             // Status

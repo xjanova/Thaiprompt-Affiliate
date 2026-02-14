@@ -71,7 +71,7 @@ return [
 
     'health_check' => [
         'enabled' => env('DEPLOY_HEALTH_CHECK', true),
-        'url' => env('APP_URL') . '/up',
+        'url' => env('APP_URL').'/up',
         'timeout' => 30,
     ],
 

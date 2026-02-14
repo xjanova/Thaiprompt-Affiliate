@@ -32,9 +32,10 @@ class DeployCommand extends Command
         $skipMaintenance = $this->option('skip-maintenance');
 
         // Step 1: Maintenance Mode
-        if (!$skipMaintenance) {
+        if (! $skipMaintenance) {
             $this->task('Enabling maintenance mode', function () {
                 Artisan::call('down', ['--retry' => 60]);
+
                 return true;
             });
         }
@@ -45,43 +46,50 @@ class DeployCommand extends Command
             Artisan::call('config:clear');
             Artisan::call('route:clear');
             Artisan::call('view:clear');
+
             return true;
         });
 
         // Step 3: Run Migrations
         $this->task('Running database migrations', function () {
             Artisan::call('migrate', ['--force' => true]);
+
             return true;
         });
 
         // Step 4: Cache Configuration
         $this->task('Caching configuration', function () {
             Artisan::call('config:cache');
+
             return true;
         });
 
         // Step 5: Cache Routes
         $this->task('Caching routes', function () {
             Artisan::call('route:cache');
+
             return true;
         });
 
         // Step 6: Cache Views
         $this->task('Caching views', function () {
             Artisan::call('view:cache');
+
             return true;
         });
 
         // Step 7: Optimize
         $this->task('Optimizing application', function () {
             Artisan::call('optimize');
+
             return true;
         });
 
         // Step 8: Disable Maintenance Mode
-        if (!$skipMaintenance) {
+        if (! $skipMaintenance) {
             $this->task('Disabling maintenance mode', function () {
                 Artisan::call('up');
+
                 return true;
             });
         }
@@ -92,9 +100,9 @@ class DeployCommand extends Command
 
         // Display summary
         $this->comment('Deployment Summary:');
-        $this->line('  - Environment: ' . config('app.env'));
-        $this->line('  - Time: ' . now()->format('Y-m-d H:i:s'));
-        $this->line('  - Laravel Version: ' . app()->version());
+        $this->line('  - Environment: '.config('app.env'));
+        $this->line('  - Time: '.now()->format('Y-m-d H:i:s'));
+        $this->line('  - Laravel Version: '.app()->version());
         $this->newLine();
 
         $this->info('📋 Post-Deployment Checklist:');

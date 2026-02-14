@@ -12,14 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง mlm_members มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('mlm_members')) {
+        if (! Schema::hasTable('mlm_members')) {
             return;
         }
 
         Schema::table('mlm_members', function (Blueprint $table) {
             // Add package_id (แพคเกจที่สมาชิกซื้อ)
             $table->foreignId('package_id')->nullable()->after('mlm_plan_id')
-                  ->constrained('mlm_packages')->onDelete('set null');
+                ->constrained('mlm_packages')->onDelete('set null');
 
             // Add index for package queries
             $table->index('package_id');

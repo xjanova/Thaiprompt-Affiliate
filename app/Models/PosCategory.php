@@ -147,7 +147,7 @@ class PosCategory extends Model
                 // Ensure unique slug
                 $count = 1;
                 while (static::where('slug', $category->slug)->exists()) {
-                    $category->slug = Str::slug($category->name) . '-' . $count;
+                    $category->slug = Str::slug($category->name).'-'.$count;
                     $count++;
                 }
             }

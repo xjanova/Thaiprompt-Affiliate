@@ -154,15 +154,13 @@ class CentralAiSetting extends Model
 
     /**
      * ดึงการตั้งค่าที่ active (Singleton pattern)
-     *
-     * @return self
      */
     public static function getActive(): self
     {
         $setting = self::where('is_active', true)->first();
 
         // ถ้าไม่มี สร้างใหม่
-        if (!$setting) {
+        if (! $setting) {
             $setting = self::create([
                 'name' => 'Central AI',
                 'is_active' => true,
@@ -236,7 +234,7 @@ class CentralAiSetting extends Model
             $updateData = ['ollama_status' => 'stopped'];
 
             // ถ้ายังไม่เคยมาร์คว่าติดตั้งแล้ว ให้ลองเช็คผ่าน binary
-            if (!$this->is_ollama_installed) {
+            if (! $this->is_ollama_installed) {
                 $updateData['is_ollama_installed'] = false;
             }
 
@@ -258,7 +256,7 @@ class CentralAiSetting extends Model
      */
     public function checkPostXAgentStatus(): array
     {
-        if (!$this->postxagent_enabled) {
+        if (! $this->postxagent_enabled) {
             return [
                 'status' => 'not_configured',
                 'providers' => [],
@@ -313,8 +311,6 @@ class CentralAiSetting extends Model
 
     /**
      * รันการตรวจสอบ health check ครบทุกระบบ
-     *
-     * @return array
      */
     public function performHealthCheck(): array
     {
@@ -338,15 +334,11 @@ class CentralAiSetting extends Model
 
     /**
      * กำหนดสถานะโดยรวม
-     *
-     * @param array $ollamaStatus
-     * @param array $postxagentStatus
-     * @return string
      */
     protected function determineOverallStatus(array $ollamaStatus, array $postxagentStatus): string
     {
         $ollamaOk = $ollamaStatus['status'] === 'running';
-        $postxagentOk = !$this->postxagent_enabled || $postxagentStatus['status'] === 'running';
+        $postxagentOk = ! $this->postxagent_enabled || $postxagentStatus['status'] === 'running';
 
         if ($ollamaOk && $postxagentOk) {
             return 'healthy';
@@ -362,8 +354,7 @@ class CentralAiSetting extends Model
     /**
      * นับคำขอเพิ่มขึ้น (สำหรับสถิติ)
      *
-     * @param bool $success สำเร็จหรือไม่
-     * @return void
+     * @param  bool  $success  สำเร็จหรือไม่
      */
     public function incrementRequest(bool $success = true): void
     {
@@ -378,8 +369,6 @@ class CentralAiSetting extends Model
 
     /**
      * คำนวณอัตราความสำเร็จ
-     *
-     * @return float
      */
     public function getSuccessRateAttribute(): float
     {
@@ -392,8 +381,6 @@ class CentralAiSetting extends Model
 
     /**
      * ดึง Ollama URL สมบูรณ์
-     *
-     * @return string
      */
     public function getOllamaUrlAttribute(): string
     {
@@ -402,8 +389,6 @@ class CentralAiSetting extends Model
 
     /**
      * ดึง PostXAgent URL สมบูรณ์
-     *
-     * @return string
      */
     public function getPostxagentUrlAttribute(): string
     {

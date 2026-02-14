@@ -2,29 +2,31 @@
 
 use App\Services\SeoService;
 
-if (!function_exists('seo_meta')) {
+if (! function_exists('seo_meta')) {
     /**
      * Get SEO meta tags for a page
      */
     function seo_meta(string $pageType, array $customData = []): array
     {
         $seoService = app(SeoService::class);
+
         return $seoService->getMetaTags($pageType, $customData);
     }
 }
 
-if (!function_exists('render_seo_meta')) {
+if (! function_exists('render_seo_meta')) {
     /**
      * Render SEO meta tags HTML
      */
     function render_seo_meta(string $pageType, array $customData = []): string
     {
         $seoService = app(SeoService::class);
+
         return $seoService->renderMetaTags($pageType, $customData);
     }
 }
 
-if (!function_exists('structured_data')) {
+if (! function_exists('structured_data')) {
     /**
      * Generate structured data JSON-LD
      */

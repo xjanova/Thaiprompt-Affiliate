@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\HotelAdmin\DashboardController;
 use App\Http\Controllers\HotelAdmin\HotelManagementController;
+use App\Http\Controllers\HotelAdmin\ReviewManagementController;
 use App\Http\Controllers\HotelAdmin\RoomManagementController;
 use App\Http\Controllers\HotelAdmin\SpecialOfferManagementController;
-use App\Http\Controllers\HotelAdmin\ReviewManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*

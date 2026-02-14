@@ -2,8 +2,8 @@
 
 namespace App\Helpers;
 
-use App\Models\MlmMember;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use Carbon\Carbon;
 
 /**
@@ -23,7 +23,7 @@ class MlmRetentionHelper
     /**
      * ตรวจสอบว่าสมาชิก active หรือไม่ (ใช้ร่วมกันทุก Service)
      *
-     * @param MlmMember $member สมาชิกที่ต้องการตรวจ
+     * @param  MlmMember  $member  สมาชิกที่ต้องการตรวจ
      * @return bool true = active, false = ไม่รักษายอด
      */
     public static function isMemberActive(MlmMember $member): bool
@@ -31,13 +31,13 @@ class MlmRetentionHelper
         // ตรวจว่าระบบรักษายอดเปิดอยู่หรือไม่
         $retentionEnabled = MlmGlobalSetting::get('volume_retention_enabled', true);
 
-        if (!$retentionEnabled) {
+        if (! $retentionEnabled) {
             // ระบบรักษายอดปิด → ถือว่า active ทุกคน (ยกเว้น suspended/inactive)
             return $member->status === 'active';
         }
 
         // ตรวจสถานะ static ก่อน (ถ้าถูก admin ปิด manual → ไม่ active ทันที)
-        if ($member->status !== 'active' || !$member->is_qualified) {
+        if ($member->status !== 'active' || ! $member->is_qualified) {
             return false;
         }
 
@@ -77,7 +77,7 @@ class MlmRetentionHelper
     /**
      * ดึงข้อมูลสถานะรักษายอดแบบละเอียด (สำหรับแสดง UI)
      *
-     * @param MlmMember $member สมาชิก
+     * @param  MlmMember  $member  สมาชิก
      * @return array ข้อมูลสถานะ
      */
     public static function getRetentionStatus(MlmMember $member): array
@@ -103,10 +103,10 @@ class MlmRetentionHelper
             : null;
 
         // กำหนดสถานะ
-        if (!$retentionEnabled) {
+        if (! $retentionEnabled) {
             $status = $member->status === 'active' ? 'active' : 'inactive';
             $color = $status === 'active' ? 'green' : 'red';
-        } elseif ($member->status !== 'active' || !$member->is_qualified) {
+        } elseif ($member->status !== 'active' || ! $member->is_qualified) {
             $status = 'inactive';
             $color = 'red';
         } elseif ($monthlyPv >= $requiredMonthlyPv) {

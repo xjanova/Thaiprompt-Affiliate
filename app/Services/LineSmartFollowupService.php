@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\MlmProspect;
-use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -20,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 class LineSmartFollowupService
 {
     private const CACHE_PREFIX = 'line:followup:';
+
     private const CACHE_TTL = 86400; // 24 hours
 
     // Follow-up schedules (in minutes after dropout)
@@ -55,6 +55,7 @@ class LineSmartFollowupService
         // Don't send more than 5 follow-ups
         if ($followUpCount >= 5) {
             $this->markAsGiveUp($prospect);
+
             return;
         }
 
@@ -84,7 +85,7 @@ class LineSmartFollowupService
         $progress = $this->progressService->getProgress($prospect);
 
         // Choose message type based on follow-up count
-        $message = match($followUpCount) {
+        $message = match ($followUpCount) {
             1 => $this->createFirstFollowUpMessage($prospect, $progress),
             2 => $this->createSecondFollowUpMessage($prospect, $progress),
             3 => $this->createThirdFollowUpMessage($prospect, $progress),
@@ -93,7 +94,7 @@ class LineSmartFollowupService
             default => null,
         };
 
-        if (!$message) {
+        if (! $message) {
             return false;
         }
 
@@ -560,7 +561,7 @@ class LineSmartFollowupService
      */
     private function calculateNextFollowUpTime(MlmProspect $prospect, int $followUpCount): \Carbon\Carbon
     {
-        $scheduleKey = match($followUpCount) {
+        $scheduleKey = match ($followUpCount) {
             0 => 'first',
             1 => 'second',
             2 => 'third',
@@ -606,6 +607,7 @@ class LineSmartFollowupService
     private function getFollowUpCount(MlmProspect $prospect): int
     {
         $cacheKey = $this->getCacheKey($prospect->id, 'count');
+
         return (int) Cache::get($cacheKey, 0);
     }
 
@@ -650,7 +652,7 @@ class LineSmartFollowupService
      */
     private function getCacheKey(int $prospectId, string $suffix): string
     {
-        return self::CACHE_PREFIX . $prospectId . ':' . $suffix;
+        return self::CACHE_PREFIX.$prospectId.':'.$suffix;
     }
 
     /**

@@ -3,14 +3,12 @@
 namespace App\Services;
 
 use App\Helpers\MlmRetentionHelper;
-use App\Models\MlmMember;
 use App\Models\MlmCommission;
 use App\Models\MlmGlobalSetting;
+use App\Models\MlmMember;
 use App\Models\Order;
-use App\Services\OverpayProtectionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class MlmCommissionService
 {
@@ -76,12 +74,12 @@ class MlmCommissionService
 
             // ⚠️ Overpay Protection - ป้องกันจ่าย commission เกินสัดส่วนที่ตั้งค่าไว้
             // ใช้ OverpayProtectionService สำหรับตรวจสอบ runtime
-            if (!empty($commissions)) {
+            if (! empty($commissions)) {
                 $totalCommission = array_sum(array_column($commissions, 'commission_amount'));
 
                 $overpayCheck = OverpayProtectionService::checkRuntimeOverpay($pv, $totalCommission);
 
-                if (!$overpayCheck['allowed']) {
+                if (! $overpayCheck['allowed']) {
                     // ลดสัดส่วนทุก commission ให้รวมแล้วไม่เกิน cap
                     $ratio = $overpayCheck['ratio'];
 
@@ -133,7 +131,7 @@ class MlmCommissionService
             Log::error('Commission calculation error', [
                 'member_id' => $member->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
@@ -152,14 +150,14 @@ class MlmCommissionService
      * 3. สุดท้ายจะ rollup ไปที่ Admin (ID 1) เท่านั้น
      * 4. บันทึก rollup_chain เพื่อติดตามที่มาที่ไป
      *
-     * @param MlmMember $member สมาชิกผู้ซื้อ
-     * @param float $pv จำนวน PV
-     * @param string $transactionType ประเภทธุรกรรม
-     * @param mixed $transactionId ID ของธุรกรรม
-     * @param bool $rollupEnabled เปิดระบบ rollup หรือไม่
-     * @param bool $preventDuplicateRollup ป้องกันจ่าย rollup ซ้ำ
-     * @param int $maxLevels จำนวนชั้นสูงสุดที่จ่ายคอมมิชชั่น (unilevel_max_depth)
-     * @param int $rollupSearchDepth ระยะค้นหา rollup สูงสุด (rollup_max_levels)
+     * @param  MlmMember  $member  สมาชิกผู้ซื้อ
+     * @param  float  $pv  จำนวน PV
+     * @param  string  $transactionType  ประเภทธุรกรรม
+     * @param  mixed  $transactionId  ID ของธุรกรรม
+     * @param  bool  $rollupEnabled  เปิดระบบ rollup หรือไม่
+     * @param  bool  $preventDuplicateRollup  ป้องกันจ่าย rollup ซ้ำ
+     * @param  int  $maxLevels  จำนวนชั้นสูงสุดที่จ่ายคอมมิชชั่น (unilevel_max_depth)
+     * @param  int  $rollupSearchDepth  ระยะค้นหา rollup สูงสุด (rollup_max_levels)
      */
     protected function calculateUnilevelWithRollup(
         MlmMember $member,
@@ -195,7 +193,7 @@ class MlmCommissionService
         while ($currentLevel <= $maxLevels && $currentMember->sponsor_id) {
             $sponsor = $currentMember->sponsor;
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 break;
             }
 
@@ -205,10 +203,11 @@ class MlmCommissionService
             // Get level configuration
             $levelConfig = collect($unilevelLevels)->firstWhere('level', $currentLevel);
 
-            if (!$levelConfig) {
+            if (! $levelConfig) {
                 // แก้ Bug #23: ใช้ continue แทน break เพื่อให้ level ถัดไปยังทำงานได้
                 $currentMember = $sponsor;
                 $currentLevel++;
+
                 continue;
             }
 
@@ -217,6 +216,7 @@ class MlmCommissionService
             if ($percentage <= 0) {
                 $currentMember = $sponsor;
                 $currentLevel++;
+
                 continue;
             }
 
@@ -243,13 +243,13 @@ class MlmCommissionService
 
             // ตรวจสอบสถานะ active ก่อนจ่าย commission
             // แก้ ROLLUP-1: คนไม่รักษายอดต้องถูกข้ามเสมอ ไม่ว่า rollup จะเปิดหรือปิด
-            if (!$isActive) {
+            if (! $isActive) {
                 if ($rollupEnabled) {
                     // Rollup เปิด: ม้วนขึ้นไปหาคน active ถัดไป
-                    Log::info("Roll-up triggered for inactive member", [
+                    Log::info('Roll-up triggered for inactive member', [
                         'inactive_member_id' => $sponsor->id,
                         'level' => $currentLevel,
-                        'amount' => $commissionAmount
+                        'amount' => $commissionAmount,
                     ]);
 
                     // สร้าง rollup chain สำหรับติดตาม
@@ -321,7 +321,7 @@ class MlmCommissionService
                             'created_at' => now(),
                         ];
 
-                        Log::info("Roll-up commission sent to Pool Bonus", [
+                        Log::info('Roll-up commission sent to Pool Bonus', [
                             'amount' => $commissionAmount,
                             'rolled_from' => $sponsor->id,
                             'chain_length' => count($rollupChain),
@@ -366,7 +366,7 @@ class MlmCommissionService
                             'created_at' => now(),
                         ];
 
-                        Log::info("Roll-up commission created with chain tracking", [
+                        Log::info('Roll-up commission created with chain tracking', [
                             'recipient_id' => $rollupSponsor->id,
                             'recipient_code' => $rollupSponsor->member_code,
                             'amount' => $commissionAmount,
@@ -379,7 +379,7 @@ class MlmCommissionService
                 } else {
                     // แก้ ROLLUP-1: Rollup ปิด แต่สมาชิกไม่ active → ข้าม (ไม่จ่าย)
                     // คอมมิชชั่นของชั้นนี้จะหายไป เพราะไม่มีระบบ rollup ม้วนต่อ
-                    Log::info("Skipped inactive member (rollup disabled)", [
+                    Log::info('Skipped inactive member (rollup disabled)', [
                         'inactive_member_id' => $sponsor->id,
                         'level' => $currentLevel,
                         'skipped_amount' => $commissionAmount,
@@ -433,11 +433,6 @@ class MlmCommissionService
      * 2. เช็ค rollup_to_pool_enabled - ส่งไป pool แทน admin
      * 3. กระจายแบบ distributed/proportional ถ้าตั้งค่าไว้
      *
-     * @param MlmMember $member
-     * @param int $maxLevelsToSearch
-     * @param array $rollupTracker
-     * @param bool $preventDuplicate
-     * @param MlmMember|null $adminMember
      * @return array ['sponsor' => MlmMember|null, 'chain' => array, 'to_pool' => bool]
      */
     protected function findNextActiveUplineWithChain(
@@ -458,7 +453,7 @@ class MlmCommissionService
         while ($levelsSearched < $maxLevelsToSearch && $currentMember->sponsor_id) {
             $sponsor = $currentMember->sponsor;
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 break;
             }
 
@@ -469,7 +464,7 @@ class MlmCommissionService
             $memberRollupCount = $this->rollupCountPerMember[$sponsor->id] ?? 0;
             $exceedsMaxRollup = $memberRollupCount >= $maxPerMember;
 
-            if ($isActive && !$alreadyReceived && !$exceedsMaxRollup) {
+            if ($isActive && ! $alreadyReceived && ! $exceedsMaxRollup) {
                 // พบ upline ที่ active, ยังไม่ได้รับ rollup, และไม่เกินกำหนด
                 // เพิ่ม count
                 $this->rollupCountPerMember[$sponsor->id] = $memberRollupCount + 1;
@@ -559,18 +554,14 @@ class MlmCommissionService
 
     /**
      * สร้าง notes สำหรับ rollup commission
-     *
-     * @param array $chain
-     * @param MlmMember $originalInactive
-     * @return string
      */
     protected function buildRollupNotes(array $chain, MlmMember $originalInactive): string
     {
         $skippedCount = count($chain);
-        $skippedCodes = array_map(fn($item) => $item['member_code'], $chain);
+        $skippedCodes = array_map(fn ($item) => $item['member_code'], $chain);
 
         return sprintf(
-            "Roll-up จากสมาชิก #%s (ไม่ active) ข้าม %d คน: %s",
+            'Roll-up จากสมาชิก #%s (ไม่ active) ข้าม %d คน: %s',
             $originalInactive->member_code,
             $skippedCount,
             implode(' → ', $skippedCodes)
@@ -598,7 +589,7 @@ class MlmCommissionService
         while ($levelsSearched < $maxLevelsToSearch && $currentMember->sponsor_id) {
             $sponsor = $currentMember->sponsor;
 
-            if (!$sponsor) {
+            if (! $sponsor) {
                 return null;
             }
 
@@ -623,17 +614,17 @@ class MlmCommissionService
      * หมายเหตุ: MlmBinaryService สร้าง MlmCommission records โดยตรง (ไม่ return array)
      * ดังนั้น method นี้ return array ว่าง เพราะ commissions ถูก save แล้ว
      *
-     * @param MlmMember $member สมาชิกผู้ซื้อ
-     * @param float $pv จำนวน PV
-     * @param string $transactionType ประเภทธุรกรรม ('order', 'purchase', etc.)
-     * @param mixed $transactionId ID ของธุรกรรม (order_id)
+     * @param  MlmMember  $member  สมาชิกผู้ซื้อ
+     * @param  float  $pv  จำนวน PV
+     * @param  string  $transactionType  ประเภทธุรกรรม ('order', 'purchase', etc.)
+     * @param  mixed  $transactionId  ID ของธุรกรรม (order_id)
      * @return array Commission records (ว่าง เพราะ MlmBinaryService save โดยตรง)
      */
     protected function calculateBinaryCommissions(MlmMember $member, float $pv, string $transactionType, $transactionId)
     {
         $binaryEnabled = MlmGlobalSetting::get('binary_enabled', false);
 
-        if (!$binaryEnabled) {
+        if (! $binaryEnabled) {
             return [];
         }
 
@@ -642,7 +633,7 @@ class MlmCommissionService
             $order = Order::find($transactionId);
 
             if ($order) {
-                $binaryService = new MlmBinaryService();
+                $binaryService = new MlmBinaryService;
                 $pvData = ['total_pv' => $pv];
 
                 // MlmBinaryService จะ:
@@ -694,12 +685,12 @@ class MlmCommissionService
      * - จ่ายให้ผู้แนะนำตรงจริงๆ (original_sponsor)
      * - ไม่ใช่ unilevel_sponsor ซึ่งอาจเปลี่ยนไปจากการ spillover
      *
-     * @param Order $order ออเดอร์ที่ชำระแล้ว
-     * @return MlmCommission|null
+     * @param  Order  $order  ออเดอร์ที่ชำระแล้ว
      */
     public function calculateDirectReferralBonus(Order $order): ?MlmCommission
     {
-        $referralService = new MlmReferralBonusService();
+        $referralService = new MlmReferralBonusService;
+
         return $referralService->calculateReferralBonus($order);
     }
 
@@ -708,8 +699,8 @@ class MlmCommissionService
      *
      * เรียกใช้หลังจากออเดอร์ได้รับชำระเงินแล้ว
      *
-     * @param Order $order ออเดอร์ที่ชำระแล้ว
-     * @param array $pvData ข้อมูล PV ['total_pv' => float]
+     * @param  Order  $order  ออเดอร์ที่ชำระแล้ว
+     * @param  array  $pvData  ข้อมูล PV ['total_pv' => float]
      * @return array ['direct_referral' => ?MlmCommission, 'unilevel' => array, 'binary' => array]
      */
     /**
@@ -727,11 +718,12 @@ class MlmCommissionService
         // หา MlmMember ของผู้ซื้อ
         $buyerMember = MlmMember::where('user_id', $order->user_id)->first();
 
-        if (!$buyerMember) {
+        if (! $buyerMember) {
             Log::debug('Buyer is not MLM member, skipping commission calculation', [
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
             ]);
+
             return $result;
         }
 
@@ -745,6 +737,7 @@ class MlmCommissionService
             Log::warning('Order commissions already calculated, skipping', [
                 'order_id' => $order->id,
             ]);
+
             return $result;
         }
 
@@ -802,8 +795,8 @@ class MlmCommissionService
                         $result['direct_referral']->update([
                             'commission_amount' => round($allowedReferral, 2),
                             'notes' => $result['direct_referral']->notes
-                                . ' | Overpay scaled: ฿' . number_format($originalReferral, 2)
-                                . ' → ฿' . number_format($allowedReferral, 2),
+                                .' | Overpay scaled: ฿'.number_format($originalReferral, 2)
+                                .' → ฿'.number_format($allowedReferral, 2),
                         ]);
                         $result['direct_referral']->refresh();
 
@@ -841,7 +834,7 @@ class MlmCommissionService
      *
      * ใช้สำหรับบันทึกใน commission records เพื่อให้ duplicate guard ทำงานได้ถูกต้อง
      *
-     * @param string $transactionType ประเภทธุรกรรม ('order', 'purchase', etc.)
+     * @param  string  $transactionType  ประเภทธุรกรรม ('order', 'purchase', etc.)
      * @return string|null Fully qualified class name หรือ null
      */
     protected function resolveSourceType(string $transactionType): ?string
@@ -854,9 +847,6 @@ class MlmCommissionService
 
     /**
      * ดึงสถานะรักษายอดของสมาชิก (delegate ไป MlmRetentionHelper)
-     *
-     * @param MlmMember $member
-     * @return array
      */
     public function getMemberRetentionStatus(MlmMember $member): array
     {

@@ -80,8 +80,6 @@ class ThemeRgbEffect extends Model
 
     /**
      * ความสัมพันธ์กับ ThemeSetting
-     *
-     * @return BelongsTo
      */
     public function themeSetting(): BelongsTo
     {
@@ -90,8 +88,6 @@ class ThemeRgbEffect extends Model
 
     /**
      * ดึง CSS Selector สำหรับ element
-     *
-     * @return string
      */
     public function getCssSelector(): string
     {
@@ -121,8 +117,6 @@ class ThemeRgbEffect extends Model
 
     /**
      * ดึง Intensity Value (สำหรับ calculation)
-     *
-     * @return float
      */
     public function getIntensityValue(): float
     {
@@ -138,8 +132,6 @@ class ThemeRgbEffect extends Model
 
     /**
      * สร้าง CSS Animation Keyframes
-     *
-     * @return string
      */
     public function generateKeyframes(): string
     {
@@ -163,16 +155,16 @@ class ThemeRgbEffect extends Model
 
             case 'pulse':
                 $keyframes .= "    0%, 100% { box-shadow: 0 0 {$this->blur_radius}px {$colors[0]}; }\n";
-                $keyframes .= "    50% { box-shadow: 0 0 " . ($this->blur_radius * 2) . "px {$colors[0]}; }\n";
+                $keyframes .= '    50% { box-shadow: 0 0 '.($this->blur_radius * 2)."px {$colors[0]}; }\n";
                 break;
 
             case 'glow':
                 $color = $colors[0] ?? '#FF0000';
                 $keyframes .= "    0%, 100% { box-shadow: 0 0 {$this->blur_radius}px {$color}; }\n";
-                $keyframes .= "    50% { box-shadow: 0 0 " . ($this->blur_radius * 3) . "px {$color}; }\n";
+                $keyframes .= '    50% { box-shadow: 0 0 '.($this->blur_radius * 3)."px {$color}; }\n";
                 break;
 
-            // Add more animation types as needed
+                // Add more animation types as needed
         }
 
         $keyframes .= "}\n";

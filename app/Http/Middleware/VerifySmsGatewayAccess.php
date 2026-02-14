@@ -20,7 +20,7 @@ class VerifySmsGatewayAccess
     {
         $device = $request->attributes->get('sms_checker_device');
 
-        if (!$device) {
+        if (! $device) {
             return response()->json([
                 'success' => false,
                 'message' => 'Device authentication required',
@@ -33,7 +33,7 @@ class VerifySmsGatewayAccess
         }
 
         // Seller devices → เช็ค subscription
-        if (!SmsGatewaySubscription::storeHasAccess($device->store_id)) {
+        if (! SmsGatewaySubscription::storeHasAccess($device->store_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'SMS Gateway subscription required. Please subscribe from your store dashboard.',

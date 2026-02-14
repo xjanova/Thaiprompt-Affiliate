@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\LineOaSetting;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class LineSignupRichMenuService
@@ -113,6 +111,7 @@ class LineSignupRichMenuService
             Log::error('Failed to create Rich Menu', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -138,6 +137,7 @@ class LineSignupRichMenuService
                 'richMenuId' => $richMenuId,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

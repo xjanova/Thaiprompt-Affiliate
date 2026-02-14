@@ -44,7 +44,7 @@ class BlockedIp extends Model
      */
     public function isExpired(): bool
     {
-        if (!$this->expires_at) {
+        if (! $this->expires_at) {
             return false; // Permanent block
         }
 
@@ -96,10 +96,10 @@ class BlockedIp extends Model
      */
     public static function blockIp(
         string $ip,
-        string $reason = null,
-        int $blockedBy = null,
+        ?string $reason = null,
+        ?int $blockedBy = null,
         $expiresAt = null,
-        string $notes = null
+        ?string $notes = null
     ): self {
         return static::create([
             'ip_address' => $ip,
@@ -117,9 +117,9 @@ class BlockedIp extends Model
      */
     public static function whitelistIp(
         string $ip,
-        string $reason = null,
-        int $addedBy = null,
-        string $notes = null
+        ?string $reason = null,
+        ?int $addedBy = null,
+        ?string $notes = null
     ): self {
         return static::create([
             'ip_address' => $ip,
@@ -220,7 +220,7 @@ class BlockedIp extends Model
             return false;
         }
 
-        return ($ip >= $startIp && $ip <= $endIp);
+        return $ip >= $startIp && $ip <= $endIp;
     }
 
     /**
@@ -234,7 +234,7 @@ class BlockedIp extends Model
         }
 
         // IPv4 CIDR
-        list($subnet, $mask) = explode('/', $cidr);
+        [$subnet, $mask] = explode('/', $cidr);
 
         $ipLong = ip2long($ip);
         $subnetLong = ip2long($subnet);
@@ -243,7 +243,7 @@ class BlockedIp extends Model
             return false;
         }
 
-        $mask = -1 << (32 - (int)$mask);
+        $mask = -1 << (32 - (int) $mask);
         $subnetLong &= $mask;
 
         return ($ipLong & $mask) === $subnetLong;
@@ -254,7 +254,7 @@ class BlockedIp extends Model
      */
     protected static function ipv6InCidr(string $ip, string $cidr): bool
     {
-        list($subnet, $mask) = explode('/', $cidr);
+        [$subnet, $mask] = explode('/', $cidr);
 
         $ip = inet_pton($ip);
         $subnet = inet_pton($subnet);
@@ -263,10 +263,10 @@ class BlockedIp extends Model
             return false;
         }
 
-        $mask = (int)$mask;
+        $mask = (int) $mask;
 
         // Create mask
-        $maskBin = str_repeat('1', $mask) . str_repeat('0', 128 - $mask);
+        $maskBin = str_repeat('1', $mask).str_repeat('0', 128 - $mask);
         $maskPacked = '';
 
         for ($i = 0; $i < 128; $i += 8) {
@@ -281,7 +281,7 @@ class BlockedIp extends Model
      */
     public function getIpTypeLabel(): string
     {
-        return match($this->ip_type) {
+        return match ($this->ip_type) {
             'single' => 'Single IP',
             'range' => 'IP Range',
             'cidr' => 'CIDR',
@@ -294,7 +294,7 @@ class BlockedIp extends Model
      */
     public function getIpDisplay(): string
     {
-        return match($this->ip_type) {
+        return match ($this->ip_type) {
             'single' => $this->ip_address,
             'range' => "{$this->ip_range_start} - {$this->ip_range_end}",
             'cidr' => $this->ip_cidr,

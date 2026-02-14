@@ -15,7 +15,7 @@ class MarketplaceController extends Controller
     public function __construct()
     {
         $this->middleware('auth')->except(['index', 'show']);
-        $this->rentalService = new RentalService();
+        $this->rentalService = new RentalService;
     }
 
     /**
@@ -141,7 +141,7 @@ class MarketplaceController extends Controller
             ->findOrFail($id);
 
         // Check if user can rent
-        if (!$this->rentalService->canUserRentBot($bot, Auth::user())) {
+        if (! $this->rentalService->canUserRentBot($bot, Auth::user())) {
             return back()->with('error', 'คุณไม่สามารถเช่าบอทนี้ได้');
         }
 
@@ -156,20 +156,20 @@ class MarketplaceController extends Controller
 
         // Process rental based on type
         if ($rentalType === 'monthly') {
-            if (!$bot->rental_price_per_month) {
+            if (! $bot->rental_price_per_month) {
                 return back()->with('error', 'บอทนี้ไม่รองรับการเช่ารายเดือน');
             }
 
             $result = $this->rentalService->rentMonthly($bot, Auth::user(), $paymentMethod);
         } else {
-            if (!$bot->rental_price_per_message) {
+            if (! $bot->rental_price_per_message) {
                 return back()->with('error', 'บอทนี้ไม่รองรับการเช่าแบบต่อข้อความ');
             }
 
             $result = $this->rentalService->rentPerMessage($bot, Auth::user());
         }
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->with('error', $result['error']);
         }
 

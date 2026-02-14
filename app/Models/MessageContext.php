@@ -95,8 +95,6 @@ class MessageContext extends Model
 
     /**
      * ความสัมพันธ์กับ MessageSentiment
-     *
-     * @return BelongsTo
      */
     public function sentiment(): BelongsTo
     {
@@ -105,8 +103,6 @@ class MessageContext extends Model
 
     /**
      * ความสัมพันธ์กับ parent message
-     *
-     * @return BelongsTo
      */
     public function parentMessage(): BelongsTo
     {
@@ -116,7 +112,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง first messages ในแต่ละ conversation
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFirstMessages($query)
@@ -127,7 +123,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง follow-up messages
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFollowUps($query)
@@ -138,7 +134,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง escalation messages
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEscalations($query)
@@ -149,7 +145,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง conversations ที่ improving
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeImproving($query)
@@ -160,7 +156,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง conversations ที่ declining
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDeclining($query)
@@ -171,8 +167,8 @@ class MessageContext extends Model
     /**
      * Scope: ดึง high urgency escalations
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param float $threshold ค่าต่ำสุด (default: 0.7)
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  float  $threshold  ค่าต่ำสุด (default: 0.7)
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeHighUrgency($query, float $threshold = 0.7)
@@ -183,8 +179,7 @@ class MessageContext extends Model
     /**
      * Scope: ดึง messages จาก user
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $lineUserId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFromUser($query, string $lineUserId)
@@ -194,8 +189,6 @@ class MessageContext extends Model
 
     /**
      * ตรวจสอบว่า context เป็น first message
-     *
-     * @return bool
      */
     public function isFirstMessage(): bool
     {
@@ -204,8 +197,6 @@ class MessageContext extends Model
 
     /**
      * ตรวจสอบว่า conversation กำลัง improving
-     *
-     * @return bool
      */
     public function isSentimentImproving(): bool
     {
@@ -214,8 +205,6 @@ class MessageContext extends Model
 
     /**
      * ตรวจสอบว่า urgency escalating
-     *
-     * @return bool
      */
     public function isUrgencyEscalating(): bool
     {
@@ -224,12 +213,10 @@ class MessageContext extends Model
 
     /**
      * ดึง estimated next intent
-     *
-     * @return string|null
      */
     public function getNextIntentAttribute(): ?string
     {
-        if (empty($this->predicted_next_intent) || !is_array($this->predicted_next_intent)) {
+        if (empty($this->predicted_next_intent) || ! is_array($this->predicted_next_intent)) {
             return null;
         }
 
@@ -238,12 +225,10 @@ class MessageContext extends Model
 
     /**
      * ดึง recommended response
-     *
-     * @return array|null
      */
     public function getFirstRecommendedResponseAttribute(): ?array
     {
-        if (empty($this->recommended_responses) || !is_array($this->recommended_responses)) {
+        if (empty($this->recommended_responses) || ! is_array($this->recommended_responses)) {
             return null;
         }
 
@@ -252,8 +237,6 @@ class MessageContext extends Model
 
     /**
      * ดึง topic count
-     *
-     * @return int
      */
     public function getTopicCountAttribute(): int
     {
@@ -262,8 +245,6 @@ class MessageContext extends Model
 
     /**
      * ดึง entities count
-     *
-     * @return int
      */
     public function getEntityCountAttribute(): int
     {
@@ -272,8 +253,6 @@ class MessageContext extends Model
 
     /**
      * ดึง intents count
-     *
-     * @return int
      */
     public function getIntentCountAttribute(): int
     {
@@ -282,9 +261,6 @@ class MessageContext extends Model
 
     /**
      * Update urgency escalation score
-     *
-     * @param float $newScore
-     * @return void
      */
     public function updateUrgencyScore(float $newScore): void
     {
@@ -293,14 +269,11 @@ class MessageContext extends Model
 
     /**
      * Add topic to stack
-     *
-     * @param string $topic
-     * @return void
      */
     public function addTopic(string $topic): void
     {
         $topics = $this->topic_stack ?? [];
-        if (!in_array($topic, $topics)) {
+        if (! in_array($topic, $topics)) {
             $topics[] = $topic;
             $this->update(['topic_stack' => $topics]);
         }
@@ -308,9 +281,6 @@ class MessageContext extends Model
 
     /**
      * Add entity to mentioned list
-     *
-     * @param array $entity
-     * @return void
      */
     public function addMentionedEntity(array $entity): void
     {

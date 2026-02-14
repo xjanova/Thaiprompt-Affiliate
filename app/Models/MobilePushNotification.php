@@ -89,14 +89,15 @@ class MobilePushNotification extends Model
      * สถานะที่เป็นไปได้
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_SCHEDULED = 'scheduled';
+
     const STATUS_SENT = 'sent';
+
     const STATUS_FAILED = 'failed';
 
     /**
      * ความสัมพันธ์กับ User (ผู้สร้าง)
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -106,8 +107,6 @@ class MobilePushNotification extends Model
     /**
      * ความสัมพันธ์กับ PushNotificationDelivery
      * ติดตามการส่งไปยังแต่ละเครื่อง
-     *
-     * @return HasMany
      */
     public function deliveries(): HasMany
     {
@@ -164,10 +163,16 @@ class MobilePushNotification extends Model
      */
     public function canSend(): bool
     {
-        if ($this->status === self::STATUS_SENT) return false;
-        if ($this->status === self::STATUS_FAILED) return false;
+        if ($this->status === self::STATUS_SENT) {
+            return false;
+        }
+        if ($this->status === self::STATUS_FAILED) {
+            return false;
+        }
 
-        if ($this->scheduled_at && $this->scheduled_at > now()) return false;
+        if ($this->scheduled_at && $this->scheduled_at > now()) {
+            return false;
+        }
 
         return true;
     }
@@ -201,7 +206,9 @@ class MobilePushNotification extends Model
     public function getSuccessRateAttribute(): float
     {
         $total = $this->success_count + $this->failure_count;
-        if ($total === 0) return 0;
+        if ($total === 0) {
+            return 0;
+        }
 
         return round(($this->success_count / $total) * 100, 1);
     }

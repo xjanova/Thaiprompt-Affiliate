@@ -15,13 +15,11 @@ return new class extends Migration
 {
     /**
      * เพิ่มคอลัมน์ fortune_bank_account_ids
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
-            if (!Schema::hasColumn('fortune_telling_settings', 'fortune_bank_account_ids')) {
+            if (! Schema::hasColumn('fortune_telling_settings', 'fortune_bank_account_ids')) {
                 $table->json('fortune_bank_account_ids')
                     ->nullable()
                     ->after('payment_qr_image')
@@ -32,8 +30,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ fortune_bank_account_ids
-     *
-     * @return void
      */
     public function down(): void
     {

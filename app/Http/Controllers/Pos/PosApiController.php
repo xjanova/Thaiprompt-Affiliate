@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Pos;
 use App\Http\Controllers\Controller;
 use App\Models\PosCategory;
 use App\Models\PosDevice;
-use App\Models\PosOfflineQueue;
 use App\Models\PosSetting;
-use App\Models\PosSession;
 use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\Product;
@@ -34,9 +32,6 @@ class PosApiController extends Controller
 
     /**
      * ดึงสินค้าทั้งหมดสำหรับ offline cache
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAllProducts(Request $request): JsonResponse
     {
@@ -61,7 +56,7 @@ class PosApiController extends Controller
                     'category_id',
                     'image',
                     'is_active',
-                    'updated_at'
+                    'updated_at',
                 ]);
 
             // กรองตามร้านค้า
@@ -74,8 +69,9 @@ class PosApiController extends Controller
             // แปลง image path เป็น URL
             $products = $products->map(function ($product) {
                 if ($product->image) {
-                    $product->image_url = asset('storage/' . $product->image);
+                    $product->image_url = asset('storage/'.$product->image);
                 }
+
                 return $product;
             });
 
@@ -83,27 +79,24 @@ class PosApiController extends Controller
                 'success' => true,
                 'data' => $products,
                 'count' => $products->count(),
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             Log::error('POS API: Failed to get products', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงข้อมูลสินค้าได้',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงสินค้าที่อัพเดทตั้งแต่ timestamp ที่กำหนด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getUpdatedProducts(Request $request): JsonResponse
     {
@@ -111,7 +104,7 @@ class PosApiController extends Controller
             $since = $request->input('since');
             $storeId = $request->input('store_id');
 
-            if (!$since) {
+            if (! $since) {
                 return $this->getAllProducts($request);
             }
 
@@ -134,7 +127,7 @@ class PosApiController extends Controller
                     'is_active',
                     'is_blocked',
                     'updated_at',
-                    'deleted_at'
+                    'deleted_at',
                 ])
                 ->withTrashed(); // รวม soft deleted เพื่อ sync การลบ
 
@@ -149,58 +142,52 @@ class PosApiController extends Controller
                 'data' => $products,
                 'count' => $products->count(),
                 'since' => $since,
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             Log::error('POS API: Failed to get updated products', [
                 'error' => $e->getMessage(),
-                'since' => $since ?? null
+                'since' => $since ?? null,
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลสินค้าที่อัพเดทได้'
+                'message' => 'ไม่สามารถดึงข้อมูลสินค้าที่อัพเดทได้',
             ], 500);
         }
     }
 
     /**
      * ดึงสินค้าเดี่ยวตาม ID
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function getProduct(int $id): JsonResponse
     {
         try {
             $product = Product::find($id);
 
-            if (!$product) {
+            if (! $product) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่พบสินค้า'
+                    'message' => 'ไม่พบสินค้า',
                 ], 404);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $product
+                'data' => $product,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลสินค้าได้'
+                'message' => 'ไม่สามารถดึงข้อมูลสินค้าได้',
             ], 500);
         }
     }
 
     /**
      * ค้นหาสินค้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchProducts(Request $request): JsonResponse
     {
@@ -218,8 +205,8 @@ class PosApiController extends Controller
             if ($query) {
                 $productsQuery->where(function ($q) use ($query) {
                     $q->where('name', 'like', "%{$query}%")
-                      ->orWhere('sku', 'like', "%{$query}%")
-                      ->orWhere('barcode', $query);
+                        ->orWhere('sku', 'like', "%{$query}%")
+                        ->orWhere('barcode', $query);
                 });
             }
 
@@ -238,13 +225,13 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $products,
-                'count' => $products->count()
+                'count' => $products->count(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถค้นหาสินค้าได้'
+                'message' => 'ไม่สามารถค้นหาสินค้าได้',
             ], 500);
         }
     }
@@ -255,9 +242,6 @@ class PosApiController extends Controller
 
     /**
      * ดึงหมวดหมู่ทั้งหมด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAllCategories(Request $request): JsonResponse
     {
@@ -279,29 +263,26 @@ class PosApiController extends Controller
                 'success' => true,
                 'data' => $categories,
                 'count' => $categories->count(),
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลหมวดหมู่ได้'
+                'message' => 'ไม่สามารถดึงข้อมูลหมวดหมู่ได้',
             ], 500);
         }
     }
 
     /**
      * ดึงหมวดหมู่ที่อัพเดท
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getUpdatedCategories(Request $request): JsonResponse
     {
         try {
             $since = $request->input('since');
 
-            if (!$since) {
+            if (! $since) {
                 return $this->getAllCategories($request);
             }
 
@@ -315,13 +296,13 @@ class PosApiController extends Controller
                 'data' => $categories,
                 'count' => $categories->count(),
                 'since' => $since,
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลหมวดหมู่ได้'
+                'message' => 'ไม่สามารถดึงข้อมูลหมวดหมู่ได้',
             ], 500);
         }
     }
@@ -332,9 +313,6 @@ class PosApiController extends Controller
 
     /**
      * ดึงลูกค้าทั้งหมด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getAllCustomers(Request $request): JsonResponse
     {
@@ -362,7 +340,7 @@ class PosApiController extends Controller
                     'phone',
                     'member_code',
                     'points',
-                    'updated_at'
+                    'updated_at',
                 ])
                 ->limit(1000)
                 ->get();
@@ -371,29 +349,26 @@ class PosApiController extends Controller
                 'success' => true,
                 'data' => $customers,
                 'count' => $customers->count(),
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลลูกค้าได้'
+                'message' => 'ไม่สามารถดึงข้อมูลลูกค้าได้',
             ], 500);
         }
     }
 
     /**
      * ดึงลูกค้าที่อัพเดท
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getUpdatedCustomers(Request $request): JsonResponse
     {
         try {
             $since = $request->input('since');
 
-            if (!$since) {
+            if (! $since) {
                 return $this->getAllCustomers($request);
             }
 
@@ -406,29 +381,26 @@ class PosApiController extends Controller
                     'phone',
                     'member_code',
                     'points',
-                    'updated_at'
+                    'updated_at',
                 ])
                 ->get();
 
             return response()->json([
                 'success' => true,
                 'data' => $customers,
-                'count' => $customers->count()
+                'count' => $customers->count(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงข้อมูลลูกค้าได้'
+                'message' => 'ไม่สามารถดึงข้อมูลลูกค้าได้',
             ], 500);
         }
     }
 
     /**
      * ค้นหาลูกค้า
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function searchCustomers(Request $request): JsonResponse
     {
@@ -439,9 +411,9 @@ class PosApiController extends Controller
             $customers = User::query()
                 ->where(function ($q) use ($query) {
                     $q->where('name', 'like', "%{$query}%")
-                      ->orWhere('phone', 'like', "%{$query}%")
-                      ->orWhere('email', 'like', "%{$query}%")
-                      ->orWhere('member_code', $query);
+                        ->orWhere('phone', 'like', "%{$query}%")
+                        ->orWhere('email', 'like', "%{$query}%")
+                        ->orWhere('member_code', $query);
                 })
                 ->select(['id', 'name', 'email', 'phone', 'member_code', 'points'])
                 ->limit($limit)
@@ -450,22 +422,19 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $customers,
-                'count' => $customers->count()
+                'count' => $customers->count(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถค้นหาลูกค้าได้'
+                'message' => 'ไม่สามารถค้นหาลูกค้าได้',
             ], 500);
         }
     }
 
     /**
      * สร้างลูกค้าใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function createCustomer(Request $request): JsonResponse
     {
@@ -473,14 +442,14 @@ class PosApiController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'phone' => 'nullable|string|max:20',
-                'email' => 'nullable|email|max:255'
+                'email' => 'nullable|email|max:255',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ข้อมูลไม่ถูกต้อง',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -490,19 +459,19 @@ class PosApiController extends Controller
                 'phone' => $request->input('phone'),
                 'email' => $request->input('email'),
                 'password' => bcrypt(str()->random(16)),
-                'member_code' => 'M' . str_pad(User::max('id') + 1, 8, '0', STR_PAD_LEFT)
+                'member_code' => 'M'.str_pad(User::max('id') + 1, 8, '0', STR_PAD_LEFT),
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $customer,
-                'message' => 'สร้างลูกค้าสำเร็จ'
+                'message' => 'สร้างลูกค้าสำเร็จ',
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถสร้างลูกค้าได้'
+                'message' => 'ไม่สามารถสร้างลูกค้าได้',
             ], 500);
         }
     }
@@ -513,9 +482,6 @@ class PosApiController extends Controller
 
     /**
      * ดึงการตั้งค่า POS
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getSettings(Request $request): JsonResponse
     {
@@ -542,11 +508,11 @@ class PosApiController extends Controller
                     'cash' => true,
                     'card' => true,
                     'qr' => true,
-                    'wallet' => true
+                    'wallet' => true,
                 ],
                 'currency' => 'THB',
                 'currency_symbol' => '฿',
-                'decimal_places' => 2
+                'decimal_places' => 2,
             ];
 
             if ($settings) {
@@ -558,13 +524,13 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
-                'timestamp' => now()->toISOString()
+                'timestamp' => now()->toISOString(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงการตั้งค่าได้'
+                'message' => 'ไม่สามารถดึงการตั้งค่าได้',
             ], 500);
         }
     }
@@ -575,9 +541,6 @@ class PosApiController extends Controller
 
     /**
      * Sync รายการขายจาก offline
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncTransaction(Request $request): JsonResponse
     {
@@ -585,10 +548,10 @@ class PosApiController extends Controller
             $transactionData = $request->input('transaction');
             $itemsData = $request->input('items', []);
 
-            if (!$transactionData) {
+            if (! $transactionData) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่มีข้อมูลรายการขาย'
+                    'message' => 'ไม่มีข้อมูลรายการขาย',
                 ], 400);
             }
 
@@ -600,11 +563,12 @@ class PosApiController extends Controller
 
             if ($existing) {
                 DB::rollBack();
+
                 return response()->json([
                     'success' => true,
                     'data' => ['id' => $existing->id],
                     'message' => 'รายการนี้ถูกบันทึกไปแล้ว',
-                    'duplicate' => true
+                    'duplicate' => true,
                 ]);
             }
 
@@ -630,7 +594,7 @@ class PosApiController extends Controller
                 'status' => $transactionData['status'] ?? 'completed',
                 'notes' => $transactionData['notes'] ?? null,
                 'synced_from_offline' => true,
-                'offline_created_at' => $transactionData['created_at'] ?? now()
+                'offline_created_at' => $transactionData['created_at'] ?? now(),
             ]);
 
             // สร้าง transaction items
@@ -645,11 +609,11 @@ class PosApiController extends Controller
                     'quantity' => $item['quantity'] ?? 1,
                     'discount_amount' => $item['discount'] ?? 0,
                     'tax_amount' => $item['tax'] ?? 0,
-                    'subtotal' => $item['subtotal'] ?? ($item['unit_price'] * $item['quantity'])
+                    'subtotal' => $item['subtotal'] ?? ($item['unit_price'] * $item['quantity']),
                 ]);
 
                 // อัพเดทสต็อก (ถ้าจำเป็น)
-                if (!empty($item['product_id'])) {
+                if (! empty($item['product_id'])) {
                     $product = Product::find($item['product_id']);
                     if ($product && $product->track_inventory) {
                         $product->decrement('stock_quantity', $item['quantity']);
@@ -663,9 +627,9 @@ class PosApiController extends Controller
                 'success' => true,
                 'data' => [
                     'id' => $transaction->id,
-                    'transaction_number' => $transaction->transaction_number
+                    'transaction_number' => $transaction->transaction_number,
                 ],
-                'message' => 'บันทึกรายการขายสำเร็จ'
+                'message' => 'บันทึกรายการขายสำเร็จ',
             ]);
 
         } catch (\Exception $e) {
@@ -673,22 +637,19 @@ class PosApiController extends Controller
 
             Log::error('POS API: Failed to sync transaction', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถบันทึกรายการขายได้',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * Sync หลายรายการขายพร้อมกัน
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function bulkSyncTransactions(Request $request): JsonResponse
     {
@@ -704,14 +665,14 @@ class PosApiController extends Controller
                 try {
                     $request->replace([
                         'transaction' => $data['transaction'] ?? $data,
-                        'items' => $data['items'] ?? []
+                        'items' => $data['items'] ?? [],
                     ]);
 
                     $response = $this->syncTransaction($request);
                     $responseData = json_decode($response->getContent(), true);
 
                     if ($responseData['success']) {
-                        if (!empty($responseData['duplicate'])) {
+                        if (! empty($responseData['duplicate'])) {
                             $duplicates++;
                         } else {
                             $synced++;
@@ -719,14 +680,14 @@ class PosApiController extends Controller
                         $results[] = [
                             'local_id' => $data['id'] ?? null,
                             'server_id' => $responseData['data']['id'] ?? null,
-                            'status' => 'success'
+                            'status' => 'success',
                         ];
                     } else {
                         $failed++;
                         $results[] = [
                             'local_id' => $data['id'] ?? null,
                             'status' => 'failed',
-                            'error' => $responseData['message'] ?? 'Unknown error'
+                            'error' => $responseData['message'] ?? 'Unknown error',
                         ];
                     }
                 } catch (\Exception $e) {
@@ -734,7 +695,7 @@ class PosApiController extends Controller
                     $results[] = [
                         'local_id' => $data['id'] ?? null,
                         'status' => 'failed',
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
@@ -745,15 +706,15 @@ class PosApiController extends Controller
                     'synced' => $synced,
                     'failed' => $failed,
                     'duplicates' => $duplicates,
-                    'results' => $results
+                    'results' => $results,
                 ],
-                'message' => "Synced: {$synced}, Failed: {$failed}, Duplicates: {$duplicates}"
+                'message' => "Synced: {$synced}, Failed: {$failed}, Duplicates: {$duplicates}",
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถ sync รายการขายได้'
+                'message' => 'ไม่สามารถ sync รายการขายได้',
             ], 500);
         }
     }
@@ -764,9 +725,6 @@ class PosApiController extends Controller
 
     /**
      * Sync การเคลื่อนไหวสต็อก
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function syncStockMovements(Request $request): JsonResponse
     {
@@ -779,10 +737,14 @@ class PosApiController extends Controller
                 $quantity = $movement['quantity'] ?? 0;
                 $type = $movement['type'] ?? 'adjustment';
 
-                if (!$productId) continue;
+                if (! $productId) {
+                    continue;
+                }
 
                 $product = Product::find($productId);
-                if (!$product) continue;
+                if (! $product) {
+                    continue;
+                }
 
                 // อัพเดทสต็อก
                 if ($type === 'sale' || $quantity < 0) {
@@ -797,22 +759,19 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => ['synced' => $synced],
-                'message' => "Synced {$synced} stock movements"
+                'message' => "Synced {$synced} stock movements",
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถ sync การเคลื่อนไหวสต็อกได้'
+                'message' => 'ไม่สามารถ sync การเคลื่อนไหวสต็อกได้',
             ], 500);
         }
     }
 
     /**
      * บันทึกการเคลื่อนไหวสต็อกเดี่ยว
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function recordStockMovement(Request $request): JsonResponse
     {
@@ -821,13 +780,13 @@ class PosApiController extends Controller
                 'product_id' => 'required|exists:products,id',
                 'type' => 'required|in:in,out,adjustment,sale,return',
                 'quantity' => 'required|numeric',
-                'reason' => 'nullable|string'
+                'reason' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -846,15 +805,15 @@ class PosApiController extends Controller
                 'success' => true,
                 'data' => [
                     'product_id' => $product->id,
-                    'new_stock' => $product->fresh()->stock_quantity
+                    'new_stock' => $product->fresh()->stock_quantity,
                 ],
-                'message' => 'บันทึกการเคลื่อนไหวสต็อกสำเร็จ'
+                'message' => 'บันทึกการเคลื่อนไหวสต็อกสำเร็จ',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถบันทึกการเคลื่อนไหวสต็อกได้'
+                'message' => 'ไม่สามารถบันทึกการเคลื่อนไหวสต็อกได้',
             ], 500);
         }
     }
@@ -865,9 +824,6 @@ class PosApiController extends Controller
 
     /**
      * ลงทะเบียน/อัพเดท Device
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function registerDevice(Request $request): JsonResponse
     {
@@ -875,13 +831,13 @@ class PosApiController extends Controller
             $validator = Validator::make($request->all(), [
                 'device_code' => 'required|string',
                 'device_name' => 'required|string',
-                'device_type' => 'nullable|string'
+                'device_type' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -892,29 +848,26 @@ class PosApiController extends Controller
                     'device_type' => $request->input('device_type', 'pwa'),
                     'last_active_at' => now(),
                     'last_ip_address' => $request->ip(),
-                    'is_online' => true
+                    'is_online' => true,
                 ]
             );
 
             return response()->json([
                 'success' => true,
                 'data' => $device,
-                'message' => 'ลงทะเบียนอุปกรณ์สำเร็จ'
+                'message' => 'ลงทะเบียนอุปกรณ์สำเร็จ',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถลงทะเบียนอุปกรณ์ได้'
+                'message' => 'ไม่สามารถลงทะเบียนอุปกรณ์ได้',
             ], 500);
         }
     }
 
     /**
      * Heartbeat - อัพเดทสถานะ online
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function heartbeat(Request $request): JsonResponse
     {
@@ -925,19 +878,19 @@ class PosApiController extends Controller
                 PosDevice::where('id', $deviceId)->update([
                     'last_active_at' => now(),
                     'last_ip_address' => $request->ip(),
-                    'is_online' => true
+                    'is_online' => true,
                 ]);
             }
 
             return response()->json([
                 'success' => true,
                 'timestamp' => now()->toISOString(),
-                'server_time' => now()->format('Y-m-d H:i:s')
+                'server_time' => now()->format('Y-m-d H:i:s'),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -948,9 +901,6 @@ class PosApiController extends Controller
 
     /**
      * ดึงสรุปยอดขายวันนี้
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getTodaySummary(Request $request): JsonResponse
     {
@@ -985,30 +935,27 @@ class PosApiController extends Controller
                         return [
                             'method' => $method,
                             'count' => $group->count(),
-                            'total' => $group->sum('total_amount')
+                            'total' => $group->sum('total_amount'),
                         ];
                     })->values(),
-                'date' => today()->format('Y-m-d')
+                'date' => today()->format('Y-m-d'),
             ];
 
             return response()->json([
                 'success' => true,
-                'data' => $summary
+                'data' => $summary,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงสรุปยอดขายได้'
+                'message' => 'ไม่สามารถดึงสรุปยอดขายได้',
             ], 500);
         }
     }
 
     /**
      * ดึงรายการขายล่าสุด
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function getRecentTransactions(Request $request): JsonResponse
     {
@@ -1030,13 +977,13 @@ class PosApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $transactions,
-                'count' => $transactions->count()
+                'count' => $transactions->count(),
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถดึงรายการขายได้'
+                'message' => 'ไม่สามารถดึงรายการขายได้',
             ], 500);
         }
     }

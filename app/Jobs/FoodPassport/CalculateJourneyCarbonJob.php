@@ -16,6 +16,7 @@ class CalculateJourneyCarbonJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
+
     public int $timeout = 30;
 
     /**
@@ -32,10 +33,11 @@ class CalculateJourneyCarbonJob implements ShouldQueue
     {
         try {
             // Skip if no transport details
-            if (!$this->journey->transport_method || !$this->journey->distance_km) {
+            if (! $this->journey->transport_method || ! $this->journey->distance_km) {
                 Log::info('Journey stage has no transport data, skipping carbon calculation', [
                     'journey_id' => $this->journey->id,
                 ]);
+
                 return;
             }
 
@@ -72,7 +74,7 @@ class CalculateJourneyCarbonJob implements ShouldQueue
     {
         $product = $this->journey->foodProduct;
 
-        if (!$product) {
+        if (! $product) {
             return;
         }
 

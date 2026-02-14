@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * เก็บข้อมูล Cloud GPU providers สำหรับ AI rental system
      * รองรับทั้ง free tier และ paid tier
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -110,8 +108,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_rental_cloud_providers
-     *
-     * @return void
      */
     public function down(): void
     {

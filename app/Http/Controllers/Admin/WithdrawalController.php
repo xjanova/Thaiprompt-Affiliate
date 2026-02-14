@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\WithdrawalRequest;
-use App\Models\User;
 use App\Services\WithdrawalService;
-use Illuminate\Http\Request;
 use Exception;
+use Illuminate\Http\Request;
 
 class WithdrawalController extends Controller
 {
@@ -69,7 +68,7 @@ class WithdrawalController extends Controller
      */
     public function approve(Request $request, $id)
     {
-        if (!auth()->user()->hasPermission('approve_withdrawals')) {
+        if (! auth()->user()->hasPermission('approve_withdrawals')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์อนุมัติคำขอถอนเงิน');
         }
 
@@ -80,7 +79,7 @@ class WithdrawalController extends Controller
             return redirect()->route('admin.withdrawals.show', $id)
                 ->with('success', 'อนุมัติคำขอถอนเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -89,7 +88,7 @@ class WithdrawalController extends Controller
      */
     public function reject(Request $request, $id)
     {
-        if (!auth()->user()->hasPermission('approve_withdrawals')) {
+        if (! auth()->user()->hasPermission('approve_withdrawals')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ปฏิเสธคำขอถอนเงิน');
         }
 
@@ -108,7 +107,7 @@ class WithdrawalController extends Controller
             return redirect()->route('admin.withdrawals.show', $id)
                 ->with('success', 'ปฏิเสธคำขอถอนเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -117,7 +116,7 @@ class WithdrawalController extends Controller
      */
     public function complete(Request $request, $id)
     {
-        if (!auth()->user()->hasPermission('approve_withdrawals')) {
+        if (! auth()->user()->hasPermission('approve_withdrawals')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ดำเนินการนี้');
         }
 
@@ -138,7 +137,7 @@ class WithdrawalController extends Controller
             return redirect()->route('admin.withdrawals.show', $id)
                 ->with('success', 'ดำเนินการโอนเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -147,7 +146,7 @@ class WithdrawalController extends Controller
      */
     public function batchApprove(Request $request)
     {
-        if (!auth()->user()->hasPermission('approve_withdrawals')) {
+        if (! auth()->user()->hasPermission('approve_withdrawals')) {
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์อนุมัติคำขอถอนเงิน');
         }
 

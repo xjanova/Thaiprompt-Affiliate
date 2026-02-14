@@ -114,7 +114,7 @@ class ReviewManagementController extends Controller
         $review = HotelReview::where('hotel_id', $user->managed_hotel_id)
             ->findOrFail($id);
 
-        if (!$review->hotel_response) {
+        if (! $review->hotel_response) {
             return response()->json([
                 'success' => false,
                 'message' => 'No response exists to update',
@@ -147,7 +147,7 @@ class ReviewManagementController extends Controller
         $review = HotelReview::where('hotel_id', $user->managed_hotel_id)
             ->findOrFail($id);
 
-        if (!$review->hotel_response) {
+        if (! $review->hotel_response) {
             return response()->json([
                 'success' => false,
                 'message' => 'No response exists to delete',
@@ -210,7 +210,7 @@ class ReviewManagementController extends Controller
                 'approved_reviews' => $approvedReviews->count(),
                 'pending_reviews' => $reviews->where('is_approved', false)->count(),
                 'rating_breakdown' => $ratingBreakdown,
-                'category_averages' => array_map(function($avg) {
+                'category_averages' => array_map(function ($avg) {
                     return $avg ? round($avg, 2) : 0;
                 }, $categoryAverages),
                 'response_stats' => [
@@ -275,7 +275,7 @@ class ReviewManagementController extends Controller
         $review = HotelReview::where('hotel_id', $user->managed_hotel_id)
             ->findOrFail($id);
 
-        if (!$review->is_approved) {
+        if (! $review->is_approved) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only approved reviews can be suggested as featured',

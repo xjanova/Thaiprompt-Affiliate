@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
-use App\Models\FortuneUserCredit;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
 use App\Services\FortuneChannelManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,7 +43,7 @@ class FortuneUsersController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('facebook_user_id', 'like', "%{$search}%")
-                  ->orWhere('facebook_user_name', 'like', "%{$search}%");
+                    ->orWhere('facebook_user_name', 'like', "%{$search}%");
             });
         }
 
@@ -137,7 +137,7 @@ class FortuneUsersController extends Controller
             $channelManager = new FortuneChannelManager($settings);
             $platformService = $channelManager->getPlatform($validated['platform']);
 
-            if (!$platformService) {
+            if (! $platformService) {
                 return back()->with('error', "ไม่สามารถเชื่อมต่อ {$validated['platform']} ได้ กรุณาตั้งค่าช่องทางก่อน");
             }
 
@@ -167,7 +167,7 @@ class FortuneUsersController extends Controller
                 'user_id' => $validated['facebook_user_id'],
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -242,7 +242,8 @@ class FortuneUsersController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Admin broadcast message failed', ['error' => $e->getMessage()]);
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 

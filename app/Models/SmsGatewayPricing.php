@@ -75,7 +75,7 @@ class SmsGatewayPricing extends Model
 
     public function getFormattedPriceAttribute(): string
     {
-        return '฿' . number_format($this->price, 0);
+        return '฿'.number_format($this->price, 0);
     }
 
     public function getPricePerMonthAttribute(): float
@@ -83,6 +83,7 @@ class SmsGatewayPricing extends Model
         if ($this->plan_type === 'yearly') {
             return round($this->price / 12, 2);
         }
+
         return (float) $this->price;
     }
 
@@ -98,7 +99,7 @@ class SmsGatewayPricing extends Model
             ->where('is_active', true)
             ->first();
 
-        if (!$monthly) {
+        if (! $monthly) {
             return 0;
         }
 

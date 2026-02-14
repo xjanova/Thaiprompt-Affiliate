@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PayrollRecord;
-use App\Models\Employee;
 use App\Models\Department;
+use App\Models\PayrollRecord;
 use App\Services\PayrollService;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class PayrollController extends Controller
 {
@@ -33,7 +31,7 @@ class PayrollController extends Controller
 
         // Department filter
         if ($request->filled('department_id')) {
-            $query->whereHas('employee', function($q) use ($request) {
+            $query->whereHas('employee', function ($q) use ($request) {
                 $q->where('department_id', $request->get('department_id'));
             });
         }
@@ -88,14 +86,14 @@ class PayrollController extends Controller
                 auth()->id()
             );
 
-            $message = count($result['generated']) . ' payroll records generated';
+            $message = count($result['generated']).' payroll records generated';
             if (count($result['errors']) > 0) {
-                $message .= ', ' . count($result['errors']) . ' errors occurred';
+                $message .= ', '.count($result['errors']).' errors occurred';
             }
 
             return back()->with('success', $message);
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to generate payrolls: ' . $e->getMessage());
+            return back()->with('error', 'Failed to generate payrolls: '.$e->getMessage());
         }
     }
 
@@ -149,7 +147,7 @@ class PayrollController extends Controller
             }
         }
 
-        return back()->with('success', $count . ' payroll records approved');
+        return back()->with('success', $count.' payroll records approved');
     }
 
     public function export(Request $request)
@@ -158,24 +156,24 @@ class PayrollController extends Controller
         $year = $request->get('year', now()->year);
 
         $payrolls = PayrollRecord::with(['employee.department', 'employee.position'])
-                                ->where('month', $month)
-                                ->where('year', $year)
-                                ->get();
+            ->where('month', $month)
+            ->where('year', $year)
+            ->get();
 
-        $filename = 'payroll_' . $year . '_' . str_pad($month, 2, '0', STR_PAD_LEFT) . '.csv';
+        $filename = 'payroll_'.$year.'_'.str_pad($month, 2, '0', STR_PAD_LEFT).'.csv';
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ];
 
-        $callback = function() use ($payrolls) {
+        $callback = function () use ($payrolls) {
             $file = fopen('php://output', 'w');
 
             fputcsv($file, [
                 'Employee ID', 'Name', 'Department', 'Position',
                 'Basic Salary', 'Allowances', 'Bonuses', 'Overtime', 'Commission',
                 'Gross Salary', 'Tax', 'Social Security', 'Provident Fund',
-                'Other Deductions', 'Total Deductions', 'Net Salary', 'Status'
+                'Other Deductions', 'Total Deductions', 'Net Salary', 'Status',
             ]);
 
             foreach ($payrolls as $payroll) {

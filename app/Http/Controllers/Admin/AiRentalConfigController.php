@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AiRentalCloudConfig;
 use App\Models\AiRentalCloudProvider;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 /**
  * My Configurations Controller
@@ -19,9 +19,6 @@ class AiRentalConfigController extends Controller
 {
     /**
      * แสดงรายการ Configurations ของผู้ใช้
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -59,8 +56,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * แสดงฟอร์มสร้าง Configuration ใหม่
-     *
-     * @return View
      */
     public function create(): View
     {
@@ -72,9 +67,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * บันทึก Configuration ใหม่
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function store(Request $request): RedirectResponse
     {
@@ -140,9 +132,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * แสดงรายละเอียด Configuration
-     *
-     * @param AiRentalCloudConfig $config
-     * @return View
      */
     public function show(AiRentalCloudConfig $config): View
     {
@@ -166,9 +155,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * แสดงฟอร์มแก้ไข Configuration
-     *
-     * @param AiRentalCloudConfig $config
-     * @return View
      */
     public function edit(AiRentalCloudConfig $config): View
     {
@@ -183,10 +169,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * อัพเดท Configuration
-     *
-     * @param Request $request
-     * @param AiRentalCloudConfig $config
-     * @return RedirectResponse
      */
     public function update(Request $request, AiRentalCloudConfig $config): RedirectResponse
     {
@@ -250,9 +232,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * ลบ Configuration
-     *
-     * @param AiRentalCloudConfig $config
-     * @return RedirectResponse
      */
     public function destroy(AiRentalCloudConfig $config): RedirectResponse
     {
@@ -263,7 +242,7 @@ class AiRentalConfigController extends Controller
         if ($config->deployments()->running()->exists()) {
             return redirect()
                 ->back()
-                ->with('error', "ไม่สามารถลบได้ เนื่องจากมี deployments ที่กำลังรันอยู่");
+                ->with('error', 'ไม่สามารถลบได้ เนื่องจากมี deployments ที่กำลังรันอยู่');
         }
 
         $name = $config->config_name;
@@ -278,9 +257,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * ทดสอบการเชื่อมต่อ
-     *
-     * @param AiRentalCloudConfig $config
-     * @return RedirectResponse
      */
     public function testConnection(AiRentalCloudConfig $config): RedirectResponse
     {
@@ -302,9 +278,6 @@ class AiRentalConfigController extends Controller
 
     /**
      * ตั้งเป็น Default Configuration
-     *
-     * @param AiRentalCloudConfig $config
-     * @return RedirectResponse
      */
     public function setDefault(AiRentalCloudConfig $config): RedirectResponse
     {

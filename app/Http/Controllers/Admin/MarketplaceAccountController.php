@@ -22,7 +22,6 @@ class MarketplaceAccountController extends Controller
     /**
      * แสดงรายการบัญชี Marketplace ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -84,7 +83,6 @@ class MarketplaceAccountController extends Controller
     /**
      * บันทึกบัญชีใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -128,7 +126,6 @@ class MarketplaceAccountController extends Controller
     /**
      * แสดงรายละเอียดบัญชี
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\View\View
      */
     public function show(MarketplaceAccount $account)
@@ -153,7 +150,6 @@ class MarketplaceAccountController extends Controller
     /**
      * แสดงฟอร์มแก้ไขบัญชี
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\View\View
      */
     public function edit(MarketplaceAccount $account)
@@ -167,8 +163,6 @@ class MarketplaceAccountController extends Controller
     /**
      * อัพเดทบัญชี
      *
-     * @param Request $request
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, MarketplaceAccount $account)
@@ -227,7 +221,6 @@ class MarketplaceAccountController extends Controller
     /**
      * ลบบัญชี
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(MarketplaceAccount $account)
@@ -246,7 +239,6 @@ class MarketplaceAccountController extends Controller
     /**
      * ทดสอบการเชื่อมต่อ API
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function testConnection(MarketplaceAccount $account)
@@ -257,6 +249,7 @@ class MarketplaceAccountController extends Controller
 
             if ($result) {
                 $account->update(['status' => 'active', 'last_error' => null]);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'เชื่อมต่อ API สำเร็จ',
@@ -280,7 +273,7 @@ class MarketplaceAccountController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -288,7 +281,6 @@ class MarketplaceAccountController extends Controller
     /**
      * Sync สินค้าจาก Marketplace
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function syncProducts(MarketplaceAccount $account)
@@ -315,7 +307,7 @@ class MarketplaceAccountController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Sync ล้มเหลว: ' . $e->getMessage(),
+                'message' => 'Sync ล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -323,7 +315,6 @@ class MarketplaceAccountController extends Controller
     /**
      * Sync ออเดอร์จาก Marketplace
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function syncOrders(MarketplaceAccount $account)
@@ -350,7 +341,7 @@ class MarketplaceAccountController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Sync ล้มเหลว: ' . $e->getMessage(),
+                'message' => 'Sync ล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -358,7 +349,6 @@ class MarketplaceAccountController extends Controller
     /**
      * Sync ทั้งหมด (สินค้า + ออเดอร์)
      *
-     * @param MarketplaceAccount $account
      * @return \Illuminate\Http\JsonResponse
      */
     public function syncAll(MarketplaceAccount $account)
@@ -389,7 +379,7 @@ class MarketplaceAccountController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Sync ล้มเหลว: ' . $e->getMessage(),
+                'message' => 'Sync ล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\LineFailedMessage;
 use App\Models\LineErrorLog;
+use App\Models\LineFailedMessage;
 use App\Services\LineAutoRetryService;
 use Illuminate\Console\Command;
 
@@ -17,8 +17,6 @@ use Illuminate\Console\Command;
  * - php artisan line:retry-status
  * - php artisan line:retry-status --days=30     (สถิติ 30 วัน)
  * - php artisan line:retry-status --detailed    (แสดงรายละเอียดเพิ่มเติม)
- *
- * @package App\Console\Commands
  */
 class LineRetryStatus extends Command
 {
@@ -40,15 +38,11 @@ class LineRetryStatus extends Command
 
     /**
      * LineAutoRetryService instance
-     *
-     * @var LineAutoRetryService
      */
     protected LineAutoRetryService $retryService;
 
     /**
      * Constructor
-     *
-     * @param LineAutoRetryService $retryService
      */
     public function __construct(LineAutoRetryService $retryService)
     {
@@ -58,8 +52,6 @@ class LineRetryStatus extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return int
      */
     public function handle(): int
     {
@@ -86,15 +78,14 @@ class LineRetryStatus extends Command
             return Command::SUCCESS;
 
         } catch (\Exception $e) {
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }
 
     /**
      * แสดงสถานะโดยรวม
-     *
-     * @return void
      */
     protected function displayOverallStatus(): void
     {
@@ -115,11 +106,11 @@ class LineRetryStatus extends Command
         $this->table(
             ['Status', 'Count', 'Percentage'],
             [
-                ['⏳ Pending', number_format($pending), $total > 0 ? round(($pending / $total) * 100, 1) . '%' : '0%'],
-                ['🔄 Retrying', number_format($retrying), $total > 0 ? round(($retrying / $total) * 100, 1) . '%' : '0%'],
-                ['✅ Succeeded', number_format($succeeded), $total > 0 ? round(($succeeded / $total) * 100, 1) . '%' : '0%'],
-                ['❌ Failed', number_format($failed), $total > 0 ? round(($failed / $total) * 100, 1) . '%' : '0%'],
-                ['⚠️  Abandoned', number_format($abandoned), $total > 0 ? round(($abandoned / $total) * 100, 1) . '%' : '0%'],
+                ['⏳ Pending', number_format($pending), $total > 0 ? round(($pending / $total) * 100, 1).'%' : '0%'],
+                ['🔄 Retrying', number_format($retrying), $total > 0 ? round(($retrying / $total) * 100, 1).'%' : '0%'],
+                ['✅ Succeeded', number_format($succeeded), $total > 0 ? round(($succeeded / $total) * 100, 1).'%' : '0%'],
+                ['❌ Failed', number_format($failed), $total > 0 ? round(($failed / $total) * 100, 1).'%' : '0%'],
+                ['⚠️  Abandoned', number_format($abandoned), $total > 0 ? round(($abandoned / $total) * 100, 1).'%' : '0%'],
                 ['', '', ''],
                 ['📝 Total Messages', number_format($total), '100%'],
                 ['🔴 Unresolved Errors', number_format($unresolvedErrors), '-'],
@@ -134,9 +125,6 @@ class LineRetryStatus extends Command
 
     /**
      * แสดงสถิติการ retry
-     *
-     * @param int $days
-     * @return void
      */
     protected function displayRetryStatistics(int $days): void
     {
@@ -149,22 +137,22 @@ class LineRetryStatus extends Command
             ['Metric', 'Value'],
             [
                 ['Total Failed Messages', number_format($stats['total'])],
-                ['Successfully Recovered', number_format($stats['succeeded']) . ' (' . $stats['success_rate'] . '%)'],
-                ['Abandoned (Unrecoverable)', number_format($stats['abandoned']) . ' (' . $stats['abandonment_rate'] . '%)'],
+                ['Successfully Recovered', number_format($stats['succeeded']).' ('.$stats['success_rate'].'%)'],
+                ['Abandoned (Unrecoverable)', number_format($stats['abandoned']).' ('.$stats['abandonment_rate'].'%)'],
                 ['Still Pending', number_format($stats['pending'])],
                 ['Average Retry Count', $stats['avg_retry_count']],
             ]
         );
 
         // แสดง breakdown ตาม error type
-        if (!empty($stats['by_error_type'])) {
+        if (! empty($stats['by_error_type'])) {
             $this->newLine();
             $this->line('🔍 Error Types Breakdown:');
 
             $errorRows = [];
             foreach ($stats['by_error_type'] as $type => $count) {
                 $percentage = $stats['total'] > 0 ? round(($count / $stats['total']) * 100, 1) : 0;
-                $errorRows[] = [$this->formatErrorType($type), number_format($count), $percentage . '%'];
+                $errorRows[] = [$this->formatErrorType($type), number_format($count), $percentage.'%'];
             }
 
             $this->table(['Error Type', 'Count', 'Percentage'], $errorRows);
@@ -173,9 +161,6 @@ class LineRetryStatus extends Command
 
     /**
      * แสดงข้อมูลรายละเอียด
-     *
-     * @param int $days
-     * @return void
      */
     protected function displayDetailedInfo(int $days): void
     {
@@ -216,8 +201,6 @@ class LineRetryStatus extends Command
 
     /**
      * แสดงข้อความล่าสุดที่ล้มเหลว
-     *
-     * @return void
      */
     protected function displayRecentFailures(): void
     {
@@ -226,7 +209,7 @@ class LineRetryStatus extends Command
 
         $recentFailures = LineFailedMessage::whereIn('status', [
             LineFailedMessage::STATUS_FAILED,
-            LineFailedMessage::STATUS_PENDING
+            LineFailedMessage::STATUS_PENDING,
         ])
             ->latest('updated_at')
             ->limit(5)
@@ -234,6 +217,7 @@ class LineRetryStatus extends Command
 
         if ($recentFailures->isEmpty()) {
             $this->info('   ไม่มีข้อความที่ล้มเหลวล่าสุด');
+
             return;
         }
 
@@ -243,7 +227,7 @@ class LineRetryStatus extends Command
                 $failure->id,
                 $failure->message_type,
                 $failure->error_type ?? 'unknown',
-                $failure->retry_count . '/' . $failure->max_retries,
+                $failure->retry_count.'/'.$failure->max_retries,
                 $failure->next_retry_at ? $failure->next_retry_at->diffForHumans() : '-',
             ];
         }
@@ -256,9 +240,6 @@ class LineRetryStatus extends Command
 
     /**
      * แสดง recommendations
-     *
-     * @param int $days
-     * @return void
      */
     protected function displayRecommendations(int $days): void
     {
@@ -270,17 +251,17 @@ class LineRetryStatus extends Command
 
         // ตรวจสอบ success rate
         if ($stats['success_rate'] < 70) {
-            $recommendations[] = '⚠️  Success rate ต่ำ (' . $stats['success_rate'] . '%) - ตรวจสอบ LINE API credentials หรือ network connectivity';
+            $recommendations[] = '⚠️  Success rate ต่ำ ('.$stats['success_rate'].'%) - ตรวจสอบ LINE API credentials หรือ network connectivity';
         }
 
         // ตรวจสอบ abandonment rate
         if ($stats['abandonment_rate'] > 20) {
-            $recommendations[] = '⚠️  Abandonment rate สูง (' . $stats['abandonment_rate'] . '%) - พิจารณาเพิ่ม max_retries หรือตรวจสอบ error patterns';
+            $recommendations[] = '⚠️  Abandonment rate สูง ('.$stats['abandonment_rate'].'%) - พิจารณาเพิ่ม max_retries หรือตรวจสอบ error patterns';
         }
 
         // ตรวจสอบจำนวน pending
         if ($stats['pending'] > 100) {
-            $recommendations[] = '⚠️  มีข้อความรอ retry มาก (' . number_format($stats['pending']) . ') - เพิ่มความถี่ cron job หรือเพิ่ม limit';
+            $recommendations[] = '⚠️  มีข้อความรอ retry มาก ('.number_format($stats['pending']).') - เพิ่มความถี่ cron job หรือเพิ่ม limit';
         }
 
         // ตรวจสอบ error types
@@ -293,7 +274,7 @@ class LineRetryStatus extends Command
         }
 
         foreach ($recommendations as $rec) {
-            $this->line('   ' . $rec);
+            $this->line('   '.$rec);
         }
 
         $this->newLine();
@@ -302,11 +283,6 @@ class LineRetryStatus extends Command
 
     /**
      * คำนวณสถานะสุขภาพของระบบ
-     *
-     * @param int $pending
-     * @param int $abandoned
-     * @param int $unresolvedErrors
-     * @return string
      */
     protected function calculateHealthStatus(int $pending, int $abandoned, int $unresolvedErrors): string
     {
@@ -323,9 +299,6 @@ class LineRetryStatus extends Command
 
     /**
      * Format error type เป็นรูปแบบที่อ่านง่าย
-     *
-     * @param string $errorType
-     * @return string
      */
     protected function formatErrorType(string $errorType): string
     {

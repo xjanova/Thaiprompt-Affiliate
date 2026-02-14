@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Crypto\Web3Service;
 use App\Services\Crypto\BlockchainIndexerService;
 use App\Services\Crypto\CryptoPriceService;
+use App\Services\Crypto\Web3Service;
 use Illuminate\Console\Command;
 
 /**
@@ -21,7 +21,9 @@ class TestCryptoConnections extends Command
     protected $description = 'Test all cryptocurrency connections and services';
 
     protected Web3Service $web3Service;
+
     protected BlockchainIndexerService $indexerService;
+
     protected CryptoPriceService $priceService;
 
     public function __construct(
@@ -51,17 +53,17 @@ class TestCryptoConnections extends Command
             $this->newLine();
 
             // Test 1: RPC Connection
-            if (!$this->testRpcConnection($network)) {
+            if (! $this->testRpcConnection($network)) {
                 $allPassed = false;
             }
 
             // Test 2: Indexer API
-            if (!$this->testIndexerApi($network)) {
+            if (! $this->testIndexerApi($network)) {
                 $allPassed = false;
             }
 
             // Test 3: Price Feed
-            if (!$this->testPriceFeed($network)) {
+            if (! $this->testPriceFeed($network)) {
                 $allPassed = false;
             }
 
@@ -69,12 +71,12 @@ class TestCryptoConnections extends Command
         }
 
         // Test 4: Database Connection
-        if (!$this->testDatabase()) {
+        if (! $this->testDatabase()) {
             $allPassed = false;
         }
 
         // Test 5: Cache Connection
-        if (!$this->testCache()) {
+        if (! $this->testCache()) {
             $allPassed = false;
         }
 
@@ -110,10 +112,12 @@ class TestCryptoConnections extends Command
                 return true;
             } else {
                 $this->error('     ❌ Failed to get block number');
+
                 return false;
             }
         } catch (\Exception $e) {
-            $this->error('     ❌ Connection failed: ' . $e->getMessage());
+            $this->error('     ❌ Connection failed: '.$e->getMessage());
+
             return false;
         }
     }
@@ -122,8 +126,9 @@ class TestCryptoConnections extends Command
     {
         $this->line('  🔍 Testing Blockchain Indexer API...');
 
-        if (!$this->indexerService->isConfigured($network)) {
+        if (! $this->indexerService->isConfigured($network)) {
             $this->warn('     ⚠️  API key not configured (set in .env)');
+
             return false;
         }
 
@@ -139,7 +144,7 @@ class TestCryptoConnections extends Command
                     // Test gas oracle
                     $gasOracle = $this->indexerService->getGasOracle($network);
                     if ($gasOracle) {
-                        $this->line("     ⛽ Gas Oracle:");
+                        $this->line('     ⛽ Gas Oracle:');
                         $this->line("        Safe: {$gasOracle['SafeGasPrice']} Gwei");
                         $this->line("        Propose: {$gasOracle['ProposeGasPrice']} Gwei");
                         $this->line("        Fast: {$gasOracle['FastGasPrice']} Gwei");
@@ -150,17 +155,19 @@ class TestCryptoConnections extends Command
                     $balance = $this->indexerService->getBalance($network, $testAddress);
                     if ($balance !== null) {
                         $balanceEth = bcdiv($balance, '1000000000000000000', 6);
-                        $this->line("     💰 Test Query (Vitalik): {$balanceEth} " . $this->getNativeCurrency($network));
+                        $this->line("     💰 Test Query (Vitalik): {$balanceEth} ".$this->getNativeCurrency($network));
                     }
                 }
 
                 return true;
             } else {
                 $this->error('     ❌ API request failed');
+
                 return false;
             }
         } catch (\Exception $e) {
-            $this->error('     ❌ API error: ' . $e->getMessage());
+            $this->error('     ❌ API error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -174,8 +181,9 @@ class TestCryptoConnections extends Command
         try {
             $cryptoCurrency = \App\Models\CryptoCurrency::where('code', $currency)->first();
 
-            if (!$cryptoCurrency) {
+            if (! $cryptoCurrency) {
                 $this->warn("     ⚠️  {$currency} not found in database");
+
                 return false;
             }
 
@@ -184,24 +192,26 @@ class TestCryptoConnections extends Command
             $responseTime = round((microtime(true) - $startTime) * 1000, 2);
 
             if ($rate && $rate->rate_thb) {
-                $this->info("     ✅ Price: ฿" . number_format($rate->rate_thb, 2) . " ({$responseTime}ms)");
+                $this->info('     ✅ Price: ฿'.number_format($rate->rate_thb, 2)." ({$responseTime}ms)");
 
                 if ($this->option('detail') && $rate->rate_usd) {
-                    $this->line("     💵 USD: \$" . number_format($rate->rate_usd, 2));
+                    $this->line('     💵 USD: $'.number_format($rate->rate_usd, 2));
                     if ($rate->change_24h) {
                         $changeColor = $rate->change_24h >= 0 ? 'info' : 'error';
                         $changeSymbol = $rate->change_24h >= 0 ? '▲' : '▼';
-                        $this->$changeColor("     📈 24h Change: {$changeSymbol} " . number_format(abs($rate->change_24h), 2) . "%");
+                        $this->$changeColor("     📈 24h Change: {$changeSymbol} ".number_format(abs($rate->change_24h), 2).'%');
                     }
                 }
 
                 return true;
             } else {
                 $this->error('     ❌ Failed to get price');
+
                 return false;
             }
         } catch (\Exception $e) {
-            $this->error('     ❌ Price feed error: ' . $e->getMessage());
+            $this->error('     ❌ Price feed error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -222,7 +232,7 @@ class TestCryptoConnections extends Command
                 $txCount = \App\Models\CryptoTransaction::count();
                 $currencyCount = \App\Models\CryptoCurrency::count();
 
-                $this->line("  📊 Statistics:");
+                $this->line('  📊 Statistics:');
                 $this->line("     Wallets: {$walletCount}");
                 $this->line("     Transactions: {$txCount}");
                 $this->line("     Currencies: {$currencyCount}");
@@ -230,7 +240,8 @@ class TestCryptoConnections extends Command
 
             return true;
         } catch (\Exception $e) {
-            $this->error('  ❌ Database error: ' . $e->getMessage());
+            $this->error('  ❌ Database error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -241,8 +252,8 @@ class TestCryptoConnections extends Command
 
         try {
             $startTime = microtime(true);
-            \Cache::put('crypto_test_' . time(), 'test', 60);
-            \Cache::get('crypto_test_' . time());
+            \Cache::put('crypto_test_'.time(), 'test', 60);
+            \Cache::get('crypto_test_'.time());
             $responseTime = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->info("  ✅ Cache Working ({$responseTime}ms)");
@@ -254,7 +265,8 @@ class TestCryptoConnections extends Command
 
             return true;
         } catch (\Exception $e) {
-            $this->error('  ❌ Cache error: ' . $e->getMessage());
+            $this->error('  ❌ Cache error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -277,7 +289,7 @@ class TestCryptoConnections extends Command
 
     protected function getNativeCurrency(string $network): string
     {
-        return match($network) {
+        return match ($network) {
             'ethereum' => 'ETH',
             'bsc' => 'BNB',
             'polygon' => 'MATIC',

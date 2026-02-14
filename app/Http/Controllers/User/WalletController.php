@@ -3,29 +3,31 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\WalletService;
-use App\Services\WithdrawalService;
-use App\Services\PaymentGatewayService;
-use App\Services\CashbackService;
-use App\Services\Payment\PaymentService;
-use App\Models\PaymentMethod;
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
+use App\Models\VendorStore;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
-use App\Models\VendorStore;
+use App\Services\CashbackService;
+use App\Services\Payment\PaymentService;
+use App\Services\PaymentGatewayService;
+use App\Services\WalletService;
+use App\Services\WithdrawalService;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Exception;
 
 class WalletController extends Controller
 {
     protected $walletService;
+
     protected $withdrawalService;
+
     protected $paymentGatewayService;
+
     protected $cashbackService;
 
     public function __construct(
@@ -66,10 +68,10 @@ class WalletController extends Controller
         $cashbackStats = [
             'total' => $cashbackTransactions->sum('amount'),
             'count' => $cashbackTransactions->count(),
-            'this_month' => $cashbackTransactions->filter(function($t) {
+            'this_month' => $cashbackTransactions->filter(function ($t) {
                 return $t->created_at->isCurrentMonth();
             })->sum('amount'),
-            'last_30_days' => $cashbackTransactions->filter(function($t) {
+            'last_30_days' => $cashbackTransactions->filter(function ($t) {
                 return $t->created_at->greaterThanOrEqualTo(now()->subDays(30));
             })->sum('amount'),
         ];
@@ -77,21 +79,21 @@ class WalletController extends Controller
         // Get admin adjustments and refunds statistics
         $adminTransactions = $wallet->transactions()
             ->where('status', 'completed')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('reference_type', 'admin_adjustment')
-                      ->orWhere('reference_type', 'admin_refund')
-                      ->orWhere('reference_type', 'refund')
-                      ->orWhere('type', 'refund');
+                    ->orWhere('reference_type', 'admin_refund')
+                    ->orWhere('reference_type', 'refund')
+                    ->orWhere('type', 'refund');
             })
             ->get();
 
         $adminStats = [
             'total' => $adminTransactions->sum('amount'),
             'count' => $adminTransactions->count(),
-            'this_month' => $adminTransactions->filter(function($t) {
+            'this_month' => $adminTransactions->filter(function ($t) {
                 return $t->created_at->isCurrentMonth();
             })->sum('amount'),
-            'last_30_days' => $adminTransactions->filter(function($t) {
+            'last_30_days' => $adminTransactions->filter(function ($t) {
                 return $t->created_at->greaterThanOrEqualTo(now()->subDays(30));
             })->sum('amount'),
         ];
@@ -162,7 +164,6 @@ class WalletController extends Controller
      * สร้าง PaymentTransaction โดยตรง และ redirect ไปหน้าชำระเงิน
      * ไม่ผ่านระบบตะกร้าสินค้า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function processTopup(Request $request)
@@ -215,7 +216,7 @@ class WalletController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -223,7 +224,6 @@ class WalletController extends Controller
     /**
      * แสดงหน้าชำระเงินสำหรับเติมเงิน
      *
-     * @param string $transactionId
      * @return \Illuminate\View\View
      */
     public function topupPayment(string $transactionId)
@@ -264,8 +264,6 @@ class WalletController extends Controller
     /**
      * ประมวลผลการชำระเงินเติมเงิน
      *
-     * @param Request $request
-     * @param string $transactionId
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
     public function processTopupPayment(Request $request, string $transactionId)
@@ -312,7 +310,7 @@ class WalletController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return redirect()->back()
                     ->with('error', $result['message'] ?? 'การชำระเงินล้มเหลว');
             }
@@ -333,7 +331,7 @@ class WalletController extends Controller
             // ถ้าชำระเงินสำเร็จทันที
             if ($updatedTransaction->isCompleted()) {
                 return redirect()->route('user.wallet.index')
-                    ->with('success', 'เติมเงิน ฿' . number_format($transaction->amount, 2) . ' สำเร็จแล้ว!');
+                    ->with('success', 'เติมเงิน ฿'.number_format($transaction->amount, 2).' สำเร็จแล้ว!');
             }
 
             // ถ้ายังรอดำเนินการ
@@ -347,14 +345,13 @@ class WalletController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ตรวจสอบสถานะการชำระเงินเติมเงิน
      *
-     * @param string $transactionId
      * @return \Illuminate\View\View
      */
     public function topupStatus(string $transactionId)
@@ -372,7 +369,6 @@ class WalletController extends Controller
     /**
      * API: ตรวจสอบสถานะ transaction (สำหรับ polling)
      *
-     * @param string $transactionId
      * @return \Illuminate\Http\JsonResponse
      */
     public function checkTopupStatus(string $transactionId)
@@ -384,7 +380,7 @@ class WalletController extends Controller
             ->where('type', 'wallet_topup')
             ->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบรายการ',
@@ -447,9 +443,9 @@ class WalletController extends Controller
             );
 
             return redirect()->route('user.wallet.withdrawals')
-                ->with('success', 'ส่งคำขอถอนเงินเรียบร้อยแล้ว รหัสคำขอ: ' . $withdrawal->request_id);
+                ->with('success', 'ส่งคำขอถอนเงินเรียบร้อยแล้ว รหัสคำขอ: '.$withdrawal->request_id);
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -476,7 +472,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ยกเลิกคำขอถอนเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -519,9 +515,9 @@ class WalletController extends Controller
             );
 
             return redirect()->route('user.wallet.index')
-                ->with('success', 'โอนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท');
+                ->with('success', 'โอนเงินสำเร็จ: '.number_format($request->amount, 2).' บาท');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -556,7 +552,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'เพิ่มช่องทางการรับเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -571,7 +567,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ลบช่องทางการรับเงินเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -649,7 +645,7 @@ class WalletController extends Controller
             );
 
             return redirect()->route('user.wallet.index')
-                ->with('success', 'อัพโหลดสลิปเรียบร้อยแล้ว รหัสอ้างอิง: ' . $result['reference'] . ' กรุณารอการตรวจสอบจากแอดมิน 1-24 ชั่วโมง');
+                ->with('success', 'อัพโหลดสลิปเรียบร้อยแล้ว รหัสอ้างอิง: '.$result['reference'].' กรุณารอการตรวจสอบจากแอดมิน 1-24 ชั่วโมง');
         } catch (Exception $e) {
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
@@ -674,7 +670,7 @@ class WalletController extends Controller
             );
 
             return redirect()->route('user.wallet.index')
-                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿' . number_format($request->amount, 2) . ' รหัส: ' . $result['transaction_id']);
+                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿'.number_format($request->amount, 2).' รหัส: '.$result['transaction_id']);
         } catch (Exception $e) {
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
@@ -699,7 +695,7 @@ class WalletController extends Controller
             );
 
             return redirect()->route('user.wallet.index')
-                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿' . number_format($request->amount, 2) . ' รหัส: ' . $result['transaction_id']);
+                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿'.number_format($request->amount, 2).' รหัส: '.$result['transaction_id']);
         } catch (Exception $e) {
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
@@ -746,7 +742,7 @@ class WalletController extends Controller
 
             return redirect()->back()->with('success', 'ตั้งค่าช่องทางรับเงินเริ่มต้นเรียบร้อยแล้ว');
         } catch (Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -760,7 +756,6 @@ class WalletController extends Controller
      * สร้าง QR Code จาก Wallet Address
      * ผู้ใช้สามารถแชร์ QR ให้คนอื่นสแกนเพื่อโอนเงินมาได้
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function qrCode(Request $request)
@@ -826,7 +821,6 @@ class WalletController extends Controller
      * 4. Row-level Locking - ป้องกัน race condition ใน DB
      * 5. Balance Verification - ตรวจยอดเงินภายใน transaction
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function processQrTransfer(Request $request)
@@ -846,7 +840,7 @@ class WalletController extends Controller
         ]);
 
         $user = auth()->user();
-        $transactionRef = 'QRT-' . Str::upper(Str::random(12));
+        $transactionRef = 'QRT-'.Str::upper(Str::random(12));
 
         // บันทึก Audit Log เริ่มต้น
         Log::info('QR Transfer Initiated', [
@@ -864,7 +858,7 @@ class WalletController extends Controller
             $lockKey = "qr_transfer_lock:user:{$user->id}";
             $lock = Cache::lock($lockKey, 30); // lock 30 วินาที
 
-            if (!$lock->get()) {
+            if (! $lock->get()) {
                 Log::warning('QR Transfer Lock Failed', [
                     'ref' => $transactionRef,
                     'user_id' => $user->id,
@@ -885,7 +879,7 @@ class WalletController extends Controller
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$fromWallet) {
+                    if (! $fromWallet) {
                         throw new Exception('ไม่พบกระเป๋าเงินของคุณ');
                     }
 
@@ -893,7 +887,7 @@ class WalletController extends Controller
                     $toWallet = Wallet::where('wallet_address', $request->wallet_address)->first();
 
                     // ตรวจสอบ Wallet ผู้รับ
-                    if (!$toWallet) {
+                    if (! $toWallet) {
                         throw new Exception('ไม่พบ Wallet ผู้รับ กรุณาตรวจสอบ QR Code');
                     }
 
@@ -906,7 +900,7 @@ class WalletController extends Controller
 
                     // ตรวจสอบยอดขั้นต่ำ
                     $validationErrors = WalletSetting::validateTransferAmount($amount);
-                    if (!empty($validationErrors)) {
+                    if (! empty($validationErrors)) {
                         throw new Exception($validationErrors[0]);
                     }
 
@@ -924,11 +918,11 @@ class WalletController extends Controller
                             'required' => $totalDeduction,
                         ]);
 
-                        throw new Exception('ยอดเงินไม่เพียงพอ ต้องการ ฿' . number_format($totalDeduction, 2) . ' (รวมค่าธรรมเนียม ฿' . number_format($fee, 2) . ')');
+                        throw new Exception('ยอดเงินไม่เพียงพอ ต้องการ ฿'.number_format($totalDeduction, 2).' (รวมค่าธรรมเนียม ฿'.number_format($fee, 2).')');
                     }
 
                     // ดำเนินการโอนเงินผ่าน WalletService (รวมค่าธรรมเนียม)
-                    $description = ($request->description ?? 'QR Transfer') . " [Ref: {$transactionRef}]";
+                    $description = ($request->description ?? 'QR Transfer')." [Ref: {$transactionRef}]";
                     $result = $this->walletService->transferWithFee(
                         $fromWallet,
                         $toWallet,
@@ -989,7 +983,6 @@ class WalletController extends Controller
     /**
      * API: ดึงข้อมูล Wallet จาก QR Code
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getWalletFromQr(Request $request)
@@ -1001,7 +994,7 @@ class WalletController extends Controller
         try {
             $wallet = Wallet::where('wallet_address', $request->wallet_address)->first();
 
-            if (!$wallet) {
+            if (! $wallet) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบ Wallet Address นี้ในระบบ',
@@ -1028,7 +1021,7 @@ class WalletController extends Controller
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -1036,7 +1029,6 @@ class WalletController extends Controller
     /**
      * API: คำนวณค่าธรรมเนียมการโอน QR
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculateQrFee(Request $request)
@@ -1067,7 +1059,7 @@ class WalletController extends Controller
     /**
      * คำนวณค่าธรรมเนียมการโอน QR
      *
-     * @param float $amount จำนวนเงินที่โอน
+     * @param  float  $amount  จำนวนเงินที่โอน
      * @return float ค่าธรรมเนียม
      */
     private function calculateQrTransferFee(float $amount): float

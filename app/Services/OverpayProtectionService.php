@@ -25,9 +25,9 @@ class OverpayProtectionService
     /**
      * ตรวจสอบว่าการตั้งค่า unilevel levels จะทำให้เกิด overpay หรือไม่
      *
-     * @param array $levels unilevel levels [['level' => 1, 'percentage' => 10], ...]
-     * @param float|null $commissionPerPv อัตราแปลง PV→บาท (ถ้า null ดึงจาก settings)
-     * @param float|null $maxPercentage เปอร์เซ็นต์สูงสุดที่อนุญาต (ถ้า null ดึงจาก settings)
+     * @param  array  $levels  unilevel levels [['level' => 1, 'percentage' => 10], ...]
+     * @param  float|null  $commissionPerPv  อัตราแปลง PV→บาท (ถ้า null ดึงจาก settings)
+     * @param  float|null  $maxPercentage  เปอร์เซ็นต์สูงสุดที่อนุญาต (ถ้า null ดึงจาก settings)
      * @return array ['is_valid' => bool, 'total_percentage' => float, 'max_percentage' => float, 'message' => string]
      */
     public static function validateLevelConfiguration(
@@ -74,7 +74,7 @@ class OverpayProtectionService
     /**
      * ตรวจสอบว่าค่า PV Rate ถูกต้อง (>= 1)
      *
-     * @param float $pvRate อัตรา PV
+     * @param  float  $pvRate  อัตรา PV
      * @return array ['is_valid' => bool, 'message' => string]
      */
     public static function validatePvRate(float $pvRate): array
@@ -105,7 +105,7 @@ class OverpayProtectionService
     /**
      * ตรวจสอบว่าค่า commission_per_pv ถูกต้อง
      *
-     * @param float $commissionPerPv อัตราแปลง PV→บาท
+     * @param  float  $commissionPerPv  อัตราแปลง PV→บาท
      * @return array ['is_valid' => bool, 'message' => string]
      */
     public static function validateCommissionPerPv(float $commissionPerPv): array
@@ -130,10 +130,10 @@ class OverpayProtectionService
      *
      * ใช้ตรวจสอบว่ายอด commission ทั้งหมดไม่เกิน budget ที่กำหนด
      *
-     * @param float $totalPv PV รวม
-     * @param float $totalCommission Commission รวมที่คำนวณได้
-     * @param float|null $commissionPerPv อัตราแปลง (ถ้า null ดึงจาก settings)
-     * @param float|null $maxPercentage % สูงสุด (ถ้า null ดึงจาก settings)
+     * @param  float  $totalPv  PV รวม
+     * @param  float  $totalCommission  Commission รวมที่คำนวณได้
+     * @param  float|null  $commissionPerPv  อัตราแปลง (ถ้า null ดึงจาก settings)
+     * @param  float|null  $maxPercentage  % สูงสุด (ถ้า null ดึงจาก settings)
      * @return array ['allowed' => bool, 'max_allowed' => float, 'excess' => float, 'ratio' => float]
      */
     public static function checkRuntimeOverpay(
@@ -187,10 +187,10 @@ class OverpayProtectionService
      * - MLM Commission = ค่าการตลาด PV (ไปจ่ายคอมมิชชั่น uplines)
      * - Fee กับ MLM เป็นคนละก้อน แยกจากกัน
      *
-     * @param float $grossAmount ยอดขาย
-     * @param float $platformFee ค่า Platform Fee
-     * @param float $vatAmount ภาษี VAT
-     * @param float $mlmCommission ค่า MLM Commission (PV-based)
+     * @param  float  $grossAmount  ยอดขาย
+     * @param  float  $platformFee  ค่า Platform Fee
+     * @param  float  $vatAmount  ภาษี VAT
+     * @param  float  $mlmCommission  ค่า MLM Commission (PV-based)
      * @return array ['sufficient' => bool, 'net_amount' => float, 'message' => string]
      */
     public static function checkSellerNetAmount(
@@ -223,7 +223,7 @@ class OverpayProtectionService
      *
      * ใช้สำหรับตรวจสอบก่อนบันทึกการตั้งค่า MLM
      *
-     * @param array $settings ค่าที่ต้องการตรวจสอบ
+     * @param  array  $settings  ค่าที่ต้องการตรวจสอบ
      * @return array ['is_valid' => bool, 'errors' => array, 'warnings' => array]
      */
     public static function validateAllSettings(array $settings): array
@@ -234,7 +234,7 @@ class OverpayProtectionService
         // ตรวจสอบ PV Rate
         if (isset($settings['global_pv_rate'])) {
             $pvResult = self::validatePvRate((float) $settings['global_pv_rate']);
-            if (!$pvResult['is_valid']) {
+            if (! $pvResult['is_valid']) {
                 $errors[] = $pvResult['message'];
             } elseif (isset($pvResult['warning'])) {
                 $warnings[] = $pvResult['warning'];
@@ -244,7 +244,7 @@ class OverpayProtectionService
         // ตรวจสอบ commission_per_pv
         if (isset($settings['commission_per_pv'])) {
             $cpvResult = self::validateCommissionPerPv((float) $settings['commission_per_pv']);
-            if (!$cpvResult['is_valid']) {
+            if (! $cpvResult['is_valid']) {
                 $errors[] = $cpvResult['message'];
             }
         }
@@ -262,7 +262,7 @@ class OverpayProtectionService
                     isset($settings['max_commission_percentage']) ? (float) $settings['max_commission_percentage'] : null
                 );
 
-                if (!$levelResult['is_valid']) {
+                if (! $levelResult['is_valid']) {
                     $errors[] = $levelResult['message'];
                 }
             }
@@ -270,7 +270,7 @@ class OverpayProtectionService
 
         $isValid = empty($errors);
 
-        if (!$isValid) {
+        if (! $isValid) {
             Log::warning('MLM Settings validation failed', [
                 'errors' => $errors,
                 'warnings' => $warnings,

@@ -3,11 +3,11 @@
 namespace App\Services\OCR;
 
 use App\Models\Setting;
+use Google\Cloud\Vision\V1\Image;
+use Google\Cloud\Vision\V1\ImageAnnotatorClient;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Google\Cloud\Vision\V1\ImageAnnotatorClient;
-use Google\Cloud\Vision\V1\Image;
 
 /**
  * Thai ID Card OCR Service
@@ -21,7 +21,9 @@ use Google\Cloud\Vision\V1\Image;
 class ThaiIdCardOcrService
 {
     protected $client;
+
     protected ?string $apiKey = null;
+
     protected bool $useRestApi = false;
 
     /**
@@ -50,11 +52,11 @@ class ThaiIdCardOcrService
         elseif ($this->hasGoogleCredentials()) {
             try {
                 $this->client = new ImageAnnotatorClient([
-                    'credentials' => config('services.google.credentials_path')
+                    'credentials' => config('services.google.credentials_path'),
                 ]);
                 Log::info('ThaiIdCardOcrService: ใช้ SDK + Service Account');
             } catch (\Exception $e) {
-                Log::warning('Failed to initialize Google Vision API: ' . $e->getMessage());
+                Log::warning('Failed to initialize Google Vision API: '.$e->getMessage());
                 $this->client = null;
             }
         }
@@ -79,7 +81,7 @@ class ThaiIdCardOcrService
         if ($this->useRestApi && $this->apiKey) {
             $status['configured'] = true;
             $status['method'] = 'REST API + API Key';
-            $status['api_key_masked'] = substr($this->apiKey, 0, 8) . '...' . substr($this->apiKey, -4);
+            $status['api_key_masked'] = substr($this->apiKey, 0, 8).'...'.substr($this->apiKey, -4);
             $status['capabilities'] = [
                 'text_detection' => true,
                 'document_text_detection' => true,
@@ -118,7 +120,7 @@ class ThaiIdCardOcrService
      */
     protected function testApiConnection(): array
     {
-        if (!$this->useRestApi || !$this->apiKey) {
+        if (! $this->useRestApi || ! $this->apiKey) {
             return ['success' => false, 'error' => 'ไม่ได้ใช้ REST API'];
         }
 
@@ -126,13 +128,13 @@ class ThaiIdCardOcrService
             // สร้างรูปขนาดเล็กสำหรับทดสอบ (1x1 pixel transparent PNG)
             $testImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-            $response = Http::timeout(10)->post(self::VISION_API_URL . '?key=' . $this->apiKey, [
+            $response = Http::timeout(10)->post(self::VISION_API_URL.'?key='.$this->apiKey, [
                 'requests' => [
                     [
                         'image' => ['content' => $testImage],
                         'features' => [['type' => 'TEXT_DETECTION', 'maxResults' => 1]],
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
             if ($response->successful()) {
@@ -140,6 +142,7 @@ class ThaiIdCardOcrService
             }
 
             $error = $response->json('error.message') ?? 'Unknown error';
+
             return ['success' => false, 'error' => $error];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -149,7 +152,7 @@ class ThaiIdCardOcrService
     /**
      * Extract data from Thai ID card or driver's license image
      *
-     * @param string $imagePath Path to the image file
+     * @param  string  $imagePath  Path to the image file
      * @return array Extracted data with error information
      */
     public function extractData(string $imagePath): array
@@ -157,19 +160,20 @@ class ThaiIdCardOcrService
         Log::info('OCR extractData started', [
             'imagePath' => $imagePath,
             'useRestApi' => $this->useRestApi,
-            'hasApiKey' => !empty($this->apiKey),
-            'hasClient' => !is_null($this->client),
+            'hasApiKey' => ! empty($this->apiKey),
+            'hasClient' => ! is_null($this->client),
         ]);
 
         try {
             // Check if image file exists
-            if (!Storage::disk('public')->exists($imagePath)) {
+            if (! Storage::disk('public')->exists($imagePath)) {
                 Log::warning('OCR: Image file not found', ['path' => $imagePath]);
+
                 return [
                     'success' => false,
                     'error' => 'ไม่พบไฟล์รูปภาพ',
                     'error_code' => 'FILE_NOT_FOUND',
-                    'suggestion' => 'กรุณาอัพโหลดรูปภาพใหม่อีกครั้ง'
+                    'suggestion' => 'กรุณาอัพโหลดรูปภาพใหม่อีกครั้ง',
                 ];
             }
 
@@ -179,13 +183,14 @@ class ThaiIdCardOcrService
 
             // Validate image content
             $validation = $this->validateImageQuality($imageContent);
-            if (!$validation['valid']) {
+            if (! $validation['valid']) {
                 Log::warning('OCR: Image validation failed', $validation);
+
                 return [
                     'success' => false,
                     'error' => $validation['error'],
                     'error_code' => $validation['error_code'],
-                    'suggestion' => $validation['suggestion']
+                    'suggestion' => $validation['suggestion'],
                 ];
             }
 
@@ -211,22 +216,24 @@ class ThaiIdCardOcrService
 
             if ($result === null) {
                 // ตรวจสอบว่ามี API ใดเลยหรือไม่
-                if (!$this->useRestApi && !$this->client) {
+                if (! $this->useRestApi && ! $this->client) {
                     Log::error('OCR: Not configured - no API key or credentials');
+
                     return [
                         'success' => false,
                         'error' => 'ระบบ OCR ยังไม่พร้อมใช้งาน',
                         'error_code' => 'OCR_NOT_CONFIGURED',
-                        'suggestion' => 'กรุณาตั้งค่า Google Cloud Vision API Key ในหน้าตั้งค่าระบบ หรือติดตั้ง Service Account credentials'
+                        'suggestion' => 'กรุณาตั้งค่า Google Cloud Vision API Key ในหน้าตั้งค่าระบบ หรือติดตั้ง Service Account credentials',
                     ];
                 }
 
                 Log::warning('OCR: No text detected from image');
+
                 return [
                     'success' => false,
                     'error' => 'ไม่สามารถตรวจจับข้อความจากรูปภาพได้',
                     'error_code' => 'NO_TEXT_DETECTED',
-                    'suggestion' => 'กรุณาถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และข้อความบนบัตรสามารถอ่านได้ชัดเจน'
+                    'suggestion' => 'กรุณาถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และข้อความบนบัตรสามารถอ่านได้ชัดเจน',
                 ];
             }
 
@@ -237,23 +244,25 @@ class ThaiIdCardOcrService
                 $result['success'] = true;
                 $result['ocr_method'] = $this->useRestApi ? 'REST_API' : 'SDK';
                 Log::info('OCR: Success - extracted meaningful data', [
-                    'id_card_number' => !empty($result['id_card_number']) ? '***' . substr($result['id_card_number'] ?? '', -4) : null,
+                    'id_card_number' => ! empty($result['id_card_number']) ? '***'.substr($result['id_card_number'] ?? '', -4) : null,
                     'thai_first_name' => $result['thai_first_name'] ?? null,
                     'english_first_name' => $result['english_first_name'] ?? null,
                 ]);
+
                 return $result;
             } else {
                 Log::warning('OCR: Insufficient data extracted', ['partial_data' => $result]);
+
                 return [
                     'success' => false,
                     'error' => 'ตรวจพบข้อความบางส่วน แต่ไม่สามารถระบุข้อมูลสำคัญได้',
                     'error_code' => 'INSUFFICIENT_DATA',
                     'suggestion' => 'กรุณาตรวจสอบว่ารูปบัตรมีความชัดเจน ไม่เบลอ และถ่ายบัตรทั้งใบให้เห็นชัดเจน',
-                    'partial_data' => $result
+                    'partial_data' => $result,
                 ];
             }
         } catch (\Exception $e) {
-            Log::error('Thai ID Card OCR Error: ' . $e->getMessage(), [
+            Log::error('Thai ID Card OCR Error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'imagePath' => $imagePath,
             ]);
@@ -263,7 +272,7 @@ class ThaiIdCardOcrService
                 'error' => 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ',
                 'error_code' => 'PROCESSING_ERROR',
                 'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่อีกครั้ง หรือใช้รูปภาพอื่น',
-                'technical_error' => $e->getMessage()
+                'technical_error' => $e->getMessage(),
             ];
         }
     }
@@ -271,7 +280,7 @@ class ThaiIdCardOcrService
     /**
      * Extract text using REST API + API Key
      *
-     * @param string $imageContent Base64 encoded image content
+     * @param  string  $imageContent  Base64 encoded image content
      * @return array|null Extracted data or null if failed
      */
     protected function extractWithRestApi(string $imageContent): ?array
@@ -279,7 +288,7 @@ class ThaiIdCardOcrService
         try {
             $base64Image = base64_encode($imageContent);
 
-            $response = Http::timeout(30)->post(self::VISION_API_URL . '?key=' . $this->apiKey, [
+            $response = Http::timeout(30)->post(self::VISION_API_URL.'?key='.$this->apiKey, [
                 'requests' => [
                     [
                         'image' => ['content' => $base64Image],
@@ -290,13 +299,14 @@ class ThaiIdCardOcrService
                         'imageContext' => [
                             'languageHints' => ['th', 'en'],
                         ],
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 $error = $response->json('error.message') ?? 'Unknown API error';
-                Log::error('Vision API REST Error: ' . $error);
+                Log::error('Vision API REST Error: '.$error);
+
                 return null;
             }
 
@@ -319,7 +329,7 @@ class ThaiIdCardOcrService
             // Detect document type
             $documentType = $this->detectDocumentType($fullText);
 
-            Log::info('OCR (REST API) detected document type: ' . $documentType);
+            Log::info('OCR (REST API) detected document type: '.$documentType);
 
             // Parse based on document type
             if ($documentType === 'driver_license') {
@@ -328,7 +338,8 @@ class ThaiIdCardOcrService
                 return $this->parseThaiIdCardText($fullText);
             }
         } catch (\Exception $e) {
-            Log::error('Vision API REST Exception: ' . $e->getMessage());
+            Log::error('Vision API REST Exception: '.$e->getMessage());
+
             return null;
         }
     }
@@ -345,7 +356,7 @@ class ThaiIdCardOcrService
                 'valid' => false,
                 'error' => 'ไฟล์รูปภาพมีขนาดเล็กเกินไป',
                 'error_code' => 'FILE_TOO_SMALL',
-                'suggestion' => 'กรุณาใช้รูปถ่ายจากกล้องที่มีความละเอียดสูง ไม่ใช่ภาพหน้าจอ (screenshot)'
+                'suggestion' => 'กรุณาใช้รูปถ่ายจากกล้องที่มีความละเอียดสูง ไม่ใช่ภาพหน้าจอ (screenshot)',
             ];
         }
 
@@ -357,7 +368,7 @@ class ThaiIdCardOcrService
                     'valid' => false,
                     'error' => 'ไฟล์ไม่ใช่รูปภาพที่ถูกต้อง',
                     'error_code' => 'INVALID_IMAGE',
-                    'suggestion' => 'กรุณาอัพโหลดไฟล์รูปภาพ (JPEG, PNG) เท่านั้น'
+                    'suggestion' => 'กรุณาอัพโหลดไฟล์รูปภาพ (JPEG, PNG) เท่านั้น',
                 ];
             }
 
@@ -366,9 +377,9 @@ class ThaiIdCardOcrService
             if ($width < 300 || $height < 200) {
                 return [
                     'valid' => false,
-                    'error' => 'ความละเอียดของรูปภาพต่ำเกินไป (' . $width . 'x' . $height . ')',
+                    'error' => 'ความละเอียดของรูปภาพต่ำเกินไป ('.$width.'x'.$height.')',
                     'error_code' => 'LOW_RESOLUTION',
-                    'suggestion' => 'กรุณาถ่ายรูปใหม่ด้วยกล้องที่มีความละเอียดสูงกว่า หรือเข้าใกล้บัตรมากขึ้น (แนะนำ: อย่างน้อย 800x600 pixels)'
+                    'suggestion' => 'กรุณาถ่ายรูปใหม่ด้วยกล้องที่มีความละเอียดสูงกว่า หรือเข้าใกล้บัตรมากขึ้น (แนะนำ: อย่างน้อย 800x600 pixels)',
                 ];
             }
 
@@ -377,7 +388,7 @@ class ThaiIdCardOcrService
                 'valid' => false,
                 'error' => 'ไม่สามารถตรวจสอบคุณภาพรูปภาพได้',
                 'error_code' => 'VALIDATION_ERROR',
-                'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่'
+                'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่',
             ];
         }
 
@@ -391,7 +402,7 @@ class ThaiIdCardOcrService
     {
         try {
             // Use Intervention Image for preprocessing
-            $imageManager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $imageManager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver);
             $image = $imageManager->read($imageContent);
 
             // Auto adjust brightness and contrast
@@ -406,7 +417,8 @@ class ThaiIdCardOcrService
 
             return (string) $encoded;
         } catch (\Exception $e) {
-            Log::warning('Image preprocessing failed, using original: ' . $e->getMessage());
+            Log::warning('Image preprocessing failed, using original: '.$e->getMessage());
+
             return $imageContent;
         }
     }
@@ -423,40 +435,62 @@ class ThaiIdCardOcrService
 
         // For ID card
         if ($data['document_type'] === 'id_card') {
-            if (!empty($data['id_card_number'])) $fieldsFound++;
-            if (!empty($data['thai_first_name'])) $fieldsFound++;
-            if (!empty($data['thai_last_name'])) $fieldsFound++;
-            if (!empty($data['english_first_name'])) $fieldsFound++;
-            if (!empty($data['english_last_name'])) $fieldsFound++;
-            if (!empty($data['birth_date'])) $fieldsFound++;
-            if (!empty($data['address'])) $fieldsFound++;
+            if (! empty($data['id_card_number'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['thai_first_name'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['thai_last_name'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['english_first_name'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['english_last_name'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['birth_date'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['address'])) {
+                $fieldsFound++;
+            }
 
             Log::info('OCR hasMinimumData check:', [
                 'document_type' => 'id_card',
                 'fields_found' => $fieldsFound,
-                'has_id' => !empty($data['id_card_number']),
-                'has_thai_name' => !empty($data['thai_first_name']),
-                'has_english_name' => !empty($data['english_first_name']),
+                'has_id' => ! empty($data['id_card_number']),
+                'has_thai_name' => ! empty($data['thai_first_name']),
+                'has_english_name' => ! empty($data['english_first_name']),
             ]);
 
             // ผ่านถ้ามีเลขบัตร หรือ มีชื่อ (ไทย/อังกฤษ) หรือ มีข้อมูลอย่างน้อย 2 อย่าง
-            return !empty($data['id_card_number']) ||
-                   !empty($data['thai_first_name']) ||
-                   !empty($data['english_first_name']) ||
+            return ! empty($data['id_card_number']) ||
+                   ! empty($data['thai_first_name']) ||
+                   ! empty($data['english_first_name']) ||
                    $fieldsFound >= 2;
         }
 
         // For driver license
         if ($data['document_type'] === 'driver_license') {
-            if (!empty($data['license_number'])) $fieldsFound++;
-            if (!empty($data['id_card_number'])) $fieldsFound++;
-            if (!empty($data['thai_first_name'])) $fieldsFound++;
-            if (!empty($data['english_first_name'])) $fieldsFound++;
+            if (! empty($data['license_number'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['id_card_number'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['thai_first_name'])) {
+                $fieldsFound++;
+            }
+            if (! empty($data['english_first_name'])) {
+                $fieldsFound++;
+            }
 
-            return !empty($data['license_number']) ||
-                   !empty($data['id_card_number']) ||
-                   !empty($data['thai_first_name']) ||
-                   !empty($data['english_first_name']) ||
+            return ! empty($data['license_number']) ||
+                   ! empty($data['id_card_number']) ||
+                   ! empty($data['thai_first_name']) ||
+                   ! empty($data['english_first_name']) ||
                    $fieldsFound >= 2;
         }
 
@@ -469,7 +503,7 @@ class ThaiIdCardOcrService
     protected function extractWithGoogleVision(string $imageContent): ?array
     {
         try {
-            $image = new Image();
+            $image = new Image;
             $image->setContent($imageContent);
 
             // Perform text detection
@@ -486,7 +520,7 @@ class ThaiIdCardOcrService
             // Detect document type
             $documentType = $this->detectDocumentType($fullText);
 
-            Log::info('OCR (SDK) detected document type: ' . $documentType);
+            Log::info('OCR (SDK) detected document type: '.$documentType);
 
             // Parse based on document type
             if ($documentType === 'driver_license') {
@@ -495,7 +529,8 @@ class ThaiIdCardOcrService
                 return $this->parseThaiIdCardText($fullText);
             }
         } catch (\Exception $e) {
-            Log::error('Google Vision API Error: ' . $e->getMessage());
+            Log::error('Google Vision API Error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -589,13 +624,13 @@ class ThaiIdCardOcrService
         // Extract dates
         $dates = [];
         preg_match_all('/(\d{1,2}\s*(?:ม\.ค|ก\.พ|มี\.ค|เม\.ย|พ\.ค|มิ\.ย|ก\.ค|ส\.ค|ก\.ย|ต\.ค|พ\.ย|ธ\.ค|มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม)\.*\s*\d{4})/', $text, $dateMatches);
-        if (!empty($dateMatches[0])) {
+        if (! empty($dateMatches[0])) {
             $dates = $dateMatches[0];
         }
 
         // Also try DD/MM/YYYY format
         preg_match_all('/(\d{1,2}\/\d{1,2}\/\d{4})/', $text, $slashDateMatches);
-        if (!empty($slashDateMatches[0])) {
+        if (! empty($slashDateMatches[0])) {
             $dates = array_merge($dates, $slashDateMatches[0]);
         }
 
@@ -713,16 +748,16 @@ class ThaiIdCardOcrService
 
         foreach ($thaiNamePatterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
-                if (isset($matches[2]) && !empty($matches[2])) {
+                if (isset($matches[2]) && ! empty($matches[2])) {
                     $data['thai_first_name'] = trim($matches[2]);
                 }
-                if (isset($matches[3]) && !empty($matches[3])) {
+                if (isset($matches[3]) && ! empty($matches[3])) {
                     $data['thai_last_name'] = trim($matches[3]);
                 }
-                if (!empty($data['thai_first_name'])) {
+                if (! empty($data['thai_first_name'])) {
                     Log::debug('OCR Found Thai Name:', [
                         'first' => $data['thai_first_name'],
-                        'last' => $data['thai_last_name']
+                        'last' => $data['thai_last_name'],
                     ]);
                     break;
                 }
@@ -730,10 +765,10 @@ class ThaiIdCardOcrService
         }
 
         // ถ้ายังไม่เจอนามสกุล ลองหาจากบรรทัดถัดไป
-        if (!empty($data['thai_first_name']) && empty($data['thai_last_name'])) {
+        if (! empty($data['thai_first_name']) && empty($data['thai_last_name'])) {
             $lines = explode("\n", $text);
             foreach ($lines as $i => $line) {
-                if (preg_match('/(นาย|นาง|นางสาว|น\.ส\.)\s*' . preg_quote($data['thai_first_name']) . '/', $line)) {
+                if (preg_match('/(นาย|นาง|นางสาว|น\.ส\.)\s*'.preg_quote($data['thai_first_name']).'/', $line)) {
                     if (isset($lines[$i + 1])) {
                         $nextLine = trim($lines[$i + 1]);
                         if (preg_match('/^([ก-๙]+)$/u', $nextLine, $lastNameMatch)) {
@@ -759,16 +794,16 @@ class ThaiIdCardOcrService
 
         foreach ($englishNamePatterns as $pattern) {
             if (preg_match($pattern, $text, $matches)) {
-                if (isset($matches[1]) && !empty($matches[1])) {
+                if (isset($matches[1]) && ! empty($matches[1])) {
                     $data['english_first_name'] = trim($matches[1]);
                 }
-                if (isset($matches[2]) && !empty($matches[2])) {
+                if (isset($matches[2]) && ! empty($matches[2])) {
                     $data['english_last_name'] = trim($matches[2]);
                 }
-                if (!empty($data['english_first_name'])) {
+                if (! empty($data['english_first_name'])) {
                     Log::debug('OCR Found English Name:', [
                         'first' => $data['english_first_name'],
-                        'last' => $data['english_last_name']
+                        'last' => $data['english_last_name'],
                     ]);
                     break;
                 }
@@ -776,7 +811,7 @@ class ThaiIdCardOcrService
         }
 
         // ลองหา Last name แยก
-        if (!empty($data['english_first_name']) && empty($data['english_last_name'])) {
+        if (! empty($data['english_first_name']) && empty($data['english_last_name'])) {
             if (preg_match('/(?:Last\s*name|Surname)\s*[:\s]*([A-Z][a-zA-Z]+)/i', $text, $matches)) {
                 $data['english_last_name'] = trim($matches[1]);
             }
@@ -904,7 +939,7 @@ class ThaiIdCardOcrService
             // Parse Thai format
             foreach ($thaiMonths as $thaiMonth => $monthNum) {
                 if (strpos($dateString, $thaiMonth) !== false) {
-                    preg_match('/(\d{1,2})\s*' . preg_quote($thaiMonth) . '\.*\s*(\d{4})/', $dateString, $matches);
+                    preg_match('/(\d{1,2})\s*'.preg_quote($thaiMonth).'\.*\s*(\d{4})/', $dateString, $matches);
                     if (count($matches) >= 3) {
                         $day = str_pad($matches[1], 2, '0', STR_PAD_LEFT);
                         $year = $matches[2];
@@ -921,7 +956,8 @@ class ThaiIdCardOcrService
 
             return null;
         } catch (\Exception $e) {
-            Log::error('Date parsing error: ' . $e->getMessage());
+            Log::error('Date parsing error: '.$e->getMessage());
+
             return null;
         }
     }
@@ -932,7 +968,8 @@ class ThaiIdCardOcrService
     protected function hasGoogleCredentials(): bool
     {
         $credentialsPath = config('services.google.credentials_path');
-        return !empty($credentialsPath) && file_exists($credentialsPath);
+
+        return ! empty($credentialsPath) && file_exists($credentialsPath);
     }
 
     /**
@@ -943,19 +980,19 @@ class ThaiIdCardOcrService
         // Remove spaces and check length
         $idNumber = preg_replace('/\s+/', '', $idNumber);
 
-        if (strlen($idNumber) !== 13 || !ctype_digit($idNumber)) {
+        if (strlen($idNumber) !== 13 || ! ctype_digit($idNumber)) {
             return false;
         }
 
         // Calculate checksum
         $sum = 0;
         for ($i = 0; $i < 12; $i++) {
-            $sum += (int)$idNumber[$i] * (13 - $i);
+            $sum += (int) $idNumber[$i] * (13 - $i);
         }
 
         $checkDigit = (11 - ($sum % 11)) % 10;
 
-        return $checkDigit == (int)$idNumber[12];
+        return $checkDigit == (int) $idNumber[12];
     }
 
     /**

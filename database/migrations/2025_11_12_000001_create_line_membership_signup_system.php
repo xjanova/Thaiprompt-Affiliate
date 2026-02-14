@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // LINE Signup Sessions - Track ongoing signup conversations
-        if (!Schema::hasTable('line_signup_sessions')) {
+        if (! Schema::hasTable('line_signup_sessions')) {
             Schema::create('line_signup_sessions', function (Blueprint $table) {
                 $table->id();
                 $table->string('line_user_id')->index();
@@ -40,7 +40,7 @@ return new class extends Migration
         }
 
         // LINE Signup Steps - Track individual step completions
-        if (!Schema::hasTable('line_signup_step_logs')) {
+        if (! Schema::hasTable('line_signup_step_logs')) {
             Schema::create('line_signup_step_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('session_id')->constrained('line_signup_sessions')->onDelete('cascade');
@@ -59,7 +59,7 @@ return new class extends Migration
         }
 
         // LINE Signup AI Conversations - Store AI chat history
-        if (!Schema::hasTable('line_signup_conversations')) {
+        if (! Schema::hasTable('line_signup_conversations')) {
             Schema::create('line_signup_conversations', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('session_id')->constrained('line_signup_sessions')->onDelete('cascade');
@@ -75,7 +75,7 @@ return new class extends Migration
         }
 
         // LINE Signup Templates - Store reusable Flex Message templates
-        if (!Schema::hasTable('line_signup_templates')) {
+        if (! Schema::hasTable('line_signup_templates')) {
             Schema::create('line_signup_templates', function (Blueprint $table) {
                 $table->id();
                 $table->string('template_key')->unique(); // welcome_message, name_input, otp_verify, etc.
@@ -92,7 +92,7 @@ return new class extends Migration
         }
 
         // LINE Signup Analytics - Track signup funnel metrics
-        if (!Schema::hasTable('line_signup_analytics')) {
+        if (! Schema::hasTable('line_signup_analytics')) {
             Schema::create('line_signup_analytics', function (Blueprint $table) {
                 $table->id();
                 $table->date('date');
@@ -109,7 +109,7 @@ return new class extends Migration
         }
 
         // LINE Signup Rewards - Incentives for completing signup
-        if (!Schema::hasTable('line_signup_rewards')) {
+        if (! Schema::hasTable('line_signup_rewards')) {
             Schema::create('line_signup_rewards', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -129,7 +129,7 @@ return new class extends Migration
         }
 
         // LINE Signup Invitations - Track referral invitations
-        if (!Schema::hasTable('line_signup_invitations')) {
+        if (! Schema::hasTable('line_signup_invitations')) {
             Schema::create('line_signup_invitations', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('inviter_user_id')->constrained('users')->onDelete('cascade');
@@ -150,7 +150,7 @@ return new class extends Migration
         }
 
         // LINE Signup Webhook Logs - Debug webhook events
-        if (!Schema::hasTable('line_signup_webhook_logs')) {
+        if (! Schema::hasTable('line_signup_webhook_logs')) {
             Schema::create('line_signup_webhook_logs', function (Blueprint $table) {
                 $table->id();
                 $table->string('line_user_id')->nullable();

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PosDevice;
-use App\Models\PosTransaction;
 use App\Models\PosSession;
+use App\Models\PosTransaction;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -99,8 +99,10 @@ class PosDashboardController extends Controller
             if ($store) {
                 $store->transaction_count = $stat->transaction_count;
                 $store->total_sales = $stat->total_sales;
+
                 return $store;
             }
+
             return null;
         })->filter();
     }
@@ -135,6 +137,7 @@ class PosDashboardController extends Controller
         }
 
         $refundCount = PosTransaction::where('status', 'refunded')->count();
+
         return round(($refundCount / $totalTransactions) * 100, 2);
     }
 
@@ -155,17 +158,17 @@ class PosDashboardController extends Controller
     protected function getSalesDataByDays($days)
     {
         $data = PosTransaction::select(
-                DB::raw('DATE(transaction_date) as date'),
-                DB::raw('COUNT(*) as transaction_count'),
-                DB::raw('SUM(total_amount) as total_sales')
-            )
+            DB::raw('DATE(transaction_date) as date'),
+            DB::raw('COUNT(*) as transaction_count'),
+            DB::raw('SUM(total_amount) as total_sales')
+        )
             ->whereDate('transaction_date', '>=', now()->subDays($days))
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
         return [
-            'labels' => $data->pluck('date')->map(fn($date) => date('M d', strtotime($date))),
+            'labels' => $data->pluck('date')->map(fn ($date) => date('M d', strtotime($date))),
             'transactions' => $data->pluck('transaction_count'),
             'sales' => $data->pluck('total_sales'),
         ];
@@ -174,17 +177,17 @@ class PosDashboardController extends Controller
     protected function getSalesDataByMonths($months)
     {
         $data = PosTransaction::select(
-                DB::raw('DATE_FORMAT(transaction_date, "%Y-%m") as month'),
-                DB::raw('COUNT(*) as transaction_count'),
-                DB::raw('SUM(total_amount) as total_sales')
-            )
+            DB::raw('DATE_FORMAT(transaction_date, "%Y-%m") as month'),
+            DB::raw('COUNT(*) as transaction_count'),
+            DB::raw('SUM(total_amount) as total_sales')
+        )
             ->whereDate('transaction_date', '>=', now()->subMonths($months))
             ->groupBy('month')
             ->orderBy('month')
             ->get();
 
         return [
-            'labels' => $data->pluck('month')->map(fn($month) => date('M Y', strtotime($month . '-01'))),
+            'labels' => $data->pluck('month')->map(fn ($month) => date('M Y', strtotime($month.'-01'))),
             'transactions' => $data->pluck('transaction_count'),
             'sales' => $data->pluck('total_sales'),
         ];
@@ -218,10 +221,10 @@ class PosDashboardController extends Controller
     protected function getHourlySalesAnalytics($dateFrom, $dateTo)
     {
         return PosTransaction::select(
-                DB::raw('HOUR(transaction_date) as hour'),
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(total_amount) as total')
-            )
+            DB::raw('HOUR(transaction_date) as hour'),
+            DB::raw('COUNT(*) as count'),
+            DB::raw('SUM(total_amount) as total')
+        )
             ->whereBetween('transaction_date', [$dateFrom, $dateTo])
             ->groupBy('hour')
             ->orderBy('hour')
@@ -250,8 +253,10 @@ class PosDashboardController extends Controller
             if ($device) {
                 $device->transaction_count = $stat->transaction_count;
                 $device->total_sales = $stat->total_sales;
+
                 return $device;
             }
+
             return null;
         })->filter();
     }
@@ -280,8 +285,10 @@ class PosDashboardController extends Controller
                 $store->transaction_count = $stat->transaction_count;
                 $store->total_sales = $stat->total_sales;
                 $store->average_sale = $stat->average_sale;
+
                 return $store;
             }
+
             return null;
         })->filter();
     }

@@ -2,11 +2,11 @@
 
 namespace App\Observers;
 
-use App\Models\FoodProduct;
-use App\Services\BlockchainRecordService;
 use App\Jobs\FoodPassport\GenerateProductQRCodeJob;
 use App\Jobs\FoodPassport\RecordProductOnBlockchainJob;
 use App\Jobs\FoodPassport\SendFoodPassportNotificationJob;
+use App\Models\FoodProduct;
+use App\Services\BlockchainRecordService;
 use Illuminate\Support\Facades\Log;
 
 class FoodProductObserver
@@ -26,7 +26,7 @@ class FoodProductObserver
         Log::info('Food Product created', ['passport_id' => $product->food_passport_id]);
 
         // Generate QR code asynchronously
-        if (!$product->qr_code_url) {
+        if (! $product->qr_code_url) {
             GenerateProductQRCodeJob::dispatch($product);
         }
 
@@ -68,7 +68,7 @@ class FoodProductObserver
 
         Log::info('Food Product updated', [
             'id' => $product->id,
-            'changes' => $product->getChanges()
+            'changes' => $product->getChanges(),
         ]);
     }
 
@@ -80,7 +80,7 @@ class FoodProductObserver
         // Prevent deletion if product has started its journey
         if ($product->journeyStages()->count() > 0) {
             Log::warning('Attempted to delete product with journey stages', [
-                'product_id' => $product->id
+                'product_id' => $product->id,
             ]);
 
             throw new \Exception('Cannot delete product that has journey stages. Archive it instead.');
@@ -106,7 +106,7 @@ class FoodProductObserver
      */
     protected function updateCarbonScore(FoodProduct $product): void
     {
-        if (!$product->total_carbon_footprint) {
+        if (! $product->total_carbon_footprint) {
             return;
         }
 
@@ -119,7 +119,7 @@ class FoodProductObserver
         $percentage = ($product->total_carbon_footprint / $baseline) * 100;
 
         // Assign score (A+ to E)
-        $score = match(true) {
+        $score = match (true) {
             $percentage <= 30 => 'A+',
             $percentage <= 50 => 'A',
             $percentage <= 70 => 'B',
@@ -139,7 +139,7 @@ class FoodProductObserver
     {
         $lowerType = strtolower($productType);
 
-        return match(true) {
+        return match (true) {
             str_contains($lowerType, 'rice') || str_contains($lowerType, 'ข้าว') => 'rice',
             str_contains($lowerType, 'vegetable') || str_contains($lowerType, 'ผัก') => 'vegetables',
             str_contains($lowerType, 'fruit') || str_contains($lowerType, 'ผลไม้') => 'fruits',

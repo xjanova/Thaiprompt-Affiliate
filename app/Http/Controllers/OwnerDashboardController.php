@@ -18,7 +18,7 @@ class OwnerDashboardController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->rentalService = new RentalService();
+        $this->rentalService = new RentalService;
     }
 
     /**
@@ -241,7 +241,7 @@ class OwnerDashboardController extends Controller
                 $earning->update([
                     'payout_status' => 'processing',
                     'payout_method' => $validated['payout_method'],
-                    'payout_reference' => 'PAYOUT-' . now()->format('YmdHis') . '-' . $owner->id,
+                    'payout_reference' => 'PAYOUT-'.now()->format('YmdHis').'-'.$owner->id,
                 ]);
                 $totalMarked += $earning->net_amount;
 
@@ -251,7 +251,7 @@ class OwnerDashboardController extends Controller
             }
         }
 
-        return back()->with('success', 'ส่งคำขอถอนเงินสำเร็จ จำนวน ' . number_format($totalMarked, 2) . ' บาท');
+        return back()->with('success', 'ส่งคำขอถอนเงินสำเร็จ จำนวน '.number_format($totalMarked, 2).' บาท');
     }
 
     /**

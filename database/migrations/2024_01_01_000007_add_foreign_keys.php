@@ -17,25 +17,23 @@ return new class extends Migration
 {
     /**
      * เพิ่ม foreign key constraint
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users และ affiliates มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             // ตาราง users ยังไม่มี - ข้าม migration นี้
             // foreign key จะถูกสร้างใน users_comprehensive migration แทน
             return;
         }
 
-        if (!Schema::hasTable('affiliates')) {
+        if (! Schema::hasTable('affiliates')) {
             // ตาราง affiliates ยังไม่มี - ข้าม migration นี้
             return;
         }
 
         // ตรวจสอบว่ามีคอลัมน์ affiliate_id หรือไม่
-        if (!Schema::hasColumn('users', 'affiliate_id')) {
+        if (! Schema::hasColumn('users', 'affiliate_id')) {
             // ยังไม่มีคอลัมน์ affiliate_id - ข้าม
             return;
         }
@@ -55,20 +53,18 @@ return new class extends Migration
         // เพิ่ม foreign key
         Schema::table('users', function (Blueprint $table) {
             $table->foreign('affiliate_id')
-                  ->references('id')
-                  ->on('affiliates')
-                  ->onDelete('set null');
+                ->references('id')
+                ->on('affiliates')
+                ->onDelete('set null');
         });
     }
 
     /**
      * ลบ foreign key constraint
-     *
-     * @return void
      */
     public function down(): void
     {
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             return;
         }
 

@@ -21,6 +21,7 @@ class PaySolutionsGatewaySeeder extends Seeder
         if ($existingGateway) {
             $this->command->warn('⚠️  PaySolutions payment gateway already exists!');
             $this->command->info('   Skipping to preserve your configuration.');
+
             return;
         }
 

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('trading_market_data')) {
+        if (! Schema::hasTable('trading_market_data')) {
             Schema::create('trading_market_data', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('exchange_id')->constrained('trading_exchanges')->onDelete('cascade');

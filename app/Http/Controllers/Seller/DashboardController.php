@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Slogan;
 use App\Models\VendorStore;
 use App\Models\WithdrawalRequest;
@@ -34,7 +34,7 @@ class DashboardController extends Controller
         $store = VendorStore::where('user_id', $sellerId)->first();
 
         // ถ้าไม่มี store (ไม่ควรเกิดขึ้นเพราะมี middleware) ให้ redirect ไป onboarding
-        if (!$store) {
+        if (! $store) {
             return redirect()->route('seller.onboarding.index')
                 ->with('info', 'กรุณาตั้งค่าร้านค้าของคุณก่อน');
         }
@@ -62,7 +62,7 @@ class DashboardController extends Controller
         $todayRevenue = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereDate('created_at', today());
+                    ->whereDate('created_at', today());
             })
             ->sum('seller_earning');
 
@@ -70,16 +70,16 @@ class DashboardController extends Controller
         $currentMonthRevenue = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereMonth('created_at', now()->month)
-                  ->whereYear('created_at', now()->year);
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year);
             })
             ->sum('seller_earning');
 
         $previousMonthRevenue = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function ($q) {
                 $q->where('payment_status', 'paid')
-                  ->whereMonth('created_at', now()->subMonth()->month)
-                  ->whereYear('created_at', now()->subMonth()->year);
+                    ->whereMonth('created_at', now()->subMonth()->month)
+                    ->whereYear('created_at', now()->subMonth()->year);
             })
             ->sum('seller_earning');
 
@@ -95,14 +95,14 @@ class DashboardController extends Controller
             $revenue = OrderItem::where('seller_id', $sellerId)
                 ->whereHas('order', function ($q) use ($date) {
                     $q->where('payment_status', 'paid')
-                      ->whereMonth('created_at', $date->month)
-                      ->whereYear('created_at', $date->year);
+                        ->whereMonth('created_at', $date->month)
+                        ->whereYear('created_at', $date->year);
                 })
                 ->sum('seller_earning');
 
             $monthlyRevenue->push([
                 'month' => $date->format('M Y'),
-                'total' => $revenue
+                'total' => $revenue,
             ]);
         }
 
@@ -176,6 +176,7 @@ class DashboardController extends Controller
     public function marketing()
     {
         $user = Auth::user();
+
         return view('seller.marketing', compact('user'));
     }
 
@@ -185,6 +186,7 @@ class DashboardController extends Controller
     public function profile()
     {
         $user = Auth::user();
+
         return view('seller.profile', compact('user'));
     }
 
@@ -193,8 +195,6 @@ class DashboardController extends Controller
      *
      * รองรับการอัพโหลด avatar และข้อมูลส่วนตัว
      *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateProfile(Request $request, ImageUploadService $imageUploadService)
@@ -203,7 +203,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'phone' => ['nullable', 'string', 'max:20'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
             'current_password' => ['nullable', 'string'],
@@ -229,7 +229,7 @@ class DashboardController extends Controller
 
         // Handle password change
         if ($request->filled('current_password') && $request->filled('new_password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
+            if (! Hash::check($request->current_password, $user->password)) {
                 return back()->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
             }
 
@@ -383,7 +383,7 @@ class DashboardController extends Controller
 
         // ตรวจสอบช่องทางรับเงิน
         $paymentMethod = $user->paymentMethods()->find($request->payment_method_id);
-        if (!$paymentMethod) {
+        if (! $paymentMethod) {
             return back()->withErrors(['payment_method_id' => 'ไม่พบช่องทางรับเงินที่เลือก'])->withInput();
         }
 
@@ -430,7 +430,8 @@ class DashboardController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: '.$e->getMessage()])->withInput();
         }
     }
 
@@ -487,7 +488,8 @@ class DashboardController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
+
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: '.$e->getMessage()]);
         }
     }
 

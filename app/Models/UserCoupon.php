@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $coupon_id
  * @property bool $is_used
  * @property \Carbon\Carbon|null $used_at
- *
  * @property-read User $user
  * @property-read Coupon $coupon
  */
@@ -56,10 +55,6 @@ class UserCoupon extends Model
 
     /**
      * เก็บคูปองสำหรับผู้ใช้
-     *
-     * @param int $userId
-     * @param int $couponId
-     * @return static|null
      */
     public static function collectCoupon(int $userId, int $couponId): ?static
     {
@@ -74,7 +69,7 @@ class UserCoupon extends Model
 
         // ตรวจสอบว่าคูปองยังใช้งานได้
         $coupon = Coupon::find($couponId);
-        if (!$coupon || !$coupon->isValid()) {
+        if (! $coupon || ! $coupon->isValid()) {
             return null;
         }
 
@@ -87,13 +82,12 @@ class UserCoupon extends Model
 
     /**
      * ใช้คูปอง
-     *
-     * @return bool
      */
     public function markAsUsed(): bool
     {
         $this->is_used = true;
         $this->used_at = now();
+
         return $this->save();
     }
 
@@ -115,9 +109,6 @@ class UserCoupon extends Model
 
     /**
      * ดึงคูปองที่ยังใช้งานได้ของผู้ใช้
-     *
-     * @param int $userId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getAvailableCoupons(int $userId): \Illuminate\Database\Eloquent\Collection
     {
@@ -131,6 +122,6 @@ class UserCoupon extends Model
                     });
             }])
             ->get()
-            ->filter(fn($uc) => $uc->coupon !== null);
+            ->filter(fn ($uc) => $uc->coupon !== null);
     }
 }

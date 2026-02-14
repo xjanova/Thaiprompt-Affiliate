@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\CoinExchangeRate;
 use App\Models\VideoChannel;
 use App\Models\VideoContent;
 use App\Models\VideoLevel;
 use App\Models\VideoQuest;
-use App\Models\CoinExchangeRate;
 use Illuminate\Database\Seeder;
 
 class VideoRewardSystemSeeder extends Seeder
@@ -514,7 +514,7 @@ class VideoRewardSystemSeeder extends Seeder
             VideoQuest::updateOrCreate(
                 [
                     'name' => $questData['name'],
-                    'frequency' => $questData['frequency']
+                    'frequency' => $questData['frequency'],
                 ],
                 $questData
             );
@@ -571,7 +571,7 @@ class VideoRewardSystemSeeder extends Seeder
             CoinExchangeRate::updateOrCreate(
                 [
                     'coins_amount' => $rateData['coins_amount'],
-                    'min_level' => $rateData['min_level']
+                    'min_level' => $rateData['min_level'],
                 ],
                 $rateData
             );

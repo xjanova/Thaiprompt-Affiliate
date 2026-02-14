@@ -13,6 +13,7 @@ class CryptoWithdrawalRejected extends Notification implements ShouldQueue
     use Queueable;
 
     protected CryptoWithdrawalRequest $withdrawal;
+
     protected string $reason;
 
     public function __construct(CryptoWithdrawalRequest $withdrawal, string $reason)
@@ -38,17 +39,17 @@ class CryptoWithdrawalRejected extends Notification implements ShouldQueue
         $currency = $this->withdrawal->currency->code;
 
         return (new MailMessage)
-            ->subject('❌ คำขอถอนเงิน ' . $currency . ' ถูกปฏิเสธ')
-            ->greeting('สวัสดี ' . $notifiable->name . '!')
-            ->line("คำขอถอนเงินของคุณถูกปฏิเสธ")
+            ->subject('❌ คำขอถอนเงิน '.$currency.' ถูกปฏิเสธ')
+            ->greeting('สวัสดี '.$notifiable->name.'!')
+            ->line('คำขอถอนเงินของคุณถูกปฏิเสธ')
             ->line('รายละเอียด:')
             ->line("จำนวน: {$amount} {$currency}")
-            ->line("ปลายทาง: " . substr($this->withdrawal->to_address, 0, 20) . '...')
+            ->line('ปลายทาง: '.substr($this->withdrawal->to_address, 0, 20).'...')
             ->line('')
             ->line('**เหตุผล:**')
             ->line($this->reason)
             ->line('')
-            ->line("ยอดเงินได้ถูกคืนเข้ากระเป๋าของคุณแล้ว")
+            ->line('ยอดเงินได้ถูกคืนเข้ากระเป๋าของคุณแล้ว')
             ->action('ดูรายละเอียด', route('user.crypto-wallet.withdrawals'))
             ->line('หากมีข้อสงสัย กรุณาติดต่อฝ่ายสนับสนุน');
     }

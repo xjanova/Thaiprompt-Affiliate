@@ -77,14 +77,14 @@ class ApiKey extends Model
      */
     public static function generate($name, $userId = null, $attributes = [])
     {
-        $prefix = 'sk_' . (app()->environment('production') ? 'live' : 'test') . '_';
+        $prefix = 'sk_'.(app()->environment('production') ? 'live' : 'test').'_';
         $randomKey = Str::random(48);
-        $fullKey = $prefix . $randomKey;
+        $fullKey = $prefix.$randomKey;
 
         return static::create(array_merge([
             'name' => $name,
             'key' => hash('sha256', $fullKey),
-            'prefix' => $prefix . substr($randomKey, 0, 8) . '...',
+            'prefix' => $prefix.substr($randomKey, 0, 8).'...',
             'user_id' => $userId,
         ], $attributes));
     }
@@ -95,6 +95,7 @@ class ApiKey extends Model
     public static function verify($key)
     {
         $hashedKey = hash('sha256', $key);
+
         return static::where('key', $hashedKey)
             ->where('is_active', true)
             ->where(function ($query) {
@@ -154,7 +155,7 @@ class ApiKey extends Model
      */
     public function isQuotaExceeded()
     {
-        if (!$this->monthly_quota) {
+        if (! $this->monthly_quota) {
             return false;
         }
 

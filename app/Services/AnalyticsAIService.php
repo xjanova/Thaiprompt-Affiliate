@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\VendorStore;
-use App\Models\VendorAnalytics;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\User;
+use App\Models\VendorAnalytics;
+use App\Models\VendorStore;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 
 class AnalyticsAIService
 {
@@ -125,9 +123,11 @@ class AnalyticsAIService
         $rfmData = [];
 
         foreach ($customers as $userId => $orders) {
-            if ($userId === 'guest') continue;
+            if ($userId === 'guest') {
+                continue;
+            }
 
-            $lastOrderDate = $orders->max(fn($o) => $o->order->created_at);
+            $lastOrderDate = $orders->max(fn ($o) => $o->order->created_at);
             $recency = now()->diffInDays($lastOrderDate);
             $frequency = $orders->count();
             $monetary = $orders->sum('total');
@@ -172,7 +172,9 @@ class AnalyticsAIService
 
             $cohortSize = count($newCustomers);
 
-            if ($cohortSize === 0) continue;
+            if ($cohortSize === 0) {
+                continue;
+            }
 
             $retention = [];
             for ($month = 0; $month <= now()->diffInMonths($cohortMonth); $month++) {
@@ -289,7 +291,7 @@ class AnalyticsAIService
             $insights[] = [
                 'type' => 'success',
                 'title' => 'Traffic Growth',
-                'message' => 'Your unique visitors increased by ' . round((($lastWeek - $firstWeek) / $firstWeek) * 100) . '% in the last week!',
+                'message' => 'Your unique visitors increased by '.round((($lastWeek - $firstWeek) / $firstWeek) * 100).'% in the last week!',
                 'action' => 'Keep up the great marketing efforts!',
                 'priority' => 'high',
             ];
@@ -297,7 +299,7 @@ class AnalyticsAIService
             $insights[] = [
                 'type' => 'warning',
                 'title' => 'Traffic Decline',
-                'message' => 'Your traffic dropped by ' . round((($firstWeek - $lastWeek) / $firstWeek) * 100) . '% compared to last week.',
+                'message' => 'Your traffic dropped by '.round((($firstWeek - $lastWeek) / $firstWeek) * 100).'% compared to last week.',
                 'action' => 'Consider running a promotion or improving SEO.',
                 'priority' => 'high',
             ];
@@ -342,7 +344,7 @@ class AnalyticsAIService
             $insights[] = [
                 'type' => 'info',
                 'title' => 'Peak Sales Day',
-                'message' => "Your best sales day is {$dayOfWeek} with ฿" . number_format($bestDay->total_sales, 2),
+                'message' => "Your best sales day is {$dayOfWeek} with ฿".number_format($bestDay->total_sales, 2),
                 'action' => "Schedule promotions on {$dayOfWeek} for maximum impact.",
                 'priority' => 'medium',
             ];
@@ -438,6 +440,7 @@ class AnalyticsAIService
         foreach ($values as $value) {
             $variance += pow($value - $mean, 2);
         }
+
         return sqrt($variance / count($values));
     }
 

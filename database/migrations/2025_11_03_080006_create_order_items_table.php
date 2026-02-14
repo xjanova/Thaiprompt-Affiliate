@@ -43,7 +43,7 @@ return new class extends Migration
                 'delivered',
                 'completed',
                 'cancelled',
-                'refunded'
+                'refunded',
             ])->default('pending');
 
             $table->timestamps();

@@ -44,7 +44,7 @@ class HotelFacilityController extends Controller
 
             return back()->with('success', 'Facility created successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to create facility: ' . $e->getMessage());
+            return back()->with('error', 'Failed to create facility: '.$e->getMessage());
         }
     }
 
@@ -70,7 +70,7 @@ class HotelFacilityController extends Controller
 
             return back()->with('success', 'Facility updated successfully!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update facility: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update facility: '.$e->getMessage());
         }
     }
 
@@ -91,7 +91,7 @@ class HotelFacilityController extends Controller
 
             return back()->with('success', 'Facility deleted successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to delete facility: ' . $e->getMessage());
+            return back()->with('error', 'Failed to delete facility: '.$e->getMessage());
         }
     }
 

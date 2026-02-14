@@ -28,7 +28,7 @@ class MarketplaceSetting extends Model
     {
         $setting = static::where('setting_key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return $default;
         }
 
@@ -38,7 +38,7 @@ class MarketplaceSetting extends Model
     /**
      * Set setting
      */
-    public static function set(string $key, $value, string $type = 'string', string $description = null)
+    public static function set(string $key, $value, string $type = 'string', ?string $description = null)
     {
         return static::updateOrCreate(
             ['setting_key' => $key],

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\FortuneTellingSetting;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
 use Illuminate\Http\Request;
@@ -40,7 +40,6 @@ class FortuneChannelController extends Controller
     /**
      * บันทึกการตั้งค่าช่องทาง
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -62,17 +61,17 @@ class FortuneChannelController extends Controller
         $settings = FortuneTellingSetting::getSettings();
 
         // จัดการ checkbox (ถ้าไม่ส่งมา = false)
-        if (!$request->has('line_enabled')) {
+        if (! $request->has('line_enabled')) {
             $validated['line_enabled'] = false;
         }
 
         // จัดการ enabled_platforms
-        if (!$request->has('enabled_platforms')) {
+        if (! $request->has('enabled_platforms')) {
             $validated['enabled_platforms'] = [];
         }
 
         // เช็คว่าถ้าเปิด line_enabled ต้องใส่ค่าที่จำเป็น
-        if (!empty($validated['line_enabled'])) {
+        if (! empty($validated['line_enabled'])) {
             if (empty($validated['line_channel_id']) ||
                 empty($validated['line_channel_secret']) ||
                 empty($validated['line_channel_access_token'])) {
@@ -104,7 +103,7 @@ class FortuneChannelController extends Controller
         try {
             $settings = FortuneTellingSetting::getSettings();
 
-            if (!$settings->hasLineConfigured()) {
+            if (! $settings->hasLineConfigured()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'กรุณาตั้งค่า LINE Channel ก่อนทดสอบ',
@@ -127,15 +126,13 @@ class FortuneChannelController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }
 
     /**
      * ดึงสถิติการใช้งานตามช่องทาง
-     *
-     * @return array
      */
     protected function getChannelStats(): array
     {
@@ -241,7 +238,7 @@ class FortuneChannelController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }
@@ -271,7 +268,7 @@ class FortuneChannelController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }
@@ -314,7 +311,7 @@ class FortuneChannelController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ]);
         }
     }

@@ -146,11 +146,12 @@ class BotRental extends Model
      */
     public function getDaysRemainingAttribute(): ?int
     {
-        if ($this->rental_type !== 'monthly' || !$this->end_date) {
+        if ($this->rental_type !== 'monthly' || ! $this->end_date) {
             return null;
         }
 
         $days = now()->diffInDays($this->end_date, false);
+
         return $days > 0 ? $days : 0;
     }
 

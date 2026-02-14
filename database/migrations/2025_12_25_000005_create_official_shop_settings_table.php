@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บการตั้งค่าต่างๆ สำหรับระบบ Official Shop
      * เช่น คะแนนขั้นต่ำ AI Selection, จำนวนสินค้าขายดี, น้ำหนักคะแนน, ฯลฯ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -36,8 +34,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง official_shop_settings
-     *
-     * @return void
      */
     public function down(): void
     {

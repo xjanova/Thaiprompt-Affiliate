@@ -155,12 +155,12 @@ class PosTransaction extends Model
 
     public function canBeRefunded(): bool
     {
-        return $this->status === 'completed' && !$this->isRefunded();
+        return $this->status === 'completed' && ! $this->isRefunded();
     }
 
     public function refund(?string $reason = null, ?int $userId = null): void
     {
-        if (!$this->canBeRefunded()) {
+        if (! $this->canBeRefunded()) {
             throw new \Exception('Transaction cannot be refunded');
         }
 
@@ -225,12 +225,12 @@ class PosTransaction extends Model
 
     public function generateTransactionCode(): string
     {
-        return 'POS-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 8));
+        return 'POS-'.date('Ymd').'-'.strtoupper(substr(md5(uniqid()), 0, 8));
     }
 
     public function generateReceiptNumber(): string
     {
-        return 'RCP-' . date('YmdHis') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'RCP-'.date('YmdHis').'-'.str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
     }
 
     /**

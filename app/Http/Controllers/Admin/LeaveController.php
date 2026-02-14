@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
-use App\Models\Employee;
-use App\Models\Department;
 use Illuminate\Http\Request;
 
 class LeaveController extends Controller
@@ -22,7 +21,7 @@ class LeaveController extends Controller
 
         // Department filter
         if ($request->filled('department_id')) {
-            $query->whereHas('employee', function($q) use ($request) {
+            $query->whereHas('employee', function ($q) use ($request) {
                 $q->where('department_id', $request->get('department_id'));
             });
         }
@@ -103,9 +102,9 @@ class LeaveController extends Controller
         $endDate = \Carbon\Carbon::create($year, $month, 1)->endOfMonth();
 
         $leaveRequests = LeaveRequest::with(['employee', 'leaveType'])
-                                    ->where('status', 'approved')
-                                    ->dateRange($startDate, $endDate)
-                                    ->get();
+            ->where('status', 'approved')
+            ->dateRange($startDate, $endDate)
+            ->get();
 
         return view('admin.hrm.leave.calendar', compact('leaveRequests', 'month', 'year'));
     }
@@ -144,7 +143,7 @@ class LeaveController extends Controller
         LeaveType::create($validated);
 
         return redirect()->route('admin.hrm.leave.types')
-                       ->with('success', 'Leave type created successfully');
+            ->with('success', 'Leave type created successfully');
     }
 
     public function editLeaveType(LeaveType $leaveType)
@@ -156,7 +155,7 @@ class LeaveController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:leave_types,code,' . $leaveType->id,
+            'code' => 'required|string|unique:leave_types,code,'.$leaveType->id,
             'description' => 'nullable|string',
             'default_days_per_year' => 'required|numeric|min:0',
             'is_paid' => 'boolean',
@@ -173,6 +172,6 @@ class LeaveController extends Controller
         $leaveType->update($validated);
 
         return redirect()->route('admin.hrm.leave.types')
-                       ->with('success', 'Leave type updated successfully');
+            ->with('success', 'Leave type updated successfully');
     }
 }

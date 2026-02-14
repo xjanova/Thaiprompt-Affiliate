@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\LineMessageAnalyticsService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * LINE Message Analytics Controller
@@ -17,22 +17,16 @@ use Illuminate\Http\JsonResponse;
  * - GET /admin/line-analytics/api/overview - API: Overview stats
  * - GET /admin/line-analytics/api/trending - API: Trending data
  * - GET /admin/line-analytics/api/errors - API: Error analysis
- *
- * @package App\Http\Controllers\Admin
  */
 class LineMessageAnalyticsController extends Controller
 {
     /**
      * Analytics Service
-     *
-     * @var LineMessageAnalyticsService
      */
     protected LineMessageAnalyticsService $analyticsService;
 
     /**
      * Constructor
-     *
-     * @param LineMessageAnalyticsService $analyticsService
      */
     public function __construct(LineMessageAnalyticsService $analyticsService)
     {
@@ -42,7 +36,6 @@ class LineMessageAnalyticsController extends Controller
     /**
      * แสดง dashboard หลัก
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function dashboard(Request $request)
@@ -51,7 +44,7 @@ class LineMessageAnalyticsController extends Controller
         $period = $request->get('period', 'week');
 
         // Validate period
-        if (!in_array($period, ['today', 'week', 'month', 'all'])) {
+        if (! in_array($period, ['today', 'week', 'month', 'all'])) {
             $period = 'week';
         }
 
@@ -67,9 +60,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: ดึงสถิติภาพรวม
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiOverview(Request $request): JsonResponse
     {
@@ -85,9 +75,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: ดึงข้อมูล trending
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiTrending(Request $request): JsonResponse
     {
@@ -95,7 +82,7 @@ class LineMessageAnalyticsController extends Controller
         $interval = $request->get('interval', 'day');
 
         // Validate interval
-        if (!in_array($interval, ['hour', 'day'])) {
+        if (! in_array($interval, ['hour', 'day'])) {
             $interval = 'day';
         }
 
@@ -109,9 +96,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: วิเคราะห์ error patterns
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiErrors(Request $request): JsonResponse
     {
@@ -131,9 +115,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: ดึง recovery metrics
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiRecovery(Request $request): JsonResponse
     {
@@ -149,9 +130,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: ดึงสถิติ message types
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiMessageTypes(Request $request): JsonResponse
     {
@@ -167,9 +145,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * API: ดึงสถิติ user engagement
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function apiUserEngagement(Request $request): JsonResponse
     {
@@ -185,8 +160,6 @@ class LineMessageAnalyticsController extends Controller
 
     /**
      * ล้าง cache analytics
-     *
-     * @return JsonResponse
      */
     public function clearCache(): JsonResponse
     {
@@ -200,7 +173,7 @@ class LineMessageAnalyticsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'ล้าง cache ล้มเหลว: ' . $e->getMessage(),
+                'message' => 'ล้าง cache ล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -13,8 +13,6 @@ class ShippingRateSeeder extends Seeder
      * อัตราค่าส่งตามน้ำหนักสำหรับ:
      * - ในประเทศ (domestic): 5 ระดับน้ำหนัก
      * - ต่างประเทศ (international): 4 ระดับน้ำหนัก
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -23,6 +21,7 @@ class ShippingRateSeeder extends Seeder
         // ตรวจสอบว่ามีข้อมูลอยู่แล้วหรือไม่
         if (ShippingRate::count() > 0) {
             $this->command->info('ข้อมูลอัตราค่าจัดส่งมีอยู่แล้ว ข้าม...');
+
             return;
         }
 
@@ -144,6 +143,6 @@ class ShippingRateSeeder extends Seeder
             ShippingRate::create($rate);
         }
 
-        $this->command->info('✅ Seed อัตราค่าจัดส่ง ' . count($rates) . ' รายการสำเร็จ!');
+        $this->command->info('✅ Seed อัตราค่าจัดส่ง '.count($rates).' รายการสำเร็จ!');
     }
 }

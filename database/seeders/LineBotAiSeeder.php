@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\AiBotProfile;
-use App\Models\AiProvider;
 use App\Models\AiModel;
+use App\Models\AiProvider;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -20,8 +20,6 @@ class LineBotAiSeeder extends Seeder
      * 1. Thaiprompt Affiliate Bot - สำหรับตอบคำถาม Affiliate
      * 2. Customer Support Bot - สำหรับให้คำแนะนำ
      * 3. Sales Assistant Bot - ช่วยแนะนำสินค้า
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -31,6 +29,7 @@ class LineBotAiSeeder extends Seeder
         if ($existingBots > 0) {
             $this->command->warn('⚠️  AI Bot Profiles already exist!');
             $this->command->info('   Skipping to preserve your custom bot configurations.');
+
             return;
         }
 
@@ -38,12 +37,13 @@ class LineBotAiSeeder extends Seeder
 
         // ดึง admin user หรือ system user
         $adminUser = User::where('role', 'admin')->orWhere('email', 'admin@example.com')->first();
-        if (!$adminUser) {
+        if (! $adminUser) {
             $adminUser = User::first();
         }
 
-        if (!$adminUser) {
+        if (! $adminUser) {
             $this->command->warn('⚠️  No admin user found! Bot creation skipped.');
+
             return;
         }
 
@@ -53,19 +53,20 @@ class LineBotAiSeeder extends Seeder
             ->first();
 
         // ถ้าไม่มี Meta ให้ลอง OpenAI
-        if (!$provider) {
+        if (! $provider) {
             $provider = AiProvider::where('name', 'openai')
                 ->orWhere('display_name', 'like', '%OpenAI%')
                 ->first();
         }
 
         // ถ้าไม่มี OpenAI ให้ดึง provider แรกที่มี
-        if (!$provider) {
+        if (! $provider) {
             $provider = AiProvider::first();
         }
 
-        if (!$provider) {
+        if (! $provider) {
             $this->command->warn('⚠️  No AI Provider found! Please run AiProvidersSeeder first.');
+
             return;
         }
 
@@ -76,19 +77,20 @@ class LineBotAiSeeder extends Seeder
             ->first();
 
         // ถ้าไม่มี Llama 4 ให้ลอง GPT-4
-        if (!$model) {
+        if (! $model) {
             $model = AiModel::where('provider_id', $provider->id)
                 ->where('model_identifier', 'gpt-4')
                 ->orWhere('display_name', 'like', '%GPT-4%')
                 ->first();
         }
 
-        if (!$model) {
+        if (! $model) {
             $model = AiModel::where('provider_id', $provider->id)->first();
         }
 
-        if (!$model) {
+        if (! $model) {
             $this->command->warn('⚠️  No AI Model found! Please ensure models are seeded for the provider.');
+
             return;
         }
 

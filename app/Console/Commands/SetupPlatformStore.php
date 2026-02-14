@@ -30,7 +30,7 @@ class SetupPlatformStore extends Command
         // 1. สร้าง/ดึง Platform Store
         $platformStore = VendorStore::getPlatformStore();
 
-        $this->info("Platform Store:");
+        $this->info('Platform Store:');
         $this->table(
             ['ID', 'Name', 'Slug', 'Status'],
             [[$platformStore->id, $platformStore->store_name, $platformStore->store_slug, $platformStore->status ?? 'active']]
@@ -42,20 +42,22 @@ class SetupPlatformStore extends Command
 
         if ($devicesWithoutStore->isEmpty()) {
             $this->info('All devices already have store_id assigned.');
+
             return Command::SUCCESS;
         }
 
         $this->warn("Found {$devicesWithoutStore->count()} device(s) without store_id:");
         $this->table(
             ['ID', 'Device ID', 'Device Name', 'Status'],
-            $devicesWithoutStore->map(fn($d) => [$d->id, $d->device_id, $d->device_name, $d->status])
+            $devicesWithoutStore->map(fn ($d) => [$d->id, $d->device_id, $d->device_name, $d->status])
         );
         $this->newLine();
 
         // 3. ถาม confirm
-        if (!$this->option('force')) {
-            if (!$this->confirm("Do you want to assign these devices to Platform Store (ID: {$platformStore->id})?")) {
+        if (! $this->option('force')) {
+            if (! $this->confirm("Do you want to assign these devices to Platform Store (ID: {$platformStore->id})?")) {
                 $this->warn('Aborted.');
+
                 return Command::FAILURE;
             }
         }
@@ -72,7 +74,7 @@ class SetupPlatformStore extends Command
         $allDevices = SmsCheckerDevice::with('store')->get();
         $this->table(
             ['ID', 'Device ID', 'Device Name', 'Store ID', 'Store Name', 'Status'],
-            $allDevices->map(fn($d) => [
+            $allDevices->map(fn ($d) => [
                 $d->id,
                 $d->device_id,
                 $d->device_name,

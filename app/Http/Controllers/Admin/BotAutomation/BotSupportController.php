@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin\BotAutomation;
 
 use App\Http\Controllers\Controller;
 use App\Models\BotAutomation\BotSupportTicket;
-use App\Models\BotAutomation\BotSupportResponse;
 use Illuminate\Http\Request;
 
 class BotSupportController extends Controller
@@ -80,7 +79,7 @@ class BotSupportController extends Controller
         ]);
 
         // Update ticket status if not internal
-        if (!$response->is_internal) {
+        if (! $response->is_internal) {
             $ticket->update([
                 'status' => 'pending',
                 'last_response_at' => now(),
@@ -141,7 +140,6 @@ class BotSupportController extends Controller
     /**
      * ส่งออกข้อมูลทิกเก็ตเป็นไฟล์ JSON
      *
-     * @param BotSupportTicket $ticket
      * @return \Illuminate\Http\Response
      */
     public function export(BotSupportTicket $ticket)
@@ -171,19 +169,18 @@ class BotSupportController extends Controller
             'exported_at' => now()->toDateTimeString(),
         ];
 
-        $filename = 'ticket-' . $ticket->id . '-' . now()->format('Y-m-d') . '.json';
+        $filename = 'ticket-'.$ticket->id.'-'.now()->format('Y-m-d').'.json';
 
         return response()
             ->json($data, 200, [
                 'Content-Type' => 'application/json',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 
     /**
      * ลบทิกเก็ต
      *
-     * @param BotSupportTicket $ticket
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(BotSupportTicket $ticket)

@@ -95,16 +95,16 @@ class VendorPublicProduct extends Model
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true)
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('featured_until')
-                  ->orWhere('featured_until', '>', now());
+                    ->orWhere('featured_until', '>', now());
             });
     }
 
     /**
      * Approve the request
      */
-    public function approve(int $reviewerId, string $note = null): bool
+    public function approve(int $reviewerId, ?string $note = null): bool
     {
         $this->status = 'approved';
         $this->reviewed_by = $reviewerId;
@@ -138,7 +138,7 @@ class VendorPublicProduct extends Model
     /**
      * Remove from public listing
      */
-    public function removeFromPublic(string $reason = null): bool
+    public function removeFromPublic(?string $reason = null): bool
     {
         $this->status = 'removed';
         $this->rejection_reason = $reason;
@@ -173,7 +173,7 @@ class VendorPublicProduct extends Model
      */
     public function getStatusColorAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'yellow',
             'approved' => 'green',
             'rejected' => 'red',
@@ -187,7 +187,7 @@ class VendorPublicProduct extends Model
      */
     public function getStatusTextAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รออนุมัติ',
             'approved' => 'อนุมัติแล้ว',
             'rejected' => 'ถูกปฏิเสธ',

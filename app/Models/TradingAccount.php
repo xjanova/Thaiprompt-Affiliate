@@ -184,6 +184,7 @@ class TradingAccount extends Model
         if ($this->initial_balance == 0) {
             return 0;
         }
+
         return (($this->current_balance - $this->initial_balance) / $this->initial_balance) * 100;
     }
 

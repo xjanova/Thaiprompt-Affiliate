@@ -15,8 +15,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง video_mission_rank_limits
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_mission_rank_limits
-     *
-     * @return void
      */
     public function down(): void
     {

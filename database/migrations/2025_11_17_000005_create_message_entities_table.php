@@ -17,8 +17,6 @@ return new class extends Migration
      * - TIME: เวลา (วัน, เดือน, ปี)
      * - PERSON: ชื่อบุคคล
      * - ORGANIZATION: ชื่อบริษัท/องค์กร
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -54,7 +52,7 @@ return new class extends Migration
                 'PAYMENT_METHOD',
                 'DELIVERY_STATUS',
                 'ORDER_STATUS',
-                'CUSTOM'
+                'CUSTOM',
             ])->index();
 
             $table->string('entity_value')->index(); // ค่าที่ดึงออกมา (เช่น "Bangkok", "500 บาท")
@@ -81,8 +79,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง message_entities
-     *
-     * @return void
      */
     public function down(): void
     {

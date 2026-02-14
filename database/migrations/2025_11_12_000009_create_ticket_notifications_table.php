@@ -51,7 +51,7 @@ return new class extends Migration
                 'sla_warning',
                 'sla_breached',
                 'ticket_closed',
-                'rating_request'
+                'rating_request',
             ]);
 
             $table->enum('channel', ['email', 'in_app', 'sms'])->default('email');

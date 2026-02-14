@@ -16,8 +16,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง line_recruitment_topic_boundaries
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -73,8 +71,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง line_recruitment_topic_boundaries
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class ApiQuota extends Model
 {
@@ -48,7 +47,7 @@ class ApiQuota extends Model
      */
     public function isLimitExceeded()
     {
-        if (!$this->limit) {
+        if (! $this->limit) {
             return false;
         }
 
@@ -138,7 +137,7 @@ class ApiQuota extends Model
      */
     public function getRemainingAttribute()
     {
-        if (!$this->limit) {
+        if (! $this->limit) {
             return null;
         }
 
@@ -150,7 +149,7 @@ class ApiQuota extends Model
      */
     public function getUsagePercentageAttribute()
     {
-        if (!$this->limit) {
+        if (! $this->limit) {
             return 0;
         }
 

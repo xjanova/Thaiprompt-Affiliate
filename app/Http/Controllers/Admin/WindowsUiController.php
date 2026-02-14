@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\WindowsUiSetting;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class WindowsUiController extends Controller
 {
@@ -32,7 +31,6 @@ class WindowsUiController extends Controller
     /**
      * Update Windows UI settings
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -269,7 +267,6 @@ class WindowsUiController extends Controller
     /**
      * Update RGB Settings
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateRgbSettings(Request $request)
@@ -294,9 +291,7 @@ class WindowsUiController extends Controller
     /**
      * Get setting type based on key and value
      *
-     * @param string $key
-     * @param mixed $value
-     * @return string
+     * @param  mixed  $value
      */
     private function getSettingType(string $key, $value): string
     {
@@ -387,7 +382,6 @@ class WindowsUiController extends Controller
     /**
      * Update Start Button Settings (from start-menu page)
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateStartButtonSettings(Request $request)
@@ -481,7 +475,6 @@ class WindowsUiController extends Controller
     /**
      * Update Menu RGB Settings (from start-menu page)
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateMenuRgbSettings(Request $request)
@@ -517,7 +510,6 @@ class WindowsUiController extends Controller
     /**
      * Update Menu Size & Position Settings (from start-menu page)
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateMenuSettings(Request $request)
@@ -593,7 +585,7 @@ class WindowsUiController extends Controller
         // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
             // Skip null values to avoid overwriting existing settings (but allow empty strings for text fields)
-            if ($value === null && !in_array($key, ['millennium_menu_app_name', 'millennium_menu_subtitle'])) {
+            if ($value === null && ! in_array($key, ['millennium_menu_app_name', 'millennium_menu_subtitle'])) {
                 continue;
             }
 

@@ -11,13 +11,11 @@ return new class extends Migration
      *
      * ตารางนี้เก็บข้อมูลที่แม่ทีมปรับแต่งเอง
      * แต่ละ user มีได้แค่ 1 recruit page
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง users มีอยู่หรือไม่
-        if (!Schema::hasTable('users')) {
+        if (! Schema::hasTable('users')) {
             throw new \Exception('Table "users" must exist before creating "recruit_customizations" table.');
         }
 
@@ -69,8 +67,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง recruit_customizations
-     *
-     * @return void
      */
     public function down(): void
     {

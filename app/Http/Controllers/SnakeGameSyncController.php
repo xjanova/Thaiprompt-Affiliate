@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Services\SnakeGameSyncService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
@@ -31,9 +31,6 @@ class SnakeGameSyncController extends Controller
      * เข้าร่วมเกม (สร้าง session)
      *
      * POST /api/snake-sync/join
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function join(Request $request): JsonResponse
     {
@@ -44,7 +41,7 @@ class SnakeGameSyncController extends Controller
             ]);
 
             // สร้าง unique player ID
-            $playerId = 'player_' . Str::uuid();
+            $playerId = 'player_'.Str::uuid();
 
             // สร้าง session
             $session = $this->syncService->createSession(
@@ -62,7 +59,7 @@ class SnakeGameSyncController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เข้าร่วมเกมล้มเหลว: ' . $e->getMessage(),
+                'message' => 'เข้าร่วมเกมล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -71,9 +68,6 @@ class SnakeGameSyncController extends Controller
      * อัปเดตสถานะผู้เล่น
      *
      * POST /api/snake-sync/update
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function updateState(Request $request): JsonResponse
     {
@@ -114,7 +108,7 @@ class SnakeGameSyncController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'อัปเดตสถานะล้มเหลว: ' . $e->getMessage(),
+                'message' => 'อัปเดตสถานะล้มเหลว: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -123,9 +117,6 @@ class SnakeGameSyncController extends Controller
      * ดึงผู้เล่น active ทั้งหมด (ไม่รวมตัวเอง)
      *
      * GET /api/snake-sync/players/{playerId}
-     *
-     * @param string $playerId
-     * @return JsonResponse
      */
     public function getActivePlayers(string $playerId): JsonResponse
     {
@@ -151,9 +142,6 @@ class SnakeGameSyncController extends Controller
      * แจ้งว่าผู้เล่นตาย
      *
      * POST /api/snake-sync/died
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function playerDied(Request $request): JsonResponse
     {
@@ -179,9 +167,6 @@ class SnakeGameSyncController extends Controller
      * ออกจากเกม
      *
      * POST /api/snake-sync/leave
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function leave(Request $request): JsonResponse
     {
@@ -207,9 +192,6 @@ class SnakeGameSyncController extends Controller
      * Ping เพื่อรักษา session
      *
      * POST /api/snake-sync/ping
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function ping(Request $request): JsonResponse
     {
@@ -234,8 +216,6 @@ class SnakeGameSyncController extends Controller
      * ดึงสถิติ (จำนวนผู้เล่น active)
      *
      * GET /api/snake-sync/stats
-     *
-     * @return JsonResponse
      */
     public function stats(): JsonResponse
     {

@@ -95,6 +95,7 @@ class TPIXLiquidityPool extends Model
         if (bccomp($this->reserve_a, '0', 8) === 0) {
             return '0';
         }
+
         return bcdiv($this->reserve_b, $this->reserve_a, 8);
     }
 
@@ -105,6 +106,7 @@ class TPIXLiquidityPool extends Model
     {
         $valueA = bcmul($this->reserve_a, $this->tokenA->current_price_tpix ?? '0', 8);
         $valueB = bcmul($this->reserve_b, $this->tokenB->current_price_tpix ?? '0', 8);
+
         return bcadd($valueA, $valueB, 8);
     }
 

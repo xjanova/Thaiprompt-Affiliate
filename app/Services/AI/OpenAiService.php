@@ -17,10 +17,10 @@ class OpenAiService extends BaseAiService
         try {
             $response = Http::timeout(120)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->getApiKey(),
+                    'Authorization' => 'Bearer '.$this->getApiKey(),
                     'Content-Type' => 'application/json',
                 ])
-                ->post($this->getEndpoint() . '/chat/completions', [
+                ->post($this->getEndpoint().'/chat/completions', [
                     'model' => $this->model->model_identifier,
                     'messages' => $this->formatMessages($messages),
                     'temperature' => $options['temperature'] ?? 0.7,
@@ -90,10 +90,10 @@ class OpenAiService extends BaseAiService
         try {
             $response = Http::timeout(60)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->getApiKey(),
+                    'Authorization' => 'Bearer '.$this->getApiKey(),
                     'Content-Type' => 'application/json',
                 ])
-                ->post($this->getEndpoint() . '/embeddings', [
+                ->post($this->getEndpoint().'/embeddings', [
                     'model' => 'text-embedding-3-small', // หรือ text-embedding-ada-002
                     'input' => $text,
                 ]);
@@ -125,7 +125,7 @@ class OpenAiService extends BaseAiService
      */
     public function testConnection(): array
     {
-        if (!$this->hasApiKey()) {
+        if (! $this->hasApiKey()) {
             return [
                 'success' => false,
                 'message' => 'ไม่พบ API Key',
@@ -136,9 +136,9 @@ class OpenAiService extends BaseAiService
             // ทดสอบด้วยการ list models
             $response = Http::timeout(10)
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->getApiKey(),
+                    'Authorization' => 'Bearer '.$this->getApiKey(),
                 ])
-                ->get($this->getEndpoint() . '/models');
+                ->get($this->getEndpoint().'/models');
 
             if ($response->successful()) {
                 return [
@@ -159,7 +159,7 @@ class OpenAiService extends BaseAiService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }

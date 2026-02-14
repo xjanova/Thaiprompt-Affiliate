@@ -40,7 +40,7 @@ class LoadTheme
         $theme = $userTheme['theme'];
         $mode = $userTheme['mode'];
 
-        if (!$theme) {
+        if (! $theme) {
             return '';
         }
 

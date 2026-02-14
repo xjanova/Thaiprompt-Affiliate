@@ -71,7 +71,7 @@ class LineSignupFlowController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'step_key' => 'required|string|max:255|unique:line_signup_flows,step_key,' . $id,
+            'step_key' => 'required|string|max:255|unique:line_signup_flows,step_key,'.$id,
             'step_order' => 'required|integer',
             'message_text' => 'required|string',
             'input_type' => 'required|in:text,phone,email,name,confirm,choice,none',

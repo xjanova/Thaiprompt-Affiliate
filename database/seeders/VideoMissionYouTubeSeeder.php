@@ -111,6 +111,7 @@ class VideoMissionYouTubeSeeder extends Seeder
 
             if ($exists) {
                 $skipped++;
+
                 continue;
             }
 

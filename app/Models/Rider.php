@@ -130,8 +130,6 @@ class Rider extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -140,8 +138,6 @@ class Rider extends Model
 
     /**
      * ความสัมพันธ์กับ User ที่อนุมัติ
-     *
-     * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
@@ -150,8 +146,6 @@ class Rider extends Model
 
     /**
      * งานทั้งหมดของไรเดอร์
-     *
-     * @return HasMany
      */
     public function jobs(): HasMany
     {
@@ -160,8 +154,6 @@ class Rider extends Model
 
     /**
      * ประวัติตำแหน่ง GPS
-     *
-     * @return HasMany
      */
     public function locations(): HasMany
     {
@@ -203,10 +195,10 @@ class Rider extends Model
     public function scopeNearby($query, $latitude, $longitude, $radiusKm = 5)
     {
         // Haversine formula สำหรับคำนวณระยะทาง
-        return $query->selectRaw("*,
+        return $query->selectRaw('*,
             (6371 * acos(cos(radians(?)) * cos(radians(last_latitude)) *
             cos(radians(last_longitude) - radians(?)) +
-            sin(radians(?)) * sin(radians(last_latitude)))) AS distance_km",
+            sin(radians(?)) * sin(radians(last_latitude)))) AS distance_km',
             [$latitude, $longitude, $latitude])
             ->having('distance_km', '<=', $radiusKm)
             ->orderBy('distance_km');
@@ -218,8 +210,6 @@ class Rider extends Model
 
     /**
      * ตรวจสอบว่าได้รับสิทธิ์ทั้งหมดหรือยัง
-     *
-     * @return bool
      */
     public function getHasAllPermissionsAttribute(): bool
     {
@@ -231,12 +221,10 @@ class Rider extends Model
 
     /**
      * ชื่อสถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusTextAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'pending' => 'รอตรวจสอบ',
             'approved' => 'อนุมัติแล้ว',
             'rejected' => 'ถูกปฏิเสธ',
@@ -248,12 +236,10 @@ class Rider extends Model
 
     /**
      * ชื่อสถานะพร้อมรับงานภาษาไทย
-     *
-     * @return string
      */
     public function getAvailabilityTextAttribute(): string
     {
-        return match($this->availability) {
+        return match ($this->availability) {
             'online' => 'พร้อมรับงาน',
             'offline' => 'ออฟไลน์',
             'busy' => 'กำลังส่งงาน',
@@ -263,12 +249,10 @@ class Rider extends Model
 
     /**
      * ชื่อยานพาหนะภาษาไทย
-     *
-     * @return string
      */
     public function getVehicleTypeTextAttribute(): string
     {
-        return match($this->vehicle_type) {
+        return match ($this->vehicle_type) {
             'motorcycle' => 'มอเตอร์ไซค์',
             'car' => 'รถยนต์',
             'bicycle' => 'จักรยาน',
@@ -279,12 +263,13 @@ class Rider extends Model
 
     /**
      * อัตราการทำงานสำเร็จ
-     *
-     * @return float
      */
     public function getCompletionRateAttribute(): float
     {
-        if ($this->total_jobs == 0) return 0;
+        if ($this->total_jobs == 0) {
+            return 0;
+        }
+
         return round(($this->completed_jobs / $this->total_jobs) * 100, 2);
     }
 
@@ -294,10 +279,6 @@ class Rider extends Model
 
     /**
      * อัปเดตตำแหน่ง GPS
-     *
-     * @param float $latitude
-     * @param float $longitude
-     * @return void
      */
     public function updateLocation(float $latitude, float $longitude): void
     {
@@ -310,8 +291,6 @@ class Rider extends Model
 
     /**
      * ตั้งค่าสถานะออนไลน์
-     *
-     * @return void
      */
     public function goOnline(): void
     {
@@ -324,8 +303,6 @@ class Rider extends Model
 
     /**
      * ตั้งค่าสถานะออฟไลน์
-     *
-     * @return void
      */
     public function goOffline(): void
     {
@@ -334,8 +311,6 @@ class Rider extends Model
 
     /**
      * ตั้งค่าสถานะกำลังส่งงาน
-     *
-     * @return void
      */
     public function setBusy(): void
     {
@@ -344,9 +319,6 @@ class Rider extends Model
 
     /**
      * บันทึกสิทธิ์ที่ได้รับ
-     *
-     * @param array $permissions
-     * @return void
      */
     public function grantPermissions(array $permissions): void
     {
@@ -365,7 +337,7 @@ class Rider extends Model
             $updateData['notification_permission_granted'] = $permissions['notification'];
         }
 
-        if (!empty($updateData)) {
+        if (! empty($updateData)) {
             $updateData['permissions_granted_at'] = now();
             $this->update($updateData);
         }

@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AICoreAlert;
 use App\Models\AICoreFeature;
 use App\Models\AICoreTenant;
 use App\Models\AICoreUsageLog;
-use App\Models\AICoreAlert;
 use App\Services\AICoreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,8 +26,6 @@ class AICoreController extends Controller
 
     /**
      * Constructor
-     *
-     * @param AICoreService $aiCoreService
      */
     public function __construct(AICoreService $aiCoreService)
     {
@@ -75,8 +73,6 @@ class AICoreController extends Controller
 
     /**
      * ดึงสถิติรวมสำหรับ Dashboard
-     *
-     * @return array
      */
     private function getDashboardStats(): array
     {
@@ -94,8 +90,6 @@ class AICoreController extends Controller
 
     /**
      * ดึงข้อมูลสำหรับ Usage Chart (7 วันล่าสุด)
-     *
-     * @return array
      */
     private function getUsageChartData(): array
     {
@@ -181,7 +175,6 @@ class AICoreController extends Controller
     /**
      * บันทึกการตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)

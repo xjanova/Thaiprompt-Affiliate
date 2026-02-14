@@ -126,10 +126,11 @@ class LineBotAiSetting extends Model
      */
     public function getMaskedApiKey(): string
     {
-        if (!$this->api_key) {
+        if (! $this->api_key) {
             return 'Not set';
         }
-        return substr($this->api_key, 0, 8) . '••••••••' . substr($this->api_key, -4);
+
+        return substr($this->api_key, 0, 8).'••••••••'.substr($this->api_key, -4);
     }
 
     /**
@@ -187,7 +188,7 @@ class LineBotAiSetting extends Model
     /**
      * Scope: เฉพาะที่ใช้สำหรับรับสมัคร
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForRecruitment($query)
@@ -197,8 +198,6 @@ class LineBotAiSetting extends Model
 
     /**
      * รับ AI Setting สำหรับการรับสมัครที่ active
-     *
-     * @return self|null
      */
     public static function getActiveRecruitment(): ?self
     {
@@ -211,8 +210,6 @@ class LineBotAiSetting extends Model
 
     /**
      * ล้าง Cache รับสมัคร
-     *
-     * @return void
      */
     public static function clearRecruitmentCache(): void
     {
@@ -221,12 +218,10 @@ class LineBotAiSetting extends Model
 
     /**
      * รับ System Prompt สำหรับการรับสมัคร
-     *
-     * @return string
      */
     public function getRecruitmentSystemPrompt(): string
     {
-        if ($this->use_for_recruitment && !empty($this->recruitment_system_prompt)) {
+        if ($this->use_for_recruitment && ! empty($this->recruitment_system_prompt)) {
             return $this->recruitment_system_prompt;
         }
 
@@ -235,8 +230,6 @@ class LineBotAiSetting extends Model
 
     /**
      * รับข้อความต้อนรับ
-     *
-     * @return string
      */
     public function getGreetingMessage(): string
     {
@@ -245,8 +238,6 @@ class LineBotAiSetting extends Model
 
     /**
      * รับข้อความเมื่อหมดรอบการคุย
-     *
-     * @return string
      */
     public function getMaxTurnsMessage(): string
     {
@@ -255,8 +246,6 @@ class LineBotAiSetting extends Model
 
     /**
      * รับข้อความเมื่อคุยเรื่องที่ไม่เกี่ยวข้อง
-     *
-     * @return string
      */
     public function getOffTopicMessage(): string
     {
@@ -265,8 +254,6 @@ class LineBotAiSetting extends Model
 
     /**
      * ตรวจสอบว่าเปิดใช้งาน Topic Filtering หรือไม่
-     *
-     * @return bool
      */
     public function hasTopicFiltering(): bool
     {
@@ -275,8 +262,6 @@ class LineBotAiSetting extends Model
 
     /**
      * ตรวจสอบว่าใช้ PostXAgent เป็น provider หรือไม่
-     *
-     * @return bool
      */
     public function isPostXAgentProvider(): bool
     {
@@ -286,7 +271,7 @@ class LineBotAiSetting extends Model
     /**
      * สร้าง PostXAgent API URL
      *
-     * @param string $path Path ของ API endpoint
+     * @param  string  $path  Path ของ API endpoint
      * @return string URL เต็ม
      */
     public function getPostXAgentUrl(string $path = ''): string
@@ -298,7 +283,7 @@ class LineBotAiSetting extends Model
         $baseUrl = "{$protocol}://{$host}:{$port}";
 
         if ($path) {
-            return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+            return rtrim($baseUrl, '/').'/'.ltrim($path, '/');
         }
 
         return $baseUrl;
@@ -316,26 +301,23 @@ class LineBotAiSetting extends Model
 
     /**
      * ตรวจสอบว่า PostXAgent ตั้งค่าครบหรือไม่
-     *
-     * @return bool
      */
     public function isPostXAgentConfigured(): bool
     {
-        return !empty($this->postxagent_host)
-            && !empty($this->postxagent_api_port);
+        return ! empty($this->postxagent_host)
+            && ! empty($this->postxagent_api_port);
     }
 
     /**
      * Mask PostXAgent API key for display
-     *
-     * @return string
      */
     public function getMaskedPostXAgentApiKey(): string
     {
-        if (!$this->postxagent_api_key) {
+        if (! $this->postxagent_api_key) {
             return 'Not set';
         }
         $key = $this->postxagent_api_key;
-        return substr($key, 0, 8) . '••••••••' . substr($key, -4);
+
+        return substr($key, 0, 8).'••••••••'.substr($key, -4);
     }
 }

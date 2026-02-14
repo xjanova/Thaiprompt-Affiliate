@@ -107,8 +107,6 @@ class Label extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -117,8 +115,6 @@ class Label extends Model
 
     /**
      * ความสัมพันธ์กับ LabelTemplate
-     *
-     * @return BelongsTo
      */
     public function template(): BelongsTo
     {
@@ -128,7 +124,7 @@ class Label extends Model
     /**
      * Scope: เฉพาะรายการโปรด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeFavorites($query)
@@ -139,8 +135,7 @@ class Label extends Model
     /**
      * Scope: กรองตามหมวดหมู่
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInCategory($query, string $category)
@@ -151,7 +146,7 @@ class Label extends Model
     /**
      * Scope: เรียงตามการใช้งานล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecentlyUsed($query)
@@ -162,8 +157,7 @@ class Label extends Model
     /**
      * Scope: ล่าสุด
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $limit
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecent($query, int $limit = 10)
@@ -173,12 +167,10 @@ class Label extends Model
 
     /**
      * สลับสถานะรายการโปรด
-     *
-     * @return bool
      */
     public function toggleFavorite(): bool
     {
-        $this->is_favorite = !$this->is_favorite;
+        $this->is_favorite = ! $this->is_favorite;
         $this->save();
 
         return $this->is_favorite;
@@ -187,8 +179,7 @@ class Label extends Model
     /**
      * บันทึกการพิมพ์
      *
-     * @param int $copies จำนวนสำเนาที่พิมพ์
-     * @return void
+     * @param  int  $copies  จำนวนสำเนาที่พิมพ์
      */
     public function recordPrint(int $copies = 1): void
     {
@@ -198,8 +189,6 @@ class Label extends Model
 
     /**
      * ดึงรายการ barcode elements
-     *
-     * @return array
      */
     public function getBarcodeElementsAttribute(): array
     {
@@ -208,8 +197,6 @@ class Label extends Model
 
     /**
      * ดึงรายการ QR code elements
-     *
-     * @return array
      */
     public function getQrcodeElementsAttribute(): array
     {
@@ -218,8 +205,6 @@ class Label extends Model
 
     /**
      * ดึงรายการ text elements
-     *
-     * @return array
      */
     public function getTextElementsAttribute(): array
     {
@@ -228,8 +213,6 @@ class Label extends Model
 
     /**
      * ดึงรายการ image elements
-     *
-     * @return array
      */
     public function getImageElementsAttribute(): array
     {
@@ -239,7 +222,7 @@ class Label extends Model
     /**
      * คำนวณขนาดในหน่วย pixel (สำหรับ preview)
      *
-     * @param int $dpi DPI สำหรับการแปลง
+     * @param  int  $dpi  DPI สำหรับการแปลง
      * @return array{width: int, height: int}
      */
     public function getSizeInPixels(int $dpi = 96): array
@@ -256,13 +239,12 @@ class Label extends Model
     /**
      * โคลนฉลากเป็นฉลากใหม่
      *
-     * @param string|null $newName ชื่อใหม่
-     * @return Label
+     * @param  string|null  $newName  ชื่อใหม่
      */
     public function duplicate(?string $newName = null): Label
     {
         $clone = $this->replicate();
-        $clone->name = $newName ?? $this->name . ' (สำเนา)';
+        $clone->name = $newName ?? $this->name.' (สำเนา)';
         $clone->print_count = 0;
         $clone->last_printed_at = null;
         $clone->thumbnail_path = null;

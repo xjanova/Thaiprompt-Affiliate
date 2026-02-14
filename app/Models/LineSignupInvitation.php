@@ -34,7 +34,9 @@ class LineSignupInvitation extends Model
      * Invitation statuses
      */
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_USED = 'used';
+
     public const STATUS_EXPIRED = 'expired';
 
     /**

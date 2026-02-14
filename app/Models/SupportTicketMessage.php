@@ -70,8 +70,6 @@ class SupportTicketMessage extends Model
 
     /**
      * ความสัมพันธ์กับ Ticket
-     *
-     * @return BelongsTo
      */
     public function ticket(): BelongsTo
     {
@@ -80,8 +78,6 @@ class SupportTicketMessage extends Model
 
     /**
      * ความสัมพันธ์กับ User
-     *
-     * @return BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -122,12 +118,10 @@ class SupportTicketMessage extends Model
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
-     *
-     * @return void
      */
     public function markAsRead(): void
     {
-        if (!$this->is_read) {
+        if (! $this->is_read) {
             $this->update([
                 'is_read' => true,
                 'read_at' => now(),

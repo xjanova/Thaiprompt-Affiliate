@@ -17,13 +17,11 @@ class ServiceBookingController extends Controller
 {
     public function __construct(
         protected ServiceBookingService $bookingService
-    ) {
-    }
+    ) {}
 
     /**
      * แสดงรายการจองทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -72,7 +70,6 @@ class ServiceBookingController extends Controller
     /**
      * แสดงรายละเอียดการจอง
      *
-     * @param ServiceBooking $serviceBooking
      * @return \Illuminate\View\View
      */
     public function show(ServiceBooking $serviceBooking)
@@ -83,23 +80,21 @@ class ServiceBookingController extends Controller
             'provider',
             'items',
             'locations',
-            'trackings' => fn($q) => $q->latest()->limit(20),
-            'notifications' => fn($q) => $q->latest(),
-            'actions' => fn($q) => $q->latest(),
+            'trackings' => fn ($q) => $q->latest()->limit(20),
+            'notifications' => fn ($q) => $q->latest(),
+            'actions' => fn ($q) => $q->latest(),
             'review',
         ]);
 
         return view('admin.service-bookings.show', [
             'booking' => $serviceBooking,
-            'pageTitle' => 'การจอง #' . $serviceBooking->booking_number,
+            'pageTitle' => 'การจอง #'.$serviceBooking->booking_number,
         ]);
     }
 
     /**
      * มอบหมายผู้ให้บริการ
      *
-     * @param Request $request
-     * @param ServiceBooking $serviceBooking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function assignProvider(Request $request, ServiceBooking $serviceBooking)
@@ -121,15 +116,13 @@ class ServiceBookingController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ยกเลิกการจอง
      *
-     * @param Request $request
-     * @param ServiceBooking $serviceBooking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function cancel(Request $request, ServiceBooking $serviceBooking)
@@ -151,14 +144,13 @@ class ServiceBookingController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ผู้ให้บริการที่พร้อมรับงาน
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function availableProviders(Request $request)
@@ -186,8 +178,6 @@ class ServiceBookingController extends Controller
     /**
      * อัพเดทสถานะการจอง
      *
-     * @param Request $request
-     * @param ServiceBooking $serviceBooking
      * @return \Illuminate\Http\JsonResponse
      */
     public function updateStatus(Request $request, ServiceBooking $serviceBooking)
@@ -210,7 +200,6 @@ class ServiceBookingController extends Controller
     /**
      * Export รายงาน
      *
-     * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function export(Request $request)
@@ -222,7 +211,6 @@ class ServiceBookingController extends Controller
     /**
      * แสดงหน้า Analytics การจองบริการ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function analytics(Request $request)
@@ -233,24 +221,24 @@ class ServiceBookingController extends Controller
 
         // สถิติภาพรวม
         $stats = [
-            'total_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])->count(),
-            'total_revenue' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            'total_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])->count(),
+            'total_revenue' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
                 ->where('payment_status', 'paid')
                 ->sum('final_price'),
-            'completed_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            'completed_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
                 ->where('status', 'completed')
                 ->count(),
-            'cancelled_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            'cancelled_bookings' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
                 ->where('status', 'cancelled')
                 ->count(),
-            'average_rating' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            'average_rating' => ServiceBooking::whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
                 ->whereNotNull('rating')
                 ->avg('rating') ?? 0,
         ];
 
         // กราฟการจองรายวัน
         $dailyBookings = ServiceBooking::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -259,7 +247,7 @@ class ServiceBookingController extends Controller
 
         // รายได้รายวัน
         $dailyRevenue = ServiceBooking::selectRaw('DATE(created_at) as date, SUM(final_price) as total')
-            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
             ->where('payment_status', 'paid')
             ->groupBy('date')
             ->orderBy('date')
@@ -269,7 +257,7 @@ class ServiceBookingController extends Controller
 
         // สถิติตามสถานะ
         $statusStats = ServiceBooking::selectRaw('status, COUNT(*) as count')
-            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
             ->groupBy('status')
             ->get()
             ->pluck('count', 'status')
@@ -277,7 +265,7 @@ class ServiceBookingController extends Controller
 
         // Top Services
         $topServices = ServiceBooking::selectRaw('service_id, COUNT(*) as count, SUM(final_price) as revenue')
-            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
             ->with('service')
             ->groupBy('service_id')
             ->orderByDesc('count')
@@ -286,7 +274,7 @@ class ServiceBookingController extends Controller
 
         // Top Providers
         $topProviders = ServiceBooking::selectRaw('provider_id, COUNT(*) as count, AVG(rating) as avg_rating')
-            ->whereBetween('created_at', [$startDate, $endDate . ' 23:59:59'])
+            ->whereBetween('created_at', [$startDate, $endDate.' 23:59:59'])
             ->whereNotNull('provider_id')
             ->with('provider')
             ->groupBy('provider_id')

@@ -2,8 +2,8 @@
 
 namespace App\Services\Payment;
 
-use App\Models\PaymentTransaction;
 use App\Models\PaymentGateway;
+use App\Models\PaymentTransaction;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,11 +18,15 @@ use Illuminate\Support\Facades\Log;
 class OmiseProvider implements PaymentProviderInterface
 {
     protected $gateway;
+
     protected $publicKey;
+
     protected $secretKey;
+
     protected $testMode;
 
     protected const API_URL = 'https://api.omise.co';
+
     protected const VAULT_URL = 'https://vault.omise.co';
 
     public function __construct()
@@ -37,7 +41,7 @@ class OmiseProvider implements PaymentProviderInterface
             }
         } catch (\Exception $e) {
             // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ข้ามการโหลด config
-            Log::debug('OmiseProvider: Cannot load gateway config - ' . $e->getMessage());
+            Log::debug('OmiseProvider: Cannot load gateway config - '.$e->getMessage());
             $this->gateway = null;
         }
     }
@@ -45,20 +49,17 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Validate Omise payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      * @throws Exception
      */
     public function validate(PaymentTransaction $transaction, array $data): bool
     {
         // ตรวจสอบว่า gateway พร้อมใช้งาน
-        if (!$this->gateway || !$this->gateway->isConfigured()) {
+        if (! $this->gateway || ! $this->gateway->isConfigured()) {
             throw new Exception('Omise gateway is not configured');
         }
 
         // ตรวจสอบว่า gateway เปิดใช้งาน
-        if (!$this->gateway->is_active) {
+        if (! $this->gateway->is_active) {
             throw new Exception('Omise gateway is not active');
         }
 
@@ -84,9 +85,6 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Process Omise payment
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     public function process(PaymentTransaction $transaction, array $data): array
@@ -95,7 +93,7 @@ class OmiseProvider implements PaymentProviderInterface
             // สร้าง Charge
             $charge = $this->createCharge($transaction, $data);
 
-            if (!$charge || !isset($charge['id'])) {
+            if (! $charge || ! isset($charge['id'])) {
                 throw new Exception('Failed to create Omise charge');
             }
 
@@ -167,10 +165,6 @@ class OmiseProvider implements PaymentProviderInterface
 
     /**
      * Verify Omise payment (webhook callback)
-     *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return bool
      */
     public function verify(PaymentTransaction $transaction, array $data): bool
     {
@@ -178,7 +172,7 @@ class OmiseProvider implements PaymentProviderInterface
             // ตรวจสอบ event type
             $eventType = $data['key'] ?? '';
 
-            if (!in_array($eventType, ['charge.complete', 'charge.create'])) {
+            if (! in_array($eventType, ['charge.complete', 'charge.create'])) {
                 return false;
             }
 
@@ -198,17 +192,20 @@ class OmiseProvider implements PaymentProviderInterface
                     'expected' => $transaction->amount,
                     'received' => $paidAmount,
                 ]);
+
                 return false;
             }
 
             // ตรวจสอบสถานะ
             $status = $chargeData['status'] ?? '';
+
             return $status === 'successful';
         } catch (Exception $e) {
             Log::error('Omise verification error', [
                 'transaction_id' => $transaction->transaction_id,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -216,9 +213,6 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Refund Omise payment
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     public function refund(PaymentTransaction $transaction, float $amount): array
@@ -251,9 +245,6 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Create Omise Charge
      *
-     * @param PaymentTransaction $transaction
-     * @param array $data
-     * @return array
      * @throws Exception
      */
     protected function createCharge(PaymentTransaction $transaction, array $data): array
@@ -270,14 +261,14 @@ class OmiseProvider implements PaymentProviderInterface
         ];
 
         // ใช้ token หรือ source
-        if (!empty($data['token'])) {
+        if (! empty($data['token'])) {
             $payload['card'] = $data['token'];
-        } elseif (!empty($data['source'])) {
+        } elseif (! empty($data['source'])) {
             $payload['source'] = $data['source'];
         }
 
         // ถ้ามี customer ID
-        if (!empty($data['customer_id'])) {
+        if (! empty($data['customer_id'])) {
             $payload['customer'] = $data['customer_id'];
         }
 
@@ -287,9 +278,6 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Create Omise Refund
      *
-     * @param PaymentTransaction $transaction
-     * @param float $amount
-     * @return array
      * @throws Exception
      */
     protected function createRefund(PaymentTransaction $transaction, float $amount): array
@@ -304,10 +292,6 @@ class OmiseProvider implements PaymentProviderInterface
     /**
      * Call Omise API
      *
-     * @param string $endpoint
-     * @param array $payload
-     * @param string $method
-     * @return array
      * @throws Exception
      */
     protected function callOmiseApi(string $endpoint, array $payload, string $method = 'POST'): array
@@ -316,7 +300,7 @@ class OmiseProvider implements PaymentProviderInterface
             $response = Http::withBasicAuth($this->secretKey, '')
                 ->timeout(30);
 
-            $url = self::API_URL . '/' . $endpoint;
+            $url = self::API_URL.'/'.$endpoint;
 
             if ($method === 'GET') {
                 $response = $response->get($url, $payload);
@@ -336,16 +320,16 @@ class OmiseProvider implements PaymentProviderInterface
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Payment gateway communication error: ' . $e->getMessage());
+            throw new Exception('Payment gateway communication error: '.$e->getMessage());
         }
     }
 
     /**
      * Create Omise Source (for PromptPay, TrueMoney, etc.)
      *
-     * @param string $type Source type (promptpay, truemoney_wallet, etc.)
-     * @param int $amount Amount in satang
-     * @return array
+     * @param  string  $type  Source type (promptpay, truemoney_wallet, etc.)
+     * @param  int  $amount  Amount in satang
+     *
      * @throws Exception
      */
     public function createSource(string $type, int $amount): array
@@ -361,16 +345,13 @@ class OmiseProvider implements PaymentProviderInterface
 
     /**
      * Check payment status
-     *
-     * @param PaymentTransaction $transaction
-     * @return array
      */
     public function checkStatus(PaymentTransaction $transaction): array
     {
         try {
             $response = Http::withBasicAuth($this->secretKey, '')
                 ->timeout(30)
-                ->get(self::API_URL . "/charges/{$transaction->gateway_transaction_id}");
+                ->get(self::API_URL."/charges/{$transaction->gateway_transaction_id}");
 
             if ($response->failed()) {
                 return [
@@ -397,8 +378,6 @@ class OmiseProvider implements PaymentProviderInterface
 
     /**
      * Get public key for frontend
-     *
-     * @return string|null
      */
     public function getPublicKey(): ?string
     {

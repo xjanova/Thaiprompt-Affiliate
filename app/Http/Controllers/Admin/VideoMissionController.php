@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Rank;
 use App\Models\VideoMission;
 use App\Models\VideoMissionCompletion;
 use App\Models\VideoMissionRankLimit;
 use App\Models\VideoMissionSetting;
-use App\Models\Rank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -74,7 +74,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายการภารกิจทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function missions(Request $request)
@@ -140,7 +139,6 @@ class VideoMissionController extends Controller
     /**
      * บันทึกภารกิจใหม่
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
@@ -222,7 +220,7 @@ class VideoMissionController extends Controller
         // ตรวจสอบความขัดแย้งของภารกิจ
         $conflictCheck = VideoMission::validateMissionConflicts($validated);
 
-        if (!$conflictCheck['valid']) {
+        if (! $conflictCheck['valid']) {
             // มี error - ไม่อนุญาตให้สร้าง
             return back()
                 ->withInput()
@@ -240,7 +238,7 @@ class VideoMissionController extends Controller
         // ถ้ามี warnings แสดงด้วย
         $message = 'สร้างภารกิจใหม่สำเร็จ';
         if (count($conflictCheck['warnings']) > 0) {
-            $message .= ' (มีคำเตือน: ' . implode(', ', $conflictCheck['warnings']) . ')';
+            $message .= ' (มีคำเตือน: '.implode(', ', $conflictCheck['warnings']).')';
         }
 
         return redirect()
@@ -252,7 +250,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายละเอียดภารกิจ
      *
-     * @param VideoMission $mission
      * @return \Illuminate\View\View
      */
     public function show(VideoMission $mission)
@@ -282,7 +279,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงฟอร์มแก้ไขภารกิจ
      *
-     * @param VideoMission $mission
      * @return \Illuminate\View\View
      */
     public function edit(VideoMission $mission)
@@ -295,8 +291,6 @@ class VideoMissionController extends Controller
     /**
      * อัพเดทภารกิจ
      *
-     * @param Request $request
-     * @param VideoMission $mission
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request, VideoMission $mission)
@@ -383,7 +377,7 @@ class VideoMissionController extends Controller
         // ตรวจสอบความขัดแย้งของภารกิจ
         $conflictCheck = VideoMission::validateMissionConflicts($validated);
 
-        if (!$conflictCheck['valid']) {
+        if (! $conflictCheck['valid']) {
             // มี error - ไม่อนุญาตให้อัพเดท
             return back()
                 ->withInput()
@@ -401,7 +395,7 @@ class VideoMissionController extends Controller
         // ถ้ามี warnings แสดงด้วย
         $message = 'อัพเดทภารกิจสำเร็จ';
         if (count($conflictCheck['warnings']) > 0) {
-            $message .= ' (มีคำเตือน: ' . implode(', ', $conflictCheck['warnings']) . ')';
+            $message .= ' (มีคำเตือน: '.implode(', ', $conflictCheck['warnings']).')';
         }
 
         return redirect()
@@ -413,7 +407,6 @@ class VideoMissionController extends Controller
     /**
      * ลบภารกิจ
      *
-     * @param VideoMission $mission
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(VideoMission $mission)
@@ -439,12 +432,11 @@ class VideoMissionController extends Controller
     /**
      * Toggle active status
      *
-     * @param VideoMission $mission
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(VideoMission $mission)
     {
-        $mission->update(['is_active' => !$mission->is_active]);
+        $mission->update(['is_active' => ! $mission->is_active]);
 
         return response()->json([
             'success' => true,
@@ -458,7 +450,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายการการทำภารกิจ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function completions(Request $request)
@@ -507,7 +498,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายละเอียดการทำภารกิจ
      *
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\View\View
      */
     public function showCompletion(VideoMissionCompletion $completion)
@@ -520,8 +510,6 @@ class VideoMissionController extends Controller
     /**
      * ยืนยันการทำภารกิจ (Manual verification)
      *
-     * @param Request $request
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\RedirectResponse
      */
     public function verifyCompletion(Request $request, VideoMissionCompletion $completion)
@@ -547,8 +535,6 @@ class VideoMissionController extends Controller
     /**
      * ปฏิเสธการทำภารกิจ
      *
-     * @param Request $request
-     * @param VideoMissionCompletion $completion
      * @return \Illuminate\Http\RedirectResponse
      */
     public function rejectCompletion(Request $request, VideoMissionCompletion $completion)
@@ -557,7 +543,7 @@ class VideoMissionController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        if (!in_array($completion->status, ['completed', 'verified'])) {
+        if (! in_array($completion->status, ['completed', 'verified'])) {
             return back()->with('error', 'ไม่สามารถปฏิเสธการทำภารกิจนี้ได้');
         }
 
@@ -589,7 +575,6 @@ class VideoMissionController extends Controller
     /**
      * อัพเดท Rank Limits
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateRankLimits(Request $request)
@@ -627,7 +612,8 @@ class VideoMissionController extends Controller
             return back()->with('success', 'อัพเดทการตั้งค่า Rank Limits สำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -648,7 +634,6 @@ class VideoMissionController extends Controller
     /**
      * อัพเดทตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateSettings(Request $request)
@@ -683,7 +668,6 @@ class VideoMissionController extends Controller
     /**
      * แสดงรายงาน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function reports(Request $request)
@@ -735,7 +719,7 @@ class VideoMissionController extends Controller
             'completions as verified_completions' => function ($q) use ($startDate, $endDate) {
                 $q->where('status', 'verified')
                     ->whereBetween('completion_date', [$startDate, $endDate]);
-            }
+            },
         ])
             ->orderByDesc('verified_completions')
             ->take(10)
@@ -782,7 +766,7 @@ class VideoMissionController extends Controller
         sort($categories);
 
         // ตรวจสอบว่ามี API Key หรือไม่
-        $hasApiKey = !empty(env('YOUTUBE_API_KEY'));
+        $hasApiKey = ! empty(env('YOUTUBE_API_KEY'));
 
         return view('admin.video-missions.import-youtube', compact('categories', 'hasApiKey'));
     }
@@ -790,7 +774,6 @@ class VideoMissionController extends Controller
     /**
      * ประมวลผลนำเข้าวิดีโอจาก YouTube
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function processImportYouTube(Request $request)
@@ -809,7 +792,7 @@ class VideoMissionController extends Controller
 
         $apiKey = $request->input('api_key') ?: env('YOUTUBE_API_KEY');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาระบุ YouTube API Key',
@@ -820,7 +803,7 @@ class VideoMissionController extends Controller
         $channel = $request->input('channel');
         $channelId = $this->resolveChannelId($channel, $apiKey);
 
-        if (!$channelId) {
+        if (! $channelId) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบช่อง YouTube ที่ระบุ กรุณาตรวจสอบชื่อช่องหรือ Channel ID',
@@ -830,7 +813,7 @@ class VideoMissionController extends Controller
         // ดึงข้อมูลช่อง
         $channelInfo = $this->getChannelInfo($channelId, $apiKey);
 
-        if (!$channelInfo) {
+        if (! $channelInfo) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงข้อมูลช่องได้',
@@ -840,7 +823,7 @@ class VideoMissionController extends Controller
         // ดึงวิดีโอจากช่อง
         $uploadsPlaylistId = $channelInfo['uploadsPlaylistId'] ?? null;
 
-        if (!$uploadsPlaylistId) {
+        if (! $uploadsPlaylistId) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบ Playlist วิดีโอของช่อง',
@@ -889,7 +872,7 @@ class VideoMissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "นำเข้าสำเร็จ!",
+            'message' => 'นำเข้าสำเร็จ!',
             'data' => [
                 'channel' => $channelInfo['title'],
                 'total_videos' => count($videos),
@@ -917,7 +900,7 @@ class VideoMissionController extends Controller
                 return $matches[1];
             }
             if (preg_match('/youtube\.com\/@([\w-]+)/', $channel, $matches)) {
-                $channel = '@' . $matches[1];
+                $channel = '@'.$matches[1];
             }
         }
 
@@ -940,7 +923,7 @@ class VideoMissionController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (!empty($data['items'])) {
+                if (! empty($data['items'])) {
                     return $data['items'][0]['id']['channelId'] ?? null;
                 }
             }
@@ -954,7 +937,7 @@ class VideoMissionController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (!empty($data['items'])) {
+                if (! empty($data['items'])) {
                     return $data['items'][0]['id'] ?? null;
                 }
             }
@@ -968,7 +951,7 @@ class VideoMissionController extends Controller
 
             if ($response->successful()) {
                 $data = $response->json();
-                if (!empty($data['items'])) {
+                if (! empty($data['items'])) {
                     return $data['items'][0]['id'] ?? null;
                 }
             }
@@ -991,7 +974,7 @@ class VideoMissionController extends Controller
                 'part' => 'snippet,contentDetails,statistics',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -1039,7 +1022,7 @@ class VideoMissionController extends Controller
 
             $response = \Http::get('https://www.googleapis.com/youtube/v3/playlistItems', $params);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 break;
             }
 
@@ -1081,7 +1064,7 @@ class VideoMissionController extends Controller
                 'part' => 'contentDetails,statistics',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 return null;
             }
 
@@ -1111,6 +1094,7 @@ class VideoMissionController extends Controller
     {
         try {
             $interval = new \DateInterval($duration);
+
             return ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
         } catch (\Exception $e) {
             return 60; // default 1 minute
@@ -1124,7 +1108,7 @@ class VideoMissionController extends Controller
     {
         $videoId = $video['videoId'];
 
-        if (!$videoId) {
+        if (! $videoId) {
             return 'error';
         }
 

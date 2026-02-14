@@ -19,7 +19,7 @@ class QuotationPdfService
     public function generatePdf(SoftwareQuotation $quotation): string
     {
         // Check if DomPDF is available
-        if (!class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
+        if (! class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
             throw new \Exception('DomPDF is not installed. Please install it with: composer require barryvdh/laravel-dompdf');
         }
 
@@ -45,18 +45,19 @@ class QuotationPdfService
     /**
      * Download PDF
      */
-    public function download(SoftwareQuotation $quotation, string $filename = null): \Symfony\Component\HttpFoundation\Response
+    public function download(SoftwareQuotation $quotation, ?string $filename = null): \Symfony\Component\HttpFoundation\Response
     {
-        if (!$filename) {
-            $filename = 'quotation-' . $quotation->quotation_number . '.pdf';
+        if (! $filename) {
+            $filename = 'quotation-'.$quotation->quotation_number.'.pdf';
         }
 
-        if (!class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
+        if (! class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
             // Fallback: Return HTML with print dialog
             $html = $this->generateHtml($quotation);
+
             return response($html)
                 ->header('Content-Type', 'text/html')
-                ->header('Content-Disposition', 'inline; filename="' . $filename . '.html"');
+                ->header('Content-Disposition', 'inline; filename="'.$filename.'.html"');
         }
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.quotation', [
@@ -71,9 +72,10 @@ class QuotationPdfService
      */
     public function stream(SoftwareQuotation $quotation): \Symfony\Component\HttpFoundation\Response
     {
-        if (!class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
+        if (! class_exists('Barryvdh\DomPDF\Facade\Pdf')) {
             // Fallback: Return HTML
             $html = $this->generateHtml($quotation);
+
             return response($html)->header('Content-Type', 'text/html');
         }
 
@@ -81,7 +83,7 @@ class QuotationPdfService
             'quotation' => $quotation->load(['items.selectedOptions', 'softwareProduct']),
         ]);
 
-        return $pdf->stream('quotation-' . $quotation->quotation_number . '.pdf');
+        return $pdf->stream('quotation-'.$quotation->quotation_number.'.pdf');
     }
 
     /**
@@ -92,9 +94,11 @@ class QuotationPdfService
         try {
             $pdfContent = $this->generatePdf($quotation);
             \Illuminate\Support\Facades\Storage::put($path, $pdfContent);
+
             return true;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to save PDF: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Failed to save PDF: '.$e->getMessage());
+
             return false;
         }
     }

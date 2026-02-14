@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\JobPosting;
 use App\Models\Department;
+use App\Models\JobPosting;
 use App\Models\Position;
 use Illuminate\Http\Request;
 
@@ -20,10 +20,10 @@ class JobPostingController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('job_title', 'like', '%'.$search.'%')
-                  ->orWhere('job_code', 'like', '%'.$search.'%')
-                  ->orWhere('job_description', 'like', '%'.$search.'%');
+                    ->orWhere('job_code', 'like', '%'.$search.'%')
+                    ->orWhere('job_description', 'like', '%'.$search.'%');
             });
         }
 
@@ -86,7 +86,7 @@ class JobPostingController extends Controller
         JobPosting::create($validated);
 
         return redirect()->route('admin.hrm.recruitment.jobs.index')
-                        ->with('success', __('Job posting created successfully'));
+            ->with('success', __('Job posting created successfully'));
     }
 
     /**
@@ -136,7 +136,7 @@ class JobPostingController extends Controller
         $job->update($validated);
 
         return redirect()->route('admin.hrm.recruitment.jobs.index')
-                        ->with('success', __('Job posting updated successfully'));
+            ->with('success', __('Job posting updated successfully'));
     }
 
     /**
@@ -147,6 +147,6 @@ class JobPostingController extends Controller
         $job->delete();
 
         return redirect()->route('admin.hrm.recruitment.jobs.index')
-                        ->with('success', __('Job posting deleted successfully'));
+            ->with('success', __('Job posting deleted successfully'));
     }
 }

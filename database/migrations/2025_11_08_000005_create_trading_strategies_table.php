@@ -26,7 +26,7 @@ return new class extends Migration
                 'grid_trading',
                 'arbitrage',
                 'ai_ml',
-                'custom'
+                'custom',
             ])->default('custom');
 
             // Strategy Configuration

@@ -81,8 +81,11 @@ class SoftwareLicense extends Model
 
     // Status Constants
     const STATUS_ACTIVE = 'active';
+
     const STATUS_INACTIVE = 'inactive';
+
     const STATUS_EXPIRED = 'expired';
+
     const STATUS_REVOKED = 'revoked';
 
     /**
@@ -131,10 +134,10 @@ class SoftwareLicense extends Model
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ACTIVE)
-                    ->where(function($q) {
-                        $q->whereNull('expires_at')
-                          ->orWhere('expires_at', '>', now());
-                    });
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            });
     }
 
     /**
@@ -166,7 +169,7 @@ class SoftwareLicense extends Model
      */
     public function canDownload(): bool
     {
-        if (!$this->isValid()) {
+        if (! $this->isValid()) {
             return false;
         }
 
@@ -183,7 +186,7 @@ class SoftwareLicense extends Model
      */
     public function canActivate(): bool
     {
-        if (!$this->isValid()) {
+        if (! $this->isValid()) {
             return false;
         }
 
@@ -195,7 +198,7 @@ class SoftwareLicense extends Model
      */
     public function activate(string $device, string $ip): bool
     {
-        if (!$this->canActivate()) {
+        if (! $this->canActivate()) {
             return false;
         }
 
@@ -255,7 +258,7 @@ class SoftwareLicense extends Model
      */
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             self::STATUS_ACTIVE => '<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-bold">✅ ใช้งานได้</span>',
             self::STATUS_INACTIVE => '<span class="px-3 py-1 bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 rounded-full text-sm font-bold">⏸️ ไม่ได้ใช้งาน</span>',
             self::STATUS_EXPIRED => '<span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-sm font-bold">⏰ หมดอายุ</span>',

@@ -2,15 +2,13 @@
 
 namespace Tests\Unit\Services;
 
-use Tests\TestCase;
-use App\Services\GameRoomManager;
+use App\Models\Game;
 use App\Models\GameRoom;
 use App\Models\GameRoomPlayer;
-use App\Models\GameRoomItem;
-use App\Models\Game;
 use App\Models\User;
+use App\Services\GameRoomManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
 
 /**
  * GameRoomManager Unit Tests
@@ -22,6 +20,7 @@ class GameRoomManagerTest extends TestCase
     use RefreshDatabase;
 
     protected GameRoomManager $manager;
+
     protected Game $game;
 
     /**
@@ -31,7 +30,7 @@ class GameRoomManagerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = new GameRoomManager();
+        $this->manager = new GameRoomManager;
 
         // สร้างเกม Snake.io สำหรับทดสอบ
         $this->game = Game::factory()->create([

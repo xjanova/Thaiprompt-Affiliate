@@ -35,8 +35,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * Dashboard AI Selection
-     *
-     * @return View
      */
     public function index(): View
     {
@@ -81,7 +79,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * รัน AI Selection ทันที
      *
-     * @param Request $request
      * @return JsonResponse|RedirectResponse
      */
     public function runSelection(Request $request)
@@ -94,6 +91,7 @@ class OfficialShopSelectionController extends Controller
 
         if ($result['success']) {
             $message = "รัน AI Selection สำเร็จ! เลือกใหม่ {$result['stats']['new_selections']} รายการ";
+
             return back()->with('success', $message);
         }
 
@@ -102,9 +100,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * แสดงรายการ Warnings
-     *
-     * @param Request $request
-     * @return View
      */
     public function warnings(Request $request): View
     {
@@ -128,7 +123,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * ประมวลผล Warnings
      *
-     * @param Request $request
      * @return JsonResponse|RedirectResponse
      */
     public function processWarnings(Request $request)
@@ -148,8 +142,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * ถอดสินค้าออกจาก Official Shop
      *
-     * @param Request $request
-     * @param OfficialShopProduct $entry
      * @return JsonResponse|RedirectResponse
      */
     public function removeProduct(Request $request, OfficialShopProduct $entry)
@@ -169,8 +161,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * หน้าตั้งค่า
-     *
-     * @return View
      */
     public function settings(): View
     {
@@ -184,9 +174,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * บันทึกการตั้งค่า
-     *
-     * @param Request $request
-     * @return RedirectResponse
      */
     public function updateSettings(Request $request): RedirectResponse
     {
@@ -240,7 +227,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * คำนวณสินค้าขายดีรายเดือน
      *
-     * @param Request $request
      * @return JsonResponse|RedirectResponse
      */
     public function calculateBestSellers(Request $request)
@@ -256,6 +242,7 @@ class OfficialShopSelectionController extends Controller
 
         if (isset($result['products'])) {
             $count = count($result['products']);
+
             return back()->with('success', "คำนวณสินค้าขายดีสำเร็จ! พบ {$count} รายการ");
         }
 
@@ -264,9 +251,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * แสดงรายการสินค้าใหม่ที่กำลังโปรโมท
-     *
-     * @param Request $request
-     * @return View
      */
     public function newProductPromotions(Request $request): View
     {
@@ -288,8 +272,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * ยกเลิกโปรโมทสินค้าใหม่
      *
-     * @param Request $request
-     * @param NewProductPromotion $promotion
      * @return JsonResponse|RedirectResponse
      */
     public function cancelPromotion(Request $request, NewProductPromotion $promotion)
@@ -309,10 +291,6 @@ class OfficialShopSelectionController extends Controller
 
     /**
      * คำนวณคะแนนสินค้าแบบ Preview
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return JsonResponse
      */
     public function previewScore(Request $request, Product $product): JsonResponse
     {
@@ -334,8 +312,6 @@ class OfficialShopSelectionController extends Controller
     /**
      * เพิ่มสินค้าเข้า Official Shop ด้วยตนเอง
      *
-     * @param Request $request
-     * @param Product $product
      * @return JsonResponse|RedirectResponse
      */
     public function addProductManually(Request $request, Product $product)
@@ -359,14 +335,11 @@ class OfficialShopSelectionController extends Controller
             ]);
         }
 
-        return back()->with('success', 'เพิ่มสินค้าเข้า Official Shop สำเร็จ: ' . $product->name);
+        return back()->with('success', 'เพิ่มสินค้าเข้า Official Shop สำเร็จ: '.$product->name);
     }
 
     /**
      * แสดงรายการสินค้าขายดี
-     *
-     * @param Request $request
-     * @return View
      */
     public function bestSellers(Request $request): View
     {

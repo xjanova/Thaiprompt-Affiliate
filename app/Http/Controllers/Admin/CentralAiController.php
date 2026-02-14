@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CentralAiSetting;
-use App\Services\AI\LocalAiManager;
 use App\Services\AI\LlamaInstallationService;
+use App\Services\AI\LocalAiManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,9 +36,6 @@ class CentralAiController extends Controller
 
     /**
      * Constructor
-     *
-     * @param LocalAiManager $localAiManager
-     * @param LlamaInstallationService $llamaInstaller
      */
     public function __construct(
         LocalAiManager $localAiManager,
@@ -52,15 +49,13 @@ class CentralAiController extends Controller
      * แสดงหน้าหลัก Central AI
      * ถ้ายังไม่ได้ติดตั้ง → แสดง Wizard
      * ถ้าติดตั้งแล้ว → แสดง Dashboard
-     *
-     * @return View
      */
     public function index(): View
     {
         $setting = CentralAiSetting::getActive();
 
         // ถ้ายังไม่ได้ติดตั้ง แสดง Wizard
-        if (!$setting->setup_completed) {
+        if (! $setting->setup_completed) {
             return $this->wizard();
         }
 
@@ -72,8 +67,6 @@ class CentralAiController extends Controller
      * แสดงหน้า Setup Wizard
      *
      * ถ้า Ollama ติดตั้งแล้วจะ redirect ไปหน้า Control Panel
-     *
-     * @return View|RedirectResponse
      */
     public function wizard(): View|RedirectResponse
     {
@@ -106,8 +99,6 @@ class CentralAiController extends Controller
 
     /**
      * แสดงหน้า Dashboard
-     *
-     * @return View
      */
     public function dashboard(): View
     {
@@ -115,7 +106,7 @@ class CentralAiController extends Controller
 
         // ทำ health check อัตโนมัติถ้าเกิน 5 นาที
         if (
-            !$setting->last_health_check_at ||
+            ! $setting->last_health_check_at ||
             $setting->last_health_check_at->lt(now()->subMinutes(5))
         ) {
             $setting->performHealthCheck();
@@ -136,8 +127,6 @@ class CentralAiController extends Controller
 
     /**
      * ตรวจสอบ system resources (CPU, RAM, Disk)
-     *
-     * @return JsonResponse
      */
     public function checkSystemResources(): JsonResponse
     {
@@ -163,8 +152,6 @@ class CentralAiController extends Controller
 
     /**
      * แสดงหน้า Ollama Management
-     *
-     * @return View
      */
     public function ollamaIndex(): View
     {
@@ -183,8 +170,6 @@ class CentralAiController extends Controller
 
     /**
      * ตรวจสอบสถานะ Ollama
-     *
-     * @return JsonResponse
      */
     public function checkOllamaStatus(): JsonResponse
     {
@@ -218,8 +203,6 @@ class CentralAiController extends Controller
 
     /**
      * ติดตั้ง Ollama
-     *
-     * @return JsonResponse
      */
     public function installOllama(): JsonResponse
     {
@@ -230,7 +213,7 @@ class CentralAiController extends Controller
             if ($status['is_installed']) {
                 // อัพเดทสถานะใน settings (กรณีติดตั้งด้วยตนเองผ่าน SSH)
                 $setting = CentralAiSetting::getActive();
-                if (!$setting->is_ollama_installed) {
+                if (! $setting->is_ollama_installed) {
                     $setting->update([
                         'is_ollama_installed' => true,
                         'ollama_status' => 'running',
@@ -248,7 +231,7 @@ class CentralAiController extends Controller
             // ติดตั้ง Ollama
             $result = $this->llamaInstaller->installOllama();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'การติดตั้ง Ollama ล้มเหลว',
@@ -296,9 +279,6 @@ class CentralAiController extends Controller
 
     /**
      * ดาวน์โหลดและติดตั้งโมเดล
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function downloadModel(Request $request): JsonResponse
     {
@@ -314,10 +294,10 @@ class CentralAiController extends Controller
             $modelName = $request->input('model');
 
             // ตรวจสอบว่า Ollama service ทำงานอยู่ ถ้าไม่ ให้เริ่มก่อน
-            if (!$this->localAiManager->isRunning()) {
+            if (! $this->localAiManager->isRunning()) {
                 $startResult = $this->localAiManager->start();
                 // ถ้า start() ล้มเหลว ตรวจสอบอีกครั้งว่า Ollama อาจเริ่มจาก systemd แล้ว
-                if (!($startResult['success'] ?? false) && !$this->localAiManager->isRunning()) {
+                if (! ($startResult['success'] ?? false) && ! $this->localAiManager->isRunning()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'ไม่สามารถเริ่ม Ollama Service ได้',
@@ -331,7 +311,7 @@ class CentralAiController extends Controller
             // ดาวน์โหลดโมเดล
             $result = $this->llamaInstaller->downloadModel($modelName);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => 'การดาวน์โหลดโมเดลล้มเหลว',
@@ -367,8 +347,6 @@ class CentralAiController extends Controller
 
     /**
      * เริ่มการทำงานของ Ollama service
-     *
-     * @return JsonResponse
      */
     public function startOllama(): JsonResponse
     {
@@ -399,8 +377,6 @@ class CentralAiController extends Controller
 
     /**
      * หยุดการทำงานของ Ollama service
-     *
-     * @return JsonResponse
      */
     public function stopOllama(): JsonResponse
     {
@@ -447,8 +423,6 @@ class CentralAiController extends Controller
 
     /**
      * รีสตาร์ท Ollama service
-     *
-     * @return JsonResponse
      */
     public function restartOllama(): JsonResponse
     {
@@ -479,8 +453,6 @@ class CentralAiController extends Controller
 
     /**
      * ตรวจสอบสถานะ PostXAgent
-     *
-     * @return JsonResponse
      */
     public function checkPostXAgentStatus(): JsonResponse
     {
@@ -507,8 +479,6 @@ class CentralAiController extends Controller
 
     /**
      * แสดงหน้าตั้งค่า AI Settings
-     *
-     * @return View
      */
     public function settings(): View
     {
@@ -521,9 +491,6 @@ class CentralAiController extends Controller
 
     /**
      * บันทึกการตั้งค่า (API)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSettings(Request $request): JsonResponse
     {
@@ -595,9 +562,6 @@ class CentralAiController extends Controller
 
     /**
      * ลบโมเดล
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function deleteModel(Request $request): JsonResponse
     {
@@ -611,7 +575,7 @@ class CentralAiController extends Controller
             $modelName = $request->input('model');
             $result = $this->llamaInstaller->deleteModel($modelName);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['message'] ?? 'ไม่สามารถลบโมเดลได้',
@@ -645,9 +609,6 @@ class CentralAiController extends Controller
 
     /**
      * ทดสอบ Chat กับโมเดล
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function chatTest(Request $request): JsonResponse
     {
@@ -673,7 +634,7 @@ class CentralAiController extends Controller
             ];
 
             // ใส่ system prompt ถ้ามีการตั้งค่าไว้ (กำหนดขอบเขตการตอบ)
-            if (!empty($setting->system_prompt)) {
+            if (! empty($setting->system_prompt)) {
                 $payload['system'] = $setting->system_prompt;
             }
 
@@ -702,7 +663,7 @@ class CentralAiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'โมเดลไม่ตอบกลับ: ' . $response->body(),
+                'message' => 'โมเดลไม่ตอบกลับ: '.$response->body(),
             ], 500);
         } catch (\Exception $e) {
             Log::error('Chat test failed', [
@@ -714,15 +675,13 @@ class CentralAiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ดึงรายการโมเดลที่กำลังโหลดอยู่ใน memory
-     *
-     * @return JsonResponse
      */
     public function getRunningModels(): JsonResponse
     {
@@ -744,8 +703,6 @@ class CentralAiController extends Controller
 
     /**
      * ดึงข้อมูลการใช้ทรัพยากร
-     *
-     * @return JsonResponse
      */
     public function getResourceUsage(): JsonResponse
     {
@@ -771,9 +728,6 @@ class CentralAiController extends Controller
 
     /**
      * เสร็จสิ้นการติดตั้ง (Wizard Step สุดท้าย)
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function completeSetup(Request $request): JsonResponse
     {
@@ -813,8 +767,6 @@ class CentralAiController extends Controller
 
     /**
      * ทำ Health Check
-     *
-     * @return JsonResponse
      */
     public function performHealthCheck(): JsonResponse
     {
@@ -842,15 +794,13 @@ class CentralAiController extends Controller
 
     /**
      * ตรวจจับ system resources (CPU, RAM, Disk, OS)
-     *
-     * @return array
      */
     protected function detectSystemResources(): array
     {
         // ตรวจสอบว่า exec() / shell_exec() สามารถใช้งานได้หรือไม่
         $disabledFunctions = array_map('trim', explode(',', ini_get('disable_functions') ?: ''));
-        $canExec = function_exists('exec') && !in_array('exec', $disabledFunctions);
-        $canShellExec = function_exists('shell_exec') && !in_array('shell_exec', $disabledFunctions);
+        $canExec = function_exists('exec') && ! in_array('exec', $disabledFunctions);
+        $canShellExec = function_exists('shell_exec') && ! in_array('shell_exec', $disabledFunctions);
 
         $resources = [
             'cpu_cores' => null,
@@ -938,7 +888,7 @@ class CentralAiController extends Controller
      *
      * ดึงข้อมูลจาก config/central-ai.php แทนการ hard-code
      *
-     * @param array $resources ข้อมูล system resources (cpu_cores, ram_gb, disk_gb, etc.)
+     * @param  array  $resources  ข้อมูล system resources (cpu_cores, ram_gb, disk_gb, etc.)
      * @return array รายการโมเดลที่แนะนำพร้อม flag recommended
      */
     protected function getRecommendedModels(array $resources): array
@@ -955,7 +905,7 @@ class CentralAiController extends Controller
                 $models[] = [
                     'name' => $model['name'],
                     'size' => $model['size'],
-                    'description' => $model['description'] . ' (ไม่สามารถตรวจจับ RAM ได้ กรุณาเลือกเอง)',
+                    'description' => $model['description'].' (ไม่สามารถตรวจจับ RAM ได้ กรุณาเลือกเอง)',
                     'recommended' => $index === 2, // แนะนำโมเดลขนาดกลาง (llama3:8b) เป็นค่าเริ่มต้น
                 ];
             }
@@ -982,7 +932,7 @@ class CentralAiController extends Controller
         }
 
         // ถ้าไม่มีโมเดลที่เหมาะสม ให้แสดงโมเดลแรกจาก config (ขนาดเล็กสุด)
-        if (empty($models) && !empty($configModels)) {
+        if (empty($models) && ! empty($configModels)) {
             $firstModel = $configModels[0];
             $models[] = [
                 'name' => $firstModel['name'],

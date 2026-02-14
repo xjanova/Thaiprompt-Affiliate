@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง rider_jobs
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -33,7 +31,7 @@ return new class extends Migration
                 'food',         // ส่งอาหาร
                 'document',     // ส่งเอกสาร
                 'service',      // ให้บริการ
-                'pickup'        // รับของ
+                'pickup',        // รับของ
             ])->default('delivery');
             $table->string('title');
             $table->text('description')->nullable();
@@ -76,7 +74,7 @@ return new class extends Migration
                 'delivered',        // ส่งแล้ว
                 'completed',        // เสร็จสิ้น
                 'cancelled',        // ยกเลิก
-                'failed'            // ล้มเหลว
+                'failed',            // ล้มเหลว
             ])->default('pending');
             $table->text('cancellation_reason')->nullable();
             $table->enum('cancelled_by', ['rider', 'customer', 'system'])->nullable();
@@ -116,8 +114,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง rider_jobs
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
  * ช่วยให้แอดมินสามารถจัดการเมนูผ่าน UI ได้
  *
  * @version 1.0.0
+ *
  * @since 2025-12-04
  */
 class MenuItemSeeder extends Seeder
@@ -40,6 +41,7 @@ class MenuItemSeeder extends Seeder
         if (MenuItem::count() > 0) {
             $this->log('⚠️ ตาราง menu_items มีข้อมูลอยู่แล้ว กำลังข้าม...', 'warn');
             $this->log('   หากต้องการนำเข้าใหม่ กรุณาลบข้อมูลเก่าก่อน');
+
             return;
         }
 
@@ -52,6 +54,7 @@ class MenuItemSeeder extends Seeder
 
                 if (empty($menus)) {
                     $this->log("⚠️ ไม่พบเมนูสำหรับ {$type} ใน config/menus.php", 'warn');
+
                     continue;
                 }
 
@@ -73,9 +76,7 @@ class MenuItemSeeder extends Seeder
     /**
      * Log message (รองรับทั้ง console และ controller)
      *
-     * @param string $message
-     * @param string $type info|warn|error
-     * @return void
+     * @param  string  $type  info|warn|error
      */
     protected function log(string $message, string $type = 'info'): void
     {
@@ -88,10 +89,10 @@ class MenuItemSeeder extends Seeder
     /**
      * นำเข้าเมนูและ submenu แบบ recursive
      *
-     * @param array $menus รายการเมนู
-     * @param string $dashboardType ประเภท dashboard
-     * @param int|null $parentId Parent menu ID
-     * @param string $keyPrefix Prefix สำหรับ menu_key
+     * @param  array  $menus  รายการเมนู
+     * @param  string  $dashboardType  ประเภท dashboard
+     * @param  int|null  $parentId  Parent menu ID
+     * @param  string  $keyPrefix  Prefix สำหรับ menu_key
      */
     protected function importMenus(array $menus, string $dashboardType, ?int $parentId = null, string $keyPrefix = ''): void
     {
@@ -105,9 +106,9 @@ class MenuItemSeeder extends Seeder
 
             // สร้าง menu_key
             if ($isDivider) {
-                $menuKey = $keyPrefix . $dashboardType . '.divider.' . uniqid();
+                $menuKey = $keyPrefix.$dashboardType.'.divider.'.uniqid();
             } else {
-                $menuKey = $keyPrefix . $dashboardType . '.' . ($menuId ?? uniqid());
+                $menuKey = $keyPrefix.$dashboardType.'.'.($menuId ?? uniqid());
             }
 
             // ดึง order
@@ -136,12 +137,12 @@ class MenuItemSeeder extends Seeder
             ]);
 
             // นำเข้า submenu ถ้ามี
-            if (!empty($menu['submenu'])) {
+            if (! empty($menu['submenu'])) {
                 $this->importMenus(
                     $menu['submenu'],
                     $dashboardType,
                     $menuItem->id,
-                    $menuKey . '.'
+                    $menuKey.'.'
                 );
             }
         }

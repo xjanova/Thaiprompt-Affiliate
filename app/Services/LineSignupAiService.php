@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\LineSignupSession;
-use App\Models\AiProvider;
 use App\Models\AiModel;
-use App\Services\AI\PostXAgentService;
-use App\Services\AI\PostXAgentHealthCheck;
+use App\Models\AiProvider;
+use App\Models\LineSignupSession;
 use App\Services\AI\AiServiceFactory;
+use App\Services\AI\PostXAgentHealthCheck;
+use App\Services\AI\PostXAgentService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -30,7 +30,7 @@ class LineSignupAiService
     {
         // ตรวจสอบว่าเปิดใช้งาน PostXAgent สำหรับ LINE signup หรือไม่
         if (config('postxagent.line_signup.enabled', false)) {
-            $this->healthCheck = new PostXAgentHealthCheck();
+            $this->healthCheck = new PostXAgentHealthCheck;
             $this->usePostXAgent = $this->healthCheck->isAvailable();
         }
     }
@@ -101,7 +101,7 @@ EOT;
         // Add step-specific instructions
         $stepInstructions = $this->getStepInstructions($step);
 
-        return $basePrompt . "\n\n" . $stepInstructions;
+        return $basePrompt."\n\n".$stepInstructions;
     }
 
     /**
@@ -110,7 +110,7 @@ EOT;
     protected function getStepInstructions(string $step): string
     {
         $instructions = [
-            'welcome' => <<<EOT
+            'welcome' => <<<'EOT'
 ขั้นตอน: ต้อนรับ
 
 ภารกิจของคุณ:
@@ -128,7 +128,7 @@ EOT;
 
 พร้อมเริ่มต้นเส้นทางสู่อิสรภาพทางการเงินกันไหมคะ? 🚀"
 EOT,
-            'name' => <<<EOT
+            'name' => <<<'EOT'
 ขั้นตอน: กรอกชื่อ
 
 ภารกิจของคุณ:
@@ -142,7 +142,7 @@ EOT,
 - ขอให้กรอกใหม่พร้อมตัวอย่าง
 - ไม่ทำให้รู้สึกผิดหรืออับอาย
 EOT,
-            'email' => <<<EOT
+            'email' => <<<'EOT'
 ขั้นตอน: กรอกอีเมล
 
 ภารกิจของคุณ:
@@ -156,7 +156,7 @@ EOT,
 - จะได้รับ Newsletter เกี่ยวกับเทคนิคการขาย
 - สามารถยกเลิกการรับข่าวสารได้ทุกเมื่อ
 EOT,
-            'phone' => <<<EOT
+            'phone' => <<<'EOT'
 ขั้นตอน: กรอกเบอร์โทรศัพท์
 
 ภารกิจของคุณ:
@@ -170,7 +170,7 @@ EOT,
 - ไม่แชร์เบอร์กับบุคคลที่สาม
 - ใช้เฉพาะการยืนยันตัวตนเท่านั้น
 EOT,
-            'otp' => <<<EOT
+            'otp' => <<<'EOT'
 ขั้นตอน: ยืนยัน OTP
 
 ภารกิจของคุณ:
@@ -203,7 +203,7 @@ EOT,
 - อย่าแชร์รหัสผ่านกับใคร
 - เปลี่ยนรหัสผ่านทุก 3 เดือน
 EOT,
-            'referral' => <<<EOT
+            'referral' => <<<'EOT'
 ขั้นตอน: กรอกรหัสผู้แนะนำ
 
 ภารกิจของคุณ:
@@ -223,7 +223,7 @@ EOT,
 - ระบบจะจับคู่ผู้แนะนำให้อัตโนมัติ
 - ยังได้รับโบนัสต้อนรับเหมือนเดิม
 EOT,
-            'confirmation' => <<<EOT
+            'confirmation' => <<<'EOT'
 ขั้นตอน: ยืนยันข้อมูล
 
 ภารกิจของคุณ:
@@ -290,7 +290,7 @@ EOT;
             }
 
             // Fallback สุดท้าย: ใช้ smart default response
-            $cacheKey = 'ai_response_' . md5($systemPrompt . $userPrompt);
+            $cacheKey = 'ai_response_'.md5($systemPrompt.$userPrompt);
 
             return Cache::remember($cacheKey, 3600, function () use ($userPrompt) {
                 return $this->getSmartDefaultResponse($userPrompt);
@@ -301,16 +301,12 @@ EOT;
                 'use_postxagent' => $this->usePostXAgent,
             ]);
 
-            return "ขออภัยค่ะ ตอนนี้ระบบ AI กำลังยุ่งอยู่ 🙏 แต่ไม่ต้องกังวลนะคะ คุณสามารถดำเนินการสมัครสมาชิกต่อได้เลย หรือหากมีคำถาม ติดต่อทีมงานได้ที่ Line: @thaiprompt 💚";
+            return 'ขออภัยค่ะ ตอนนี้ระบบ AI กำลังยุ่งอยู่ 🙏 แต่ไม่ต้องกังวลนะคะ คุณสามารถดำเนินการสมัครสมาชิกต่อได้เลย หรือหากมีคำถาม ติดต่อทีมงานได้ที่ Line: @thaiprompt 💚';
         }
     }
 
     /**
      * เรียกใช้ PostXAgent AI
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @return string|null
      */
     protected function callPostXAgent(string $systemPrompt, string $userPrompt): ?string
     {
@@ -318,15 +314,16 @@ EOT;
             // ดึง provider/model ที่ดีที่สุดจาก PostXAgent
             $best = $this->healthCheck?->selectBestAvailableProvider();
 
-            if (!$best) {
+            if (! $best) {
                 Log::warning('LineSignupAi: No available provider from PostXAgent');
+
                 return null;
             }
 
             // สร้าง dummy AiProvider และ AiModel สำหรับ PostXAgent
             $provider = new AiProvider([
                 'name' => 'postxagent',
-                'display_name' => 'PostXAgent - ' . ($best['provider']['name'] ?? 'Unknown'),
+                'display_name' => 'PostXAgent - '.($best['provider']['name'] ?? 'Unknown'),
                 'api_endpoint' => config('postxagent.api_url'),
                 'is_active' => true,
                 'config' => [
@@ -355,7 +352,7 @@ EOT;
 
             $content = $result['content'] ?? '';
 
-            if (!empty($content)) {
+            if (! empty($content)) {
                 Log::info('LineSignupAi: PostXAgent response success', [
                     'provider' => $best['provider']['name'] ?? 'unknown',
                     'model' => $best['model']['name'] ?? 'unknown',
@@ -377,10 +374,6 @@ EOT;
 
     /**
      * เรียกใช้ AI provider จากระบบ (fallback)
-     *
-     * @param string $systemPrompt
-     * @param string $userPrompt
-     * @return string|null
      */
     protected function callSystemAiProvider(string $systemPrompt, string $userPrompt): ?string
     {
@@ -391,13 +384,13 @@ EOT;
                 ->whereIn('name', ['meta-local', 'deepseek-local', 'deepseek', 'openai'])
                 ->first();
 
-            if (!$provider) {
+            if (! $provider) {
                 return null;
             }
 
             $model = $provider->models()->where('is_active', true)->first();
 
-            if (!$model) {
+            if (! $model) {
                 return null;
             }
 
@@ -415,7 +408,7 @@ EOT;
 
             $content = $result['content'] ?? '';
 
-            if (!empty($content)) {
+            if (! empty($content)) {
                 Log::info('LineSignupAi: System AI response success', [
                     'provider' => $provider->name,
                     'model' => $model->model_identifier,
@@ -436,8 +429,6 @@ EOT;
 
     /**
      * ตรวจสอบว่า PostXAgent พร้อมใช้งานหรือไม่
-     *
-     * @return bool
      */
     public function isPostXAgentAvailable(): bool
     {
@@ -446,8 +437,6 @@ EOT;
 
     /**
      * ดึงสถานะ AI providers ทั้งหมด
-     *
-     * @return array
      */
     public function getAiProvidersStatus(): array
     {
@@ -471,7 +460,7 @@ EOT;
         // System providers
         $systemProviders = AiProvider::where('is_active', true)
             ->where('is_available', true)
-            ->with(['models' => fn($q) => $q->where('is_active', true)])
+            ->with(['models' => fn ($q) => $q->where('is_active', true)])
             ->get();
 
         if ($systemProviders->isNotEmpty()) {

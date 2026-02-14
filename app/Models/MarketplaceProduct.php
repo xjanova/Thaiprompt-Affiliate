@@ -102,7 +102,7 @@ class MarketplaceProduct extends Model
     public function scopeAvailable($query)
     {
         return $query->where('is_available', true)
-                     ->where('stock_quantity', '>', 0);
+            ->where('stock_quantity', '>', 0);
     }
 
     /**
@@ -111,8 +111,8 @@ class MarketplaceProduct extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where('name', 'like', "%{$search}%")
-                     ->orWhere('description', 'like', "%{$search}%")
-                     ->orWhere('brand', 'like', "%{$search}%");
+            ->orWhere('description', 'like', "%{$search}%")
+            ->orWhere('brand', 'like', "%{$search}%");
     }
 
     /**

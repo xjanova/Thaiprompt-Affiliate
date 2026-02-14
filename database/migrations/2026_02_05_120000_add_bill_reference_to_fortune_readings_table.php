@@ -8,13 +8,11 @@ return new class extends Migration
 {
     /**
      * เพิ่ม bill_reference สำหรับอ้างอิงบิลดูดวง
-     *
-     * @return void
      */
     public function up(): void
     {
         Schema::table('fortune_readings', function (Blueprint $table) {
-            if (!Schema::hasColumn('fortune_readings', 'bill_reference')) {
+            if (! Schema::hasColumn('fortune_readings', 'bill_reference')) {
                 $table->string('bill_reference', 20)->nullable()->unique()->after('id');
                 $table->index('bill_reference', 'fortune_bill_ref_idx');
             }
@@ -23,8 +21,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ bill_reference
-     *
-     * @return void
      */
     public function down(): void
     {

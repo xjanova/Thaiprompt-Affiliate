@@ -118,8 +118,7 @@ class FortuneResponseTemplate extends Model
     /**
      * ดึงเทมเพลตเริ่มต้นตามประเภท
      *
-     * @param string $type ประเภท: basic/deep/welcome/payment/limit_exceeded/error
-     * @return self|null
+     * @param  string  $type  ประเภท: basic/deep/welcome/payment/limit_exceeded/error
      */
     public static function getDefault(string $type): ?self
     {
@@ -135,9 +134,6 @@ class FortuneResponseTemplate extends Model
 
     /**
      * ดึงเทมเพลตตาม slug
-     *
-     * @param string $slug
-     * @return self|null
      */
     public static function findBySlug(string $slug): ?self
     {
@@ -147,7 +143,6 @@ class FortuneResponseTemplate extends Model
     /**
      * ดึงเทมเพลตทั้งหมดตามประเภท
      *
-     * @param string $type
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getByType(string $type)
@@ -180,7 +175,7 @@ class FortuneResponseTemplate extends Model
      * - {max_free} จำนวนครั้งฟรีสูงสุด
      * - {price} ราคาต่อครั้ง
      *
-     * @param array $data ข้อมูลสำหรับแทนที่ placeholders
+     * @param  array  $data  ข้อมูลสำหรับแทนที่ placeholders
      * @return string ข้อความที่แทนที่แล้ว
      */
     public function render(array $data = []): string
@@ -188,16 +183,16 @@ class FortuneResponseTemplate extends Model
         $output = '';
 
         // ข้อความส่วนหัว
-        if (!empty($this->header_text)) {
-            $output .= $this->replacePlaceholders($this->header_text, $data) . "\n\n";
+        if (! empty($this->header_text)) {
+            $output .= $this->replacePlaceholders($this->header_text, $data)."\n\n";
         }
 
         // เนื้อหาหลัก
         $output .= $this->replacePlaceholders($this->body, $data);
 
         // ข้อความส่วนท้าย
-        if (!empty($this->footer_text)) {
-            $output .= "\n\n" . $this->replacePlaceholders($this->footer_text, $data);
+        if (! empty($this->footer_text)) {
+            $output .= "\n\n".$this->replacePlaceholders($this->footer_text, $data);
         }
 
         return trim($output);
@@ -206,9 +201,8 @@ class FortuneResponseTemplate extends Model
     /**
      * แทนที่ placeholders ในข้อความ
      *
-     * @param string $text ข้อความต้นฉบับ
-     * @param array $data ข้อมูลสำหรับแทนที่
-     * @return string
+     * @param  string  $text  ข้อความต้นฉบับ
+     * @param  array  $data  ข้อมูลสำหรับแทนที่
      */
     protected function replacePlaceholders(string $text, array $data): string
     {
@@ -240,7 +234,7 @@ class FortuneResponseTemplate extends Model
     /**
      * จัดรูปแบบวันที่เป็นภาษาไทย
      *
-     * @param \Carbon\Carbon $date
+     * @param  \Carbon\Carbon  $date
      * @return string เช่น "29 มกราคม 2569"
      */
     protected function formatThaiDate($date): string
@@ -268,7 +262,7 @@ class FortuneResponseTemplate extends Model
      */
     public function hasHeaderImage(): bool
     {
-        return !empty($this->header_image_url);
+        return ! empty($this->header_image_url);
     }
 
     /**
@@ -276,7 +270,7 @@ class FortuneResponseTemplate extends Model
      */
     public function hasFooterImage(): bool
     {
-        return !empty($this->footer_image_url);
+        return ! empty($this->footer_image_url);
     }
 
     /**

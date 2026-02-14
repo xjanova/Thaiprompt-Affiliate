@@ -11,27 +11,25 @@ return new class extends Migration
 
     /**
      * เพิ่มคอลัมน์ retry_count และ last_retry_at สำหรับระบบ retry อัตโนมัติ
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง line_broadcast_messages มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('line_broadcast_messages')) {
+        if (! Schema::hasTable('line_broadcast_messages')) {
             return;
         }
 
         Schema::table('line_broadcast_messages', function (Blueprint $table) {
             // เพิ่มคอลัมน์สำหรับการ retry
-            $this->safeAddColumn($table, 'line_broadcast_messages', 'retry_count', function($table) {
+            $this->safeAddColumn($table, 'line_broadcast_messages', 'retry_count', function ($table) {
                 $table->integer('retry_count')->default(0)->comment('จำนวนครั้งที่พยายามส่งซ้ำ')->after('failed_count');
             });
 
-            $this->safeAddColumn($table, 'line_broadcast_messages', 'last_retry_at', function($table) {
+            $this->safeAddColumn($table, 'line_broadcast_messages', 'last_retry_at', function ($table) {
                 $table->timestamp('last_retry_at')->nullable()->comment('เวลาที่ retry ครั้งล่าสุด')->after('retry_count');
             });
 
-            $this->safeAddColumn($table, 'line_broadcast_messages', 'error_message', function($table) {
+            $this->safeAddColumn($table, 'line_broadcast_messages', 'error_message', function ($table) {
                 $table->text('error_message')->nullable()->comment('ข้อความ error (ถ้ามี)')->after('last_retry_at');
             });
         });
@@ -42,8 +40,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

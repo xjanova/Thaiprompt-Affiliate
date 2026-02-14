@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\CoinExchangeRate;
 use App\Models\CoinExchangeRequest;
+use App\Models\UserVideoLevel;
 use App\Models\VideoChannel;
+use App\Models\VideoCoin;
 use App\Models\VideoContent;
 use App\Models\VideoQuest;
-use App\Models\VideoLevel;
-use App\Models\CoinExchangeRate;
-use App\Models\UserVideoLevel;
-use App\Models\VideoCoin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -86,7 +85,7 @@ class VideoRewardAdminController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve: ' . $e->getMessage(),
+                'message' => 'Failed to approve: '.$e->getMessage(),
             ], 500);
         }
     }

@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\GameLeaderboard;
 use App\Models\Game;
+use App\Models\GameLeaderboard;
 use App\Services\SnakeGame\SnakeGameServiceManager;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
@@ -19,8 +18,6 @@ class SnakeGameAdminController extends Controller
 {
     /**
      * Service Manager instance
-     *
-     * @var SnakeGameServiceManager
      */
     private SnakeGameServiceManager $serviceManager;
 
@@ -37,8 +34,6 @@ class SnakeGameAdminController extends Controller
      * แสดง Admin Dashboard
      *
      * GET /admin/games/snake-io/monitor
-     *
-     * @return View
      */
     public function dashboard(): View
     {
@@ -72,8 +67,6 @@ class SnakeGameAdminController extends Controller
      * ดึงสถานะ service (API)
      *
      * GET /api/admin/games/snake-io/status
-     *
-     * @return JsonResponse
      */
     public function getStatus(): JsonResponse
     {
@@ -93,8 +86,6 @@ class SnakeGameAdminController extends Controller
      * เปิด service
      *
      * POST /api/admin/games/snake-io/start
-     *
-     * @return JsonResponse
      */
     public function startService(): JsonResponse
     {
@@ -111,8 +102,6 @@ class SnakeGameAdminController extends Controller
      * ปิด service
      *
      * POST /api/admin/games/snake-io/stop
-     *
-     * @return JsonResponse
      */
     public function stopService(): JsonResponse
     {
@@ -129,8 +118,6 @@ class SnakeGameAdminController extends Controller
      * ดึงรายการผู้เล่น online
      *
      * GET /api/admin/games/snake-io/players
-     *
-     * @return JsonResponse
      */
     public function getOnlinePlayers(): JsonResponse
     {
@@ -147,8 +134,6 @@ class SnakeGameAdminController extends Controller
      * ดึงรายการห้อง
      *
      * GET /api/admin/games/snake-io/rooms
-     *
-     * @return JsonResponse
      */
     public function getRooms(): JsonResponse
     {
@@ -165,8 +150,6 @@ class SnakeGameAdminController extends Controller
      * ดึงกิจกรรมน่าสงสัย
      *
      * GET /api/admin/games/snake-io/suspicious
-     *
-     * @return JsonResponse
      */
     public function getSuspiciousActivities(): JsonResponse
     {
@@ -183,9 +166,6 @@ class SnakeGameAdminController extends Controller
      * Kick ผู้เล่นออกจากระบบ
      *
      * POST /api/admin/games/snake-io/kick/{userId}
-     *
-     * @param int $userId
-     * @return JsonResponse
      */
     public function kickPlayer(int $userId): JsonResponse
     {
@@ -201,8 +181,6 @@ class SnakeGameAdminController extends Controller
      * ล้างข้อมูลทั้งหมด
      *
      * POST /api/admin/games/snake-io/clear-data
-     *
-     * @return JsonResponse
      */
     public function clearData(): JsonResponse
     {

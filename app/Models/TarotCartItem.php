@@ -76,6 +76,7 @@ class TarotCartItem extends Model
     public static function getCartTotal($userId = null, $sessionId = null, $ipAddress = null)
     {
         $items = static::getCartItems($userId, $sessionId, $ipAddress);
+
         return $items->sum('price');
     }
 

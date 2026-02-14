@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class UserDailyStreak extends Model
 {
@@ -41,11 +41,11 @@ class UserDailyStreak extends Model
      */
     public function canClaimToday(): bool
     {
-        if (!$this->last_claim_date) {
+        if (! $this->last_claim_date) {
             return true;
         }
 
-        return !$this->last_claim_date->isToday();
+        return ! $this->last_claim_date->isToday();
     }
 
     /**
@@ -91,7 +91,7 @@ class UserDailyStreak extends Model
      */
     public function claimReward(): array
     {
-        if (!$this->canClaimToday()) {
+        if (! $this->canClaimToday()) {
             throw new \Exception('Already claimed today');
         }
 

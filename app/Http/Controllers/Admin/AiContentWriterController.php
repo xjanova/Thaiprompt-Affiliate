@@ -3,18 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiContentGeneration;
+use App\Models\AiContentProject;
 use App\Models\AiContentSetting;
 use App\Models\AiContentTemplate;
-use App\Models\AiContentProject;
-use App\Models\AiContentGeneration;
-use App\Models\AiContentPrompt;
 use App\Models\AiContentUsageLog;
-use App\Services\AiContentWriter\ContentWriterService;
-use App\Services\AiContentWriter\OpenAiService;
 use App\Services\AiContentWriter\ClaudeService;
+use App\Services\AiContentWriter\ContentWriterService;
 use App\Services\AiContentWriter\GeminiService;
-use Illuminate\Http\Request;
+use App\Services\AiContentWriter\OpenAiService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 /**
@@ -35,7 +34,7 @@ class AiContentWriterController extends Controller
      */
     public function __construct()
     {
-        $this->writerService = new ContentWriterService();
+        $this->writerService = new ContentWriterService;
     }
 
     // =========================================
@@ -108,9 +107,6 @@ class AiContentWriterController extends Controller
 
     /**
      * บันทึก Settings
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function saveSettings(Request $request): JsonResponse
     {
@@ -134,20 +130,18 @@ class AiContentWriterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ทดสอบการเชื่อมต่อ API
-     *
-     * @param string $provider
-     * @return JsonResponse
      */
     public function testApiConnection(string $provider): JsonResponse
     {
         $result = $this->writerService->testProvider($provider);
+
         return response()->json($result);
     }
 
@@ -158,7 +152,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายการ Templates
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function templates(Request $request)
@@ -214,9 +207,6 @@ class AiContentWriterController extends Controller
 
     /**
      * บันทึก Template ใหม่
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function storeTemplate(Request $request): JsonResponse
     {
@@ -258,7 +248,7 @@ class AiContentWriterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -266,7 +256,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงฟอร์มแก้ไข Template
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function editTemplate(int $id)
@@ -281,16 +270,12 @@ class AiContentWriterController extends Controller
             'tones' => AiContentTemplate::TONES,
             'outputFormats' => AiContentTemplate::OUTPUT_FORMATS,
             'models' => $this->getAllModels(),
-            'pageTitle' => 'แก้ไขเทมเพลต: ' . $template->name,
+            'pageTitle' => 'แก้ไขเทมเพลต: '.$template->name,
         ]);
     }
 
     /**
      * อัพเดท Template
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function updateTemplate(Request $request, int $id): JsonResponse
     {
@@ -329,16 +314,13 @@ class AiContentWriterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
      * ลบ Template
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deleteTemplate(int $id): JsonResponse
     {
@@ -354,7 +336,7 @@ class AiContentWriterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -366,7 +348,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายการ Projects
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function projects(Request $request)
@@ -375,7 +356,7 @@ class AiContentWriterController extends Controller
 
         // ค้นหา
         if ($request->filled('search')) {
-            $query->where('name', 'like', '%' . $request->get('search') . '%');
+            $query->where('name', 'like', '%'.$request->get('search').'%');
         }
 
         // กรองตาม status
@@ -401,7 +382,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายละเอียด Project
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function showProject(int $id)
@@ -411,15 +391,12 @@ class AiContentWriterController extends Controller
 
         return view('admin.ai-content-writer.projects.show', [
             'project' => $project,
-            'pageTitle' => 'โปรเจกต์: ' . $project->name,
+            'pageTitle' => 'โปรเจกต์: '.$project->name,
         ]);
     }
 
     /**
      * ลบ Project
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function deleteProject(int $id): JsonResponse
     {
@@ -435,7 +412,7 @@ class AiContentWriterController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -447,7 +424,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายการ Generations
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function generations(Request $request)
@@ -477,7 +453,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายละเอียด Generation
      *
-     * @param int $id
      * @return \Illuminate\View\View
      */
     public function showGeneration(int $id)
@@ -487,7 +462,7 @@ class AiContentWriterController extends Controller
 
         return view('admin.ai-content-writer.generations.show', [
             'generation' => $generation,
-            'pageTitle' => 'Generation #' . $generation->id,
+            'pageTitle' => 'Generation #'.$generation->id,
         ]);
     }
 
@@ -498,7 +473,6 @@ class AiContentWriterController extends Controller
     /**
      * แสดงรายการ Usage Logs
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function usageLogs(Request $request)
@@ -515,7 +489,7 @@ class AiContentWriterController extends Controller
             $query->where('created_at', '>=', $request->get('date_from'));
         }
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', $request->get('date_to') . ' 23:59:59');
+            $query->where('created_at', '<=', $request->get('date_to').' 23:59:59');
         }
 
         $logs = $query->latest('created_at')->paginate(50);
@@ -562,9 +536,6 @@ class AiContentWriterController extends Controller
 
     /**
      * Quick Generate
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function quickGenerate(Request $request): JsonResponse
     {
@@ -598,8 +569,6 @@ class AiContentWriterController extends Controller
 
     /**
      * ดึงรายการ Models ทั้งหมด
-     *
-     * @return array
      */
     protected function getAllModels(): array
     {

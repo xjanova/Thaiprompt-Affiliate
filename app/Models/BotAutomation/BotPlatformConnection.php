@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Crypt;
 
 class BotPlatformConnection extends Model
 {
@@ -84,9 +83,10 @@ class BotPlatformConnection extends Model
      */
     public function isTokenExpired(): bool
     {
-        if (!$this->token_expires_at) {
+        if (! $this->token_expires_at) {
             return false;
         }
+
         return now()->greaterThan($this->token_expires_at);
     }
 
@@ -95,7 +95,7 @@ class BotPlatformConnection extends Model
      */
     public function isValid(): bool
     {
-        return $this->is_active && !$this->isTokenExpired();
+        return $this->is_active && ! $this->isTokenExpired();
     }
 
     /**

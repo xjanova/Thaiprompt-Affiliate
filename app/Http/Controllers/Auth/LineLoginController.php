@@ -19,6 +19,7 @@ use Illuminate\View\View;
 class LineLoginController extends Controller
 {
     protected LineService $lineService;
+
     protected LineTokenService $tokenService;
 
     public function __construct(LineService $lineService, LineTokenService $tokenService)
@@ -34,7 +35,7 @@ class LineLoginController extends Controller
      */
     public function redirect(Request $request): RedirectResponse
     {
-        if (!$this->lineService->isConfigured()) {
+        if (! $this->lineService->isConfigured()) {
             // ถ้ามาจาก mobile auth flow ให้ redirect กลับไปหน้า error
             if ($request->has('mobile_token')) {
                 return redirect()->route('mobile-login.show', [
@@ -76,7 +77,7 @@ class LineLoginController extends Controller
             Session::put('line_mobile_state', $request->get('state'));
 
             Log::info('LINE Login from mobile app', [
-                'mobile_token' => substr($request->get('mobile_token'), 0, 10) . '...',
+                'mobile_token' => substr($request->get('mobile_token'), 0, 10).'...',
                 'mobile_state' => $request->get('state'),
             ]);
         }
@@ -102,17 +103,19 @@ class LineLoginController extends Controller
             if ($errorRoute === 'register' && $referralCode) {
                 $redirect = redirect()->route($errorRoute, ['ref' => $referralCode]);
             }
+
             return $redirect->with('error', $errorMessage);
         };
 
         // Verify state to prevent CSRF
         $state = Session::get('line_login_state');
-        if (!$state || $state !== $request->get('state')) {
+        if (! $state || $state !== $request->get('state')) {
             Log::warning('LINE Login state mismatch', [
                 'expected' => $state,
                 'received' => $request->get('state'),
             ]);
             Session::forget('line_login_origin');
+
             return $getErrorRedirect('การยืนยันตัวตนไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง');
         }
 
@@ -136,7 +139,7 @@ class LineLoginController extends Controller
                 'invalid_request' => 'คำขอไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
                 'unauthorized_client' => 'ระบบ LINE ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
                 'server_error' => 'เกิดข้อผิดพลาดจาก LINE กรุณาลองใหม่ภายหลัง',
-                default => 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE: ' . $errorDesc,
+                default => 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE: '.$errorDesc,
             };
 
             return $getErrorRedirect($userMessage);
@@ -144,8 +147,9 @@ class LineLoginController extends Controller
 
         // Get authorization code
         $code = $request->get('code');
-        if (!$code) {
+        if (! $code) {
             Session::forget('line_login_origin');
+
             return $getErrorRedirect('ไม่ได้รับรหัสยืนยันจาก LINE กรุณาลองใหม่อีกครั้ง');
         }
 
@@ -225,7 +229,7 @@ class LineLoginController extends Controller
             $referralCode = Session::get('line_login_referral');
             $redirectUrl = route('register');
             if ($referralCode) {
-                $redirectUrl .= '?ref=' . $referralCode;
+                $redirectUrl .= '?ref='.$referralCode;
             }
 
             return redirect($redirectUrl)
@@ -238,6 +242,7 @@ class LineLoginController extends Controller
             ]);
 
             Session::forget('line_login_origin');
+
             return $getErrorRedirect('เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย LINE กรุณาลองใหม่อีกครั้ง');
         }
     }
@@ -249,7 +254,7 @@ class LineLoginController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->line_user_id) {
+        if (! $user->line_user_id) {
             return back()->with('error', 'บัญชี LINE ไม่ได้เชื่อมต่ออยู่');
         }
 
@@ -278,7 +283,7 @@ class LineLoginController extends Controller
      */
     public function link(Request $request): RedirectResponse
     {
-        if (!$this->lineService->isConfigured()) {
+        if (! $this->lineService->isConfigured()) {
             return back()->with('error', 'LINE Login is not configured.');
         }
 
@@ -297,14 +302,14 @@ class LineLoginController extends Controller
      */
     public function linkCallback(Request $request): RedirectResponse
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login')
                 ->with('error', 'กรุณาเข้าสู่ระบบก่อนเชื่อมต่อบัญชี LINE');
         }
 
         // Verify state
         $state = Session::get('line_link_state');
-        if (!$state || $state !== $request->get('state')) {
+        if (! $state || $state !== $request->get('state')) {
             return redirect()->route('user.profile')
                 ->with('error', 'Invalid state parameter.');
         }
@@ -313,7 +318,7 @@ class LineLoginController extends Controller
         Session::forget('line_link_mode');
 
         $code = $request->get('code');
-        if (!$code) {
+        if (! $code) {
             return redirect()->route('user.profile')
                 ->with('error', 'Authorization code not received.');
         }
@@ -381,9 +386,6 @@ class LineLoginController extends Controller
      *
      * รับ GET request จาก LINE OAuth แล้ว redirect ไป app deep link
      * เพราะ LINE OAuth รองรับแค่ HTTPS redirect URI ไม่รองรับ custom scheme
-     *
-     * @param Request $request
-     * @return RedirectResponse|View
      */
     public function mobileCallback(Request $request): RedirectResponse|View
     {
@@ -401,7 +403,7 @@ class LineLoginController extends Controller
             ]);
 
             // Redirect ไป app deep link พร้อม error
-            $deepLink = 'thaiprompt://login?' . http_build_query([
+            $deepLink = 'thaiprompt://login?'.http_build_query([
                 'error' => $error,
                 'error_description' => $errorDescription ?? 'LINE Login failed',
             ]);
@@ -410,10 +412,10 @@ class LineLoginController extends Controller
         }
 
         // ตรวจสอบว่ามี code หรือไม่
-        if (!$code) {
+        if (! $code) {
             Log::warning('LINE Mobile Login - missing code');
 
-            $deepLink = 'thaiprompt://login?' . http_build_query([
+            $deepLink = 'thaiprompt://login?'.http_build_query([
                 'error' => 'missing_code',
                 'error_description' => 'Authorization code not received',
             ]);
@@ -422,12 +424,12 @@ class LineLoginController extends Controller
         }
 
         Log::info('LINE Mobile Login callback received', [
-            'has_code' => !empty($code),
+            'has_code' => ! empty($code),
             'state' => $state,
         ]);
 
         // สร้าง deep link URL พร้อม code และ state
-        $deepLink = 'thaiprompt://login?' . http_build_query([
+        $deepLink = 'thaiprompt://login?'.http_build_query([
             'code' => $code,
             'state' => $state ?? '',
         ]);
@@ -438,9 +440,8 @@ class LineLoginController extends Controller
     /**
      * แสดงหน้า redirect ไป mobile app
      *
-     * @param string $deepLink URL ของ deep link
-     * @param string $message ข้อความที่แสดง
-     * @return View
+     * @param  string  $deepLink  URL ของ deep link
+     * @param  string  $message  ข้อความที่แสดง
      */
     protected function renderMobileRedirectPage(string $deepLink, string $message): View
     {
@@ -455,10 +456,9 @@ class LineLoginController extends Controller
      *
      * สร้าง auth_code และ redirect กลับไปแอพผ่าน deep link
      *
-     * @param User $user ผู้ใช้ที่ login สำเร็จ
-     * @param string $mobileToken login_token จาก mobile app (raw, unhashed)
-     * @param string $mobileState state จาก mobile app
-     * @return RedirectResponse|View
+     * @param  User  $user  ผู้ใช้ที่ login สำเร็จ
+     * @param  string  $mobileToken  login_token จาก mobile app (raw, unhashed)
+     * @param  string  $mobileState  state จาก mobile app
      */
     protected function authorizeMobileApp(User $user, string $mobileToken, string $mobileState): RedirectResponse|View
     {
@@ -471,9 +471,9 @@ class LineLoginController extends Controller
             ->whereNull('used_at')
             ->first();
 
-        if (!$authToken) {
+        if (! $authToken) {
             Log::warning('Mobile auth token not found for LINE login', [
-                'token_hash' => substr($loginTokenHash, 0, 10) . '...',
+                'token_hash' => substr($loginTokenHash, 0, 10).'...',
                 'state' => $mobileState,
             ]);
 
@@ -511,7 +511,7 @@ class LineLoginController extends Controller
         ]);
 
         // สร้าง deep link URL
-        $redirectUrl = 'thaiprompt://auth?' . http_build_query([
+        $redirectUrl = 'thaiprompt://auth?'.http_build_query([
             'code' => $authCode,
             'state' => $mobileState,
         ]);

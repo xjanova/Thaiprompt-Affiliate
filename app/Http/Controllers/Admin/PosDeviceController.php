@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\PosDevice;
 use App\Models\VendorStore;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class PosDeviceController extends Controller
 {
@@ -20,8 +19,8 @@ class PosDeviceController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('device_name', 'like', "%{$search}%")
-                  ->orWhere('device_code', 'like', "%{$search}%")
-                  ->orWhere('license_key', 'like', "%{$search}%");
+                    ->orWhere('device_code', 'like', "%{$search}%")
+                    ->orWhere('license_key', 'like', "%{$search}%");
             });
         }
 
@@ -50,6 +49,7 @@ class PosDeviceController extends Controller
     public function create()
     {
         $stores = VendorStore::active()->get();
+
         return view('admin.pos.devices.create', compact('stores'));
     }
 
@@ -100,6 +100,7 @@ class PosDeviceController extends Controller
     public function edit(PosDevice $device)
     {
         $stores = VendorStore::active()->get();
+
         return view('admin.pos.devices.edit', compact('device', 'stores'));
     }
 
@@ -152,10 +153,11 @@ class PosDeviceController extends Controller
     public function toggleStatus(PosDevice $device)
     {
         $device->update([
-            'is_active' => !$device->is_active,
+            'is_active' => ! $device->is_active,
         ]);
 
         $status = $device->is_active ? 'activated' : 'deactivated';
+
         return back()->with('success', "Device {$status} successfully!");
     }
 
@@ -225,11 +227,11 @@ class PosDeviceController extends Controller
     public function export(Request $request)
     {
         $devices = PosDevice::with('store')
-            ->when($request->has('store_id'), fn($q) => $q->where('store_id', $request->store_id))
-            ->when($request->has('status'), fn($q) => $q->where('subscription_status', $request->status))
+            ->when($request->has('store_id'), fn ($q) => $q->where('store_id', $request->store_id))
+            ->when($request->has('status'), fn ($q) => $q->where('subscription_status', $request->status))
             ->get();
 
-        $filename = 'pos_devices_' . now()->format('YmdHis') . '.csv';
+        $filename = 'pos_devices_'.now()->format('YmdHis').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

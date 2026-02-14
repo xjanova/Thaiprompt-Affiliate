@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บบันทึกการทำนายแต่ละครั้ง
      * รองรับทั้งผู้ใช้ที่สมัครสมาชิกและไม่สมัครสมาชิก
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -76,8 +74,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง fortune_readings
-     *
-     * @return void
      */
     public function down(): void
     {

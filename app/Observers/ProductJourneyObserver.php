@@ -2,17 +2,18 @@
 
 namespace App\Observers;
 
-use App\Models\ProductJourney;
-use App\Services\CarbonCreditService;
-use App\Services\BlockchainRecordService;
 use App\Jobs\FoodPassport\CalculateJourneyCarbonJob;
-use App\Jobs\FoodPassport\UpdateProductLocationJob;
 use App\Jobs\FoodPassport\SendFoodPassportNotificationJob;
+use App\Jobs\FoodPassport\UpdateProductLocationJob;
+use App\Models\ProductJourney;
+use App\Services\BlockchainRecordService;
+use App\Services\CarbonCreditService;
 use Illuminate\Support\Facades\Log;
 
 class ProductJourneyObserver
 {
     protected CarbonCreditService $carbonService;
+
     protected BlockchainRecordService $blockchain;
 
     public function __construct(
@@ -59,7 +60,7 @@ class ProductJourneyObserver
 
         Log::info('Journey stage updated', [
             'id' => $journey->id,
-            'changes' => $journey->getChanges()
+            'changes' => $journey->getChanges(),
         ]);
     }
 
@@ -159,7 +160,7 @@ class ProductJourneyObserver
             // Check if quality checkpoint exists
             $hasCheckpoint = $journey->qualityCheckpoints()->exists();
 
-            if (!$hasCheckpoint) {
+            if (! $hasCheckpoint) {
                 Log::warning('Quality checkpoint missing for stage', [
                     'journey_id' => $journey->id,
                     'stage' => $journey->stage,
@@ -222,7 +223,7 @@ class ProductJourneyObserver
     protected function recordJourneyOnBlockchain(ProductJourney $journey): void
     {
         try {
-            if (!$journey->blockchain_hash) {
+            if (! $journey->blockchain_hash) {
                 $hash = $this->blockchain->recordJourneyStageOnChain($journey);
                 $journey->blockchain_hash = $hash;
                 $journey->saveQuietly();

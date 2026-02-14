@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * รองรับทั้งโทรฟี่ดี (positive) และไม่ดี (negative)
      * โทรฟี่ไม่ดีจะติดตลอดไป (is_permanent = true)
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -70,8 +68,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง forum_trophies
-     *
-     * @return void
      */
     public function down(): void
     {

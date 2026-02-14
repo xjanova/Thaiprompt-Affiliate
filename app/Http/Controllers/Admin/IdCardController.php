@@ -18,8 +18,6 @@ use Illuminate\Support\Facades\Validator;
  * - ตั้งค่าพื้นหลัง (สี, gradient, รูปภาพ)
  * - ดูตัวอย่างแบบ realtime
  * - ดูบัตรของสมาชิกแต่ละคน
- *
- * @package App\Http\Controllers\Admin
  */
 class IdCardController extends Controller
 {
@@ -43,7 +41,6 @@ class IdCardController extends Controller
     /**
      * แสดงหน้า Designer สำหรับออกแบบ ID Card
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function designer(Request $request)
@@ -53,12 +50,12 @@ class IdCardController extends Controller
         // ดึง setting สำหรับ rank นี้ หรือสร้างใหม่
         $setting = IdCardSetting::where('rank_level', $rankLevel)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             // ใช้ default setting
             $setting = IdCardSetting::where('is_default', true)->first();
 
             // ถ้ายังไม่มี default ให้สร้างค่าเริ่มต้น
-            if (!$setting) {
+            if (! $setting) {
                 $setting = new IdCardSetting([
                     'rank_level' => $rankLevel,
                     'name' => 'New Setting',
@@ -87,7 +84,6 @@ class IdCardController extends Controller
     /**
      * บันทึกการตั้งค่า ID Card
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function save(Request $request)
@@ -148,8 +144,6 @@ class IdCardController extends Controller
     /**
      * อัพโหลดภาพพื้นหลัง
      *
-     * @param Request $request
-     * @param ImageUploadService $imageUploadService
      * @return \Illuminate\Http\JsonResponse
      */
     public function uploadBackground(Request $request, ImageUploadService $imageUploadService)
@@ -180,12 +174,12 @@ class IdCardController extends Controller
                 'success' => true,
                 'message' => 'อัพโหลดสำเร็จ',
                 'path' => $path,
-                'url' => asset('storage/' . $path),
+                'url' => asset('storage/'.$path),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการอัพโหลด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการอัพโหลด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -193,7 +187,6 @@ class IdCardController extends Controller
     /**
      * ดูบัตรของสมาชิกที่ระบุ
      *
-     * @param User $user
      * @return \Illuminate\View\View
      */
     public function viewUserCard(User $user)
@@ -214,7 +207,6 @@ class IdCardController extends Controller
     /**
      * ดึง preview data สำหรับ real-time preview
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function previewData(Request $request)
@@ -231,7 +223,7 @@ class IdCardController extends Controller
                 ?? User::first();
         }
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่พบผู้ใช้สำหรับ preview',
@@ -247,8 +239,8 @@ class IdCardController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'member_number' => $user->member_number ?? 'TP' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
-                    'profile_picture_url' => $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=random&size=200',
+                    'member_number' => $user->member_number ?? 'TP'.str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                    'profile_picture_url' => $user->profile_picture_url ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name).'&background=random&size=200',
                     'created_at' => $user->created_at->format('M Y'),
                     'rank_points' => $user->rank_points ?? 0,
                 ],
@@ -267,7 +259,6 @@ class IdCardController extends Controller
     /**
      * ลบการตั้งค่า ID Card
      *
-     * @param IdCardSetting $setting
      * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(IdCardSetting $setting)
@@ -291,8 +282,6 @@ class IdCardController extends Controller
     /**
      * คัดลอกการตั้งค่าไปยัง rank อื่น
      *
-     * @param Request $request
-     * @param IdCardSetting $setting
      * @return \Illuminate\Http\JsonResponse
      */
     public function duplicate(Request $request, IdCardSetting $setting)
@@ -314,7 +303,7 @@ class IdCardController extends Controller
         // สร้างสำเนา
         $newSetting = $setting->replicate();
         $newSetting->rank_level = $targetRankLevel;
-        $newSetting->name = $setting->name . ' (Copy)';
+        $newSetting->name = $setting->name.' (Copy)';
         $newSetting->is_default = false;
 
         // ปรับ gradient ให้เหมาะกับ rank ใหม่

@@ -16,7 +16,9 @@ class SyncCMCPricesJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 300;
+
     public $backoff = [60, 300, 900]; // Retry after 1min, 5min, 15min
 
     protected ?int $tokenId;
@@ -24,7 +26,7 @@ class SyncCMCPricesJob implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param int|null $tokenId If null, sync all tokens
+     * @param  int|null  $tokenId  If null, sync all tokens
      */
     public function __construct(?int $tokenId = null)
     {
@@ -42,8 +44,9 @@ class SyncCMCPricesJob implements ShouldQueue
                 // Sync single token
                 $token = TPIXToken::find($this->tokenId);
 
-                if (!$token || !$token->cmc_id) {
+                if (! $token || ! $token->cmc_id) {
                     Log::warning("Token {$this->tokenId} not found or no CMC ID");
+
                     return;
                 }
 
@@ -66,7 +69,8 @@ class SyncCMCPricesJob implements ShouldQueue
                         usleep(300000); // Sleep 0.3 seconds between calls
 
                     } catch (\Exception $e) {
-                        Log::error("Failed to sync token {$token->symbol}: " . $e->getMessage());
+                        Log::error("Failed to sync token {$token->symbol}: ".$e->getMessage());
+
                         continue;
                     }
                 }
@@ -75,7 +79,7 @@ class SyncCMCPricesJob implements ShouldQueue
             Log::info('CMC price sync completed successfully');
 
         } catch (\Exception $e) {
-            Log::error('CMC price sync failed: ' . $e->getMessage());
+            Log::error('CMC price sync failed: '.$e->getMessage());
             throw $e; // Re-throw to trigger retry
         }
     }
@@ -85,7 +89,7 @@ class SyncCMCPricesJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error('CMC price sync job failed permanently: ' . $exception->getMessage());
+        Log::error('CMC price sync job failed permanently: '.$exception->getMessage());
 
         // Notify admin
         // You can dispatch a notification here

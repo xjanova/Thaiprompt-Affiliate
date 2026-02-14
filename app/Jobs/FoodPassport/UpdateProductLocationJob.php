@@ -15,6 +15,7 @@ class UpdateProductLocationJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
+
     public int $timeout = 30;
 
     /**
@@ -35,7 +36,7 @@ class UpdateProductLocationJob implements ShouldQueue
                 ->orderBy('sequence_order', 'desc')
                 ->first();
 
-            if (!$currentStage) {
+            if (! $currentStage) {
                 return;
             }
 

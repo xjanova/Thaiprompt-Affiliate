@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('push_notification_deliveries')) {
+        if (! Schema::hasTable('push_notification_deliveries')) {
             Schema::create('push_notification_deliveries', function (Blueprint $table) {
                 $table->id();
 

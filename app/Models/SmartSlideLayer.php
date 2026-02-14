@@ -37,12 +37,19 @@ class SmartSlideLayer extends Model
      * Layer types
      */
     const TYPE_HEADING = 'heading';
+
     const TYPE_TEXT = 'text';
+
     const TYPE_IMAGE = 'image';
+
     const TYPE_BUTTON = 'button';
+
     const TYPE_VIDEO_YOUTUBE = 'video_youtube';
+
     const TYPE_VIDEO_VIMEO = 'video_vimeo';
+
     const TYPE_VIDEO_UPLOAD = 'video_upload';
+
     const TYPE_HTML = 'html';
 
     /**
@@ -243,7 +250,8 @@ class SmartSlideLayer extends Model
             if (filter_var($this->content, FILTER_VALIDATE_URL)) {
                 return $this->content;
             }
-            return asset('storage/' . $this->content);
+
+            return asset('storage/'.$this->content);
         }
 
         return $this->content;

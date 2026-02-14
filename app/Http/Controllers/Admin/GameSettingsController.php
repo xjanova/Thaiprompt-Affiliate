@@ -33,7 +33,6 @@ class GameSettingsController extends Controller
     /**
      * อัพเดทการตั้งค่า
      *
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
     public function update(Request $request)
@@ -61,7 +60,7 @@ class GameSettingsController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.games.game-settings.index')
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

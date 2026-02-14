@@ -110,8 +110,7 @@ class VideoAutoSetting extends Model
     /**
      * Scope: กรองตาม group
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $group
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByGroup($query, string $group)
@@ -122,7 +121,7 @@ class VideoAutoSetting extends Model
     /**
      * Scope: กรองเฉพาะที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -133,7 +132,7 @@ class VideoAutoSetting extends Model
     /**
      * Scope: เรียงตาม sort_order
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)
@@ -171,8 +170,6 @@ class VideoAutoSetting extends Model
 
     /**
      * ถอดรหัสค่า
-     *
-     * @return string|null
      */
     protected function decryptValue(): ?string
     {
@@ -186,8 +183,7 @@ class VideoAutoSetting extends Model
     /**
      * เข้ารหัสและบันทึกค่า
      *
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     public function setEncodedValue($value): void
     {
@@ -211,21 +207,20 @@ class VideoAutoSetting extends Model
      * - ไม่สามารถเชื่อมต่อ database ได้ (เช่น ตอน route:cache)
      * - ตาราง video_auto_settings ยังไม่ถูกสร้าง
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function getValue(string $key, $default = null)
     {
         try {
             // ตรวจสอบว่า database พร้อมใช้งานและตารางมีอยู่
-            if (!app()->bound('db') || !static::tableExists()) {
+            if (! app()->bound('db') || ! static::tableExists()) {
                 return $default;
             }
 
             $setting = static::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
@@ -239,8 +234,6 @@ class VideoAutoSetting extends Model
 
     /**
      * ตรวจสอบว่าตาราง video_auto_settings มีอยู่หรือไม่
-     *
-     * @return bool
      */
     protected static function tableExists(): bool
     {
@@ -254,9 +247,7 @@ class VideoAutoSetting extends Model
     /**
      * ตั้งค่า setting
      *
-     * @param string $key
-     * @param mixed $value
-     * @return static
+     * @param  mixed  $value
      */
     public static function setValue(string $key, $value): static
     {
@@ -272,14 +263,13 @@ class VideoAutoSetting extends Model
      *
      * จะ return collection ว่างถ้า database ไม่พร้อม
      *
-     * @param string $group
      * @return \Illuminate\Support\Collection
      */
     public static function getByGroup(string $group)
     {
         try {
             // ตรวจสอบว่า database พร้อมใช้งานและตารางมีอยู่
-            if (!app()->bound('db') || !static::tableExists()) {
+            if (! app()->bound('db') || ! static::tableExists()) {
                 return collect([]);
             }
 
@@ -300,8 +290,6 @@ class VideoAutoSetting extends Model
      * ดึง API settings ทั้งหมด
      *
      * จะ return array ว่างในแต่ละ key ถ้า database ไม่พร้อม
-     *
-     * @return array
      */
     public static function getApiSettings(): array
     {
@@ -331,9 +319,6 @@ class VideoAutoSetting extends Model
 
     /**
      * ตรวจสอบว่า API พร้อมใช้งานหรือไม่
-     *
-     * @param string $apiName
-     * @return bool
      */
     public static function isApiConfigured(string $apiName): bool
     {

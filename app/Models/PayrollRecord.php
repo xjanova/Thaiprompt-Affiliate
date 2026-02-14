@@ -120,6 +120,7 @@ class PayrollRecord extends Model
                             + $this->bonuses
                             + $this->overtime_pay
                             + $this->commission;
+
         return $this->gross_salary;
     }
 
@@ -133,6 +134,7 @@ class PayrollRecord extends Model
                                 + $this->provident_fund
                                 + $this->loan_deduction
                                 + $this->other_deductions;
+
         return $this->total_deductions;
     }
 
@@ -144,6 +146,7 @@ class PayrollRecord extends Model
         $this->calculateGrossSalary();
         $this->calculateTotalDeductions();
         $this->net_salary = $this->gross_salary - $this->total_deductions;
+
         return $this->net_salary;
     }
 
@@ -187,6 +190,7 @@ class PayrollRecord extends Model
     {
         $contribution = $this->basic_salary * 0.05;
         $this->social_security = min($contribution, 750);
+
         return $this->social_security;
     }
 

@@ -2,10 +2,10 @@
 
 namespace App\Services\BotAutomation;
 
-use App\Models\BotAutomation\BotAutomation;
-use App\Models\BotAutomation\BotScheduledPost;
-use App\Models\BotAutomation\BotAutomationExecution;
 use App\Jobs\BotAutomation\ExecuteBotAutomationJob;
+use App\Models\BotAutomation\BotAutomation;
+use App\Models\BotAutomation\BotAutomationExecution;
+use App\Models\BotAutomation\BotScheduledPost;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -29,7 +29,7 @@ class BotAutomationService
             $automation->update(['next_execution_at' => $nextExecution]);
         }
 
-        Log::info("Bot automation created", ['automation_id' => $automation->id]);
+        Log::info('Bot automation created', ['automation_id' => $automation->id]);
 
         return $automation;
     }
@@ -49,7 +49,7 @@ class BotAutomationService
             $execution->start();
 
             // Route to appropriate handler based on automation type
-            $result = match($automation->automation_type) {
+            $result = match ($automation->automation_type) {
                 'scheduled_post' => $this->executeScheduledPost($automation, $execution),
                 'customer_support' => $this->executeCustomerSupport($automation, $execution),
                 'sales_assistant' => $this->executeSalesAssistant($automation, $execution),
@@ -61,7 +61,7 @@ class BotAutomationService
             $execution->complete($result);
             $automation->recordExecution(true);
 
-            Log::info("Automation executed successfully", [
+            Log::info('Automation executed successfully', [
                 'automation_id' => $automation->id,
                 'execution_id' => $execution->id,
             ]);
@@ -70,7 +70,7 @@ class BotAutomationService
             $execution->fail($e->getMessage(), [], $e->getTraceAsString());
             $automation->recordExecution(false);
 
-            Log::error("Automation execution failed", [
+            Log::error('Automation execution failed', [
                 'automation_id' => $automation->id,
                 'execution_id' => $execution->id,
                 'error' => $e->getMessage(),

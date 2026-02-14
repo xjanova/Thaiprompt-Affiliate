@@ -14,8 +14,6 @@ return new class extends Migration
 {
     /**
      * แก้ไขคอลัมน์
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -38,8 +36,6 @@ return new class extends Migration
 
     /**
      * คืนค่าเดิม
-     *
-     * @return void
      */
     public function down(): void
     {

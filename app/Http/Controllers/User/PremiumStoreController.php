@@ -18,10 +18,6 @@ class PremiumStoreController extends Controller
 {
     /**
      * แสดงรายการร้าน Premium
-     *
-     * @param Request $request
-     * @param PremiumStoreService $service
-     * @return View
      */
     public function index(Request $request, PremiumStoreService $service): View
     {
@@ -64,9 +60,6 @@ class PremiumStoreController extends Controller
 
     /**
      * แสดงรายละเอียดร้าน Premium
-     *
-     * @param VendorStore $store
-     * @return View
      */
     public function show(VendorStore $store): View
     {

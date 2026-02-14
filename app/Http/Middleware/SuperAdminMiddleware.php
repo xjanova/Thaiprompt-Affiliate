@@ -16,12 +16,12 @@ class SuperAdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         // Check if user is authenticated
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login')->with('error', __('auth.unauthorized'));
         }
 
         // Check if user is Super Admin
-        if (!auth()->user()->isSuperAdmin()) {
+        if (! auth()->user()->isSuperAdmin()) {
             abort(403, __('auth.forbidden'));
         }
 

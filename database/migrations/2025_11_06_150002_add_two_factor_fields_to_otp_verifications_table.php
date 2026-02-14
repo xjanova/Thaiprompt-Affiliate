@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // ตรวจสอบว่าตาราง otp_verifications มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('otp_verifications')) {
+        if (! Schema::hasTable('otp_verifications')) {
             return;
         }
 

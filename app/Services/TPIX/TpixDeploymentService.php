@@ -15,22 +15,16 @@ use Illuminate\Support\Facades\Log;
  * TPIX Deployment Service
  *
  * จัดการ business logic สำหรับ TPIX Native Coin Deployment Wizard
- *
- * @package App\Services\TPIX
  */
 class TpixDeploymentService
 {
     /**
      * Blockchain Service
-     *
-     * @var TPIXBlockchainService
      */
     protected TPIXBlockchainService $blockchainService;
 
     /**
      * Constructor
-     *
-     * @param TPIXBlockchainService $blockchainService
      */
     public function __construct(TPIXBlockchainService $blockchainService)
     {
@@ -43,8 +37,6 @@ class TpixDeploymentService
 
     /**
      * ตรวจสอบ prerequisites ทั้งหมด
-     *
-     * @return array
      */
     public function checkPrerequisites(): array
     {
@@ -66,8 +58,6 @@ class TpixDeploymentService
 
     /**
      * ตรวจสอบ RPC Node
-     *
-     * @return array
      */
     protected function checkRpcNode(): array
     {
@@ -97,8 +87,6 @@ class TpixDeploymentService
 
     /**
      * ตรวจสอบ Wallet
-     *
-     * @return array
      */
     protected function checkWallet(): array
     {
@@ -126,7 +114,7 @@ class TpixDeploymentService
                         'message' => 'Wallet มี TPIX ไม่เพียงพอสำหรับ deploy (ต้องการอย่างน้อย 1 TPIX)',
                         'details' => [
                             'address' => $walletAddress,
-                            'balance' => number_format($balanceTPIX, 4) . ' TPIX',
+                            'balance' => number_format($balanceTPIX, 4).' TPIX',
                         ],
                         'solution' => 'กรุณาเติม TPIX เข้า deployer wallet',
                     ];
@@ -137,7 +125,7 @@ class TpixDeploymentService
                     'message' => 'Wallet พร้อมใช้งาน',
                     'details' => [
                         'address' => $walletAddress,
-                        'balance' => number_format($balanceTPIX, 4) . ' TPIX',
+                        'balance' => number_format($balanceTPIX, 4).' TPIX',
                     ],
                 ];
             } catch (Exception $e) {
@@ -158,8 +146,6 @@ class TpixDeploymentService
 
     /**
      * ตรวจสอบ Services
-     *
-     * @return array
      */
     protected function checkServices(): array
     {
@@ -175,7 +161,7 @@ class TpixDeploymentService
         } catch (Exception $e) {
             $services['redis'] = [
                 'running' => false,
-                'message' => 'Redis ไม่ทำงาน: ' . $e->getMessage(),
+                'message' => 'Redis ไม่ทำงาน: '.$e->getMessage(),
             ];
         }
 
@@ -189,7 +175,7 @@ class TpixDeploymentService
         } catch (Exception $e) {
             $services['database'] = [
                 'running' => false,
-                'message' => 'Database เชื่อมต่อไม่สำเร็จ: ' . $e->getMessage(),
+                'message' => 'Database เชื่อมต่อไม่สำเร็จ: '.$e->getMessage(),
             ];
         }
 
@@ -199,7 +185,7 @@ class TpixDeploymentService
             'message' => 'Queue Worker พร้อมใช้งาน',
         ];
 
-        $allRunning = collect($services)->every(fn($service) => $service['running']);
+        $allRunning = collect($services)->every(fn ($service) => $service['running']);
 
         return [
             'passed' => $allRunning,
@@ -210,8 +196,6 @@ class TpixDeploymentService
 
     /**
      * ตรวจสอบ Environment
-     *
-     * @return array
      */
     protected function checkEnvironment(): array
     {
@@ -236,7 +220,7 @@ class TpixDeploymentService
         $missingExtensions = [];
 
         foreach ($requiredExtensions as $ext) {
-            if (!extension_loaded($ext)) {
+            if (! extension_loaded($ext)) {
                 $missingExtensions[] = $ext;
             }
         }
@@ -251,7 +235,7 @@ class TpixDeploymentService
         $notWritable = [];
 
         foreach ($writablePaths as $path) {
-            if (!is_writable(base_path($path))) {
+            if (! is_writable(base_path($path))) {
                 $notWritable[] = $path;
             }
         }
@@ -261,7 +245,7 @@ class TpixDeploymentService
             'not_writable' => $notWritable,
         ];
 
-        $allPassed = collect($checks)->every(fn($check) => $check['passed']);
+        $allPassed = collect($checks)->every(fn ($check) => $check['passed']);
 
         return [
             'passed' => $allPassed,
@@ -276,10 +260,6 @@ class TpixDeploymentService
 
     /**
      * บันทึกการตั้งค่าพื้นฐาน (Step 2)
-     *
-     * @param TpixConfiguration $config
-     * @param array $data
-     * @return TpixConfiguration
      */
     public function saveBasicConfiguration(TpixConfiguration $config, array $data): TpixConfiguration
     {
@@ -303,10 +283,6 @@ class TpixDeploymentService
 
     /**
      * บันทึกการตั้งค่า Tokenomics (Step 3)
-     *
-     * @param TpixConfiguration $config
-     * @param array $data
-     * @return TpixConfiguration
      */
     public function saveTokenomics(TpixConfiguration $config, array $data): TpixConfiguration
     {
@@ -335,10 +311,6 @@ class TpixDeploymentService
 
     /**
      * สร้าง Smart Contract Code
-     *
-     * @param TpixConfiguration $config
-     * @param array $features
-     * @return string
      */
     public function generateSmartContract(TpixConfiguration $config, array $features = []): string
     {
@@ -358,11 +330,6 @@ class TpixDeploymentService
 
     /**
      * Customize contract ตาม config
-     *
-     * @param string $template
-     * @param TpixConfiguration $config
-     * @param array $features
-     * @return string
      */
     protected function customizeContract(string $template, TpixConfiguration $config, array $features): string
     {
@@ -403,15 +370,13 @@ class TpixDeploymentService
     /**
      * Deploy Smart Contract
      *
-     * @param TpixConfiguration $config
-     * @return array
      * @throws Exception
      */
     public function deployContract(TpixConfiguration $config): array
     {
         try {
             // ตรวจสอบว่าพร้อม deploy หรือไม่
-            if (!$config->isReadyToDeploy()) {
+            if (! $config->isReadyToDeploy()) {
                 throw new Exception('Configuration ยังไม่พร้อมสำหรับ deploy');
             }
 
@@ -431,7 +396,7 @@ class TpixDeploymentService
             $config->deployed_at = now();
             $config->deploy_gas_used = $result['gas_used'] ?? null;
             $config->deploy_cost_tpix = $result['cost_tpix'] ?? null;
-            $config->explorer_url = config('tpix.explorer_url') . '/address/' . $result['contract_address'];
+            $config->explorer_url = config('tpix.explorer_url').'/address/'.$result['contract_address'];
             $config->save();
 
             $config->addDeploymentLog('contract_deployed', $result);
@@ -457,15 +422,12 @@ class TpixDeploymentService
 
     /**
      * Verify Contract บน Explorer
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function verifyContract(TpixConfiguration $config): array
     {
         try {
             // ส่ง source code ไปยัง block explorer สำหรับ verify
-            $response = Http::post(config('tpix.explorer_api') . '/api', [
+            $response = Http::post(config('tpix.explorer_api').'/api', [
                 'module' => 'contract',
                 'action' => 'verifysourcecode',
                 'contractaddress' => $config->contract_address,
@@ -498,7 +460,7 @@ class TpixDeploymentService
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการ verify: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการ verify: '.$e->getMessage(),
             ];
         }
     }
@@ -510,10 +472,6 @@ class TpixDeploymentService
     /**
      * สร้าง Liquidity Pool
      *
-     * @param TpixConfiguration $config
-     * @param float $amountTPIX
-     * @param float $amountToken
-     * @return array
      * @throws Exception
      */
     public function createLiquidityPool(
@@ -570,14 +528,11 @@ class TpixDeploymentService
 
     /**
      * เปิดการซื้อขาย
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function enableTrading(TpixConfiguration $config): array
     {
         try {
-            if (!$config->dex_enabled || empty($config->liquidity_pool_id)) {
+            if (! $config->dex_enabled || empty($config->liquidity_pool_id)) {
                 throw new Exception('Liquidity Pool ยังไม่ถูกสร้าง');
             }
 
@@ -597,7 +552,7 @@ class TpixDeploymentService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถเปิดการซื้อขายได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถเปิดการซื้อขายได้: '.$e->getMessage(),
             ];
         }
     }
@@ -608,9 +563,6 @@ class TpixDeploymentService
 
     /**
      * ส่งข้อมูลไปยัง CoinMarketCap
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function submitToCoinMarketCap(TpixConfiguration $config): array
     {
@@ -646,16 +598,13 @@ class TpixDeploymentService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถส่งข้อมูลไปยัง CoinMarketCap ได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถส่งข้อมูลไปยัง CoinMarketCap ได้: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * ส่งข้อมูลไปยัง CoinGecko
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function submitToCoinGecko(TpixConfiguration $config): array
     {
@@ -684,7 +633,7 @@ class TpixDeploymentService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'ไม่สามารถส่งข้อมูลไปยัง CoinGecko ได้: ' . $e->getMessage(),
+                'message' => 'ไม่สามารถส่งข้อมูลไปยัง CoinGecko ได้: '.$e->getMessage(),
             ];
         }
     }
@@ -695,10 +644,6 @@ class TpixDeploymentService
 
     /**
      * สร้าง Configuration ใหม่
-     *
-     * @param User $user
-     * @param string $name
-     * @return TpixConfiguration
      */
     public function createConfiguration(User $user, string $name): TpixConfiguration
     {
@@ -712,9 +657,6 @@ class TpixDeploymentService
 
     /**
      * คำนวณ estimated gas สำหรับ deployment
-     *
-     * @param TpixConfiguration $config
-     * @return array
      */
     public function estimateDeploymentCost(TpixConfiguration $config): array
     {
@@ -731,7 +673,7 @@ class TpixDeploymentService
                 'gas_price_gwei' => $gasPriceGwei,
                 'estimated_gas' => $estimatedGas,
                 'estimated_cost_tpix' => $estimatedCostTPIX,
-                'estimated_cost_formatted' => number_format($estimatedCostTPIX, 8) . ' TPIX',
+                'estimated_cost_formatted' => number_format($estimatedCostTPIX, 8).' TPIX',
             ];
         } catch (Exception $e) {
             return [

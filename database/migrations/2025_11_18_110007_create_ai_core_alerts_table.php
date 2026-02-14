@@ -14,8 +14,6 @@ return new class extends Migration
      *
      * ตารางนี้เก็บการแจ้งเตือนและ alerts ต่างๆ
      * เช่น quota ใกล้หมด, feature error, scheduled action, etc.
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -57,7 +55,7 @@ return new class extends Migration
                 'subscription_expired',
                 'payment_failed',
                 'system_maintenance',
-                'custom'
+                'custom',
             ])->index()->comment('ประเภท alert');
 
             $table->enum('severity', ['info', 'warning', 'error', 'critical'])->default('info')->index()->comment('ระดับความสำคัญ');
@@ -109,8 +107,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง ai_core_alerts
-     *
-     * @return void
      */
     public function down(): void
     {

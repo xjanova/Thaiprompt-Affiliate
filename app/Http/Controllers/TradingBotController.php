@@ -2,22 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\TradingAccount;
 use App\Models\TradingBot;
 use App\Models\TradingBotPackage;
 use App\Models\TradingBotSubscription;
-use App\Models\TradingAccount;
-use App\Models\TradingStrategy;
 use App\Models\TradingExchange;
-use App\Services\TradingEngine\TradingEngineService;
-use App\Services\TradingEngine\ArbitrageService;
+use App\Models\TradingStrategy;
 use App\Services\TradingEngine\AI\EnhancedAIStrategyService;
+use App\Services\TradingEngine\ArbitrageService;
+use App\Services\TradingEngine\TradingEngineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class TradingBotController extends Controller
 {
     protected TradingEngineService $engineService;
+
     protected ArbitrageService $arbitrageService;
+
     protected EnhancedAIStrategyService $aiService;
 
     public function __construct(
@@ -99,7 +101,7 @@ class TradingBotController extends Controller
 
         return redirect()
             ->route('trading-bot.index')
-            ->with('success', 'Successfully subscribed to ' . $package->name);
+            ->with('success', 'Successfully subscribed to '.$package->name);
     }
 
     /**
@@ -111,7 +113,7 @@ class TradingBotController extends Controller
 
         // Check subscription
         $subscription = $user->tradingBotSubscription()->active()->first();
-        if (!$subscription) {
+        if (! $subscription) {
             return redirect()
                 ->route('trading-bot.marketplace')
                 ->with('error', 'Please subscribe to a package first');

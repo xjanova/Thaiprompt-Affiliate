@@ -83,7 +83,7 @@ class VideoQuest extends Model
     {
         // Check level requirement
         $userLevel = UserVideoLevel::where('user_id', $user->id)->first();
-        if (!$userLevel || $userLevel->currentLevel->level < $this->min_level) {
+        if (! $userLevel || $userLevel->currentLevel->level < $this->min_level) {
             return false;
         }
 

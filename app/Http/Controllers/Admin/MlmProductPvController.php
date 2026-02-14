@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\MlmPlan;
 use App\Models\MlmProductPv;
 use App\Models\Product;
-use App\Models\MlmPlan;
 use App\Services\MlmPvService;
 use Illuminate\Http\Request;
 
@@ -15,7 +15,7 @@ class MlmProductPvController extends Controller
 
     public function __construct()
     {
-        $this->pvService = new MlmPvService();
+        $this->pvService = new MlmPvService;
     }
 
     public function index(Request $request)
@@ -31,7 +31,7 @@ class MlmProductPvController extends Controller
             $search = $request->search;
             $query->whereHas('product', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -190,7 +190,7 @@ class MlmProductPvController extends Controller
             switch ($validated['action']) {
                 case 'toggle_display':
                     $productPv->update([
-                        'show_pv_on_product_page' => !$productPv->show_pv_on_product_page,
+                        'show_pv_on_product_page' => ! $productPv->show_pv_on_product_page,
                     ]);
                     break;
 

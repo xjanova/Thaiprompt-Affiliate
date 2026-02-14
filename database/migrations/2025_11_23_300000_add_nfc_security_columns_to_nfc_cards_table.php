@@ -18,13 +18,11 @@ return new class extends Migration
      * - nfc_signature: Digital signature (HMAC-SHA256)
      * - nfc_written_at: วันเวลาที่เขียนข้อมูลลงบัตร
      * - nfc_written_by: ผู้เขียนข้อมูลลงบัตร
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง nfc_cards มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('nfc_cards')) {
+        if (! Schema::hasTable('nfc_cards')) {
             return;
         }
 
@@ -62,7 +60,7 @@ return new class extends Migration
         // เพิ่ม foreign key สำหรับ nfc_written_by
         if (Schema::hasColumn('nfc_cards', 'nfc_written_by')) {
             Schema::table('nfc_cards', function (Blueprint $table) {
-                if (!$this->foreignKeyExists('nfc_cards', 'nfc_cards_nfc_written_by_foreign')) {
+                if (! $this->foreignKeyExists('nfc_cards', 'nfc_cards_nfc_written_by_foreign')) {
                     $table->foreign('nfc_written_by', 'nfc_cards_nfc_written_by_foreign')
                         ->references('id')
                         ->on('users')
@@ -74,8 +72,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {
@@ -102,10 +98,6 @@ return new class extends Migration
 
     /**
      * ตรวจสอบว่า foreign key มีอยู่หรือไม่
-     *
-     * @param string $table
-     * @param string $foreignKey
-     * @return bool
      */
     protected function foreignKeyExists(string $table, string $foreignKey): bool
     {

@@ -4,15 +4,15 @@ namespace App\Jobs;
 
 use App\Models\FortuneCommentEngagement;
 use App\Models\FortuneTellingSetting;
-use App\Services\FortuneAIService;
 use App\Services\FacebookWebhookService;
+use App\Services\FortuneAIService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Exception;
 use Throwable;
 
 /**
@@ -30,18 +30,20 @@ class ProcessCommentEngagement implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 2;
+
     public $timeout = 60;
+
     public $backoff = [10, 30];
 
     protected array $data;
 
     /**
-     * @param array $data Expected keys:
-     *   - facebook_user_id: string (PSID)
-     *   - facebook_post_id: string
-     *   - facebook_comment_id: string
-     *   - comment_text: string
-     *   - user_name: string|null
+     * @param  array  $data  Expected keys:
+     *                       - facebook_user_id: string (PSID)
+     *                       - facebook_post_id: string
+     *                       - facebook_comment_id: string
+     *                       - comment_text: string
+     *                       - user_name: string|null
      */
     public function __construct(array $data)
     {
@@ -54,8 +56,9 @@ class ProcessCommentEngagement implements ShouldQueue
         try {
             $settings = FortuneTellingSetting::getSettings();
 
-            if (!$settings->isCommentEngagementEnabled()) {
+            if (! $settings->isCommentEngagementEnabled()) {
                 Log::info('Comment engagement ถูกปิดอยู่ ข้ามการประมวลผล');
+
                 return;
             }
 
@@ -73,6 +76,7 @@ class ProcessCommentEngagement implements ShouldQueue
                     'user_id' => $userId,
                     'post_id' => $postId,
                 ]);
+
                 return;
             }
 
@@ -82,7 +86,7 @@ class ProcessCommentEngagement implements ShouldQueue
             Log::info('Comment Engagement: กำลังสร้างข้อความชวนดูดวง', [
                 'user_id' => $userId,
                 'comment' => mb_substr($commentText, 0, 50),
-                'has_profile' => !empty($userProfile),
+                'has_profile' => ! empty($userProfile),
             ]);
 
             // 2. AI สร้างข้อความ
@@ -123,7 +127,7 @@ class ProcessCommentEngagement implements ShouldQueue
             ]);
 
         } catch (Exception $e) {
-            Log::error('Comment Engagement Error: ' . $e->getMessage(), [
+            Log::error('Comment Engagement Error: '.$e->getMessage(), [
                 'data' => $this->data,
                 'trace' => $e->getTraceAsString(),
             ]);

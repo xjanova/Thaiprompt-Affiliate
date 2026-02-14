@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class MlmProspect extends Model
 {
@@ -110,7 +110,7 @@ class MlmProspect extends Model
      */
     public function isLocked(): bool
     {
-        if (!$this->is_locked) {
+        if (! $this->is_locked) {
             return false;
         }
 
@@ -120,6 +120,7 @@ class MlmProspect extends Model
                 'is_locked' => false,
                 'status' => 'expired',
             ]);
+
             return false;
         }
 
@@ -265,7 +266,7 @@ class MlmProspect extends Model
      */
     public function getLockRemainingTimeAttribute(): ?string
     {
-        if (!$this->is_locked || !$this->locked_until) {
+        if (! $this->is_locked || ! $this->locked_until) {
             return null;
         }
 

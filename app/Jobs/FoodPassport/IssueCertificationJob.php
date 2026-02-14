@@ -49,8 +49,9 @@ class IssueCertificationJob implements ShouldQueue
         ]);
 
         $product = $this->checkpoint->foodProduct;
-        if (!$product) {
+        if (! $product) {
             Log::error('Cannot issue certification: Product not found');
+
             return;
         }
 
@@ -126,7 +127,7 @@ class IssueCertificationJob implements ShouldQueue
      */
     protected function determineCertificationType(): string
     {
-        return match($this->checkpoint->checkpoint_type) {
+        return match ($this->checkpoint->checkpoint_type) {
             'laboratory' => 'laboratory_tested',
             'certification' => 'quality_certified',
             'processing' => 'processing_certified',
@@ -142,7 +143,7 @@ class IssueCertificationJob implements ShouldQueue
     {
         $score = $this->checkpoint->pass_score;
 
-        return match(true) {
+        return match (true) {
             $score >= 98 => 'ISO 22000',
             $score >= 95 => 'HACCP',
             $score >= 90 => 'GMP',

@@ -5,9 +5,8 @@ namespace App\Services;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
-use App\Models\PaymentBankAccount;
-use App\Models\UniquePaymentAmount;
 use App\Models\SmsPaymentNotification;
+use App\Models\UniquePaymentAmount;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -32,7 +31,9 @@ use Illuminate\Support\Facades\Log;
 class FortuneConversationService
 {
     protected FortuneTellingSetting $settings;
+
     protected FortuneAIService $aiService;
+
     protected FacebookWebhookService $facebookService;
 
     /**
@@ -218,15 +219,12 @@ class FortuneConversationService
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
         $this->aiService = new FortuneAIService($this->settings);
         $this->facebookService = new FacebookWebhookService($this->settings);
-        $this->chartService = new FortuneChartService();
+        $this->chartService = new FortuneChartService;
     }
 
     /**
      * ประมวลผลข้อความจาก Messenger
      *
-     * @param string $facebookUserId
-     * @param string $messageText
-     * @param array|null $userProfile
      * @return array ผลลัพธ์ ['action' => '...', 'message' => '...', 'reading' => FortuneReading|null]
      */
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
@@ -234,12 +232,13 @@ class FortuneConversationService
         try {
             // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
             $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
-            if (!$filterResult['valid']) {
+            if (! $filterResult['valid']) {
                 Log::info('Fortune Filter: Message blocked', [
                     'user_id' => $facebookUserId,
                     'reason' => $filterResult['reason'],
                     'text_preview' => mb_substr($messageText, 0, 50),
                 ]);
+
                 return [
                     'action' => 'filtered',
                     'message' => $filterResult['message'],
@@ -260,6 +259,7 @@ class FortuneConversationService
                 // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ
                 if ($this->isCancelRequest($messageText)) {
                     $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
                     return [
                         'action' => 'cancelled',
                         'message' => "ยกเลิกแล้วค่ะ หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลยนะคะ 🔮",
@@ -283,13 +283,14 @@ class FortuneConversationService
 
                     // ✅ ถ้าเป็นคำถามดูดวง → เริ่มทำนายเลยโดยไม่ถามซ้ำ (ไม่ต้อง greeting อีก)
                     if ($this->containsFortuneKeyword($messageText)) {
-                        if (!$this->canMakeAICall($facebookUserId)) {
+                        if (! $this->canMakeAICall($facebookUserId)) {
                             return [
                                 'action' => 'ai_limit',
                                 'message' => $this->getAILimitMessage(),
                                 'reading' => null,
                             ];
                         }
+
                         return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
                     }
                     // ถ้าไม่ใช่คำถามดูดวง → ตกลงไปถาม confirmation ตามปกติ
@@ -299,7 +300,7 @@ class FortuneConversationService
             }
 
             // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI
-            if (!$this->canMakeAICall($facebookUserId)) {
+            if (! $this->canMakeAICall($facebookUserId)) {
                 return [
                     'action' => 'ai_limit',
                     'message' => $this->getAILimitMessage(),
@@ -338,28 +339,26 @@ class FortuneConversationService
     /**
      * ข้อความ fallback เมื่อระบบมีปัญหา - ยังคงเป็นมิตรกับผู้ใช้
      *
-     * @param string $name ชื่อผู้ใช้
-     * @return string
+     * @param  string  $name  ชื่อผู้ใช้
      */
     protected function getFallbackMessage(string $name): string
     {
-        return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n" .
-               "จันทรายินดีต้อนรับนะคะ จันทราเป็นหมอดูสาวที่ใช้พลังหยั่งรู้ในการทำนายค่ะ\n\n" .
-               "บอกจันทราได้เลยนะคะว่าอยากรู้เรื่องอะไร:\n" .
-               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
-               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n" .
-               "💰 การเงิน - รายได้ การลงทุน\n" .
-               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n" .
-               "พิมพ์มาได้เลยค่ะ 🔮";
+        return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n".
+               "จันทรายินดีต้อนรับนะคะ จันทราเป็นหมอดูสาวที่ใช้พลังหยั่งรู้ในการทำนายค่ะ\n\n".
+               "บอกจันทราได้เลยนะคะว่าอยากรู้เรื่องอะไร:\n".
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n".
+               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n".
+               "💰 การเงิน - รายได้ การลงทุน\n".
+               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n".
+               'พิมพ์มาได้เลยค่ะ 🔮';
     }
 
     /**
      * สร้าง fallback response เมื่อ AI ติดต่อไม่ได้
      * ตอบแบบเป็นธรรมชาติเหมือนหมอดูจริง ไม่บอกว่าระบบมีปัญหา
      *
-     * @param string $messageText ข้อความจากผู้ใช้
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้
-     * @return string
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
      */
     protected function getFallbackFortuneResponse(string $messageText, ?array $userProfile = null): string
     {
@@ -370,11 +369,11 @@ class FortuneConversationService
         $greetings = ['สวัสดี', 'หวัดดี', 'ดีจ้า', 'ดีค่ะ', 'ดีครับ', 'hi', 'hello', 'hey'];
         foreach ($greetings as $greeting) {
             if (str_contains($text, $greeting)) {
-                return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n" .
-                       "จันทรายินดีต้อนรับนะคะ จันทราเป็นหมอดูสาวที่ใช้พลังหยั่งรู้ในการทำนาย พร้อมช่วยดูดวงให้ค่ะ\n\n" .
-                       "ไม่ว่าจะเรื่องความรัก 💕 การงาน 💼 การเงิน 💰 หรือสุขภาพ 🏥\n" .
-                       "ถามมาได้เลยนะคะ แล้วอย่าลืมบอกวันเดือนปีเกิดให้จันทราด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n\n" .
-                       "ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨";
+                return "🔮 สวัสดีค่ะ คุณ{$name} ✨\n\n".
+                       "จันทรายินดีต้อนรับนะคะ จันทราเป็นหมอดูสาวที่ใช้พลังหยั่งรู้ในการทำนาย พร้อมช่วยดูดวงให้ค่ะ\n\n".
+                       "ไม่ว่าจะเรื่องความรัก 💕 การงาน 💼 การเงิน 💰 หรือสุขภาพ 🏥\n".
+                       "ถามมาได้เลยนะคะ แล้วอย่าลืมบอกวันเดือนปีเกิดให้จันทราด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n\n".
+                       'ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨';
             }
         }
 
@@ -416,108 +415,107 @@ class FortuneConversationService
         }
 
         // ข้อความอื่นๆ ทั่วไป
-        return "🔮 สวัสดีค่ะ คุณ{$name}\n\n" .
-               "ขอบคุณที่ทักมานะคะ จันทราพร้อมดูดวงให้ค่ะ ✨\n\n" .
-               "ลองบอกจันทราว่าอยากรู้เรื่องอะไร:\n" .
-               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
-               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n" .
-               "💰 การเงิน - รายได้ การลงทุน\n" .
-               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n" .
-               "บอกวันเดือนปีเกิดมาด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂✨";
+        return "🔮 สวัสดีค่ะ คุณ{$name}\n\n".
+               "ขอบคุณที่ทักมานะคะ จันทราพร้อมดูดวงให้ค่ะ ✨\n\n".
+               "ลองบอกจันทราว่าอยากรู้เรื่องอะไร:\n".
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n".
+               "💼 การงาน - เปลี่ยนงาน เลื่อนตำแหน่ง\n".
+               "💰 การเงิน - รายได้ การลงทุน\n".
+               "🏥 สุขภาพ - ระวังอะไรบ้าง\n\n".
+               'บอกวันเดือนปีเกิดมาด้วยนะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂✨';
     }
 
     /**
      * สุ่มข้อความ fallback ตามหมวดหมู่
      *
-     * @param string $category หมวดหมู่ (love, work, money, health, general)
-     * @param string $name ชื่อผู้ใช้
-     * @return string
+     * @param  string  $category  หมวดหมู่ (love, work, money, health, general)
+     * @param  string  $name  ชื่อผู้ใช้
      */
     protected function getRandomFallback(string $category, string $name): string
     {
         $responses = [
             'love' => [
-                "🔮 คุณ{$name} คะ จันทราเห็นว่าช่วงนี้ดวงความรักกำลังมีการเปลี่ยนแปลงค่ะ\n\n" .
-                "💕 สำหรับคนมีคู่: ช่วงนี้ควรให้เวลากับคนรักมากขึ้น มีเรื่องดีๆ รออยู่ข้างหน้าค่ะ\n" .
-                "💕 สำหรับคนโสด: ดวงเปิดรับคนใหม่ ลองเปิดใจดูนะคะ\n\n" .
-                "📅 ช่วงเวลาที่ดี: 2-3 เดือนข้างหน้า\n" .
-                "🎨 สีมงคล: ชมพู, แดง\n\n" .
-                "ถ้าบอกวันเดือนปีเกิดให้จันทรา จะได้ทำนายได้แม่นยำยิ่งขึ้นนะคะ 🎂",
+                "🔮 คุณ{$name} คะ จันทราเห็นว่าช่วงนี้ดวงความรักกำลังมีการเปลี่ยนแปลงค่ะ\n\n".
+                "💕 สำหรับคนมีคู่: ช่วงนี้ควรให้เวลากับคนรักมากขึ้น มีเรื่องดีๆ รออยู่ข้างหน้าค่ะ\n".
+                "💕 สำหรับคนโสด: ดวงเปิดรับคนใหม่ ลองเปิดใจดูนะคะ\n\n".
+                "📅 ช่วงเวลาที่ดี: 2-3 เดือนข้างหน้า\n".
+                "🎨 สีมงคล: ชมพู, แดง\n\n".
+                'ถ้าบอกวันเดือนปีเกิดให้จันทรา จะได้ทำนายได้แม่นยำยิ่งขึ้นนะคะ 🎂',
 
-                "🔮 คุณ{$name} คะ จันทราขอบอกตรงๆ เลยนะคะ\n\n" .
-                "💕 ดวงความรักของคุณช่วงนี้ มีทั้งสิ่งดีและสิ่งที่ต้องระวังค่ะ\n" .
-                "✅ เรื่องดี: จะมีคนเข้ามาให้ความสนใจ หรือคนรักจะแสดงความรักมากขึ้น\n" .
-                "⚠️ ระวัง: อย่าใจร้อน อย่าตัดสินใจเรื่องใหญ่เรื่องความรักเร็วเกินไป\n\n" .
-                "🔢 เลขมงคล: 9, 19\n\n" .
-                "อยากรู้ละเอียดกว่านี้ บอกวันเกิดมาได้เลยนะคะ 🎂✨",
+                "🔮 คุณ{$name} คะ จันทราขอบอกตรงๆ เลยนะคะ\n\n".
+                "💕 ดวงความรักของคุณช่วงนี้ มีทั้งสิ่งดีและสิ่งที่ต้องระวังค่ะ\n".
+                "✅ เรื่องดี: จะมีคนเข้ามาให้ความสนใจ หรือคนรักจะแสดงความรักมากขึ้น\n".
+                "⚠️ ระวัง: อย่าใจร้อน อย่าตัดสินใจเรื่องใหญ่เรื่องความรักเร็วเกินไป\n\n".
+                "🔢 เลขมงคล: 9, 19\n\n".
+                'อยากรู้ละเอียดกว่านี้ บอกวันเกิดมาได้เลยนะคะ 🎂✨',
             ],
             'work' => [
-                "🔮 คุณ{$name} คะ จันทราเห็นดวงการงานช่วงนี้ค่ะ\n\n" .
-                "💼 ดวงการงานกำลังอยู่ในช่วงที่ต้องอดทนและพัฒนาตัวเอง\n" .
-                "✅ โอกาสใหม่ๆ จะเริ่มเข้ามาในช่วง 1-3 เดือนข้างหน้า\n" .
-                "✅ คนที่คิดจะเปลี่ยนงาน ช่วงนี้เป็นจังหวะที่ดีค่ะ\n" .
-                "⚠️ ระวังเรื่องเพื่อนร่วมงาน อย่าไว้ใจคนง่ายเกินไป\n\n" .
-                "📅 วันมงคล: วันพฤหัสบดี\n" .
-                "🎨 สีมงคล: เหลือง, ส้ม\n\n" .
-                "บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงได้ลึกขึ้น 🎂",
+                "🔮 คุณ{$name} คะ จันทราเห็นดวงการงานช่วงนี้ค่ะ\n\n".
+                "💼 ดวงการงานกำลังอยู่ในช่วงที่ต้องอดทนและพัฒนาตัวเอง\n".
+                "✅ โอกาสใหม่ๆ จะเริ่มเข้ามาในช่วง 1-3 เดือนข้างหน้า\n".
+                "✅ คนที่คิดจะเปลี่ยนงาน ช่วงนี้เป็นจังหวะที่ดีค่ะ\n".
+                "⚠️ ระวังเรื่องเพื่อนร่วมงาน อย่าไว้ใจคนง่ายเกินไป\n\n".
+                "📅 วันมงคล: วันพฤหัสบดี\n".
+                "🎨 สีมงคล: เหลือง, ส้ม\n\n".
+                'บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงได้ลึกขึ้น 🎂',
 
-                "🔮 คุณ{$name} คะ จันทราขอทำนายดวงการงานให้นะคะ\n\n" .
-                "💼 ช่วงนี้เป็นจังหวะที่ดีสำหรับการเริ่มต้นสิ่งใหม่ค่ะ\n" .
-                "✅ มีเกณฑ์ได้รับข่าวดีเรื่องงาน\n" .
-                "✅ คนทำธุรกิจจะเริ่มเห็นผลลัพธ์\n" .
-                "⚠️ แต่อย่าประมาท ทำทุกอย่างให้รอบคอบ\n\n" .
-                "🔢 เลขมงคล: 5, 14\n\n" .
-                "ถ้าอยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+                "🔮 คุณ{$name} คะ จันทราขอทำนายดวงการงานให้นะคะ\n\n".
+                "💼 ช่วงนี้เป็นจังหวะที่ดีสำหรับการเริ่มต้นสิ่งใหม่ค่ะ\n".
+                "✅ มีเกณฑ์ได้รับข่าวดีเรื่องงาน\n".
+                "✅ คนทำธุรกิจจะเริ่มเห็นผลลัพธ์\n".
+                "⚠️ แต่อย่าประมาท ทำทุกอย่างให้รอบคอบ\n\n".
+                "🔢 เลขมงคล: 5, 14\n\n".
+                'ถ้าอยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨',
             ],
             'money' => [
-                "🔮 คุณ{$name} คะ จันทราเห็นดวงการเงินค่ะ\n\n" .
-                "💰 ดวงการเงินช่วงนี้: ต้องระมัดระวังเรื่องรายจ่ายค่ะ\n" .
-                "✅ มีเกณฑ์ได้เงินก้อน หรือรายได้เพิ่มในช่วง 2-4 เดือนข้างหน้า\n" .
-                "✅ เหมาะกับการออมเงินและวางแผนการเงิน\n" .
-                "⚠️ ระวังการลงทุนที่เสี่ยงสูง ช่วงนี้ยังไม่ใช่จังหวะ\n\n" .
-                "🎨 สีมงคลการเงิน: เขียว, ทอง\n" .
-                "📅 วันมงคล: วันพุธ\n\n" .
-                "บอกวันเกิดมาด้วยนะคะ จะได้ทำนายเรื่องการเงินได้แม่นขึ้น 🎂",
+                "🔮 คุณ{$name} คะ จันทราเห็นดวงการเงินค่ะ\n\n".
+                "💰 ดวงการเงินช่วงนี้: ต้องระมัดระวังเรื่องรายจ่ายค่ะ\n".
+                "✅ มีเกณฑ์ได้เงินก้อน หรือรายได้เพิ่มในช่วง 2-4 เดือนข้างหน้า\n".
+                "✅ เหมาะกับการออมเงินและวางแผนการเงิน\n".
+                "⚠️ ระวังการลงทุนที่เสี่ยงสูง ช่วงนี้ยังไม่ใช่จังหวะ\n\n".
+                "🎨 สีมงคลการเงิน: เขียว, ทอง\n".
+                "📅 วันมงคล: วันพุธ\n\n".
+                'บอกวันเกิดมาด้วยนะคะ จะได้ทำนายเรื่องการเงินได้แม่นขึ้น 🎂',
 
-                "🔮 คุณ{$name} คะ จันทราขอบอกเรื่องการเงินนะคะ\n\n" .
-                "💰 ดวงการเงินของคุณกำลังจะดีขึ้นค่ะ\n" .
-                "✅ มีโอกาสได้รับเงินจากทางที่ไม่คาดคิด\n" .
-                "✅ คนที่ค้าขายจะเริ่มมีลูกค้าเพิ่มขึ้น\n" .
-                "⚠️ แต่ระวังเรื่องการใช้จ่ายฟุ่มเฟือย\n\n" .
-                "🔢 เลขมงคลการเงิน: 3, 8, 24\n\n" .
-                "อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+                "🔮 คุณ{$name} คะ จันทราขอบอกเรื่องการเงินนะคะ\n\n".
+                "💰 ดวงการเงินของคุณกำลังจะดีขึ้นค่ะ\n".
+                "✅ มีโอกาสได้รับเงินจากทางที่ไม่คาดคิด\n".
+                "✅ คนที่ค้าขายจะเริ่มมีลูกค้าเพิ่มขึ้น\n".
+                "⚠️ แต่ระวังเรื่องการใช้จ่ายฟุ่มเฟือย\n\n".
+                "🔢 เลขมงคลการเงิน: 3, 8, 24\n\n".
+                'อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨',
             ],
             'health' => [
-                "🔮 คุณ{$name} คะ จันทราเห็นดวงสุขภาพค่ะ\n\n" .
-                "🏥 ช่วงนี้ต้องดูแลสุขภาพให้ดีค่ะ\n" .
-                "✅ ออกกำลังกายเบาๆ สม่ำเสมอ จะช่วยได้มาก\n" .
-                "✅ พักผ่อนให้เพียงพอ อย่าหักโหมมากเกินไป\n" .
-                "⚠️ ระวังเรื่องการเดินทาง และอาหารการกิน\n\n" .
-                "📅 ช่วงที่ต้องระวังเป็นพิเศษ: 2-3 สัปดาห์ข้างหน้า\n" .
-                "🎨 สีมงคล: เขียว, ขาว\n\n" .
-                "บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงสุขภาพได้ละเอียดขึ้น 🎂",
+                "🔮 คุณ{$name} คะ จันทราเห็นดวงสุขภาพค่ะ\n\n".
+                "🏥 ช่วงนี้ต้องดูแลสุขภาพให้ดีค่ะ\n".
+                "✅ ออกกำลังกายเบาๆ สม่ำเสมอ จะช่วยได้มาก\n".
+                "✅ พักผ่อนให้เพียงพอ อย่าหักโหมมากเกินไป\n".
+                "⚠️ ระวังเรื่องการเดินทาง และอาหารการกิน\n\n".
+                "📅 ช่วงที่ต้องระวังเป็นพิเศษ: 2-3 สัปดาห์ข้างหน้า\n".
+                "🎨 สีมงคล: เขียว, ขาว\n\n".
+                'บอกวันเกิดมาด้วยนะคะ จะได้วิเคราะห์ดวงสุขภาพได้ละเอียดขึ้น 🎂',
             ],
             'general' => [
-                "🔮 คุณ{$name} คะ จันทรายินดีดูดวงให้ค่ะ ✨\n\n" .
-                "⭐ ดวงโดยรวมช่วงนี้: กำลังอยู่ในช่วงเปลี่ยนผ่าน มีทั้งเรื่องดีและสิ่งที่ต้องระวังค่ะ\n\n" .
-                "✅ เรื่องดี: จะมีโอกาสใหม่ๆ เข้ามา ทั้งเรื่องงานและเรื่องส่วนตัว\n" .
-                "✅ การเงินมีเกณฑ์ดีขึ้น\n" .
-                "⚠️ ระวัง: เรื่องสุขภาพ อย่าประมาท ดูแลตัวเองให้ดี\n\n" .
-                "🎨 สีมงคล: น้ำเงิน, ทอง\n" .
-                "🔢 เลขมงคล: 7, 16\n" .
-                "📅 วันมงคล: วันพฤหัสบดี\n\n" .
-                "บอกวันเดือนปีเกิดให้จันทรานะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n" .
-                "ถ้าคำทำนายถูกใจ ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨",
+                "🔮 คุณ{$name} คะ จันทรายินดีดูดวงให้ค่ะ ✨\n\n".
+                "⭐ ดวงโดยรวมช่วงนี้: กำลังอยู่ในช่วงเปลี่ยนผ่าน มีทั้งเรื่องดีและสิ่งที่ต้องระวังค่ะ\n\n".
+                "✅ เรื่องดี: จะมีโอกาสใหม่ๆ เข้ามา ทั้งเรื่องงานและเรื่องส่วนตัว\n".
+                "✅ การเงินมีเกณฑ์ดีขึ้น\n".
+                "⚠️ ระวัง: เรื่องสุขภาพ อย่าประมาท ดูแลตัวเองให้ดี\n\n".
+                "🎨 สีมงคล: น้ำเงิน, ทอง\n".
+                "🔢 เลขมงคล: 7, 16\n".
+                "📅 วันมงคล: วันพฤหัสบดี\n\n".
+                "บอกวันเดือนปีเกิดให้จันทรานะคะ จะได้ทำนายได้แม่นยำยิ่งขึ้น 🎂\n".
+                'ถ้าคำทำนายถูกใจ ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ 🔮✨',
 
-                "🔮 คุณ{$name} คะ จันทราขอทำนายดวงให้นะคะ\n\n" .
-                "⭐ ภาพรวมดวงชะตา: กำลังเข้าสู่ช่วงที่ดีค่ะ\n\n" .
-                "💕 ความรัก: มีเกณฑ์ได้พบคนถูกใจ หรือความสัมพันธ์จะแน่นแฟ้นขึ้น\n" .
-                "💼 การงาน: มีความก้าวหน้า อาจได้รับข้อเสนอใหม่\n" .
-                "💰 การเงิน: ระมัดระวังเรื่องรายจ่าย แต่มีเกณฑ์ได้เงินเข้ามา\n" .
-                "🏥 สุขภาพ: ดูแลตัวเองให้ดี พักผ่อนให้เพียงพอ\n\n" .
-                "🎨 สีมงคล: ม่วง, ครีม\n" .
-                "🔢 เลขมงคล: 2, 11, 29\n\n" .
-                "อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨",
+                "🔮 คุณ{$name} คะ จันทราขอทำนายดวงให้นะคะ\n\n".
+                "⭐ ภาพรวมดวงชะตา: กำลังเข้าสู่ช่วงที่ดีค่ะ\n\n".
+                "💕 ความรัก: มีเกณฑ์ได้พบคนถูกใจ หรือความสัมพันธ์จะแน่นแฟ้นขึ้น\n".
+                "💼 การงาน: มีความก้าวหน้า อาจได้รับข้อเสนอใหม่\n".
+                "💰 การเงิน: ระมัดระวังเรื่องรายจ่าย แต่มีเกณฑ์ได้เงินเข้ามา\n".
+                "🏥 สุขภาพ: ดูแลตัวเองให้ดี พักผ่อนให้เพียงพอ\n\n".
+                "🎨 สีมงคล: ม่วง, ครีม\n".
+                "🔢 เลขมงคล: 2, 11, 29\n\n".
+                'อยากรู้ละเอียดกว่านี้ บอกวันเดือนปีเกิดมานะคะ 🎂✨',
             ],
         ];
 
@@ -529,9 +527,6 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบว่าเป็นคำสั่งเช็คสิทธิ์ดูดวงหรือไม่
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isCheckRemainingRequest(string $text): bool
     {
@@ -549,9 +544,6 @@ class FortuneConversationService
 
     /**
      * แสดงสิทธิ์ดูดวงฟรีที่เหลือวันนี้
-     *
-     * @param string $facebookUserId
-     * @return array
      */
     protected function handleCheckRemaining(string $facebookUserId): array
     {
@@ -581,7 +573,7 @@ class FortuneConversationService
         if ($remaining > 0) {
             $message .= "💡 พิมพ์คำถามมาได้เลยนะคะ\n";
             $message .= "ไม่ว่าจะเรื่องความรัก การงาน การเงิน สุขภาพ\n";
-            $message .= "จันทราพร้อมทำนายให้ค่ะ 🔮✨";
+            $message .= 'จันทราพร้อมทำนายให้ค่ะ 🔮✨';
         } else {
             $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n";
             $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
@@ -604,10 +596,7 @@ class FortuneConversationService
      * สร้าง reading ในสถานะ awaiting_confirmation แล้วส่งข้อความถาม
      * เก็บข้อความต้นฉบับไว้ใน conversation_state เพื่อใช้ตอนทำนายจริง
      *
-     * @param string $facebookUserId
-     * @param string $messageText ข้อความต้นฉบับจากผู้ใช้
-     * @param array|null $userProfile
-     * @return array
+     * @param  string  $messageText  ข้อความต้นฉบับจากผู้ใช้
      */
     protected function askFortuneConfirmation(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
@@ -616,7 +605,7 @@ class FortuneConversationService
             $userProfile = $this->facebookService->getUserProfile($facebookUserId);
         }
 
-        if (!is_array($userProfile)) {
+        if (! is_array($userProfile)) {
             $userProfile = [
                 'name' => 'คุณ',
                 'id' => $facebookUserId,
@@ -688,12 +677,6 @@ class FortuneConversationService
      * ถ้ายืนยัน → ดึงข้อความต้นฉบับจาก state แล้วส่งให้ AI ทำนาย
      * ถ้าปฏิเสธ → ปิด conversation แล้วบอกลา
      * ถ้าพิมพ์อย่างอื่น → ถือเป็นข้อความใหม่ เริ่มทำนายเลย
-     *
-     * @param FortuneReading $reading
-     * @param string $facebookUserId
-     * @param string $messageText
-     * @param array|null $userProfile
-     * @return array
      */
     protected function handleConfirmationResponse(FortuneReading $reading, string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
@@ -705,9 +688,9 @@ class FortuneConversationService
 
             return [
                 'action' => 'declined',
-                'message' => "🔮 ไม่เป็นไรค่ะ คุณ{$name}\n\n" .
-                             "เมื่อไหร่อยากดูดวง ทักมาหาจันทราได้ตลอดนะคะ ✨\n" .
-                             "ขอให้โชคดีค่ะ 🙏",
+                'message' => "🔮 ไม่เป็นไรค่ะ คุณ{$name}\n\n".
+                             "เมื่อไหร่อยากดูดวง ทักมาหาจันทราได้ตลอดนะคะ ✨\n".
+                             'ขอให้โชคดีค่ะ 🙏',
                 'reading' => $reading,
             ];
         }
@@ -725,7 +708,7 @@ class FortuneConversationService
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
         // ตรวจสอบ limit อีกครั้งก่อนส่งให้ AI
-        if (!$this->canMakeAICall($facebookUserId)) {
+        if (! $this->canMakeAICall($facebookUserId)) {
             return [
                 'action' => 'ai_limit',
                 'message' => $this->getAILimitMessage(),
@@ -739,9 +722,6 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบว่าผู้ใช้ปฏิเสธดูดวงหรือไม่
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isDeclineResponse(string $text): bool
     {
@@ -760,9 +740,6 @@ class FortuneConversationService
     /**
      * ตรวจสอบว่าผู้ใช้ตอบยืนยันแบบสั้นๆ (ดู, เอา, ใช่ ฯลฯ)
      * ใช้เพื่อแยกว่าเป็นการยืนยันหรือเป็นคำถามใหม่
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isSimpleConfirmResponse(string $text): bool
     {
@@ -781,9 +758,6 @@ class FortuneConversationService
     /**
      * ตรวจสอบว่าข้อความมีคำเกี่ยวกับดูดวงหรือไม่
      * ใช้เพื่อตัดสินว่าควรข้ามขั้นตอนยืนยัน (confirmation) แล้วเริ่มทำนายทันที
-     *
-     * @param string $text
-     * @return bool
      */
     protected function containsFortuneKeyword(string $text): bool
     {
@@ -802,7 +776,6 @@ class FortuneConversationService
      * สร้างบริบทจากประวัติผู้ใช้ (Personalization)
      * ดึงสรุปคำทำนายก่อนหน้าให้ AI ใช้อ้างอิง
      *
-     * @param string $facebookUserId
      * @return string บริบทสำหรับใส่ใน prompt
      */
     protected function buildUserContext(string $facebookUserId): string
@@ -834,10 +807,10 @@ class FortuneConversationService
 
             $context .= "- เคยดูดวง {$previousReadings->count()} ครั้ง\n";
 
-            if (!empty($categoryCount)) {
+            if (! empty($categoryCount)) {
                 arsort($categoryCount);
                 $topCategories = array_slice($categoryCount, 0, 3, true);
-                $catStr = implode(', ', array_map(fn($c, $n) => "{$c}({$n}ครั้ง)", array_keys($topCategories), $topCategories));
+                $catStr = implode(', ', array_map(fn ($c, $n) => "{$c}({$n}ครั้ง)", array_keys($topCategories), $topCategories));
                 $context .= "- หมวดที่สนใจมากที่สุด: {$catStr}\n";
             }
 
@@ -851,12 +824,12 @@ class FortuneConversationService
             $recentQuestions = [];
             foreach ($previousReadings->take(3) as $reading) {
                 $qs = $reading->questions ?? [];
-                if (!empty($qs)) {
+                if (! empty($qs)) {
                     $recentQuestions[] = mb_substr($qs[0], 0, 50);
                 }
             }
-            if (!empty($recentQuestions)) {
-                $context .= "- คำถามล่าสุด: " . implode(' | ', $recentQuestions) . "\n";
+            if (! empty($recentQuestions)) {
+                $context .= '- คำถามล่าสุด: '.implode(' | ', $recentQuestions)."\n";
             }
 
             $context .= "- ให้ทำนายต่อยอดจากครั้งก่อนได้ เช่น \"จากที่จันทราเคยบอกไว้...\" หรือ \"จันทราจำได้ว่าครั้งก่อน...\"\n";
@@ -864,6 +837,7 @@ class FortuneConversationService
             return $context;
         } catch (\Exception $e) {
             Log::warning('Fortune: buildUserContext failed', ['error' => $e->getMessage()]);
+
             return '';
         }
     }
@@ -871,7 +845,6 @@ class FortuneConversationService
     /**
      * ตรวจจับหมวดคำถามอัตโนมัติจากข้อความ
      *
-     * @param string $text
      * @return string|null หมวดที่ตรวจจับได้ หรือ null
      */
     protected function detectCategory(string $text): ?string
@@ -900,11 +873,6 @@ class FortuneConversationService
 
     /**
      * เริ่มต้น conversation ใหม่ - ทำนายพื้นฐานฟรี
-     *
-     * @param string $facebookUserId
-     * @param string $messageText
-     * @param array|null $userProfile
-     * @return array
      */
     protected function startNewConversation(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
@@ -914,7 +882,7 @@ class FortuneConversationService
         }
 
         // ✅ ป้องกัน null userProfile - สร้าง default profile
-        if (!is_array($userProfile)) {
+        if (! is_array($userProfile)) {
             $userProfile = [
                 'name' => 'คุณ',
                 'id' => $facebookUserId,
@@ -956,7 +924,7 @@ class FortuneConversationService
             Log::info('Fortune: กำลังเรียก AI', [
                 'facebook_user_id' => $facebookUserId,
                 'provider' => $this->settings->getActualAIProvider(),
-                'has_api_key' => !empty($this->settings->getActualAIApiKey()),
+                'has_api_key' => ! empty($this->settings->getActualAIApiKey()),
                 'prompt_length' => mb_strlen($basicPrompt),
             ]);
 
@@ -1015,7 +983,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'basic_done',
-                'message' => $aiResult['response'] . "\n\n" . $remainingMessage . "\n\n" . $billRefMessage . "\n\n" . $upsellMessage,
+                'message' => $aiResult['response']."\n\n".$remainingMessage."\n\n".$billRefMessage."\n\n".$upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
                 'chart_image_url' => $chartImageUrl,
@@ -1029,7 +997,7 @@ class FortuneConversationService
                 'trace_short' => mb_substr($e->getTraceAsString(), 0, 500),
                 'ai_provider' => $this->settings->getActualAIProvider(),
                 'ai_model' => $this->settings->getActualAIModel(),
-                'has_api_key' => !empty($this->settings->getActualAIApiKey()),
+                'has_api_key' => ! empty($this->settings->getActualAIApiKey()),
             ]);
 
             // ลบ reading ที่สร้างไว้เพื่อไม่ให้นับรวมใน daily limit
@@ -1048,9 +1016,9 @@ class FortuneConversationService
             // แจ้งผู้ใช้สั้นๆ ว่าระบบมีปัญหาชั่วคราว (หลังจาก retry + สลับ provider หมดแล้ว)
             return [
                 'action' => 'error',
-                'message' => "🔮 คุณ{$name} คะ ขออภัยนะคะ ระบบกำลังปรับปรุงชั่วคราวค่ะ 🙏\n\n" .
-                             "กรุณาลองพิมพ์มาใหม่อีกครั้งในอีก 1-2 นาทีนะคะ\n" .
-                             "จันทราพร้อมดูดวงให้ค่ะ ✨",
+                'message' => "🔮 คุณ{$name} คะ ขออภัยนะคะ ระบบกำลังปรับปรุงชั่วคราวค่ะ 🙏\n\n".
+                             "กรุณาลองพิมพ์มาใหม่อีกครั้งในอีก 1-2 นาทีนะคะ\n".
+                             'จันทราพร้อมดูดวงให้ค่ะ ✨',
                 'reading' => null,
             ];
         }
@@ -1058,11 +1026,6 @@ class FortuneConversationService
 
     /**
      * ดำเนินการต่อ conversation ที่มีอยู่
-     *
-     * @param FortuneReading $reading
-     * @param string $messageText
-     * @param array|null $userProfile
-     * @return array
      */
     protected function continueConversation(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
     {
@@ -1071,6 +1034,7 @@ class FortuneConversationService
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
         if ($this->isCancelRequest($messageText)) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
             return [
                 'action' => 'cancelled',
                 'message' => "ยกเลิกแล้วค่ะ หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลยนะคะ 🔮",
@@ -1093,10 +1057,6 @@ class FortuneConversationService
 
     /**
      * จัดการหลังทำนายพื้นฐาน - ถามว่าต้องการดูดวงละเอียดไหม
-     *
-     * @param FortuneReading $reading
-     * @param string $messageText
-     * @return array
      */
     protected function handleAfterBasic(FortuneReading $reading, string $messageText): array
     {
@@ -1123,16 +1083,12 @@ class FortuneConversationService
 
     /**
      * จัดการ input วันเกิด
-     *
-     * @param FortuneReading $reading
-     * @param string $messageText
-     * @return array
      */
     protected function handleBirthdateInput(FortuneReading $reading, string $messageText): array
     {
         $birthDate = $this->parseBirthDate($messageText);
 
-        if (!$birthDate) {
+        if (! $birthDate) {
             return [
                 'action' => 'invalid_birthdate',
                 'message' => "ขอโทษค่ะ ไม่เข้าใจวันเกิด กรุณาพิมพ์ใหม่ในรูปแบบ:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990\n📅 หรือ 15 สิงหาคม 2533\n\nพิมพ์ 'ยกเลิก' หากต้องการยกเลิก",
@@ -1156,10 +1112,6 @@ class FortuneConversationService
 
     /**
      * จัดการ input คำถาม
-     *
-     * @param FortuneReading $reading
-     * @param string $messageText
-     * @return array
      */
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
@@ -1167,7 +1119,7 @@ class FortuneConversationService
         $questions = $this->parseMultipleQuestions($messageText);
 
         foreach ($questions as $question) {
-            if (!empty(trim($question))) {
+            if (! empty(trim($question))) {
                 $reading->addQuestion(trim($question));
             }
         }
@@ -1177,6 +1129,7 @@ class FortuneConversationService
 
         if ($questionCount < self::REQUIRED_QUESTIONS) {
             $remaining = self::REQUIRED_QUESTIONS - $questionCount;
+
             return [
                 'action' => 'need_more_questions',
                 'message' => "✅ รับคำถามแล้ว {$questionCount} ข้อ\n\nกรุณาพิมพ์คำถามอีก {$remaining} ข้อค่ะ\n\nหรือพิมพ์ทุกคำถามในครั้งเดียว คั่นด้วย , หรือขึ้นบรรทัดใหม่",
@@ -1190,17 +1143,13 @@ class FortuneConversationService
 
     /**
      * จัดการเมื่อรอชำระเงิน
-     *
-     * @param FortuneReading $reading
-     * @param string $messageText
-     * @return array
      */
     protected function handlePendingPayment(FortuneReading $reading, string $messageText): array
     {
         // ตรวจสอบยอดเงินว่าหมดอายุหรือยัง
         $uniqueAmount = $reading->uniquePaymentAmount;
 
-        if (!$uniqueAmount || $uniqueAmount->expires_at < now()) {
+        if (! $uniqueAmount || $uniqueAmount->expires_at < now()) {
             // บิลหมดอายุ → ปิด conversation กลับไปแชทปกติ
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
@@ -1211,9 +1160,9 @@ class FortuneConversationService
 
             return [
                 'action' => 'payment_expired',
-                'message' => "⏰ บิลดูดวงละเอียดหมดอายุแล้วค่ะ\n\n" .
-                             "ถ้าต้องการดูดวงละเอียดอีกครั้ง พิมพ์ 'ดูดวงละเอียด' ได้เลยนะคะ\n" .
-                             "หรือพิมพ์คำถามใหม่มาได้เลยค่ะ จันทราพร้อมดูดวงให้ค่ะ 🔮✨",
+                'message' => "⏰ บิลดูดวงละเอียดหมดอายุแล้วค่ะ\n\n".
+                             "ถ้าต้องการดูดวงละเอียดอีกครั้ง พิมพ์ 'ดูดวงละเอียด' ได้เลยนะคะ\n".
+                             'หรือพิมพ์คำถามใหม่มาได้เลยค่ะ จันทราพร้อมดูดวงให้ค่ะ 🔮✨',
                 'reading' => $reading,
             ];
         }
@@ -1248,10 +1197,6 @@ class FortuneConversationService
 
     /**
      * สร้างบิลรอชำระเงิน
-     *
-     * @param FortuneReading $reading
-     * @param array $questions
-     * @return array
      */
     protected function createPaymentBill(FortuneReading $reading, array $questions): array
     {
@@ -1264,7 +1209,7 @@ class FortuneConversationService
                 60  // หมดอายุใน 60 นาที
             );
 
-            if (!$uniqueAmount) {
+            if (! $uniqueAmount) {
                 return [
                     'action' => 'error',
                     'message' => "🔮 ตอนนี้ระบบกำลังเตรียมบิลให้ค่ะ\n\nรบกวนพิมพ์ 'ดูดวงละเอียด' อีกครั้งในอีกสักครู่นะคะ ✨",
@@ -1312,10 +1257,6 @@ class FortuneConversationService
      *
      * ทำนายทีละคำถาม อิงจากวันเดือนปีเกิด+เพศ
      * ส่งคู่คำถาม-คำทำนายแยกกัน ให้ละเอียดน่าเชื่อถือ
-     *
-     * @param FortuneReading $reading
-     * @param SmsPaymentNotification|null $notification
-     * @return array
      */
     public function processPaymentConfirmed(FortuneReading $reading, ?SmsPaymentNotification $notification = null): array
     {
@@ -1414,7 +1355,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'completed',
-                'message' => $fullResponse . "\n\n" . $thankYouMessage,
+                'message' => $fullResponse."\n\n".$thankYouMessage,
                 'deep_readings' => $deepReadings,
                 'thank_you' => $thankYouMessage,
                 'reading' => $reading,
@@ -1451,7 +1392,7 @@ class FortuneConversationService
         $hasSpecialCredit = $userCredit && ($userCredit->isCurrentlyUnlimited() || $userCredit->getRemainingCredits() > 0 || $userCredit->isDailyResetActive());
 
         if ($remaining >= 99) {
-            return "📊 สิทธิ์ดูดวงฟรี: ✨ ไม่จำกัด ✨ (โปรโมชั่นพิเศษ!)";
+            return '📊 สิทธิ์ดูดวงฟรี: ✨ ไม่จำกัด ✨ (โปรโมชั่นพิเศษ!)';
         }
 
         $msg = "📊 สิทธิ์ดูดวงฟรีคงเหลือวันนี้: {$remaining} ครั้ง";
@@ -1473,14 +1414,15 @@ class FortuneConversationService
     protected function getUpsellMessage(string $name): string
     {
         $price = self::DEEP_READING_PRICE;
-        return "═══════════════════════\n" .
-               "🌟 *ดูดวงละเอียด* 🌟\n" .
-               "═══════════════════════\n\n" .
-               "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n" .
-               "📍 บอกวันเดือนปีเกิด\n" .
-               "📍 ถามได้ 3 คำถาม\n" .
-               "📍 เพียง {$price} บาท\n\n" .
-               "ตอบ 'ต้องการ' หรือ 'เอา' เพื่อเริ่มต้นค่ะ ✨\n" .
+
+        return "═══════════════════════\n".
+               "🌟 *ดูดวงละเอียด* 🌟\n".
+               "═══════════════════════\n\n".
+               "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n".
+               "📍 บอกวันเดือนปีเกิด\n".
+               "📍 ถามได้ 3 คำถาม\n".
+               "📍 เพียง {$price} บาท\n\n".
+               "ตอบ 'ต้องการ' หรือ 'เอา' เพื่อเริ่มต้นค่ะ ✨\n".
                "ตอบ 'ไม่' หากไม่ต้องการ";
     }
 
@@ -1489,11 +1431,11 @@ class FortuneConversationService
      */
     protected function getBirthdateRequestMessage(): string
     {
-        return "🎂 *กรุณาบอกวันเดือนปีเกิดค่ะ*\n\n" .
-               "📅 พิมพ์ในรูปแบบ: วัน/เดือน/ปี\n" .
-               "📅 ตัวอย่าง: 15/08/1990 หรือ 15/08/2533\n" .
-               "📅 หรือพิมพ์: 15 สิงหาคม 2533\n\n" .
-               "ข้อมูลนี้จะช่วยให้คำทำนายแม่นยำขึ้นค่ะ ✨";
+        return "🎂 *กรุณาบอกวันเดือนปีเกิดค่ะ*\n\n".
+               "📅 พิมพ์ในรูปแบบ: วัน/เดือน/ปี\n".
+               "📅 ตัวอย่าง: 15/08/1990 หรือ 15/08/2533\n".
+               "📅 หรือพิมพ์: 15 สิงหาคม 2533\n\n".
+               'ข้อมูลนี้จะช่วยให้คำทำนายแม่นยำขึ้นค่ะ ✨';
     }
 
     /**
@@ -1504,17 +1446,17 @@ class FortuneConversationService
         $formattedDate = $this->formatThaiDate($birthDate);
         $count = self::REQUIRED_QUESTIONS;
 
-        return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n" .
-               "═══════════════════════\n" .
-               "🔮 *ตั้งคำถาม {$count} ข้อ*\n" .
-               "═══════════════════════\n\n" .
-               "คุณ{$name} ต้องการถามเรื่องอะไรบ้างคะ?\n\n" .
-               "💡 ตัวอย่างคำถาม:\n" .
-               "• การเงินปีนี้เป็นอย่างไร\n" .
-               "• ความรักจะสมหวังไหม\n" .
-               "• การงานจะเจริญก้าวหน้าไหม\n\n" .
-               "📝 พิมพ์ทีละข้อ หรือพิมพ์ทั้ง {$count} ข้อในครั้งเดียว\n" .
-               "(คั่นด้วย , หรือขึ้นบรรทัดใหม่)";
+        return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n".
+               "═══════════════════════\n".
+               "🔮 *ตั้งคำถาม {$count} ข้อ*\n".
+               "═══════════════════════\n\n".
+               "คุณ{$name} ต้องการถามเรื่องอะไรบ้างคะ?\n\n".
+               "💡 ตัวอย่างคำถาม:\n".
+               "• การเงินปีนี้เป็นอย่างไร\n".
+               "• ความรักจะสมหวังไหม\n".
+               "• การงานจะเจริญก้าวหน้าไหม\n\n".
+               "📝 พิมพ์ทีละข้อ หรือพิมพ์ทั้ง {$count} ข้อในครั้งเดียว\n".
+               '(คั่นด้วย , หรือขึ้นบรรทัดใหม่)';
     }
 
     /**
@@ -1552,7 +1494,7 @@ class FortuneConversationService
 
         $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨";
+        $message .= 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨';
 
         return $message;
     }
@@ -1609,19 +1551,19 @@ class FortuneConversationService
     /**
      * สร้างข้อความขอบคุณหลังชำระเงิน
      *
-     * @param string $name ชื่อผู้ใช้
-     * @param string|null $billReference เลขที่บิลอ้างอิง
+     * @param  string  $name  ชื่อผู้ใช้
+     * @param  string|null  $billReference  เลขที่บิลอ้างอิง
      */
     protected function getThankYouMessage(string $name, ?string $billReference = null): string
     {
-        $billInfo = $billReference ? "🔖 เลขที่บิล: {$billReference}\n\n" : "";
+        $billInfo = $billReference ? "🔖 เลขที่บิล: {$billReference}\n\n" : '';
 
-        return "═══════════════════════\n" .
-               "🙏 *ขอบคุณที่ใช้บริการค่ะ*\n" .
-               "═══════════════════════\n\n" .
-               $billInfo .
-               "คุณ{$name} หวังว่าคำทำนายจะเป็นประโยชน์นะคะ ✨\n\n" .
-               "📢 อย่าลืมส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ\n" .
+        return "═══════════════════════\n".
+               "🙏 *ขอบคุณที่ใช้บริการค่ะ*\n".
+               "═══════════════════════\n\n".
+               $billInfo.
+               "คุณ{$name} หวังว่าคำทำนายจะเป็นประโยชน์นะคะ ✨\n\n".
+               "📢 อย่าลืมส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันนะคะ\n".
                "พิมพ์ 'ดูดวง' เมื่อต้องการดูดวงอีกครั้ง 🔮";
     }
 
@@ -1630,17 +1572,15 @@ class FortuneConversationService
      */
     protected function getHelpMessage(): string
     {
-        return "🔮 *ระบบดูดวง AI*\n\n" .
-               "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n" .
-               "หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ค่ะ ✨";
+        return "🔮 *ระบบดูดวง AI*\n\n".
+               "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
+               'หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ค่ะ ✨';
     }
 
     /**
      * สร้างข้อความ help พร้อมตัวอย่างคำถาม
      *
      * มีคาแรคเตอร์หมอดูที่อบอุ่น เป็นกันเอง แต่น่าเชื่อถือ
-     *
-     * @return string
      */
     protected function getHelpMessageWithExamples(): string
     {
@@ -1671,16 +1611,13 @@ class FortuneConversationService
         $message .= "• ดวงการเงินช่วงนี้เป็นอย่างไร\n\n";
 
         $message .= "💡 พิมพ์คำถามมาได้เลยนะคะ\n";
-        $message .= "หมอพร้อมทำนายให้ค่ะ ✨";
+        $message .= 'หมอพร้อมทำนายให้ค่ะ ✨';
 
         return $message;
     }
 
     /**
      * สร้างข้อความเลขที่บิลอ้างอิง
-     *
-     * @param string|null $billReference
-     * @return string
      */
     protected function getBillReferenceMessage(?string $billReference): string
     {
@@ -1688,11 +1625,11 @@ class FortuneConversationService
             return '';
         }
 
-        return "═══════════════════════\n" .
-               "🔖 *เลขที่บิลอ้างอิง*\n" .
-               "📌 {$billReference}\n" .
-               "═══════════════════════\n" .
-               "(เก็บไว้อ้างอิงหากมีปัญหาค่ะ)";
+        return "═══════════════════════\n".
+               "🔖 *เลขที่บิลอ้างอิง*\n".
+               "📌 {$billReference}\n".
+               "═══════════════════════\n".
+               '(เก็บไว้อ้างอิงหากมีปัญหาค่ะ)';
     }
 
     // ============================================================
@@ -1706,7 +1643,7 @@ class FortuneConversationService
      * บล็อกเฉพาะ spam รุนแรงและข้อความยาวเกินเท่านั้น
      * ให้ AI system prompt จัดการ off-topic เอง
      *
-     * @param string $text ข้อความที่ต้องการตรวจสอบ
+     * @param  string  $text  ข้อความที่ต้องการตรวจสอบ
      * @return array ['valid' => bool, 'reason' => string, 'message' => string]
      */
     protected function preFilterMessage(string $text): array
@@ -1728,7 +1665,7 @@ class FortuneConversationService
             return [
                 'valid' => false,
                 'reason' => 'empty',
-                'message' => "🔮 พิมพ์ข้อความมาได้เลยนะคะ จันทราพร้อมช่วยดูดวงให้ค่ะ ✨",
+                'message' => '🔮 พิมพ์ข้อความมาได้เลยนะคะ จันทราพร้อมช่วยดูดวงให้ค่ะ ✨',
             ];
         }
 
@@ -1752,19 +1689,20 @@ class FortuneConversationService
     /**
      * Pre-filter ข้อความพร้อม Rate Limiting (ต้องระบุ userId)
      *
-     * @param string $userId Facebook User ID
-     * @param string $text ข้อความ
+     * @param  string  $userId  Facebook User ID
+     * @param  string  $text  ข้อความ
      * @return array ['valid' => bool, 'reason' => string, 'message' => string]
      */
     public function preFilterWithRateLimit(string $userId, string $text): array
     {
         // 1. ตรวจสอบ Rate Limiting ก่อน
         $rateLimitResult = $this->checkRateLimit($userId);
-        if (!$rateLimitResult['allowed']) {
+        if (! $rateLimitResult['allowed']) {
             Log::warning('Fortune Filter: Rate limit exceeded', [
                 'user_id' => $userId,
                 'type' => $rateLimitResult['type'],
             ]);
+
             return [
                 'valid' => false,
                 'reason' => 'rate_limit',
@@ -1790,9 +1728,6 @@ class FortuneConversationService
 
     /**
      * ตรวจจับข้อความ spam หรือพิมพ์ไม่รู้เรื่อง
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isSpamOrGibberish(string $text): bool
     {
@@ -1823,7 +1758,7 @@ class FortuneConversationService
         // 5. ไม่มีตัวอักษรไทยหรืออังกฤษเลย (ยกเว้นสั้นมาก)
         if (mb_strlen($text) > 10) {
             $hasThaiOrEnglish = preg_match('/[\p{Thai}a-zA-Z]/u', $text);
-            if (!$hasThaiOrEnglish) {
+            if (! $hasThaiOrEnglish) {
                 return true;
             }
         }
@@ -1834,9 +1769,6 @@ class FortuneConversationService
     /**
      * ตรวจจับ Prompt Injection Attempts
      * ป้องกันการพยายาม manipulate AI ด้วยคำสั่งพิเศษ
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isPromptInjection(string $text): bool
     {
@@ -1874,9 +1806,6 @@ class FortuneConversationService
     /**
      * ตรวจจับรูปแบบการโจมตีจาก AI อื่น
      * ป้องกันการใช้ AI ตัวอื่นมาโจมตี/ทดสอบระบบ
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isAIAttack(string $text): bool
     {
@@ -1911,9 +1840,6 @@ class FortuneConversationService
 
     /**
      * ตรวจจับข้อความไร้สาระ/ถามเรื่อยเปื่อย
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isMeaninglessMessage(string $text): bool
     {
@@ -1939,7 +1865,7 @@ class FortuneConversationService
             }
 
             // ถ้าสั้นและไม่มี keyword ดูดวง และไม่ใช่คำสั่งพื้นฐาน
-            if (!$hasFortuneKeyword && !$this->isBasicCommand($text)) {
+            if (! $hasFortuneKeyword && ! $this->isBasicCommand($text)) {
                 return true;
             }
         }
@@ -1954,7 +1880,6 @@ class FortuneConversationService
     /**
      * ตรวจสอบ Rate Limit
      *
-     * @param string $userId
      * @return array ['allowed' => bool, 'type' => string|null]
      */
     protected function checkRateLimit(string $userId): array
@@ -1988,7 +1913,7 @@ class FortuneConversationService
      * เช็คจากฐานข้อมูลว่าวันนี้ถามฟรีไปกี่ครั้งแล้ว
      * เทียบกับ max_free_readings ที่ตั้งค่าไว้
      *
-     * @param string $userId Facebook/LINE User ID
+     * @param  string  $userId  Facebook/LINE User ID
      * @return bool true ถ้ายังถามฟรีได้
      */
     public function canMakeAICall(string $userId): bool
@@ -2002,13 +1927,12 @@ class FortuneConversationService
         // 2. เช็คจากสิทธิ์ฟรีประจำวันปกติ
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
 
-        return !FortuneReading::hasReachedFreeLimit($userId, $maxFreeReadings);
+        return ! FortuneReading::hasReachedFreeLimit($userId, $maxFreeReadings);
     }
 
     /**
      * ตรวจสอบจำนวนคำถามฟรีที่เหลือวันนี้
      *
-     * @param string $userId
      * @return int จำนวนครั้งที่เหลือ
      */
     public function getRemainingFreeQuestions(string $userId): int
@@ -2037,8 +1961,6 @@ class FortuneConversationService
 
     /**
      * บันทึกการเรียก AI
-     *
-     * @param string $userId
      */
     public function recordAICall(string $userId): void
     {
@@ -2059,10 +1981,6 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบข้อความซ้ำ
-     *
-     * @param string $userId
-     * @param string $text
-     * @return bool
      */
     protected function isRepetitiveMessage(string $userId, string $text): bool
     {
@@ -2084,9 +2002,6 @@ class FortuneConversationService
 
     /**
      * บันทึกข้อความล่าสุด
-     *
-     * @param string $userId
-     * @param string $text
      */
     protected function recordMessage(string $userId, string $text): void
     {
@@ -2109,9 +2024,6 @@ class FortuneConversationService
 
     /**
      * ดึงสถิติการใช้งานของ user
-     *
-     * @param string $userId
-     * @return array
      */
     public function getUserUsageStats(string $userId): array
     {
@@ -2130,7 +2042,6 @@ class FortuneConversationService
     /**
      * ตรวจจับคำถาม off-topic
      *
-     * @param string $text
      * @return array ['is_off_topic' => bool, 'category' => string|null]
      */
     protected function detectOffTopic(string $text): array
@@ -2142,6 +2053,7 @@ class FortuneConversationService
             if (str_contains($textLower, mb_strtolower($keyword))) {
                 // หา category
                 $category = $this->categorizeOffTopic($keyword);
+
                 return [
                     'is_off_topic' => true,
                     'category' => $category,
@@ -2160,7 +2072,7 @@ class FortuneConversationService
             }
 
             // ถ้าไม่มีคำเกี่ยวกับดูดวง และไม่ใช่คำสั่งพื้นฐาน
-            if (!$hasFortuneKeyword && !$this->isBasicCommand($text)) {
+            if (! $hasFortuneKeyword && ! $this->isBasicCommand($text)) {
                 return [
                     'is_off_topic' => true,
                     'category' => 'unknown',
@@ -2176,9 +2088,6 @@ class FortuneConversationService
 
     /**
      * จัดหมวดหมู่ off-topic
-     *
-     * @param string $keyword
-     * @return string
      */
     protected function categorizeOffTopic(string $keyword): string
     {
@@ -2205,9 +2114,6 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบว่าเป็นคำสั่งพื้นฐานหรือไม่
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isBasicCommand(string $text): bool
     {
@@ -2225,9 +2131,6 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบว่าถามเกี่ยวกับ AI หรือไม่
-     *
-     * @param string $text
-     * @return bool
      */
     protected function isAskingAboutAI(string $text): bool
     {
@@ -2257,19 +2160,19 @@ class FortuneConversationService
      */
     protected function getSecurityBlockMessage(): string
     {
-        return "🙏 ขอบคุณที่ทักมานะคะ\n\n" .
-               "จันทราขอตอบเฉพาะเรื่องดูดวงเท่านั้นค่ะ\n\n" .
-               "💡 *ตัวอย่างคำถาม*:\n" .
-               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
-               "• การเงินจะดีขึ้นไหม\n" .
-               "• ควรเปลี่ยนงานไหม\n\n" .
-               "จันทราพร้อมทำนายให้ค่ะ 🔮✨";
+        return "🙏 ขอบคุณที่ทักมานะคะ\n\n".
+               "จันทราขอตอบเฉพาะเรื่องดูดวงเท่านั้นค่ะ\n\n".
+               "💡 *ตัวอย่างคำถาม*:\n".
+               "• ดวงความรักปีนี้เป็นอย่างไร\n".
+               "• การเงินจะดีขึ้นไหม\n".
+               "• ควรเปลี่ยนงานไหม\n\n".
+               'จันทราพร้อมทำนายให้ค่ะ 🔮✨';
     }
 
     /**
      * ข้อความเมื่อโดน rate limit
      *
-     * @param string $type minute, hour, หรือ day
+     * @param  string  $type  minute, hour, หรือ day
      */
     protected function getRateLimitMessage(string $type): string
     {
@@ -2287,13 +2190,13 @@ class FortuneConversationService
      */
     protected function getRepetitiveMessage(): string
     {
-        return "🙏 จันทราเห็นข้อความนี้แล้วค่ะ\n\n" .
-               "กรุณาลองถามเรื่องอื่น หรือถามในมุมใหม่ได้นะคะ\n\n" .
-               "💡 *ตัวอย่าง*:\n" .
-               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
-               "• การเงินจะดีขึ้นไหม\n" .
-               "• ควรเปลี่ยนงานไหม\n\n" .
-               "จันทราพร้อมทำนายให้ค่ะ 🔮✨";
+        return "🙏 จันทราเห็นข้อความนี้แล้วค่ะ\n\n".
+               "กรุณาลองถามเรื่องอื่น หรือถามในมุมใหม่ได้นะคะ\n\n".
+               "💡 *ตัวอย่าง*:\n".
+               "• ดวงความรักปีนี้เป็นอย่างไร\n".
+               "• การเงินจะดีขึ้นไหม\n".
+               "• ควรเปลี่ยนงานไหม\n\n".
+               'จันทราพร้อมทำนายให้ค่ะ 🔮✨';
     }
 
     /**
@@ -2303,17 +2206,17 @@ class FortuneConversationService
      */
     protected function getMeaninglessMessage(): string
     {
-        return "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n" .
-               "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่อง:\n\n" .
-               "💕 ความรัก - เนื้อคู่ คู่ครอง\n" .
-               "💼 การงาน - เปลี่ยนงาน เลื่อนขั้น\n" .
-               "💰 การเงิน - โชคลาภ รายได้\n" .
-               "🏥 สุขภาพ - สิ่งควรระวัง\n\n" .
-               "💡 *ตัวอย่างคำถาม*:\n" .
-               "• ปีนี้จะมีคู่ครองไหม\n" .
-               "• ควรเปลี่ยนงานไหม\n" .
-               "• ดวงการเงินเป็นอย่างไร\n\n" .
-               "พิมพ์คำถามมาได้เลยค่ะ 🔮✨";
+        return "🔮 *สวัสดีค่ะ หมอยินดีต้อนรับนะคะ*\n\n".
+               "หมอพร้อมช่วยดูดวงให้ค่ะ ไม่ว่าจะเรื่อง:\n\n".
+               "💕 ความรัก - เนื้อคู่ คู่ครอง\n".
+               "💼 การงาน - เปลี่ยนงาน เลื่อนขั้น\n".
+               "💰 การเงิน - โชคลาภ รายได้\n".
+               "🏥 สุขภาพ - สิ่งควรระวัง\n\n".
+               "💡 *ตัวอย่างคำถาม*:\n".
+               "• ปีนี้จะมีคู่ครองไหม\n".
+               "• ควรเปลี่ยนงานไหม\n".
+               "• ดวงการเงินเป็นอย่างไร\n\n".
+               'พิมพ์คำถามมาได้เลยค่ะ 🔮✨';
     }
 
     /**
@@ -2346,7 +2249,7 @@ class FortuneConversationService
         $message .= "3️⃣ ถามคำถามได้เลย 3 ข้อ\n\n";
 
         $message .= "💡 พิมพ์ \"*ต้องการดูละเอียด*\" หรือ \"*โอนแล้ว*\"\n";
-        $message .= "เพื่อเริ่มกระบวนการค่ะ ✨";
+        $message .= 'เพื่อเริ่มกระบวนการค่ะ ✨';
 
         return $message;
     }
@@ -2356,14 +2259,14 @@ class FortuneConversationService
      */
     protected function getTooLongMessage(): string
     {
-        return "🔮 ข้อความยาวไปหน่อยค่ะ\n\n" .
-               "ลองย่อให้สั้นกว่านี้ได้ไหมคะ?\n" .
-               "หมอจะได้ตอบได้ตรงจุดค่ะ\n\n" .
-               "💡 *ตัวอย่าง*:\n" .
-               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
-               "• ควรเปลี่ยนงานตอนนี้ไหม\n" .
-               "• การเงินช่วงนี้จะดีไหม\n\n" .
-               "หมอรอคำถามอยู่นะคะ ✨";
+        return "🔮 ข้อความยาวไปหน่อยค่ะ\n\n".
+               "ลองย่อให้สั้นกว่านี้ได้ไหมคะ?\n".
+               "หมอจะได้ตอบได้ตรงจุดค่ะ\n\n".
+               "💡 *ตัวอย่าง*:\n".
+               "• ดวงความรักปีนี้เป็นอย่างไร\n".
+               "• ควรเปลี่ยนงานตอนนี้ไหม\n".
+               "• การเงินช่วงนี้จะดีไหม\n\n".
+               'หมอรอคำถามอยู่นะคะ ✨';
     }
 
     /**
@@ -2371,13 +2274,13 @@ class FortuneConversationService
      */
     protected function getTooShortMessage(): string
     {
-        return "🔮 หมอไม่ค่อยเข้าใจค่ะ\n\n" .
-               "ลองพิมพ์คำถามให้ชัดกว่านี้หน่อยนะคะ\n\n" .
-               "💡 *ตัวอย่าง*:\n" .
-               "• ดวงความรักปีนี้เป็นอย่างไร\n" .
-               "• ควรเปลี่ยนงานไหม\n" .
-               "• การเงินจะดีขึ้นไหม\n\n" .
-               "หมอพร้อมทำนายให้ค่ะ ✨";
+        return "🔮 หมอไม่ค่อยเข้าใจค่ะ\n\n".
+               "ลองพิมพ์คำถามให้ชัดกว่านี้หน่อยนะคะ\n\n".
+               "💡 *ตัวอย่าง*:\n".
+               "• ดวงความรักปีนี้เป็นอย่างไร\n".
+               "• ควรเปลี่ยนงานไหม\n".
+               "• การเงินจะดีขึ้นไหม\n\n".
+               'หมอพร้อมทำนายให้ค่ะ ✨';
     }
 
     /**
@@ -2387,46 +2290,43 @@ class FortuneConversationService
      */
     protected function getSpamMessage(): string
     {
-        return "🔮 *สวัสดีค่ะ*\n\n" .
-               "หมอไม่ค่อยเข้าใจข้อความค่ะ\n" .
-               "ลองพิมพ์คำถามชัดๆ ได้ไหมคะ?\n\n" .
-               "💡 *ตัวอย่าง*:\n" .
-               "• ปีนี้ดวงความรักเป็นอย่างไร\n" .
-               "• ควรเปลี่ยนงานไหม\n" .
-               "• ดวงการเงินช่วงนี้\n\n" .
-               "หมอพร้อมทำนายให้นะคะ ✨";
+        return "🔮 *สวัสดีค่ะ*\n\n".
+               "หมอไม่ค่อยเข้าใจข้อความค่ะ\n".
+               "ลองพิมพ์คำถามชัดๆ ได้ไหมคะ?\n\n".
+               "💡 *ตัวอย่าง*:\n".
+               "• ปีนี้ดวงความรักเป็นอย่างไร\n".
+               "• ควรเปลี่ยนงานไหม\n".
+               "• ดวงการเงินช่วงนี้\n\n".
+               'หมอพร้อมทำนายให้นะคะ ✨';
     }
 
     /**
      * ข้อความเมื่อตรวจจับ off-topic
-     *
-     * @param string $category
-     * @return string
      */
     protected function getOffTopicMessage(string $category): string
     {
         $categoryMessages = [
-            'code' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับเขียนโค้ดหรือโปรแกรมนะคะ 🙏",
-            'food' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับแนะนำร้านอาหารหรือสูตรอาหารนะคะ 🙏",
-            'translate' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับแปลภาษานะคะ 🙏",
-            'story' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับเล่าเรื่องหรือมุกตลกนะคะ 🙏",
-            'math' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับคำนวณเลขนะคะ 🙏",
-            'hack' => "ขอโทษค่ะ จันทราไม่รับทำสิ่งที่ผิดกฎหมายหรือไม่เหมาะสมค่ะ 🙏",
-            'homework' => "ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับทำการบ้านหรือเขียนรายงานนะคะ 🙏",
+            'code' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับเขียนโค้ดหรือโปรแกรมนะคะ 🙏',
+            'food' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับแนะนำร้านอาหารหรือสูตรอาหารนะคะ 🙏',
+            'translate' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับแปลภาษานะคะ 🙏',
+            'story' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับเล่าเรื่องหรือมุกตลกนะคะ 🙏',
+            'math' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับคำนวณเลขนะคะ 🙏',
+            'hack' => 'ขอโทษค่ะ จันทราไม่รับทำสิ่งที่ผิดกฎหมายหรือไม่เหมาะสมค่ะ 🙏',
+            'homework' => 'ขอบคุณที่สนใจค่ะ แต่จันทราไม่รับทำการบ้านหรือเขียนรายงานนะคะ 🙏',
         ];
 
-        $specificMessage = $categoryMessages[$category] ?? "ขอบคุณที่สนใจค่ะ 🙏";
+        $specificMessage = $categoryMessages[$category] ?? 'ขอบคุณที่สนใจค่ะ 🙏';
 
-        return "{$specificMessage}\n\n" .
-               "═══════════════════════\n" .
-               "🔮 *จันทรารับดูดวงเท่านั้นค่ะ*\n" .
-               "═══════════════════════\n\n" .
-               "ถ้ามีเรื่องอยากให้ทำนาย ไม่ว่าจะเรื่อง:\n" .
-               "💕 ความรัก คู่ครอง\n" .
-               "💼 การงาน อาชีพ\n" .
-               "💰 การเงิน โชคลาภ\n" .
-               "🏥 สุขภาพ\n\n" .
-               "ทักมาได้เลยค่ะ จันทราพร้อมทำนายให้ค่ะ 🔮✨";
+        return "{$specificMessage}\n\n".
+               "═══════════════════════\n".
+               "🔮 *จันทรารับดูดวงเท่านั้นค่ะ*\n".
+               "═══════════════════════\n\n".
+               "ถ้ามีเรื่องอยากให้ทำนาย ไม่ว่าจะเรื่อง:\n".
+               "💕 ความรัก คู่ครอง\n".
+               "💼 การงาน อาชีพ\n".
+               "💰 การเงิน โชคลาภ\n".
+               "🏥 สุขภาพ\n\n".
+               'ทักมาได้เลยค่ะ จันทราพร้อมทำนายให้ค่ะ 🔮✨';
     }
 
     // ============================================================
@@ -2535,7 +2435,7 @@ class FortuneConversationService
         ];
 
         foreach ($thaiMonths as $monthName => $monthNum) {
-            if (preg_match('/(\d{1,2})\s*' . $monthName . '\s*(\d{4})/', $text, $matches)) {
+            if (preg_match('/(\d{1,2})\s*'.$monthName.'\s*(\d{4})/', $text, $matches)) {
                 $day = (int) $matches[1];
                 $year = (int) $matches[2];
 
@@ -2562,7 +2462,7 @@ class FortuneConversationService
 
         // ตัด whitespace และกรองออก
         $questions = array_map('trim', $questions);
-        $questions = array_filter($questions, fn($q) => mb_strlen($q) > 2);
+        $questions = array_filter($questions, fn ($q) => mb_strlen($q) > 2);
 
         // ถ้า parse ไม่ได้ ใช้ทั้งข้อความเป็น 1 คำถาม
         if (empty($questions)) {
@@ -2580,7 +2480,7 @@ class FortuneConversationService
         try {
             $d = \Carbon\Carbon::parse($date);
             $thaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
             $thaiYear = $d->year + 543;
 
             return "{$d->day} {$thaiMonths[$d->month]} {$thaiYear}";
@@ -2601,10 +2501,10 @@ class FortuneConversationService
      * - ถ้าถูกถามว่าเป็น AI: ตอบว่า "จันทรามีทีมงานช่วยกัน"
      * - พูดเฉพาะเรื่องดูดวง ปฏิเสธเรื่องอื่นสุภาพ
      *
-     * @param array|null $userProfile ข้อมูลโปรไฟล์ผู้ใช้ (name, gender)
-     * @param string $question ข้อความที่ผู้ใช้ส่งมา
-     * @param string $userContext บริบทจากประวัติผู้ใช้ (Personalization)
-     * @param string|null $detectedCategory หมวดคำถามที่ตรวจจับได้อัตโนมัติ
+     * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้ (name, gender)
+     * @param  string  $question  ข้อความที่ผู้ใช้ส่งมา
+     * @param  string  $userContext  บริบทจากประวัติผู้ใช้ (Personalization)
+     * @param  string|null  $detectedCategory  หมวดคำถามที่ตรวจจับได้อัตโนมัติ
      * @return string prompt ที่สร้างเสร็จ
      */
     protected function buildBasicPrompt(?array $userProfile, string $question, string $userContext = '', ?string $detectedCategory = null): string
@@ -2615,7 +2515,7 @@ class FortuneConversationService
 
         // ส่วน User Context (ประวัติผู้ใช้)
         $contextSection = '';
-        if (!empty($userContext)) {
+        if (! empty($userContext)) {
             $contextSection = "\n=== บริบทจากประวัติผู้ใช้ (Personalization) ===\n{$userContext}\n=== จบบริบท ===\n";
         }
 
@@ -2630,14 +2530,14 @@ class FortuneConversationService
                 'โชคลาภ' => 'ผู้ถามสนใจเรื่องโชคลาภ → เน้นวิเคราะห์ภพศุภะ(9) + ภพลาภะ(11) + ดาวพฤหัสบดี',
                 'การเรียน' => 'ผู้ถามสนใจเรื่องการเรียน → เน้นวิเคราะห์ภพปุตตะ(5) + ดาวพุธ + ปัญญา',
             ];
-            $categoryHint = "\n[หมวดคำถามที่ตรวจจับได้: {$detectedCategory}]\n" . ($categoryMap[$detectedCategory] ?? '') . "\n";
+            $categoryHint = "\n[หมวดคำถามที่ตรวจจับได้: {$detectedCategory}]\n".($categoryMap[$detectedCategory] ?? '')."\n";
         }
 
         return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์ไทย (โหราศาสตร์เจ้าชนะ) และโหราศาสตร์สากล ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกา พูดจาเพราะ อบอุ่นเป็นกันเอง น่าเชื่อถือ ใช้คำแทนตัวว่า \"จันทรา\" ทำนายแม่นยำมาก ฟันธงแต่อ่อนโยน ไม่เกิน 500 คำ
 {$contextSection}{$categoryHint}
 ข้อมูลผู้ขอดูดวง:
 - ชื่อ: {$name}
-" . ($gender ? "- เพศ: {$gender}\n" : "") . "
+".($gender ? "- เพศ: {$gender}\n" : '')."
 ข้อความที่ส่งมา: {$question}
 
 แนวทางการตอบ:
@@ -2723,18 +2623,18 @@ class FortuneConversationService
         $name = $userProfile['name'] ?? 'คุณ';
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
         $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
-        $questionsText = implode("\n", array_map(fn($i, $q) => ($i + 1) . ". {$q}", array_keys($questions), $questions));
+        $questionsText = implode("\n", array_map(fn ($i, $q) => ($i + 1).". {$q}", array_keys($questions), $questions));
 
         $birthInfo = '';
         $deepPlanetPositionsInfo = '';
         if ($birthDate) {
-            $birthInfo = "วันเดือนปีเกิด: " . $this->formatThaiDate($birthDate);
+            $birthInfo = 'วันเดือนปีเกิด: '.$this->formatThaiDate($birthDate);
 
             // คำนวณตำแหน่งดาวจริงในภพ → ส่งให้ AI ทำนายแม่นยำ
             try {
                 $date = \Carbon\Carbon::parse($birthDate);
                 $dayOfWeek = $date->dayOfWeek;
-                $chartService = new FortuneChartService();
+                $chartService = new FortuneChartService;
                 $positions = $chartService->calculatePlanetPositions($dayOfWeek);
                 $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
 
@@ -2742,9 +2642,9 @@ class FortuneConversationService
                 foreach ($positions as $houseNum => $planets) {
                     $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
                     $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
-                    if (!empty($planets)) {
-                        $planetNames = array_map(fn($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $deepPlanetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): " . implode(', ', $planetNames) . "\n";
+                    if (! empty($planets)) {
+                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $deepPlanetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ".implode(', ', $planetNames)."\n";
                     }
                 }
 
@@ -2811,8 +2711,8 @@ class FortuneConversationService
 
 ข้อมูลผู้ขอดูดวง:
 - ชื่อ: {$name} (เรียกว่า \"{$genderPrefix}{$name}\")
-" . ($gender ? "- เพศ: {$gender}\n" : "") . "
-" . ($birthInfo ? "- {$birthInfo}\n" : "") . "
+".($gender ? "- เพศ: {$gender}\n" : '').'
+'.($birthInfo ? "- {$birthInfo}\n" : '')."
 {$deepPlanetPositionsInfo}
 คำถาม:
 {$questionsText}
@@ -2854,13 +2754,12 @@ class FortuneConversationService
      * แต่ละคำถามจะอ้างอิงจากวันเกิด+เพศอย่างละเอียด
      * ทำนายเจาะลึกเฉพาะคำถามนั้นๆ ให้แม่นยำ น่าเชื่อถือ
      *
-     * @param array|null $userProfile โปรไฟล์ผู้ใช้
-     * @param string $question คำถามเดียว
-     * @param int $questionNumber ลำดับคำถาม (1,2,3)
-     * @param int $totalQuestions จำนวนคำถามทั้งหมด
-     * @param string|null $birthDate วันเกิด
-     * @param array $previousReadings คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)
-     * @return string
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @param  string  $question  คำถามเดียว
+     * @param  int  $questionNumber  ลำดับคำถาม (1,2,3)
+     * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
+     * @param  string|null  $birthDate  วันเกิด
+     * @param  array  $previousReadings  คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)
      */
     protected function buildPerQuestionDeepPrompt(
         ?array $userProfile,
@@ -2886,7 +2785,7 @@ class FortuneConversationService
             try {
                 $date = \Carbon\Carbon::parse($birthDate);
                 $dayOfWeek = $date->dayOfWeek;
-                $chartService = new FortuneChartService();
+                $chartService = new FortuneChartService;
                 $positions = $chartService->calculatePlanetPositions($dayOfWeek);
                 $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
 
@@ -2894,10 +2793,10 @@ class FortuneConversationService
                 foreach ($positions as $houseNum => $planets) {
                     $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
                     $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
-                    if (!empty($planets)) {
-                        $planetNames = array_map(fn($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $planetSymbols = array_map(fn($p) => FortuneChartService::PLANETS[$p]['symbol'] ?? '', $planets);
-                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): " . implode(', ', $planetNames) . " [" . implode('', $planetSymbols) . "]\n";
+                    if (! empty($planets)) {
+                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $planetSymbols = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['symbol'] ?? '', $planets);
+                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ".implode(', ', $planetNames).' ['.implode('', $planetSymbols)."]\n";
                     } else {
                         $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ว่าง\n";
                     }
@@ -2916,7 +2815,7 @@ class FortuneConversationService
 
         // สรุปคำทำนายก่อนหน้า (เพื่อไม่ให้ AI ซ้ำ)
         $previousContext = '';
-        if (!empty($previousReadings)) {
+        if (! empty($previousReadings)) {
             $previousContext = "\n[คำทำนายที่ผ่านมา - ห้ามพูดซ้ำ ให้ทำนายมุมใหม่]\n";
             foreach ($previousReadings as $prev) {
                 $previousContext .= "- คำถาม {$prev['question_number']}: {$prev['question']} → ตอบไปแล้ว (ห้ามพูดซ้ำ)\n";
@@ -2940,9 +2839,9 @@ class FortuneConversationService
 
 ข้อมูลผู้ขอดูดวง:
 - ชื่อ: {$name} (เรียกว่า \"{$genderPrefix}{$name}\")
-" . ($gender ? "- เพศ: {$gender}\n" : "") . "
-" . ($birthInfo ? "- วันเกิด: {$birthInfo}\n" : "") . "
-" . ($zodiacInfo ? "- {$zodiacInfo}\n" : "") . "
+".($gender ? "- เพศ: {$gender}\n" : '').'
+'.($birthInfo ? "- วันเกิด: {$birthInfo}\n" : '').'
+'.($zodiacInfo ? "- {$zodiacInfo}\n" : '')."
 {$planetPositionsInfo}
 คำถามที่ {$questionNumber}: {$question}
 {$previousContext}
@@ -2956,20 +2855,20 @@ class FortuneConversationService
             $prompt .= "🔮 **เปิดเรื่อง** (คำถามแรก):
 - ทักทาย{$genderPrefix}{$name}อย่างอบอุ่น
 - บอกว่า \"จันทราได้รับคำถาม {$totalQuestions} ข้อจาก{$genderPrefix}{$name} จันทราจะทำนายให้อย่างละเอียดทีละข้อด้วยหลักโหราศาสตร์เจ้าชนะนะคะ\"
-" . ($birthDate ? "- วิเคราะห์ดวงชะตาจากวันเกิดก่อน: ดาวเจ้าชนะ ดาวมิตร ดาวศัตรู ราศี ธาตุประจำตัว
+".($birthDate ? '- วิเคราะห์ดวงชะตาจากวันเกิดก่อน: ดาวเจ้าชนะ ดาวมิตร ดาวศัตรู ราศี ธาตุประจำตัว
 - บอกดาวที่กำลังโคจรส่งผลช่วงนี้ อ้างภพที่ดาวโคจรผ่าน
-- บอกจุดแข็งจุดอ่อนของดวงชะตาสั้นๆ" : "- บอกว่าจันทราใช้พลังหยั่งรู้ประกอบหลักโหราศาสตร์เจ้าชนะในการสัมผัสดวงชะตาของ{$genderPrefix}{$name}") . "
+- บอกจุดแข็งจุดอ่อนของดวงชะตาสั้นๆ' : "- บอกว่าจันทราใช้พลังหยั่งรู้ประกอบหลักโหราศาสตร์เจ้าชนะในการสัมผัสดวงชะตาของ{$genderPrefix}{$name}").'
 
-";
+';
         }
 
         $prompt .= "⭐ **วิเคราะห์คำถาม** (เจาะลึกเฉพาะคำถามนี้ ด้วยหลักเจ้าชนะ):
 - ตอบคำถาม \"{$question}\" อย่างละเอียด ลึกซึ้ง
-" . ($birthDate ? "- อ้างอิงดาวเจ้าชนะ + ดาวที่ส่งผลต่อเรื่องนี้ พร้อมบอกภพที่เกี่ยวข้อง
+".($birthDate ? "- อ้างอิงดาวเจ้าชนะ + ดาวที่ส่งผลต่อเรื่องนี้ พร้อมบอกภพที่เกี่ยวข้อง
 - เช่น ถามเรื่องรัก→ดูดาวศุกร์+ภพปัตนิ ถามเรื่องงาน→ดูภพกัมมะ ถามเรื่องเงิน→ดูภพกดุมภ
-- ระบุว่าราศี+ดาวเจ้าชนะของ{$genderPrefix}{$name}ส่งผลต่อเรื่องนี้อย่างไร" : "- ใช้พลังหยั่งรู้ประกอบหลักเจ้าชนะในการทำนาย") . "
+- ระบุว่าราศี+ดาวเจ้าชนะของ{$genderPrefix}{$name}ส่งผลต่อเรื่องนี้อย่างไร" : '- ใช้พลังหยั่งรู้ประกอบหลักเจ้าชนะในการทำนาย').'
 - ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี
-- ระบุช่วงเวลาที่ชัดเจน เช่น \"ช่วงเดือนมีนา-เมษา ดาว[ชื่อ]โคจรเข้าภพ[ชื่อ]\" \"ภายใน 45 วัน\"
+- ระบุช่วงเวลาที่ชัดเจน เช่น "ช่วงเดือนมีนา-เมษา ดาว[ชื่อ]โคจรเข้าภพ[ชื่อ]" "ภายใน 45 วัน"
 
 💫 **สิ่งที่จะเกิดขึ้น** (แบ่งเป็นช่วงเวลา):
 - ระยะสั้น (1-3 เดือน): ...
@@ -2983,7 +2882,7 @@ class FortuneConversationService
 - ⚠️ สิ่งที่ต้องระวัง (อ้างดาวศัตรูที่ส่งผล) + วิธีแก้ไข
 - 🙏 วิธีเสริมดวง: ไหว้พระ ทำบุญ ใช้สีมงคล ตามหลักเจ้าชนะ
 
-";
+';
 
         // คำถามสุดท้าย: ปิดด้วยกำลังใจ
         if ($questionNumber === $totalQuestions) {
@@ -3010,20 +2909,19 @@ class FortuneConversationService
     /**
      * รวมคำทำนายทีละคำถามเป็นข้อความเดียว (สำหรับบันทึกลง DB)
      *
-     * @param array $deepReadings ข้อมูลคำทำนายแต่ละข้อ
-     * @param string $name ชื่อผู้ใช้
-     * @param string|null $billRef เลขที่บิล
-     * @return string
+     * @param  array  $deepReadings  ข้อมูลคำทำนายแต่ละข้อ
+     * @param  string  $name  ชื่อผู้ใช้
+     * @param  string|null  $billRef  เลขที่บิล
      */
     protected function combineDeepReadings(array $deepReadings, string $name, ?string $billRef = null): string
     {
-        $combined = "";
+        $combined = '';
 
         foreach ($deepReadings as $reading) {
             $combined .= "═══════════════════════\n";
             $combined .= "❓ คำถามที่ {$reading['question_number']}: {$reading['question']}\n";
             $combined .= "═══════════════════════\n\n";
-            $combined .= $reading['answer'] . "\n\n";
+            $combined .= $reading['answer']."\n\n";
         }
 
         return $combined;
@@ -3032,8 +2930,7 @@ class FortuneConversationService
     /**
      * คำนวณราศีและข้อมูลโหราศาสตร์จากวันเกิด
      *
-     * @param string $birthDate วันเกิด (Y-m-d)
-     * @return string
+     * @param  string  $birthDate  วันเกิด (Y-m-d)
      */
     protected function getZodiacDescription(string $birthDate): string
     {

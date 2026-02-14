@@ -61,7 +61,7 @@ class InstallmentPlan extends Model
 
         static::creating(function ($plan) {
             if (empty($plan->plan_number)) {
-                $plan->plan_number = 'IP-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+                $plan->plan_number = 'IP-'.date('Ymd').'-'.strtoupper(\Illuminate\Support\Str::random(6));
             }
         });
     }
@@ -165,7 +165,7 @@ class InstallmentPlan extends Model
     /**
      * Mark payment as paid
      */
-    public function recordPayment(InstallmentPayment $payment, float $amount, string $paymentMethod, string $reference = null): void
+    public function recordPayment(InstallmentPayment $payment, float $amount, string $paymentMethod, ?string $reference = null): void
     {
         $payment->paid_amount = $amount;
         $payment->payment_method = $paymentMethod;
@@ -226,7 +226,7 @@ class InstallmentPlan extends Model
     /**
      * Cancel plan
      */
-    public function cancel(string $reason = null): void
+    public function cancel(?string $reason = null): void
     {
         $this->status = 'cancelled';
         $this->cancelled_at = now();

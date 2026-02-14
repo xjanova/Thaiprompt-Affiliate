@@ -9,19 +9,17 @@ return new class extends Migration
     /**
      * เพิ่มคอลัมน์ extracted_data ในตาราง kyc_verifications
      * สำหรับเก็บข้อมูลที่ OCR อ่านได้จากบัตรประชาชน
-     *
-     * @return void
      */
     public function up(): void
     {
         // ตรวจสอบว่าตาราง kyc_verifications มีอยู่แล้วหรือไม่
-        if (!Schema::hasTable('kyc_verifications')) {
+        if (! Schema::hasTable('kyc_verifications')) {
             return;
         }
 
         Schema::table('kyc_verifications', function (Blueprint $table) {
             // เช็คว่าคอลัมน์มีอยู่แล้วหรือยัง
-            if (!Schema::hasColumn('kyc_verifications', 'extracted_data')) {
+            if (! Schema::hasColumn('kyc_verifications', 'extracted_data')) {
                 $table->json('extracted_data')->nullable()->after('submitted_at');
             }
         });
@@ -29,8 +27,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ extracted_data
-     *
-     * @return void
      */
     public function down(): void
     {

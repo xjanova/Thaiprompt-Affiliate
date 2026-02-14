@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\PageTemplate;
 use App\Models\PageSection;
+use App\Models\PageTemplate;
 use App\Models\Setting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -37,12 +37,13 @@ class MigratePremiumPageToTemplate extends Command
             // Check if default template already exists
             $existingDefault = PageTemplate::where('is_default', true)->first();
             if ($existingDefault) {
-                if (!$this->confirm("มี Default Template อยู่แล้ว ({$existingDefault->name}). ต้องการแทนที่?")) {
+                if (! $this->confirm("มี Default Template อยู่แล้ว ({$existingDefault->name}). ต้องการแทนที่?")) {
                     $this->warn('ยกเลิกการแปลง');
+
                     return 0;
                 }
 
-                $this->info("กำลังยกเลิก Default Template เดิม...");
+                $this->info('กำลังยกเลิก Default Template เดิม...');
                 $existingDefault->update(['is_default' => false]);
             }
 
@@ -165,14 +166,15 @@ class MigratePremiumPageToTemplate extends Command
             );
 
             $this->newLine();
-            $this->info('💡 คุณสามารถแก้ไขเทมเพลตได้ที่: /admin/templates/' . $template->id);
+            $this->info('💡 คุณสามารถแก้ไขเทมเพลตได้ที่: /admin/templates/'.$template->id);
             $this->info('💡 ดูรายการเทมเพลตทั้งหมด: /admin/templates');
 
             return 0;
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->error('❌ เกิดข้อผิดพลาด: ' . $e->getMessage());
+            $this->error('❌ เกิดข้อผิดพลาด: '.$e->getMessage());
             $this->error($e->getTraceAsString());
+
             return 1;
         }
     }

@@ -18,17 +18,20 @@ class PlayerDied implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $playerId;
+
     public int $finalScore;
+
     public int $finalLength;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่เกิดเหตุการณ์
-     * @param int $playerId ID ผู้เล่นที่ตาย
-     * @param int $finalScore คะแนนสุดท้าย
-     * @param int $finalLength ความยาวสุดท้าย
+     * @param  int  $roomId  ห้องที่เกิดเหตุการณ์
+     * @param  int  $playerId  ID ผู้เล่นที่ตาย
+     * @param  int  $finalScore  คะแนนสุดท้าย
+     * @param  int  $finalLength  ความยาวสุดท้าย
      */
     public function __construct(int $roomId, int $playerId, int $finalScore, int $finalLength)
     {
@@ -40,8 +43,6 @@ class PlayerDied implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -54,8 +55,6 @@ class PlayerDied implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -70,7 +69,7 @@ class PlayerDied implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

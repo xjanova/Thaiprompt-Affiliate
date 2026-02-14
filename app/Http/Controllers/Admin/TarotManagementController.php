@@ -6,13 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\TarotCard;
 use App\Models\TarotCardBackImage;
 use App\Models\TarotCardInterpretation;
-use App\Models\TarotReadingCategory;
-use App\Models\TarotSpreadType;
 use App\Models\TarotReading;
+use App\Models\TarotReadingCategory;
 use App\Models\TarotSetting;
+use App\Models\TarotSpreadType;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class TarotManagementController extends Controller
@@ -23,6 +22,7 @@ class TarotManagementController extends Controller
     {
         $this->imageService = $imageService;
     }
+
     /**
      * Show tarot dashboard
      */
@@ -95,7 +95,7 @@ class TarotManagementController extends Controller
         // Handle image upload - แปลงเป็น WebP และ resize ให้พอดีกับขนาดการ์ด
         if ($request->hasFile('image')) {
             $path = $this->imageService->uploadTarotCard($request->file('image'));
-            $data['image_url'] = '/storage/' . $path;
+            $data['image_url'] = '/storage/'.$path;
         }
 
         TarotCard::create($data);
@@ -153,7 +153,7 @@ class TarotManagementController extends Controller
 
             // อัพโหลดรูปใหม่
             $path = $this->imageService->uploadTarotCard($request->file('image'));
-            $data['image_url'] = '/storage/' . $path;
+            $data['image_url'] = '/storage/'.$path;
 
             // Log for debugging
             \Log::info('Tarot card image uploaded', [
@@ -205,7 +205,7 @@ class TarotManagementController extends Controller
                 'image' => 'required|image|max:5120',
             ]);
 
-            if (!$request->hasFile('image')) {
+            if (! $request->hasFile('image')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบไฟล์รูปภาพ',
@@ -223,14 +223,14 @@ class TarotManagementController extends Controller
             // ลองอัพโหลดแบบ WebP ก่อน
             try {
                 $path = $this->imageService->uploadTarotCard($file);
-                $imageUrl = '/storage/' . $path;
+                $imageUrl = '/storage/'.$path;
             } catch (\Exception $e) {
                 // Fallback: อัพโหลดแบบปกติถ้า WebP ไม่ทำงาน
                 \Log::warning('WebP conversion failed, using fallback', ['error' => $e->getMessage()]);
 
-                $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+                $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('tarot/cards', $filename, 'public');
-                $imageUrl = '/storage/' . $path;
+                $imageUrl = '/storage/'.$path;
             }
 
             // อัพเดท database
@@ -251,7 +251,7 @@ class TarotManagementController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'รูปภาพไม่ถูกต้อง: ' . implode(', ', $e->validator->errors()->all()),
+                'message' => 'รูปภาพไม่ถูกต้อง: '.implode(', ', $e->validator->errors()->all()),
             ], 422);
 
         } catch (\Exception $e) {
@@ -263,7 +263,7 @@ class TarotManagementController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -325,7 +325,7 @@ class TarotManagementController extends Controller
         $request->validate([
             'name_en' => 'required|string|max:255',
             'name_th' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:tarot_reading_categories,slug,' . $id,
+            'slug' => 'nullable|string|unique:tarot_reading_categories,slug,'.$id,
             'description_en' => 'nullable|string',
             'description_th' => 'nullable|string',
             'icon' => 'nullable|string|max:100',
@@ -381,7 +381,7 @@ class TarotManagementController extends Controller
 
         TarotCardBackImage::create([
             'name' => $request->name,
-            'image_url' => '/storage/' . $path,
+            'image_url' => '/storage/'.$path,
             'is_default' => $request->boolean('is_default'),
             'is_active' => $request->boolean('is_active', true),
             'sort_order' => TarotCardBackImage::max('sort_order') + 1,
@@ -458,7 +458,9 @@ class TarotManagementController extends Controller
         ]);
 
         foreach ($request->all() as $key => $value) {
-            if ($key === '_token') continue;
+            if ($key === '_token') {
+                continue;
+            }
 
             $type = 'string';
             if (in_array($key, ['enable_tarot_system', 'allow_guest_readings', 'show_reversed_cards', 'enable_ai_interpretation'])) {
@@ -566,7 +568,7 @@ class TarotManagementController extends Controller
     /**
      * แก้ไขคำทำนายของไพ่แต่ละใบสำหรับทุกหมวด
      *
-     * @param int $id ID ของไพ่
+     * @param  int  $id  ID ของไพ่
      */
     public function interpretationsEdit($id)
     {
@@ -579,7 +581,7 @@ class TarotManagementController extends Controller
             $interpretation = $card->interpretations
                 ->firstWhere('category_id', $category->id);
 
-            if (!$interpretation) {
+            if (! $interpretation) {
                 $interpretation = new TarotCardInterpretation([
                     'card_id' => $card->id,
                     'category_id' => $category->id,
@@ -595,8 +597,7 @@ class TarotManagementController extends Controller
     /**
      * บันทึกคำทำนายของไพ่
      *
-     * @param Request $request
-     * @param int $id ID ของไพ่
+     * @param  int  $id  ID ของไพ่
      */
     public function interpretationsUpdate(Request $request, $id)
     {
@@ -640,7 +641,7 @@ class TarotManagementController extends Controller
      *
      * ใช้สำหรับ setup เริ่มต้นเพื่อคัดลอกความหมายพื้นฐานไปทุกหมวด
      *
-     * @param int $id ID ของไพ่
+     * @param  int  $id  ID ของไพ่
      */
     public function interpretationsCopyDefaults($id)
     {

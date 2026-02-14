@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\InvestmentPlan;
-use App\Models\StakingPosition;
 use App\Models\RoiDistribution;
+use App\Models\StakingPosition;
 use App\Services\InvestmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,7 +49,7 @@ class InvestmentController extends Controller
     {
         $user = Auth::user();
 
-        if (!$plan->is_active) {
+        if (! $plan->is_active) {
             return response()->json([
                 'success' => false,
                 'message' => 'แผนการลงทุนนี้ไม่พร้อมใช้งาน',

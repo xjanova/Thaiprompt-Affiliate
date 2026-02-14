@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\MessageSentiment;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Sentiment Analysis Service
@@ -66,10 +65,9 @@ class SentimentAnalysisService
     /**
      * วิเคราะห์ sentiment ของข้อความ
      *
-     * @param string $message ข้อความที่ต้องการวิเคราะห์
-     * @param string|null $lineUserId LINE user ID (optional)
-     * @param int|null $keywordId Keyword ID (optional)
-     * @return MessageSentiment
+     * @param  string  $message  ข้อความที่ต้องการวิเคราะห์
+     * @param  string|null  $lineUserId  LINE user ID (optional)
+     * @param  int|null  $keywordId  Keyword ID (optional)
      */
     public function analyzeSentiment(string $message, ?string $lineUserId = null, ?int $keywordId = null): MessageSentiment
     {
@@ -127,16 +125,13 @@ class SentimentAnalysisService
         // Log activity
         activity()
             ->performedOn($sentiment)
-            ->log('วิเคราะห์ sentiment สำเร็จ: ' . $sentimentData['sentiment']);
+            ->log('วิเคราะห์ sentiment สำเร็จ: '.$sentimentData['sentiment']);
 
         return $sentiment;
     }
 
     /**
      * ตรวจสอบภาษา
-     *
-     * @param string $message
-     * @return string
      */
     private function detectLanguage(string $message): string
     {
@@ -150,10 +145,6 @@ class SentimentAnalysisService
 
     /**
      * แยกคำจากข้อความ
-     *
-     * @param string $message
-     * @param string $language
-     * @return array
      */
     private function extractWords(string $message, string $language): array
     {
@@ -168,15 +159,11 @@ class SentimentAnalysisService
         }
 
         // Remove empty strings and short words
-        return array_filter($words, fn($w) => strlen($w) > 1);
+        return array_filter($words, fn ($w) => strlen($w) > 1);
     }
 
     /**
      * คำนวณ sentiment scores
-     *
-     * @param array $words
-     * @param string $language
-     * @return array
      */
     private function calculateSentimentScores(array $words, string $language): array
     {
@@ -232,10 +219,6 @@ class SentimentAnalysisService
 
     /**
      * ตรวจสอบอารมณ์
-     *
-     * @param array $words
-     * @param string $message
-     * @return array
      */
     private function detectEmotions(array $words, string $message): array
     {
@@ -307,10 +290,6 @@ class SentimentAnalysisService
 
     /**
      * ตรวจสอบคีย์เวิร์ด
-     *
-     * @param array $words
-     * @param string $language
-     * @return array
      */
     private function detectKeywords(array $words, string $language): array
     {
@@ -335,7 +314,7 @@ class SentimentAnalysisService
                 }
             }
 
-            if (!$found) {
+            if (! $found) {
                 foreach ($lexicon['negative'] as $negative) {
                     if ($word === $negative || strpos($negative, $word) !== false) {
                         $keywords['negative'][] = $word;
@@ -345,7 +324,7 @@ class SentimentAnalysisService
                 }
             }
 
-            if (!$found && strlen($word) > 2) {
+            if (! $found && strlen($word) > 2) {
                 $keywords['neutral'][] = $word;
             }
         }
@@ -359,10 +338,6 @@ class SentimentAnalysisService
 
     /**
      * ตรวจสอบปัญหาและ pain points
-     *
-     * @param string $message
-     * @param array $words
-     * @return array
      */
     private function detectPainPoints(string $message, array $words): array
     {
@@ -376,9 +351,9 @@ class SentimentAnalysisService
 
             foreach ($keywordList as $keyword) {
                 if (strpos($messageLower, mb_strtolower($keyword)) !== false) {
-                    if (!in_array($issue, $detected)) {
+                    if (! in_array($issue, $detected)) {
                         $detected[] = $issue;
-                        if (!$primary) {
+                        if (! $primary) {
                             $primary = $issue;
                         }
                     }
@@ -394,11 +369,6 @@ class SentimentAnalysisService
 
     /**
      * ตรวจสอบว่าเป็น complaint หรือไม่
-     *
-     * @param array $sentimentData
-     * @param array $painPoints
-     * @param string $message
-     * @return bool
      */
     private function isComplaint(array $sentimentData, array $painPoints, string $message): bool
     {
@@ -420,11 +390,6 @@ class SentimentAnalysisService
 
     /**
      * ตรวจสอบว่า urgent หรือไม่
-     *
-     * @param array $sentimentData
-     * @param array $painPoints
-     * @param string $message
-     * @return bool
      */
     private function isUrgent(array $sentimentData, array $painPoints, string $message): bool
     {
@@ -451,9 +416,6 @@ class SentimentAnalysisService
 
     /**
      * ได้ sentiments ตามช่วงเวลา
-     *
-     * @param int $days
-     * @return Collection
      */
     public function getSentimentsTrend(int $days = 30): Collection
     {
@@ -466,9 +428,6 @@ class SentimentAnalysisService
 
     /**
      * ได้สถิติ sentiments
-     *
-     * @param int $days
-     * @return array
      */
     public function getSentimentStatistics(int $days = 30): array
     {
@@ -502,9 +461,6 @@ class SentimentAnalysisService
 
     /**
      * ได้ pain points distribution
-     *
-     * @param int $days
-     * @return Collection
      */
     public function getPainPointsDistribution(int $days = 30): Collection
     {
@@ -531,10 +487,6 @@ class SentimentAnalysisService
 
     /**
      * ได้ top complaints
-     *
-     * @param int $limit
-     * @param int $days
-     * @return Collection
      */
     public function getTopComplaints(int $limit = 10, int $days = 30): Collection
     {
@@ -547,9 +499,6 @@ class SentimentAnalysisService
 
     /**
      * ได้ urgent issues
-     *
-     * @param int $limit
-     * @return Collection
      */
     public function getUrgentIssues(int $limit = 10): Collection
     {
@@ -561,9 +510,6 @@ class SentimentAnalysisService
 
     /**
      * ได้ recommendations จาก sentiment analysis
-     *
-     * @param int $days
-     * @return array
      */
     public function getRecommendations(int $days = 30): array
     {
@@ -576,7 +522,7 @@ class SentimentAnalysisService
             $recommendations[] = [
                 'type' => 'warning',
                 'priority' => 'high',
-                'message' => $stats['negative_percentage'] . '% ของข้อความเป็น negative',
+                'message' => $stats['negative_percentage'].'% ของข้อความเป็น negative',
                 'action' => 'ตรวจสอบ pain points และปรับปรุงการบริการ',
             ];
         }
@@ -586,7 +532,7 @@ class SentimentAnalysisService
             $recommendations[] = [
                 'type' => 'warning',
                 'priority' => 'high',
-                'message' => $stats['complaint_count'] . ' ข้อร้องเรียนในช่วง ' . $days . ' วัน',
+                'message' => $stats['complaint_count'].' ข้อร้องเรียนในช่วง '.$days.' วัน',
                 'action' => 'ตอบสนองอย่างเร็วต่อข้อร้องเรียน',
             ];
         }
@@ -596,7 +542,7 @@ class SentimentAnalysisService
             $recommendations[] = [
                 'type' => 'danger',
                 'priority' => 'urgent',
-                'message' => $stats['urgent_count'] . ' เรื่องด่วนที่ต้องการความสนใจทันที',
+                'message' => $stats['urgent_count'].' เรื่องด่วนที่ต้องการความสนใจทันที',
                 'action' => 'ดำเนินการทันทีสำหรับเรื่องด่วน',
             ];
         }
@@ -607,8 +553,8 @@ class SentimentAnalysisService
             $recommendations[] = [
                 'type' => 'info',
                 'priority' => 'medium',
-                'message' => 'ปัญหาหลัก: ' . $topPain['issue'] . ' (' . $topPain['count'] . ' ครั้ง)',
-                'action' => 'พิจารณาปรับปรุงประเภท: ' . $topPain['issue'],
+                'message' => 'ปัญหาหลัก: '.$topPain['issue'].' ('.$topPain['count'].' ครั้ง)',
+                'action' => 'พิจารณาปรับปรุงประเภท: '.$topPain['issue'],
             ];
         }
 
@@ -617,7 +563,7 @@ class SentimentAnalysisService
             $recommendations[] = [
                 'type' => 'success',
                 'priority' => 'low',
-                'message' => $stats['positive_percentage'] . '% ของข้อความเป็น positive',
+                'message' => $stats['positive_percentage'].'% ของข้อความเป็น positive',
                 'action' => 'ยังคงรักษาคุณภาพการบริการ',
             ];
         }

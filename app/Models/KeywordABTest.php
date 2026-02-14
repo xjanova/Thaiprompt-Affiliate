@@ -80,8 +80,6 @@ class KeywordABTest extends Model
 
     /**
      * ความสัมพันธ์กับ LineBotKeyword
-     *
-     * @return BelongsTo
      */
     public function keyword(): BelongsTo
     {
@@ -90,8 +88,6 @@ class KeywordABTest extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTestVariant (variants)
-     *
-     * @return HasMany
      */
     public function variants(): HasMany
     {
@@ -100,8 +96,6 @@ class KeywordABTest extends Model
 
     /**
      * ความสัมพันธ์กับ KeywordABTestResult (results)
-     *
-     * @return HasMany
      */
     public function results_records(): HasMany
     {
@@ -137,8 +131,8 @@ class KeywordABTest extends Model
     /**
      * Scope: ได้แค่ tests ในช่วงเวลา
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $days จำนวนวัน
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  int  $days  จำนวนวัน
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRecentlyStarted($query, $days = 30)
@@ -149,12 +143,10 @@ class KeywordABTest extends Model
 
     /**
      * ตรวจสอบว่าทดสอบสถิติถูกต้องหรือไม่
-     *
-     * @return bool
      */
     public function hasStatisticalSignificance(): bool
     {
-        if (!$this->winner_confidence) {
+        if (! $this->winner_confidence) {
             return false;
         }
 
@@ -164,8 +156,6 @@ class KeywordABTest extends Model
 
     /**
      * ตรวจสอบว่าตัวอย่างเพียงพอหรือไม่
-     *
-     * @return bool
      */
     public function hasSufficientSamples(): bool
     {
@@ -197,8 +187,6 @@ class KeywordABTest extends Model
 
     /**
      * ได้สรุปผลการทดสอบ
-     *
-     * @return array
      */
     public function getSummary(): array
     {

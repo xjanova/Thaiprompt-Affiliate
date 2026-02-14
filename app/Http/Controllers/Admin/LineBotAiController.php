@@ -105,12 +105,14 @@ class LineBotAiController extends Controller
     {
         $aiSetting = LineBotAiSetting::with('knowledgeBases')->findOrFail($aiSettingId);
         $knowledgeBases = $aiSetting->knowledgeBases;
+
         return view('admin.line-bot.ai.knowledge-base', compact('aiSetting', 'knowledgeBases'));
     }
 
     public function knowledgeCreate($aiSettingId)
     {
         $setting = LineBotAiSetting::findOrFail($aiSettingId);
+
         return view('admin.line-bot.ai.knowledge.create', compact('setting'));
     }
 

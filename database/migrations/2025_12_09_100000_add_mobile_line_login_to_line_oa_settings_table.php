@@ -19,13 +19,13 @@ return new class extends Migration
     {
         Schema::table('line_oa_settings', function (Blueprint $table) {
             // เพิ่ม Mobile LINE Login columns
-            if (!Schema::hasColumn('line_oa_settings', 'mobile_login_channel_id')) {
+            if (! Schema::hasColumn('line_oa_settings', 'mobile_login_channel_id')) {
                 $table->string('mobile_login_channel_id')->nullable()
                     ->after('redirect_uri')
                     ->comment('LINE Login Channel ID สำหรับ Mobile App');
             }
 
-            if (!Schema::hasColumn('line_oa_settings', 'mobile_login_channel_secret')) {
+            if (! Schema::hasColumn('line_oa_settings', 'mobile_login_channel_secret')) {
                 $table->string('mobile_login_channel_secret')->nullable()
                     ->after('mobile_login_channel_id')
                     ->comment('LINE Login Channel Secret สำหรับ Mobile App');

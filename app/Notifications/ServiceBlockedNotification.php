@@ -19,8 +19,6 @@ class ServiceBlockedNotification extends Notification implements ShouldQueue
 
     /**
      * สร้าง notification instance
-     *
-     * @param Service $service
      */
     public function __construct(Service $service)
     {
@@ -30,8 +28,7 @@ class ServiceBlockedNotification extends Notification implements ShouldQueue
     /**
      * ช่องทางการส่ง notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function via($notifiable): array
     {
@@ -41,16 +38,15 @@ class ServiceBlockedNotification extends Notification implements ShouldQueue
     /**
      * Email notification
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
      */
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('⚠️ บริการของคุณถูกบล็อกโดย Admin')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line('บริการ "' . $this->service->name . '" ของคุณถูกบล็อกโดยผู้ดูแลระบบ')
-            ->line('**เหตุผล**: ' . $this->service->block_reason)
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('บริการ "'.$this->service->name.'" ของคุณถูกบล็อกโดยผู้ดูแลระบบ')
+            ->line('**เหตุผล**: '.$this->service->block_reason)
             ->line('บริการจะไม่แสดงในระบบจนกว่าจะได้รับการปลดบล็อก')
             ->line('กรุณาติดต่อผู้ดูแลระบบเพื่อขอข้อมูลเพิ่มเติมหรือแก้ไขปัญหา')
             ->action('ดูรายละเอียดบริการ', route('admin.services.edit', $this->service))
@@ -60,8 +56,7 @@ class ServiceBlockedNotification extends Notification implements ShouldQueue
     /**
      * Database notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function toArray($notifiable): array
     {
@@ -72,7 +67,7 @@ class ServiceBlockedNotification extends Notification implements ShouldQueue
             'block_reason' => $this->service->block_reason,
             'blocked_at' => $this->service->blocked_at,
             'blocked_by' => $this->service->blocked_by,
-            'message' => 'บริการ "' . $this->service->name . '" ถูกบล็อกโดย Admin',
+            'message' => 'บริการ "'.$this->service->name.'" ถูกบล็อกโดย Admin',
             'action_url' => route('admin.services.edit', $this->service),
         ];
     }

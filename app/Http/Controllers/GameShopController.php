@@ -63,7 +63,7 @@ class GameShopController extends Controller
             return response()->json(['error' => 'Invalid skin for this game'], 400);
         }
 
-        if (!$skin->isAvailable()) {
+        if (! $skin->isAvailable()) {
             return response()->json(['error' => 'This skin is not available'], 400);
         }
 
@@ -123,7 +123,8 @@ class GameShopController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Purchase failed: ' . $e->getMessage()], 500);
+
+            return response()->json(['error' => 'Purchase failed: '.$e->getMessage()], 500);
         }
     }
 

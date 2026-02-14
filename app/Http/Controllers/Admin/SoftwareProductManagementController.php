@@ -23,9 +23,9 @@ class SoftwareProductManagementController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
+                    ->orWhere('slug', 'like', "%{$search}%");
             });
         }
 
@@ -41,6 +41,7 @@ class SoftwareProductManagementController extends Controller
     public function create()
     {
         $categories = SoftwareProductCategory::active()->ordered()->get();
+
         return view('admin.software-products.create', compact('categories'));
     }
 
@@ -94,6 +95,7 @@ class SoftwareProductManagementController extends Controller
     public function show(SoftwareProduct $softwareProduct)
     {
         $softwareProduct->load(['category', 'options.values', 'quotations']);
+
         return view('admin.software-products.show', compact('softwareProduct'));
     }
 
@@ -103,6 +105,7 @@ class SoftwareProductManagementController extends Controller
     public function edit(SoftwareProduct $softwareProduct)
     {
         $categories = SoftwareProductCategory::ordered()->get();
+
         return view('admin.software-products.edit', compact('softwareProduct', 'categories'));
     }
 
@@ -114,7 +117,7 @@ class SoftwareProductManagementController extends Controller
         $validated = $request->validate([
             'category_id' => 'nullable|exists:software_product_categories,id',
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|unique:software_products,slug,' . $softwareProduct->id,
+            'slug' => 'nullable|string|unique:software_products,slug,'.$softwareProduct->id,
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'features' => 'nullable|array',

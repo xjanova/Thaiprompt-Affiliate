@@ -23,7 +23,7 @@ class CarbonCreditExpiredNotification extends Notification implements ShouldQueu
         return (new MailMessage)
             ->subject('⏰ Carbon Credit หมดอายุแล้ว')
             ->greeting("สวัสดีครับ คุณ{$notifiable->name}")
-            ->line("Carbon Credit ของคุณหมดอายุแล้ว")
+            ->line('Carbon Credit ของคุณหมดอายุแล้ว')
             ->line("จำนวน: {$this->data['amount']} TPCC")
             ->line("วันหมดอายุ: {$this->data['expiry_date']}")
             ->line('Carbon Credit ที่หมดอายุจะไม่สามารถใช้งานหรือซื้อขายได้อีกต่อไป')

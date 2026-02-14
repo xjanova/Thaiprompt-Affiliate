@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\PerformanceReview;
 use App\Models\Employee;
+use App\Models\PerformanceReview;
 use Illuminate\Http\Request;
 
 class PerformanceReviewController extends Controller
@@ -19,9 +19,9 @@ class PerformanceReviewController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->whereHas('employee', function($q) use ($search) {
+            $query->whereHas('employee', function ($q) use ($search) {
                 $q->where('first_name', 'like', '%'.$search.'%')
-                  ->orWhere('last_name', 'like', '%'.$search.'%');
+                    ->orWhere('last_name', 'like', '%'.$search.'%');
             });
         }
 
@@ -93,7 +93,7 @@ class PerformanceReviewController extends Controller
         $review->save();
 
         return redirect()->route('admin.hrm.performance.reviews.index')
-                        ->with('success', __('Performance review created successfully'));
+            ->with('success', __('Performance review created successfully'));
     }
 
     /**
@@ -154,7 +154,7 @@ class PerformanceReviewController extends Controller
         $review->save();
 
         return redirect()->route('admin.hrm.performance.reviews.index')
-                        ->with('success', __('Performance review updated successfully'));
+            ->with('success', __('Performance review updated successfully'));
     }
 
     /**
@@ -165,6 +165,6 @@ class PerformanceReviewController extends Controller
         $review->delete();
 
         return redirect()->route('admin.hrm.performance.reviews.index')
-                        ->with('success', __('Performance review deleted successfully'));
+            ->with('success', __('Performance review deleted successfully'));
     }
 }

@@ -52,6 +52,7 @@ class SmsGatewayBankAccount extends Model
         if ($storeId === null) {
             return $query->whereNull('store_id');
         }
+
         return $query->where('store_id', $storeId);
     }
 
@@ -92,6 +93,7 @@ class SmsGatewayBankAccount extends Model
     public function getBankDisplayNameAttribute(): string
     {
         $banks = config('smschecker.supported_banks', []);
+
         return $banks[$this->bank_code] ?? $this->bank_code;
     }
 
@@ -104,6 +106,7 @@ class SmsGatewayBankAccount extends Model
         if (strlen($num) <= 4) {
             return $num;
         }
-        return str_repeat('*', strlen($num) - 4) . substr($num, -4);
+
+        return str_repeat('*', strlen($num) - 4).substr($num, -4);
     }
 }

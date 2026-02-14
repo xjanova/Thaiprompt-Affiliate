@@ -238,7 +238,7 @@ class EmailController extends Controller
         ]);
 
         // Convert comma-separated string to array
-        if (!empty($validated['variables'])) {
+        if (! empty($validated['variables'])) {
             $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
         }
 
@@ -276,7 +276,7 @@ class EmailController extends Controller
         ]);
 
         // Convert comma-separated string to array
-        if (!empty($validated['variables'])) {
+        if (! empty($validated['variables'])) {
             $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
         }
 
@@ -330,7 +330,7 @@ class EmailController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to preview template: ' . $e->getMessage(),
+                'message' => 'Failed to preview template: '.$e->getMessage(),
             ], 500);
         }
     }

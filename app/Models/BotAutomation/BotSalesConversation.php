@@ -2,8 +2,8 @@
 
 namespace App\Models\BotAutomation;
 
-use App\Models\User;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -178,7 +178,7 @@ class BotSalesConversation extends Model
      */
     public static function generateConversationId(): string
     {
-        return 'SALES-' . strtoupper(uniqid());
+        return 'SALES-'.strtoupper(uniqid());
     }
 
     /**
@@ -187,10 +187,10 @@ class BotSalesConversation extends Model
     protected static function booted()
     {
         static::creating(function ($conversation) {
-            if (!$conversation->conversation_id) {
+            if (! $conversation->conversation_id) {
                 $conversation->conversation_id = self::generateConversationId();
             }
-            if (!$conversation->first_contact_at) {
+            if (! $conversation->first_contact_at) {
                 $conversation->first_contact_at = now();
             }
         });

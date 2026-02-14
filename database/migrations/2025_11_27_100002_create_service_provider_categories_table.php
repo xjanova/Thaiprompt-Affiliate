@@ -13,8 +13,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง pivot สำหรับ provider และ categories
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -53,8 +51,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง
-     *
-     * @return void
      */
     public function down(): void
     {

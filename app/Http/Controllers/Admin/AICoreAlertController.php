@@ -19,7 +19,6 @@ class AICoreAlertController extends Controller
     /**
      * แสดงรายการ Alerts ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -88,7 +87,6 @@ class AICoreAlertController extends Controller
     /**
      * แสดงรายละเอียด Alert
      *
-     * @param AICoreAlert $alert
      * @return \Illuminate\View\View
      */
     public function show(AICoreAlert $alert)
@@ -97,7 +95,7 @@ class AICoreAlertController extends Controller
         $alert->load(['tenant', 'feature', 'acknowledgedByUser', 'resolvedByUser']);
 
         // ทำเครื่องหมายว่าอ่านแล้ว (ถ้ายังไม่ได้อ่าน)
-        if (!$alert->is_read) {
+        if (! $alert->is_read) {
             $alert->markAsRead();
         }
 
@@ -107,7 +105,6 @@ class AICoreAlertController extends Controller
     /**
      * ทำเครื่องหมายว่าอ่านแล้ว
      *
-     * @param AICoreAlert $alert
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function markAsRead(AICoreAlert $alert)
@@ -132,11 +129,11 @@ class AICoreAlertController extends Controller
             if (request()->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -159,15 +156,13 @@ class AICoreAlertController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * รับทราบ Alert (Acknowledge)
      *
-     * @param Request $request
-     * @param AICoreAlert $alert
      * @return \Illuminate\Http\RedirectResponse
      */
     public function acknowledge(Request $request, AICoreAlert $alert)
@@ -186,15 +181,13 @@ class AICoreAlertController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * แก้ไข Alert (Resolve)
      *
-     * @param Request $request
-     * @param AICoreAlert $alert
      * @return \Illuminate\Http\RedirectResponse
      */
     public function resolve(Request $request, AICoreAlert $alert)
@@ -213,14 +206,13 @@ class AICoreAlertController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปิด Alert (Dismiss)
      *
-     * @param AICoreAlert $alert
      * @return \Illuminate\Http\RedirectResponse
      */
     public function dismiss(AICoreAlert $alert)
@@ -235,14 +227,13 @@ class AICoreAlertController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ลบ Alert
      *
-     * @param AICoreAlert $alert
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(AICoreAlert $alert)
@@ -253,14 +244,14 @@ class AICoreAlertController extends Controller
 
             return redirect()
                 ->route('admin.ai-core.alerts.index')
-                ->with('success', 'ลบ Alert สำเร็จ: ' . $alertTitle);
+                ->with('success', 'ลบ Alert สำเร็จ: '.$alertTitle);
         } catch (\Exception $e) {
             Log::error('AI Core: ลบ alert ล้มเหลว', [
                 'alert_id' => $alert->id,
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -282,7 +273,7 @@ class AICoreAlertController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 }

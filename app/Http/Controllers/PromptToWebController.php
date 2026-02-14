@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\PromptToWebService;
 use App\Models\GeneratedPage;
+use App\Services\PromptToWebService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -53,7 +53,7 @@ class PromptToWebController extends Controller
                 $request->input('model')
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการสร้างหน้าเว็บ',
@@ -87,7 +87,7 @@ class PromptToWebController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -120,7 +120,7 @@ class PromptToWebController extends Controller
                 $request->input('provider')
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json([
                     'success' => false,
                     'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการปรับปรุงหน้าเว็บ',
@@ -157,7 +157,7 @@ class PromptToWebController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -191,7 +191,7 @@ class PromptToWebController extends Controller
      */
     public function list(Request $request)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -213,7 +213,7 @@ class PromptToWebController extends Controller
      */
     public function delete($id)
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'กรุณาเข้าสู่ระบบ',
@@ -241,7 +241,7 @@ class PromptToWebController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -251,7 +251,7 @@ class PromptToWebController extends Controller
      */
     protected function savePage(string $prompt, array $result): GeneratedPage
     {
-        $slug = Str::slug($result['title']) . '-' . Str::random(8);
+        $slug = Str::slug($result['title']).'-'.Str::random(8);
 
         return GeneratedPage::create([
             'user_id' => Auth::id(),

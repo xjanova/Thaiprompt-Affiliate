@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * VideoMission Model
@@ -225,8 +225,6 @@ class VideoMission extends Model
 
     /**
      * ความสัมพันธ์กับ Rank ขั้นต่ำ
-     *
-     * @return BelongsTo
      */
     public function minRank(): BelongsTo
     {
@@ -235,8 +233,6 @@ class VideoMission extends Model
 
     /**
      * ความสัมพันธ์กับ Rank สูงสุด
-     *
-     * @return BelongsTo
      */
     public function maxRank(): BelongsTo
     {
@@ -245,8 +241,6 @@ class VideoMission extends Model
 
     /**
      * ความสัมพันธ์กับผู้สร้าง
-     *
-     * @return BelongsTo
      */
     public function creator(): BelongsTo
     {
@@ -255,8 +249,6 @@ class VideoMission extends Model
 
     /**
      * ความสัมพันธ์กับผู้แก้ไขล่าสุด
-     *
-     * @return BelongsTo
      */
     public function updater(): BelongsTo
     {
@@ -265,8 +257,6 @@ class VideoMission extends Model
 
     /**
      * ความสัมพันธ์กับการทำภารกิจ
-     *
-     * @return HasMany
      */
     public function completions(): HasMany
     {
@@ -275,8 +265,6 @@ class VideoMission extends Model
 
     /**
      * ดึงการทำสำเร็จของ user
-     *
-     * @return HasMany
      */
     public function userCompletions(): HasMany
     {
@@ -351,12 +339,12 @@ class VideoMission extends Model
      */
     public function scopeForRank($query, int $rankId, int $rankLevel)
     {
-        return $query->where(function ($q) use ($rankId, $rankLevel) {
+        return $query->where(function ($q) use ($rankLevel) {
             $q->whereNull('min_rank_id')
                 ->orWhereHas('minRank', function ($subQ) use ($rankLevel) {
                     $subQ->where('level', '<=', $rankLevel);
                 });
-        })->where(function ($q) use ($rankId, $rankLevel) {
+        })->where(function ($q) use ($rankLevel) {
             $q->whereNull('max_rank_id')
                 ->orWhereHas('maxRank', function ($subQ) use ($rankLevel) {
                     $subQ->where('level', '>=', $rankLevel);
@@ -368,38 +356,35 @@ class VideoMission extends Model
 
     /**
      * ดึงชื่อตาม locale
-     *
-     * @return string
      */
     public function getDisplayTitleAttribute(): string
     {
         $locale = app()->getLocale();
+
         return ($locale === 'th' && $this->title_th) ? $this->title_th : $this->title;
     }
 
     /**
      * ดึงรายละเอียดตาม locale
-     *
-     * @return string|null
      */
     public function getDisplayDescriptionAttribute(): ?string
     {
         $locale = app()->getLocale();
+
         return ($locale === 'th' && $this->description_th) ? $this->description_th : $this->description;
     }
 
     /**
      * ดึง URL รูปปก
-     *
-     * @return string|null
      */
     public function getThumbnailUrlAttribute(): ?string
     {
-        if (!$this->thumbnail) {
+        if (! $this->thumbnail) {
             // ถ้าเป็น YouTube ใช้ thumbnail อัตโนมัติ
             if ($this->video_type === 'youtube' && $this->video_id) {
                 return "https://img.youtube.com/vi/{$this->video_id}/maxresdefault.jpg";
             }
+
             return null;
         }
 
@@ -407,13 +392,11 @@ class VideoMission extends Model
             return $this->thumbnail;
         }
 
-        return asset('storage/' . $this->thumbnail);
+        return asset('storage/'.$this->thumbnail);
     }
 
     /**
      * ดึง video ID จาก URL
-     *
-     * @return string|null
      */
     public function getVideoIdAttribute($value): ?string
     {
@@ -427,13 +410,11 @@ class VideoMission extends Model
 
     /**
      * ดึง embed URL
-     *
-     * @return string|null
      */
     public function getEmbedUrlAttribute(): ?string
     {
         $videoId = $this->video_id;
-        if (!$videoId) {
+        if (! $videoId) {
             return null;
         }
 
@@ -451,27 +432,25 @@ class VideoMission extends Model
 
     /**
      * รวมรางวัลทั้งหมดเป็นข้อความ
-     *
-     * @return string
      */
     public function getRewardSummaryAttribute(): string
     {
         $rewards = [];
 
         if ($this->reward_money > 0) {
-            $rewards[] = '฿' . number_format($this->reward_money, 2);
+            $rewards[] = '฿'.number_format($this->reward_money, 2);
         }
         if ($this->reward_coins > 0) {
-            $rewards[] = number_format($this->reward_coins) . ' Coins';
+            $rewards[] = number_format($this->reward_coins).' Coins';
         }
         if ($this->reward_points > 0) {
-            $rewards[] = number_format($this->reward_points) . ' แต้ม';
+            $rewards[] = number_format($this->reward_points).' แต้ม';
         }
         if ($this->reward_tpix > 0) {
-            $rewards[] = number_format($this->reward_tpix, 4) . ' TPIX';
+            $rewards[] = number_format($this->reward_tpix, 4).' TPIX';
         }
         if ($this->reward_exp > 0) {
-            $rewards[] = number_format($this->reward_exp) . ' EXP';
+            $rewards[] = number_format($this->reward_exp).' EXP';
         }
 
         return implode(' + ', $rewards) ?: 'ไม่มีรางวัล';
@@ -479,35 +458,31 @@ class VideoMission extends Model
 
     /**
      * แปลงเวลาที่ต้องดูเป็นรูปแบบอ่านง่าย
-     *
-     * @return string
      */
     public function getRequiredWatchTimeFormattedAttribute(): string
     {
         $seconds = $this->required_watch_seconds;
 
         if ($seconds < 60) {
-            return $seconds . ' วินาที';
+            return $seconds.' วินาที';
         }
 
         $minutes = floor($seconds / 60);
         $remainingSeconds = $seconds % 60;
 
         if ($remainingSeconds > 0) {
-            return $minutes . ' นาที ' . $remainingSeconds . ' วินาที';
+            return $minutes.' นาที '.$remainingSeconds.' วินาที';
         }
 
-        return $minutes . ' นาที';
+        return $minutes.' นาที';
     }
 
     /**
      * ดึงสถานะการเปิดใช้งาน
-     *
-     * @return string
      */
     public function getStatusAttribute(): string
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return 'inactive';
         }
 
@@ -526,8 +501,6 @@ class VideoMission extends Model
 
     /**
      * ดึงสีสถานะ
-     *
-     * @return string
      */
     public function getStatusColorAttribute(): string
     {
@@ -542,8 +515,6 @@ class VideoMission extends Model
 
     /**
      * ดึง label สถานะภาษาไทย
-     *
-     * @return string
      */
     public function getStatusLabelAttribute(): string
     {
@@ -558,8 +529,6 @@ class VideoMission extends Model
 
     /**
      * ดึง label ความถี่/รอบรีเซ็ตภาษาไทย
-     *
-     * @return string
      */
     public function getResetPeriodLabelAttribute(): string
     {
@@ -580,8 +549,6 @@ class VideoMission extends Model
 
     /**
      * ดึง icon สำหรับแสดงความถี่
-     *
-     * @return string
      */
     public function getResetPeriodIconAttribute(): string
     {
@@ -598,8 +565,6 @@ class VideoMission extends Model
 
     /**
      * ดึง badge class สำหรับแสดงความถี่
-     *
-     * @return string
      */
     public function getResetPeriodBadgeClassAttribute(): string
     {
@@ -619,13 +584,12 @@ class VideoMission extends Model
     /**
      * ตรวจสอบว่า user มีสิทธิ์ทำภารกิจนี้หรือไม่
      *
-     * @param User $user
      * @return array ['eligible' => bool, 'reason' => string|null]
      */
     public function checkUserEligibility(User $user): array
     {
         // ตรวจสอบสถานะภารกิจ
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return ['eligible' => false, 'reason' => 'ภารกิจนี้ปิดใช้งานแล้ว'];
         }
 
@@ -641,7 +605,7 @@ class VideoMission extends Model
         // ตรวจสอบวันที่เปิดให้ทำ
         if ($this->available_days) {
             $today = $now->dayOfWeek;
-            if (!in_array($today, $this->available_days)) {
+            if (! in_array($today, $this->available_days)) {
                 return ['eligible' => false, 'reason' => 'ภารกิจไม่เปิดให้ทำในวันนี้'];
             }
         }
@@ -678,17 +642,17 @@ class VideoMission extends Model
         }
 
         // ตรวจสอบ KYC
-        if ($this->require_kyc && !$user->is_kyc_verified) {
+        if ($this->require_kyc && ! $user->is_kyc_verified) {
             return ['eligible' => false, 'reason' => 'ต้องยืนยันตัวตน (KYC) ก่อน'];
         }
 
         // ตรวจสอบ Email verified
-        if ($this->require_email_verified && !$user->hasVerifiedEmail()) {
+        if ($this->require_email_verified && ! $user->hasVerifiedEmail()) {
             return ['eligible' => false, 'reason' => 'ต้องยืนยันอีเมลก่อน'];
         }
 
         // ตรวจสอบ Phone verified
-        if ($this->require_phone_verified && !$user->phone_verified_at) {
+        if ($this->require_phone_verified && ! $user->phone_verified_at) {
             return ['eligible' => false, 'reason' => 'ต้องยืนยันเบอร์โทรศัพท์ก่อน'];
         }
 
@@ -696,7 +660,7 @@ class VideoMission extends Model
         if ($this->is_premium) {
             // ถ้า rank มี can_access_premium_missions
             $rankLimit = VideoMissionRankLimit::where('rank_id', $user->current_rank_id)->first();
-            if (!$rankLimit || !$rankLimit->can_access_premium_missions) {
+            if (! $rankLimit || ! $rankLimit->can_access_premium_missions) {
                 return ['eligible' => false, 'reason' => 'ภารกิจนี้สำหรับสมาชิก Premium เท่านั้น'];
             }
         }
@@ -725,13 +689,13 @@ class VideoMission extends Model
             return ['eligible' => false, 'reason' => 'งบประมาณรางวัลของภารกิจนี้หมดแล้ว'];
         }
 
-        if (!$this->hasBudgetForNextReward()) {
+        if (! $this->hasBudgetForNextReward()) {
             return ['eligible' => false, 'reason' => 'งบประมาณไม่เพียงพอสำหรับรางวัล'];
         }
 
         // ตรวจสอบ frequency
         $canDoNow = $this->canUserDoNow($user);
-        if (!$canDoNow['can']) {
+        if (! $canDoNow['can']) {
             return ['eligible' => false, 'reason' => $canDoNow['reason']];
         }
 
@@ -741,7 +705,6 @@ class VideoMission extends Model
     /**
      * ตรวจสอบว่า user สามารถทำภารกิจได้ตอนนี้หรือไม่ (ตาม frequency และ reset_period_value)
      *
-     * @param User $user
      * @return array ['can' => bool, 'reason' => string|null, 'next_available_at' => Carbon|null]
      */
     public function canUserDoNow(User $user): array
@@ -752,7 +715,7 @@ class VideoMission extends Model
             ->latest('completed_at')
             ->first();
 
-        if (!$lastCompletion) {
+        if (! $lastCompletion) {
             return ['can' => true, 'reason' => null, 'next_available_at' => null];
         }
 
@@ -776,6 +739,7 @@ class VideoMission extends Model
                     $reasonText = $periodValue == 1
                         ? 'ภารกิจนี้ทำได้วันละครั้ง'
                         : "ภารกิจนี้ทำได้ทุก {$periodValue} วัน";
+
                     return [
                         'can' => false,
                         'reason' => $reasonText,
@@ -791,6 +755,7 @@ class VideoMission extends Model
                     $reasonText = $periodValue == 1
                         ? 'ภารกิจนี้ทำได้สัปดาห์ละครั้ง'
                         : "ภารกิจนี้ทำได้ทุก {$periodValue} สัปดาห์";
+
                     return [
                         'can' => false,
                         'reason' => $reasonText,
@@ -806,6 +771,7 @@ class VideoMission extends Model
                     $reasonText = $periodValue == 1
                         ? 'ภารกิจนี้ทำได้เดือนละครั้ง'
                         : "ภารกิจนี้ทำได้ทุก {$periodValue} เดือน";
+
                     return [
                         'can' => false,
                         'reason' => $reasonText,
@@ -821,6 +787,7 @@ class VideoMission extends Model
                     $reasonText = $periodValue == 1
                         ? 'ภารกิจนี้ทำได้ปีละครั้ง'
                         : "ภารกิจนี้ทำได้ทุก {$periodValue} ปี";
+
                     return [
                         'can' => false,
                         'reason' => $reasonText,
@@ -834,6 +801,7 @@ class VideoMission extends Model
                     $nextAvailable = $lastCompletedAt->copy()->addMinutes($this->cooldown_minutes);
                     if ($now->lt($nextAvailable)) {
                         $minutesLeft = $now->diffInMinutes($nextAvailable);
+
                         return [
                             'can' => false,
                             'reason' => "ต้องรออีก {$minutesLeft} นาที",
@@ -850,12 +818,11 @@ class VideoMission extends Model
     /**
      * ดึงจำนวนครั้งที่ user ทำได้อีก
      *
-     * @param User $user
      * @return int|null null = ไม่จำกัด
      */
     public function getRemainingCompletions(User $user): ?int
     {
-        if (!$this->max_completions_per_user) {
+        if (! $this->max_completions_per_user) {
             return null;
         }
 
@@ -869,8 +836,6 @@ class VideoMission extends Model
 
     /**
      * เพิ่ม view count
-     *
-     * @return void
      */
     public function incrementViewCount(): void
     {
@@ -879,8 +844,6 @@ class VideoMission extends Model
 
     /**
      * เพิ่ม completion count
-     *
-     * @return void
      */
     public function incrementCompletionCount(): void
     {
@@ -889,9 +852,6 @@ class VideoMission extends Model
 
     /**
      * เพิ่มรางวัลที่แจกไป
-     *
-     * @param float $amount
-     * @return void
      */
     public function addRewardsGiven(float $amount): void
     {
@@ -908,13 +868,11 @@ class VideoMission extends Model
 
     /**
      * ตรวจสอบว่างบประมาณหมดหรือยัง
-     *
-     * @return bool
      */
     public function isBudgetExhausted(): bool
     {
         // ถ้าไม่มีการกำหนด budget = ไม่จำกัด
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             return false;
         }
 
@@ -923,12 +881,10 @@ class VideoMission extends Model
 
     /**
      * ตรวจสอบว่างบประมาณใกล้หมดหรือยัง (ตาม threshold)
-     *
-     * @return bool
      */
     public function isBudgetNearExhaustion(): bool
     {
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             return false;
         }
 
@@ -945,7 +901,7 @@ class VideoMission extends Model
      */
     public function getRemainingBudget(): ?float
     {
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             return null;
         }
 
@@ -959,7 +915,7 @@ class VideoMission extends Model
      */
     public function getBudgetUsedPercentage(): ?float
     {
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             return null;
         }
 
@@ -968,12 +924,10 @@ class VideoMission extends Model
 
     /**
      * Mark ว่างบประมาณหมดแล้ว
-     *
-     * @return void
      */
     public function markBudgetExhausted(): void
     {
-        if (!$this->budget_exhausted_at) {
+        if (! $this->budget_exhausted_at) {
             $this->update([
                 'budget_exhausted_at' => now(),
             ]);
@@ -983,13 +937,12 @@ class VideoMission extends Model
     /**
      * ตรวจสอบว่ามีงบเพียงพอสำหรับรางวัลครั้งต่อไปหรือไม่
      *
-     * @param float|null $nextRewardAmount จำนวนรางวัลที่จะแจกครั้งต่อไป (null = ใช้ค่าเริ่มต้น)
-     * @return bool
+     * @param  float|null  $nextRewardAmount  จำนวนรางวัลที่จะแจกครั้งต่อไป (null = ใช้ค่าเริ่มต้น)
      */
     public function hasBudgetForNextReward(?float $nextRewardAmount = null): bool
     {
         // ถ้าไม่มี budget limit = ไม่จำกัด
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             return true;
         }
 
@@ -1003,8 +956,6 @@ class VideoMission extends Model
 
     /**
      * คำนวณมูลค่ารางวัลทั้งหมดต่อครั้ง
-     *
-     * @return float
      */
     public function calculateTotalRewardValue(): float
     {
@@ -1020,11 +971,12 @@ class VideoMission extends Model
      */
     public function getRemainingSlots(): ?int
     {
-        if (!$this->max_reward_budget || $this->max_reward_budget <= 0) {
+        if (! $this->max_reward_budget || $this->max_reward_budget <= 0) {
             // ตรวจสอบ max_total_completions แทน
             if ($this->max_total_completions) {
                 return max(0, $this->max_total_completions - $this->completion_count);
             }
+
             return null;
         }
 
@@ -1034,18 +986,16 @@ class VideoMission extends Model
         }
 
         $remaining = $this->getRemainingBudget();
+
         return (int) floor($remaining / $rewardPerCompletion);
     }
 
     /**
      * Extract video ID จาก URL
-     *
-     * @param string|null $url
-     * @return string|null
      */
     protected function extractVideoId(?string $url): ?string
     {
-        if (!$url) {
+        if (! $url) {
             return null;
         }
 
@@ -1064,9 +1014,6 @@ class VideoMission extends Model
 
     /**
      * คำนวณรางวัลพร้อม multiplier
-     *
-     * @param float $multiplier
-     * @return array
      */
     public function calculateRewards(float $multiplier = 1.0): array
     {
@@ -1089,7 +1036,7 @@ class VideoMission extends Model
      * - มีรางวัลอย่างน้อย 1 อย่าง
      * - ช่วงเวลาเปิดให้ทำถูกต้อง
      *
-     * @param array $data ข้อมูลที่จะตรวจสอบ (ใช้สำหรับ create/update)
+     * @param  array  $data  ข้อมูลที่จะตรวจสอบ (ใช้สำหรับ create/update)
      * @return array ['valid' => bool, 'errors' => array, 'warnings' => array]
      */
     public static function validateMissionConflicts(array $data): array
@@ -1125,7 +1072,7 @@ class VideoMission extends Model
 
         $hasReward = ($rewardMoney > 0 || $rewardCoins > 0 || $rewardPoints > 0 || $rewardTpix > 0 || $rewardExp > 0);
 
-        if (!$hasReward) {
+        if (! $hasReward) {
             $errors[] = 'ต้องกำหนดรางวัลอย่างน้อย 1 อย่าง (เงิน, Coins, แต้ม, TPIX, หรือ EXP)';
         }
 

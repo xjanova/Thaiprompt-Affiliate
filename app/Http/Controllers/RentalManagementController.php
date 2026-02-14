@@ -15,7 +15,7 @@ class RentalManagementController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->rentalService = new RentalService();
+        $this->rentalService = new RentalService;
     }
 
     /**
@@ -90,7 +90,7 @@ class RentalManagementController extends Controller
         $rental = BotRental::where('renter_id', Auth::id())
             ->findOrFail($id);
 
-        if (!$rental->isActive()) {
+        if (! $rental->isActive()) {
             return back()->with('error', 'ไม่สามารถยกเลิกการเช่าที่ไม่ได้ active');
         }
 
@@ -103,7 +103,7 @@ class RentalManagementController extends Controller
             $validated['reason'] ?? 'Cancelled by user'
         );
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->with('error', $result['error']);
         }
 
@@ -121,11 +121,11 @@ class RentalManagementController extends Controller
             ->where('rental_type', 'monthly')
             ->findOrFail($id);
 
-        if (!$rental->isActive()) {
+        if (! $rental->isActive()) {
             return back()->with('error', 'ไม่สามารถแก้ไขการเช่าที่ไม่ได้ active');
         }
 
-        $rental->auto_renew = !$rental->auto_renew;
+        $rental->auto_renew = ! $rental->auto_renew;
         $rental->save();
 
         $message = $rental->auto_renew

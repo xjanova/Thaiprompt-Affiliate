@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Rider;
-use App\Models\RiderJob;
 use App\Models\RiderLocation;
 use App\Models\ServiceCategory;
 use App\Services\NotificationService;
@@ -27,7 +26,6 @@ class RiderController extends Controller
     /**
      * แสดงรายการไรเดอร์ทั้งหมด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -86,7 +84,6 @@ class RiderController extends Controller
     /**
      * แสดงรายการไรเดอร์ที่รอตรวจสอบ
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function pending(Request $request)
@@ -115,7 +112,6 @@ class RiderController extends Controller
     /**
      * แสดงรายละเอียดไรเดอร์
      *
-     * @param Rider $rider
      * @return \Illuminate\View\View
      */
     public function show(Rider $rider)
@@ -153,15 +149,13 @@ class RiderController extends Controller
             'jobStats' => $jobStats,
             'recentJobs' => $recentJobs,
             'services' => $services,
-            'pageTitle' => 'รายละเอียดไรเดอร์: ' . $rider->full_name,
+            'pageTitle' => 'รายละเอียดไรเดอร์: '.$rider->full_name,
         ]);
     }
 
     /**
      * อนุมัติไรเดอร์
      *
-     * @param Request $request
-     * @param Rider $rider
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function approve(Request $request, Rider $rider)
@@ -210,19 +204,17 @@ class RiderController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ปฏิเสธไรเดอร์
      *
-     * @param Request $request
-     * @param Rider $rider
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function reject(Request $request, Rider $rider)
@@ -247,7 +239,7 @@ class RiderController extends Controller
                     $rider->user,
                     'rider_rejected',
                     'การสมัครไรเดอร์ไม่ผ่านการอนุมัติ',
-                    'เหตุผล: ' . $request->reason . ' หากมีข้อสงสัย กรุณาติดต่อทีมงาน',
+                    'เหตุผล: '.$request->reason.' หากมีข้อสงสัย กรุณาติดต่อทีมงาน',
                     ['rider_id' => $rider->id, 'reason' => $request->reason],
                     route('user.support.create'),
                     'ติดต่อทีมงาน',
@@ -275,19 +267,17 @@ class RiderController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * ระงับไรเดอร์
      *
-     * @param Request $request
-     * @param Rider $rider
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function suspend(Request $request, Rider $rider)
@@ -321,19 +311,17 @@ class RiderController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                    'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
                 ], 500);
             }
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * สลับสถานะ Active
      *
-     * @param Request $request
-     * @param Rider $rider
      * @return \Illuminate\Http\JsonResponse
      */
     public function toggleActive(Request $request, Rider $rider)
@@ -361,7 +349,7 @@ class RiderController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -369,7 +357,6 @@ class RiderController extends Controller
     /**
      * แสดงตำแหน่ง GPS ของไรเดอร์
      *
-     * @param Rider $rider
      * @return \Illuminate\View\View
      */
     public function locations(Rider $rider)
@@ -390,14 +377,13 @@ class RiderController extends Controller
             'rider' => $rider,
             'latestLocation' => $latestLocation,
             'locationHistory' => $locationHistory,
-            'pageTitle' => 'ตำแหน่ง GPS: ' . $rider->full_name,
+            'pageTitle' => 'ตำแหน่ง GPS: '.$rider->full_name,
         ]);
     }
 
     /**
      * API: ดึงตำแหน่ง GPS ล่าสุด
      *
-     * @param Rider $rider
      * @return \Illuminate\Http\JsonResponse
      */
     public function getLatestLocation(Rider $rider)
@@ -450,7 +436,6 @@ class RiderController extends Controller
     /**
      * API: ดึงข้อมูล GPS ของไรเดอร์ทั้งหมดสำหรับ GPS Monitoring
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getGpsData(Request $request)
@@ -471,11 +456,17 @@ class RiderController extends Controller
 
         // กรองตามสถานะ
         $availabilities = [];
-        if ($showOnline) $availabilities[] = 'online';
-        if ($showBusy) $availabilities[] = 'busy';
-        if ($showOffline) $availabilities[] = 'offline';
+        if ($showOnline) {
+            $availabilities[] = 'online';
+        }
+        if ($showBusy) {
+            $availabilities[] = 'busy';
+        }
+        if ($showOffline) {
+            $availabilities[] = 'offline';
+        }
 
-        if (!empty($availabilities)) {
+        if (! empty($availabilities)) {
             $query->whereIn('availability', $availabilities);
         }
 
@@ -493,6 +484,7 @@ class RiderController extends Controller
         // แปลงข้อมูลสำหรับแผนที่
         $riderData = $riders->map(function ($rider) {
             $currentJob = $rider->jobs->first();
+
             return [
                 'id' => $rider->id,
                 'name' => $rider->full_name,
@@ -532,7 +524,6 @@ class RiderController extends Controller
     /**
      * แสดงประวัติตำแหน่ง GPS ของไรเดอร์ (Playback)
      *
-     * @param Rider $rider
      * @return \Illuminate\View\View
      */
     public function locationPlayback(Rider $rider)
@@ -546,15 +537,13 @@ class RiderController extends Controller
         return view('admin.riders.playback', [
             'rider' => $rider,
             'logs' => $logs,
-            'pageTitle' => 'เล่นย้อนหลัง GPS: ' . $rider->full_name,
+            'pageTitle' => 'เล่นย้อนหลัง GPS: '.$rider->full_name,
         ]);
     }
 
     /**
      * API: ดึงประวัติตำแหน่ง GPS ของไรเดอร์
      *
-     * @param Request $request
-     * @param Rider $rider
      * @return \Illuminate\Http\JsonResponse
      */
     public function getLocationHistory(Request $request, Rider $rider)
@@ -610,10 +599,10 @@ class RiderController extends Controller
     /**
      * คำนวณระยะทาง (Haversine formula)
      *
-     * @param float $lat1
-     * @param float $lon1
-     * @param float $lat2
-     * @param float $lon2
+     * @param  float  $lat1
+     * @param  float  $lon1
+     * @param  float  $lat2
+     * @param  float  $lon2
      * @return float
      */
     private function calculateDistance($lat1, $lon1, $lat2, $lon2)

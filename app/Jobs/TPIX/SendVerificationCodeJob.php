@@ -11,16 +11,17 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Notification;
 
 class SendVerificationCodeJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $tries = 3;
+
     public $timeout = 30;
 
     protected int $referralUseId;
+
     protected string $method; // 'email' or 'sms'
 
     /**
@@ -41,20 +42,23 @@ class SendVerificationCodeJob implements ShouldQueue
         try {
             $referralUse = TPIXReferralUse::find($this->referralUseId);
 
-            if (!$referralUse) {
+            if (! $referralUse) {
                 Log::error("Referral use {$this->referralUseId} not found");
+
                 return;
             }
 
             if ($referralUse->is_verified) {
                 Log::info("Referral use {$this->referralUseId} already verified");
+
                 return;
             }
 
             $user = $referralUse->referee;
 
-            if (!$user) {
+            if (! $user) {
                 Log::error("User not found for referral use {$this->referralUseId}");
+
                 return;
             }
 
@@ -69,7 +73,7 @@ class SendVerificationCodeJob implements ShouldQueue
             Log::info("Verification code sent via {$this->method} to user {$user->id}");
 
         } catch (\Exception $e) {
-            Log::error("Failed to send verification code: " . $e->getMessage());
+            Log::error('Failed to send verification code: '.$e->getMessage());
             throw $e;
         }
     }
@@ -100,8 +104,9 @@ class SendVerificationCodeJob implements ShouldQueue
         // Integration with SMS service (Twilio, etc.)
         // This is a placeholder - implement based on your SMS provider
 
-        if (!$user->phone) {
+        if (! $user->phone) {
             Log::warning("User {$user->id} has no phone number");
+
             return;
         }
 
@@ -122,6 +127,6 @@ class SendVerificationCodeJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Failed to send verification code for referral use {$this->referralUseId}: " . $exception->getMessage());
+        Log::error("Failed to send verification code for referral use {$this->referralUseId}: ".$exception->getMessage());
     }
 }

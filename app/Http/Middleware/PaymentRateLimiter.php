@@ -50,7 +50,7 @@ class PaymentRateLimiter
             $config['decay']
         );
 
-        if (!$executed) {
+        if (! $executed) {
             $retryAfter = RateLimiter::availableIn($key);
 
             return response()->json([

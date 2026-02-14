@@ -2,10 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Ticket;
 use App\Models\TicketCategory;
-use App\Models\TicketReply;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,7 +13,9 @@ class TicketSystemTest extends TestCase
     use RefreshDatabase;
 
     protected $user;
+
     protected $admin;
+
     protected $category;
 
     protected function setUp(): void

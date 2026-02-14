@@ -31,9 +31,9 @@ class ShippingService
     /**
      * คำนวณค่าจัดส่งสำหรับสินค้าชิ้นเดียว
      *
-     * @param Product $product สินค้า
-     * @param int $quantity จำนวน
-     * @param string $zone โซนจัดส่ง (domestic/international)
+     * @param  Product  $product  สินค้า
+     * @param  int  $quantity  จำนวน
+     * @param  string  $zone  โซนจัดส่ง (domestic/international)
      * @return float ค่าจัดส่ง
      */
     public function calculateForProduct(Product $product, int $quantity = 1, string $zone = 'domestic'): float
@@ -57,8 +57,8 @@ class ShippingService
     /**
      * คำนวณค่าจัดส่งสำหรับตะกร้าสินค้า (หลายรายการ)
      *
-     * @param Collection $cartItems รายการสินค้าในตะกร้า (ต้องมี product relationship)
-     * @param string $zone โซนจัดส่ง
+     * @param  Collection  $cartItems  รายการสินค้าในตะกร้า (ต้องมี product relationship)
+     * @param  string  $zone  โซนจัดส่ง
      * @return array ['total' => ค่าส่งรวม, 'breakdown' => รายละเอียดแต่ละรายการ]
      */
     public function calculateForCart(Collection $cartItems, string $zone = 'domestic'): array
@@ -70,7 +70,7 @@ class ShippingService
 
         foreach ($cartItems as $item) {
             $product = $item->product;
-            if (!$product) {
+            if (! $product) {
                 continue;
             }
 
@@ -85,6 +85,7 @@ class ShippingService
                     'shipping_fee' => 0,
                     'method' => 'virtual',
                 ];
+
                 continue;
             }
 
@@ -105,8 +106,7 @@ class ShippingService
         // ถ้ามีสินค้า physical แต่ยอดรวมเกิน threshold → ฟรีค่าส่ง
         if ($hasPhysicalProducts && $subtotal >= self::DEFAULT_FREE_SHIPPING_THRESHOLD) {
             // เช็คว่าทุกสินค้าใช้ store_default หรือไม่
-            $allStoreDefault = collect($breakdown)->every(fn($b) =>
-                in_array($b['method'], ['store_default', 'virtual'])
+            $allStoreDefault = collect($breakdown)->every(fn ($b) => in_array($b['method'], ['store_default', 'virtual'])
             );
             if ($allStoreDefault) {
                 $totalShipping = 0;
@@ -123,10 +123,6 @@ class ShippingService
 
     /**
      * คำนวณค่าจัดส่งแบบเหมาจ่าย (flat rate)
-     *
-     * @param Product $product
-     * @param int $quantity
-     * @return float
      */
     protected function calculateFlatRate(Product $product, int $quantity): float
     {
@@ -145,11 +141,6 @@ class ShippingService
 
     /**
      * คำนวณค่าจัดส่งตามน้ำหนัก
-     *
-     * @param Product $product
-     * @param int $quantity
-     * @param string $zone
-     * @return float
      */
     protected function calculateWeightBased(Product $product, int $quantity, string $zone): float
     {
@@ -162,12 +153,12 @@ class ShippingService
             ->where('min_weight_kg', '<=', $totalWeight)
             ->where(function ($q) use ($totalWeight) {
                 $q->where('max_weight_kg', '>=', $totalWeight)
-                  ->orWhere('max_weight_kg', 0);
+                    ->orWhere('max_weight_kg', 0);
             })
             ->orderBy('sort_order')
             ->first();
 
-        if (!$rate) {
+        if (! $rate) {
             // ใช้ rate เริ่มต้น: base 40 + 15 บาท/กก.
             $fee = 40 + ($totalWeight * 15);
         } else {
@@ -187,10 +178,6 @@ class ShippingService
 
     /**
      * คำนวณค่าจัดส่งตามค่าเริ่มต้นของร้าน หรือค่า default ของระบบ
-     *
-     * @param Product $product
-     * @param int $quantity
-     * @return float
      */
     protected function calculateStoreDefault(Product $product, int $quantity): float
     {
@@ -221,9 +208,6 @@ class ShippingService
 
     /**
      * ตรวจสอบว่าสินค้าจัดส่งฟรีหรือไม่ (สำหรับแสดงบน storefront)
-     *
-     * @param Product $product
-     * @return bool
      */
     public function isProductFreeShipping(Product $product): bool
     {
@@ -247,7 +231,7 @@ class ShippingService
     /**
      * ดึงข้อมูลค่าจัดส่งสำหรับแสดงผลในหน้าสินค้า
      *
-     * @param Product $product สินค้า
+     * @param  Product  $product  สินค้า
      * @return array ['is_free' => bool, 'label' => string, 'fee' => float|null, 'method' => string, 'badge_class' => string, 'details' => string]
      */
     public function getShippingDisplayInfo(Product $product): array
@@ -277,13 +261,13 @@ class ShippingService
             ],
             'flat_rate' => [
                 'is_free' => false,
-                'label' => 'ค่าจัดส่ง ฿' . number_format($product->shipping_fee ?? 0, 0),
+                'label' => 'ค่าจัดส่ง ฿'.number_format($product->shipping_fee ?? 0, 0),
                 'fee' => $product->shipping_fee ?? 0,
                 'method' => 'flat_rate',
                 'badge_class' => 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700',
                 'details' => $product->free_shipping_min_amount > 0
-                    ? 'ส่งฟรีเมื่อซื้อครบ ฿' . number_format($product->free_shipping_min_amount, 0)
-                    : 'ค่าจัดส่งคงที่ ฿' . number_format($product->shipping_fee ?? 0, 0) . ' ต่อออเดอร์',
+                    ? 'ส่งฟรีเมื่อซื้อครบ ฿'.number_format($product->free_shipping_min_amount, 0)
+                    : 'ค่าจัดส่งคงที่ ฿'.number_format($product->shipping_fee ?? 0, 0).' ต่อออเดอร์',
             ],
             'weight_based' => [
                 'is_free' => false,
@@ -291,9 +275,9 @@ class ShippingService
                 'fee' => $this->calculateForProduct($product, 1),
                 'method' => 'weight_based',
                 'badge_class' => 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-700',
-                'details' => 'น้ำหนัก ' . number_format($product->shipping_weight_kg ?? 0, 1) . ' กก. - ค่าส่งประมาณ ฿' . number_format($this->calculateForProduct($product, 1), 0)
-                    . ($product->free_shipping_min_amount > 0
-                        ? ' | ส่งฟรีเมื่อซื้อครบ ฿' . number_format($product->free_shipping_min_amount, 0)
+                'details' => 'น้ำหนัก '.number_format($product->shipping_weight_kg ?? 0, 1).' กก. - ค่าส่งประมาณ ฿'.number_format($this->calculateForProduct($product, 1), 0)
+                    .($product->free_shipping_min_amount > 0
+                        ? ' | ส่งฟรีเมื่อซื้อครบ ฿'.number_format($product->free_shipping_min_amount, 0)
                         : ''),
             ],
             default => $product->price >= self::DEFAULT_FREE_SHIPPING_THRESHOLD
@@ -303,15 +287,15 @@ class ShippingService
                     'fee' => 0,
                     'method' => 'store_default',
                     'badge_class' => 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700',
-                    'details' => 'ส่งฟรีสำหรับสินค้าราคา ฿' . number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0) . ' ขึ้นไป',
+                    'details' => 'ส่งฟรีสำหรับสินค้าราคา ฿'.number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0).' ขึ้นไป',
                 ]
                 : [
                     'is_free' => false,
-                    'label' => 'ค่าจัดส่ง ฿' . number_format(self::DEFAULT_SHIPPING_FEE, 0),
+                    'label' => 'ค่าจัดส่ง ฿'.number_format(self::DEFAULT_SHIPPING_FEE, 0),
                     'fee' => self::DEFAULT_SHIPPING_FEE,
                     'method' => 'store_default',
                     'badge_class' => 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-700',
-                    'details' => 'ส่งฟรีเมื่อยอดสั่งซื้อครบ ฿' . number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0),
+                    'details' => 'ส่งฟรีเมื่อยอดสั่งซื้อครบ ฿'.number_format(self::DEFAULT_FREE_SHIPPING_THRESHOLD, 0),
                 ],
         };
     }

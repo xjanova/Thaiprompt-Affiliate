@@ -255,8 +255,6 @@ class ServiceAreaSeeder extends Seeder
 
     /**
      * สร้างพื้นที่ให้บริการ
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -265,8 +263,9 @@ class ServiceAreaSeeder extends Seeder
         // หา owner (admin user)
         $owner = User::where('role', 'admin')->first() ?? User::first();
 
-        if (!$owner) {
+        if (! $owner) {
             $this->command->error('❌ ไม่พบ User สำหรับเป็น owner');
+
             return;
         }
 
@@ -278,6 +277,7 @@ class ServiceAreaSeeder extends Seeder
 
             if ($existing) {
                 $this->command->warn("  ⚠️  พื้นที่ '{$areaData['name']}' มีอยู่แล้ว ข้าม...");
+
                 continue;
             }
 

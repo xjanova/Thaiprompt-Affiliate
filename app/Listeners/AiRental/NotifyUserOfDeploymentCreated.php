@@ -35,15 +35,12 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
 
     /**
      * Monitoring Service
-     *
-     * @var MonitoringService
      */
     protected MonitoringService $monitoringService;
 
     /**
      * สร้าง listener instance
      *
-     * @param MonitoringService $monitoringService
      * @return void
      */
     public function __construct(MonitoringService $monitoringService)
@@ -53,9 +50,6 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
 
     /**
      * จัดการ event
-     *
-     * @param DeploymentCreated $event
-     * @return void
      */
     public function handle(DeploymentCreated $event): void
     {
@@ -102,8 +96,7 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * สร้าง welcome alert
      *
-     * @param \App\Models\AiRentalDeployment $deployment
-     * @return void
+     * @param  \App\Models\AiRentalDeployment  $deployment
      */
     protected function createWelcomeAlert($deployment): void
     {
@@ -114,7 +107,7 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
             'severity' => 'info',
             'title' => '🎉 Deployment สร้างสำเร็จ!',
             'message' => "Deployment '{$deployment->deployment_name}' กำลังเริ่มต้น",
-            'description' => "ระบบกำลัง provision GPU instance สำหรับคุณ โปรดรอสักครู่...",
+            'description' => 'ระบบกำลัง provision GPU instance สำหรับคุณ โปรดรอสักครู่...',
             'alert_data' => [
                 'deployment_id' => $deployment->id,
                 'deployment_name' => $deployment->deployment_name,
@@ -134,9 +127,8 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * ส่ง email notification
      *
-     * @param \App\Models\User $user
-     * @param \App\Models\AiRentalDeployment $deployment
-     * @return void
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\AiRentalDeployment  $deployment
      */
     protected function sendEmailNotification($user, $deployment): void
     {
@@ -153,9 +145,8 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * ส่ง push notification
      *
-     * @param \App\Models\User $user
-     * @param \App\Models\AiRentalDeployment $deployment
-     * @return void
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\AiRentalDeployment  $deployment
      */
     protected function sendPushNotification($user, $deployment): void
     {
@@ -173,9 +164,7 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * บันทึก analytics
      *
-     * @param \App\Models\AiRentalDeployment $deployment
-     * @param array $metadata
-     * @return void
+     * @param  \App\Models\AiRentalDeployment  $deployment
      */
     protected function trackDeploymentCreation($deployment, array $metadata): void
     {
@@ -195,8 +184,7 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * ตรวจสอบว่าควรส่ง email หรือไม่
      *
-     * @param \App\Models\User $user
-     * @return bool
+     * @param  \App\Models\User  $user
      */
     protected function shouldSendEmail($user): bool
     {
@@ -208,8 +196,7 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
     /**
      * ตรวจสอบว่าควรส่ง push notification หรือไม่
      *
-     * @param \App\Models\User $user
-     * @return bool
+     * @param  \App\Models\User  $user
      */
     protected function shouldSendPush($user): bool
     {
@@ -220,10 +207,6 @@ class NotifyUserOfDeploymentCreated implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลว
-     *
-     * @param DeploymentCreated $event
-     * @param \Throwable $exception
-     * @return void
      */
     public function failed(DeploymentCreated $event, \Throwable $exception): void
     {

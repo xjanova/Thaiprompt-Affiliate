@@ -3,11 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\LineSignupSession;
-use App\Models\MlmProspect;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class LineSignupSessionSeeder extends Seeder
 {
@@ -20,8 +19,6 @@ class LineSignupSessionSeeder extends Seeder
      * 1. new - session ใหม่ (ยังไม่ได้สมัคร)
      * 2. in_progress - กำลังสมัครอยู่
      * 3. completed - สมัครสำเร็จ
-     *
-     * @return void
      */
     public function run(): void
     {
@@ -31,6 +28,7 @@ class LineSignupSessionSeeder extends Seeder
         if ($existingCount > 0) {
             $this->command->warn('⚠️  LINE Signup Sessions already exist!');
             $this->command->info('   Skipping to preserve existing session data.');
+
             return;
         }
 
@@ -38,7 +36,7 @@ class LineSignupSessionSeeder extends Seeder
 
         // ดึง demo admin user
         $admin = User::where('role', 'admin')->first();
-        if (!$admin) {
+        if (! $admin) {
             $admin = User::first();
         }
 

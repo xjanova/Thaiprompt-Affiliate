@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\AiGen\AiGenService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class AiGenController extends Controller
 {
@@ -57,7 +57,7 @@ class AiGenController extends Controller
                 $validated['parameters'] ?? []
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 400);
             }
 
@@ -81,7 +81,7 @@ class AiGenController extends Controller
                 $request->user()
             );
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 404);
             }
 
@@ -136,7 +136,7 @@ class AiGenController extends Controller
                 ->with(['provider', 'usageLog'])
                 ->first();
 
-            if (!$generation) {
+            if (! $generation) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Generation not found',
@@ -165,7 +165,7 @@ class AiGenController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->first();
 
-            if (!$generation) {
+            if (! $generation) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Generation not found',
@@ -196,7 +196,7 @@ class AiGenController extends Controller
                 ->where('user_id', $request->user()->id)
                 ->first();
 
-            if (!$generation) {
+            if (! $generation) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Generation not found',

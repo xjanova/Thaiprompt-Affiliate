@@ -2,15 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
-use App\Models\User;
 use App\Models\EarningsLedger;
-use App\Models\PayoutSetting;
-use App\Models\WalletDebt;
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmProductPv;
+use App\Models\Order;
+use App\Models\PayoutSetting;
+use App\Models\Product;
+use App\Models\User;
+use App\Models\WalletDebt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -38,18 +37,18 @@ use Illuminate\Support\Facades\Log;
 class OrderDistributionService
 {
     protected PlatformRevenueService $revenueService;
+
     protected MlmCommissionService $mlmCommissionService;
 
     public function __construct()
     {
-        $this->revenueService = new PlatformRevenueService();
-        $this->mlmCommissionService = new MlmCommissionService();
+        $this->revenueService = new PlatformRevenueService;
+        $this->mlmCommissionService = new MlmCommissionService;
     }
 
     /**
      * ประมวลผลการแบ่งเงินจาก Order ที่ชำระเงินแล้ว
      *
-     * @param Order $order
      * @return array ผลลัพธ์การแบ่งเงิน
      */
     public function processOrderDistribution(Order $order): array
@@ -66,6 +65,7 @@ class OrderDistributionService
                 Log::info('Order already distributed (inside transaction), skipping', [
                     'order_id' => $order->id,
                 ]);
+
                 return [
                     'order_id' => $order->id,
                     'total_amount' => $order->total_amount,
@@ -94,6 +94,7 @@ class OrderDistributionService
                 if ($this->isOfficialShopSeller($sellerId)) {
                     $adminResult = $this->processAdminShopItems($order, $items);
                     $results['distributions'][] = $adminResult;
+
                     continue;
                 }
 
@@ -102,7 +103,7 @@ class OrderDistributionService
             }
 
             // ตรวจสอบบริการของ Admin (ค่าสมัคร, ค่าบริการ, etc.)
-            $adminServices = $order->items->filter(fn($item) => $item->item_type === 'admin_service');
+            $adminServices = $order->items->filter(fn ($item) => $item->item_type === 'admin_service');
             if ($adminServices->isNotEmpty()) {
                 $serviceResult = $this->processAdminServices($order, $adminServices);
                 $results['distributions'][] = $serviceResult;
@@ -126,15 +127,12 @@ class OrderDistributionService
     /**
      * ประมวลผลรายการของ Seller
      *
-     * @param Order $order
-     * @param int $sellerId
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processSellerItems(Order $order, int $sellerId, $items): array
     {
         $seller = User::find($sellerId);
-        if (!$seller) {
+        if (! $seller) {
             return ['error' => "Seller #{$sellerId} not found"];
         }
 
@@ -234,7 +232,7 @@ class OrderDistributionService
             'available_at' => $availableAt,
             'description' => "รายได้จากการขาย Order #{$order->order_number}",
             'breakdown' => [
-                'items' => $items->map(fn($item) => [
+                'items' => $items->map(fn ($item) => [
                     'product_id' => $item->product_id,
                     'product_name' => $item->product_name,
                     'quantity' => $item->quantity,
@@ -273,8 +271,7 @@ class OrderDistributionService
     /**
      * คำนวณ VAT
      *
-     * @param \Illuminate\Support\Collection $items
-     * @return float
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function calculateVat($items): float
     {
@@ -295,7 +292,7 @@ class OrderDistributionService
      * - PV จาก MlmProductPv (absolute) หรือ price × global_pv_rate
      * - commission_per_pv จาก MlmGlobalSetting (อัตราแปลง PV→บาท)
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      * @return float จำนวนเงิน (THB) ที่หักเป็นค่าการตลาด PV
      */
     protected function calculateMlmCommissionFromItems($items): float
@@ -344,7 +341,6 @@ class OrderDistributionService
      * - Unilevel Commission: จ่ายให้ unilevel_sponsor หลายชั้น (พร้อม rollup ถ้า inactive)
      * - Binary Commission: จ่ายให้ binary_sponsor (ตาม matching/pairing)
      *
-     * @param Order $order
      * @return array ผลลัพธ์การคำนวณ commission
      */
     protected function processMlmCommissions(Order $order): array
@@ -356,10 +352,11 @@ class OrderDistributionService
             // ตรวจสอบว่ามีการเปิดใช้ระบบ Genealogy หรือไม่
             $genealogyEnabled = MlmGlobalSetting::get('genealogy_enabled', true);
 
-            if (!$genealogyEnabled && $pvData['total_pv'] <= 0) {
+            if (! $genealogyEnabled && $pvData['total_pv'] <= 0) {
                 Log::debug('MLM Commission skipped: genealogy disabled and no PV', [
                     'order_id' => $order->id,
                 ]);
+
                 return [
                     'success' => true,
                     'direct_referral' => null,
@@ -378,7 +375,7 @@ class OrderDistributionService
                     ->first();
 
                 if ($buyerMember) {
-                    $pvService = new MlmPvService();
+                    $pvService = new MlmPvService;
                     $pvService->recordPvTransaction($buyerMember, $order, $pvData);
                     $buyerMember->increment('total_pv', $pvData['total_pv']);
                     $buyerMember->update(['last_purchase_at' => now()]);
@@ -439,7 +436,6 @@ class OrderDistributionService
      * - PV points: จาก MlmProductPv.pv_value × quantity, หรือ item.total × global_pv_rate
      * - PV amount THB: PV points × commission_per_pv (อัตราแปลง PV→บาท)
      *
-     * @param Order $order
      * @return array ['total_pv' => float, 'pv_amount_thb' => float, 'items' => array]
      */
     protected function calculateTotalPvFromOrder(Order $order): array
@@ -502,9 +498,7 @@ class OrderDistributionService
      * ประมวลผลรายการสินค้าของ Admin Shop (Official Shop)
      * สินค้าที่ seller_id = Official Seller ID คือสินค้าของ Admin
      *
-     * @param Order $order
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processAdminShopItems(Order $order, $items): array
     {
@@ -558,7 +552,7 @@ class OrderDistributionService
                     'gross_amount' => $grossAmount,
                     'vat_amount' => $vatAmount,
                     'mlm_commission' => $mlmCommission,
-                    'items' => $items->map(fn($item) => [
+                    'items' => $items->map(fn ($item) => [
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name,
                         'quantity' => $item->quantity,
@@ -587,9 +581,7 @@ class OrderDistributionService
     /**
      * ประมวลผลบริการของ Admin (ค่าสมัคร, ค่าบริการ, ค่าอัพเกรด, etc.)
      *
-     * @param Order $order
-     * @param \Illuminate\Support\Collection $items
-     * @return array
+     * @param  \Illuminate\Support\Collection  $items
      */
     protected function processAdminServices(Order $order, $items): array
     {
@@ -652,7 +644,7 @@ class OrderDistributionService
                     'vat_amount' => $vatAmount,
                     'mlm_commission' => $mlmCommission,
                     'service_types' => $items->pluck('service_type')->unique()->toArray(),
-                    'items' => $items->map(fn($item) => [
+                    'items' => $items->map(fn ($item) => [
                         'service_type' => $item->service_type ?? 'general',
                         'service_name' => $item->product_name,
                         'quantity' => $item->quantity,
@@ -681,9 +673,6 @@ class OrderDistributionService
 
     /**
      * ตรวจสอบว่า Order ถูก distribute แล้วหรือยัง
-     *
-     * @param Order $order
-     * @return bool
      */
     public function isOrderDistributed(Order $order): bool
     {
@@ -695,7 +684,6 @@ class OrderDistributionService
     /**
      * ดึงรายการ Order ที่รอ distribute
      *
-     * @param int $limit
      * @return \Illuminate\Support\Collection
      */
     public function getPendingOrders(int $limit = 100)
@@ -709,9 +697,6 @@ class OrderDistributionService
 
     /**
      * Batch process pending orders
-     *
-     * @param int $limit
-     * @return array
      */
     public function processPendingOrders(int $limit = 100): array
     {
@@ -746,12 +731,11 @@ class OrderDistributionService
     /**
      * ตรวจสอบว่า seller_id เป็นของ Official Shop หรือไม่
      *
-     * @param int|null $sellerId
-     * @return bool
+     * @param  int|null  $sellerId
      */
     protected function isOfficialShopSeller($sellerId): bool
     {
-        if (!$sellerId) {
+        if (! $sellerId) {
             return false;
         }
 

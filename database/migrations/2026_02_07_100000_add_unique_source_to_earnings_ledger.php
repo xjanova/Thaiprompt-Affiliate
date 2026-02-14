@@ -11,8 +11,6 @@ return new class extends Migration
      *
      * ป้องกัน Race Condition: ถ้า 2 request เข้ามาพร้อมกัน
      * จะมีเพียง request เดียวที่ insert สำเร็จ อีก request จะเกิด duplicate key error
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -37,8 +35,6 @@ return new class extends Migration
 
     /**
      * ย้อนกลับ: ลบ UNIQUE และเพิ่ม INDEX เดิมกลับ
-     *
-     * @return void
      */
     public function down(): void
     {

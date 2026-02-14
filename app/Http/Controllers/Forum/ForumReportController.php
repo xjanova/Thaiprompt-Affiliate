@@ -19,8 +19,6 @@ class ForumReportController extends Controller
     /**
      * รายงานกระทู้
      *
-     * @param Request $request
-     * @param int $threadId
      * @return \Illuminate\Http\JsonResponse
      */
     public function reportThread(Request $request, int $threadId)
@@ -65,8 +63,6 @@ class ForumReportController extends Controller
     /**
      * รายงานโพสต์
      *
-     * @param Request $request
-     * @param int $postId
      * @return \Illuminate\Http\JsonResponse
      */
     public function reportPost(Request $request, int $postId)

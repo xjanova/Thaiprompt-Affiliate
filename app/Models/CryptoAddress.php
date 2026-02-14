@@ -58,9 +58,10 @@ class CryptoAddress extends Model
      */
     public function getFormattedBalanceAttribute(): string
     {
-        if (!$this->currency) {
+        if (! $this->currency) {
             return number_format($this->balance, 8);
         }
+
         return $this->currency->formatAmount($this->balance);
     }
 
@@ -69,12 +70,12 @@ class CryptoAddress extends Model
      */
     public function getBalanceInThbAttribute(): float
     {
-        if ($this->balance <= 0 || !$this->currency) {
+        if ($this->balance <= 0 || ! $this->currency) {
             return 0;
         }
 
         $rate = $this->currency->getCachedCurrentRate();
-        if (!$rate) {
+        if (! $rate) {
             return 0;
         }
 
@@ -86,7 +87,7 @@ class CryptoAddress extends Model
      */
     public function getDecryptedPrivateKey(): ?string
     {
-        if (!$this->encrypted_private_key) {
+        if (! $this->encrypted_private_key) {
             return null;
         }
 
@@ -97,6 +98,7 @@ class CryptoAddress extends Model
                 'address_id' => $this->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -145,7 +147,8 @@ class CryptoAddress extends Model
         if (strlen($this->address) <= 10) {
             return $this->address;
         }
-        return substr($this->address, 0, 6) . '...' . substr($this->address, -4);
+
+        return substr($this->address, 0, 6).'...'.substr($this->address, -4);
     }
 
     /**
@@ -153,9 +156,10 @@ class CryptoAddress extends Model
      */
     public function getExplorerUrl(): string
     {
-        if (!$this->currency) {
+        if (! $this->currency) {
             return '';
         }
+
         return $this->currency->getExplorerAddressUrl($this->address);
     }
 

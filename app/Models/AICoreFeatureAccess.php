@@ -93,8 +93,6 @@ class AICoreFeatureAccess extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -103,8 +101,6 @@ class AICoreFeatureAccess extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -113,8 +109,6 @@ class AICoreFeatureAccess extends Model
 
     /**
      * ความสัมพันธ์กับผู้อนุมัติ
-     *
-     * @return BelongsTo
      */
     public function approver(): BelongsTo
     {
@@ -124,7 +118,7 @@ class AICoreFeatureAccess extends Model
     /**
      * Scope: เฉพาะ access ที่ active
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -140,7 +134,7 @@ class AICoreFeatureAccess extends Model
     /**
      * Scope: เฉพาะที่กำลัง trial
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeTrial($query)
@@ -155,7 +149,7 @@ class AICoreFeatureAccess extends Model
     /**
      * Scope: เฉพาะที่รอการอนุมัติ
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePending($query)
@@ -165,13 +159,11 @@ class AICoreFeatureAccess extends Model
 
     /**
      * ตรวจสอบว่า access ยังใช้งานได้หรือไม่
-     *
-     * @return bool
      */
     public function isActive(): bool
     {
         // ตรวจสอบว่าเปิดใช้งาน
-        if (!$this->is_enabled || $this->status !== 'approved') {
+        if (! $this->is_enabled || $this->status !== 'approved') {
             return false;
         }
 
@@ -191,8 +183,7 @@ class AICoreFeatureAccess extends Model
     /**
      * ตรวจสอบว่ามีโควต้าเหลืออยู่หรือไม่
      *
-     * @param int $amount จำนวนที่ต้องการใช้
-     * @return bool
+     * @param  int  $amount  จำนวนที่ต้องการใช้
      */
     public function hasQuotaRemaining(int $amount = 1): bool
     {
@@ -207,12 +198,11 @@ class AICoreFeatureAccess extends Model
     /**
      * ใช้โควต้า
      *
-     * @param int $amount จำนวนที่ต้องการใช้
-     * @return bool
+     * @param  int  $amount  จำนวนที่ต้องการใช้
      */
     public function consumeQuota(int $amount = 1): bool
     {
-        if (!$this->hasQuotaRemaining($amount)) {
+        if (! $this->hasQuotaRemaining($amount)) {
             return false;
         }
 
@@ -221,8 +211,6 @@ class AICoreFeatureAccess extends Model
 
     /**
      * รีเซ็ตโควต้า
-     *
-     * @return bool
      */
     public function resetQuota(): bool
     {
@@ -245,8 +233,7 @@ class AICoreFeatureAccess extends Model
     /**
      * อนุมัติการเข้าถึง
      *
-     * @param int $approvedBy User ID ของผู้อนุมัติ
-     * @return bool
+     * @param  int  $approvedBy  User ID ของผู้อนุมัติ
      */
     public function approve(int $approvedBy): bool
     {
@@ -260,8 +247,7 @@ class AICoreFeatureAccess extends Model
     /**
      * ปฏิเสธการเข้าถึง
      *
-     * @param string $reason เหตุผลที่ปฏิเสธ
-     * @return bool
+     * @param  string  $reason  เหตุผลที่ปฏิเสธ
      */
     public function reject(string $reason): bool
     {
@@ -273,8 +259,6 @@ class AICoreFeatureAccess extends Model
 
     /**
      * ระงับการเข้าถึง
-     *
-     * @return bool
      */
     public function suspend(): bool
     {
@@ -287,8 +271,7 @@ class AICoreFeatureAccess extends Model
     /**
      * ดึงการตั้งค่าเฉพาะจาก custom_config
      *
-     * @param string $key
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public function getConfig(string $key, $default = null)
@@ -299,14 +282,13 @@ class AICoreFeatureAccess extends Model
     /**
      * อัปเดตการตั้งค่าเฉพาะใน custom_config
      *
-     * @param string $key
-     * @param mixed $value
-     * @return bool
+     * @param  mixed  $value
      */
     public function setConfig(string $key, $value): bool
     {
         $config = $this->custom_config ?? [];
         data_set($config, $key, $value);
+
         return $this->update(['custom_config' => $config]);
     }
 }

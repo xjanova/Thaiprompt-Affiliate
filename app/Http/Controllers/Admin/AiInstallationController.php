@@ -3,24 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\AI\SystemRequirementsChecker;
-use App\Services\AI\ModelRecommendationService;
-use App\Services\AI\AiInstallationService;
 use App\Models\AiInstallationLog;
+use App\Services\AI\AiInstallationService;
+use App\Services\AI\ModelRecommendationService;
+use App\Services\AI\SystemRequirementsChecker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AiInstallationController extends Controller
 {
     private SystemRequirementsChecker $requirementsChecker;
+
     private ModelRecommendationService $recommendationService;
+
     private AiInstallationService $installationService;
 
     public function __construct()
     {
-        $this->requirementsChecker = new SystemRequirementsChecker();
-        $this->recommendationService = new ModelRecommendationService();
-        $this->installationService = new AiInstallationService();
+        $this->requirementsChecker = new SystemRequirementsChecker;
+        $this->recommendationService = new ModelRecommendationService;
+        $this->installationService = new AiInstallationService;
     }
 
     /**
@@ -169,7 +171,7 @@ class AiInstallationController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        if (!$log->isInProgress()) {
+        if (! $log->isInProgress()) {
             return response()->json([
                 'success' => false,
                 'message' => 'การติดตั้งนี้ไม่สามารถยกเลิกได้',
@@ -212,7 +214,7 @@ class AiInstallationController extends Controller
             return response()->json($result);
         } else {
             // ส่ง status code ตามประเภทของ error
-            $statusCode = match($result['code'] ?? 'UNKNOWN') {
+            $statusCode = match ($result['code'] ?? 'UNKNOWN') {
                 'MODEL_IN_USE' => 409, // Conflict
                 'MODEL_NOT_FOUND' => 404, // Not Found
                 'OLLAMA_NOT_RUNNING' => 503, // Service Unavailable

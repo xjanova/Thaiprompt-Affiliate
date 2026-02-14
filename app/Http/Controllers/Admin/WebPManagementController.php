@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ConvertImagesToWebPJob;
-use App\Services\WebPService;
 use App\Models\WebPConversionStat;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class WebPManagementController extends Controller
 {
@@ -51,7 +51,7 @@ class WebPManagementController extends Controller
         ];
 
         foreach ($directories as $dir) {
-            if (!Storage::disk('public')->exists($dir)) {
+            if (! Storage::disk('public')->exists($dir)) {
                 continue;
             }
 
@@ -68,7 +68,7 @@ class WebPManagementController extends Controller
                 $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
                 // Skip non-image files
-                if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
+                if (! in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
                     continue;
                 }
 
@@ -135,10 +135,10 @@ class WebPManagementController extends Controller
                 ->with('job_id', $jobId);
 
         } catch (\Exception $e) {
-            Log::error('WebP conversion dispatch error: ' . $e->getMessage());
+            Log::error('WebP conversion dispatch error: '.$e->getMessage());
 
             return redirect()->route('admin.webp.index')
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
@@ -149,14 +149,14 @@ class WebPManagementController extends Controller
     {
         $jobId = $request->input('job_id');
 
-        if (!$jobId) {
+        if (! $jobId) {
             return response()->json(['error' => 'Job ID required'], 400);
         }
 
         // Get progress from cache
         $progress = Cache::get("webp_job:{$jobId}");
 
-        if (!$progress) {
+        if (! $progress) {
             return response()->json([
                 'percentage' => 0,
                 'message' => 'กำลังเริ่มต้น...',
@@ -175,7 +175,7 @@ class WebPManagementController extends Controller
     {
         $directory = $request->input('directory');
 
-        if (!$directory || !Storage::disk('public')->exists($directory)) {
+        if (! $directory || ! Storage::disk('public')->exists($directory)) {
             return response()->json(['error' => 'Directory not found'], 404);
         }
 
@@ -186,7 +186,7 @@ class WebPManagementController extends Controller
             $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
             // Skip non-image files
-            if (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
+            if (! in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
                 continue;
             }
 
@@ -224,6 +224,6 @@ class WebPManagementController extends Controller
             $bytes /= 1024;
         }
 
-        return round($bytes, $precision) . ' ' . $units[$i];
+        return round($bytes, $precision).' '.$units[$i];
     }
 }

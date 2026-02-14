@@ -104,8 +104,6 @@ class AICoreSetting extends Model
 
     /**
      * ความสัมพันธ์กับ Tenant
-     *
-     * @return BelongsTo
      */
     public function tenant(): BelongsTo
     {
@@ -114,8 +112,6 @@ class AICoreSetting extends Model
 
     /**
      * ความสัมพันธ์กับ Feature
-     *
-     * @return BelongsTo
      */
     public function feature(): BelongsTo
     {
@@ -124,8 +120,6 @@ class AICoreSetting extends Model
 
     /**
      * ความสัมพันธ์กับผู้แก้ไขล่าสุด
-     *
-     * @return BelongsTo
      */
     public function updatedBy(): BelongsTo
     {
@@ -134,8 +128,6 @@ class AICoreSetting extends Model
 
     /**
      * ความสัมพันธ์กับ setting ต้นฉบับที่ override มา
-     *
-     * @return BelongsTo
      */
     public function parentSetting(): BelongsTo
     {
@@ -145,7 +137,7 @@ class AICoreSetting extends Model
     /**
      * Scope: เฉพาะ global settings
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeGlobal($query)
@@ -156,8 +148,7 @@ class AICoreSetting extends Model
     /**
      * Scope: กรองตาม setting group
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $group
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeGroup($query, string $group)
@@ -168,7 +159,7 @@ class AICoreSetting extends Model
     /**
      * Scope: เฉพาะ settings ที่แสดงใน UI
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeVisible($query)
@@ -179,7 +170,7 @@ class AICoreSetting extends Model
     /**
      * Scope: เฉพาะ settings ที่แก้ไขได้
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeEditable($query)
@@ -189,8 +180,6 @@ class AICoreSetting extends Model
 
     /**
      * ตรวจสอบว่าเป็น global setting หรือไม่
-     *
-     * @return bool
      */
     public function isGlobal(): bool
     {
@@ -199,8 +188,6 @@ class AICoreSetting extends Model
 
     /**
      * ตรวจสอบว่าเป็น tenant-specific setting หรือไม่
-     *
-     * @return bool
      */
     public function isTenantSpecific(): bool
     {
@@ -209,8 +196,6 @@ class AICoreSetting extends Model
 
     /**
      * ตรวจสอบว่าเป็น feature-specific setting หรือไม่
-     *
-     * @return bool
      */
     public function isFeatureSpecific(): bool
     {
@@ -242,10 +227,9 @@ class AICoreSetting extends Model
     /**
      * ตั้งค่าใหม่ (cast ก่อนบันทึก)
      *
-     * @param mixed $value
-     * @param int|null $userId ผู้แก้ไข
-     * @param string|null $reason เหตุผล
-     * @return bool
+     * @param  mixed  $value
+     * @param  int|null  $userId  ผู้แก้ไข
+     * @param  string|null  $reason  เหตุผล
      */
     public function setValue($value, ?int $userId = null, ?string $reason = null): bool
     {
@@ -274,13 +258,12 @@ class AICoreSetting extends Model
     /**
      * ตรวจสอบว่าค่าที่ใส่มาถูกต้องหรือไม่
      *
-     * @param mixed $value
-     * @return bool
+     * @param  mixed  $value
      */
     public function isValidValue($value): bool
     {
         // ตรวจสอบ allowed_values
-        if ($this->allowed_values && !in_array($value, $this->allowed_values)) {
+        if ($this->allowed_values && ! in_array($value, $this->allowed_values)) {
             return false;
         }
 
@@ -302,8 +285,6 @@ class AICoreSetting extends Model
 
     /**
      * รีเซ็ตค่ากลับเป็น default
-     *
-     * @return bool
      */
     public function resetToDefault(): bool
     {
@@ -313,14 +294,11 @@ class AICoreSetting extends Model
     /**
      * สร้าง override setting ใหม่
      *
-     * @param int|null $tenantId
-     * @param int|null $featureId
-     * @param mixed $value
-     * @return static|null
+     * @param  mixed  $value
      */
     public function createOverride(?int $tenantId = null, ?int $featureId = null, $value = null): ?static
     {
-        if (!$this->can_be_overridden) {
+        if (! $this->can_be_overridden) {
             return null;
         }
 
@@ -352,10 +330,7 @@ class AICoreSetting extends Model
     /**
      * ดึงค่า setting โดยคำนึงถึง hierarchy (feature > tenant > global)
      *
-     * @param string $key
-     * @param int|null $tenantId
-     * @param int|null $featureId
-     * @param mixed $default
+     * @param  mixed  $default
      * @return mixed
      */
     public static function getValue(string $key, ?int $tenantId = null, ?int $featureId = null, $default = null)

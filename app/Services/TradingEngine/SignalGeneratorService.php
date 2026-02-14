@@ -63,7 +63,7 @@ class SignalGeneratorService
             'expires_at' => now()->addMinutes(15),
         ]);
 
-        Log::info("Trading signal generated", [
+        Log::info('Trading signal generated', [
             'bot_id' => $bot->id,
             'signal_type' => $signalType,
             'confidence' => $confidenceScore,
@@ -81,7 +81,7 @@ class SignalGeneratorService
         array $indicators,
         ?array $aiPrediction
     ): string {
-        if (!$conditions) {
+        if (! $conditions) {
             return 'hold';
         }
 
@@ -94,7 +94,7 @@ class SignalGeneratorService
             $operator = $condition['operator'] ?? null;
             $value = $condition['value'] ?? null;
 
-            if (!$indicator || !$operator || $value === null) {
+            if (! $indicator || ! $operator || $value === null) {
                 continue;
             }
 

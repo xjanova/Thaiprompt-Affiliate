@@ -83,7 +83,7 @@ class CryptoWithdrawalRequest extends Model
 
         static::creating(function ($request) {
             if (empty($request->request_id)) {
-                $request->request_id = 'CWDR' . strtoupper(Str::random(20));
+                $request->request_id = 'CWDR'.strtoupper(Str::random(20));
             }
         });
     }
@@ -141,7 +141,7 @@ class CryptoWithdrawalRequest extends Model
      */
     public function generateVerificationCode(): string
     {
-        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         $this->update([
             'verification_code' => $code,
@@ -277,7 +277,7 @@ class CryptoWithdrawalRequest extends Model
         }
 
         // Check if address validation failed
-        if (!$this->address_validated) {
+        if (! $this->address_validated) {
             $score += 15;
             $flags[] = 'address_validation_failed';
         }
@@ -367,7 +367,7 @@ class CryptoWithdrawalRequest extends Model
     public function scopeRequiresApproval($query)
     {
         return $query->where('requires_admin_approval', true)
-                     ->whereIn('status', ['pending', 'verifying']);
+            ->whereIn('status', ['pending', 'verifying']);
     }
 
     /**

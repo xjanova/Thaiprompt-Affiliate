@@ -18,8 +18,6 @@ return new class extends Migration
 
     /**
      * เพิ่มคอลัมน์ max_reward_budget
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -55,8 +53,6 @@ return new class extends Migration
 
     /**
      * ลบคอลัมน์ที่เพิ่มเข้าไป
-     *
-     * @return void
      */
     public function down(): void
     {

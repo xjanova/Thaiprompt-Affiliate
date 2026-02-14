@@ -18,19 +18,23 @@ class PlayerJoined implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $roomId;
+
     public int $playerId;
+
     public string $playerName;
+
     public string $skinSlug;
+
     public array $position;
 
     /**
      * สร้าง event instance
      *
-     * @param int $roomId ห้องที่ผู้เล่นเข้าร่วม
-     * @param int $playerId ID ผู้เล่น
-     * @param string $playerName ชื่อผู้เล่น
-     * @param string $skinSlug สกินที่เลือก
-     * @param array $position ตำแหน่งเริ่มต้น
+     * @param  int  $roomId  ห้องที่ผู้เล่นเข้าร่วม
+     * @param  int  $playerId  ID ผู้เล่น
+     * @param  string  $playerName  ชื่อผู้เล่น
+     * @param  string  $skinSlug  สกินที่เลือก
+     * @param  array  $position  ตำแหน่งเริ่มต้น
      */
     public function __construct(int $roomId, int $playerId, string $playerName, string $skinSlug, array $position)
     {
@@ -43,8 +47,6 @@ class PlayerJoined implements ShouldBroadcast
 
     /**
      * ข้อมูลที่จะถูก broadcast
-     *
-     * @return array
      */
     public function broadcastWith(): array
     {
@@ -58,8 +60,6 @@ class PlayerJoined implements ShouldBroadcast
 
     /**
      * ชื่อ event ที่จะถูก broadcast
-     *
-     * @return string
      */
     public function broadcastAs(): string
     {
@@ -74,7 +74,7 @@ class PlayerJoined implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('snake-room.' . $this->roomId),
+            new Channel('snake-room.'.$this->roomId),
         ];
     }
 }

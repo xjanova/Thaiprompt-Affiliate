@@ -48,7 +48,7 @@ class TarotUserLimit extends Model
     {
         $category = TarotReadingCategory::find($categoryId);
 
-        if (!$category || !$category->is_free_first) {
+        if (! $category || ! $category->is_free_first) {
             return false;
         }
 
@@ -75,7 +75,7 @@ class TarotUserLimit extends Model
 
         $limit = $query->first();
 
-        if (!$limit) {
+        if (! $limit) {
             return true; // No record yet, allow
         }
 
@@ -108,11 +108,12 @@ class TarotUserLimit extends Model
 
         $limit = $query->first();
 
-        if (!$limit) {
+        if (! $limit) {
             return $maxLimit;
         }
 
         $remaining = $maxLimit - $limit->free_count;
+
         return max(0, $remaining);
     }
 

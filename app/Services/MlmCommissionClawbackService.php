@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\EarningsLedger;
 use App\Models\MlmCommission;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\WalletDebt;
-use App\Models\EarningsLedger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -25,15 +25,13 @@ class MlmCommissionClawbackService
 
     public function __construct()
     {
-        $this->debtService = new DebtCollectionService();
+        $this->debtService = new DebtCollectionService;
     }
 
     /**
      * Clawback ทุก Commission ที่เกี่ยวข้องกับ Order
      *
-     * @param Order $order
-     * @param int|null $adminId Admin ที่ทำการ Refund
-     * @return array
+     * @param  int|null  $adminId  Admin ที่ทำการ Refund
      */
     public function clawbackOrderCommissions(Order $order, ?int $adminId = null): array
     {
@@ -77,7 +75,7 @@ class MlmCommissionClawbackService
                 $results['total_clawback_amount'] += $userResult['clawback_amount'];
                 $results['affected_users'][] = $userResult;
 
-                if (!empty($userResult['debt_id'])) {
+                if (! empty($userResult['debt_id'])) {
                     $results['debts_created'][] = $userResult['debt_id'];
                 }
 
@@ -88,7 +86,7 @@ class MlmCommissionClawbackService
                     ];
                 }
 
-                if (!empty($userResult['cancelled_commission_ids'])) {
+                if (! empty($userResult['cancelled_commission_ids'])) {
                     $results['cancelled_pending'] = array_merge(
                         $results['cancelled_pending'],
                         $userResult['cancelled_commission_ids']
@@ -105,11 +103,7 @@ class MlmCommissionClawbackService
     /**
      * Clawback Commission ของ User คนเดียว
      *
-     * @param int $userId
-     * @param \Illuminate\Support\Collection $commissions
-     * @param Order $order
-     * @param int|null $adminId
-     * @return array
+     * @param  \Illuminate\Support\Collection  $commissions
      */
     protected function clawbackUserCommissions(
         int $userId,
@@ -180,12 +174,6 @@ class MlmCommissionClawbackService
 
     /**
      * ประมวลผล Clawback - หักเงินหรือสร้างหนี้
-     *
-     * @param int $userId
-     * @param float $amount
-     * @param Order $order
-     * @param int|null $adminId
-     * @return array
      */
     protected function processClawback(
         int $userId,
@@ -200,7 +188,7 @@ class MlmCommissionClawbackService
         ];
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             return $result;
         }
 
@@ -234,14 +222,10 @@ class MlmCommissionClawbackService
 
     /**
      * หักเงินจาก Wallet
-     *
-     * @param User $user
-     * @param float $amount
-     * @param Order $order
      */
     protected function deductFromWallet(User $user, float $amount, Order $order): void
     {
-        if (!$user->wallet) {
+        if (! $user->wallet) {
             return;
         }
 
@@ -269,12 +253,6 @@ class MlmCommissionClawbackService
 
     /**
      * สร้างหนี้ Clawback
-     *
-     * @param int $userId
-     * @param float $amount
-     * @param Order $order
-     * @param int|null $adminId
-     * @return WalletDebt
      */
     protected function createClawbackDebt(
         int $userId,
@@ -300,9 +278,6 @@ class MlmCommissionClawbackService
 
     /**
      * ยกเลิก Earnings ที่เกี่ยวข้อง
-     *
-     * @param int $userId
-     * @param Order $order
      */
     protected function cancelRelatedEarnings(int $userId, Order $order): void
     {
@@ -324,9 +299,6 @@ class MlmCommissionClawbackService
 
     /**
      * ดึงสถิติ Clawback
-     *
-     * @param array $filters
-     * @return array
      */
     public function getClawbackStats(array $filters = []): array
     {
@@ -358,8 +330,7 @@ class MlmCommissionClawbackService
     /**
      * คำนวณอัตราการเก็บเงิน
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return float
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      */
     protected function calculateCollectionRate($query): float
     {
@@ -375,11 +346,6 @@ class MlmCommissionClawbackService
 
     /**
      * Clawback Commission เฉพาะ User (Manual)
-     *
-     * @param MlmCommission $commission
-     * @param int|null $adminId
-     * @param string $reason
-     * @return array
      */
     public function clawbackSingleCommission(
         MlmCommission $commission,
@@ -435,8 +401,6 @@ class MlmCommissionClawbackService
     /**
      * ดึงรายการ Clawback ทั้งหมด
      *
-     * @param array $filters
-     * @param int $perPage
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
     public function getClawbacks(array $filters = [], int $perPage = 20)

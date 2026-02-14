@@ -13,13 +13,13 @@ class CarbonCreditResource extends JsonResource
             'id' => $this->id,
 
             // Owner
-            'user' => $this->whenLoaded('user', fn() => [
+            'user' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ]),
 
             // Product
-            'food_product' => $this->whenLoaded('foodProduct', fn() => [
+            'food_product' => $this->whenLoaded('foodProduct', fn () => [
                 'id' => $this->foodProduct->id,
                 'passport_id' => $this->foodProduct->food_passport_id,
                 'variety' => $this->foodProduct->variety,
@@ -52,7 +52,7 @@ class CarbonCreditResource extends JsonResource
             // Trading
             'tradeable' => $this->tradeable,
             'can_trade' => $this->canTrade(),
-            'traded_to' => $this->when($this->traded_to_user_id, fn() => [
+            'traded_to' => $this->when($this->traded_to_user_id, fn () => [
                 'user_id' => $this->traded_to_user_id,
                 'traded_at' => $this->traded_at?->toIso8601String(),
                 'trade_price' => $this->trade_price,

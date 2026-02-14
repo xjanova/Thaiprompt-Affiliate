@@ -13,6 +13,7 @@ return new class extends Migration
     {
         if (Schema::hasTable('knowledge_bases')) {
             echo "Table 'knowledge_bases' already exists, skipping creation.\n";
+
             return;
         }
 

@@ -11,8 +11,6 @@ return new class extends Migration
 {
     /**
      * สร้างตาราง support_tickets
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -37,7 +35,7 @@ return new class extends Migration
                 'technical',    // ปัญหาเทคนิค
                 'complaint',    // ร้องเรียน
                 'suggestion',   // ข้อเสนอแนะ
-                'other'         // อื่นๆ
+                'other',         // อื่นๆ
             ])->default('general');
             $table->enum('priority', ['low', 'medium', 'high', 'urgent'])
                 ->default('medium');
@@ -48,7 +46,7 @@ return new class extends Migration
                 'in_progress',  // กำลังดำเนินการ
                 'waiting',      // รอผู้ใช้ตอบกลับ
                 'resolved',     // แก้ไขแล้ว
-                'closed'        // ปิดแล้ว
+                'closed',        // ปิดแล้ว
             ])->default('open');
 
             // ผู้รับผิดชอบ
@@ -79,8 +77,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง support_tickets
-     *
-     * @return void
      */
     public function down(): void
     {

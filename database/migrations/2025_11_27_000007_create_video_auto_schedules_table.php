@@ -9,8 +9,6 @@ return new class extends Migration
     /**
      * สร้างตาราง video_auto_schedules
      * เก็บตารางเวลาสำหรับสร้างวีดีโออัตโนมัติ
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -35,7 +33,7 @@ return new class extends Migration
                 'daily',        // ทุกวัน
                 'weekly',       // รายสัปดาห์
                 'monthly',      // รายเดือน
-                'custom'        // กำหนดเอง (cron)
+                'custom',        // กำหนดเอง (cron)
             ])->default('daily');
 
             // สำหรับ once
@@ -123,8 +121,6 @@ return new class extends Migration
 
     /**
      * ลบตาราง video_auto_schedules
-     *
-     * @return void
      */
     public function down(): void
     {

@@ -20,15 +20,13 @@ class ServiceBookingController extends Controller
     public function __construct(
         protected ServiceBookingService $bookingService,
         protected ServicePricingService $pricingService
-    ) {
-    }
+    ) {}
 
     /**
      * หน้าแรก - ค้นหาบริการ (Service Discovery)
      *
      * รองรับการค้นหา, กรองตามหมวดหมู่, ราคา, ระยะทาง และคะแนน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -49,7 +47,7 @@ class ServiceBookingController extends Controller
             $searchTerm = $request->q;
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('description', 'like', "%{$searchTerm}%");
+                    ->orWhere('description', 'like', "%{$searchTerm}%");
             });
         }
 
@@ -91,7 +89,7 @@ class ServiceBookingController extends Controller
                 break;
             default:
                 $query->orderBy('is_featured', 'desc')
-                      ->orderBy('booking_count', 'desc');
+                    ->orderBy('booking_count', 'desc');
         }
 
         // Pagination
@@ -142,7 +140,6 @@ class ServiceBookingController extends Controller
     /**
      * รายการบริการในหมวดหมู่
      *
-     * @param ServiceCategory $category
      * @return \Illuminate\View\View
      */
     public function category(ServiceCategory $category)
@@ -162,7 +159,6 @@ class ServiceBookingController extends Controller
     /**
      * รายละเอียดบริการ
      *
-     * @param Service $service
      * @return \Illuminate\View\View
      */
     public function show(Service $service)
@@ -184,13 +180,12 @@ class ServiceBookingController extends Controller
     /**
      * ฟอร์มจองบริการ
      *
-     * @param Service $service
      * @return \Illuminate\View\View
      */
     public function book(Service $service)
     {
         // ตรวจสอบว่าบริการต้องการตำแหน่งหรือไม่
-        if ($service->requires_location && !request()->has(['latitude', 'longitude'])) {
+        if ($service->requires_location && ! request()->has(['latitude', 'longitude'])) {
             return redirect()
                 ->back()
                 ->with('error', 'บริการนี้ต้องระบุตำแหน่ง GPS กรุณาเปิดตำแหน่งของคุณ');
@@ -198,15 +193,13 @@ class ServiceBookingController extends Controller
 
         return view('user.services.book', [
             'service' => $service,
-            'pageTitle' => 'จอง: ' . $service->name,
+            'pageTitle' => 'จอง: '.$service->name,
         ]);
     }
 
     /**
      * บันทึกการจอง
      *
-     * @param Request $request
-     * @param Service $service
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeBooking(Request $request, Service $service)
@@ -247,14 +240,13 @@ class ServiceBookingController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
 
     /**
      * รายการจองของฉัน
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function myBookings(Request $request)
@@ -278,7 +270,6 @@ class ServiceBookingController extends Controller
     /**
      * รายละเอียดการจอง
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\View\View
      */
     public function showBooking(ServiceBooking $booking)
@@ -293,20 +284,18 @@ class ServiceBookingController extends Controller
             'provider',
             'items',
             'locations',
-            'trackings' => fn($q) => $q->latest()->limit(10),
+            'trackings' => fn ($q) => $q->latest()->limit(10),
         ]);
 
         return view('user.bookings.show', [
             'booking' => $booking,
-            'pageTitle' => 'การจอง #' . $booking->booking_number,
+            'pageTitle' => 'การจอง #'.$booking->booking_number,
         ]);
     }
 
     /**
      * ยกเลิกการจอง
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function cancelBooking(Request $request, ServiceBooking $booking)
@@ -340,7 +329,6 @@ class ServiceBookingController extends Controller
     /**
      * คำนวณราคาตัวอย่าง (API)
      *
-     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function calculatePrice(Request $request)
@@ -378,7 +366,6 @@ class ServiceBookingController extends Controller
     /**
      * ติดตามสถานะแบบ Real-time (API)
      *
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\JsonResponse
      */
     public function trackBooking(ServiceBooking $booking)
@@ -414,9 +401,6 @@ class ServiceBookingController extends Controller
 
     /**
      * คำนวณ PV และ Cashback ที่ลูกค้าจะได้รับจากบริการ
-     *
-     * @param Service $service
-     * @return array
      */
     private function calculateEarningsPreview(Service $service): array
     {
@@ -448,7 +432,6 @@ class ServiceBookingController extends Controller
     /**
      * แสดงรีวิวบริการของผู้ใช้
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function myReviews(Request $request)
@@ -470,8 +453,6 @@ class ServiceBookingController extends Controller
     /**
      * บันทึกรีวิวสำหรับการจอง
      *
-     * @param Request $request
-     * @param ServiceBooking $booking
      * @return \Illuminate\Http\RedirectResponse
      */
     public function storeReview(Request $request, ServiceBooking $booking)
@@ -518,7 +499,6 @@ class ServiceBookingController extends Controller
     /**
      * แก้ไขรีวิว
      *
-     * @param ServiceBooking $review
      * @return \Illuminate\View\View
      */
     public function editReview(ServiceBooking $review)
@@ -538,8 +518,6 @@ class ServiceBookingController extends Controller
     /**
      * อัพเดทรีวิว
      *
-     * @param Request $request
-     * @param ServiceBooking $review
      * @return \Illuminate\Http\RedirectResponse
      */
     public function updateReview(Request $request, ServiceBooking $review)
@@ -572,7 +550,6 @@ class ServiceBookingController extends Controller
     /**
      * ลบรีวิว
      *
-     * @param ServiceBooking $review
      * @return \Illuminate\Http\RedirectResponse
      */
     public function deleteReview(ServiceBooking $review)
@@ -602,9 +579,6 @@ class ServiceBookingController extends Controller
 
     /**
      * อัพเดทคะแนนเฉลี่ยของ Provider
-     *
-     * @param int $providerId
-     * @return void
      */
     private function updateProviderRating(int $providerId): void
     {

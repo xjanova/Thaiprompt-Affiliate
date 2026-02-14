@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -56,11 +56,13 @@ class CloudflareService
         try {
             if (class_exists(\App\Models\Setting::class)) {
                 $value = \App\Models\Setting::get($key);
-                return !empty($value) ? $value : null;
+
+                return ! empty($value) ? $value : null;
             }
         } catch (\Exception $e) {
             // Database อาจยังไม่พร้อม (เช่น ตอน migrate)
         }
+
         return null;
     }
 
@@ -80,7 +82,7 @@ class CloudflareService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
@@ -101,32 +103,30 @@ class CloudflareService
      */
     public function isConfigured(): bool
     {
-        return !empty($this->apiToken) && !empty($this->zoneId);
+        return ! empty($this->apiToken) && ! empty($this->zoneId);
     }
 
     /**
      * ทดสอบการเชื่อมต่อ API
-     *
-     * @return array
      */
     public function testConnection(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า Zone ID หรือ API Token',
                 'details' => [
-                    'zone_id_set' => !empty($this->zoneId),
-                    'api_token_set' => !empty($this->apiToken),
+                    'zone_id_set' => ! empty($this->zoneId),
+                    'api_token_set' => ! empty($this->apiToken),
                 ],
             ];
         }
 
         try {
             // ทดสอบ API Token ด้วย /user/tokens/verify
-            $tokenResponse = $this->client()->get(self::API_BASE . '/user/tokens/verify');
+            $tokenResponse = $this->client()->get(self::API_BASE.'/user/tokens/verify');
 
-            if (!$tokenResponse->successful()) {
+            if (! $tokenResponse->successful()) {
                 return [
                     'success' => false,
                     'message' => 'API Token ไม่ถูกต้องหรือหมดอายุ',
@@ -140,9 +140,9 @@ class CloudflareService
             $tokenData = $tokenResponse->json('result', []);
 
             // ทดสอบ Zone ID
-            $zoneResponse = $this->client()->get(self::API_BASE . "/zones/{$this->zoneId}");
+            $zoneResponse = $this->client()->get(self::API_BASE."/zones/{$this->zoneId}");
 
-            if (!$zoneResponse->successful()) {
+            if (! $zoneResponse->successful()) {
                 return [
                     'success' => false,
                     'message' => 'Zone ID ไม่ถูกต้องหรือ Token ไม่มีสิทธิ์เข้าถึง Zone นี้',
@@ -170,7 +170,7 @@ class CloudflareService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการเชื่อมต่อ: '.$e->getMessage(),
                 'details' => [
                     'exception' => get_class($e),
                     'error' => $e->getMessage(),
@@ -201,7 +201,7 @@ class CloudflareService
     public function getZones(): array
     {
         try {
-            $response = $this->client()->get(self::API_BASE . '/zones');
+            $response = $this->client()->get(self::API_BASE.'/zones');
 
             if ($response->successful()) {
                 return [
@@ -224,7 +224,7 @@ class CloudflareService
         $zoneId = $zoneId ?? $this->zoneId;
 
         try {
-            $response = $this->client()->get(self::API_BASE . "/zones/{$zoneId}");
+            $response = $this->client()->get(self::API_BASE."/zones/{$zoneId}");
 
             if ($response->successful()) {
                 return [
@@ -252,12 +252,13 @@ class CloudflareService
 
         try {
             $response = $this->client()->post(
-                self::API_BASE . "/zones/{$zoneId}/purge_cache",
+                self::API_BASE."/zones/{$zoneId}/purge_cache",
                 ['purge_everything' => true]
             );
 
             if ($response->successful() && $response->json('success')) {
                 Log::info('Cloudflare: Purged all cache', ['zone_id' => $zoneId]);
+
                 return ['success' => true, 'message' => 'Purge cache ทั้งหมดสำเร็จ'];
             }
 
@@ -276,12 +277,13 @@ class CloudflareService
 
         try {
             $response = $this->client()->post(
-                self::API_BASE . "/zones/{$zoneId}/purge_cache",
+                self::API_BASE."/zones/{$zoneId}/purge_cache",
                 ['files' => $urls]
             );
 
             if ($response->successful() && $response->json('success')) {
                 Log::info('Cloudflare: Purged specific URLs', ['zone_id' => $zoneId, 'urls' => $urls]);
+
                 return ['success' => true, 'message' => 'Purge URLs สำเร็จ', 'count' => count($urls)];
             }
 
@@ -300,7 +302,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->post(
-                self::API_BASE . "/zones/{$zoneId}/purge_cache",
+                self::API_BASE."/zones/{$zoneId}/purge_cache",
                 ['tags' => $tags]
             );
 
@@ -323,7 +325,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->post(
-                self::API_BASE . "/zones/{$zoneId}/purge_cache",
+                self::API_BASE."/zones/{$zoneId}/purge_cache",
                 ['prefixes' => $prefixes]
             );
 
@@ -350,7 +352,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/dns_records",
+                self::API_BASE."/zones/{$zoneId}/dns_records",
                 ['per_page' => 100]
             );
 
@@ -377,12 +379,13 @@ class CloudflareService
 
         try {
             $response = $this->client()->post(
-                self::API_BASE . "/zones/{$zoneId}/dns_records",
+                self::API_BASE."/zones/{$zoneId}/dns_records",
                 $data
             );
 
             if ($response->successful()) {
                 Log::info('Cloudflare: Created DNS record', ['zone_id' => $zoneId, 'data' => $data]);
+
                 return [
                     'success' => true,
                     'data' => $response->json('result'),
@@ -405,12 +408,13 @@ class CloudflareService
 
         try {
             $response = $this->client()->put(
-                self::API_BASE . "/zones/{$zoneId}/dns_records/{$recordId}",
+                self::API_BASE."/zones/{$zoneId}/dns_records/{$recordId}",
                 $data
             );
 
             if ($response->successful()) {
                 Log::info('Cloudflare: Updated DNS record', ['record_id' => $recordId]);
+
                 return [
                     'success' => true,
                     'data' => $response->json('result'),
@@ -433,11 +437,12 @@ class CloudflareService
 
         try {
             $response = $this->client()->delete(
-                self::API_BASE . "/zones/{$zoneId}/dns_records/{$recordId}"
+                self::API_BASE."/zones/{$zoneId}/dns_records/{$recordId}"
             );
 
             if ($response->successful()) {
                 Log::info('Cloudflare: Deleted DNS record', ['record_id' => $recordId]);
+
                 return ['success' => true, 'message' => 'ลบ DNS Record สำเร็จ'];
             }
 
@@ -460,7 +465,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/analytics/dashboard",
+                self::API_BASE."/zones/{$zoneId}/analytics/dashboard",
                 ['since' => $since, 'continuous' => true]
             );
 
@@ -490,7 +495,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/firewall/rules"
+                self::API_BASE."/zones/{$zoneId}/firewall/rules"
             );
 
             if ($response->successful()) {
@@ -515,7 +520,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/settings/security_level"
+                self::API_BASE."/zones/{$zoneId}/settings/security_level"
             );
 
             if ($response->successful()) {
@@ -540,18 +545,19 @@ class CloudflareService
         $zoneId = $zoneId ?? $this->zoneId;
         $validLevels = ['off', 'essentially_off', 'low', 'medium', 'high', 'under_attack'];
 
-        if (!in_array($level, $validLevels)) {
+        if (! in_array($level, $validLevels)) {
             return ['success' => false, 'message' => 'Invalid security level'];
         }
 
         try {
             $response = $this->client()->patch(
-                self::API_BASE . "/zones/{$zoneId}/settings/security_level",
+                self::API_BASE."/zones/{$zoneId}/settings/security_level",
                 ['value' => $level]
             );
 
             if ($response->successful()) {
                 Log::info('Cloudflare: Security level changed', ['level' => $level]);
+
                 return [
                     'success' => true,
                     'message' => "Security level เปลี่ยนเป็น {$level} สำเร็จ",
@@ -593,7 +599,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/settings/ssl"
+                self::API_BASE."/zones/{$zoneId}/settings/ssl"
             );
 
             if ($response->successful()) {
@@ -622,7 +628,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/settings/development_mode"
+                self::API_BASE."/zones/{$zoneId}/settings/development_mode"
             );
 
             if ($response->successful()) {
@@ -647,13 +653,14 @@ class CloudflareService
 
         try {
             $response = $this->client()->patch(
-                self::API_BASE . "/zones/{$zoneId}/settings/development_mode",
+                self::API_BASE."/zones/{$zoneId}/settings/development_mode",
                 ['value' => $enabled ? 'on' : 'off']
             );
 
             if ($response->successful()) {
                 $status = $enabled ? 'เปิด' : 'ปิด';
                 Log::info("Cloudflare: Development mode {$status}");
+
                 return [
                     'success' => true,
                     'message' => "{$status} Development Mode สำเร็จ",
@@ -679,7 +686,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/pagerules"
+                self::API_BASE."/zones/{$zoneId}/pagerules"
             );
 
             if ($response->successful()) {
@@ -708,9 +715,6 @@ class CloudflareService
      * - Security
      * - Caching
      * - SSL/TLS
-     *
-     * @param string|null $zoneId
-     * @return array
      */
     public function oneClickOptimization(?string $zoneId = null): array
     {
@@ -941,10 +945,7 @@ class CloudflareService
     /**
      * ตั้งค่า setting เดี่ยว
      *
-     * @param string $setting
-     * @param mixed $value
-     * @param string|null $zoneId
-     * @return array
+     * @param  mixed  $value
      */
     public function setSetting(string $setting, $value, ?string $zoneId = null): array
     {
@@ -952,7 +953,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->patch(
-                self::API_BASE . "/zones/{$zoneId}/settings/{$setting}",
+                self::API_BASE."/zones/{$zoneId}/settings/{$setting}",
                 ['value' => $value]
             );
 
@@ -972,10 +973,6 @@ class CloudflareService
 
     /**
      * ดึงค่า setting เดี่ยว
-     *
-     * @param string $setting
-     * @param string|null $zoneId
-     * @return array
      */
     public function getSetting(string $setting, ?string $zoneId = null): array
     {
@@ -983,7 +980,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/settings/{$setting}"
+                self::API_BASE."/zones/{$zoneId}/settings/{$setting}"
             );
 
             if ($response->successful()) {
@@ -1001,9 +998,6 @@ class CloudflareService
 
     /**
      * ดึง settings ทั้งหมดพร้อมกัน
-     *
-     * @param string|null $zoneId
-     * @return array
      */
     public function getAllSettings(?string $zoneId = null): array
     {
@@ -1011,7 +1005,7 @@ class CloudflareService
 
         try {
             $response = $this->client()->get(
-                self::API_BASE . "/zones/{$zoneId}/settings"
+                self::API_BASE."/zones/{$zoneId}/settings"
             );
 
             if ($response->successful()) {
@@ -1038,9 +1032,6 @@ class CloudflareService
 
     /**
      * ตรวจสอบสถานะ optimization ปัจจุบัน
-     *
-     * @param string|null $zoneId
-     * @return array
      */
     public function checkOptimizationStatus(?string $zoneId = null): array
     {
@@ -1048,7 +1039,7 @@ class CloudflareService
 
         $settingsResult = $this->getAllSettings($zoneId);
 
-        if (!$settingsResult['success']) {
+        if (! $settingsResult['success']) {
             return $settingsResult;
         }
 
@@ -1220,14 +1211,12 @@ class CloudflareService
      * - จำนวน rate limit exceeded ใน X นาที
      * - จำนวน turnstile failures ใน X นาที
      * - จำนวน threat IPs detected ใน X นาที
-     *
-     * @return array
      */
     public function checkAutoUnderAttackStatus(): array
     {
         $settings = $this->getAutoUnderAttackSettings();
 
-        if (!$settings['enabled']) {
+        if (! $settings['enabled']) {
             return [
                 'should_activate' => false,
                 'reason' => 'Auto Under Attack Mode ถูกปิดใช้งาน',
@@ -1261,7 +1250,7 @@ class CloudflareService
                     ->count();
 
                 $metrics['unique_attack_ips'] = \App\Models\SecurityLog::whereIn('event_type', [
-                    'login_failed', 'rate_limit_exceeded', 'turnstile_failed', 'blocked_by_threat_intelligence'
+                    'login_failed', 'rate_limit_exceeded', 'turnstile_failed', 'blocked_by_threat_intelligence',
                 ])
                     ->where('created_at', '>=', $since)
                     ->distinct('ip_address')
@@ -1294,7 +1283,7 @@ class CloudflareService
         return [
             'should_activate' => $shouldActivate,
             'reason' => $shouldActivate
-                ? 'ตรวจพบการโจมตี! ' . implode(', ', $reasons)
+                ? 'ตรวจพบการโจมตี! '.implode(', ', $reasons)
                 : 'ยังไม่ถึง threshold การโจมตี',
             'threat_score' => $threatScore,
             'threshold' => $settings['threshold'],
@@ -1306,12 +1295,11 @@ class CloudflareService
     /**
      * เปิด Under Attack Mode อัตโนมัติ พร้อม log
      *
-     * @param string $reason เหตุผลที่เปิด
-     * @return array
+     * @param  string  $reason  เหตุผลที่เปิด
      */
     public function autoEnableUnderAttackMode(string $reason = ''): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -1334,7 +1322,7 @@ class CloudflareService
                         'event_type' => 'cloudflare_under_attack_enabled',
                         'ip_address' => request()->ip() ?? '127.0.0.1',
                         'severity' => 'critical',
-                        'description' => 'Auto-enabled Under Attack Mode: ' . $reason,
+                        'description' => 'Auto-enabled Under Attack Mode: '.$reason,
                         'user_agent' => 'System',
                     ]);
                 } catch (\Exception $e) {
@@ -1356,12 +1344,10 @@ class CloudflareService
 
     /**
      * ปิด Under Attack Mode อัตโนมัติ เมื่อหมดเวลาที่กำหนด
-     *
-     * @return array
      */
     public function autoDisableUnderAttackMode(): array
     {
-        if (!$this->isConfigured()) {
+        if (! $this->isConfigured()) {
             return [
                 'success' => false,
                 'message' => 'Cloudflare ยังไม่ได้ตั้งค่า',
@@ -1373,7 +1359,7 @@ class CloudflareService
         // ตรวจสอบว่าเปิดอัตโนมัติอยู่หรือไม่
         $autoEnabled = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled', false);
 
-        if (!$autoEnabled) {
+        if (! $autoEnabled) {
             return [
                 'success' => false,
                 'message' => 'Under Attack Mode ไม่ได้เปิดอัตโนมัติ',
@@ -1382,7 +1368,7 @@ class CloudflareService
 
         $enabledAt = \App\Models\Setting::get('cloudflare_under_attack_auto_enabled_at');
 
-        if (!$enabledAt) {
+        if (! $enabledAt) {
             return [
                 'success' => false,
                 'message' => 'ไม่พบเวลาที่เปิด Under Attack Mode',
@@ -1395,6 +1381,7 @@ class CloudflareService
         // ถ้ายังไม่ถึงเวลาปิด
         if (now()->diffInMinutes($enabledAtTime) < $duration) {
             $remainingMinutes = $duration - now()->diffInMinutes($enabledAtTime);
+
             return [
                 'success' => false,
                 'message' => "ยังไม่ถึงเวลาปิด Under Attack Mode อีก {$remainingMinutes} นาที",
@@ -1416,7 +1403,7 @@ class CloudflareService
                         'event_type' => 'cloudflare_under_attack_disabled',
                         'ip_address' => '127.0.0.1',
                         'severity' => 'medium',
-                        'description' => 'Auto-disabled Under Attack Mode หลังจากเปิดมา ' . $duration . ' นาที',
+                        'description' => 'Auto-disabled Under Attack Mode หลังจากเปิดมา '.$duration.' นาที',
                         'user_agent' => 'System',
                     ]);
                 } catch (\Exception $e) {
@@ -1437,8 +1424,6 @@ class CloudflareService
 
     /**
      * ดึงการตั้งค่า Auto Under Attack Mode
-     *
-     * @return array
      */
     public function getAutoUnderAttackSettings(): array
     {
@@ -1459,9 +1444,6 @@ class CloudflareService
 
     /**
      * บันทึกการตั้งค่า Auto Under Attack Mode
-     *
-     * @param array $settings
-     * @return array
      */
     public static function saveAutoUnderAttackSettings(array $settings): array
     {
@@ -1494,15 +1476,13 @@ class CloudflareService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
     }
 
     /**
      * ดึงสถานะ Under Attack Mode ปัจจุบัน
-     *
-     * @return array
      */
     public function getUnderAttackStatus(): array
     {
@@ -1547,6 +1527,7 @@ class CloudflareService
         if (is_array($value)) {
             return json_encode($value);
         }
+
         return (string) $value;
     }
 
@@ -1560,7 +1541,7 @@ class CloudflareService
     protected function handleError($response): array
     {
         $errors = $response->json('errors', []);
-        $message = !empty($errors) ? $errors[0]['message'] ?? 'Unknown error' : 'API request failed';
+        $message = ! empty($errors) ? $errors[0]['message'] ?? 'Unknown error' : 'API request failed';
 
         Log::error('Cloudflare API Error', [
             'status' => $response->status(),

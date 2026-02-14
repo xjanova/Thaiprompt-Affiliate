@@ -45,7 +45,7 @@ return new class extends Migration
                 'refund',            // Refunded crypto
                 'transfer_in',       // Received from another user
                 'transfer_out',      // Sent to another user
-                'gas_fee'            // Gas fee deduction
+                'gas_fee',            // Gas fee deduction
             ]);
 
             // Amount
@@ -64,7 +64,7 @@ return new class extends Migration
                 'confirmed',         // Fully confirmed
                 'completed',         // Processed in system
                 'failed',            // Transaction failed
-                'cancelled'          // Cancelled before broadcast
+                'cancelled',          // Cancelled before broadcast
             ])->default('pending');
 
             $table->integer('confirmations')->default(0);

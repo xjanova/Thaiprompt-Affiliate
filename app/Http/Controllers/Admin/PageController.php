@@ -24,9 +24,9 @@ class PageController extends Controller
         // Search
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', '%'.$search.'%')
-                  ->orWhere('slug', 'like', '%'.$search.'%');
+                    ->orWhere('slug', 'like', '%'.$search.'%');
             });
         }
 
@@ -42,6 +42,7 @@ class PageController extends Controller
     public function create()
     {
         $types = Page::getTypes();
+
         return view('admin.pages.create', compact('types'));
     }
 
@@ -53,7 +54,7 @@ class PageController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:pages,slug'],
-            'type' => ['required', 'in:' . implode(',', array_keys(Page::getTypes()))],
+            'type' => ['required', 'in:'.implode(',', array_keys(Page::getTypes()))],
             'content' => ['required', 'string'],
             'is_published' => ['boolean'],
             'sort_order' => ['integer'],
@@ -83,6 +84,7 @@ class PageController extends Controller
     public function edit(Page $page)
     {
         $types = Page::getTypes();
+
         return view('admin.pages.edit', compact('page', 'types'));
     }
 
@@ -93,8 +95,8 @@ class PageController extends Controller
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:pages,slug,' . $page->id],
-            'type' => ['required', 'in:' . implode(',', array_keys(Page::getTypes()))],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:pages,slug,'.$page->id],
+            'type' => ['required', 'in:'.implode(',', array_keys(Page::getTypes()))],
             'content' => ['required', 'string'],
             'is_published' => ['boolean'],
             'sort_order' => ['integer'],
@@ -134,7 +136,7 @@ class PageController extends Controller
 
         foreach ($validated['pages'] as $pageData) {
             Page::where('id', $pageData['id'])->update([
-                'sort_order' => $pageData['sort_order']
+                'sort_order' => $pageData['sort_order'],
             ]);
         }
 

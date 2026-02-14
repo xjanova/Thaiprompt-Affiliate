@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class DeepSeekService implements AiServiceInterface
 {
     protected string $apiKey;
+
     protected string $apiEndpoint;
 
     public function __construct()
@@ -32,8 +33,8 @@ class DeepSeekService implements AiServiceInterface
                 'max_tokens' => $params['max_tokens'] ?? 2000,
             ]);
 
-            if (!$response->successful()) {
-                throw new \Exception("DeepSeek API error: " . $response->body());
+            if (! $response->successful()) {
+                throw new \Exception('DeepSeek API error: '.$response->body());
             }
 
             $data = $response->json();

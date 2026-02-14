@@ -19,8 +19,6 @@ class ProductUnblockedNotification extends Notification implements ShouldQueue
 
     /**
      * สร้าง notification instance
-     *
-     * @param Product $product
      */
     public function __construct(Product $product)
     {
@@ -30,8 +28,7 @@ class ProductUnblockedNotification extends Notification implements ShouldQueue
     /**
      * ช่องทางการส่ง notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function via($notifiable): array
     {
@@ -41,15 +38,14 @@ class ProductUnblockedNotification extends Notification implements ShouldQueue
     /**
      * Email notification
      *
-     * @param mixed $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @param  mixed  $notifiable
      */
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
             ->subject('✅ สินค้าของคุณถูกปลดบล็อกแล้ว')
-            ->greeting('สวัสดี ' . $notifiable->name)
-            ->line('สินค้า "' . $this->product->name . '" ของคุณถูกปลดบล็อกโดยผู้ดูแลระบบแล้ว')
+            ->greeting('สวัสดี '.$notifiable->name)
+            ->line('สินค้า "'.$this->product->name.'" ของคุณถูกปลดบล็อกโดยผู้ดูแลระบบแล้ว')
             ->line('คุณสามารถเปิดใช้งานสินค้าเพื่อแสดงในหน้าร้านได้ตามปกติ')
             ->line('หากมีข้อสงสัย กรุณาติดต่อผู้ดูแลระบบ')
             ->action('จัดการสินค้า', route('seller.products.edit', $this->product))
@@ -59,8 +55,7 @@ class ProductUnblockedNotification extends Notification implements ShouldQueue
     /**
      * Database notification
      *
-     * @param mixed $notifiable
-     * @return array
+     * @param  mixed  $notifiable
      */
     public function toArray($notifiable): array
     {
@@ -70,7 +65,7 @@ class ProductUnblockedNotification extends Notification implements ShouldQueue
             'product_name' => $this->product->name,
             'unblocked_at' => $this->product->unblocked_at,
             'unblocked_by' => $this->product->unblocked_by,
-            'message' => 'สินค้า "' . $this->product->name . '" ถูกปลดบล็อกแล้ว คุณสามารถเปิดใช้งานได้ตามปกติ',
+            'message' => 'สินค้า "'.$this->product->name.'" ถูกปลดบล็อกแล้ว คุณสามารถเปิดใช้งานได้ตามปกติ',
             'action_url' => route('seller.products.edit', $this->product),
         ];
     }
