@@ -410,15 +410,14 @@ class FortuneConversationService
 
         } catch (\Exception $e) {
             // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
-            $errorDetails = [
+            Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
                 'facebook_user_id' => $facebookUserId,
                 'error' => $e->getMessage(),
                 'error_class' => get_class($e),
                 'error_file' => $e->getFile().':'.$e->getLine(),
                 'trace_short' => mb_substr($e->getTraceAsString(), 0, 800),
                 'text_preview' => mb_substr($messageText, 0, 50),
-            ];
-            Log::error('Fortune processMessage: เกิดข้อผิดพลาด', $errorDetails);
+            ]);
 
             // ✅ ป้องกัน null userProfile - ใช้ is_array ก่อนเข้าถึง array key
             $name = (is_array($userProfile) && isset($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
@@ -427,20 +426,6 @@ class FortuneConversationService
             try {
                 $activeReading = FortuneReading::findActiveConversation($facebookUserId);
                 if ($activeReading) {
-                    // 🔍 DEBUG: เก็บ error details ไว้ใน conversation_state เพื่อดูจาก admin
-                    try {
-                        $activeReading->setConversationState('last_error', [
-                            'message' => $e->getMessage(),
-                            'class' => get_class($e),
-                            'file' => $e->getFile().':'.$e->getLine(),
-                            'trace' => mb_substr($e->getTraceAsString(), 0, 500),
-                            'input_text' => mb_substr($messageText, 0, 100),
-                            'time' => now()->toDateTimeString(),
-                        ]);
-                    } catch (\Exception $stateErr) {
-                        Log::error('Fortune: บันทึก error state ไม่สำเร็จ', ['error' => $stateErr->getMessage()]);
-                    }
-
                     $status = $activeReading->conversation_status;
 
                     // ถ้าอยู่ระหว่างเก็บคำถาม → แจ้งให้พิมพ์คำถามอีกครั้ง
@@ -448,15 +433,11 @@ class FortuneConversationService
                         $collected = count($activeReading->getCollectedQuestions());
                         $remaining = max(0, self::REQUIRED_QUESTIONS - $collected);
 
-                        // 🔍 DEBUG: แสดง error ชั่วคราวในข้อความ (ลบทีหลัง)
-                        $debugInfo = "\n\n[DEBUG] {$e->getMessage()} @ ".basename($e->getFile()).':'.$e->getLine();
-
                         return [
                             'action' => 'retry_question',
                             'message' => "ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\n"
                                 ."ตอนนี้จันทรารับคำถามแล้ว {$collected} ข้อ\n"
-                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อใหม่อีกครั้งนะคะ"
-                                .$debugInfo,
+                                ."กรุณาพิมพ์คำถามอีก {$remaining} ข้อใหม่อีกครั้งนะคะ",
                             'reading' => $activeReading,
                         ];
                     }
