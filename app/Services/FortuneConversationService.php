@@ -1632,11 +1632,14 @@ class FortuneConversationService
                         $perQuestionMessage = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
                             ."❓ {$question}\n\n"
                             .$aiResult['response'];
+
+                        Log::info("Fortune Deep Streaming: ข้อที่ {$questionNum} ยาว ".mb_strlen($perQuestionMessage).' ตัวอักษร');
+
                         $channelManager->sendResponse($platform, $userId, [
                             'action' => 'partial',
                             'message' => $perQuestionMessage,
-                        ]);
-                        usleep(300000); // รอ 0.3 วินาทีก่อนข้อถัดไป
+                        ], ['from_admin' => true]);
+                        usleep(500000); // รอ 0.5 วินาทีก่อนข้อถัดไป (ลด rate limit)
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
                             'error' => $sendErr->getMessage(),
@@ -1688,7 +1691,7 @@ class FortuneConversationService
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'completed',
                         'message' => $thankYouMessage,
-                    ]);
+                    ], ['from_admin' => true]);
                 } catch (\Exception $sendErr) {
                     Log::warning('Fortune Deep Streaming: ส่งข้อความขอบคุณไม่สำเร็จ', [
                         'error' => $sendErr->getMessage(),
@@ -3380,7 +3383,7 @@ class FortuneConversationService
 - ต้องอ้างอิงตำแหน่งดาวจริงจากแผนที่ดวงชะตา + Transit ปัจจุบัน + Transit อนาคต ห้ามแต่งตำแหน่งดาวขึ้นเอง
 - เมื่อทำนายอนาคต ต้องอ้าง Transit อนาคต (1,3,6,12 เดือน) เปรียบเทียบกับดวงกำเนิด
 - ห้ามพูดว่าหยั่งรู้ จิตสัมผัส → ใช้คำว่า \"ศาสตร์โหราศาสตร์โบราณ\" หรือ \"หลักเจ้าชนะ\" แทน
-- ตอบอย่างละเอียดสมราคา ไม่น้อยกว่า 400 คำ ไม่เกิน 700 คำ
+- ตอบอย่างละเอียดสมราคา ไม่น้อยกว่า 300 คำ ไม่เกิน 450 คำ (⚠️ จำกัด 1500 ตัวอักษร เพราะส่งผ่าน Messenger ที่มี limit)
 - ใช้ \"จันทรา\" แทนตัวเอง
 - ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ มีศาสตร์รองรับ ทำให้อยากดูดวงอีก";
 

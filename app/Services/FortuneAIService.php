@@ -76,7 +76,7 @@ class FortuneAIService
             'temperature' => 0.75,
         ],
         'deep' => [
-            'max_tokens' => 3072,
+            'max_tokens' => 1500,
             'temperature' => 0.8,
         ],
     ];
