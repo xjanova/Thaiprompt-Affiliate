@@ -319,11 +319,14 @@ public function run(): void
 - [ ] ทุก column modification มี `Schema::hasColumn()` check
 - [ ] Foreign keys ใช้ `constrained()` หรือมีการตรวจสอบก่อนเพิ่ม
 - [ ] Index ที่มีชื่อยาวถูกกำหนดชื่อสั้นแล้ว (≤50 chars)
+- [ ] **ไม่มี MySQL-specific SQL** (ห้าม `SET FOREIGN_KEY_CHECKS`, `INFORMATION_SCHEMA`, `MODIFY COLUMN`)
+- [ ] **ใช้ Laravel Schema methods เท่านั้น** (ไม่ใช้ raw DB::statement สำหรับ DDL)
 - [ ] ทุก seeder ใหม่ถูกเพิ่มใน `DatabaseSeeder.php` แล้ว
 - [ ] Seeder เรียงลำดับตาม dependencies ถูกต้อง
 - [ ] Seeders เป็น idempotent (รันซ้ำได้)
 - [ ] มี information messages ใน seeders
 - [ ] ทดสอบ `php artisan migrate:fresh --seed` สำเร็จ
+- [ ] รัน `./vendor/bin/pint` แล้ว (code style)
 
 ---
 
@@ -485,6 +488,112 @@ $this->call([
 
 ---
 
+## 🚫 Cross-Database Compatibility (กฎบังคับ — ป้องกัน CI ล่ม)
+
+> **⚠️ CRITICAL**: Migration ต้องรองรับทั้ง MySQL และ SQLite (ที่ใช้ในการทดสอบ)
+> การใช้ MySQL-specific SQL จะทำให้ CI Tests ล่มทุกครั้ง
+
+### ห้ามใช้ MySQL-specific SQL โดยตรง
+
+```php
+// ❌ ห้ามทำ — ใช้ได้เฉพาะ MySQL, SQLite จะ error
+DB::statement('SET FOREIGN_KEY_CHECKS=0');
+DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+// ✅ ใช้ Laravel Schema methods แทน — รองรับทุก database driver
+Schema::disableForeignKeyConstraints();
+Schema::enableForeignKeyConstraints();
+```
+
+```php
+// ❌ ห้ามทำ — INFORMATION_SCHEMA ไม่มีใน SQLite
+$indexes = DB::select('SELECT * FROM INFORMATION_SCHEMA.STATISTICS WHERE ...');
+$fks = DB::select('SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE ...');
+
+// ✅ ใช้ Laravel 11 Schema methods แทน
+$indexes = Schema::getIndexes('table_name');
+$foreignKeys = Schema::getForeignKeys('table_name');
+```
+
+```php
+// ❌ ห้ามทำ — ALTER TABLE ... MODIFY COLUMN เป็น MySQL-specific
+DB::statement('ALTER TABLE xxx MODIFY COLUMN yyy VARCHAR(255)');
+
+// ✅ ใช้ Laravel Schema แทน
+Schema::table('xxx', function (Blueprint $table) {
+    $table->string('yyy', 255)->nullable()->change();
+});
+```
+
+### ใช้ SafeMigration Trait เสมอ (แนะนำ)
+
+```php
+use Database\Migrations\Concerns\SafeMigration;
+
+return new class extends Migration
+{
+    use SafeMigration;
+
+    public function up(): void
+    {
+        Schema::table('table_name', function (Blueprint $table) {
+            // ✅ SafeMigration methods — ปลอดภัย รองรับทุก driver
+            $this->safeAddColumn($table, 'table_name', 'new_col', function ($t) {
+                $t->string('new_col')->nullable();
+            });
+        });
+
+        // ✅ เช็ค index อย่างปลอดภัย
+        $this->safeAddIndex('table_name', 'new_col');
+    }
+};
+```
+
+### สรุปสิ่งที่ห้ามใช้ใน Migrations
+
+| ❌ ห้ามใช้ (MySQL-specific) | ✅ ใช้แทน (Cross-DB) |
+|---------------------------|---------------------|
+| `DB::statement('SET FOREIGN_KEY_CHECKS=0')` | `Schema::disableForeignKeyConstraints()` |
+| `DB::statement('SET FOREIGN_KEY_CHECKS=1')` | `Schema::enableForeignKeyConstraints()` |
+| `INFORMATION_SCHEMA.STATISTICS` | `Schema::getIndexes()` |
+| `INFORMATION_SCHEMA.TABLE_CONSTRAINTS` | `Schema::getForeignKeys()` |
+| `ALTER TABLE ... MODIFY COLUMN ...` | `$table->...->change()` |
+| `DB::unprepared('ALTER TABLE ...')` | Laravel Blueprint methods |
+
+---
+
+## 🏭 Model Factories (กฎบังคับ — ป้องกัน CI Tests ล่ม)
+
+> **⚠️ CRITICAL**: ทุก Model ที่ใช้ `::factory()` ในเทสต์ต้องมี Factory class
+
+### กฎ: สร้าง Factory ทุกครั้งที่สร้าง Model ใหม่ที่มีเทสต์
+
+```bash
+# สร้าง Factory พร้อม Model
+php artisan make:model Feature -mf  # -f = สร้าง Factory ด้วย
+
+# หรือสร้าง Factory แยก
+php artisan make:factory FeatureFactory --model=Feature
+```
+
+### ถ้าไม่มี Factory จะเกิด Error นี้ใน CI:
+
+```
+BadMethodCallException: Call to undefined method App\Models\Feature::factory()
+```
+
+### Factory files ต้องอยู่ใน `database/factories/`
+
+```
+database/factories/
+├── UserFactory.php
+├── GameFactory.php
+├── WalletFactory.php
+└── [Model]Factory.php  ← เพิ่มทุกครั้งที่สร้าง Model ใหม่
+```
+
+---
+
 ## 🎯 Summary
 
 **กฎทองสำหรับ Database Management:**
@@ -496,6 +605,8 @@ $this->call([
    - ถ้าตารางที่อ้างอิงมีอยู่แล้ว → ใช้ `foreignId()->constrained()`
    - ถ้าตารางที่อ้างอิงสร้างทีหลัง → ใช้ `unsignedBigInteger` + conditional FK
 5. ✅ **ทุกอย่าง** = ต้อง Idempotent (รันซ้ำได้)
+6. ✅ **ห้ามใช้ MySQL-specific SQL** = ใช้ Laravel Schema methods เท่านั้น (ป้องกัน CI ล่ม)
+7. ✅ **ทุก Model ที่มีเทสต์** = ต้องมี Factory class ใน `database/factories/`
 
 **⚠️ Checklist ก่อนสร้าง Migration:**
 

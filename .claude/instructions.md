@@ -209,12 +209,22 @@
 - [ ] Migration มี table existence check (บังคับ)
 - [ ] Foreign keys และ indexes ครบถ้วน
 - [ ] Model relationships ตรงกับ database schema
+- [ ] **ห้ามใช้ MySQL-specific SQL** ใน migrations (ดู DATABASE_GUIDELINES.md)
 
 ### Seeders
 - [ ] Seeder ทุกตัวอยู่ใน DatabaseSeeder.php (บังคับ)
 - [ ] รัน `php scripts/verify-seeders.php` ผ่าน (บังคับ)
 - [ ] Smart seeding (check before insert)
 - [ ] Git pre-commit hook จะตรวจสอบอัตโนมัติ
+
+### Tests & Factories (บังคับ)
+- [ ] **ทุก Model ที่ใช้ `factory()` ในเทสต์ ต้องมี Factory class** ใน `database/factories/`
+- [ ] Factory ต้องกำหนด `$fillable` fields ที่ถูกต้องตาม migration
+- [ ] เทสต์ต้องผ่าน `./vendor/bin/phpunit` ก่อน push
+- [ ] ห้ามใช้ MySQL-specific SQL ใน tests (เช่น `DB::statement('SET ...')`)
+
+> **⚠️ เหตุผล**: CI รัน `phpunit` อัตโนมัติ ถ้า Factory ไม่มี จะ error
+> `BadMethodCallException: Call to undefined method ...::factory()`
 
 ### Routes & Views
 - [ ] Routes ไม่ซ้ำ มี middleware
