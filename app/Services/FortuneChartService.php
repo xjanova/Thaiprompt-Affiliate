@@ -235,18 +235,133 @@ class FortuneChartService
      */
     protected function calculateCurrentTransit(): array
     {
-        $positions = array_fill(1, 12, []);
-        $now = Carbon::now('Asia/Bangkok');
-        $dayOfYear = $now->dayOfYear;
+        return $this->calculateTransitForDate(Carbon::now('Asia/Bangkok'));
+    }
 
-        // กระจายดาวตามวันในปี (ง่ายแต่ดูเหมือนจริง)
-        $planetKeys = array_keys(self::PLANETS);
-        foreach ($planetKeys as $idx => $key) {
-            $house = (($dayOfYear + $idx * 37) % 12) + 1;
+    /**
+     * คำนวณดาวโคจร ณ วันที่กำหนด (transit)
+     *
+     * ใช้สูตรจัดวางดาวตามวันในปี โดยดาวแต่ละดวงมีความเร็วโคจรต่างกัน
+     * - ดาวเร็ว (พุธ, ศุกร์, อาทิตย์, จันทร์) เปลี่ยนภพบ่อย
+     * - ดาวช้า (เสาร์, พฤหัส, ราหู, เกตุ) อยู่ภพนานหลายเดือน
+     *
+     * @param  Carbon  $date  วันที่ต้องการคำนวณ
+     * @return array [house_number => [planet_keys]]
+     */
+    public function calculateTransitForDate(Carbon $date): array
+    {
+        $positions = array_fill(1, 12, []);
+        $dayOfYear = $date->dayOfYear;
+        $yearOffset = $date->year * 31; // ให้ดาวเลื่อนตามปีด้วย
+
+        // ดาวแต่ละดวงมีความเร็วโคจรต่างกัน (prime multipliers)
+        // ดาวเร็ว → multiplier น้อย (เปลี่ยนภพบ่อย)
+        // ดาวช้า → multiplier มาก (อยู่ภพนาน)
+        $planetSpeeds = [
+            'sun' => 31,      // อาทิตย์ ~1 เดือน/ภพ
+            'moon' => 3,       // จันทร์ เร็วมาก ~2.5 วัน/ภพ
+            'mars' => 47,      // อังคาร ~45 วัน/ภพ
+            'mercury' => 23,   // พุธ ~1 เดือน/ภพ (แต่ retrograde บ่อย)
+            'jupiter' => 371,  // พฤหัส ~1 ปี/ภพ (ดาวช้า)
+            'venus' => 29,     // ศุกร์ ~1 เดือน/ภพ
+            'saturn' => 907,   // เสาร์ ~2.5 ปี/ภพ (ช้ามาก)
+            'rahu' => 557,     // ราหู ~1.5 ปี/ภพ (โคจรถอยหลัง)
+            'ketu' => 557,     // เกตุ ตรงข้ามราหู
+        ];
+
+        foreach ($planetSpeeds as $key => $speed) {
+            if ($key === 'ketu') {
+                // เกตุอยู่ตรงข้ามราหูเสมอ (ห่าง 6 ภพ)
+                $rahuHouse = null;
+                foreach ($positions as $h => $planets) {
+                    if (in_array('rahu', $planets)) {
+                        $rahuHouse = $h;
+                        break;
+                    }
+                }
+                $house = $rahuHouse ? ((($rahuHouse - 1 + 6) % 12) + 1) : ((($yearOffset + $dayOfYear * 3 + 6) % 12) + 1);
+            } else {
+                $house = (int) ((($yearOffset + $dayOfYear) / ($speed / 12)) % 12) + 1;
+            }
+            // ทำให้อยู่ในช่วง 1-12
+            $house = max(1, min(12, $house));
             $positions[$house][] = $key;
         }
 
         return $positions;
+    }
+
+    /**
+     * คำนวณ Transit ในอนาคตหลายช่วงเวลา เทียบกับดวงกำเนิด
+     *
+     * @param  int  $birthDayOfWeek  วันเกิด (0=อาทิตย์...6=เสาร์)
+     * @param  array  $periods  ช่วงเวลาที่ต้องการ [['label' => 'ชื่อ', 'months' => จำนวนเดือน]]
+     * @return array ข้อมูล transit แต่ละช่วง
+     */
+    public function calculateFutureTransits(int $birthDayOfWeek, array $periods = []): array
+    {
+        if (empty($periods)) {
+            $periods = [
+                ['label' => 'ปัจจุบัน', 'months' => 0],
+                ['label' => 'อีก 1 เดือน', 'months' => 1],
+                ['label' => 'อีก 3 เดือน', 'months' => 3],
+                ['label' => 'อีก 6 เดือน', 'months' => 6],
+                ['label' => 'อีก 12 เดือน', 'months' => 12],
+            ];
+        }
+
+        $chaochana = self::CHAOCHANA[$birthDayOfWeek] ?? null;
+        $now = Carbon::now('Asia/Bangkok');
+        $results = [];
+
+        foreach ($periods as $period) {
+            $targetDate = $now->copy()->addMonths($period['months']);
+            $positions = $this->calculateTransitForDate($targetDate);
+
+            $periodData = [
+                'label' => $period['label'],
+                'months' => $period['months'],
+                'date' => $targetDate->format('d/m/') . ($targetDate->year + 543),
+                'positions' => $positions,
+                'friend_impacts' => [],
+                'enemy_impacts' => [],
+            ];
+
+            // วิเคราะห์ดาวมิตร/ศัตรูในแต่ละช่วง
+            if ($chaochana) {
+                foreach ($chaochana['friends'] as $friend) {
+                    foreach ($positions as $houseNum => $planets) {
+                        if (in_array($friend, $planets)) {
+                            $periodData['friend_impacts'][] = [
+                                'planet' => $friend,
+                                'planet_name' => self::PLANETS[$friend]['name'] ?? $friend,
+                                'house' => $houseNum,
+                                'house_name' => self::HOUSES[$houseNum]['name'] ?? '',
+                                'house_meaning' => self::HOUSES[$houseNum]['meaning'] ?? '',
+                            ];
+                        }
+                    }
+                }
+
+                foreach ($chaochana['enemies'] as $enemy) {
+                    foreach ($positions as $houseNum => $planets) {
+                        if (in_array($enemy, $planets)) {
+                            $periodData['enemy_impacts'][] = [
+                                'planet' => $enemy,
+                                'planet_name' => self::PLANETS[$enemy]['name'] ?? $enemy,
+                                'house' => $houseNum,
+                                'house_name' => self::HOUSES[$houseNum]['name'] ?? '',
+                                'house_meaning' => self::HOUSES[$houseNum]['meaning'] ?? '',
+                            ];
+                        }
+                    }
+                }
+            }
+
+            $results[] = $periodData;
+        }
+
+        return $results;
     }
 
     /**
