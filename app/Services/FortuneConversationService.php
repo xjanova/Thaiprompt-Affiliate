@@ -1653,13 +1653,25 @@ class FortuneConversationService
             // รวม response ทั้งหมดสำหรับบันทึกลง DB
             $fullResponse = $this->combineDeepReadings($deepReadings, $name, $reading->bill_reference);
 
-            // บันทึกคำทำนายละเอียด
-            $reading->saveDeepReading(
-                $fullResponse,
-                $lastProvider,
-                $lastModel,
-                $totalTokens
-            );
+            // บันทึกคำทำนายละเอียดลง DB
+            try {
+                $reading->saveDeepReading(
+                    $fullResponse,
+                    $lastProvider,
+                    $lastModel,
+                    $totalTokens
+                );
+                Log::info('Fortune Deep: saveDeepReading สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'response_length' => strlen($fullResponse),
+                ]);
+            } catch (\Exception $saveErr) {
+                Log::error('Fortune Deep: saveDeepReading ล้มเหลว!', [
+                    'reading_id' => $reading->id,
+                    'error' => $saveErr->getMessage(),
+                    'response_length' => strlen($fullResponse),
+                ]);
+            }
 
             // สร้างข้อความขอบคุณ
             $thankYouMessage = $this->getThankYouMessage($name, $reading->bill_reference);
