@@ -1654,6 +1654,8 @@ class FortuneConversationService
             $fullResponse = $this->combineDeepReadings($deepReadings, $name, $reading->bill_reference);
 
             // บันทึกคำทำนายละเอียดลง DB
+            // Note: saveDeepReading ใช้ DB::table query ตรง เพราะหลัง AI generation
+            // 45-60 วินาที MySQL connection อาจ stale ทำให้ Eloquent update ล้มเหลว
             try {
                 $reading->saveDeepReading(
                     $fullResponse,
@@ -1661,15 +1663,12 @@ class FortuneConversationService
                     $lastModel,
                     $totalTokens
                 );
-                Log::info('Fortune Deep: saveDeepReading สำเร็จ', [
-                    'reading_id' => $reading->id,
-                    'response_length' => strlen($fullResponse),
-                ]);
             } catch (\Exception $saveErr) {
                 Log::error('Fortune Deep: saveDeepReading ล้มเหลว!', [
                     'reading_id' => $reading->id,
                     'error' => $saveErr->getMessage(),
                     'response_length' => strlen($fullResponse),
+                    'trace' => substr($saveErr->getTraceAsString(), 0, 300),
                 ]);
             }
 

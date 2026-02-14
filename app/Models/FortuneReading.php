@@ -628,10 +628,14 @@ class FortuneReading extends Model
 
     /**
      * บันทึกคำทำนายละเอียดหลังชำระเงิน
+     *
+     * ใช้ DB::table query โดยตรงแทน Eloquent update
+     * เพราะหลัง AI generation 45-60 วินาที MySQL connection อาจ stale
+     * และ Eloquent $this->update() อาจ return false โดยไม่ throw exception
      */
     public function saveDeepReading(string $response, string $provider, string $model, int $tokensUsed): void
     {
-        $this->update([
+        $updateData = [
             'deep_response' => $response,
             'ai_response' => $response,
             'ai_provider' => $provider,
@@ -639,7 +643,36 @@ class FortuneReading extends Model
             'tokens_used' => ($this->tokens_used ?? 0) + $tokensUsed,
             'conversation_status' => self::STATUS_COMPLETED,
             'reading_type' => 'deep',
-        ]);
+            'updated_at' => now(),
+        ];
+
+        // ใช้ DB::table query ตรง — หลีกเลี่ยง Eloquent stale connection
+        $affected = \Illuminate\Support\Facades\DB::table($this->table)
+            ->where('id', $this->id)
+            ->update($updateData);
+
+        if ($affected > 0) {
+            // Sync model attributes ให้ตรงกับ DB
+            $this->forceFill($updateData)->syncOriginal();
+            \Illuminate\Support\Facades\Log::info('Fortune: saveDeepReading สำเร็จ (DB::table)', [
+                'reading_id' => $this->id,
+                'affected_rows' => $affected,
+            ]);
+        } else {
+            // Fallback: ลอง Eloquent refresh + update
+            $this->refresh();
+            $result = $this->update($updateData);
+            \Illuminate\Support\Facades\Log::warning('Fortune: saveDeepReading fallback to Eloquent', [
+                'reading_id' => $this->id,
+                'eloquent_result' => $result,
+            ]);
+
+            if (! $result) {
+                throw new \RuntimeException(
+                    "saveDeepReading failed: DB::table affected 0 rows, Eloquent returned false for reading #{$this->id}"
+                );
+            }
+        }
     }
 
     /**
