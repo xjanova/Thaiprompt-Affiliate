@@ -239,6 +239,31 @@ class SmsCheckerAdminController extends Controller
     }
 
     /**
+     * ลบ FCM Token ของอุปกรณ์ (สำหรับ reset token ที่ไม่ถูกต้อง)
+     *
+     * @param SmsCheckerDevice $device
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function clearFcmToken(SmsCheckerDevice $device)
+    {
+        $deviceName = $device->device_name ?? $device->device_id;
+
+        $device->update([
+            'fcm_token' => null,
+            'fcm_token_updated_at' => now(),
+        ]);
+
+        \Illuminate\Support\Facades\Log::info('Admin: ลบ FCM token ของอุปกรณ์', [
+            'device_id' => $device->device_id,
+            'device_name' => $deviceName,
+        ]);
+
+        return redirect()
+            ->route('admin.smschecker.device-show', $device)
+            ->with('success', "ลบ FCM Token ของ \"{$deviceName}\" สำเร็จ! แอพจะลงทะเบียน token ใหม่เมื่อเปิดใช้งาน");
+    }
+
+    /**
      * แสดงประวัติ SMS Notifications ทั้งหมด
      *
      * @return \Illuminate\View\View

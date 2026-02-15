@@ -130,6 +130,18 @@
                     <dd class="text-sm text-gray-900 dark:text-white">{{ $device->fcm_token_updated_at->format('d/m/Y H:i:s') }}</dd>
                 </div>
                 @endif
+                @if($device->fcm_token)
+                <div class="pt-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                    <form action="{{ route('admin.smschecker.device-clear-fcm', $device) }}" method="POST"
+                          onsubmit="return confirm('ลบ FCM Token? แอพจะลงทะเบียน token ใหม่เมื่อเปิดใช้งาน')">
+                        @csrf
+                        <button type="submit"
+                                class="w-full px-3 py-1.5 text-xs bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 text-red-700 dark:text-red-300 rounded-lg transition">
+                            🗑️ ลบ FCM Token (Reset)
+                        </button>
+                    </form>
+                </div>
+                @endif
             </dl>
         </div>
 
