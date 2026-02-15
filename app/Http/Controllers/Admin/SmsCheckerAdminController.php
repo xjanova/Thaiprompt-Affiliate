@@ -432,7 +432,13 @@ class SmsCheckerAdminController extends Controller
             $json = json_decode($content, true);
 
             if (! $json || empty($json['project_id']) || empty($json['private_key']) || empty($json['client_email'])) {
-                return redirect()->back()->with('error', 'ไฟล์ JSON ไม่ถูกต้อง ต้องเป็น Firebase Service Account JSON');
+                $errorMsg = 'ไฟล์ JSON ไม่ถูกต้อง ต้องเป็น Firebase Service Account JSON';
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $errorMsg], 422);
+                }
+
+                return redirect()->back()->with('error', $errorMsg);
             }
 
             // Save to storage
@@ -460,9 +466,19 @@ class SmsCheckerAdminController extends Controller
             }
         }
 
+        $successMsg = 'บันทึกการตั้งค่า FCM เรียบร้อยแล้ว';
+
+        // ถ้าเป็น AJAX request → return JSON (ป้องกัน session หมดอายุจาก form submit)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMsg,
+            ]);
+        }
+
         return redirect()
             ->route('admin.smschecker.settings')
-            ->with('success', 'บันทึกการตั้งค่า FCM เรียบร้อยแล้ว');
+            ->with('success', $successMsg);
     }
 
     /**
@@ -470,20 +486,31 @@ class SmsCheckerAdminController extends Controller
      *
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function testFcm()
+    public function testFcm(Request $request)
     {
         $fcmService = app(FcmNotificationService::class);
         $result = $fcmService->triggerSync();
 
+        $successMsg = 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android';
+        $errorMsg = 'ส่ง FCM test push ล้มเหลว ตรวจสอบ log สำหรับรายละเอียด';
+
+        // ถ้าเป็น AJAX request → return JSON
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => (bool) $result,
+                'message' => $result ? $successMsg : $errorMsg,
+            ], $result ? 200 : 500);
+        }
+
         if ($result) {
             return redirect()
                 ->route('admin.smschecker.settings')
-                ->with('success', 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android');
+                ->with('success', $successMsg);
         }
 
         return redirect()
             ->route('admin.smschecker.settings')
-            ->with('error', 'ส่ง FCM test push ล้มเหลว ตรวจสอบ log สำหรับรายละเอียด');
+            ->with('error', $errorMsg);
     }
 
     /**

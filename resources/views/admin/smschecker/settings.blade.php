@@ -156,68 +156,244 @@
                 </div>
             </div>
 
-            <form action="{{ route('admin.smschecker.settings-fcm') }}" method="POST" enctype="multipart/form-data">
-                @csrf
+            {{-- FCM Settings Form - ใช้ Alpine.js + AJAX เพื่อป้องกัน session หมดอายุ --}}
+            <div x-data="fcmSettingsForm()" x-cloak>
+                <form @submit.prevent="submitForm" enctype="multipart/form-data">
 
-                {{-- FCM Enabled --}}
-                <div class="mb-5">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="hidden" name="fcm_enabled" value="0">
-                        <input type="checkbox" name="fcm_enabled" value="1" {{ $fcmEnabled ? 'checked' : '' }}
-                            class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน FCM Push Notification</span>
-                    </label>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8">ส่ง push notification ไปยังแอพ Android เมื่อมีบิลใหม่</p>
-                </div>
+                    {{-- FCM Enabled --}}
+                    <div class="mb-5">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="fcm_enabled" value="0">
+                            <input type="checkbox" name="fcm_enabled" value="1" {{ $fcmEnabled ? 'checked' : '' }}
+                                class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน FCM Push Notification</span>
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8">ส่ง push notification ไปยังแอพ Android เมื่อมีบิลใหม่</p>
+                    </div>
 
-                {{-- Firebase Project ID --}}
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Firebase Project ID</label>
-                    <input type="text" name="fcm_project_id" value="{{ old('fcm_project_id', $fcmProjectId) }}"
-                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="your-project-id">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ดูได้จาก Firebase Console → Project Settings → General</p>
-                </div>
+                    {{-- Firebase Project ID --}}
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Firebase Project ID</label>
+                        <input type="text" name="fcm_project_id" value="{{ old('fcm_project_id', $fcmProjectId) }}"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="your-project-id">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ดูได้จาก Firebase Console → Project Settings → General</p>
+                    </div>
 
-                {{-- Service Account JSON --}}
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Account JSON</label>
-                    <input type="file" name="fcm_credentials" accept=".json"
-                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50">
-                    @if($fcmCredentialsPath)
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
-                            ไฟล์ปัจจุบัน: {{ basename($fcmCredentialsPath) }}
-                        </p>
-                    @else
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ดาวน์โหลดจาก Firebase Console → Project Settings → Service accounts → Generate new private key</p>
-                    @endif
-                </div>
+                    {{-- Service Account JSON --}}
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Service Account JSON</label>
+                        <input type="file" name="fcm_credentials" accept=".json"
+                            class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900/30 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50">
+                        @if($fcmCredentialsPath)
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                ไฟล์ปัจจุบัน: {{ basename($fcmCredentialsPath) }}
+                            </p>
+                        @else
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ดาวน์โหลดจาก Firebase Console → Project Settings → Service accounts → Generate new private key</p>
+                        @endif
+                    </div>
 
-                {{-- Buttons --}}
-                <div class="flex items-center gap-3">
-                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        บันทึก
-                    </button>
-                </div>
-            </form>
+                    {{-- Status Message --}}
+                    <div x-show="message" x-transition
+                        :class="messageType === 'success'
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                            : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'"
+                        class="mb-4 px-4 py-3 rounded-xl text-sm">
+                        <span x-text="message"></span>
+                    </div>
 
-            {{-- Test FCM Button (แยกฟอร์ม) --}}
+                    {{-- Buttons --}}
+                    <div class="flex items-center gap-3">
+                        <button type="submit" :disabled="submitting"
+                            class="inline-flex items-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-xl transition-colors">
+                            <template x-if="!submitting">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </template>
+                            <template x-if="submitting">
+                                <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </template>
+                            <span x-text="submitting ? 'กำลังบันทึก...' : 'บันทึก'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <script>
+            /**
+             * FCM Settings Form - ใช้ AJAX + refresh CSRF token ก่อน submit
+             * ป้องกัน session หมดอายุเมื่อเปิดหน้าค้างไว้นาน
+             */
+            function fcmSettingsForm() {
+                return {
+                    submitting: false,
+                    message: '',
+                    messageType: 'success',
+
+                    async submitForm(e) {
+                        this.submitting = true;
+                        this.message = '';
+
+                        try {
+                            // ขอ CSRF token ใหม่ก่อน submit (ป้องกัน session หมดอายุ)
+                            const tokenResponse = await fetch('{{ route("admin.smschecker.settings") }}', {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+
+                            if (!tokenResponse.ok) {
+                                throw new Error('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณา refresh หน้าและลองใหม่');
+                            }
+
+                            // ดึง CSRF token ใหม่จาก response HTML
+                            const html = await tokenResponse.text();
+                            const tokenMatch = html.match(/name="_token"\s+value="([^"]+)"/);
+                            const freshToken = tokenMatch ? tokenMatch[1] : null;
+
+                            if (!freshToken) {
+                                // Session หมดจริงๆ → redirect ไปหน้า login
+                                throw new Error('Session หมดอายุ กรุณา login ใหม่');
+                            }
+
+                            // สร้าง FormData พร้อม CSRF token ใหม่
+                            const form = e.target;
+                            const formData = new FormData(form);
+                            formData.set('_token', freshToken);
+
+                            // ส่งข้อมูลไป server ผ่าน AJAX
+                            const response = await fetch('{{ route("admin.smschecker.settings-fcm") }}', {
+                                method: 'POST',
+                                body: formData,
+                                credentials: 'same-origin',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json().catch(() => null);
+                                this.message = data?.message || 'บันทึกการตั้งค่า FCM เรียบร้อยแล้ว';
+                                this.messageType = (data?.success !== false) ? 'success' : 'error';
+                                // Reload หน้าหลังจากแสดง message 1 วินาที เพื่ออัพเดท status
+                                if (this.messageType === 'success') {
+                                    setTimeout(() => window.location.reload(), 1000);
+                                }
+                            } else if (response.status === 419) {
+                                // CSRF ยังไม่ถูกต้อง → reload หน้าใหม่
+                                this.message = 'Session หมดอายุ กำลัง refresh หน้า...';
+                                this.messageType = 'error';
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else if (response.status === 422) {
+                                const data = await response.json().catch(() => null);
+                                this.message = data?.message || 'ไฟล์ JSON ไม่ถูกต้อง';
+                                this.messageType = 'error';
+                            } else if (response.redirected) {
+                                // Server redirect (เช่น login page) → follow redirect
+                                window.location.href = response.url;
+                            } else {
+                                throw new Error('เกิดข้อผิดพลาดในการบันทึก (HTTP ' + response.status + ')');
+                            }
+
+                        } catch (err) {
+                            this.message = err.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+                            this.messageType = 'error';
+                        } finally {
+                            this.submitting = false;
+                        }
+                    }
+                };
+            }
+            </script>
+
+            {{-- Test FCM Button (แยกฟอร์ม - ใช้ AJAX ป้องกัน session หมดอายุ) --}}
             @if($fcmServiceAccount)
-            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <form action="{{ route('admin.smschecker.settings-fcm-test') }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-xl transition-colors">
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700" x-data="{ testing: false, testMsg: '', testType: '' }">
+                <button @click="testFcm($el)" :disabled="testing"
+                    class="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-medium rounded-xl transition-colors">
+                    <template x-if="!testing">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                         </svg>
-                        ทดสอบส่ง FCM
-                    </button>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-3">ส่ง silent push ไปยังอุปกรณ์ที่ active ทั้งหมด</span>
-                </form>
+                    </template>
+                    <template x-if="testing">
+                        <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </template>
+                    <span x-text="testing ? 'กำลังทดสอบ...' : 'ทดสอบส่ง FCM'"></span>
+                </button>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-3">ส่ง silent push ไปยังอุปกรณ์ที่ active ทั้งหมด</span>
+
+                {{-- ผลลัพธ์ทดสอบ --}}
+                <div x-show="testMsg" x-transition class="mt-3 px-4 py-3 rounded-xl text-sm"
+                    :class="testType === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'">
+                    <span x-text="testMsg"></span>
+                </div>
             </div>
+
+            <script>
+            /**
+             * ทดสอบส่ง FCM push notification ผ่าน AJAX
+             * ป้องกัน session หมดอายุ โดยขอ CSRF token ใหม่ก่อนส่ง
+             */
+            async function testFcm(el) {
+                const component = Alpine.$data(el.closest('[x-data]'));
+                component.testing = true;
+                component.testMsg = '';
+
+                try {
+                    // ขอ CSRF token ใหม่
+                    const tokenRes = await fetch('{{ route("admin.smschecker.settings") }}', {
+                        method: 'GET', credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const html = await tokenRes.text();
+                    const match = html.match(/name="_token"\s+value="([^"]+)"/);
+                    const token = match ? match[1] : null;
+
+                    if (!token) {
+                        throw new Error('Session หมดอายุ กรุณา login ใหม่');
+                    }
+
+                    const res = await fetch('{{ route("admin.smschecker.settings-fcm-test") }}', {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: '_token=' + encodeURIComponent(token)
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json().catch(() => null);
+                        component.testMsg = data?.message || 'ส่ง FCM test push สำเร็จ!';
+                        component.testType = data?.success !== false ? 'success' : 'error';
+                    } else if (res.status === 419) {
+                        component.testMsg = 'Session หมดอายุ กำลัง refresh...';
+                        component.testType = 'error';
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else {
+                        throw new Error('เกิดข้อผิดพลาด (HTTP ' + res.status + ')');
+                    }
+                } catch (err) {
+                    component.testMsg = err.message || 'เกิดข้อผิดพลาด';
+                    component.testType = 'error';
+                } finally {
+                    component.testing = false;
+                }
+            }
+            </script>
             @endif
 
             {{-- คู่มือ --}}
