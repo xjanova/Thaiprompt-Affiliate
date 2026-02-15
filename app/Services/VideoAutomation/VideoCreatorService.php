@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
  * Video Creator Service
  *
  * สร้างวีดีโอจากภาพและเพลงโดยใช้ FFmpeg
+ * รองรับ server ที่ disable exec()/shell_exec() โดยใช้ proc_open() เป็น fallback
  *
  * @see https://ffmpeg.org/documentation.html
  */
@@ -58,11 +59,102 @@ class VideoCreatorService
     }
 
     /**
+     * รัน command อย่างปลอดภัย (รองรับ server ที่ disable exec)
+     *
+     * ลำดับการลอง:
+     * 1. exec() — เร็วที่สุด
+     * 2. proc_open() — fallback เมื่อ exec ถูก disable
+     *
+     * @param  string  $command  คำสั่งที่จะรัน
+     * @param  array  $output  output จากคำสั่ง (passed by reference)
+     * @param  int  $returnCode  return code (passed by reference)
+     * @return void
+     */
+    protected function safeExec(string $command, array &$output = [], int &$returnCode = -1): void
+    {
+        // ลอง exec() ก่อน
+        if (\function_exists('exec')) {
+            try {
+                \exec($command, $output, $returnCode);
+
+                return;
+            } catch (\Throwable $e) {
+                // exec ถูก disable → ลอง proc_open
+            }
+        }
+
+        // Fallback: proc_open()
+        if (\function_exists('proc_open')) {
+            $descriptors = [
+                0 => ['pipe', 'r'],  // stdin
+                1 => ['pipe', 'w'],  // stdout
+                2 => ['pipe', 'w'],  // stderr
+            ];
+
+            $process = \proc_open($command, $descriptors, $pipes);
+
+            if (\is_resource($process)) {
+                \fclose($pipes[0]); // ปิด stdin
+
+                $stdout = \stream_get_contents($pipes[1]);
+                $stderr = \stream_get_contents($pipes[2]);
+                \fclose($pipes[1]);
+                \fclose($pipes[2]);
+
+                $returnCode = \proc_close($process);
+
+                // รวม stdout + stderr เป็น output array
+                $combined = trim($stdout."\n".$stderr);
+                $output = $combined !== '' ? explode("\n", $combined) : [];
+
+                return;
+            }
+        }
+
+        // ไม่มี method ที่ใช้ได้เลย
+        $output = ['exec() และ proc_open() ถูก disable บน server นี้'];
+        $returnCode = -1;
+
+        Log::error('VideoCreatorService: ไม่สามารถรัน command ได้ - exec() และ proc_open() ถูก disable', [
+            'command' => Str::limit($command, 200),
+        ]);
+    }
+
+    /**
+     * รัน command และคืนค่า output string (แทน shell_exec)
+     *
+     * @param  string  $command  คำสั่งที่จะรัน
+     * @return string|null  output จากคำสั่ง หรือ null ถ้าเกิด error
+     */
+    protected function safeShellExec(string $command): ?string
+    {
+        // ลอง shell_exec() ก่อน
+        if (\function_exists('shell_exec')) {
+            try {
+                $result = \shell_exec($command);
+
+                return $result;
+            } catch (\Throwable $e) {
+                // shell_exec ถูก disable → ลอง proc_open
+            }
+        }
+
+        // Fallback: ใช้ safeExec แล้วรวม output
+        $output = [];
+        $returnCode = -1;
+        $this->safeExec($command, $output, $returnCode);
+
+        return ! empty($output) ? implode("\n", $output) : null;
+    }
+
+    /**
      * ตรวจสอบว่า FFmpeg พร้อมใช้งานหรือไม่
      */
     public function isConfigured(): bool
     {
-        exec("{$this->ffmpegPath} -version 2>&1", $output, $returnCode);
+        $output = [];
+        $returnCode = -1;
+        $this->safeExec("{$this->ffmpegPath} -version 2>&1", $output, $returnCode);
 
         return $returnCode === 0;
     }
@@ -159,8 +251,10 @@ class VideoCreatorService
 
             $job?->logInfo('FFmpeg command', ['command' => $command]);
 
-            // รัน FFmpeg
-            exec($command.' 2>&1', $output, $returnCode);
+            // รัน FFmpeg (รองรับ server ที่ disable exec)
+            $output = [];
+            $returnCode = -1;
+            $this->safeExec($command.' 2>&1', $output, $returnCode);
 
             if ($returnCode !== 0) {
                 $error = implode("\n", $output);
@@ -248,7 +342,9 @@ class VideoCreatorService
                 escapeshellarg($outputFile)
             );
 
-            exec($command, $output, $returnCode);
+            $output = [];
+            $returnCode = -1;
+            $this->safeExec($command, $output, $returnCode);
 
             if ($returnCode === 0 && file_exists($outputFile)) {
                 $prepared[] = $outputFile;
@@ -344,9 +440,9 @@ class VideoCreatorService
             escapeshellarg($audioPath)
         );
 
-        $output = shell_exec($command);
+        $output = $this->safeShellExec($command);
 
-        return (float) trim($output);
+        return (float) trim($output ?? '0');
     }
 
     /**
@@ -360,8 +456,8 @@ class VideoCreatorService
             escapeshellarg($videoPath)
         );
 
-        $output = shell_exec($command);
-        $data = json_decode($output, true);
+        $output = $this->safeShellExec($command);
+        $data = json_decode($output ?? '{}', true);
 
         $format = $data['format'] ?? [];
         $stream = $data['streams'][0] ?? [];
@@ -423,7 +519,9 @@ class VideoCreatorService
                 escapeshellarg($fullOutputPath)
             );
 
-            exec($command, $output, $returnCode);
+            $output = [];
+            $returnCode = -1;
+            $this->safeExec($command, $output, $returnCode);
 
             if ($returnCode !== 0 || ! file_exists($fullOutputPath)) {
                 throw new \Exception('ไม่สามารถสร้าง thumbnail ได้');
@@ -451,7 +549,9 @@ class VideoCreatorService
      */
     public function testConnection(): array
     {
-        exec("{$this->ffmpegPath} -version 2>&1", $output, $returnCode);
+        $output = [];
+        $returnCode = -1;
+        $this->safeExec("{$this->ffmpegPath} -version 2>&1", $output, $returnCode);
 
         if ($returnCode === 0) {
             $version = $output[0] ?? 'Unknown';
