@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
+use App\Services\FortuneConversationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -156,6 +157,8 @@ class FortuneSettingsController extends Controller
             'bankAccounts' => $bankAccounts,
             'bankAccountsJson' => $bankAccountsJson,
             'supportedBanks' => $supportedBanks,
+            'defaultBasicPrompt' => FortuneConversationService::getDefaultBasicPrompt(),
+            'defaultDeepPrompt' => FortuneConversationService::getDefaultDeepPrompt(),
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
     }

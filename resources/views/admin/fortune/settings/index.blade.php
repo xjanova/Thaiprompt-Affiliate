@@ -1034,18 +1034,16 @@
 
         {{-- Prompt Templates --}}
         <div x-data="{
-            showBasicDefault: false,
-            showDeepDefault: false,
-            basicDefault: {{ json_encode($settings->getBasicPromptTemplate()) }},
-            deepDefault: {{ json_encode($settings->getDeepPromptTemplate()) }},
+            basicDefault: {{ json_encode($defaultBasicPrompt) }},
+            deepDefault: {{ json_encode($defaultDeepPrompt) }},
             resetBasic() {
-                if (confirm('รีเซ็ต Prompt พื้นฐานเป็นค่าเริ่มต้น?')) {
-                    this.$refs.basicPrompt.value = '';
+                if (confirm('รีเซ็ต Prompt พื้นฐานกลับเป็นค่าเริ่มต้น?')) {
+                    this.$refs.basicPrompt.value = this.basicDefault;
                 }
             },
             resetDeep() {
-                if (confirm('รีเซ็ต Prompt เชิงลึกเป็นค่าเริ่มต้น?')) {
-                    this.$refs.deepPrompt.value = '';
+                if (confirm('รีเซ็ต Prompt เชิงลึกกลับเป็นค่าเริ่มต้น?')) {
+                    this.$refs.deepPrompt.value = this.deepDefault;
                 }
             }
         }" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
@@ -1053,7 +1051,7 @@
                 📝 เทมเพลตคำทำนาย (AI Prompt)
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                ⚠️ <strong>ว่างไว้ = ใช้ค่าเริ่มต้นที่ระบบตั้งไว้</strong> — ระบบจะเช็คลำดับ: prompt จากการตั้งค่า → ถ้าว่าง ใช้ค่าเริ่มต้น hardcode
+                แก้ไข prompt ที่ AI ใช้ทำนายได้โดยตรง — กดปุ่ม "🔄 รีเซ็ต" เพื่อกลับค่าเริ่มต้น | ตัวแปร <code class="text-xs bg-gray-200 dark:bg-gray-700 px-1 rounded">{name}</code> จะถูกแทนที่ด้วยข้อมูลจริงตอนทำนาย
             </p>
 
             <div class="space-y-6">
@@ -1063,29 +1061,15 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             🔮 Prompt ดูดวงพื้นฐาน (ฟรี — สั้น กระชับ)
                         </label>
-                        <div class="flex gap-2">
-                            <button type="button" @click="showBasicDefault = !showBasicDefault"
-                                    class="text-xs px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
-                                <span x-text="showBasicDefault ? '🔼 ซ่อน Default' : '🔽 ดู Default Prompt'"></span>
-                            </button>
-                            <button type="button" @click="resetBasic()"
-                                    class="text-xs px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition">
-                                🔄 รีเซ็ต
-                            </button>
-                        </div>
+                        <button type="button" @click="resetBasic()"
+                                class="text-xs px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition">
+                            🔄 รีเซ็ตเป็นค่าเริ่มต้น
+                        </button>
                     </div>
 
-                    {{-- แสดง Default Prompt (อ่านอย่างเดียว) --}}
-                    <div x-show="showBasicDefault" x-transition class="mb-3">
-                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">📋 Prompt ค่าเริ่มต้น (อ่านอย่างเดียว):</p>
-                            <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto" x-text="basicDefault"></pre>
-                        </div>
-                    </div>
-
-                    <textarea name="basic_prompt_template" rows="15" x-ref="basicPrompt"
+                    <textarea name="basic_prompt_template" rows="20" x-ref="basicPrompt"
                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 font-mono text-sm leading-relaxed"
-                              placeholder="ว่างไว้ = ใช้ค่าเริ่มต้น (คลิก 'ดู Default Prompt' เพื่อดูค่าเริ่มต้น)">{{ old('basic_prompt_template', $settings->basic_prompt_template ?? '') }}</textarea>
+                              placeholder="ใส่ Prompt สำหรับดูดวงพื้นฐาน...">{{ old('basic_prompt_template', $settings->basic_prompt_template ?? $defaultBasicPrompt) }}</textarea>
                     <div class="mt-2 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
                         <p class="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">📌 ตัวแปรที่ใช้ได้ใน Prompt พื้นฐาน:</p>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-1 text-xs text-blue-600 dark:text-blue-400 font-mono">
@@ -1108,29 +1092,15 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                             🌟 Prompt ดูดวงเชิงลึก (จ่ายเงิน — ละเอียด ลึกซึ้ง ทีละคำถาม)
                         </label>
-                        <div class="flex gap-2">
-                            <button type="button" @click="showDeepDefault = !showDeepDefault"
-                                    class="text-xs px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition">
-                                <span x-text="showDeepDefault ? '🔼 ซ่อน Default' : '🔽 ดู Default Prompt'"></span>
-                            </button>
-                            <button type="button" @click="resetDeep()"
-                                    class="text-xs px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition">
-                                🔄 รีเซ็ต
-                            </button>
-                        </div>
+                        <button type="button" @click="resetDeep()"
+                                class="text-xs px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition">
+                            🔄 รีเซ็ตเป็นค่าเริ่มต้น
+                        </button>
                     </div>
 
-                    {{-- แสดง Default Prompt (อ่านอย่างเดียว) --}}
-                    <div x-show="showDeepDefault" x-transition class="mb-3">
-                        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">📋 Prompt ค่าเริ่มต้น (อ่านอย่างเดียว):</p>
-                            <pre class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto" x-text="deepDefault"></pre>
-                        </div>
-                    </div>
-
-                    <textarea name="deep_prompt_template" rows="20" x-ref="deepPrompt"
+                    <textarea name="deep_prompt_template" rows="25" x-ref="deepPrompt"
                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-sm leading-relaxed"
-                              placeholder="ว่างไว้ = ใช้ค่าเริ่มต้น (คลิก 'ดู Default Prompt' เพื่อดูค่าเริ่มต้น)">{{ old('deep_prompt_template', $settings->deep_prompt_template ?? '') }}</textarea>
+                              placeholder="ใส่ Prompt สำหรับดูดวงเชิงลึก...">{{ old('deep_prompt_template', $settings->deep_prompt_template ?? $defaultDeepPrompt) }}</textarea>
                     <div class="mt-2 p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
                         <p class="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">📌 ตัวแปรที่ใช้ได้ใน Prompt เชิงลึก:</p>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-1 text-xs text-purple-600 dark:text-purple-400 font-mono">
