@@ -3203,8 +3203,11 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
 Route::prefix('platform-revenue/video-automation')->name('video-automation.')->group(function () {
 
     // Dashboard
+    // ⚠️ บาง views ใช้ชื่อ 'index' บาง views ใช้ 'dashboard' — ลงทะเบียนทั้งสองชื่อ
     Route::get('/', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'dashboard'])
         ->name('dashboard');
+    Route::get('/', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'dashboard'])
+        ->name('index');
     Route::get('/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getDashboardStats'])
         ->name('stats');
 
@@ -3213,6 +3216,8 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
         ->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSettings'])
         ->name('settings.save');
+    Route::post('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSettings'])
+        ->name('settings.update');
     Route::post('/settings/test/{apiType}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'testApiConnection'])
         ->name('settings.test');
 
@@ -3223,16 +3228,22 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
         ->name('platforms.save');
     Route::delete('/platforms/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePlatform'])
         ->name('platforms.delete');
+    Route::post('/platforms/{id}/disconnect', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePlatform'])
+        ->name('platforms.disconnect');
 
     // YouTube OAuth
     Route::get('/youtube/connect', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'connectYouTube'])
         ->name('youtube.connect');
+    Route::get('/youtube/connect', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'connectYouTube'])
+        ->name('youtube.auth');
     Route::get('/youtube/callback', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'youtubeCallback'])
         ->name('youtube.callback');
 
     // Templates (เทมเพลตสำหรับสร้างวีดีโอ)
     Route::get('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'templates'])
         ->name('templates');
+    Route::get('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'templates'])
+        ->name('templates.index');
     Route::get('/templates/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createTemplate'])
         ->name('templates.create');
     Route::post('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeTemplate'])
@@ -3242,11 +3253,13 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
     Route::put('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updateTemplate'])
         ->name('templates.update');
     Route::delete('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteTemplate'])
-        ->name('templates.delete');
+        ->name('templates.destroy');
 
     // Projects (โปรเจกต์สร้างวีดีโอ)
     Route::get('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'projects'])
         ->name('projects');
+    Route::get('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'projects'])
+        ->name('projects.index');
     Route::get('/projects/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createProject'])
         ->name('projects.create');
     Route::post('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeProject'])
@@ -3254,25 +3267,39 @@ Route::prefix('platform-revenue/video-automation')->name('video-automation.')->g
     Route::get('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showProject'])
         ->name('projects.show');
     Route::post('/projects/{id}/run', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'runProject'])
-        ->name('projects.run');
+        ->name('projects.start');
+    Route::post('/projects/{id}/retry', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'runProject'])
+        ->name('projects.retry');
+    Route::post('/projects/{id}/cancel', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'runProject'])
+        ->name('projects.cancel');
     Route::delete('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteProject'])
-        ->name('projects.delete');
+        ->name('projects.destroy');
 
     // Jobs (งานที่รัน)
     Route::get('/jobs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'jobs'])
         ->name('jobs');
+    Route::get('/jobs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'jobs'])
+        ->name('jobs.index');
     Route::get('/jobs/{id}/logs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getJobLogs'])
         ->name('jobs.logs');
     Route::post('/jobs/{id}/retry', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'retryJob'])
         ->name('jobs.retry');
+    Route::post('/jobs/{id}/cancel', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'retryJob'])
+        ->name('jobs.cancel');
 
     // Schedules (ตารางเวลาอัตโนมัติ)
     Route::get('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'schedules'])
         ->name('schedules');
+    Route::get('/schedules/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'schedules'])
+        ->name('schedules.create');
+    Route::get('/schedules/{id}/edit', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'schedules'])
+        ->name('schedules.edit');
     Route::post('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSchedule'])
         ->name('schedules.save');
+    Route::post('/schedules/{id}/run', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSchedule'])
+        ->name('schedules.run');
     Route::delete('/schedules/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteSchedule'])
-        ->name('schedules.delete');
+        ->name('schedules.destroy');
 
     // Publish History (ประวัติการโพสต์)
     Route::get('/publish-history', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'publishHistory'])
