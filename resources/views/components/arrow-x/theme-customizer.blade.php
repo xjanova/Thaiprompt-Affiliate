@@ -3,124 +3,20 @@
  * Theme Customizer V3 - ปรับแต่งธีมแบบละเอียด
  *
  * @tip เปิดด้วยปุ่ม settings หรือ keyboard shortcut (Ctrl+Shift+T)
+ *
+ * ⚠️ IMPORTANT: ย้าย JS logic ออกจาก x-data attribute ไปเป็น <script> tag
+ * เพราะ inline JS ใน HTML attribute ทำให้ HTML parsing พังบนมือถือ
+ * (Blade @auth/@json ใน attribute ทำให้ browser ตีความ HTML ผิด)
  */
 --}}
 
-<div x-data="{
-    customizerOpen: false,
-    activeTab: 'general',
-    settings: {
-        // Glass Effects
-        glassOpacity: 15,
-        glassBlur: 12,
-        borderOpacity: 30,
+{{-- ส่ง server theme settings ผ่าน global variable (หลีกเลี่ยง @json ใน x-data attribute) --}}
+<script>
+    window.__themeServerSettings = @auth @json(auth()->user()->theme_settings ?? []) @else null @endauth;
+</script>
 
-        // Shadows & Glow
-        shadowIntensity: 50,
-        glowIntensity: 60,
-        textShadow: true,
-
-        // Animations
-        animationSpeed: 500,
-        hoverScale: 105,
-
-        // Roundness
-        cardRoundness: 16,
-        buttonRoundness: 12,
-
-        // Colors
-        primaryHue: 260, // Purple
-        accentHue: 340, // Pink
-        contrast: 100, // ความตัดกันของสี
-
-        // Advanced
-        backdropSaturate: 100,
-        perspectiveDepth: 1000,
-    },
-
-    init() {
-        // 1. โหลดค่าเริ่มต้นจาก server (ถ้ามี)
-        @auth
-        const serverSettings = @json(auth()->user()->theme_settings ?? []);
-        if (serverSettings && Object.keys(serverSettings).length > 0) {
-            this.settings = { ...this.settings, ...serverSettings };
-            // Sync ค่าจาก server ไป localStorage
-            localStorage.setItem('themeSettings', JSON.stringify(this.settings));
-        }
-        @endauth
-
-        // 2. Override ด้วย localStorage (ถ้า user ปรับแต่งเอง)
-        const saved = localStorage.getItem('themeSettings');
-        if (saved) {
-            this.settings = { ...this.settings, ...JSON.parse(saved) };
-        }
-
-        this.applySettings();
-
-        // Keyboard shortcut (Ctrl+Shift+T)
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'T') {
-                e.preventDefault();
-                this.customizerOpen = !this.customizerOpen;
-            }
-        });
-    },
-
-    saveSettings() {
-        localStorage.setItem('themeSettings', JSON.stringify(this.settings));
-        this.applySettings();
-    },
-
-    applySettings() {
-        // Apply CSS custom properties
-        const root = document.documentElement;
-        root.style.setProperty('--glass-opacity', this.settings.glassOpacity / 100);
-        root.style.setProperty('--glass-blur', this.settings.glassBlur + 'px');
-        root.style.setProperty('--border-opacity', this.settings.borderOpacity / 100);
-        root.style.setProperty('--shadow-intensity', this.settings.shadowIntensity / 100);
-        root.style.setProperty('--glow-intensity', this.settings.glowIntensity / 100);
-        root.style.setProperty('--animation-speed', this.settings.animationSpeed + 'ms');
-        root.style.setProperty('--hover-scale', this.settings.hoverScale / 100);
-        root.style.setProperty('--card-roundness', this.settings.cardRoundness + 'px');
-        root.style.setProperty('--button-roundness', this.settings.buttonRoundness + 'px');
-        root.style.setProperty('--primary-hue', this.settings.primaryHue);
-        root.style.setProperty('--accent-hue', this.settings.accentHue);
-        root.style.setProperty('--contrast', this.settings.contrast + '%');
-        root.style.setProperty('--backdrop-saturate', this.settings.backdropSaturate + '%');
-        root.style.setProperty('--perspective-depth', this.settings.perspectiveDepth + 'px');
-
-        // ถ้าเป็นโหมด Classic (ไม่มี glass effects) ให้เพิ่ม class พิเศษ
-        const isClassicMode = this.settings.glassOpacity === 0 && this.settings.glassBlur === 0;
-        if (isClassicMode) {
-            document.body.classList.add('theme-classic');
-        } else {
-            document.body.classList.remove('theme-classic');
-        }
-    },
-
-    resetSettings() {
-        if (confirm('รีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น?')) {
-            this.settings = {
-                glassOpacity: 15,
-                glassBlur: 12,
-                borderOpacity: 30,
-                shadowIntensity: 50,
-                glowIntensity: 60,
-                textShadow: true,
-                animationSpeed: 500,
-                hoverScale: 105,
-                cardRoundness: 16,
-                buttonRoundness: 12,
-                primaryHue: 260,
-                accentHue: 340,
-                contrast: 100,
-                backdropSaturate: 100,
-                perspectiveDepth: 1000,
-            };
-            this.saveSettings();
-        }
-    }
-}"
+<div x-data="themeCustomizer()"
+     x-cloak
      class="fixed right-0 top-0 bottom-0 z-[9999]"
      @keydown.escape.window="customizerOpen = false"
      @toggle-customizer.window="customizerOpen = !customizerOpen">
@@ -425,6 +321,130 @@
         </div>
     </div>
 </div>
+
+<script>
+/**
+ * Theme Customizer Alpine.js Component
+ *
+ * ย้ายออกมาจาก inline x-data attribute เพื่อป้องกันปัญหา HTML parsing
+ * เมื่อ Blade directives (@auth, @json) render ใน HTML attribute
+ */
+function themeCustomizer() {
+    return {
+        customizerOpen: false,
+        activeTab: 'general',
+        settings: {
+            // Glass Effects
+            glassOpacity: 15,
+            glassBlur: 12,
+            borderOpacity: 30,
+            // Shadows & Glow
+            shadowIntensity: 50,
+            glowIntensity: 60,
+            textShadow: true,
+            // Animations
+            animationSpeed: 500,
+            hoverScale: 105,
+            // Roundness
+            cardRoundness: 16,
+            buttonRoundness: 12,
+            // Colors
+            primaryHue: 260,
+            accentHue: 340,
+            contrast: 100,
+            // Advanced
+            backdropSaturate: 100,
+            perspectiveDepth: 1000,
+        },
+
+        init() {
+            // 1. โหลดค่าเริ่มต้นจาก server (ถ้ามี)
+            var serverSettings = window.__themeServerSettings;
+            if (serverSettings && typeof serverSettings === 'object' && Object.keys(serverSettings).length > 0) {
+                this.settings = { ...this.settings, ...serverSettings };
+                // Sync ค่าจาก server ไป localStorage
+                localStorage.setItem('themeSettings', JSON.stringify(this.settings));
+            }
+
+            // 2. Override ด้วย localStorage (ถ้า user ปรับแต่งเอง)
+            var saved = localStorage.getItem('themeSettings');
+            if (saved) {
+                try {
+                    this.settings = { ...this.settings, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.warn('themeCustomizer: localStorage parse error', e);
+                }
+            }
+
+            this.applySettings();
+
+            // Keyboard shortcut (Ctrl+Shift+T)
+            var self = this;
+            window.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+                    e.preventDefault();
+                    self.customizerOpen = !self.customizerOpen;
+                }
+            });
+        },
+
+        saveSettings() {
+            localStorage.setItem('themeSettings', JSON.stringify(this.settings));
+            this.applySettings();
+        },
+
+        applySettings() {
+            // Apply CSS custom properties
+            var root = document.documentElement;
+            root.style.setProperty('--glass-opacity', this.settings.glassOpacity / 100);
+            root.style.setProperty('--glass-blur', this.settings.glassBlur + 'px');
+            root.style.setProperty('--border-opacity', this.settings.borderOpacity / 100);
+            root.style.setProperty('--shadow-intensity', this.settings.shadowIntensity / 100);
+            root.style.setProperty('--glow-intensity', this.settings.glowIntensity / 100);
+            root.style.setProperty('--animation-speed', this.settings.animationSpeed + 'ms');
+            root.style.setProperty('--hover-scale', this.settings.hoverScale / 100);
+            root.style.setProperty('--card-roundness', this.settings.cardRoundness + 'px');
+            root.style.setProperty('--button-roundness', this.settings.buttonRoundness + 'px');
+            root.style.setProperty('--primary-hue', this.settings.primaryHue);
+            root.style.setProperty('--accent-hue', this.settings.accentHue);
+            root.style.setProperty('--contrast', this.settings.contrast + '%');
+            root.style.setProperty('--backdrop-saturate', this.settings.backdropSaturate + '%');
+            root.style.setProperty('--perspective-depth', this.settings.perspectiveDepth + 'px');
+
+            // ถ้าเป็นโหมด Classic (ไม่มี glass effects) ให้เพิ่ม class พิเศษ
+            var isClassicMode = this.settings.glassOpacity === 0 && this.settings.glassBlur === 0;
+            if (isClassicMode) {
+                document.body.classList.add('theme-classic');
+            } else {
+                document.body.classList.remove('theme-classic');
+            }
+        },
+
+        resetSettings() {
+            if (confirm('รีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น?')) {
+                this.settings = {
+                    glassOpacity: 15,
+                    glassBlur: 12,
+                    borderOpacity: 30,
+                    shadowIntensity: 50,
+                    glowIntensity: 60,
+                    textShadow: true,
+                    animationSpeed: 500,
+                    hoverScale: 105,
+                    cardRoundness: 16,
+                    buttonRoundness: 12,
+                    primaryHue: 260,
+                    accentHue: 340,
+                    contrast: 100,
+                    backdropSaturate: 100,
+                    perspectiveDepth: 1000,
+                };
+                this.saveSettings();
+            }
+        }
+    };
+}
+</script>
 
 <style>
 /**
