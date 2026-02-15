@@ -416,8 +416,11 @@ class SmsPaymentController extends Controller
         }
 
         // เพิ่ม matched_order ลงใน data เพื่อให้แอพแสดงบิลได้ทันทีหลัง notify
+        // ✅ ส่งทั้ง 'matched_order' (ชื่อเดิม) และ 'order' (ที่ Android app อ่าน)
+        // Android app TransactionRepository.kt อ่านจาก data.order
         if ($matchedOrder) {
             $result['data']['matched_order'] = $matchedOrder;
+            $result['data']['order'] = $matchedOrder;
         }
 
         return response()->json($result, $result['success'] ? 200 : 400);

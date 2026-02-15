@@ -136,13 +136,17 @@ class SmsPaymentService
                     : ($specialAmountHandled ? 'Special amount detected and processed'
                         : 'Notification recorded'));
 
+            // ✅ matched ต้องเป็น true ทุกกรณีที่จับคู่ได้ (ทั้ง fortune + ecommerce + special)
+            // เพื่อให้ Android app รู้ว่ามี order ใน response (app เช็ค data.matched)
+            $anyMatched = $matched || $fortuneReadingHandled || $specialAmountHandled;
+
             return [
                 'success' => true,
                 'message' => $message,
                 'data' => [
                     'notification_id' => $notification->id,
                     'status' => $notification->fresh()->status,
-                    'matched' => $matched,
+                    'matched' => $anyMatched,
                     'fortune_reading' => $fortuneReadingHandled,
                     'special_amount' => $specialAmountHandled,
                     'matched_transaction_id' => $notification->matched_transaction_id,
