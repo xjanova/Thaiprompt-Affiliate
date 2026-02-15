@@ -174,6 +174,9 @@ class LineRegistrationController extends Controller
         // Auto-login
         Auth::login($user);
 
+        // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
+        $request->session()->regenerate();
+
         Log::info('LINE Registration: Auto-login successful', [
             'user_id' => $user->id,
             'session_token' => $authData['session_token'] ?? null,
